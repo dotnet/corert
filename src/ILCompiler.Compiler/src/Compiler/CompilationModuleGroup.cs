@@ -42,12 +42,22 @@ namespace ILCompiler
         /// shared between modules (generics, parameterized types), or the type lives in a different module
         /// and therefore needs a full VTable
         /// </summary>
-        public abstract bool ShouldProduceFullType(TypeDesc type);
+        public abstract bool ShouldProduceFullVTable(TypeDesc type);
+        /// <summary>
+        /// If true, the necessary type should be promoted to a full type should be generated. 
+        /// </summary>
+        public abstract bool ShouldPromoteToFullType(TypeDesc type);
         /// <summary>
         /// If true, the type will not be linked into the same module as the current compilation and therefore
         /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
         /// </summary>
         public abstract bool ShouldReferenceThroughImportTable(TypeDesc type);
+
+        /// <summary>
+        /// If true, there may be type system constructs that will not be linked into the same module as the current compilation and therefore
+        /// accessed through the target platform's import mechanism (ie, Import Address Table on Windows)
+        /// </summary>
+        public abstract bool CanHaveReferenceThroughImportTable { get; }
 
         private class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
         {

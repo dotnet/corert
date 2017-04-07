@@ -26,9 +26,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-
-            // TODO: needs a closer look when we enable USG
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Universal));
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -52,10 +49,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
 
             dependencyList.Add(factory.VTable(_type), "VTable");
-
-            // TODO: native layout dependencies (template type entries)
-
-            // TODO: other dependencies needed by the dynamic type loader?
 
             return dependencyList;
         }
@@ -95,6 +88,42 @@ namespace ILCompiler.DependencyAnalysis
                 // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
                 objData.EmitZeroPointer();
             }
+        }
+
+        protected override void OutputBaseSize(ref ObjectDataBuilder objData)
+        {
+            bool emitMinimumObjectSize = false;
+
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal) && _type.IsDefType)
+            {
+                LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
+
+                if (instanceByteCount.IsIndeterminate)
+                {
+                    // For USG types, they may be of indeterminate size, and the size of the type may be meaningless. 
+                    // In that case emit a fixed constant.
+                    emitMinimumObjectSize = true;
+                }
+            }
+
+            if (emitMinimumObjectSize)
+                objData.EmitInt(MinimumObjectSize);
+            else
+                base.OutputBaseSize(ref objData);
+        }
+
+        protected override void ComputeValueTypeFieldPadding()
+        {
+            DefType defType = _type as DefType;
+
+            // Types of indeterminate sizes don't have computed ValueTypeFieldPadding
+            if (defType != null && defType.InstanceByteCount.IsIndeterminate)
+            {
+                Debug.Assert(_type.IsCanonicalSubtype(CanonicalFormKind.Universal));
+                return;
+            }
+
+            base.ComputeValueTypeFieldPadding();
         }
     }
 }

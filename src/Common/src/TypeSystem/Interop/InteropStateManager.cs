@@ -18,6 +18,7 @@ namespace Internal.TypeSystem
         private readonly NativeStructTypeHashtable _nativeStructHashtable;
         private readonly StructMarshallingThunkHashTable _structMarshallingThunkHashtable;
         private readonly DelegateMarshallingStubHashtable _delegateMarshallingThunkHashtable;
+        private readonly InlineArrayHashTable _inlineArrayHashtable;
 
         public InteropStateManager(ModuleDesc generatedAssembly)
         {
@@ -25,6 +26,7 @@ namespace Internal.TypeSystem
             _structMarshallingThunkHashtable = new StructMarshallingThunkHashTable(this, _generatedAssembly.GetGlobalModuleType());
             _nativeStructHashtable = new NativeStructTypeHashtable(this, _generatedAssembly);
             _delegateMarshallingThunkHashtable = new DelegateMarshallingStubHashtable(this, _generatedAssembly.GetGlobalModuleType());
+            _inlineArrayHashtable = new InlineArrayHashTable(this, _generatedAssembly);
         }
         //
         // Delegate Marshalling Stubs
@@ -141,6 +143,11 @@ namespace Internal.TypeSystem
             return _structMarshallingThunkHashtable.GetOrCreateValue(methodKey);
         }
 
+        public TypeDesc GetInlineArrayType(InlineArrayCandidate candidate)
+        {
+            return _inlineArrayHashtable.GetOrCreateValue(candidate);
+        }
+
 
         private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
         {
@@ -227,6 +234,45 @@ namespace Internal.TypeSystem
             {
                 _interopStateManager = interopStateManager;
                 _owningType = owningType;
+            }
+        }
+
+        private class InlineArrayHashTable : LockFreeReaderHashtable<InlineArrayCandidate, InlineArrayType>
+        {
+            protected override int GetKeyHashCode(InlineArrayCandidate key)
+            {
+                return key.ElementType.GetHashCode() ^ (int)key.Length;
+            }
+
+            protected override int GetValueHashCode(InlineArrayType value)
+            {
+                return value.ElementType.GetHashCode() ^ (int)value.Length;
+            }
+
+            protected override bool CompareKeyToValue(InlineArrayCandidate key, InlineArrayType value)
+            {
+                return Object.ReferenceEquals(key.ElementType, value.ElementType) &&
+                        key.Length == value.Length;
+            }
+
+            protected override bool CompareValueToValue(InlineArrayType value1, InlineArrayType value2)
+            {
+                return Object.ReferenceEquals(value1.ElementType, value2.ElementType) &&
+                        value1.Length == value2.Length;
+            }
+
+            protected override InlineArrayType CreateValueFromKey(InlineArrayCandidate key)
+            {
+                return new InlineArrayType(_owningModule, key.ElementType, key.Length, _interopStateManager);
+            }
+
+            private readonly InteropStateManager _interopStateManager;
+            private readonly ModuleDesc _owningModule;
+
+            public InlineArrayHashTable(InteropStateManager interopStateManager, ModuleDesc owningModule)
+            {
+                _interopStateManager = interopStateManager;
+                _owningModule = owningModule;
             }
         }
 

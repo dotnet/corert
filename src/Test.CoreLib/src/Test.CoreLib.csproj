@@ -126,6 +126,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Array.cs">
       <Link>System\Array.cs</Link>
     </Compile>

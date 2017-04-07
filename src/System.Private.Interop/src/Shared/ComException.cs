@@ -14,12 +14,15 @@
 =============================================================================*/
 
 using System;
+using System.Runtime.Serialization;
+using System.Globalization;
 
 namespace System.Runtime.InteropServices
 {
     // Exception for COM Interop errors where we don't recognize the HResult.
     //
-    public class COMException : System.Exception
+    [Serializable]
+    public class COMException : ExternalException
     {
         internal COMException(int hr)
         {
@@ -44,6 +47,36 @@ namespace System.Runtime.InteropServices
             base(message)
         {
             HResult = errorCode;
+        }
+
+        protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
+        public override String ToString()
+        {
+            String message = Message;
+            String s;
+            String _className = GetType().ToString();
+            s = _className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
+
+            if (!(message == null || message.Length <= 0))
+            {
+                s = s + ": " + message;
+            }
+
+            Exception _innerException = InnerException;
+
+            if (_innerException != null)
+            {
+                s = s + " ---> " + _innerException.ToString();
+            }
+
+
+            if (StackTrace != null)
+                s += Environment.NewLine + StackTrace;
+
+            return s;
         }
     }
 }

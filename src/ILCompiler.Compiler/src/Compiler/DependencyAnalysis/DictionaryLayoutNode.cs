@@ -84,6 +84,20 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
+        {
+            if (_layout == null)
+                ComputeLayout();
+
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            for (int i = 0; i < _layout.Length; i++)
+            {
+                templateEntries.Add(_layout[i].TemplateDictionaryNode(factory));
+            }
+
+            return templateEntries.ToArray();
+        }
+
         [Conditional("DEBUG")]
         private void Validate()
         {
@@ -96,6 +110,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc method = _owningMethodOrType as MethodDesc;
                 Debug.Assert(method != null && method.IsSharedByGenericInstantiations);
+            }
+        }
+
+        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        {
+            foreach (GenericLookupResult lookupResult in Entries)
+            {
+#if DEBUG
+                int offsetBefore = builder.CountBytes;
+#endif
+
+                lookupResult.EmitDictionaryEntry(ref builder, factory, dictionary.TypeInstantiation, dictionary.MethodInstantiation, dictionary);
+
+#if DEBUG
+                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
+#endif
             }
         }
 

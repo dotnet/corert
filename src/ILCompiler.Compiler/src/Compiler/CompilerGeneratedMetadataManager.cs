@@ -62,9 +62,40 @@ namespace ILCompiler
             base.AddGeneratedMethod(method);
         }
 
+        private void AddMetadataOnlyType(TypeDesc type)
+        {
+            if (type is MetadataType)
+            {
+                var mdType = (MetadataType)type.GetTypeDefinition();
+                _modulesSeen.Add(mdType.Module);
+                _typeDefinitionsGenerated.Add(mdType);
+            }
+        }
+
+        protected override void AddMetadataOnlyMethod(MethodDesc method)
+        {
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+            AddMetadataOnlyType(typicalMethod.OwningType);
+            _methodDefinitionsGenerated.Add(typicalMethod);
+        }
+
         public override bool IsReflectionBlocked(MetadataType type)
         {
             return _metadataPolicy.IsBlocked(type);
+        }
+
+        public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
+        {
+            // Until cross module references are understood, and reported by ComputeMetadata
+            // return false here.
+            return false;
+        }
+
+        public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
+        {
+            // Until cross module references are understood, and reported by ComputeMetadata
+            // return false here.
+            return false;
         }
 
         protected override void ComputeMetadata(NodeFactory factory,
@@ -197,6 +228,15 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
+                // Global module type always generates metadata. This is e.g. used in various places
+                // where we need a metadata enabled type from an assembly but we don't have a convenient way
+                // to find one.
+                // We don't need to worry about metadata consistency (accidentally generating metadata
+                // that can't be used with any reflection API at runtime because it's incomplete) because
+                // global module types don't derive from anything and have an empty interface list.
+                if (typeDef.IsModuleType)
+                    return true;
+
                 // Metadata consistency: if a nested type generates metadata, the containing type is
                 // required to generate metadata, or metadata generation will fail.
                 foreach (var nested in typeDef.GetNestedTypes())

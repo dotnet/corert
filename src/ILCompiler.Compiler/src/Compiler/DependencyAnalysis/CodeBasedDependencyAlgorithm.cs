@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
+            // TODO: https://github.com/dotnet/corert/issues/3224
             // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
             // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
             // we even start the compilation process (with the invocation stubs being compilation roots like any other).
@@ -32,7 +33,10 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
                     MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (invokeStub != canonInvokeStub)
-                        dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
+                    {
+                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                    }
                     else
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
                 }
@@ -48,6 +52,22 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
+
+                // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
+                // Use a name/sig reference instead.
+                if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
+                {
+                    dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
+                        "Non metadata-local method reference"));
+                }
+
+                if (method.HasInstantiation && method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                {
+                    dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)),
+                        "UniversalCanon signature of method"));
+                }
+
+                dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
 
             if (method.HasInstantiation)

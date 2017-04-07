@@ -226,11 +226,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
         {
-            if (RuntimeAugments.IsUnmanagedPointerType(elementTypeHandle))
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PointerArray);
-            }
-
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
                 throw new NotSupportedException(SR.NotSupported_OpenType);
@@ -267,11 +262,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            if (RuntimeAugments.IsUnmanagedPointerType(elementTypeHandle))
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PointerArray);
-            }
-
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
                 throw new NotSupportedException(SR.NotSupported_OpenType);
@@ -456,8 +446,18 @@ namespace Internal.Reflection.Execution
                 success = module.TryFindBlob((int)ReflectionMapBlob.NativeLayoutInfo, out pNativeLayoutInfoBlob, out cbNativeLayoutInfoBlob);
                 Debug.Assert(success);
 
-                // All methods referred from this blob are contained in the same type. The first UINT in the blob is the RVA of that EEType
-                RuntimeTypeHandle declaringTypeHandle = TypeLoaderEnvironment.RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
+                RuntimeTypeHandle declaringTypeHandle;
+                // All methods referred from this blob are contained in the same type. The first UINT in the blob is a reloc to that EEType
+                if (module.Handle.IsTypeManager)
+                {
+                    // CoreRT uses 32bit relative relocs
+                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)((byte*)(&pBlob[1]) + (int)(pBlob[0])));
+                }
+                else
+                {
+                    // .NET Native uses RVAs
+                    declaringTypeHandle = TypeLoaderEnvironment.RvaToRuntimeTypeHandle(module.Handle, pBlob[0]);
+                }
 
                 // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
                 // Now have the type loader build or locate a dictionary for this method
@@ -471,7 +471,16 @@ namespace Internal.Reflection.Execution
                 success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
                 Debug.Assert(success);
 
-                dynamicInvokeMethod = TypeLoaderEnvironment.RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
+                if (module.Handle.IsTypeManager)
+                {
+                    // CoreRT uses 32bit relative relocs
+                    dynamicInvokeMethod = (IntPtr)((byte*)(&pBlob[index + 2]) + (int)(pBlob[index + 1]));
+                }
+                else
+                {
+                    // .NET Native uses RVAs
+                    dynamicInvokeMethod = TypeLoaderEnvironment.RvaToFunctionPointer(module.Handle, pBlob[index + 1]);
+                }
             }
             else
             {

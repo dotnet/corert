@@ -23,40 +23,11 @@ namespace ILCompiler.DependencyAnalysis
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
-    class UtcDictionaryLayoutNode : DictionaryLayoutNode
+    public partial class UtcDictionaryLayoutNode : DictionaryLayoutNode
     {
-        private List<GenericLookupResult> _layout = new List<GenericLookupResult>();
-        private Dictionary<GenericLookupResult, int> _entryslots = new Dictionary<GenericLookupResult, int>();
-        private Object thisLock = new Object();
-
         public UtcDictionaryLayoutNode(TypeSystemEntity owningMethodOrType) : base(owningMethodOrType)
         {
-        }
 
-        public override int GetSlotForEntry(GenericLookupResult entry)
-        {
-            int index;
-
-            lock (thisLock)
-            {
-                if (!_entryslots.TryGetValue(entry, out index))
-                {
-                    _layout.Add(entry);
-                    index = _layout.Count - 1;
-                    _entryslots.Add(entry, index);
-                }
-            }           
-
-            Debug.Assert(index >= 0);
-            return index;
-        }
-
-        public override IEnumerable<GenericLookupResult> Entries
-        {
-            get
-            {
-                return _layout;
-            }
         }
     }
 }

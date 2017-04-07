@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -25,6 +26,11 @@ namespace ILCompiler.DependencyAnalysis
                 _typeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new TypeHandleGenericLookupResult(type);
+                });
+
+                _unwrapNullableSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new UnwrapNullableTypeHandleGenericLookupResult(type);
                 });
 
                 _methodHandles = new NodeCache<MethodDesc, GenericLookupResult>(method =>
@@ -95,7 +101,32 @@ namespace ILCompiler.DependencyAnalysis
                 _defaultCtors = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new DefaultConstructorLookupResult(type);
-                });                
+                });
+
+                _fieldOffsets = new NodeCache<FieldDesc, GenericLookupResult>(field =>
+                {
+                    return new FieldOffsetGenericLookupResult(field);
+                });
+
+                _vtableOffsets = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                {
+                    return new VTableOffsetGenericLookupResult(method);
+                });
+
+                _callingConventionConverters = new NodeCache<CallingConventionConverterKey, GenericLookupResult>(key =>
+                {
+                    return new CallingConventionConverterLookupResult(key);
+                });
+
+                _typeSizes = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new TypeSizeLookupResult(type);
+                });
+
+                _constrainedMethodUses = new NodeCache<ConstrainedMethodUseKey, GenericLookupResult>(constrainedMethodUse =>
+                {
+                    return new ConstrainedMethodUseLookupResult(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
+                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -103,6 +134,24 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult Type(TypeDesc type)
             {
                 return _typeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _unwrapNullableSymbols;
+
+            public GenericLookupResult UnwrapNullableType(TypeDesc type)
+            {
+                // An actual unwrap nullable lookup is only required if the type is exactly a runtime 
+                // determined type associated with System.__UniversalCanon itself
+                if (type.IsRuntimeDeterminedType && ((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                    return _unwrapNullableSymbols.GetOrAdd(type);
+                else
+                {
+                    // Perform the unwrap or not eagerly, and use a normal Type GenericLookupResult
+                    if (type.IsNullable)
+                        return Type(type.Instantiation[0]);
+                    else
+                        return Type(type);
+                }
             }
 
             private NodeCache<MethodDesc, GenericLookupResult> _methodHandles;
@@ -202,8 +251,79 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _defaultCtors.GetOrAdd(type);
             }
+
+            private NodeCache<FieldDesc, GenericLookupResult> _fieldOffsets;
+
+            public GenericLookupResult FieldOffsetLookupResult(FieldDesc field)
+            {
+                return _fieldOffsets.GetOrAdd(field);
+            }
+
+            private NodeCache<MethodDesc, GenericLookupResult> _vtableOffsets;
+
+            public GenericLookupResult VTableOffsetLookupResult(MethodDesc method)
+            {
+                return _vtableOffsets.GetOrAdd(method);
+            }
+
+            private NodeCache<CallingConventionConverterKey, GenericLookupResult> _callingConventionConverters;
+
+            public GenericLookupResult CallingConventionConverterLookupResult(CallingConventionConverterKey key)
+            {
+                return _callingConventionConverters.GetOrAdd(key);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _typeSizes;
+
+            public GenericLookupResult TypeSize(TypeDesc type)
+            {
+                return _typeSizes.GetOrAdd(type);
+            }
+
+            private NodeCache<ConstrainedMethodUseKey, GenericLookupResult> _constrainedMethodUses;
+            public GenericLookupResult ConstrainedMethodUse(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                return _constrainedMethodUses.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
+            }
         }
 
         public GenericLookupResults GenericLookup = new GenericLookupResults();
+
+        private struct ConstrainedMethodUseKey : IEquatable<ConstrainedMethodUseKey>
+        {
+            public ConstrainedMethodUseKey(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                ConstrainedMethod = constrainedMethod;
+                ConstraintType = constraintType;
+                DirectCall = directCall;
+            }
+
+            public readonly MethodDesc ConstrainedMethod;
+            public readonly TypeDesc ConstraintType;
+            public readonly bool DirectCall;
+
+            public override int GetHashCode()
+            {
+                return ConstraintType.GetHashCode() ^ ConstrainedMethod.GetHashCode() ^ DirectCall.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is ConstrainedMethodUseKey) && Equals((ConstrainedMethodUseKey)obj);
+            }
+
+            public bool Equals(ConstrainedMethodUseKey other)
+            {
+                if (ConstraintType != other.ConstraintType)
+                    return false;
+                if (ConstrainedMethod != other.ConstrainedMethod)
+                    return false;
+                if (DirectCall != other.DirectCall)
+                    return false;
+
+                return true;
+            }
+        }
+
     }
 }

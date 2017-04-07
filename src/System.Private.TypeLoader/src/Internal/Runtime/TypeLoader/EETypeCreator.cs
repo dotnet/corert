@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime;
@@ -139,6 +140,8 @@ namespace Internal.Runtime.TypeLoader
             IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
             IntPtr dynamicDispatchMapPtr = IntPtr.Zero;
             DynamicModule* dynamicModulePtr = null;
+            IntPtr gcStaticData = IntPtr.Zero;
+            IntPtr gcStaticsIndirection = IntPtr.Zero;
 
             try
             {
@@ -171,6 +174,7 @@ namespace Internal.Runtime.TypeLoader
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
                 bool isAbstractClass;
+                bool isByRefLike;
 #if EETYPE_TYPE_MANAGER
                 IntPtr typeManager = IntPtr.Zero;
 #endif
@@ -194,6 +198,7 @@ namespace Internal.Runtime.TypeLoader
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
                     isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
+                    isByRefLike = pTemplateEEType->IsByRefLike;
 #if EETYPE_TYPE_MANAGER
                     typeManager = pTemplateEEType->PointerToTypeManager;
 #endif
@@ -214,6 +219,7 @@ namespace Internal.Runtime.TypeLoader
                     isGeneric = false;
                     isGenericEETypeDef = true;
                     isAbstractClass = false;
+                    isByRefLike = false;
                     componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
                 }
@@ -229,6 +235,8 @@ namespace Internal.Runtime.TypeLoader
                     isAbstractClass = (state.TypeBeingBuilt is MetadataType)
                         && ((MetadataType)state.TypeBeingBuilt).IsAbstract
                         && !state.TypeBeingBuilt.IsInterface;
+
+                    isByRefLike = (state.TypeBeingBuilt is DefType) && ((DefType)state.TypeBeingBuilt).IsByRefLike;
 
                     if (state.TypeBeingBuilt.HasVariance)
                     {
@@ -327,6 +335,11 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
+
+                    if (isByRefLike)
+                        rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
+                    else
+                        rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
 
                     rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
 
@@ -609,11 +622,26 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        int cbStaticGCDesc;
-                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                        if (state.GcStaticEEType != IntPtr.Zero)
+                        {
+                            // CoreRT Abi uses managed heap-allocated GC statics
+                            object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
+                            gcStaticData = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                            // CoreRT references statics through an extra level of indirection (a table in the image).
+                            gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
+
+                            *((IntPtr*)gcStaticsIndirection) = gcStaticData;
+                            pEEType->DynamicGcStaticsData = gcStaticsIndirection;
+                        }
+                        else
+                        {
+                            int cbStaticGCDesc;
+                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
 #if GENERICS_FORCE_USG
-                        TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
+                        }
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -679,6 +707,10 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(state.GcStaticDesc);
                     if (state.AllocatedThreadStaticGCDesc)
                         MemoryHelpers.FreeMemory(state.ThreadStaticDesc);
+                    if (gcStaticData != IntPtr.Zero)
+                        RuntimeImports.RhHandleFree(gcStaticData);
+                    if (gcStaticsIndirection != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(gcStaticsIndirection);
                 }
             }
         }
@@ -1026,8 +1058,12 @@ namespace Internal.Runtime.TypeLoader
                 requireVtableSlotMapping = true;
                 pTemplateEEType = null;
             }
-            else if (type.IsMdArray)
+            else if (type.IsMdArray || (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer))
             {
+                // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and
+                // we don't need to do much for them in terms of type building. We can pretty much just take
+                // the EEType for any of those, massage the bits that matter (GCDesc, element type,
+                // component size,...) to be of the right shape and we're done.
                 pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();
                 requireVtableSlotMapping = false;
             }

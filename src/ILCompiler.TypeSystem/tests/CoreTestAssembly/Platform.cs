@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #pragma warning disable 649
+#pragma warning disable 169
 
 namespace System
 {
@@ -65,6 +66,14 @@ namespace System
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
     public class Exception { }
+
+    public struct TypedReference
+    {
+        private readonly ByReference<byte> _value;
+        private readonly RuntimeTypeHandle _typeHandle;
+    }
+
+    public struct ByReference<T> { }
 }
 
 namespace System.Collections

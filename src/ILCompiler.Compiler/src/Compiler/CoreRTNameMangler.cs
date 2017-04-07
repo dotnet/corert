@@ -11,6 +11,7 @@ using System.Text;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -31,7 +32,7 @@ namespace ILCompiler
             set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
             get
             {
-                System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
+                Debug.Assert(_compilationUnitPrefix != null);
                 return _compilationUnitPrefix;
             }
         }
@@ -257,6 +258,14 @@ namespace ILCompiler
                         }
                         mangledName += NestMangledName(mangledInstantiation);
                     }
+                    else if (type is IPrefixMangledMethod)
+                    {
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
+                    }
+                    else if (type is IPrefixMangledType)
+                    {
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
+                    }
                     else
                     {
                         mangledName = SanitizeName(((DefType)type).GetFullName(), true);
@@ -283,6 +292,32 @@ namespace ILCompiler
                 return mangledName;
 
             return ComputeMangledMethodName(method);
+        }
+
+        private string GetPrefixMangledTypeName(IPrefixMangledType prefixMangledType)
+        {
+            Debug.Assert(prefixMangledType != null);
+
+            string mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+
+            if (_mangleForCplusPlus)
+            {
+                mangledName = mangledName.Replace("::", "_");
+            }
+            return mangledName;            
+        }
+
+        private string GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
+        {
+            Debug.Assert(prefixMangledMetod != null);
+
+            string mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
+
+            if (_mangleForCplusPlus)
+            {
+                mangledName = mangledName.Replace("::", "_");
+            }
+            return mangledName;
         }
 
         private Utf8String ComputeMangledMethodName(MethodDesc method)
@@ -322,10 +357,11 @@ namespace ILCompiler
 
             string mangledName;
 
-            var methodDefinition = method.GetTypicalMethodDefinition();
+            var methodDefinition = method.GetMethodDefinition();
             if (methodDefinition != method)
             {
-                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition()).ToString();
+                // Instantiated generic method
+                mangledName = GetMangledMethodName(methodDefinition).ToString();
 
                 var inst = method.Instantiation;
                 string mangledInstantiation = "";
@@ -342,12 +378,29 @@ namespace ILCompiler
             }
             else
             {
-                // Assume that Name is unique for all other methods
-                mangledName = SanitizeName(method.Name);
-            }
+                var typicalMethodDefinition = method.GetTypicalMethodDefinition();
+                if (typicalMethodDefinition != method)
+                {
+                    // Method on an instantiated type
+                    mangledName = GetMangledMethodName(typicalMethodDefinition).ToString();
+                }
+                else if (method is IPrefixMangledMethod)
+                {
+                    mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)method);
+                }
+                else if (method is IPrefixMangledType)
+                {
+                    mangledName = GetPrefixMangledTypeName((IPrefixMangledType)method);
+                }
+                else
+                {
+                    // Assume that Name is unique for all other methods
+                    mangledName = SanitizeName(method.Name);
+                }
 
-            if (prependTypeName != null)
-                mangledName = prependTypeName + "__" + mangledName;
+                if (prependTypeName != null)
+                    mangledName = prependTypeName + "__" + mangledName;
+            }
 
             Utf8String utf8MangledName = new Utf8String(mangledName);
 

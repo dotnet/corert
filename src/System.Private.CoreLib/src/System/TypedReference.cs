@@ -11,21 +11,27 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
-namespace System.Reflection  //@TODO: Intentionally placing TypedReference in the wrong namespace to work around NUTC's inability to handle ELEMENT_TYPE_TYPEDBYREF.
+namespace System
 {
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     public struct TypedReference
     {
         // Do not change the ordering of these fields. The JIT has a dependency on this layout.
+#if CORERT
+        private readonly ByReference<byte> _value;
+#else
         private readonly ByReferenceOfByte _value;
+#endif
         private readonly RuntimeTypeHandle _typeHandle;
 
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
-            //@todo: Once ByReference<T> is fixed, uncomment the following line and delete the one after it.
-            //_value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+#if CORERT
+            _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+#else
             _value = new ByReferenceOfByte(target, offset);
+#endif
             _typeHandle = typeHandle;
         }
 
@@ -46,6 +52,11 @@ namespace System.Reflection  //@TODO: Intentionally placing TypedReference in th
             return value._typeHandle;
         }
 
+        internal static RuntimeTypeHandle RawTargetTypeToken(TypedReference value)
+        {
+            return value._typeHandle;
+        }
+
         public static object ToObject(TypedReference value)
         {
             RuntimeTypeHandle typeHandle = value._typeHandle;
@@ -56,6 +67,10 @@ namespace System.Reflection  //@TODO: Intentionally placing TypedReference in th
             if (eeType.IsValueType)
             {
                 return RuntimeImports.RhBox(eeType, ref value.Value);
+            }
+            else if (eeType.IsPointer)
+            {
+                return RuntimeImports.RhBox(EETypePtr.EETypePtrOf<UIntPtr>(), ref value.Value);
             }
             else
             {
@@ -90,7 +105,7 @@ namespace System.Reflection  //@TODO: Intentionally placing TypedReference in th
                 _offset = offset;
             }
 
-            public ref byte Value => ref Unsafe.Add<byte>(ref Unsafe.As<IntPtr, byte>(ref _target.m_pEEType), _offset);
+            public ref byte Value => ref Unsafe.Add<byte>(ref _target.GetRawData(), _offset);
 
             private readonly object _target;
             private readonly int _offset;

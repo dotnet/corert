@@ -481,13 +481,16 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             frameIterator.CalculateCurrentMethodState();
         
             STRESS_LOG1(LF_GCROOTS, LL_INFO1000, "Scanning method %pK\n", (void*)frameIterator.GetRegisterSet()->IP);
-       
-            RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
-                                           frameIterator.GetMethodInfo(), 
-                                           frameIterator.GetEffectiveSafePointAddress(),
-                                           frameIterator.GetRegisterSet(),
-                                           pfnEnumCallback,
-                                           pvCallbackData);
+
+            if (!frameIterator.ShouldSkipRegularGcReporting())
+            {
+                RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
+                                               frameIterator.GetMethodInfo(), 
+                                               frameIterator.GetEffectiveSafePointAddress(),
+                                               frameIterator.GetRegisterSet(),
+                                               pfnEnumCallback,
+                                               pvCallbackData);
+            }
         
             // Each enumerated frame (including the first one) may have an associated stack range we need to
             // report conservatively (every pointer aligned value that looks like it might be a GC reference is

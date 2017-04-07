@@ -30,7 +30,7 @@ internal static partial class Interop
         [DllImport(Libraries.CoreLibNative, EntryPoint = "CoreLibNative_LowLevelMonitor_Signal_Release")]
         internal static extern void LowLevelMonitor_Signal_Release(IntPtr monitor);
 
-        internal delegate uint ThreadProc(IntPtr parameter);
+        internal delegate IntPtr ThreadProc(IntPtr parameter);
 
         [DllImport(Libraries.CoreLibNative, EntryPoint = "CoreLibNative_RuntimeThread_CreateThread")]
         internal static extern bool RuntimeThread_CreateThread(IntPtr stackSize, IntPtr startAddress, IntPtr parameter);

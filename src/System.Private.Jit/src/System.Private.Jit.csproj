@@ -77,12 +77,15 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILEmitter.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeTargetNativeMethod.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\StructMarshallingThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\TypeGetTypeMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
-    <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeILEmitterConfiguration.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\InlineArrayType.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeILEmitterConfiguration.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropTypes.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropStateManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\Logger.cs" />
@@ -133,7 +136,6 @@
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.Intrinsics.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.cs" />
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
-    <Compile Include="$(JitInterfaceBasePath)\TypesDebugInfo\PrimitiveTypeDescriptor.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />

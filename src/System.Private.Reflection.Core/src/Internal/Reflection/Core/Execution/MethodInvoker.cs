@@ -18,10 +18,13 @@ namespace Internal.Reflection.Core.Execution
     {
         protected MethodInvoker() { }
 
+        [DebuggerGuidedStepThrough]
         public Object Invoke(Object thisObject, Object[] arguments, Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
         {
             BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, cultureInfo);
-            return Invoke(thisObject, arguments, binderBundle);
+            Object result = Invoke(thisObject, arguments, binderBundle);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
         public abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen);

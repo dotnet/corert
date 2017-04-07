@@ -309,31 +309,34 @@ public:
 
         // This EEType was constructed from a universal canonical template, and has
         // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        HasDynamicallyAllocatedDispatchMapFlag      = 0x00000080,
 
         // This EEType represents a structure that is an HFA (only ARM currently)
-        IsHFAFlag               = 0x00000100,
+        IsHFAFlag                           = 0x00000100,
 
         // This EEType has sealed vtable entries
         // This is for statically generated types - we need two different flags because
         // the sealed vtable entries are reached in different ways in the static and dynamic case
-        HasSealedVTableEntriesFlag = 0x00000200,
+        HasSealedVTableEntriesFlag          = 0x00000200,
 
         // This dynamically created type has gc statics
-        IsDynamicTypeWithGcStaticsFlag = 0x00000400,
+        IsDynamicTypeWithGcStaticsFlag      = 0x00000400,
 
         // This dynamically created type has non gc statics
-        IsDynamicTypeWithNonGcStaticsFlag = 0x00000800,
+        IsDynamicTypeWithNonGcStaticsFlag   = 0x00000800,
 
         // This dynamically created type has thread statics
-        IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
+        IsDynamicTypeWithThreadStaticsFlag  = 0x00001000,
 
         // This EEType was constructed from a module where the open type is defined in
         // a dynamically loaded type
-        HasDynamicModuleFlag    = 0x00002000,
+        HasDynamicModuleFlag                = 0x00002000,
 
         // This EEType is for an abstract (but non-interface) type
-        IsAbstractClassFlag     = 0x00004000,        
+        IsAbstractClassFlag                 = 0x00004000,  
+
+        // This EEType is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        IsByRefLikeFlag                     = 0x00008000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.

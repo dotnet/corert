@@ -87,7 +87,6 @@ namespace System.Globalization
             SetName(name);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
@@ -148,7 +147,7 @@ namespace System.Globalization
                 RegionInfo temp = s_currentRegionInfo;
                 if (temp == null)
                 {
-                    temp = new RegionInfo(CultureInfo.CurrentCulture.m_cultureData);
+                    temp = new RegionInfo(CultureInfo.CurrentCulture._cultureData);
 
                     // Need full name for custom cultures
                     temp._name = temp._cultureData.SREGIONNAME;

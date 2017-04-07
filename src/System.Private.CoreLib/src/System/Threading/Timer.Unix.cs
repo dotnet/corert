@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
+
 namespace System.Threading
 {
     //
@@ -24,6 +27,24 @@ namespace System.Threading
             get
             {
                 return Environment.TickCount;
+            }
+        }
+    }
+
+    internal sealed partial class TimerQueueTimer
+    {
+        private void SignalNoCallbacksRunning()
+        {
+            SafeWaitHandle waitHandle = _notifyWhenNoCallbacksRunning.SafeWaitHandle;
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
             }
         }
     }

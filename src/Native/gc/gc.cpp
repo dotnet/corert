@@ -4139,7 +4139,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
     if (allatonce_block)
     {
         g_gc_lowest_address =  allatonce_block;
-        g_gc_highest_address = allatonce_block + (memory_details.block_count * (large_size + normal_size));
+        g_gc_highest_address = allatonce_block + requestedMemory;
         memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
 
         for(size_t i = 0; i < memory_details.block_count; i++)

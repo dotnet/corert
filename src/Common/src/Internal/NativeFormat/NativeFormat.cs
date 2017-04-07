@@ -58,6 +58,7 @@ namespace Internal.NativeFormat
         BaseTypeSize                = 0x4f,
         GenericVarianceInfo         = 0x50,
         DelegateInvokeSignature     = 0x51,
+        GcStaticEEType              = 0x52,
 
         // Add new custom bag elements that don't match to something you'd find in the ECMA metadata here.
     }
@@ -98,6 +99,8 @@ namespace Internal.NativeFormat
         NonGenericConstrainedMethod = 0x16,
         GenericConstrainedMethod    = 0x17,
         NonGenericDirectConstrainedMethod = 0x18,
+        PointerToOtherSlot          = 0x19,
+        IntValue                    = 0x20,
 
         NotYetSupported             = 0xee,
     }

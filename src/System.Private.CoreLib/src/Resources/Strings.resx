@@ -318,6 +318,9 @@
   <data name="Arg_MustBeSingle" xml:space="preserve">
     <value>Object must be of type Single.</value>
   </data>
+  <data name="Arg_MustBeStatic" xml:space="preserve">
+    <value>Method must be a static method.</value>
+  </data>
   <data name="Arg_MustBeString" xml:space="preserve">
     <value>Object must be of type String.</value>
   </data>
@@ -455,6 +458,9 @@
   </data>
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
+  </data>
+  <data name="Argument_AbsolutePathRequired" xml:space="preserve">
+    <value>Absolute path information is required.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
@@ -1122,6 +1128,24 @@
   <data name="InvalidOperation_TooEarly" xml:space="preserve">
     <value>Internal Error: This operation cannot be invoked in an eager class constructor.</value>
   </data>
+  <data name="InvalidOperation_NullContext" xml:space="preserve">
+    <value>Cannot call Set on a null context</value>
+  </data>
+  <data name="InvalidOperation_CannotUseAFCOtherThread" xml:space="preserve">
+    <value>AsyncFlowControl object must be used on the thread where it was created.</value>
+  </data>
+  <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
+    <value>Cannot restore context flow when it is not suppressed.</value>
+  </data>
+  <data name="InvalidOperation_CannotSupressFlowMultipleTimes" xml:space="preserve">
+    <value>Context flow is already suppressed.</value>
+  </data>
+  <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
+    <value>AsyncFlowControl object can be used only once to call Undo().</value>
+  </data>
+  <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
+    <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
+  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -1151,6 +1175,9 @@
   </data>
   <data name="IO_FileLoad" xml:space="preserve">
     <value>Could not load the specified file.</value>
+  </data>
+  <data name="IO_FileLoad_FileName" xml:space="preserve">
+    <value>Could not load the file '{0}'.</value>
   </data>
   <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
     <value>Could not find a part of the path.</value>
@@ -1214,6 +1241,12 @@
   </data>
   <data name="NotSupported_VoidArray" xml:space="preserve">
     <value>Arrays of System.Void are not supported.</value>
+  </data>
+  <data name="NotSupported_ByRefLike" xml:space="preserve">
+    <value>Cannot create boxed ByRef-like values.</value>
+  </data>
+  <data name="NotSupported_Type" xml:space="preserve">
+    <value>Type is not supported.</value>
   </data>
   <data name="NotSupported_WaitAllSTAThread" xml:space="preserve">
     <value>WaitAll for multiple handles on a STA thread is not supported.</value>
@@ -1603,9 +1636,6 @@
   <data name="Argument_MinMaxValue" xml:space="preserve">
     <value>'{0}' cannot be greater than {1}.</value>
   </data>
-  <data name="InvalidOperation_NullContext" xml:space="preserve">
-    <value>Cannot call Set on a null context</value>
-  </data>
   <data name="ExecutionContext_ExceptionInAsyncLocalNotification" xml:space="preserve">
     <value>An exception was not handled in an AsyncLocal&lt;T&gt; notification callback.</value>
   </data>
@@ -1638,6 +1668,9 @@
   </data>
   <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
     <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
+  </data>
+  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
+    <value>SetData can only be used to set the value of a given name once.</value>
   </data>
   <data name="SemaphoreSlim_Disposed" xml:space="preserve">
     <value>The semaphore has been disposed.</value>
@@ -2253,5 +2286,95 @@
   </data>
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
+    <value>Ambiguous match found.</value>
+  </data>
+  <data name="NotSupported_ChangeType" xml:space="preserve">
+    <value>ChangeType operation is not supported.</value>
+  </data>
+  <data name="Arg_EmptyArray" xml:space="preserve">
+    <value>Array may not be empty.</value>
+  </data>
+  <data name="MissingMember" xml:space="preserve">
+    <value>Member not found.</value>
+  </data>
+  <data name="MissingField" xml:space="preserve">
+    <value>Field not found.</value>
+  </data>
+  <data name="InvalidCast_FromDBNull" xml:space="preserve">
+    <value>Object cannot be cast from DBNull to other types.</value>
+  </data>
+  <data name="NotSupported_DBNullSerial" xml:space="preserve">
+    <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
+  </data>
+  <data name="Serialization_StringBuilderCapacity" xml:space="preserve">
+    <value>The serialized Capacity property of StringBuilder must be positive, less than or equal to MaxCapacity and greater than or equal to the String length.</value>
+  </data>
+  <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
+    <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
+  </data>
+  <data name="PlatformNotSupported_Remoting" xml:space="preserve">
+    <value>Remoting is not supported on this platform.</value>
+  </data>   
+  <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
+    <value>Strong-name signing is not supported on this platform.</value>
+  </data>
+  <data name="Serialization_MissingDateTimeData" xml:space="preserve">
+    <value>Invalid serialized DateTime data. Unable to find 'ticks' or 'dateData'.</value>
+  </data>
+  <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
+    <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
+  </data>
+  <data name="Arg_InvalidANSIString" xml:space="preserve">
+    <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
+  </data>
+  <data name="Arg_ExpectedNulTermination" xml:space="preserve">
+    <value>The value passed was not NUL terminated.</value>
+  </data>
+  <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
+    <value>ArgIterator is not supported on this platform.</value>
+  </data>
+  <data name="Arg_TypeUnloadedException" xml:space="preserve">
+    <value>Type had been unloaded.</value>
+  </data>
+  <data name="Overflow_Currency" xml:space="preserve">
+    <value>Value was either too large or too small for a Currency.</value>
+  </data>
+  <data name="PlatformNotSupported_SecureBinarySerialization" xml:space="preserve">
+    <value>Secure binary serialization is not supported on this platform.</value>
+  </data>
+  <data name="Serialization_InvalidPtrValue" xml:space="preserve">
+    <value>An IntPtr or UIntPtr with an eight byte value cannot be deserialized on a machine with a four byte word size.</value>
+  </data>
+  <data name="EventSource_ListenerNotFound" xml:space="preserve">
+    <value>Listener not found.</value>
+  </data>
+  <data name="EventSource_ToString" xml:space="preserve">
+    <value>EventSource({0}, {1})</value>
+  </data>
+  <data name="EventSource_ImplementGetMetadata" xml:space="preserve">
+    <value>Please implement the GetMetadata method in your derived class</value>
+  </data>
+  <data name="EventSource_NeedGuid" xml:space="preserve">
+    <value>The Guid of an EventSource must be non zero.</value>
+  </data>
+  <data name="EventSource_NeedName" xml:space="preserve">
+    <value>The name of an EventSource must not be null.</value>
+  </data>
+  <data name="EventSource_NeedDescriptors" xml:space="preserve">
+    <value>The descriptor of an EventSource must be non-null.</value>
+  </data>
+  <data name="EventSource_NeedManifest" xml:space="preserve">
+    <value>The manifest of an EventSource must be non-null.</value>
+  </data>
+  <data name="EventSource_EventSourceGuidInUse" xml:space="preserve">
+    <value>An instance of EventSource with Guid {0} already exists.</value>
+  </data>
+  <data name="EventSource_ListenerWriteFailure" xml:space="preserve">
+    <value>An error occurred when writing to a listener.</value>
+  </data>
+  <data name="EventSource_NoManifest" xml:space="preserve">
+    <value>A manifest could not be generated for this EventSource because it contains one or more ill-formed event methods.</value>
   </data>
 </root>

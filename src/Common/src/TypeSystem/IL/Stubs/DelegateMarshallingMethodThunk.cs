@@ -13,7 +13,7 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
     /// </summary>
-    public class DelegateMarshallingMethodThunk : ILStubMethod
+    public partial class DelegateMarshallingMethodThunk : ILStubMethod
     {
         private readonly TypeDesc _owningType;
         private readonly MetadataType _delegateType;
@@ -107,8 +107,13 @@ namespace Internal.IL.Stubs
                             Debug.Assert(sequence == parameterMetadataArray[parameterIndex].Index);
                             marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
                         }
+                        bool isByRefType = delegateSignature[i].IsByRef;
 
-                        nativeParameterTypes[i] = MarshalHelpers.GetNativeMethodParameterType(delegateSignature[i], marshalAs, _interopStateManager, false, isAnsi);
+                        var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
+
+                        var nativeType = MarshalHelpers.GetNativeMethodParameterType(managedType, marshalAs, _interopStateManager, false, isAnsi);
+
+                        nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                      }
                     _signature = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
                 }

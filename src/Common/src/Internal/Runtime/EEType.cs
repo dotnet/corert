@@ -36,12 +36,12 @@ namespace Internal.Runtime
         {
             get
             {
-                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & 1u) != 0)
+                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & IndirectionConstants.IndirectionCellPointer) != 0)
                 {
 #if BIT64
-                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) & ~1ul);
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
 #else
-                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) & ~1u);
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
 #endif
                     return *ppInterfaceEETypeViaIAT;
                 }
@@ -504,6 +504,14 @@ namespace Internal.Runtime
             get
             {
                 return IsInterface || (RareFlags & EETypeRareFlags.IsAbstractClassFlag) != 0;
+            }
+        }
+
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return (RareFlags & EETypeRareFlags.IsByRefLikeFlag) != 0;
             }
         }
 
@@ -1076,6 +1084,54 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal IntPtr DynamicGcStaticsData
+        {
+            get
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicGcStatics);
+                fixed (EEType* pThis = &this)
+                {
+                    return *(IntPtr*)((byte*)pThis + cbOffset);
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicGcStatics);
+                fixed (EEType* pThis = &this)
+                {
+                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
+                }
+            }
+#endif
+        }
+
+        internal IntPtr DynamicNonGcStaticsData
+        {
+            get
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicNonGcStatics);
+                fixed (EEType* pThis = &this)
+                {
+                    return *(IntPtr*)((byte*)pThis + cbOffset);
+                }
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_DynamicNonGcStatics);
+                fixed (EEType* pThis = &this)
+                {
+                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
+                }
+            }
+#endif
+        }
+
         internal DynamicModule* DynamicModule
         {
             get
@@ -1294,8 +1350,32 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType);
                 return cbOffset;
             }
+            if (IsDynamicType)
+                cbOffset += (UInt32)IntPtr.Size;
 
-            // after this we have statics information for dynamic types
+            if (eField == EETypeField.ETF_DynamicGcStatics)
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                return cbOffset;
+            }
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+                cbOffset += (UInt32)IntPtr.Size;
+
+            if (eField == EETypeField.ETF_DynamicNonGcStatics)
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                return cbOffset;
+            }
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+                cbOffset += (UInt32)IntPtr.Size;
+
+            if (eField == EETypeField.ETF_DynamicThreadStaticOffset)
+            {
+                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                return cbOffset;
+            }
+            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
+                cbOffset += 4;
 
             Debug.Assert(false, "Unknown EEType field type");
             return 0;
@@ -1349,9 +1429,9 @@ namespace Internal.Runtime
         {
             get
             {
-                if (((int)_value & 1) == 0)
+                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
                     return (EEType*)_value;
-                return *(EEType**)(_value - 1);
+                return *(EEType**)(_value - IndirectionConstants.IndirectionCellPointer);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

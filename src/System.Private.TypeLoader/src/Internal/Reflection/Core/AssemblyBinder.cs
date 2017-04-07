@@ -35,6 +35,8 @@ namespace Internal.Reflection.Core
 
         public abstract bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult result, out Exception exception);
 
+        public abstract IList<AssemblyBindResult> GetLoadedAssemblies();
+
         // This helper is a concession to the fact that third-party binders running on top of the Win8P surface area have no sensible way
         // to perform this task due to the lack of a SetCulture() api on the AssemblyName class. Reflection.Core *is* able to do this 
         // thanks to the Internal.Reflection.Augment contract so we will expose this helper for the convenience of binders. 

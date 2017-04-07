@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Text
 {
@@ -72,6 +73,8 @@ namespace System.Text
 
     public abstract class Encoding : ICloneable
     {
+        private static Encoding defaultEncoding;
+
         // Special Case Code Pages
         private const int CodePageDefault = 0;
         private const int CodePageNoOEM = 1;        // OEM Code page not supported
@@ -357,7 +360,7 @@ namespace System.Text
         {
             return Array.Empty<byte>();
         }
-
+        
         // Returns the human-readable description of the encoding ( e.g. Hebrew (DOS)).
 
         public virtual String EncodingName
@@ -719,7 +722,7 @@ namespace System.Text
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -728,7 +731,7 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetBytes() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the byte[] to our byte* output buffer.  If the result count was wrong, we
@@ -766,7 +769,7 @@ namespace System.Text
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than byteCount bytes no matter the value
             // of result
             if (result < byteCount)
@@ -801,7 +804,7 @@ namespace System.Text
         public abstract int GetCharCount(byte[] bytes, int index, int count);
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         [Pure]
         [CLSCompliant(false)]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
@@ -873,7 +876,7 @@ namespace System.Text
 
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -882,7 +885,7 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetChars() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the char[] to our char* output buffer.  If the result count was wrong, we
@@ -920,7 +923,7 @@ namespace System.Text
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than charCount chars no matter the value
             // of result
             if (result < charCount)
@@ -969,6 +972,21 @@ namespace System.Text
             }
         }
 
+        // IsAlwaysNormalized
+        // Returns true if the encoding is always normalized for the specified encoding form
+        [Pure]
+        public bool IsAlwaysNormalized()
+        {
+            return this.IsAlwaysNormalized(NormalizationForm.FormC);
+        }
+
+        [Pure]
+        public virtual bool IsAlwaysNormalized(NormalizationForm form)
+        {
+            // Assume false unless the encoding knows otherwise
+            return false;
+        }
+
         // Returns a Decoder object for this encoding. The returned object
         // can be used to decode a sequence of bytes into a sequence of characters.
         // Contrary to the GetChars family of methods, a Decoder can
@@ -987,6 +1005,26 @@ namespace System.Text
         {
             return new DefaultDecoder(this);
         }
+
+        private static Encoding CreateDefaultEncoding()
+        {
+            // defaultEncoding should be null if we get here, but we can't
+            // assert that in case another thread beat us to the initialization
+
+            Encoding enc;
+
+
+            // For silverlight we use UTF8 since ANSI isn't available
+            enc = UTF8;
+
+
+            // This method should only ever return one Encoding instance
+            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
+        }
+
+        // Returns an encoding for the system's current ANSI code page.
+
+        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
 
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
@@ -1225,7 +1263,7 @@ namespace System.Text
                 return _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
             }
 
-            internal unsafe override int GetBytes(char* chars, int charCount,
+            public unsafe override int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, bool flush)
             {
                 return _encoding.GetBytes(chars, charCount, bytes, byteCount);
@@ -1258,7 +1296,7 @@ namespace System.Text
                 return _encoding.GetCharCount(bytes, index, count);
             }
 
-            internal unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+            public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
             {
                 // By default just call the encoding version, no flush by default
                 return _encoding.GetCharCount(bytes, count);
@@ -1293,7 +1331,7 @@ namespace System.Text
                 return _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             }
 
-            internal unsafe override int GetChars(byte* bytes, int byteCount,
+            public unsafe override int GetChars(byte* bytes, int byteCount,
                                                   char* chars, int charCount, bool flush)
             {
                 // By default just call the encoding's version

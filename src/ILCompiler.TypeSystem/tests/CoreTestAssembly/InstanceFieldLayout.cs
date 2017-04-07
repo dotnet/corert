@@ -146,3 +146,31 @@ namespace Sequential
     }
 }
 
+namespace IsByRefLike
+{
+    public struct ByRefLikeStruct
+    {
+        ByReference<object> ByRef;
+    }
+
+    public struct ComposedStruct
+    {
+        ByRefLikeStruct ByRefLike;
+    }
+
+    public struct NotByRefLike
+    {
+        int X;
+    }
+
+    public class Invalid
+    {
+        ByReference<int> ByRef;
+    }
+
+    public class ComposedInvalid
+    {
+        ByRefLikeStruct ByRefLike;
+    }
+}
+

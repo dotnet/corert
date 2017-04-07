@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
@@ -19,6 +21,7 @@ namespace Internal.TypeSystem
     /// </summary>
     abstract public class LockFreeReaderHashtableOfPointers<TKey, TValue>
     {
+        private const int _initialSize = 16;
         private const int _fillPercentageBeforeResize = 60;
 
         /// <summary>
@@ -31,31 +34,39 @@ namespace Internal.TypeSystem
         /// initial step, as this approach allows the TryGetValue logic to always
         /// succeed without needing any length or null checks.)
         /// </summary>
-        private IntPtr[] _hashtable = s_hashtableInitialArray;
-        private static IntPtr[] s_hashtableInitialArray = new IntPtr[1];
+        private volatile IntPtr[] _hashtable = new IntPtr[_initialSize];
+
+        /// <summary>
+        /// Tracks the hashtable being used by expansion. Used as a sentinel
+        /// to threads trying to add to the old hashtable that an expansion is
+        /// in progress.
+        /// </summary>
+        private volatile IntPtr[] _newHashTable;
 
         /// <summary>
         /// _count represents the current count of elements in the hashtable
         /// _count is used in combination with _resizeCount to control when the 
         /// hashtable should expand
         /// </summary>
-        private int _count = 0;
+        private volatile int _count = 0;
+
+        /// <summary>
+        /// Represents _count plus the number of potential adds currently happening.
+        /// If this reaches _hashTable.Length-1, an expansion is required (because
+        /// one slot must always be null for seeks to complete).
+        /// </summary>
+        private int _reserve = 0;
 
         /// <summary>
         /// _resizeCount represents the size at which the hashtable should resize.
+        /// While this doesn't strictly need to be volatile, having threads read stale values
+        /// triggers a lot of unneeded attempts to expand.
         /// </summary>
-        private int _resizeCount = 0;
+        private volatile int _resizeCount = _initialSize * _fillPercentageBeforeResize / 100;
 
         /// <summary>
-        /// Get the underlying array for the hashtable at this time. Implemented with
-        /// MethodImplOptions.NoInlining to prohibit compiler optimizations that allow
-        /// multiple reads from the _hashtable field when there is only one specified
-        /// read without requiring the use of the volatile specifier which requires
-        /// a more significant read barrier. Used by readers so that a reader thread
-        /// looks at a consistent hashtable underlying array throughout the lifetime
-        /// of a single read operation.
+        /// Get the underlying array for the hashtable at this time. 
         /// </summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private IntPtr[] GetCurrentHashtable()
         {
             return _hashtable;
@@ -69,7 +80,7 @@ namespace Internal.TypeSystem
         /// </summary>
         private void SetCurrentHashtable(IntPtr[] hashtable)
         {
-            Volatile.Write(ref _hashtable, hashtable);
+            _hashtable = hashtable;
         }
 
         /// <summary>
@@ -100,7 +111,7 @@ namespace Internal.TypeSystem
         /// Generate a somewhat independent hash value from another integer. This is used
         /// as part of a double hashing scheme. By being relatively prime with powers of 2
         /// this hash function can be reliably used as part of a double hashing scheme as it
-        /// is garaunteed to eventually probe every slot in the table. (Table sizes are
+        /// is guaranteed to eventually probe every slot in the table. (Table sizes are
         /// constrained to be a power of two)
         /// </summary>
         public static int HashInt2(int key)
@@ -122,6 +133,20 @@ namespace Internal.TypeSystem
         /// </summary>
         public LockFreeReaderHashtableOfPointers()
         {
+#if DEBUG
+            // Ensure the initial value is a power of 2
+            bool foundAOne = false;
+            for (int i = 0; i < 32; i++)
+            {
+                int lastBit = _initialSize >> i;
+                if ((lastBit & 0x1) == 0x1)
+                {
+                    Debug.Assert(!foundAOne);
+                    foundAOne = true;
+                }
+            }
+#endif // DEBUG
+            _newHashTable = _hashtable;
         }
 
         /// <summary>
@@ -178,52 +203,65 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Make the underlying array of the hashtable bigger. This function
-        /// does not change the contents of the hashtable.
+        /// does not change the contents of the hashtable. This entire function locks.
         /// </summary>
-        private void Expand()
+        private void Expand(IntPtr[] oldHashtable)
         {
-            int newSize = checked(_hashtable.Length * 2);
-
-            // The hashtable only functions well when it has a certain minimum size
-            if (newSize < 16)
-                newSize = 16;
-
-            IntPtr[] hashTableLocal = new IntPtr[newSize];
-
-            int mask = hashTableLocal.Length - 1;
-            foreach (IntPtr ptrValue in _hashtable)
+            lock(this)
             {
-                if (ptrValue == IntPtr.Zero)
-                    continue;
-
-                TValue value = ConvertIntPtrToValue(ptrValue);
-
-                int hashCode = GetValueHashCode(value);
-                int tableIndex = HashInt1(hashCode) & mask;
-
-                // Initial probe into hashtable found empty spot
-                if (hashTableLocal[tableIndex] == IntPtr.Zero)
+                // If somebody else already resized, don't try to do it based on an old table
+                if(oldHashtable != _hashtable)
                 {
-                    // Add to hash
-                    hashTableLocal[tableIndex] = ptrValue;
-                    continue;
+                    return;
                 }
 
-                int hash2 = HashInt2(hashCode);
-                tableIndex = (tableIndex + hash2) & mask;
+                // The checked statement here protects against both the hashTable size and _reserve overflowing. That does mean 
+                // the maximum size of _hashTable is 0x70000000
+                int newSize = checked(oldHashtable.Length * 2);
 
-                while (hashTableLocal[tableIndex] != IntPtr.Zero)
+                // The hashtable only functions well when it has a certain minimum size
+                const int minimumUsefulSize = 16;
+                if (newSize < minimumUsefulSize)
+                    newSize = minimumUsefulSize;
+
+                IntPtr[] newHashTable = new IntPtr[newSize];
+                _newHashTable = newHashTable;
+
+                int mask = newHashTable.Length - 1;
+                foreach (IntPtr ptrValue in _hashtable)
                 {
+                    if (ptrValue == IntPtr.Zero)
+                        continue;
+
+                    TValue value = ConvertIntPtrToValue(ptrValue);
+                    // If there's a deadlock at this point, GetValueHashCode is re-entering Add, which it must not do.
+                    int hashCode = GetValueHashCode(value);
+                    int tableIndex = HashInt1(hashCode) & mask;
+
+                    // Initial probe into hashtable found empty spot
+                    if (newHashTable[tableIndex] == IntPtr.Zero)
+                    {
+                        // Add to hash
+                        newHashTable[tableIndex] = ptrValue;
+                        continue;
+                    }
+
+                    int hash2 = HashInt2(hashCode);
                     tableIndex = (tableIndex + hash2) & mask;
+
+                    while (newHashTable[tableIndex] != IntPtr.Zero)
+                    {
+                        tableIndex = (tableIndex + hash2) & mask;
+                    }
+
+                    // We've probed to find an empty spot
+                    // Add to hash
+                    newHashTable[tableIndex] = ptrValue;
                 }
 
-                // We've probed to find an empty spot
-                // Add to hash
-                hashTableLocal[tableIndex] = ptrValue;
+                _resizeCount = checked((newSize * _fillPercentageBeforeResize) / 100);
+                SetCurrentHashtable(newHashTable);
             }
-
-            _resizeCount = checked((newSize * _fillPercentageBeforeResize) / 100);
-            SetCurrentHashtable(hashTableLocal);
         }
 
         /// <summary>
@@ -233,62 +271,94 @@ namespace Internal.TypeSystem
         /// <param name="size"></param>
         public void Reserve(int size)
         {
-            // while the type system is single threaded, this hashtable is used for some caching outside of the type system proper.
-            // thus it needs to have the lock code enabled
-            //#if !TYPE_SYSTEM_SINGLE_THREADED
-            lock (this)
-            //#endif
-            {
-                while (size >= _resizeCount)
-                    Expand();
-            }
+            while (size >= _resizeCount)
+                Expand(_hashtable);
+        }
+
+        /// <summary>
+        /// Adds a value to the hashtable if it is not already present.
+        /// Note that the key is not specified as it is implicit in the value. This function is thread-safe,
+        /// but must only take locks around internal operations and GetValueHashCode.
+        /// </summary>
+        /// <param name="value">Value to attempt to add to the hashtable, must not be null</param>
+        /// <returns>True if the value was added. False if it was already present.</returns>
+        public bool TryAdd(TValue value)
+        {
+            bool addedValue;
+            AddOrGetExistingInner(value, out addedValue);
+            return addedValue;
         }
 
         /// <summary>
         /// Add a value to the hashtable, or find a value which is already present in the hashtable.
-        /// Note that the key is not specified as it is implicit in the value. This function is thread-safe
-        /// through the use of locking.
+        /// Note that the key is not specified as it is implicit in the value. This function is thread-safe,
+        /// but must only take locks around internal operations and GetValueHashCode.
         /// </summary>
         /// <param name="value">Value to attempt to add to the hashtable, its conversion to IntPtr must not result in IntPtr.Zero</param>
-        /// <returns>newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
+        /// <returns>Newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
+        {
+            bool unused;
+            return AddOrGetExistingInner(value, out unused);
+        }
+        
+        private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
         {
             IntPtr ptrValue = ConvertValueToIntPtr(value);
 
-            if (ptrValue == null)
+            if (ptrValue == IntPtr.Zero)
                 throw new ArgumentNullException();
 
-            lock (this)
+            // Optimistically check to see if adding this value may require an expansion. If so, expand
+            // the table now. This isn't required to ensure space for the write, but helps keep
+            // the ratio in a good range.
+            if (_count >= _resizeCount)
             {
-                // Check to see if adding this value may require a resize. If so, expand
-                // the table now.
-                if (_count >= _resizeCount)
-                {
-                    Expand();
-                    Debug.Assert(_count < _resizeCount);
-                }
+                Expand(_hashtable);
+            }
 
-                IntPtr[] hashTableLocal = _hashtable;
-                int mask = hashTableLocal.Length - 1;
-                int hashCode = GetValueHashCode(value);
-                int tableIndex = HashInt1(hashCode) & mask;
+            TValue result = default(TValue);
+            bool success;
+            do
+            {
+                success = TryAddOrGetExisting(value, out addedValue, ref result);
+            } while (!success);
+            return result;
+        }
 
-                // Initial probe into hashtable found empty spot
-                if (hashTableLocal[tableIndex] == IntPtr.Zero)
-                {
-                    // Add to hash, use a volatile write to ensure that
-                    // the contents of the value are fully published to all
-                    // threads before adding to the hashtable
-                    Volatile.Write(ref hashTableLocal[tableIndex], ptrValue);
-                    _count++;
-                    return value;
-                }
+        /// <summary>
+        /// Attemps to add a value to the hashtable, or find a value which is already present in the hashtable.
+        /// In some cases, this will fail due to contention with other additions and must be retried.
+        /// Note that the key is not specified as it is implicit in the value. This function is thread-safe,
+        /// but must only take locks around internal operations and GetValueHashCode. 
+        /// </summary>
+        /// <param name="value">Value to attempt to add to the hashtable, must not be null</param>
+        /// <param name="addedValue">Set to true if <paramref name="value"/> was added to the table. False if the value
+        /// was already present. Not defined if adding was attempted but failed.</param>
+        /// <param name="valueInHashtable">Newly added value if adding succeds, a value which was already present in the hashtable which is equal to it,
+        /// or an undefined value if adding fails and must be retried.</param>
+        /// <returns>True if the operation succeeded (either because the value was added or the value was already present).</returns>
+        private bool TryAddOrGetExisting(TValue value, out bool addedValue, ref TValue valueInHashtable)
+        {
+            // The table must be captured into a local to ensure reads/writes
+            // don't get torn by expansions
+            IntPtr[] hashTableLocal = _hashtable;
 
+            addedValue = true;
+            int mask = hashTableLocal.Length - 1;
+            int hashCode = GetValueHashCode(value);
+            int tableIndex = HashInt1(hashCode) & mask;
+
+            // Find an empty spot, starting with the initial tableIndex
+            if (hashTableLocal[tableIndex] != IntPtr.Zero)
+            {
                 TValue valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
                 if (CompareValueToValue(value, valTmp))
                 {
                     // Value is already present in hash, do not add
-                    return valTmp;
+                    addedValue = false;
+                    valueInHashtable = valTmp;
+                    return true;
                 }
 
                 int hash2 = HashInt2(hashCode);
@@ -300,19 +370,63 @@ namespace Internal.TypeSystem
                     if (CompareValueToValue(value, valTmp))
                     {
                         // Value is already present in hash, do not add
-                        return valTmp;
+                        addedValue = false;
+                        valueInHashtable = valTmp;
+                        return true;
                     }
                     tableIndex = (tableIndex + hash2) & mask;
                 }
-
-                // We've probed to find an empty spot
-                // Add to hash, use a volatile write to ensure that
-                // the contents of the value are fully published to all
-                // threads before adding to the hashtable
-                Volatile.Write(ref hashTableLocal[tableIndex], ptrValue);
-                _count++;
-                return value;
             }
+
+            // Ensure there's enough space for at least one null slot after this write
+            if (Interlocked.Increment(ref _reserve) >= hashTableLocal.Length - 1)
+            {
+                Interlocked.Decrement(ref _reserve);
+                Expand(hashTableLocal);
+
+                // Since we expanded, our index won't work, restart
+                return false;
+            }
+
+            // We've probed to find an empty spot, add to hash
+            IntPtr ptrValue = ConvertValueToIntPtr(value);
+            if (!TryWriteValueToLocation(ptrValue, hashTableLocal, tableIndex))
+            {
+                Interlocked.Decrement(ref _reserve);
+                return false;
+            }
+
+            // Now that we've written to the local array, find out if that array has been
+            // replaced by expansion. If it has, we need to restart and write to the new array.
+            if (_newHashTable != hashTableLocal)
+            {
+                // Pulse the lock so we don't spin during an expansion
+                lock(this) { }
+                Interlocked.Decrement(ref _reserve);
+                return false;
+            }
+
+            // If the write succeeded, increment _count
+            Interlocked.Increment(ref _count);
+            valueInHashtable = value;
+            return true;
+        }
+
+        /// <summary>
+        /// Attampts to write a value into the table. May fail if another value has been added.
+        /// </summary>
+        /// <returns>True if the value was successfully written</returns>
+        private bool TryWriteValueToLocation(IntPtr value, IntPtr[] hashTableLocal, int tableIndex)
+        {
+            // Add to hash, use a volatile write to ensure that
+            // the contents of the value are fully published to all
+            // threads before adding to the hashtable
+            if (Interlocked.CompareExchange(ref hashTableLocal[tableIndex], value, IntPtr.Zero) == IntPtr.Zero)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -396,7 +510,7 @@ namespace Internal.TypeSystem
         /// but not others. All values in the hashtable as of enumerator
         /// creation will always be enumerated.
         /// </summary>
-        public struct Enumerator
+        public struct Enumerator : IEnumerator<TValue>
         {
             LockFreeReaderHashtableOfPointers<TKey, TValue> _hashtable;
             private IntPtr[] _hashtableContentsToEnumerate;
@@ -449,11 +563,28 @@ namespace Internal.TypeSystem
                 return false;
             }
 
+            public void Dispose()
+            {
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
+
             public TValue Current
             {
                 get
                 {
                     return _current;
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    throw new NotImplementedException();
                 }
             }
         }
@@ -466,6 +597,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Given a value, compute a hash code which would be identical to the hash code
         /// for a key which should look up this value. This function must be thread safe.
+        /// This function must also not cause additional hashtable adds.
         /// </summary>
         protected abstract int GetValueHashCode(TValue value);
 

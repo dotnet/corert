@@ -271,12 +271,7 @@ void RuntimeThreadShutdown(void* thread)
 
     UNREFERENCED_PARAMETER(thread);
 
-#if _WIN32 || HAVE_THREAD_LOCAL
-    // If the current Unix platform doesn't support thread_local, we don't get the thread pointer
-    // as the parameter, we just get NULL, so we can check the thread validity only if the
-    // thread_local is supported
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
-#endif
 
     if (!g_processShutdownHasStarted)
     {

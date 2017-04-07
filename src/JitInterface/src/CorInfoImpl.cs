@@ -209,27 +209,27 @@ namespace Internal.JitInterface
                     SetParameterNames(parameters);
                 }
 
-                ArrayBuilder<uint> variableToTypeIndex = new ArrayBuilder<uint>();
+                ArrayBuilder<TypeDesc> variableToTypeDesc = new ArrayBuilder<TypeDesc>();
 
                 var signature = MethodBeingCompiled.Signature;
                 if (!signature.IsStatic)
                 {
                     TypeDesc type = MethodBeingCompiled.OwningType;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
 
                 for (int i = 0; i < signature.Length; ++i)
                 {
                     TypeDesc type = signature[i];
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
                 var locals = methodIL.GetLocals();
                 for (int i = 0; i < locals.Length; ++i)
                 {
                     TypeDesc type = locals[i].Type;
-                    variableToTypeIndex.Add(GetVariableTypeIndex(type));
+                    variableToTypeDesc.Add(type);
                 }
-                _variableToTypeIndex = variableToTypeIndex.ToArray();
+                _variableToTypeDesc = variableToTypeDesc.ToArray();
             }
             catch (Exception e)
             {
@@ -431,7 +431,7 @@ namespace Internal.JitInterface
             _sequencePoints = null;
             _debugLocInfos = null;
             _debugVarInfos = null;
-            _variableToTypeIndex = null;
+            _variableToTypeDesc = null;
 
             _lastException = null;
         }
@@ -1051,8 +1051,11 @@ namespace Internal.JitInterface
             {
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
+                if (metadataType.IsByRefLike)
+                    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
+
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout)
+                if (metadataType.IsExplicitLayout || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
                 // TODO
@@ -1128,6 +1131,12 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
+            if (type.IsByReferenceOfT)
+            {
+                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
+                return 1;
+            }
+
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
@@ -1138,7 +1147,8 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((DefType)fieldType).ContainsGCPointers)
+                    var fieldDefType = (DefType)fieldType;
+                    if (!fieldDefType.ContainsGCPointers && !fieldDefType.IsByRefLike)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
@@ -1198,7 +1208,7 @@ namespace Internal.JitInterface
             for (int i = 0; i < ptrsCount; i++)
                 gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
 
-            if (type.ContainsGCPointers)
+            if (type.ContainsGCPointers || type.IsByRefLike)
             {
                 result = (uint)GatherClassGCLayout(type, gcPtrs);
             }
@@ -1276,6 +1286,11 @@ namespace Internal.JitInterface
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
+
+            // we shouldn't allow boxing of types that contains stack pointers
+            // csc and vbc already disallow it.
+            if (type.IsValueType && ((DefType)type).IsByRefLike)
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
         }
@@ -1409,16 +1424,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
-        {
-            // This is just a compat thunk to make current RyuJIT be able to talk to the richer API surface.
-            CORINFO_LOOKUP lookup = default(CORINFO_LOOKUP);
-            getReadyToRunDelegateCtorHelper(ref pTargetMethod, delegateType, ref lookup, isLdvirtftn: false);
-            Debug.Assert(!lookup.lookupKind.needsRuntimeLookup);
-            pLookup = lookup.constLookup;
-        }
-
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup, bool isLdvirtftn)
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
             // TODO: maybe instead of the isLdvirtftn flag, RyuJIT should just populate pTargetMethod.tokenType with a flag
             // that says the token comes from a ldvirtftn...
@@ -1544,7 +1550,7 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
-                    throw new TypeSystemException.TypeLoadException("System", "TypedReference", _compilation.TypeSystemContext.SystemModule);
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.TypedReference));
 
                 case CorInfoClassId.CLASSID_TYPE_HANDLE:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
@@ -1664,8 +1670,19 @@ namespace Internal.JitInterface
 
         private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
-            var fieldDesc = HandleToObject(field);
-            return asCorInfoType(fieldDesc.FieldType, out structType);
+            FieldDesc fieldDesc = HandleToObject(field);
+            TypeDesc fieldType = fieldDesc.FieldType;
+            CorInfoType type = asCorInfoType(fieldType, out structType);
+
+            Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT).GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
+            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
+            {
+                Debug.Assert(structType == null);
+                Debug.Assert(fieldDesc.Offset.AsInt == 0);
+                type = CorInfoType.CORINFO_TYPE_BYREF;
+            }
+
+            return type;
         }
 
         private uint getFieldOffset(CORINFO_FIELD_STRUCT_* field)
@@ -1867,16 +1884,6 @@ namespace Internal.JitInterface
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
 
-        private uint GetVariableTypeIndex(TypeDesc type)
-        {
-            uint typeIndex = 0;
-            if (type.IsPrimitive)
-            {
-                typeIndex = TypesDebugInfo.PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);               
-            }
-            return typeIndex;
-        }
-
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -2004,7 +2011,7 @@ namespace Internal.JitInterface
 
             if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
             {
-                debugVar = new DebugVarInfo(name, isParam, _variableToTypeIndex[(int)nativeVarInfo.varNumber]);
+                debugVar = new DebugVarInfo(name, isParam, _variableToTypeDesc[(int)nativeVarInfo.varNumber]);
                 debugVars[nativeVarInfo.varNumber] = debugVar;
             }
 
@@ -2327,6 +2334,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC: id = ReadyToRunHelper.MonitorExitStatic; break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT: id = ReadyToRunHelper.GVMLookupForSlot; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL: id = ReadyToRunHelper.TypeHandleToRuntimeType; break;
+                case CorInfoHelpFunc.CORINFO_HELP_GETREFANY: id = ReadyToRunHelper.GetRefAny; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
@@ -3078,7 +3088,7 @@ namespace Internal.JitInterface
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
-        private uint[] _variableToTypeIndex;
+        private TypeDesc[] _variableToTypeDesc;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {

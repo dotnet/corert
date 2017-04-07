@@ -61,6 +61,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         public sealed override int MetadataToken
         {
             get

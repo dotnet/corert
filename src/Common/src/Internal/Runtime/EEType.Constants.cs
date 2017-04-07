@@ -189,6 +189,11 @@ namespace Internal.Runtime
         /// This EEType is an abstract class (but not an interface).
         /// </summary>
         IsAbstractClassFlag = 0x00004000,
+
+        /// <summary>
+        /// This EEType is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        /// </summary>
+        IsByRefLikeFlag = 0x00008000,
     }
 
     internal enum EETypeField
@@ -203,6 +208,9 @@ namespace Internal.Runtime
         ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_DynamicGcStatics,
+        ETF_DynamicNonGcStatics,
+        ETF_DynamicThreadStaticOffset,
     }
 
     internal enum CorElementType

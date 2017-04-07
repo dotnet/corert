@@ -127,14 +127,21 @@ namespace Internal.Runtime.TypeLoader
 
             public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, string methodName, RuntimeSignature signature, RuntimeTypeHandle[] genericArgs)
             {
-                Debug.Assert(genericArgs != null);
+                // genericArgs will be null if this is a (typical or not) method definition
+                // genericArgs are non-null only for instantiated generic methods.
+                Debug.Assert(genericArgs == null || genericArgs.Length > 0);
 
                 _declaringType = declaringType;
                 _methodName = methodName;
                 _signature = signature;
                 _genericArgs = genericArgs;
                 int methodNameHashCode = methodName == null ? 0 : methodName.GetHashCode();
-                _hashcode = TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs) ^ methodNameHashCode ^ signature.GetHashCode();
+                _hashcode = methodNameHashCode ^ signature.GetHashCode();
+
+                if (genericArgs != null)
+                    _hashcode ^= TypeHashingAlgorithms.ComputeGenericInstanceHashCode(declaringType.GetHashCode(), genericArgs);
+                else
+                    _hashcode ^= declaringType.GetHashCode();
             }
 
             public override bool Equals(object obj)
@@ -152,12 +159,18 @@ namespace Internal.Runtime.TypeLoader
                 if (!_declaringType.Equals(other._declaringType) || _methodName != other._methodName || !_signature.Equals(other._signature))
                     return false;
 
-                if (_genericArgs.Length != other._genericArgs.Length)
+                if ((_genericArgs == null) != (other._genericArgs == null))
                     return false;
 
-                for (int i = 0; i < _genericArgs.Length; i++)
-                    if (!_genericArgs[i].Equals(other._genericArgs[i]))
-                        return false;
+                if (_genericArgs != null)
+                {
+                    if (_genericArgs.Length != other._genericArgs.Length)
+                       return false;
+
+                    for (int i = 0; i < _genericArgs.Length; i++)
+                        if (!_genericArgs[i].Equals(other._genericArgs[i]))
+                            return false;
+                }
 
                 return true;
             }
@@ -241,22 +254,31 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(((*(IntPtr*)&runtimeFieldHandle).ToInt64() & 0x1) == 0);
 
             RuntimeFieldHandleInfo* fieldData = *(RuntimeFieldHandleInfo**)&runtimeFieldHandle;
+            RuntimeSignature signature;
 
-#if CORERT
-            // The native layout info signature is a pair. 
-            // The first is a pointer that points to the TypeManager indirection cell.
-            // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)fieldData->NativeLayoutInfoSignature;
+#if !CORERT
+            // If the system module is compiled with as a type manager, all modules are compiled as such
+            if (ModuleList.Instance.SystemModule.Handle.IsTypeManager)
+#endif
+            {
+                // The native layout info signature is a pair. 
+                // The first is a pointer that points to the TypeManager indirection cell.
+                // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
+                IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)fieldData->NativeLayoutInfoSignature;
 
-            RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
-                (uint)nativeLayoutInfoSignatureData[1].ToInt32());
-#else
-            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(fieldData->NativeLayoutInfoSignature);
+                signature = RuntimeSignature.CreateFromNativeLayoutSignature(
+                    new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
+                    (uint)nativeLayoutInfoSignatureData[1].ToInt32());
+            }
+#if !CORERT
+            else
+            {
+                IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(fieldData->NativeLayoutInfoSignature);
 
-            RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                new TypeManagerHandle(moduleHandle),
-                GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(fieldData->NativeLayoutInfoSignature));
+                signature = RuntimeSignature.CreateFromNativeLayoutSignature(
+                    new TypeManagerHandle(moduleHandle),
+                    GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(fieldData->NativeLayoutInfoSignature));
+            }
 #endif
 
             RuntimeSignature remainingSignature;
@@ -292,8 +314,9 @@ namespace Internal.Runtime.TypeLoader
                 if (!_runtimeMethodHandles.TryGetValue(key, out runtimeMethodHandle))
                 {
                     int sizeToAllocate = sizeof(DynamicMethodHandleInfo);
+                    int numGenericMethodArgs = genericMethodArgs == null ? 0 : genericMethodArgs.Length;
                     // Use checked arithmetics to ensure there aren't any overflows/truncations
-                    sizeToAllocate = checked(sizeToAllocate + (genericMethodArgs.Length > 0 ? sizeof(IntPtr) * (genericMethodArgs.Length - 1) : 0));
+                    sizeToAllocate = checked(sizeToAllocate + (numGenericMethodArgs > 0 ? sizeof(IntPtr) * (numGenericMethodArgs - 1) : 0));
                     IntPtr runtimeMethodHandleValue = MemoryHelpers.AllocateMemory(sizeToAllocate);
                     if (runtimeMethodHandleValue == IntPtr.Zero)
                         throw new OutOfMemoryException();
@@ -302,9 +325,9 @@ namespace Internal.Runtime.TypeLoader
                     methodData->DeclaringType = *(IntPtr*)&declaringTypeHandle;
                     methodData->MethodName = methodName;
                     methodData->MethodSignature = methodSignature;
-                    methodData->NumGenericArgs = genericMethodArgs.Length;
+                    methodData->NumGenericArgs = numGenericMethodArgs;
                     IntPtr* genericArgPtr = &(methodData->GenericArgsArray);
-                    for (int i = 0; i < genericMethodArgs.Length; i++)
+                    for (int i = 0; i < numGenericMethodArgs; i++)
                     {
                         RuntimeTypeHandle currentArg = genericMethodArgs[i];
                         genericArgPtr[i] = *(IntPtr*)&currentArg;
@@ -342,7 +365,7 @@ namespace Internal.Runtime.TypeLoader
 
             DynamicMethodHandleInfo* methodData = (DynamicMethodHandleInfo*)runtimeMethodHandleValue.ToPointer();
             declaringTypeHandle = *(RuntimeTypeHandle*)&(methodData->DeclaringType);
-            genericMethodArgs = Empty<RuntimeTypeHandle>.Array;
+            genericMethodArgs = null;
 
             if (methodData->NumGenericArgs > 0)
             {
@@ -401,22 +424,30 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(((*(IntPtr*)&runtimeMethodHandle).ToInt64() & 0x1) == 0);
 
             RuntimeMethodHandleInfo* methodData = *(RuntimeMethodHandleInfo**)&runtimeMethodHandle;
+            RuntimeSignature signature;
+#if !CORERT
+            // If the system module is compiled with as a type manager, all modules are compiled as such
+            if (ModuleList.Instance.SystemModule.Handle.IsTypeManager)
+#endif
+            {
+                // The native layout info signature is a pair. 
+                // The first is a pointer that points to the TypeManager indirection cell.
+                // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
+                IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)methodData->NativeLayoutInfoSignature;
 
-#if CORERT
-            // The native layout info signature is a pair. 
-            // The first is a pointer that points to the TypeManager indirection cell.
-            // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr* nativeLayoutInfoSignatureData = (IntPtr*)methodData->NativeLayoutInfoSignature;
+                signature = RuntimeSignature.CreateFromNativeLayoutSignature(
+                    new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
+                    (uint)nativeLayoutInfoSignatureData[1].ToInt32());
+            }
+#if !CORERT
+            else
+            {
+                IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(methodData->NativeLayoutInfoSignature);
 
-            RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                new TypeManagerHandle(*(IntPtr*)nativeLayoutInfoSignatureData[0]),
-                (uint)nativeLayoutInfoSignatureData[1].ToInt32());
-#else
-            IntPtr moduleHandle = RuntimeAugments.GetOSModuleFromPointer(methodData->NativeLayoutInfoSignature);
-
-            RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(
-                new TypeManagerHandle(moduleHandle),
-                GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(methodData->NativeLayoutInfoSignature));
+                signature = RuntimeSignature.CreateFromNativeLayoutSignature(
+                    new TypeManagerHandle(moduleHandle),
+                    GetNativeLayoutInfoReader(new TypeManagerHandle(moduleHandle)).AddressToOffset(methodData->NativeLayoutInfoSignature));
+            }
 #endif
 
             RuntimeSignature remainingSignature;

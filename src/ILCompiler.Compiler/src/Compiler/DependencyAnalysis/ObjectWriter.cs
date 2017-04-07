@@ -12,8 +12,8 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.TypesDebugInfo;
 using Internal.JitInterface;
-
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.DependencyAnalysis
@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Object writer using https://github.com/dotnet/llilc
     /// </summary>
-    internal class ObjectWriter : IDisposable
+    internal class ObjectWriter : IDisposable, ITypesDebugInfoWriter
     {
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
@@ -67,6 +67,8 @@ namespace ILCompiler.DependencyAnalysis
 
         // Unix section containing LSDA data, like EH Info and GC Info
         public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
+
+        private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
 #if DEBUG
         static Dictionary<string, ISymbolNode> _previouslyWrittenNodeNames = new Dictionary<string, ISymbolNode>();
@@ -242,12 +244,51 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetEnumTypeIndex(IntPtr objWriter, EnumTypeDescriptor enumTypeDescriptor, EnumRecordTypeDescriptor[] typeRecords);
+
+        public uint GetEnumTypeIndex(EnumTypeDescriptor enumTypeDescriptor, EnumRecordTypeDescriptor[] typeRecords)
+        {
+            return GetEnumTypeIndex(_nativeObjectWriter, enumTypeDescriptor, typeRecords);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor);
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetCompleteClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+
+        public uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor)
+        {
+            return GetClassTypeIndex(_nativeObjectWriter, classTypeDescriptor);
+        }
+
+        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        {
+            return GetCompleteClassTypeIndex(_nativeObjectWriter, classTypeDescriptor, classFieldsTypeDescriptior, fields);
+        }
+
+        public uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteIndex)
+        {
+            uint typeIndex = 0;
+            if (type.IsPrimitive)
+            {
+                typeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+            }
+            else
+            {
+                typeIndex = _userDefinedTypeDescriptor.GetTypeIndex(type, needsCompleteIndex);
+            }
+            return typeIndex;
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitDebugVar(IntPtr objWriter, string name, UInt32 typeIndex, bool isParam, Int32 rangeCount, NativeVarInfo[] range);
 
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            EmitDebugVar(_nativeObjectWriter, debugVar.Name, debugVar.TypeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
+            uint typeIndex = GetVariableTypeIndex(debugVar.Type, true);
+            EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
         public void EmitDebugVarInfo(ObjectNode node)
@@ -706,6 +747,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
+            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this);
         }
 
         public void Dispose()
@@ -910,9 +952,12 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (objectWriter.HasFunctionDebugInfo())
                     {
-                        // Build debug local var info
-                        objectWriter.EmitDebugVarInfo(node);
-
+                        if (factory.Target.OperatingSystem == TargetOS.Windows)
+                        {
+                            // Build debug local var info.
+                            // It currently supports only Windows CodeView format.
+                            objectWriter.EmitDebugVarInfo(node);
+                        }
                         objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
                     }
                 }

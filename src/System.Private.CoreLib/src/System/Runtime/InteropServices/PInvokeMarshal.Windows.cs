@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Security;
 
 namespace System.Runtime.InteropServices
 {
@@ -66,6 +67,15 @@ namespace System.Runtime.InteropServices
             {
                 Interop.mincore.CoTaskMemFree(allocatedMemory);
             }
+        }
+
+        public static IntPtr SecureStringToBSTR(SecureString s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+            return s.MarshalToBSTR();
         }
     }
 }

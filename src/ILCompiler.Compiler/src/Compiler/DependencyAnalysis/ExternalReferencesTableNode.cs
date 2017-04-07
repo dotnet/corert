@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.Runtime;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -103,9 +104,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
                     Debug.Assert(factory.Target.Abi == Internal.TypeSystem.TargetAbi.ProjectN);
-                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, symbolAndDelta.Delta);
+                    int delta = symbolAndDelta.Delta;
+                    if (symbolAndDelta.Symbol.RepresentsIndirectionCell)
+                    {
+                        delta = (int)((uint)delta | IndirectionConstants.RVAPointsToIndirection);
+                    }
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
                 }
             }
 

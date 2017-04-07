@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Jit": "2.0.0-beta-25117-06",
-    "Microsoft.DotNet.ObjectWriter": "1.0.16-prerelease-00001"
+    "Microsoft.NETCore.Jit": "2.0.0-preview1-25204-02",
+    "Microsoft.DotNet.ObjectWriter": "1.0.17-prerelease-00002"
   },
   "frameworks": {
     "dnxcore50": { }
@@ -9,6 +9,7 @@
   "runtimes": {
     "win7-x64": { },
     "osx.10.10-x64": { },
+    "osx.10.12-x64": { },
     "ubuntu.14.04-x64": { },
     "ubuntu.16.04-x64": { }
   }

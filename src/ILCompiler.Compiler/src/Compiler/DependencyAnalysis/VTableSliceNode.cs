@@ -99,18 +99,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            List<DependencyListEntry> dependencies = new List<DependencyListEntry>(_slots.Length + 1);
             if (_type.HasBaseType)
             {
-                dependencies.Add(new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable"));
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable")
+                };
             }
 
-            foreach (MethodDesc method in _slots)
-            {
-                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(method), "Full vtable dependency"));
-            }
-
-            return dependencies;
+            return null;
         }
     }
 
@@ -203,10 +200,17 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.OwningType != defType)
                     continue;
 
-                yield return new CombinedDependencyListEntry(
-                    factory.VirtualMethodUse(method),
-                    factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Canonically equivalent virtual method use");
+                if (defType.Context.SupportsCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        "Canonically equivalent virtual method use");
+
+                if (defType.Context.SupportsUniversalCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Universal)),
+                        "Universal Canonically equivalent virtual method use");
             }
         }
     }

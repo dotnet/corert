@@ -40,11 +40,13 @@ namespace ILCompiler
         private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
+        private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
+        internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
 
         public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
@@ -86,6 +88,9 @@ namespace ILCompiler
             var cctorContextMapNode = new ClassConstructorContextMap(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CCtorContextMap), cctorContextMapNode, cctorContextMapNode, cctorContextMapNode.EndSymbol);
 
+            DynamicInvokeTemplateData = new DynamicInvokeTemplateDataNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DynamicInvokeTemplateData), DynamicInvokeTemplateData, DynamicInvokeTemplateData, DynamicInvokeTemplateData.EndSymbol);
+            
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 
@@ -128,6 +133,9 @@ namespace ILCompiler
             var staticsInfoHashtableNode = new StaticsInfoHashtableNode(nativeReferencesTableNode, nativeStaticsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.StaticsInfoHashtable), staticsInfoHashtableNode, staticsInfoHashtableNode, staticsInfoHashtableNode.EndSymbol);
 
+            var virtualInvokeMapNode = new ReflectionVirtualInvokeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.VirtualInvokeMap), virtualInvokeMapNode, virtualInvokeMapNode, virtualInvokeMapNode.EndSymbol);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -141,6 +149,12 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
                 AddGeneratedType(eetypeNode.Type);
+
+                if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
+                {
+                    _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
+                }
+
                 return;
             }
 
@@ -156,6 +170,13 @@ namespace ILCompiler
                 MethodDesc method = methodNode.Method;
 
                 AddGeneratedMethod(method);
+                return;
+            }
+
+            var runtimeMethodHandleNode = obj as RuntimeMethodHandleNode;
+            if (runtimeMethodHandleNode != null)
+            {
+                AddMetadataOnlyMethod(runtimeMethodHandleNode.Method);
                 return;
             }
 
@@ -176,6 +197,19 @@ namespace ILCompiler
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
             }
+
+            var virtualMethodUseNode = obj as VirtualMethodUseNode;
+            if (virtualMethodUseNode != null && virtualMethodUseNode.Method.IsAbstract)
+            {
+                AddGeneratedMethod(virtualMethodUseNode.Method);
+                return;
+            }
+
+            var gvmDependenciesNode = obj as GVMDependenciesNode;
+            if(gvmDependenciesNode != null && gvmDependenciesNode.Method.IsAbstract)
+            {
+                AddGeneratedMethod(gvmDependenciesNode.Method);
+            }
         }
 
         /// <summary>
@@ -185,7 +219,10 @@ namespace ILCompiler
         {
             var signature = method.Signature;
 
+            // ----------------------------------------------------------------
             // TODO: support for methods returning pointer types - https://github.com/dotnet/corert/issues/2113
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsPointer)
                 return false;
 
@@ -193,7 +230,10 @@ namespace ILCompiler
                 if (signature[i].IsByRef && ((ByRefType)signature[i]).ParameterType.IsPointer)
                     return false;
 
+            // ----------------------------------------------------------------
             // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsFunctionPointer)
                 return false;
 
@@ -201,11 +241,31 @@ namespace ILCompiler
                 if (signature[i].IsFunctionPointer)
                     return false;
 
+            // ----------------------------------------------------------------
             // Methods with ByRef returns can't be reflection invoked
+            // ----------------------------------------------------------------
+
             if (signature.ReturnType.IsByRef)
                 return false;
 
+            // ----------------------------------------------------------------
+            // Methods that return ByRef-like types or take them by reference can't be reflection invoked
+            // ----------------------------------------------------------------
+
+            if (signature.ReturnType.IsDefType && ((DefType)signature.ReturnType).IsByRefLike)
+                return false;
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                ByRefType paramType = signature[i] as ByRefType;
+                if (paramType != null && paramType.ParameterType.IsDefType && ((DefType)paramType.ParameterType).IsByRefLike)
+                    return false;
+            }
+
+            // ----------------------------------------------------------------
             // Delegate construction is only allowed through specific IL sequences
+            // ----------------------------------------------------------------
+
             if (method.OwningType.IsDelegate && method.IsConstructor)
                 return false;
 
@@ -228,6 +288,18 @@ namespace ILCompiler
         /// Given that a method is invokable, does there exist a reflection invoke stub?
         /// </summary>
         public abstract bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method);
+
+        /// <summary>
+        /// Given that a method is invokable, if it is inserted into the reflection invoke table
+        /// will it use a method token to be referenced, or not?
+        /// </summary>
+        public abstract bool WillUseMetadataTokenToReferenceMethod(MethodDesc method);
+
+        /// <summary>
+        /// Given that a method is invokable, if it is inserted into the reflection invoke table
+        /// will it use a field token to be referenced, or not?
+        /// </summary>
+        public abstract bool WillUseMetadataTokenToReferenceField(FieldDesc field);
 
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
@@ -351,6 +423,10 @@ namespace ILCompiler
             _methodsGenerated.Add(method);
         }
 
+        protected virtual void AddMetadataOnlyMethod(MethodDesc method)
+        {
+        }
+
         private void EnsureMetadataGenerated(NodeFactory factory)
         {
             if (_metadataBlob != null)
@@ -429,6 +505,11 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithEETypes()
         {
             return _typesWithEETypesGenerated;
+        }
+
+        internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()
+        {
+            return _typesWithConstructedEETypesGenerated;
         }
 
         public abstract bool IsReflectionBlocked(MetadataType type);

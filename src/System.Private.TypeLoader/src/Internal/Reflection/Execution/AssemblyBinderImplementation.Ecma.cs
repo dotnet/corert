@@ -109,5 +109,19 @@ namespace Internal.Reflection.Execution
                 }
             }
         }
+
+        partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies)
+        {
+            lock (s_ecmaLoadedAssemblies)
+            {
+                for (int i = 0; i < s_ecmaLoadedAssemblies.Count; i++)
+                {
+                    PEInfo info = s_ecmaLoadedAssemblies[i];
+                    AssemblyBindResult result = default(AssemblyBindResult);
+                    result.EcmaMetadataReader = info.Reader;
+                    loadedAssemblies.Add(result);
+                }
+            }
+        }
     }
 }

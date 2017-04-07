@@ -6,8 +6,10 @@ using System.Runtime.Versioning;
 
 #if BIT64
 using nint = System.Int64;
+using nuint = System.UInt64;
 #else
 using nint = System.Int32;
+using nuint = System.UInt32;
 #endif
 
 namespace System.Runtime.CompilerServices
@@ -119,6 +121,15 @@ namespace System.Runtime.CompilerServices
             // add
             // ret
         }
+
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        {
+            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+        }
+
 
         /// <summary>
         /// Adds an element offset to the given reference.

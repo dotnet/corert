@@ -53,5 +53,8 @@ namespace MetadataTransformTests
         {
             return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }

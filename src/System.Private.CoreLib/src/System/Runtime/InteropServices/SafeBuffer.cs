@@ -70,10 +70,11 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
 {
-    public abstract unsafe class SafeBuffer : SafeHandle
+    public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
         // Steal UIntPtr.MaxValue as our uninitialized value.
         private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ?

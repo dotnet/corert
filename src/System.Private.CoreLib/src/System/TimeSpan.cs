@@ -178,7 +178,7 @@ namespace System
         }
 
         // Returns a value less than zero if this  object
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null) return 1;
             if (!(value is TimeSpan))
@@ -284,6 +284,12 @@ namespace System
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             return new TimeSpan(result);
         }
+
+        public TimeSpan Multiply(double factor) => this * factor;
+
+        public TimeSpan Divide(double divisor) => this / divisor;
+
+        public double Divide(TimeSpan ts) => this / ts;
 
         public static TimeSpan FromTicks(long value)
         {

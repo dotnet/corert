@@ -36,8 +36,26 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiString(string str);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringOut(out string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringRef(ref string str);
+
+        [DllImport("*", EntryPoint = "VerifyAnsiStringRef", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern int VerifyAnsiStringInRef([In]ref string str);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern int VerifyUnicodeString(string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringOut(out string str);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringRef(ref string str);
+
+        [DllImport("*", EntryPoint = "VerifyUnicodeStringRef", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        private static extern int VerifyUnicodeStringInRef([In]ref string str);
 
         [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
@@ -91,6 +109,35 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Nested(NestedStruct ns);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Array(SequentialStruct []ns, int length);
+
+        [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
+        public unsafe struct InlineArrayStruct
+        {
+            public int f0;
+            public int f1;
+            public int f2;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+            public short[] inlineArray;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 11)]
+            public string inlineString;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 4)]
+        public unsafe struct InlineUnicodeStruct
+        {
+            public int f0;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 11)]
+            public string inlineString;
+        }
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool InlineArrayTest(ref InlineArrayStruct ias, ref InlineUnicodeStruct ius);
 
         public static int Main(string[] args)
         {
@@ -200,6 +247,24 @@ namespace PInvokeTests
             Console.WriteLine("Testing marshalling string");
             ThrowIfNotEquals(1, VerifyAnsiString("Hello World"), "Ansi String marshalling failed.");
             ThrowIfNotEquals(1, VerifyUnicodeString("Hello World"), "Unicode String marshalling failed.");
+            string s;
+            ThrowIfNotEquals(1, VerifyAnsiStringOut(out s), "Out Ansi String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out Ansi String marshalling failed");
+
+            VerifyAnsiStringInRef(ref s);
+            ThrowIfNotEquals("Hello World", s, "In Ref ansi String marshalling failed");
+
+            VerifyAnsiStringRef(ref s);
+            ThrowIfNotEquals("Hello World!", s, "Ref ansi String marshalling failed");
+
+            ThrowIfNotEquals(1, VerifyUnicodeStringOut(out s), "Out Unicode String marshalling failed");
+            ThrowIfNotEquals("Hello World", s, "Out Unicode String marshalling failed");
+
+            VerifyUnicodeStringInRef(ref s);
+            ThrowIfNotEquals("Hello World", s, "In Ref Unicode String marshalling failed");
+
+            VerifyUnicodeStringRef(ref s);
+            ThrowIfNotEquals("Hello World!", s, "Ref Unicode String marshalling failed");
         }
 
         private static void TestStringBuilder()
@@ -377,9 +442,47 @@ namespace PInvokeTests
             ns.f2 = es;
             ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
 
-// RhpThrowEx is not implemented in CPPCodeGen
+            SequentialStruct[] ssa = new SequentialStruct[3];
+            for (int i = 0; i < 3; i++)
+            {
+                ssa[i].f1 = 0;
+                ssa[i].f1 = i;
+                ssa[i].f2 = i*i;
+                ssa[i].f3 = i.ToString(); 
+            }
+            ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
+
+            InlineArrayStruct ias = new InlineArrayStruct();
+            ias.inlineArray = new short[128];
+
+            for (short i = 0; i < 128; i++)
+            {
+                ias.inlineArray[i] = i;
+            }
+
+            ias.inlineString = "Hello";
+
+            InlineUnicodeStruct ius = new InlineUnicodeStruct();
+            ius.inlineString = "Hello World";
+
 #if !CODEGEN_CPP
-            bool pass = false;
+            ThrowIfNotEquals(true, InlineArrayTest(ref ias, ref ius), "inline array marshalling failed");
+            bool pass = true;
+            for (short i = 0; i < 128; i++)
+            {
+                if (ias.inlineArray[i] != i + 1)
+                {
+                    pass = false;
+                }
+            }
+            ThrowIfNotEquals(true, pass, "inline array marshalling failed");
+
+            ThrowIfNotEquals("Hello World", ias.inlineString, "Inline ByValTStr Ansi marshalling failed");
+
+            ThrowIfNotEquals("Hello World", ius.inlineString, "Inline ByValTStr Unicode marshalling failed");
+
+            // RhpThrowEx is not implemented in CPPCodeGen
+            pass = false;
             AutoStruct autoStruct = new AutoStruct();
             try
             {

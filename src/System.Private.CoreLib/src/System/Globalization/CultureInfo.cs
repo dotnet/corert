@@ -51,7 +51,7 @@ namespace System.Globalization
 
         // We use an RFC4646 type string to construct CultureInfo.
         // This string is stored in m_name and is authoritative.
-        // We use the m_cultureData to get the data for our object
+        // We use the _cultureData to get the data for our object
 
         private bool _isReadOnly;
         private CompareInfo _compareInfo;
@@ -64,9 +64,9 @@ namespace System.Globalization
         // For supported culture, this will be the CultureData instance that read data from mscorlib assembly.
         // For customized culture, this will be the CultureData instance that read data from user customized culture binary file.
         //
-        internal CultureData m_cultureData;
+        internal CultureData _cultureData;
 
-        internal bool m_isInherited;
+        internal bool _isInherited;
 
         private CultureInfo m_consoleFallbackCulture;
 
@@ -183,14 +183,14 @@ namespace System.Globalization
             }
 
             // Get our data providing record
-            this.m_cultureData = CultureData.GetCultureData(name, useUserOverride);
+            this._cultureData = CultureData.GetCultureData(name, useUserOverride);
 
-            if (this.m_cultureData == null)
+            if (this._cultureData == null)
                 throw new CultureNotFoundException(
                     nameof(name), name, SR.Argument_CultureNotSupported);
 
-            this.m_name = this.m_cultureData.CultureName;
-            this.m_isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
+            this.m_name = this._cultureData.CultureName;
+            this._isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
         }
 
         public CultureInfo(int culture) : this(culture, true)
@@ -224,11 +224,11 @@ namespace System.Globalization
 
                 default:
                     // Now see if this LCID is supported in the system default CultureData table.
-                    m_cultureData = CultureData.GetCultureData(culture, useUserOverride);
+                    _cultureData = CultureData.GetCultureData(culture, useUserOverride);
                     break;
             }
-            m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
-            m_name = m_cultureData.CultureName;
+            _isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
+            m_name = _cultureData.CultureName;
         }
 
         // Constructor called by SQL Server's special munged culture - creates a culture with
@@ -245,11 +245,11 @@ namespace System.Globalization
             }
             Contract.EndContractBlock();
 
-            m_cultureData = CultureData.GetCultureData(cultureName, false);
-            if (m_cultureData == null)
+            _cultureData = CultureData.GetCultureData(cultureName, false);
+            if (_cultureData == null)
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
 
-            m_name = m_cultureData.CultureName;
+            m_name = _cultureData.CultureName;
 
             CultureInfo altCulture = GetCultureInfo(textAndCompareCultureName);
             _compareInfo = altCulture.CompareInfo;
@@ -338,7 +338,7 @@ namespace System.Globalization
                 return culture;
             }
 
-            return (new CultureInfo(culture.m_cultureData.SSPECIFICCULTURE));
+            return (new CultureInfo(culture._cultureData.SSPECIFICCULTURE));
         }
 
         //        //
@@ -377,7 +377,7 @@ namespace System.Globalization
         {
             //If we have an instance of one of our CultureInfos, the user can't have changed the
             //name and we know that all names are valid in files.
-            if (!culture.m_isInherited)
+            if (!culture._isInherited)
             {
                 return true;
             }
@@ -597,7 +597,7 @@ namespace System.Globalization
                     CultureInfo culture = null;
                     try
                     {
-                        string parentName = this.m_cultureData.SPARENT;
+                        string parentName = this._cultureData.SPARENT;
 
                         if (String.IsNullOrEmpty(parentName))
                         {
@@ -605,7 +605,7 @@ namespace System.Globalization
                         }
                         else
                         {
-                            culture = new CultureInfo(parentName, this.m_cultureData.UseUserOverride);
+                            culture = new CultureInfo(parentName, this._cultureData.UseUserOverride);
                         }
                     }
                     catch (ArgumentException)
@@ -625,7 +625,7 @@ namespace System.Globalization
         {
             get
             {
-                return (this.m_cultureData.ILANGUAGE);
+                return (this._cultureData.ILANGUAGE);
             }
         }
 
@@ -633,7 +633,7 @@ namespace System.Globalization
         {
             get
             {
-                return m_cultureData.IINPUTLANGUAGEHANDLE;
+                return _cultureData.IINPUTLANGUAGEHANDLE;
             }
         }
 
@@ -664,7 +664,7 @@ namespace System.Globalization
                 // We return non sorting name here.
                 if (_nonSortName == null)
                 {
-                    _nonSortName = this.m_cultureData.SNAME;
+                    _nonSortName = this._cultureData.SNAME;
                     if (_nonSortName == null)
                     {
                         _nonSortName = String.Empty;
@@ -681,7 +681,7 @@ namespace System.Globalization
             {
                 if (_sortName == null)
                 {
-                    _sortName = this.m_cultureData.SCOMPAREINFO;
+                    _sortName = this._cultureData.SCOMPAREINFO;
                 }
 
                 return _sortName;
@@ -723,7 +723,7 @@ namespace System.Globalization
                 Contract.Ensures(Contract.Result<String>() != null);
                 Debug.Assert(m_name != null, "[CultureInfo.DisplayName] Always expect m_name to be set");
 
-                return m_cultureData.SLOCALIZEDDISPLAYNAME;
+                return _cultureData.SLOCALIZEDDISPLAYNAME;
             }
         }
 
@@ -741,7 +741,7 @@ namespace System.Globalization
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return (this.m_cultureData.SNATIVEDISPLAYNAME);
+                return (this._cultureData.SNATIVEDISPLAYNAME);
             }
         }
 
@@ -759,7 +759,7 @@ namespace System.Globalization
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return (this.m_cultureData.SENGDISPLAYNAME);
+                return (this._cultureData.SENGDISPLAYNAME);
             }
         }
 
@@ -769,7 +769,7 @@ namespace System.Globalization
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return (this.m_cultureData.SISO639LANGNAME);
+                return (this._cultureData.SISO639LANGNAME);
             }
         }
 
@@ -779,7 +779,7 @@ namespace System.Globalization
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return m_cultureData.SISO639LANGNAME2;
+                return _cultureData.SISO639LANGNAME2;
             }
         }
 
@@ -796,7 +796,7 @@ namespace System.Globalization
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return m_cultureData.SABBREVLANGNAME;
+                return _cultureData.SABBREVLANGNAME;
             }
         }
 
@@ -853,7 +853,7 @@ namespace System.Globalization
                 if (_textInfo == null)
                 {
                     // Make a new textInfo
-                    TextInfo tempTextInfo = new TextInfo(this.m_cultureData);
+                    TextInfo tempTextInfo = new TextInfo(this._cultureData);
                     tempTextInfo.SetReadOnlyState(_isReadOnly);
 
                     if (OkayToCacheClassWithCompatibilityBehavior)
@@ -943,7 +943,7 @@ namespace System.Globalization
         {
             get
             {
-                return this.m_cultureData.IsNeutralCulture;
+                return this._cultureData.IsNeutralCulture;
             }
         }
 
@@ -953,20 +953,20 @@ namespace System.Globalization
             {
                 CultureTypes types = 0;
 
-                if (m_cultureData.IsNeutralCulture)
+                if (_cultureData.IsNeutralCulture)
                     types |= CultureTypes.NeutralCultures;
                 else
                     types |= CultureTypes.SpecificCultures;
 
-                types |= m_cultureData.IsWin32Installed ? CultureTypes.InstalledWin32Cultures : 0;
+                types |= _cultureData.IsWin32Installed ? CultureTypes.InstalledWin32Cultures : 0;
 
                 // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
 #pragma warning disable 618
-                types |= m_cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
+                types |= _cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
 #pragma warning restore 618
 
-                types |= m_cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
-                types |= m_cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
+                types |= _cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
+                types |= _cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
 
                 return types;
             }
@@ -978,7 +978,7 @@ namespace System.Globalization
             {
                 if (numInfo == null)
                 {
-                    NumberFormatInfo temp = new NumberFormatInfo(this.m_cultureData);
+                    NumberFormatInfo temp = new NumberFormatInfo(this._cultureData);
                     temp.isReadOnly = _isReadOnly;
                     Interlocked.CompareExchange(ref numInfo, temp, null);
                 }
@@ -1010,7 +1010,7 @@ namespace System.Globalization
                 if (dateTimeInfo == null)
                 {
                     // Change the calendar of DTFI to the specified calendar of this CultureInfo.
-                    DateTimeFormatInfo temp = new DateTimeFormatInfo(this.m_cultureData, this.Calendar);
+                    DateTimeFormatInfo temp = new DateTimeFormatInfo(this._cultureData, this.Calendar);
                     temp._isReadOnly = _isReadOnly;
                     Interlocked.CompareExchange(ref dateTimeInfo, temp, null);
                 }
@@ -1034,7 +1034,7 @@ namespace System.Globalization
 
             RegionInfo.s_currentRegionInfo = null;
 #pragma warning disable 0618 // disable the obsolete warning 
-            //TimeZone.ResetTimeZone();
+            TimeZone.ResetTimeZone();
 #pragma warning restore 0618
             TimeZoneInfo.ClearCachedData();
             s_LcidCachedCultures = null;
@@ -1108,10 +1108,10 @@ namespace System.Globalization
             {
                 if (_calendar == null)
                 {
-                    Debug.Assert(this.m_cultureData.CalendarIds.Length > 0, "this.m_cultureData.CalendarIds.Length > 0");
+                    Debug.Assert(this._cultureData.CalendarIds.Length > 0, "this._cultureData.CalendarIds.Length > 0");
                     // Get the default calendar for this culture.  Note that the value can be
                     // from registry if this is a user default culture.
-                    Calendar newObj = this.m_cultureData.DefaultCalendar;
+                    Calendar newObj = this._cultureData.DefaultCalendar;
 
                     System.Threading.Interlocked.MemoryBarrier();
                     newObj.SetReadOnlyState(_isReadOnly);
@@ -1138,7 +1138,7 @@ namespace System.Globalization
                 //
                 // This property always returns a new copy of the calendar array.
                 //
-                CalendarId[] calID = this.m_cultureData.CalendarIds;
+                CalendarId[] calID = this._cultureData.CalendarIds;
                 Calendar[] cals = new Calendar[calID.Length];
                 for (int i = 0; i < cals.Length; i++)
                 {
@@ -1152,7 +1152,7 @@ namespace System.Globalization
         {
             get
             {
-                return m_cultureData.UseUserOverride;
+                return _cultureData.UseUserOverride;
             }
         }
 
@@ -1163,7 +1163,7 @@ namespace System.Globalization
             CultureInfo temp = m_consoleFallbackCulture;
             if (temp == null)
             {
-                temp = CreateSpecificCulture(m_cultureData.SCONSOLEFALLBACKNAME);
+                temp = CreateSpecificCulture(_cultureData.SCONSOLEFALLBACKNAME);
                 temp._isReadOnly = true;
                 m_consoleFallbackCulture = temp;
             }
@@ -1177,7 +1177,7 @@ namespace System.Globalization
 
             //If this is exactly our type, we can make certain optimizations so that we don't allocate NumberFormatInfo or DTFI unless
             //they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
-            if (!m_isInherited)
+            if (!_isInherited)
             {
                 if (this.dateTimeInfo != null)
                 {
@@ -1226,7 +1226,7 @@ namespace System.Globalization
             {
                 //If this is exactly our type, we can make certain optimizations so that we don't allocate NumberFormatInfo or DTFI unless
                 //they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
-                if (!ci.m_isInherited)
+                if (!ci._isInherited)
                 {
                     if (ci.dateTimeInfo != null)
                     {

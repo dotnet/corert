@@ -35,4 +35,12 @@ namespace System.Threading
             }
         }
     }
+
+    internal sealed partial class TimerQueueTimer
+    {
+        private void SignalNoCallbacksRunning()
+        {
+            Interop.mincore.SetEvent(_notifyWhenNoCallbacksRunning.SafeWaitHandle);
+        }
+    }
 }

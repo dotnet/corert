@@ -174,8 +174,14 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>EETypeBuilderHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\UniversalGenericParameterLayout.cs">
+      <Link>UniversalGenericParameterLayout.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
@@ -373,8 +379,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>Internal\TypeSystem\TypeSystemHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-      <Link>LockFreeReaderHashtable.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
+      <Link>UniversalCanonLayoutAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>LockFreeReaderHashtableOfPointers.cs</Link>
@@ -396,6 +402,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\CallInterceptor.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ConstrainedCallSupport.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\DebugFuncEval.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\DispatchCellInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />

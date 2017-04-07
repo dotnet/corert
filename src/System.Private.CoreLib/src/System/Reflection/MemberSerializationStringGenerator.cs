@@ -114,7 +114,7 @@ namespace System
                 {
                     sb.Append("[]");
                 }
-                else if (type.IsMultiDimensionalArray)
+                else if (type.IsVariableBoundArray)
                 {
                     sb.Append('[');
                     int rank = type.GetArrayRank();

@@ -159,12 +159,15 @@ namespace Internal.TypeSystem.Interop
                 MarshallerKind kind, 
                 MarshallerKind elementMarshallerKind,
                 InteropStateManager interopStateManager,
-                MarshalAsDescriptor marshalAs)
+                MarshalAsDescriptor marshalAs,
+                bool isArrayElement = false)
         {
             TypeSystemContext context = type.Context;
             NativeTypeKind nativeType = NativeTypeKind.Invalid;
             if (marshalAs != null)
-                nativeType = marshalAs.Type;
+            {
+                nativeType = isArrayElement ? marshalAs.ArraySubType : marshalAs.Type;
+            }
 
             switch (kind)
             {
@@ -199,6 +202,9 @@ namespace Internal.TypeSystem.Interop
 
                 case MarshallerKind.Bool:
                     return context.GetWellKnownType(WellKnownType.Int32);
+
+                case MarshallerKind.CBool:
+                        return context.GetWellKnownType(WellKnownType.Byte);
 
                 case MarshallerKind.Enum:
                 case MarshallerKind.BlittableStruct:
@@ -236,9 +242,6 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.AnsiStringBuilder:
                     return context.GetWellKnownType(WellKnownType.Byte).MakePointerType();
 
-                case MarshallerKind.CBool:
-                    return context.GetWellKnownType(WellKnownType.Byte);
-
                 case MarshallerKind.BlittableArray:
                 case MarshallerKind.Array:
                 case MarshallerKind.AnsiCharArray:
@@ -254,7 +257,8 @@ namespace Internal.TypeSystem.Interop
                             elementMarshallerKind,
                             MarshallerKind.Unknown,
                             interopStateManager,
-                            null);
+                            marshalAs, 
+                            isArrayElement: true);
 
                         return elementNativeType.MakePointerType();
                     }
@@ -265,12 +269,50 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.FunctionPointer:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
-                case MarshallerKind.ByValArray:
+                case MarshallerKind.ByValUnicodeString:
+                case MarshallerKind.ByValAnsiString:
+                    {
+                        var inlineArrayCandidate = GetInlineArrayCandidate(context.GetWellKnownType(WellKnownType.Char), elementMarshallerKind, interopStateManager, marshalAs);
+                        return interopStateManager.GetInlineArrayType(inlineArrayCandidate);
+                    }
+
                 case MarshallerKind.ByValAnsiCharArray:
+                case MarshallerKind.ByValArray:
+                    {
+                        ArrayType arrayType = type as ArrayType;
+                        Debug.Assert(arrayType != null, "Expecting array");
+
+                        var inlineArrayCandidate = GetInlineArrayCandidate(arrayType.ElementType, elementMarshallerKind, interopStateManager, marshalAs);
+
+                        return interopStateManager.GetInlineArrayType(inlineArrayCandidate);
+                    }
+
                 case MarshallerKind.Unknown:
                 default:
                     throw new NotSupportedException();
             }
+        }
+
+        internal static InlineArrayCandidate GetInlineArrayCandidate(TypeDesc managedElementType, MarshallerKind elementMarshallerKind, InteropStateManager interopStateManager, MarshalAsDescriptor marshalAs)
+        {
+            var elementNativeType = (MetadataType)GetNativeTypeFromMarshallerKind(
+                                                managedElementType,
+                                                elementMarshallerKind,
+                                                MarshallerKind.Unknown,
+                                                interopStateManager,
+                                                null);
+
+            Debug.Assert(marshalAs.SizeConst.HasValue);
+
+            // if SizeConst is not specified, we will default to 1. 
+            // the marshaller will throw appropriate exception
+            uint size = 1;
+            if (marshalAs.SizeConst.HasValue)
+            {
+                size = marshalAs.SizeConst.Value;
+            }
+            return new InlineArrayCandidate(elementNativeType, size);
+
         }
 
         internal static MarshallerKind GetMarshallerKind(
@@ -449,10 +491,10 @@ namespace Internal.TypeSystem.Interop
                     // auto layout we will throw exception.
                     if (!metadataType.IsSequentialLayout && !metadataType.IsExplicitLayout)
                     {
-                        throw new InvalidProgramException("The specified structure "+metadataType.Name+ " has invalid StructLayout information. It must be either Sequential or Explicit.");
+                        throw new InvalidProgramException("The specified structure " + metadataType.Name + " has invalid StructLayout information. It must be either Sequential or Explicit.");
                     }
-
                 }
+
                 if (MarshalHelpers.IsBlittableType(type))
                 {
                     return MarshallerKind.BlittableStruct;
@@ -480,7 +522,16 @@ namespace Internal.TypeSystem.Interop
                                 return MarshallerKind.UnicodeString;
 
                             case NativeTypeKind.ByValTStr:
-                                return MarshallerKind.ByValUnicodeString;
+                                if (isAnsi)
+                                {
+                                    elementMarshallerKind = MarshallerKind.AnsiChar;
+                                    return MarshallerKind.ByValAnsiString;
+                                }
+                                else
+                                {
+                                    elementMarshallerKind = MarshallerKind.UnicodeChar;
+                                    return MarshallerKind.ByValUnicodeString;
+                                }
 
                             case NativeTypeKind.Invalid:
                                 if (isAnsi)

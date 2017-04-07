@@ -194,15 +194,6 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                // TODO: Do we really want to get the instantiation to figure out whether the type is generic?
-                if (this.HasInstantiation)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 TypeDesc baseType = this.BaseType;
@@ -515,6 +506,10 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in fieldDefinitionHandles)
             {
                 var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
+
+                if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
+                    continue;
+
                 MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(fieldDefinition);
                 marshalAsDescriptors[index++] = marshalAsDescriptor;
             }
@@ -529,7 +524,7 @@ namespace Internal.TypeSystem.Ecma
                 MetadataReader metadataReader = MetadataReader;
                 BlobReader marshalAsReader = metadataReader.GetBlobReader(fieldDefinition.GetMarshallingDescriptor());
                 EcmaSignatureParser parser = new EcmaSignatureParser(EcmaModule, marshalAsReader);
-                MarshalAsDescriptor marshalAs =  parser.ParseMarshalAsDescriptor(isParameter:false);
+                MarshalAsDescriptor marshalAs =  parser.ParseMarshalAsDescriptor();
                 Debug.Assert(marshalAs != null);
                 return marshalAs;
             }

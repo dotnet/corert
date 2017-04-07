@@ -14,10 +14,16 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _targetMethod;
 
+        public MethodDesc Method => _targetMethod;
+
         public RuntimeMethodHandleNode(MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
-            Debug.Assert(!targetMethod.IsRuntimeDeterminedExactMethod);
+
+            // IL is allowed to LDTOKEN an uninstantiated thing. Do not check IsRuntimeDetermined for the nonexact thing.
+            Debug.Assert((targetMethod.HasInstantiation && targetMethod.IsMethodDefinition)
+                || targetMethod.OwningType.IsGenericDefinition
+                || !targetMethod.IsRuntimeDeterminedExactMethod);
             _targetMethod = targetMethod;
         }
 
@@ -35,7 +41,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (_targetMethod.HasInstantiation && _targetMethod.IsVirtual)
+            if (!_targetMethod.IsMethodDefinition && !_targetMethod.OwningType.IsGenericDefinition
+                && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
                 DependencyList dependencies = new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.GVMDependencies(_targetMethod), "GVM dependencies for runtime method handle"));
@@ -43,6 +50,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             return null;
         }
+
+        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -52,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.AddSymbol(this);
 
             NativeLayoutMethodLdTokenVertexNode ldtokenSigNode = factory.NativeLayout.MethodLdTokenVertex(_targetMethod);
-            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode));
+            objData.EmitPointerReloc(factory.NativeLayout.NativeLayoutSignature(ldtokenSigNode, s_NativeLayoutSignaturePrefix, _targetMethod));
 
             return objData.ToObjectData();
         }

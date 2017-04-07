@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices
     // or alter a handle.
     public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
-        protected internal IntPtr handle;    // This must be protected so derived classes can use out params.
+        protected IntPtr handle;    // This must be protected so derived classes can use out params.
         private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
         // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.
@@ -181,6 +181,16 @@ namespace System.Runtime.InteropServices
         protected void SetHandle(IntPtr handle)
         {
             this.handle = handle;
+        }
+
+        internal void SetHandleInternal(IntPtr handle)
+        {
+        	SetHandle(handle);
+        }
+
+        internal IntPtr GetHandleInternal()
+        {
+        	return this.handle;
         }
 
         // Returns whether the handle has been explicitly marked as closed

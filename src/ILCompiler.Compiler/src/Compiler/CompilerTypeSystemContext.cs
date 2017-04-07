@@ -253,7 +253,10 @@ namespace ILCompiler
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            return _metadataFieldLayoutAlgorithm;
+            if ((type == UniversalCanonType) || (type.IsRuntimeDeterminedType && (((RuntimeDeterminedType)type).CanonicalType == UniversalCanonType)))
+                return UniversalCanonLayoutAlgorithm.Instance;
+            else 
+                return _metadataFieldLayoutAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
@@ -366,6 +369,9 @@ namespace ILCompiler
             Debug.Assert(_genericsMode == SharedGenericsMode.Disabled);
             return typeToConvert;
         }
+
+        public override bool SupportsUniversalCanon => false;
+        public override bool SupportsCanon => _genericsMode != SharedGenericsMode.Disabled;
 
         public MetadataStringDecoder GetMetadataStringDecoder()
         {

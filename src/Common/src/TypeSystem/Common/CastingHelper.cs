@@ -189,6 +189,12 @@ namespace Internal.TypeSystem
             }
         }
 
+        public static bool IsArrayElementTypeCastableBySize(TypeDesc elementType)
+        {
+            TypeDesc underlyingType = elementType.UnderlyingType;
+            return underlyingType.IsPrimitive && GetIntegralTypeMatchSize(underlyingType) != 0;
+        }
+
         private static bool CanCastToClassOrInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
         {
             if (otherType.IsInterface)

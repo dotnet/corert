@@ -25,11 +25,13 @@
             <CoreFxPackageVersion>4.4.0-beta-24913-02</CoreFxPackageVersion>
             <NetCoreAppPackageVersion>2.0.0-beta-001663-00</NetCoreAppPackageVersion>
 
-            <JitPackageVersion>2.0.0-beta-25117-06</JitPackageVersion>
+            <JitPackageVersion>2.0.0-preview1-25204-02</JitPackageVersion>
+            <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx.10.12-x64</JitNuPkgRid>
+            <JitNuPkgRid Condition="'$(JitNuPkgRid)'==''">$(NuPkgRid)</JitNuPkgRid>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
-            <ObjectWriterPackageVersion>1.0.16-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterPackageVersion>1.0.17-prerelease-00002</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
             <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>
@@ -58,7 +60,7 @@
             <ILCompilerRepackageJitFiles Include="libclrjit.so" Condition="'$(OSGroup)'=='Linux'" />
             <ILCompilerRepackageJitFiles Include="libclrjit.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerRepackageJitFiles)">
-                <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(NuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
+                <Text><![CDATA[        <file src="packages/runtime.$(JitNuPkgRid).Microsoft.NETCore.Jit/$(JitPackageVersion)/runtimes/$(JitNuPkgRid)/native/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Filename)ilc%(Extension)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <!-- Repackage the ObjectWriter dynamic library to workaround missing Ubuntu 16.04 build -->
@@ -129,6 +131,7 @@
             <ILCompilerAnyFrameworkFiles Include="System.Collections.NonGeneric" />
             <ILCompilerAnyFrameworkFiles Include="System.Console" />
             <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tools" />
+            <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tracing" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization.Calendars" />
             <ILCompilerAnyFrameworkFiles Include="System.IO" />
@@ -164,8 +167,6 @@
             <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'"/>
 
             <!-- End: Libraries with netcoreapp1.2corert configuration -->
-
-            <ILCompilerFrameworkFiles Include="runtime.aot.System.Diagnostics.Tracing/$(CoreFxPackageVersion)/runtimes/aot/lib/netcore50/System.Diagnostics.Tracing.dll" />
 
             <ILCompilerFrameworkFiles Include="System.Threading/$(CoreFxPackageVersion)/lib/netstandard1.7/System.Threading.dll" />
 

@@ -176,12 +176,12 @@ namespace Internal.TypeSystem.Interop
                 }
                 catch (NotSupportedException)
                 {
-                    // if marshalling is not supported for this type the generates stubs will emit appropriate
+                    // if marshalling is not supported for this type the generated stubs will emit appropriate
                     // error message. We just set native type to be same as managedtype
                     nativeType = managedType;
                 }
 
-                _fields[index++] = new NativeStructField(nativeType, field, this, field.Name);
+                _fields[index++] = new NativeStructField(nativeType, this, field.Name);
             }
         }
 
@@ -260,10 +260,6 @@ namespace Internal.TypeSystem.Interop
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-            }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
             {
@@ -288,10 +284,8 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         private class NativeStructField : FieldDesc
         {
-            private FieldDesc _managedField;
             private TypeDesc _fieldType;
-            private NativeStructType _owningType;
-
+            private MetadataType _owningType;
             private string _name;
 
             public override TypeSystemContext Context
@@ -323,7 +317,7 @@ namespace Internal.TypeSystem.Interop
             {
                 get
                 {
-                    return _managedField.IsInitOnly;
+                    return false;
                 }
             }
 
@@ -372,13 +366,13 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public NativeStructField(TypeDesc nativeType, FieldDesc managedField, NativeStructType owningType, string name)
+            public NativeStructField(TypeDesc nativeType, MetadataType owningType, string name)
             {
                 _fieldType = nativeType;
-                _managedField = managedField;
                 _owningType = owningType;
                 _name = name;
             }
         }
+
     }
 }

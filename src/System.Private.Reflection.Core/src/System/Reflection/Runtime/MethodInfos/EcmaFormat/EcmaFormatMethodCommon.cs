@@ -56,8 +56,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
         {
             get
             {
-                EcmaFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToEcmaFormatRuntimeNamedTypeInfo();
-                return new EcmaFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                return new EcmaFormatMethodCommon(MethodHandle, _definingTypeInfo, _definingTypeInfo);
             }
         }
 
@@ -217,11 +216,19 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
 
         public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
         {
-            Debug.Assert(genericArgs != null);
+            Debug.Assert(genericArgs == null || genericArgs.Length > 0);
 
-            RuntimeTypeHandle[] genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
-            for (int i = 0; i < genericArgHandles.Length; i++)
-                genericArgHandles[i] = genericArgs[i].TypeHandle;
+            RuntimeTypeHandle[] genericArgHandles;
+            if (genericArgs != null)
+            {
+                genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
+                for (int i = 0; i < genericArgHandles.Length; i++)
+                    genericArgHandles[i] = genericArgs[i].TypeHandle;
+            }
+            else
+            {
+                genericArgHandles = null;
+            }
 
             IntPtr dynamicModule = ModuleList.Instance.GetModuleInfoForMetadataReader(Reader).DynamicModulePtrAsIntPtr;
 

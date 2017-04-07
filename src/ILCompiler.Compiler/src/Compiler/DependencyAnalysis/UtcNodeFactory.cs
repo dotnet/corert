@@ -77,7 +77,6 @@ namespace ILCompiler
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
             ThreadStaticsIndex = new ThreadStaticsIndexNode(nameMangler.GetCurrentModuleTlsIndexPrefix());
-            ThreadStaticsStartOffset = new ThreadStaticsStartNode();
             targetPrefix = context.Target.Architecture == TargetArchitecture.X86 ? "_" : "";
             TLSDirectory = new ThreadStaticsDirectoryNode(targetPrefix);
             TlsStart = new ExternSymbolNode(targetPrefix + "_tls_start");
@@ -110,6 +109,11 @@ namespace ILCompiler
             {
                 return new NonExternMethodSymbolNode(this, method.Method, method.IsUnboxingStub);
             });
+
+            _standaloneGCStaticDescs = new NodeCache<GCStaticDescNode, StandaloneGCStaticDescRegionNode>((GCStaticDescNode staticDesc) =>
+            {
+                return new StandaloneGCStaticDescRegionNode(staticDesc);
+            });
         }
 
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -129,9 +133,8 @@ namespace ILCompiler
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
             graph.AddRoot(ThreadStaticsIndex, "Thread statics index is always generated");
-            graph.AddRoot(ThreadStaticsStartOffset, "Thread statics start offset is always generated");
             graph.AddRoot(TLSDirectory, "TLS Directory is always generated");
-            
+
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
@@ -142,7 +145,6 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticStartOffset, ThreadStaticsStartOffset, ThreadStaticsStartOffset);
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);
@@ -212,8 +214,6 @@ namespace ILCompiler
             null);
 
         public ThreadStaticsIndexNode ThreadStaticsIndex;
-
-        public ThreadStaticsStartNode ThreadStaticsStartOffset;
 
         public ThreadStaticsDirectoryNode TLSDirectory;
 
@@ -288,6 +288,13 @@ namespace ILCompiler
         public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method, bool isUnboxingStub)
         {
             return _nonExternMethodSymbols.GetOrAdd(new MethodKey(method, isUnboxingStub));
+        }
+
+        private NodeCache<GCStaticDescNode, StandaloneGCStaticDescRegionNode> _standaloneGCStaticDescs;
+
+        public StandaloneGCStaticDescRegionNode StandaloneGCStaticDescRegion(GCStaticDescNode staticDesc)
+        {
+            return _standaloneGCStaticDescs.GetOrAdd(staticDesc);
         }
     }
 }

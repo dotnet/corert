@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Text;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -18,11 +21,18 @@ namespace System.Text
     // class are typically obtained through calls to the GetEncoder method
     // of Encoding objects.
     //
+    [Serializable]
     public abstract class Encoder
     {
         internal EncoderFallback m_fallback = null;
 
+        [NonSerialized]
         internal EncoderFallbackBuffer m_fallbackBuffer = null;
+
+        internal void SerializeEncoder(SerializationInfo info)
+        {
+            info.AddValue("m_fallback", this.m_fallback);
+        }
 
         protected Encoder()
         {
@@ -85,7 +95,7 @@ namespace System.Text
         //
         // If the caller doesn't want to try again after GetBytes() throws an error, then they need to call Reset().
         //
-        // Virtual implimentation has to call GetBytes with flush and a big enough buffer to clear a 0 char string
+        // Virtual implementation has to call GetBytes with flush and a big enough buffer to clear a 0 char string
         // We avoid GetMaxByteCount() because a) we can't call the base encoder and b) it might be really big.
         public virtual void Reset()
         {
@@ -153,7 +163,7 @@ namespace System.Text
                                         byte[] bytes, int byteIndex, bool flush);
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -162,13 +172,14 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetBytes() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the byte[] to our byte* output buffer.  If the result count was wrong, we
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow byteCount either.
-        internal virtual unsafe int GetBytes(char* chars, int charCount,
+        [CLSCompliant(false)]
+        public virtual unsafe int GetBytes(char* chars, int charCount,
                                               byte* bytes, int byteCount, bool flush)
         {
             // Validate input parameters
@@ -198,7 +209,7 @@ namespace System.Text
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than byteCount bytes no matter the value
             // of result
             if (result < byteCount)
@@ -260,6 +271,50 @@ namespace System.Text
                 if (GetByteCount(chars, charIndex, charsUsed, flush) <= byteCount)
                 {
                     bytesUsed = GetBytes(chars, charIndex, charsUsed, bytes, byteIndex, flush);
+                    completed = (charsUsed == charCount &&
+                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                    return;
+                }
+
+                // Try again with 1/2 the count, won't flush then 'cause won't read it all
+                flush = false;
+                charsUsed /= 2;
+            }
+
+            // Oops, we didn't have anything, we'll have to throw an overflow
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
+        }
+
+        // Same thing, but using pointers
+        //
+        // Might consider checking Max...Count to avoid the extra counting step.
+        //
+        // Note that if all of the input chars are not consumed, then we'll do a /2, which means
+        // that its likely that we didn't consume as many chars as we could have.  For some
+        // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
+        [CLSCompliant(false)]
+        public virtual unsafe void Convert(char* chars, int charCount,
+                                             byte* bytes, int byteCount, bool flush,
+                                             out int charsUsed, out int bytesUsed, out bool completed)
+        {
+            // Validate input parameters
+            if (bytes == null || chars == null)
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
+                    SR.ArgumentNull_Array);
+            if (charCount < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            // Get ready to do it
+            charsUsed = charCount;
+
+            // Its easy to do if it won't overrun our buffer.
+            while (charsUsed > 0)
+            {
+                if (GetByteCount(chars, charsUsed, flush) <= byteCount)
+                {
+                    bytesUsed = GetBytes(chars, charsUsed, bytes, byteCount, flush);
                     completed = (charsUsed == charCount &&
                         (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
                     return;

@@ -22,6 +22,9 @@ namespace Internal.Runtime.Augments
         [ThreadStatic]
         private static RuntimeThread t_currentThread;
 
+        private ExecutionContext _executionContext;
+        private SynchronizationContext _synchronizationContext;
+
         private volatile int _threadState;
         private ThreadPriority _priority;
         private ManagedThreadId _managedThreadId;
@@ -115,6 +118,26 @@ namespace Internal.Runtime.Augments
             {
                 InitializeExistingThread().SetThreadStateBit(ThreadPoolThread);
             }
+        }
+
+        /// <summary>
+        /// Returns true if the underlying OS thread has been created and started execution of managed code.
+        /// </summary>
+        private bool HasStarted()
+        {
+            return !GetThreadStateBit(ThreadState.Unstarted);
+        }
+
+        internal ExecutionContext ExecutionContext
+        {
+            get { return _executionContext; }
+            set { _executionContext = value; }
+        }
+
+        internal SynchronizationContext SynchronizationContext
+        {
+            get { return _synchronizationContext; }
+            set { _synchronizationContext = value; }
         }
 
         public bool IsAlive
@@ -224,12 +247,7 @@ namespace Internal.Runtime.Augments
                 // Prevent race condition with starting this thread
                 using (LockHolder.Hold(_lock))
                 {
-                    if (!HasStarted())
-                    {
-                        Debug.Assert(GetThreadStateBit(ThreadState.Unstarted));
-                        // We will set the priority when we create an OS thread
-                    }
-                    else if (!SetPriorityLive(value))
+                    if (HasStarted() && !SetPriorityLive(value))
                     {
                         throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
                     }
@@ -370,8 +388,7 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static uint StartThread(IntPtr parameter)
+        private static void StartThread(IntPtr parameter)
         {
             GCHandle threadHandle = (GCHandle)parameter;
             RuntimeThread thread = (RuntimeThread)threadHandle.Target;
@@ -386,8 +403,13 @@ namespace Internal.Runtime.Augments
             }
             catch (OutOfMemoryException)
             {
+#if PLATFORM_UNIX
+                // This should go away once OnThreadExit stops using t_currentThread to signal
+                // shutdown of the thread on Unix.
+                thread._stopped.Set();
+#endif
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
-                return 0;
+                return;
             }
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
@@ -418,7 +440,6 @@ namespace Internal.Runtime.Augments
             {
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
-            return 0;
         }
     }
 }

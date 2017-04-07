@@ -86,9 +86,8 @@ namespace Internal.IL.Stubs.StartupCode
             MethodDesc initEntryAssembly = startup.GetMethod("InitializeEntryAssembly", null);
             if (initEntryAssembly != null)
             {
-                IAssemblyDesc entrypointAssembly = ((MetadataType)_mainMethod.WrappedMethod.OwningType).Module as IAssemblyDesc;
-                Debug.Assert(entrypointAssembly != null, "Multi-module assembly?");
-                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(entrypointAssembly.GetName().FullName));
+                ModuleDesc entrypointModule = ((MetadataType)_mainMethod.WrappedMethod.OwningType).Module;
+                codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(entrypointModule.GetGlobalModuleType()));
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(initEntryAssembly));
             }
 

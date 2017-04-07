@@ -114,7 +114,7 @@
       <Link>Utilities\GCPointerMap.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+        <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
@@ -356,11 +356,20 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
       <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
@@ -368,8 +377,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
       <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.Mangling.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.Mangling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.cs">
+      <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropTypes.cs">
       <Link>TypeSystem\Interop\InteropTypes.cs</Link>
@@ -388,6 +403,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
       <Link>TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledMethod.cs">
+      <Link>TypeSystem\Mangling\IPrefixMangledMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Mangling\IPrefixMangledType.cs">
+      <Link>TypeSystem\Mangling\IPrefixMangledType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>

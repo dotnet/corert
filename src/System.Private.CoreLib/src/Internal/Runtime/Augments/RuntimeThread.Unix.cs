@@ -31,14 +31,6 @@ namespace Internal.Runtime.Augments
             _stopped = new ManualResetEvent(false);
         }
 
-        /// <summary>
-        /// Returns true if the thread is started or being started in StartInternal.
-        /// </summary>
-        private bool HasStarted()
-        {
-            return _stopped != null;
-        }
-
         private ThreadPriority GetPriorityLive()
         {
             return ThreadPriority.Normal;
@@ -101,22 +93,31 @@ namespace Internal.Runtime.Augments
 
         private bool CreateThread(GCHandle thisThreadHandle)
         {
-            // Avoid OOM after creating the thread
-            var stopped = new ManualResetEvent(false);
+            // Create the Stop event before starting the thread to make sure
+            // it is ready to be signaled at thread shutdown time.
+            // This also avoids OOM after creating the thread.
+            _stopped = new ManualResetEvent(false);
 
             if (!Interop.Sys.RuntimeThread_CreateThread((IntPtr)_maxStackSize,
-                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(StartThread), (IntPtr)thisThreadHandle))
+                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle))
             {
                 return false;
             }
-
-            // This marks the thread as being started
-            _stopped = stopped;
 
             // CoreCLR ignores OS errors while setting the priority, so do we
             SetPriorityLive(_priority);
 
             return true;
+        }
+
+        /// <summary>
+        /// This an entry point for managed threads created by applicatoin
+        /// </summary>
+        [NativeCallable]
+        private static IntPtr ThreadEntryPoint(IntPtr parameter)
+        {
+            StartThread(parameter);
+            return IntPtr.Zero;
         }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);

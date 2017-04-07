@@ -11,7 +11,7 @@ namespace System.Threading
     //
     // Win32-specific implementation of ThreadPool
     //
-    internal static partial class ThreadPool
+    public static partial class ThreadPool
     {
         private static IntPtr s_work;
 

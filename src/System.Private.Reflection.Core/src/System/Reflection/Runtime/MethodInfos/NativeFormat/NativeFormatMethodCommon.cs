@@ -64,8 +64,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                NativeFormatRuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToNativeFormatRuntimeNamedTypeInfo();
-                return new NativeFormatMethodCommon(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                return new NativeFormatMethodCommon(MethodHandle, _definingTypeInfo, _definingTypeInfo);
             }
         }
 
@@ -209,11 +208,19 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
         {
-            Debug.Assert(genericArgs != null);
+            Debug.Assert(genericArgs == null || genericArgs.Length > 0);
 
-            RuntimeTypeHandle[] genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
-            for (int i = 0; i < genericArgHandles.Length; i++)
-                genericArgHandles[i] = genericArgs[i].TypeHandle;
+            RuntimeTypeHandle[] genericArgHandles;
+            if (genericArgs != null)
+            {
+                genericArgHandles = new RuntimeTypeHandle[genericArgs.Length];
+                for (int i = 0; i < genericArgHandles.Length; i++)
+                    genericArgHandles[i] = genericArgs[i].TypeHandle;
+            }
+            else
+            {
+                genericArgHandles = null;
+            }
 
             TypeManagerHandle typeManager = TypeLoaderEnvironment.Instance.ModuleList.GetModuleForMetadataReader(Reader);
 

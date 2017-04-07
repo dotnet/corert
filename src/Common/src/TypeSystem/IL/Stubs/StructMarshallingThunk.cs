@@ -11,20 +11,33 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
-    internal enum StructMarshallingThunkType : byte
+    public enum StructMarshallingThunkType : byte
     {
         ManagedToNative = 1,
         NativeToManage = 2,
         Cleanup = 4
     }
 
-    internal class StructMarshallingThunk : ILStubMethod
+    public struct InlineArrayCandidate
+    {
+        public readonly MetadataType ElementType;
+        public readonly uint Length;
+
+        public InlineArrayCandidate(MetadataType type, uint length)
+        {
+            ElementType = type;
+            Length = length;
+        }
+    }
+
+    public partial class StructMarshallingThunk : ILStubMethod
     {
         internal readonly MetadataType ManagedType;
         internal readonly NativeStructType NativeType;
         internal readonly StructMarshallingThunkType ThunkType;
         private  InteropStateManager _interopStateManager;
         private TypeDesc _owningType;
+        private Marshaller[] _marshallers;
 
         public StructMarshallingThunk(TypeDesc owningType, MetadataType managedType, StructMarshallingThunkType thunkType, InteropStateManager interopStateManager)
         {
@@ -33,6 +46,7 @@ namespace Internal.IL.Stubs
             _interopStateManager = interopStateManager;
             NativeType = _interopStateManager.GetStructMarshallingNativeType(managedType);
             ThunkType = thunkType;
+            _marshallers = InitializeMarshallers();
         }
 
         public override TypeSystemContext Context
@@ -82,36 +96,96 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                if (ThunkType == StructMarshallingThunkType.ManagedToNative)
+                switch (ThunkType)
                 {
-                    return "ManagedToNative__" + ((MetadataType)ManagedType).Name;
-                }
-                else if (ThunkType == StructMarshallingThunkType.NativeToManage)
-                {
-                    return "NativeToManaged__" + ((MetadataType)ManagedType).Name;
-                }
-                else
-                {
-                    return "Cleanup__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.ManagedToNative:
+                        return "ManagedToNative__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.NativeToManage:
+                        return "NativeToManaged__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.Cleanup:
+                        return "Cleanup__" + ((MetadataType)ManagedType).Name;
+                    default:
+                        System.Diagnostics.Debug.Assert(false, "Unexpected Struct marshalling thunk type");
+                        return string.Empty;
                 }
             }
         }
 
-        private int GetNumberOfInstanceFields()
+        public IEnumerable<InlineArrayCandidate> GetInlineArrayCandidates()
         {
-            int numFields = 0;
-            foreach (var field in ManagedType.GetFields())
+            int index = 0;
+            MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
+            foreach (FieldDesc field in ManagedType.GetFields())
             {
                 if (field.IsStatic)
                 {
                     continue;
                 }
-                numFields++;
+
+                Marshaller marshaller = _marshallers[index];
+
+                if (marshaller.MarshallerKind == MarshallerKind.ByValAnsiString
+                    || marshaller.MarshallerKind == MarshallerKind.ByValUnicodeString)
+                {
+                    yield return MarshalHelpers.GetInlineArrayCandidate(marshaller.ManagedType.Context.GetWellKnownType(WellKnownType.Char), marshaller.ElementMarshallerKind, _interopStateManager, marshalAsDescriptors[index]);
+                }
+                else if (marshaller.MarshallerKind == MarshallerKind.ByValArray
+                    || marshaller.MarshallerKind == MarshallerKind.ByValAnsiCharArray)
+                {
+                    var arrayType = marshaller.ManagedType as ArrayType;
+
+                    Debug.Assert(arrayType != null);
+
+                    yield return MarshalHelpers.GetInlineArrayCandidate(arrayType.ElementType, marshaller.ElementMarshallerKind, _interopStateManager, marshalAsDescriptors[index]);
+                }
+
+                index++;
             }
-            return numFields;
         }
 
-        private MethodIL EmitMarshallingIL(PInvokeILCodeStreams pInvokeILCodeStreams, Marshaller[] marshallers)
+        private Marshaller[] InitializeMarshallers()
+        {
+            Debug.Assert(_interopStateManager != null);
+            MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
+            Marshaller[] marshallers = new Marshaller[marshalAsDescriptors.Length];
+
+            PInvokeFlags flags = new PInvokeFlags();
+            if (ManagedType.PInvokeStringFormat == PInvokeStringFormat.UnicodeClass || ManagedType.PInvokeStringFormat == PInvokeStringFormat.AutoClass)
+            {
+                flags.CharSet = CharSet.Unicode;
+            }
+            else
+            {
+                flags.CharSet = CharSet.Ansi;
+            }
+
+            int index = 0;
+
+            foreach (FieldDesc field in ManagedType.GetFields())
+            {
+                if (field.IsStatic)
+                {
+                    continue;
+                }
+
+                marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
+                                                                    MarshallerType.Field,
+                                                                    marshalAsDescriptors[index],
+                                                                    (ThunkType == StructMarshallingThunkType.NativeToManage) ? MarshalDirection.Reverse : MarshalDirection.Forward,
+                                                                    marshallers,
+                                                                    _interopStateManager,
+                                                                    index,
+                                                                    flags,
+                                                                    isIn: true,     /* Struct fields are considered as IN within the helper*/
+                                                                    isOut: false,
+                                                                    isReturn: false);
+                index++;
+            }
+
+            return marshallers;
+        }
+
+        private MethodIL EmitMarshallingIL(PInvokeILCodeStreams pInvokeILCodeStreams)
         {
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
 
@@ -130,31 +204,45 @@ namespace Internal.IL.Stubs
 
                 var nativeField = nativeEnumerator.Current;
                 Debug.Assert(nativeField != null);
-
+                bool isInlineArray = nativeField.FieldType is InlineArrayType;
                 //
                 // Field marshallers expects the value of the fields to be 
                 // loaded on the stack. We load the value on the stack
-                // before calling the marshallers
+                // before calling the marshallers.
+                // Only exception is ByValArray marshallers. Since they can
+                // only be used for field marshalling, they load/store values 
+                // directly from arguments.
                 //
 
-                if (ThunkType == StructMarshallingThunkType.ManagedToNative)
+                if (isInlineArray)
                 {
-                    LoadFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
-                }
-                else if (ThunkType == StructMarshallingThunkType.NativeToManage)
-                {
-                    LoadFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
-                }
+                    var byValMarshaller = _marshallers[index++] as ByValArrayMarshaller;
 
-                marshallers[index++].EmitMarshallingIL(pInvokeILCodeStreams);
+                    Debug.Assert(byValMarshaller != null);
 
-                if (ThunkType == StructMarshallingThunkType.ManagedToNative)
-                {
-                    StoreFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
+                    byValMarshaller.EmitMarshallingIL(pInvokeILCodeStreams, managedField, nativeField);
                 }
-                else if (ThunkType == StructMarshallingThunkType.NativeToManage)
+                else
                 {
-                    StoreFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
+                    if (ThunkType == StructMarshallingThunkType.ManagedToNative)
+                    {
+                        LoadFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
+                    }
+                    else if (ThunkType == StructMarshallingThunkType.NativeToManage)
+                    {
+                        LoadFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
+                    }
+
+                    _marshallers[index++].EmitMarshallingIL(pInvokeILCodeStreams);
+
+                    if (ThunkType == StructMarshallingThunkType.ManagedToNative)
+                    {
+                        StoreFieldValueFromArg(1, nativeField, pInvokeILCodeStreams);
+                    }
+                    else if (ThunkType == StructMarshallingThunkType.NativeToManage)
+                    {
+                        StoreFieldValueFromArg(0, managedField, pInvokeILCodeStreams);
+                    }
                 }
             }
 
@@ -164,21 +252,21 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        private MethodIL EmitCleanupIL(PInvokeILCodeStreams pInvokeILCodeStreams, Marshaller[] marshallers)
+        private MethodIL EmitCleanupIL(PInvokeILCodeStreams pInvokeILCodeStreams)
         {
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
             ILCodeStream codeStream = pInvokeILCodeStreams.MarshallingCodeStream;
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
-            for (int i = 0; i < marshallers.Length; i++)
+            for (int i = 0; i < _marshallers.Length; i++)
             {
                 bool valid = nativeEnumerator.MoveNext();
 
                 Debug.Assert(valid);
 
-                if (marshallers[i].CleanupRequired)
+                if (_marshallers[i].CleanupRequired)
                 {
                     LoadFieldValueFromArg(0, nativeEnumerator.Current, pInvokeILCodeStreams);
-                    marshallers[i].EmitElementCleanup(codeStream, emitter);
+                    _marshallers[i].EmitElementCleanup(codeStream, emitter);
                 }
             }
 
@@ -190,53 +278,15 @@ namespace Internal.IL.Stubs
         {
             try
             {
-                Debug.Assert(_interopStateManager != null);
-                Marshaller[] marshallers = new Marshaller[GetNumberOfInstanceFields()];
-                MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
-                
-                PInvokeFlags flags = new PInvokeFlags();
-                if (ManagedType.PInvokeStringFormat == PInvokeStringFormat.UnicodeClass || ManagedType.PInvokeStringFormat == PInvokeStringFormat.AutoClass)
-                {
-                    flags.CharSet = CharSet.Unicode;
-                }
-                else
-                {
-                    flags.CharSet = CharSet.Ansi;
-                }
-
-                
-                int index = 0;
-
-                foreach (FieldDesc field in ManagedType.GetFields())
-                {
-                    if (field.IsStatic)
-                    {
-                        continue;
-                    }
-
-                    marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
-                                                                        MarshallerType.Field,
-                                                                        marshalAsDescriptors[index],
-                                                                        (ThunkType == StructMarshallingThunkType.NativeToManage) ? MarshalDirection.Reverse : MarshalDirection.Forward,
-                                                                        marshallers,
-                                                                        _interopStateManager,
-                                                                        index,
-                                                                        flags,
-                                                                        isIn: true,     /* Struct fields are considered as IN within the helper*/
-                                                                        isOut: false,
-                                                                        isReturn: false);
-                    index++;
-                }
-
                 PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
 
                 if (ThunkType == StructMarshallingThunkType.Cleanup)
                 {
-                    return EmitCleanupIL(pInvokeILCodeStreams, marshallers);
+                    return EmitCleanupIL(pInvokeILCodeStreams);
                 }
                 else
                 {
-                    return EmitMarshallingIL(pInvokeILCodeStreams, marshallers);
+                    return EmitMarshallingIL(pInvokeILCodeStreams);
                 }
             }
             catch (NotSupportedException)
@@ -250,8 +300,8 @@ namespace Internal.IL.Stubs
                 Debug.Assert(!String.IsNullOrEmpty(ex.Message));
                 return MarshalHelpers.EmitExceptionBody(ex.Message, this);
             }
-
         }
+
         /// <summary>
         /// Loads the value of field of a struct at argument index argIndex to stack
         /// </summary>
@@ -259,7 +309,6 @@ namespace Internal.IL.Stubs
         {
             ILCodeStream stream = pInvokeILCodeStreams.MarshallingCodeStream;
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
-
             stream.EmitLdArg(argIndex);
             stream.Emit(ILOpcode.ldfld, emitter.NewToken(field));
         }

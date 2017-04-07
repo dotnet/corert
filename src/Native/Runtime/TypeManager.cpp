@@ -50,8 +50,6 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader)
     m_pThreadStaticsDataSection = (UInt8*)GetModuleSection(ReadyToRunSectionType::ThreadStaticRegion, &length);
     m_pThreadStaticsGCInfo = (StaticGcDesc*)GetModuleSection(ReadyToRunSectionType::ThreadStaticGCDescRegion, &length);
     m_pTlsIndex = (UInt32*)GetModuleSection(ReadyToRunSectionType::ThreadStaticIndex, &length);
-    UInt32 *pManagedTlsStartOffset = (UInt32*)GetModuleSection(ReadyToRunSectionType::ThreadStaticStartOffset, &length);
-    m_managedTlsStartOffset = pManagedTlsStartOffset ? *pManagedTlsStartOffset : 0;
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
@@ -157,7 +155,7 @@ void TypeManager::EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData)
             //     value in the module header.
             //  2) The offset into the TLS block at which managed data begins. 
             EnumThreadStaticGCRefsBlock(pfnCallback, pvCallbackData, m_pThreadStaticsGCInfo,
-                dac_cast<UInt8*>(pThread->GetThreadLocalStorage(*m_pTlsIndex, m_managedTlsStartOffset)));
+                dac_cast<UInt8*>(pThread->GetThreadLocalStorage(*m_pTlsIndex, 0)));
         }
         END_FOREACH_THREAD
     }

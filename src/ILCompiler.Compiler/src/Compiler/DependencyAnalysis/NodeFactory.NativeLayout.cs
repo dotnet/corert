@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -29,12 +30,17 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _typeSignatures = new NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode>(type =>
                 {
-                     return NativeLayoutTypeSignatureVertexNode.NewTypeSignatureVertexNode(_factory, type);
+                    return NativeLayoutTypeSignatureVertexNode.NewTypeSignatureVertexNode(_factory, type);
                 });
 
-                _methodSignatures = new NodeCache<MethodDesc, NativeLayoutMethodSignatureVertexNode>(method =>
+                _methodSignatures = new NodeCache<MethodSignature, NativeLayoutMethodSignatureVertexNode>(signature =>
                 {
-                    return new NativeLayoutMethodSignatureVertexNode(_factory, method);
+                    return new NativeLayoutMethodSignatureVertexNode(_factory, signature);
+                });
+
+                _callingConventionSlots = new NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode>(key =>
+                {
+                    return new NativeLayoutCallingConventionConverterGenericDictionarySlotNode(key.Signature, key.ConverterKind);
                 });
 
                 _methodNameAndSignatures = new NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode>(method =>
@@ -52,6 +58,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutPlacedVertexSequenceVertexNode(vertices.Vertices);
                 });
 
+                _placedUIntVertexSequence = new NodeCache<List<uint>, NativeLayoutPlacedVertexSequenceOfUIntVertexNode>(uints =>
+                {
+                    return new NativeLayoutPlacedVertexSequenceOfUIntVertexNode(uints);
+                }, new UIntSequenceComparer());
+
                 _methodLdTokenSignatures = new NodeCache<MethodDesc, NativeLayoutMethodLdTokenVertexNode>(method =>
                 {
                     return new NativeLayoutMethodLdTokenVertexNode(_factory, method);
@@ -62,9 +73,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutFieldLdTokenVertexNode(_factory, field);
                 });
 
-                _nativeLayoutSignatureNodes = new NodeCache<NativeLayoutSavedVertexNode, NativeLayoutSignatureNode>(signature =>
+                _nativeLayoutSignatureNodes = new NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode>(key =>
                 {
-                    return new NativeLayoutSignatureNode(signature);
+                    return new NativeLayoutSignatureNode(key.SignatureVertex, key.Identity, key.IdentityPrefix);
                 });
 
                 _templateMethodEntries = new NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode>(method =>
@@ -132,20 +143,20 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutAllocateArrayGenericDictionarySlotNode(_factory, type);
                 });
 
-                _interfaceCell_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutInterfaceDispatchGenericDictionarySlotNode>( method =>
-                {
-                    return new NativeLayoutInterfaceDispatchGenericDictionarySlotNode(_factory, method);
-                });
+                _interfaceCell_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutInterfaceDispatchGenericDictionarySlotNode>(method =>
+               {
+                   return new NativeLayoutInterfaceDispatchGenericDictionarySlotNode(_factory, method);
+               });
 
-                _methodDictionary_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodDictionaryGenericDictionarySlotNode>( method =>
-                {
-                    return new NativeLayoutMethodDictionaryGenericDictionarySlotNode(_factory, method);
-                });
+                _methodDictionary_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodDictionaryGenericDictionarySlotNode>(method =>
+               {
+                   return new NativeLayoutMethodDictionaryGenericDictionarySlotNode(_factory, method);
+               });
 
-                _methodEntrypoint_GenericDictionarySlots = new NodeCache<MethodEntrypointSlotKey, NativeLayoutMethodEntrypointGenericDictionarySlotNode>( key =>
-                {
-                    return new NativeLayoutMethodEntrypointGenericDictionarySlotNode(_factory, key.Method, key.FunctionPointerTarget, key.Unboxing);
-                });
+                _methodEntrypoint_GenericDictionarySlots = new NodeCache<MethodEntrypointSlotKey, NativeLayoutMethodEntrypointGenericDictionarySlotNode>(key =>
+               {
+                   return new NativeLayoutMethodEntrypointGenericDictionarySlotNode(_factory, key.Method, key.FunctionPointerTarget, key.Unboxing);
+               });
 
                 _fieldLdToken_GenericDictionarySlots = new NodeCache<FieldDesc, NativeLayoutFieldLdTokenGenericDictionarySlotNode>(field =>
                 {
@@ -155,6 +166,36 @@ namespace ILCompiler.DependencyAnalysis
                 _methodLdToken_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodLdTokenGenericDictionarySlotNode>(method =>
                 {
                     return new NativeLayoutMethodLdTokenGenericDictionarySlotNode(method);
+                });
+
+                _fieldOffset_GenericDictionaryslots = new NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode>(field =>
+                {
+                    return new NativeLayoutFieldOffsetGenericDictionarySlotNode(field);
+                });
+
+                _vtableOffset_GenericDictionaryslots = new NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode>(method =>
+                {
+                    return new NativeLayoutVTableOffsetGenericDictionarySlotNode(method);
+                });
+
+                _dictionarySignatures = new NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode>(owningMethodOrType =>
+                {
+                    return new NativeLayoutDictionarySignatureNode(owningMethodOrType);
+                });
+
+                _integerSlots = new NodeCache<int, NativeLayoutIntegerDictionarySlotNode>(value =>
+                {
+                    return new NativeLayoutIntegerDictionarySlotNode(value);
+                });
+
+                _otherSlotPointerSlots = new NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode>(otherSlotIndex =>
+                {
+                    return new NativeLayoutPointerToOtherSlotDictionarySlotNode(otherSlotIndex);
+                });
+
+                _constrainedMethodUseSlots = new NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode>(constrainedMethodUse =>
+                {
+                    return new NativeLayoutConstrainedMethodDictionarySlotNode(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
                 });
             }
 
@@ -170,10 +211,16 @@ namespace ILCompiler.DependencyAnalysis
                 return _typeSignatures.GetOrAdd(type);
             }
 
-            private NodeCache<MethodDesc, NativeLayoutMethodSignatureVertexNode> _methodSignatures;
-            internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodDesc method)
+            private NodeCache<MethodSignature, NativeLayoutMethodSignatureVertexNode> _methodSignatures;
+            internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodSignature signature)
             {
-                return _methodSignatures.GetOrAdd(method);
+                return _methodSignatures.GetOrAdd(signature);
+            }
+
+            private NodeCache<CallingConventionConverterKey, NativeLayoutCallingConventionConverterGenericDictionarySlotNode> _callingConventionSlots;
+            internal NativeLayoutCallingConventionConverterGenericDictionarySlotNode CallingConventionConverter(CallingConventionConverterKey key)
+            {
+                return _callingConventionSlots.GetOrAdd(key);
             }
 
             private NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode> _methodNameAndSignatures;
@@ -245,6 +292,46 @@ namespace ILCompiler.DependencyAnalysis
                 return _placedVertexSequence.GetOrAdd(new VertexSequenceKey(vertices));
             }
 
+            class UIntSequenceComparer : IEqualityComparer<List<uint>>
+            {
+                bool IEqualityComparer<List<uint>>.Equals(List<uint> x, List<uint> y)
+                {
+                    if (x.Count != y.Count)
+                        return false;
+
+                    for (int i = 0; i < x.Count; i++)
+                    {
+                        if (x[i] != y[i])
+                            return false;
+                    }
+                    return true;
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private static int _rotl(int value, int shift)
+                {
+                    // This is expected to be optimized into a single rotl instruction
+                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
+                }
+
+                int IEqualityComparer<List<uint>>.GetHashCode(List<uint> obj)
+                {
+                    int hashcode = 0x42284781;
+                    foreach (uint u in obj)
+                    {
+                        hashcode ^= (int)u;
+                        hashcode = _rotl(hashcode, 5);
+                    }
+
+                    return hashcode;
+                }
+            }
+            private NodeCache<List<uint>, NativeLayoutPlacedVertexSequenceOfUIntVertexNode> _placedUIntVertexSequence;
+            internal NativeLayoutPlacedVertexSequenceOfUIntVertexNode PlacedUIntVertexSequence(List<uint> uints)
+            {
+                return _placedUIntVertexSequence.GetOrAdd(uints);
+            }
+
             private NodeCache<MethodDesc, NativeLayoutMethodLdTokenVertexNode> _methodLdTokenSignatures;
             internal NativeLayoutMethodLdTokenVertexNode MethodLdTokenVertex(MethodDesc method)
             {
@@ -257,10 +344,51 @@ namespace ILCompiler.DependencyAnalysis
                 return _fieldLdTokenSignatures.GetOrAdd(field);
             }
 
-            private NodeCache<NativeLayoutSavedVertexNode, NativeLayoutSignatureNode> _nativeLayoutSignatureNodes;
-            internal NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature)
+            private struct NativeLayoutSignatureKey : IEquatable<NativeLayoutSignatureKey>
             {
-                return _nativeLayoutSignatureNodes.GetOrAdd(signature);
+                public NativeLayoutSignatureKey(NativeLayoutSavedVertexNode signatureVertex, Utf8String identityPrefix, TypeSystemEntity identity)
+                {
+                    SignatureVertex = signatureVertex;
+                    IdentityPrefix = identityPrefix;
+                    Identity = identity;
+                }
+
+                public NativeLayoutSavedVertexNode SignatureVertex { get; }
+                public Utf8String IdentityPrefix { get; }
+                public TypeSystemEntity Identity { get; }
+
+                public override bool Equals(object obj)
+                {
+                    if (!(obj is NativeLayoutSignatureKey))
+                        return false;
+
+                    return Equals((NativeLayoutSignatureKey)obj);
+                }
+
+                public override int GetHashCode()
+                {
+                    return SignatureVertex.GetHashCode();
+                }
+
+                public bool Equals(NativeLayoutSignatureKey other)
+                {
+                    if (SignatureVertex != other.SignatureVertex)
+                        return false;
+
+                    if (!IdentityPrefix.Equals(other.IdentityPrefix))
+                        return false;
+
+                    if (Identity != other.Identity)
+                        return false;
+
+                    return true;
+                }
+            }
+
+            private NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode> _nativeLayoutSignatureNodes;
+            internal NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature, Utf8String identityPrefix, TypeSystemEntity identity)
+            {
+                return _nativeLayoutSignatureNodes.GetOrAdd(new NativeLayoutSignatureKey(signature, identityPrefix, identity));
             }
 
             private NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries;
@@ -353,6 +481,8 @@ namespace ILCompiler.DependencyAnalysis
                 return _methodDictionary_GenericDictionarySlots.GetOrAdd(method);
             }
 
+            public readonly NativeLayoutNotSupportedDictionarySlotNode NotSupportedDictionarySlot = new NativeLayoutNotSupportedDictionarySlotNode();
+
             private struct MethodEntrypointSlotKey : IEquatable<MethodEntrypointSlotKey>
             {
                 public readonly bool Unboxing;
@@ -414,6 +544,42 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutMethodLdTokenGenericDictionarySlotNode MethodLdTokenDictionarySlot(MethodDesc method)
             {
                 return _methodLdToken_GenericDictionarySlots.GetOrAdd(method);
+            }
+
+            private NodeCache<FieldDesc, NativeLayoutFieldOffsetGenericDictionarySlotNode> _fieldOffset_GenericDictionaryslots;
+            public NativeLayoutFieldOffsetGenericDictionarySlotNode FieldOffsetDictionarySlot(FieldDesc field)
+            {
+                return _fieldOffset_GenericDictionaryslots.GetOrAdd(field);
+            }
+
+            private NodeCache<MethodDesc, NativeLayoutVTableOffsetGenericDictionarySlotNode> _vtableOffset_GenericDictionaryslots;
+            public NativeLayoutVTableOffsetGenericDictionarySlotNode VTableOffsetDictionarySlot(MethodDesc method)
+            {
+                return _vtableOffset_GenericDictionaryslots.GetOrAdd(method);
+            }
+
+            private NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode> _dictionarySignatures;
+            public NativeLayoutDictionarySignatureNode DictionarySignature(TypeSystemEntity owningMethodOrType)
+            {
+                return _dictionarySignatures.GetOrAdd(owningMethodOrType);
+            }
+
+            private NodeCache<int, NativeLayoutIntegerDictionarySlotNode> _integerSlots;
+            public NativeLayoutIntegerDictionarySlotNode IntegerSlot(int value)
+            {
+                return _integerSlots.GetOrAdd(value);
+            }
+
+            private NodeCache<int, NativeLayoutPointerToOtherSlotDictionarySlotNode> _otherSlotPointerSlots;
+            public NativeLayoutPointerToOtherSlotDictionarySlotNode PointerToOtherSlot(int otherSlotIndex)
+            {
+                return _otherSlotPointerSlots.GetOrAdd(otherSlotIndex);
+            }
+
+            private NodeCache<ConstrainedMethodUseKey, NativeLayoutConstrainedMethodDictionarySlotNode> _constrainedMethodUseSlots;
+            public NativeLayoutConstrainedMethodDictionarySlotNode ConstrainedMethodUse(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+            {
+                return _constrainedMethodUseSlots.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
             }
         }
 

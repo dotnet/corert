@@ -43,7 +43,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsMultiDimensionalArray
+        public sealed override bool IsVariableBoundArray
         {
             get
             {
@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                bool multiDim = this.IsMultiDimensionalArray;
+                bool multiDim = this.IsVariableBoundArray;
                 int rank = this.GetArrayRank();
 
                 RuntimeTypeInfo arrayType = this;
@@ -274,7 +274,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                if (this.IsMultiDimensionalArray)
+                if (this.IsVariableBoundArray)
                     return Array.Empty<QTypeDefRefOrSpec>();
                 else
                     return TypeDefInfoProjectionForArrays.TypeRefDefOrSpecsForDirectlyImplementedInterfaces;

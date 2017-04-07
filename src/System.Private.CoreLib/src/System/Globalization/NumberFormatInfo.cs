@@ -231,7 +231,7 @@ namespace System.Globalization
             // Fast case for a regular CultureInfo
             NumberFormatInfo info;
             CultureInfo cultureProvider = formatProvider as CultureInfo;
-            if (cultureProvider != null && !cultureProvider.m_isInherited)
+            if (cultureProvider != null && !cultureProvider._isInherited)
             {
                 info = cultureProvider.numInfo;
                 if (info != null)
@@ -441,7 +441,7 @@ namespace System.Globalization
             get
             {
                 System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
-                if (!culture.m_isInherited)
+                if (!culture._isInherited)
                 {
                     NumberFormatInfo info = culture.numInfo;
                     if (info != null)

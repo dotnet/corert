@@ -67,22 +67,7 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             DictionaryLayoutNode layout = GetDictionaryLayout(factory);
-
-            Instantiation typeInst = this.TypeInstantiation;
-            Instantiation methodInst = this.MethodInstantiation;
-
-            foreach (GenericLookupResult lookupResult in layout.Entries)
-            {
-#if DEBUG
-                int offsetBefore = builder.CountBytes;
-#endif
-
-                lookupResult.EmitDictionaryEntry(ref builder, factory, typeInst, methodInst, this);
-
-#if DEBUG
-                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
-#endif
-            }
+            layout.EmitDictionaryData(ref builder, factory, this);            
         }
 
         protected sealed override string GetName(NodeFactory factory)
@@ -91,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class TypeGenericDictionaryNode : GenericDictionaryNode
+    public sealed class TypeGenericDictionaryNode : GenericDictionaryNode
     {
         private TypeDesc _owningType;
 
@@ -105,6 +90,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningType.Context;
 
         public TypeDesc OwningType => _owningType;
+
+        public static string GetMangledName(NameMangler nameMangler, TypeDesc owningType)
+        {
+            return MangledNamePrefix + nameMangler.GetMangledTypeName(owningType);
+        }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
@@ -159,10 +149,10 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
-				
-		public MethodDesc OwningMethod => _owningMethod;
+                
+        public MethodDesc OwningMethod => _owningMethod;
 
-		public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
+        public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
         {
             return MangledNamePrefix + nameMangler.GetMangledMethodName(owningMethod);
         }

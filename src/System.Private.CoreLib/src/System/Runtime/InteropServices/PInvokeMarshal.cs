@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Diagnostics.Contracts;
+using System.Security;
 
 namespace System.Runtime.InteropServices
 {
@@ -53,6 +55,50 @@ namespace System.Runtime.InteropServices
         public static void FreeCoTaskMem(IntPtr ptr)
         {
             CoTaskMemFree(ptr);
+        }
+
+        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+            Contract.EndContractBlock();
+
+            return s.MarshalToString(globalAlloc: true, unicode: false);
+        }
+
+        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+            Contract.EndContractBlock();
+
+            return s.MarshalToString(globalAlloc: true, unicode: true); ;
+        }
+
+        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+            Contract.EndContractBlock();
+
+            return s.MarshalToString(globalAlloc: false, unicode: false);
+        }
+
+        public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException(nameof(s));
+            }
+            Contract.EndContractBlock();
+
+            return s.MarshalToString(globalAlloc: false, unicode: true);
         }
     }
 }

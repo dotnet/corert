@@ -117,6 +117,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
         }
 
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
         public abstract override int MetadataToken 
         { 
             get; 

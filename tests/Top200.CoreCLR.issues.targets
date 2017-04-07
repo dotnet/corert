@@ -4,7 +4,7 @@
     broad coverage and an expected reasonable run time (< 30 minutes)
 
 -->
-<Project DefaultTargets = "GetListOfTestCmds"
+<Project DefaultTargets = "GetListOfTestCmds" 
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
     <IncludeList Include="$(XunitTestBinBase)\GC\Features\PartialCompaction\eco1\eco1.cmd" />
@@ -33,10 +33,10 @@
     <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyCharArray\CopyCharArray.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyDoubleArray\CopyDoubleArray.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt16Array\CopyInt16Array.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt32Array\CopyInt32Array.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt64Array\CopyInt64Array.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyIntPtrArray\CopyIntPtrArray.cmd" />
-    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopySingleArray\CopySingleArray.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\SizeConst\SizeConstTest\SizeConstTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\UIntPtr\PInvokeUIntPtrTest\PInvokeUIntPtrTest.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\addref\addref.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\And1\And1.cmd" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\AndRef\AndRef.cmd" />

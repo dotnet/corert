@@ -147,18 +147,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (_id == ReadyToRunHelperId.VirtualCall)
+            if (_id == ReadyToRunHelperId.VirtualCall || _id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
-                dependencyList.Add(factory.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
-                return dependencyList;
-            }
-            else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
-            {
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
-                return dependencyList;
+                var targetMethod = (MethodDesc)_target;
+#if !SUPPORT_JIT
+                if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(targetMethod.OwningType))
+#endif
+                {
+                    DependencyList dependencyList = new DependencyList();
+                    dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                    return dependencyList;
+                }
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
@@ -170,9 +169,8 @@ namespace ILCompiler.DependencyAnalysis
                     return dependencyList;
                 }
             }
-            {
-                return null;
-            }
+
+            return null;
         }
     }
 }

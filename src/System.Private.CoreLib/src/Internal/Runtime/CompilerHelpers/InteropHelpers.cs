@@ -36,13 +36,38 @@ namespace Internal.Runtime.CompilerHelpers
                 return buffer;
             }
         }
+        internal static unsafe void  StringToAnsiFixedArray(String str, byte *buffer, int length)
+        {
+            if (buffer == null)
+                return;
+
+            Debug.Assert(str.Length >= length);
+
+            var encoding = Encoding.UTF8;
+            fixed (char* pStr = str)
+            {
+                int bufferLength = encoding.GetByteCount(pStr, length);
+                encoding.GetBytes(pStr, length, buffer, bufferLength);
+                *(buffer + bufferLength) = 0;
+            }
+        }
 
         public static unsafe string AnsiStringToString(byte* buffer)
         {
             if (buffer == null)
-                return null;
+                return String.Empty;
 
             int length = strlen(buffer);
+
+            return AnsiStringToStringFixedArray(buffer, length);
+            
+        }
+
+        public static unsafe string AnsiStringToStringFixedArray(byte* buffer, int length)
+        {
+            if (buffer == null)
+                return String.Empty;
+
             string result = String.Empty;
 
             if (length > 0)
@@ -51,11 +76,70 @@ namespace Internal.Runtime.CompilerHelpers
 
                 fixed (char* pTemp = result)
                 {
+                    int charCount = Encoding.UTF8.GetCharCount(buffer, length);
                     // TODO: support ansi semantics in windows
-                    Encoding.UTF8.GetChars(buffer, length, pTemp, length);
+                    Encoding.UTF8.GetChars(buffer, charCount, pTemp, length);
                 }
             }
             return result;
+        }
+
+        internal static unsafe void StringToUnicodeFixedArray(String str, UInt16* buffer, int length)
+        {
+            if (buffer == null)
+                return;
+
+            Debug.Assert(str.Length >= length);
+
+            fixed (char* pStr = str)
+            {
+                int size = length * sizeof(char);
+                Buffer.MemoryCopy(pStr, buffer, size, size);
+                *(buffer + length) = 0;
+            }
+        }
+
+        internal static unsafe string UnicodeToStringFixedArray(UInt16* buffer, int length)
+        {
+            if (buffer == null)
+                return String.Empty;
+
+            string result = String.Empty;
+
+            if (length > 0)
+            {
+                result = new String(' ', length);
+
+                fixed (char* pTemp = result)
+                {
+                    int size = length * sizeof(char);
+                    Buffer.MemoryCopy(buffer, pTemp, size, size);
+                }
+            }
+            return result;
+        }
+
+        internal static unsafe char* StringToUnicodeBuffer(String str)
+        {
+            if (str == null)
+                return null;
+
+            int stringLength = str.Length;
+
+            char* buffer = (char*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(sizeof(char) * (stringLength+1))).ToPointer();
+
+            fixed (char* pStr = str)
+            {
+                int size = stringLength * sizeof(char);
+                Buffer.MemoryCopy(pStr, buffer, size, size);
+                *(buffer + stringLength) = '\0';
+            }
+            return buffer;
+        }
+
+        public static unsafe string UnicodeBufferToString(char* buffer)
+        {
+            return new String(buffer);
         }
 
         internal static char[] GetEmptyStringBuilderBuffer(StringBuilder sb)

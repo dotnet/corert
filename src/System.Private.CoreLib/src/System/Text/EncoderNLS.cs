@@ -135,7 +135,7 @@ namespace System.Text
                                 pBytes + byteIndex, byteCount, flush);
         }
 
-        internal unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+        public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
             if (chars == null || bytes == null)
@@ -200,7 +200,7 @@ namespace System.Text
 
         // This is the version that uses pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting bytes
-        private unsafe void Convert(char* chars, int charCount,
+        public override unsafe void Convert(char* chars, int charCount,
                                               byte* bytes, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {

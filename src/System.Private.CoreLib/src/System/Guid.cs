@@ -1109,7 +1109,7 @@ namespace System
             return 1;
         }
 
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
             {
@@ -1334,7 +1334,7 @@ namespace System
 
         // IFormattable interface
         // We currently ignore provider
-        private String ToString(String format, IFormatProvider provider)
+        public String ToString(String format, IFormatProvider provider)
         {
             if (format == null || format.Length == 0)
                 format = "D";
@@ -1452,11 +1452,6 @@ namespace System
                 }
             }
             return guidString;
-        }
-
-        String IFormattable.ToString(String format, IFormatProvider provider)
-        {
-            return this.ToString(format, provider);
         }
     }
 }

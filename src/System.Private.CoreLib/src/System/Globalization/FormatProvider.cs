@@ -17,49 +17,17 @@ namespace System.Globalization
         {
             return CultureInfo.CurrentCulture.TextInfo.ToLower(s);
         }
-        public static char ToLower(char c)
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToLower(c);
-        }
         public static string ToLowerInvariant(string s)
         {
             return CultureInfo.InvariantCulture.TextInfo.ToLower(s);
-        }
-        public static char ToLowerInvariant(char c)
-        {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(c);
         }
         public static string ToUpper(string s)
         {
             return CultureInfo.CurrentCulture.TextInfo.ToUpper(s);
         }
-        public static char ToUpper(char c)
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToUpper(c);
-        }
         public static string ToUpperInvariant(string s)
         {
             return CultureInfo.InvariantCulture.TextInfo.ToUpper(s);
-        }
-        public static char ToUpperInvariant(char c)
-        {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(c);
-        }
-        public static UnicodeCategory GetUnicodeCategory(char c)
-        {
-            return CharUnicodeInfo.GetUnicodeCategory(c);
-        }
-        public static UnicodeCategory GetUnicodeCategory(string s, int index)
-        {
-            return CharUnicodeInfo.GetUnicodeCategory(s, index);
-        }
-        public static double GetNumericValue(char c)
-        {
-            return CharUnicodeInfo.GetNumericValue(c);
-        }
-        public static double GetNumericValue(string s, int index)
-        {
-            return CharUnicodeInfo.GetNumericValue(s, index);
         }
         #endregion
 
@@ -83,10 +51,6 @@ namespace System.Globalization
         public static int CompareOrdinalIgnoreCase(String string1, int offset1, int length1, String string2, int offset2, int length2)
         {
             return CompareInfo.CompareOrdinalIgnoreCase(string1, offset1, length1, string2, offset2, length2);
-        }
-        public static StringComparer GetCultureAwareStringComparer(bool ignoreCase)
-        {
-            return new CultureAwareComparer(CultureInfo.CurrentCulture, ignoreCase);
         }
         public static int IndexOf(String source, String value, int startIndex, int count)
         {
@@ -140,14 +104,6 @@ namespace System.Globalization
 
         #region Formatting
         // provider if null means we use NumberFormatInfo.CurrenctInfo otherwise we use NumberFormatInfo.GetInstance(provider)
-        public static String FormatDateTime(DateTime value, String format, IFormatProvider provider)
-        {
-            return DateTimeFormat.Format(value, format, provider);
-        }
-        public static String FormatDateTime(DateTime value, String format, IFormatProvider provider, TimeSpan offSet)
-        {
-            return DateTimeFormat.Format(value, format, provider, offSet);
-        }
         public static String FormatDecimal(Decimal value, String format, IFormatProvider provider)
         {
             return FormatProvider.Number.FormatDecimal(value, format, provider);
@@ -180,40 +136,9 @@ namespace System.Globalization
         {
             return FormatProvider.Number.FormatUInt64(value, format, provider);
         }
-        public static string[] GetAllDateTimes(DateTime value, char format, IFormatProvider provider)
-        {
-            if (format == (char)0)
-                return FormatProvider.DateTimeFormat.GetAllDateTimes(value, provider);
-            else
-                return FormatProvider.DateTimeFormat.GetAllDateTimes(value, format, provider);
-        }
         #endregion
 
         #region Parsing
-        public static DateTime ParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return FormatProvider.DateTimeParse.Parse(value, provider, styles);
-        }
-        public static DateTime ParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.Parse(value, provider, styles, out offset);
-        }
-        public static DateTime ParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return FormatProvider.DateTimeParse.ParseExact(value, format, provider, styles);
-        }
-        public static DateTime ParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.ParseExact(value, format, provider, styles, out offset);
-        }
-        public static DateTime ParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles)
-        {
-            return FormatProvider.DateTimeParse.ParseExactMultiple(value, formats, provider, styles);
-        }
-        public static DateTime ParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.ParseExactMultiple(value, formats, provider, styles, out offset);
-        }
         public static Decimal ParseDecimal(String value, NumberStyles options, IFormatProvider provider)
         {
             return FormatProvider.Number.ParseDecimal(value, options, provider);
@@ -253,30 +178,6 @@ namespace System.Globalization
         public static UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
         {
             return FormatProvider.Number.ParseUInt64(value, options, provider);
-        }
-        public static Boolean TryParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return FormatProvider.DateTimeParse.TryParse(value, provider, styles, out result);
-        }
-        public static Boolean TryParseDateTime(String value, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.TryParse(value, provider, styles, out result, out offset);
-        }
-        public static Boolean TryParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return FormatProvider.DateTimeParse.TryParseExact(value, format, provider, styles, out result);
-        }
-        public static Boolean TryParseDateTimeExact(String value, String format, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.TryParseExact(value, format, provider, styles, out result, out offset);
-        }
-        public static Boolean TryParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out DateTime result)
-        {
-            return FormatProvider.DateTimeParse.TryParseExactMultiple(value, formats, provider, styles, out result);
-        }
-        public static Boolean TryParseDateTimeExactMultiple(String value, String[] formats, IFormatProvider provider, DateTimeStyles styles, out DateTime result, out TimeSpan offset)
-        {
-            return FormatProvider.DateTimeParse.TryParseExactMultiple(value, formats, provider, styles, out result, out offset);
         }
         public static Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
         {

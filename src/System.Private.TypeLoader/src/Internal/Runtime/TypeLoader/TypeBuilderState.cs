@@ -382,9 +382,10 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
                 }
-                else if (TypeBeingBuilt.IsMdArray)
+                else if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
                 {
-                    // MDArray types have the same vtable as the System.Array type they "derive" from.
+                    // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
+                    // They do not implement the generic interfaces that make this interesting for normal arrays.
                     unsafe
                     {
                         return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
@@ -512,6 +513,7 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
+        public IntPtr GcStaticEEType;
         public IntPtr ThreadStaticDesc;
         public bool AllocatedStaticGCDesc;
         public bool AllocatedThreadStaticGCDesc;
@@ -685,6 +687,10 @@ namespace Internal.Runtime.TypeLoader
                                 ThreadStaticDesc = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                                 break;
 
+                            case BagElementKind.GcStaticEEType:
+                                GcStaticEEType = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
+                                break;
+
                             default:
                                 typeInfoParser.SkipInteger();
                                 break;
@@ -850,7 +856,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 ArrayType typeAsArrayType = TypeBeingBuilt as ArrayType;
                 if (typeAsArrayType != null)
-                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.IsPointer;
+                    return !typeAsArrayType.ParameterType.IsValueType && !typeAsArrayType.ParameterType.IsPointer;
                 else
                     return false;
             }

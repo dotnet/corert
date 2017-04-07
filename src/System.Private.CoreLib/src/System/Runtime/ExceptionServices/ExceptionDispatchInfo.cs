@@ -60,5 +60,9 @@ namespace System.Runtime.ExceptionServices
             _exception.RestoreEdiState(_ediCaptureState);
             throw _exception;
         }
+
+        // Throws the source exception, maintaining the original bucketing details and augmenting
+        // rather than replacing the original stack trace.
+        public static void Throw(Exception source) => Capture(source).Throw();
     }
 }

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Text;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -23,7 +26,13 @@ namespace System.Text
     {
         internal DecoderFallback m_fallback = null;
 
+        [NonSerialized]
         internal DecoderFallbackBuffer m_fallbackBuffer = null;
+
+        internal void SerializeDecoder(SerializationInfo info)
+        {
+            info.AddValue("m_fallback", this.m_fallback);
+        }
 
         protected Decoder()
         {
@@ -86,11 +95,11 @@ namespace System.Text
         //
         // If the caller doesn't want to try again after GetChars() throws an error, then they need to call Reset().
         //
-        // Virtual implimentation has to call GetChars with flush and a big enough buffer to clear a 0 byte string
+        // Virtual implementation has to call GetChars with flush and a big enough buffer to clear a 0 byte string
         // We avoid GetMaxCharCount() because a) we can't call the base encoder and b) it might be really big.
         public virtual void Reset()
         {
-            byte[] byteTemp = { };
+            byte[] byteTemp = Array.Empty<byte>();
             char[] charTemp = new char[GetCharCount(byteTemp, 0, 0, true)];
             GetChars(byteTemp, 0, 0, charTemp, 0, true);
             if (m_fallbackBuffer != null)
@@ -112,7 +121,8 @@ namespace System.Text
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
-        internal virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
+        [CLSCompliant(false)]
+        public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate input parameters
             if (bytes == null)
@@ -159,7 +169,7 @@ namespace System.Text
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -168,13 +178,14 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetChars() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the char[] to our char* output buffer.  If the result count was wrong, we
         // could easily overflow our output buffer.  Therefore we do an extra test
         // when we copy the buffer so that we don't overflow charCount either.
-        internal virtual unsafe int GetChars(byte* bytes, int byteCount,
+        [CLSCompliant(false)]
+        public virtual unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
             // Validate input parameters
@@ -200,19 +211,18 @@ namespace System.Text
             // Do the work
             int result = GetChars(arrByte, 0, byteCount, arrChar, 0, flush);
 
-            // The only way this could fail is a bug in GetChars
             Debug.Assert(result <= charCount, "Returned more chars than we have space for");
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than charCount chars no matter the value
             // of result
             if (result < charCount)
                 charCount = result;
 
             // We check both result and charCount so that we don't accidentally overrun
-            // our pointer buffer just because of any GetChars bug.
+            // our pointer buffer just because of an issue in GetChars
             for (index = 0; index < charCount; index++)
                 chars[index] = arrChar[index];
 
@@ -266,6 +276,52 @@ namespace System.Text
                 if (GetCharCount(bytes, byteIndex, bytesUsed, flush) <= charCount)
                 {
                     charsUsed = GetChars(bytes, byteIndex, bytesUsed, chars, charIndex, flush);
+                    completed = (bytesUsed == byteCount &&
+                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                    return;
+                }
+
+                // Try again with 1/2 the count, won't flush then 'cause won't read it all
+                flush = false;
+                bytesUsed /= 2;
+            }
+
+            // Oops, we didn't have anything, we'll have to throw an overflow
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
+        }
+
+        // This is the version that uses *.
+        // We're done processing this buffer only if completed returns true.
+        //
+        // Might consider checking Max...Count to avoid the extra counting step.
+        //
+        // Note that if all of the input bytes are not consumed, then we'll do a /2, which means
+        // that its likely that we didn't consume as many bytes as we could have.  For some
+        // applications this could be slow.  (Like trying to exactly fill an output buffer from a bigger stream)
+        [CLSCompliant(false)]
+        public virtual unsafe void Convert(byte* bytes, int byteCount,
+                                             char* chars, int charCount, bool flush,
+                                             out int bytesUsed, out int charsUsed, out bool completed)
+        {
+            // Validate input parameters
+            if (chars == null || bytes == null)
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
+                    SR.ArgumentNull_Array);
+
+            if (byteCount < 0 || charCount < 0)
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            // Get ready to do it
+            bytesUsed = byteCount;
+
+            // Its easy to do if it won't overrun our buffer.
+            while (bytesUsed > 0)
+            {
+                if (GetCharCount(bytes, bytesUsed, flush) <= charCount)
+                {
+                    charsUsed = GetChars(bytes, bytesUsed, chars, charCount, flush);
                     completed = (bytesUsed == byteCount &&
                         (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
                     return;

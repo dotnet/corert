@@ -441,6 +441,28 @@ class ThreadTest
         ExpectPassed(nameof(TestMaxStackSize), 0);
     }
 
+    static int s_startedThreadCount = 0;
+    private static void TestStartShutdown()
+    {
+        Thread[] threads = new Thread[2048];
+
+        // Creating a large number of threads
+        for (int i = 0; i < threads.Length; i++)
+        {
+            threads[i] = new Thread(() => { Interlocked.Increment(ref s_startedThreadCount); });
+            threads[i].Start();
+        }
+
+        // Wait for all threads to shutdown;
+        for (int i = 0; i < threads.Length; i++)
+        {
+            threads[i].Join();
+        }
+
+        Expect(s_startedThreadCount == threads.Length,
+            String.Format("Not all threads completed. Expected: {0}, Actual: {1}", threads.Length, s_startedThreadCount));
+    }
+
     public static int Run()
     {
         TestStartMethod();
@@ -454,6 +476,7 @@ class ThreadTest
         TestThreadStateProperty();
 
         TestMaxStackSize();
+        TestStartShutdown();
 
         return (s_failed == 0) ? Program.Pass : Program.Fail;
     }

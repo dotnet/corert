@@ -51,10 +51,18 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
                 if (!IsEligibleToHaveATemplate(type))
                     continue;
+
+                if (factory.Target.Abi == TargetAbi.ProjectN)
+                {
+                    // If the type does not have fully constructed type, don't emit it.
+                    // TODO: Remove the workaround once we stop using the STS dependency analysis.
+                    if (!factory.ConstructedTypeSymbol(type).Marked)
+                        continue;
+                }
 
                 // Type's native layout info
                 DefType defType = GetActualTemplateTypeForType(factory, type);
@@ -99,6 +107,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!IsEligibleToHaveATemplate(type))
                 return null;
+
+            if (factory.Target.Abi == TargetAbi.ProjectN)
+            {
+                // If the type does not have fully constructed type, don't track its dependencies.
+                // TODO: Remove the workaround once we stop using the STS dependency analysis.
+                if (!factory.ConstructedTypeSymbol(type).Marked)
+                    return null;
+            }
 
             DependencyList dependencies = new DependencyList();
 

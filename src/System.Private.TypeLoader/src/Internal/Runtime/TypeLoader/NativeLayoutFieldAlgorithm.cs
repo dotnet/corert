@@ -37,6 +37,23 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public unsafe override bool ComputeIsByRefLike(DefType type)
+        {
+            if (type.IsTemplateCanonical())
+            {
+                return type.ComputeTemplate().RuntimeTypeHandle.ToEETypePtr()->IsByRefLike;
+            }
+            else
+            {
+                if (type.RetrieveRuntimeTypeHandleIfPossible())
+                {
+                    return type.RuntimeTypeHandle.ToEETypePtr()->IsByRefLike;
+                }
+
+                throw new NotImplementedException();
+            }
+        }
+
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             if (!type.IsTemplateUniversal() && (layoutKind == InstanceLayoutKind.TypeOnly))

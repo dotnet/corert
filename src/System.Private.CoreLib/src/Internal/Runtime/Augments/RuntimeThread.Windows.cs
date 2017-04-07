@@ -123,23 +123,15 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        /// <summary>
-        /// Returns true if the thread is started or being started in StartInternal.
-        /// </summary>
-        private bool HasStarted()
-        {
-            return !_osHandle.IsInvalid;
-        }
-
         private ThreadPriority GetPriorityLive()
         {
-            Debug.Assert(HasStarted());
+            Debug.Assert(!_osHandle.IsInvalid);
             return MapFromOSPriority(Interop.mincore.GetThreadPriority(_osHandle));
         }
 
         private bool SetPriorityLive(ThreadPriority priority)
         {
-            Debug.Assert(HasStarted());
+            Debug.Assert(!_osHandle.IsInvalid);
             return Interop.mincore.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
         }
 
@@ -228,7 +220,7 @@ namespace Internal.Runtime.Augments
 
             uint threadId;
             _osHandle = Interop.mincore.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(StartThread), (IntPtr)thisThreadHandle,
+                AddrofIntrinsics.AddrOf<Interop.mincore.ThreadProc>(ThreadEntryPoint), (IntPtr)thisThreadHandle,
                 (uint)(Interop.Constants.CreateSuspended | Interop.Constants.StackSizeParamIsAReservation),
                 out threadId);
 
@@ -242,6 +234,16 @@ namespace Internal.Runtime.Augments
 
             Interop.mincore.ResumeThread(_osHandle);
             return true;
+        }
+
+        /// <summary>
+        /// This an entry point for managed threads created by applicatoin
+        /// </summary>
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static uint ThreadEntryPoint(IntPtr parameter)
+        {
+            StartThread(parameter);
+            return 0;
         }
 
         public ApartmentState GetApartmentState() { throw null; }

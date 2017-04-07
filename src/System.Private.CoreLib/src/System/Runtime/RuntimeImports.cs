@@ -173,7 +173,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
         private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
 
-        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
         {
             IntPtr h = RhpHandleAlloc(value, type);
             if (h == IntPtr.Zero)
@@ -210,7 +210,7 @@ namespace System.Runtime
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
-        internal static extern void RhHandleFree(IntPtr handle);
+        public static extern void RhHandleFree(IntPtr handle);
 
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -324,6 +324,9 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
+
+        [DllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void RhFlushProcessWriteBuffers();
 
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default

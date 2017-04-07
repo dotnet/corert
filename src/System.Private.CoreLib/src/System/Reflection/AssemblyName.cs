@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  AssemblyName
-**
-==============================================================*/
-
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Configuration.Assemblies;
@@ -138,7 +131,7 @@ namespace System.Reflection
         public AssemblyVersionCompatibility VersionCompatibility { get; set; }
         public StrongNameKeyPair KeyPair { get; set; }
 
-        public String EscapedCodeBase
+        public string EscapedCodeBase
         {
             get
             {
@@ -231,10 +224,10 @@ namespace System.Reflection
             _siInfo = null;
         }
 
-        public static AssemblyName GetAssemblyName(String assemblyFile) { throw new NotImplementedException(); }
+        public static AssemblyName GetAssemblyName(string assemblyFile) { throw new NotImplementedException(); }
         public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); }
 
-        internal static String EscapeCodeBase(String codebase) { throw new PlatformNotSupportedException(); }
+        internal static string EscapeCodeBase(string codebase) { throw new PlatformNotSupportedException(); }
 
         private AssemblyNameFlags _flags;
         private byte[] _publicKey;

@@ -64,6 +64,14 @@ namespace ILCompiler
         {
             return false;
         }
+
+        public override bool CanHaveReferenceThroughImportTable
+        {
+            get
+            {
+                return false;
+            }
+        } 
     }
 
     /// <summary>
@@ -76,9 +84,14 @@ namespace ILCompiler
         {
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ShouldProduceFullVTable(TypeDesc type)
         {
             return ConstructedEETypeNode.CreationAllowed(type);
+        }
+
+        public override bool ShouldPromoteToFullType(TypeDesc type)
+        {
+            return ShouldProduceFullVTable(type);
         }
     }
 }

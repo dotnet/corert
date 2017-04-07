@@ -106,6 +106,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return newObject != null ? newObject : ctorAllocatedObject;
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimePlainConstructorInfo<TRuntimeMethodCommon>.GetRuntimePlainConstructorInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod);
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get
@@ -153,7 +161,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
-        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(Array.Empty<Type>());
+        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {

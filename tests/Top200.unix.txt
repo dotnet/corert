@@ -193,3 +193,7 @@ JIT/Directed/FaultHandlers/Nesting/Nesting/Nesting.sh
 Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorThrowStaticField/CctorThrowStaticField.sh
 JIT/jit64/localloc/eh/eh01_dynamic/eh01_dynamic.sh
 JIT/Regression/JitBlue/DevDiv_142976/DevDiv_142976/DevDiv_142976.sh
+Interop/MarshalAPI/Copy/CopyInt16Array/CopyInt16Array.sh
+Interop/MarshalAPI/ReadWrite/ReadWriteInt32/ReadWriteInt32.sh
+Interop/MarshalAPI/FunctionPointer/FunctionPtrTest/FunctionPtrTest.sh
+Interop/MarshalAPI/UnsafeAddrOfPinnedArrayElement/UnsafeAddrOfPinnedArrayElement/UnsafeAddrOfPinnedArrayElement.sh

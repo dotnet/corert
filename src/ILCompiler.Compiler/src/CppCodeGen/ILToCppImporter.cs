@@ -968,7 +968,8 @@ namespace Internal.IL
                     else
                         callViaSlot = true;
 
-                    _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
+                    if (!_nodeFactory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                        _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
                 }
             }
 
