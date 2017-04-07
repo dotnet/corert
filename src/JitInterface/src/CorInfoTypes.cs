@@ -1390,6 +1390,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_NEWOBJ
         CORINFO_TOKENKIND_NewObj = 0x200 | CORINFO_TOKENKIND_Method,
+
+        // token comes from CEE_LDVIRTFTN
+        CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

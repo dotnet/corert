@@ -105,6 +105,34 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
+
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
+                        if (createInfo.PerformsVirtualDispatch)
+                        {
+                            return new[] {
+                                new DependencyListEntry(
+                                    factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                    "Dictionary dependency"),
+                                new DependencyListEntry(
+                                    _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                    "Dictionary dependency") };
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    {
+                        MethodDesc target = (MethodDesc)_target;
+                        return new[] {
+                            new DependencyListEntry(
+                                factory.VirtualMethodUse(target.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                "Dictionary dependency"),
+                            new DependencyListEntry(
+                                _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                "Dictionary dependency") };
+                    }
             }
 
             // All other generic lookups just depend on the thing they point to

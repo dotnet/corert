@@ -1445,6 +1445,7 @@ namespace Internal.JitInterface
                 targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
             }
 
+            bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
             DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
 
             if (delegateInfo.NeedsRuntimeLookup)

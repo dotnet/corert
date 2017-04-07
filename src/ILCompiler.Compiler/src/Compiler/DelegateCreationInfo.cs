@@ -51,16 +51,24 @@ namespace ILCompiler
 
         public bool TargetNeedsVTableLookup => _targetKind == TargetKind.VTableLookup;
 
+        public bool PerformsVirtualDispatch
+        {
+            get
+            {
+                return _targetKind == TargetKind.VTableLookup || _targetKind == TargetKind.InterfaceDispatch;
+            }
+        }
+
         public bool NeedsRuntimeLookup
         {
             get
             {
                 switch (_targetKind)
                 {
-                    case TargetKind.Direct:
                     case TargetKind.VTableLookup:
                         return false;
 
+                    case TargetKind.Direct:
                     case TargetKind.FatPointer:
                     case TargetKind.InterfaceDispatch:
                         return TargetMethod.IsRuntimeDeterminedExactMethod;
@@ -78,7 +86,7 @@ namespace ILCompiler
         public ISymbolNode GetTargetNode(NodeFactory factory)
         {
             Debug.Assert(!NeedsRuntimeLookup);
-            return GetTargetNode(factory, TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return GetTargetNode(factory, TargetMethod);
         }
 
         /// <summary>
@@ -119,7 +127,10 @@ namespace ILCompiler
             switch (_targetKind)
             {
                 case TargetKind.Direct:
-                    return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                    if (exactTargetMethod != canonTargetMethod)
+                        return factory.ShadowConcreteMethod(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                    else
+                        return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.FatPointer:
                     if (exactTargetMethod != canonTargetMethod)
@@ -264,10 +275,16 @@ namespace ILCompiler
                             initializeMethodName = "InitializeClosedInstanceToInterface";
                         }
                         else
+                        {
                             kind = TargetKind.VTableLookup;
+                            targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        }
                     }
                     else
+                    {
                         kind = TargetKind.Direct;
+                        targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    }
                 }
 
                 return new DelegateCreationInfo(
