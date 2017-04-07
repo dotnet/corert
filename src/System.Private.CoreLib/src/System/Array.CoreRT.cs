@@ -872,18 +872,6 @@ namespace System
             }
         }
 
-        // CopyTo copies a collection into an Array, starting at a particular
-        // index into the array.
-        // 
-        // This method is to support the ICollection interface, and calls
-        // Array.Copy internally.  If you aren't using ICollection explicitly,
-        // call Array.Copy to avoid an extra indirection.
-        internal void CopyTo<T>(T[] thatArray, int index)
-        {
-            T[] thisArray = (T[])this;
-            Array.Copy(thisArray, 0, thatArray, index, Length);
-        }
-
         public static void Clear(Array array, int index, int length)
         {
             if (!RuntimeImports.TryArrayClear(array, index, length))
