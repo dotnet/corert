@@ -39,6 +39,13 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
 }
 
+inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return *(Object **)handle == NULL;
+}
+
 #ifndef DACCESS_COMPILE
 
 // Handle creation convenience functions
