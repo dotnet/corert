@@ -944,7 +944,7 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
 
 void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 {
-    ::DestroyTypedHandle((OBJECTHANDLE)handle);
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
 }
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
