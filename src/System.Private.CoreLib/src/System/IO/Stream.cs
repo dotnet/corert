@@ -660,7 +660,7 @@ namespace System.IO
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
                 //bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
 
                 //lock (_stream)
@@ -712,7 +712,7 @@ namespace System.IO
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, Object state)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
                 //bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();
 
                 //lock (_stream)
