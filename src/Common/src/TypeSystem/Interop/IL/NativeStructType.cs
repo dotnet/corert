@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
-
 using System;
 using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
 {
-    public class NativeStructType : MetadataType, IPrefixMangledType
+    public partial class NativeStructType : MetadataType
     {
         // The managed struct that this type will imitate
         public MetadataType ManagedStructType
@@ -126,10 +124,6 @@ namespace Internal.TypeSystem.Interop
                 return ManagedStructType.Context;
             }
         }
-
-        TypeDesc IPrefixMangledType.BaseType => ManagedStructType;
-
-        string IPrefixMangledType.Prefix => "NativeStructType";
 
         private NativeStructField[] _fields;
         private InteropStateManager _interopStateManager;

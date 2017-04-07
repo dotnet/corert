@@ -383,6 +383,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
     </Compile>
+    <Compile Include="TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
     </Compile>
