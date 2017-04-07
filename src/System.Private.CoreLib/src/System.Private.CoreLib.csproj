@@ -444,6 +444,7 @@
     <Compile Include="System\Text\Encoding.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingForwarder.cs" />
+    <Compile Include="System\Text\EncodingInfo.cs" />
     <Compile Include="System\Text\EncodingNLS.cs" />
     <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
