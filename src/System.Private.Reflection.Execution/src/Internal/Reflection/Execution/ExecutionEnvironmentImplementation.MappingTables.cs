@@ -226,11 +226,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
         {
-            if (RuntimeAugments.IsUnmanagedPointerType(elementTypeHandle))
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PointerArray);
-            }
-
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
                 throw new NotSupportedException(SR.NotSupported_OpenType);
@@ -267,11 +262,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            if (RuntimeAugments.IsUnmanagedPointerType(elementTypeHandle))
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_PointerArray);
-            }
-
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
                 throw new NotSupportedException(SR.NotSupported_OpenType);
