@@ -4,7 +4,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    public partial class NativeStructType : MetadataType, IPrefixMangledType
+    partial class NativeStructType : IPrefixMangledType
     {
         TypeDesc IPrefixMangledType.BaseType => ManagedStructType;
 
