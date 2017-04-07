@@ -224,8 +224,8 @@ namespace System.Reflection
             _siInfo = null;
         }
 
-        public static AssemblyName GetAssemblyName(string assemblyFile) { throw new NotImplementedException(); }
-        public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); }
+        public static AssemblyName GetAssemblyName(string assemblyFile) { throw new NotImplementedException(); } // TODO: https://github.com/dotnet/corert/issues/3253
+        public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition) { throw new NotImplementedException(); } // TODO: https://github.com/dotnet/corert/issues/1861
 
         internal static string EscapeCodeBase(string codebase) { throw new PlatformNotSupportedException(); }
 

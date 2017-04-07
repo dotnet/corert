@@ -14,7 +14,7 @@ namespace System.Reflection
         public static Assembly GetEntryAssembly() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
 
         [System.Runtime.CompilerServices.Intrinsic]
-        public static Assembly GetExecutingAssembly() { throw new NotImplementedException(); }
+        public static Assembly GetExecutingAssembly() { throw NotImplemented.ByDesign; } //Implemented by toolchain. 
 
         public static Assembly GetCallingAssembly() { throw new PlatformNotSupportedException(); }
 
