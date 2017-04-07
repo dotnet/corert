@@ -39,6 +39,42 @@ namespace System.Diagnostics
         // _isDebuggerAttached: Do not remove: This field is known to the debugger and modified directly by the debugger. 
         private static bool _isDebuggerAttached;
 #pragma warning restore 649 
+
+        /// <summary>
+        /// Constants representing the importance level of messages to be logged.
+        ///
+        /// An attached debugger can enable or disable which messages will
+        /// actually be reported to the user through the COM+ debugger
+        /// services API.  This info is communicated to the runtime so only
+        /// desired events are actually reported to the debugger.
+        /// Constant representing the default category
+        /// </summary>
+        public static readonly String DefaultCategory = null;
+
+        /// <summary>
+        /// Posts a message for the attached debugger.  If there is no
+        /// debugger attached, has no effect.  The debugger may or may not
+        /// report the message depending on its settings.
+        /// </summary>
+        public static void Log(int level, String category, String message)
+        {
+            if (IsLogging())
+            {
+                throw new NotImplementedException(); // TODO: CoreRT issue# 3235: NS2.0 - implement Debugger.Log, IsLogging
+            }
+        }
+
+        /// <summary>
+        /// Checks to see if an attached debugger has logging enabled
+        /// </summary>
+        public static bool IsLogging()
+        {
+            if (string.Empty.Length != 0)
+            {
+                throw new NotImplementedException(); // TODO: CoreRT issue# 3235: NS2.0 - implement Debugger.Log, IsLogging
+            }
+            return false;
+        }
     }
 }
 
