@@ -162,7 +162,7 @@ namespace System.Runtime
         {
             // Find the classlib function that will fail fast. This is a RuntimeExport function from the 
             // classlib module, and is therefore managed-callable.
-            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress,
+            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress,
                                                                            ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
@@ -214,7 +214,7 @@ namespace System.Runtime
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
             IntPtr pFailFastFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress, ClassLibFunctionId.FailFast);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress, ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
             {
@@ -253,7 +253,7 @@ namespace System.Runtime
         private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr IP,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
         {
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(IP,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(IP,
                 ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
@@ -284,7 +284,7 @@ namespace System.Runtime
             // Find the classlib function that will give us the exception object we want to throw. This
             // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
             IntPtr pGetRuntimeExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunction(address, ClassLibFunctionId.GetRuntimeException);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
 
             // Return the exception object we get from the classlib.
             Exception e = null;
@@ -304,6 +304,42 @@ namespace System.Runtime
                     RhFailFastReason.ClassLibDidNotTranslateExceptionID,
                     null,
                     address);
+            }
+
+            return e;
+        }
+
+        // Given an ExceptionID and an EEtype address, get an exception object of a type that the module containing 
+        // the given address will understand. This finds the classlib-defined GetRuntimeException function and asks 
+        // it for the exception object.
+        internal static Exception GetClasslibExceptionFromEEType(ExceptionIDs id, IntPtr pEEType)
+        {
+            // Find the classlib function that will give us the exception object we want to throw. This
+            // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
+            IntPtr pGetRuntimeExceptionFunction = IntPtr.Zero;
+            if (pEEType != IntPtr.Zero)
+            {
+                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype(pEEType, ClassLibFunctionId.GetRuntimeException);
+            }
+
+            // Return the exception object we get from the classlib.
+            Exception e = null;
+            try
+            {
+                e = CalliIntrinsics.Call<Exception>(pGetRuntimeExceptionFunction, id);
+            }
+            catch
+            {
+                // disallow all exceptions leaking out of callbacks
+            }
+
+            // If the helper fails to yield an object, then we fail-fast.
+            if (e == null)
+            {
+                FailFastViaClasslib(
+                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
+                    null,
+                    pEEType);
             }
 
             return e;

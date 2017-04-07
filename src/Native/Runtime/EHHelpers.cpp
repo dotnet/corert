@@ -25,6 +25,8 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "stressLog.h"
+#include "rhbinder.h"
+#include "eetype.h"
 
 // Find the code manager containing the given address, which might be a return address from a managed function. The
 // address may be to another managed function, or it may be to an unmanaged function. The address may also refer to 
@@ -38,7 +40,6 @@ static ICodeManager * FindCodeManagerForClasslibFunction(void * address)
     if (pCodeManager != NULL)
         return pCodeManager;
 
-    // @TODO: CORERT: Do we need to make this work for CoreRT?
     // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
     // necessary for EEType pointers and jump stubs.
     Module * pModule = pRI->FindModuleByAddress(address);
@@ -67,7 +68,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClaus
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
-COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFunctionId functionId))
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * address, ClasslibFunctionId functionId))
 {
     // Find the code manager for the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
@@ -81,6 +82,30 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFun
     }
 
     return pCodeManager->GetClasslibFunction(functionId);
+}
+
+// Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
+// implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
+// found via the provided address does not have the necessary exports.
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEtype, (EEType * pEEtype, ClasslibFunctionId functionId))
+{
+    if (pEEtype->HasTypeManager())
+    {
+        return pEEtype->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
+    }
+    else
+    {
+        RuntimeInstance * pRI = GetRuntimeInstance();
+        Module * pModule = pRI->FindModuleByAddress(pEEtype);
+        if (pModule != NULL)
+        {
+            return pModule->GetClasslibFunction(functionId);
+        }
+        else
+        {
+            return NULL;
+        }
+    }
 }
 
 COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack, ())
