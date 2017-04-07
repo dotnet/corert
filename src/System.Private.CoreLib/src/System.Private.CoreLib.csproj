@@ -255,7 +255,6 @@
     <Compile Include="System\IO\FileAccess.cs" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\FileMode.cs" />
-    <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\FileShare.cs" />
     <Compile Include="System\IO\FileOptions.cs" />
     <Compile Include="System\IO\IOException.cs" />
