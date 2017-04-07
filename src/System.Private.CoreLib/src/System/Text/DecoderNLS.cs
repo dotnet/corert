@@ -79,7 +79,7 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        internal unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+        public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate parameters
             if (bytes == null)
@@ -143,7 +143,7 @@ namespace System.Text
                                 pChars + charIndex, charCount, flush);
         }
 
-        internal unsafe override int GetChars(byte* bytes, int byteCount,
+        public unsafe override int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
             // Validate parameters

@@ -50,5 +50,15 @@ namespace ILCompiler
         {
             return null;
         }
+
+        public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
+        {
+            return false;
+        }
+
+        public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
+        {
+            return false;
+        }
     }
 }

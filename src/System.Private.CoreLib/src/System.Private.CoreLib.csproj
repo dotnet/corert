@@ -271,8 +271,9 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
-    <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
+    <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
@@ -443,6 +444,7 @@
     <Compile Include="System\Text\Encoding.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingForwarder.cs" />
+    <Compile Include="System\Text\EncodingInfo.cs" />
     <Compile Include="System\Text\EncodingNLS.cs" />
     <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
