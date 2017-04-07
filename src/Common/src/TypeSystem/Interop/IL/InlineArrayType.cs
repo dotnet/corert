@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Internal.TypeSystem.Interop
 {
-    internal class InlineArrayType : MetadataType
+    internal partial class InlineArrayType : MetadataType
     {
         public MetadataType ElementType
         {

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -31,6 +31,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.Sorting.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\FunctionPointerType.Canon.cs">
       <Link>TypeSystem\Canon\FunctionPointerType.Canon.cs</Link>
@@ -114,7 +117,7 @@
       <Link>Utilities\GCPointerMap.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-        <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
@@ -257,6 +260,15 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
+      <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Sorting.cs">
+      <Link>Ecma\EcmaModule.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Sorting.cs">
+      <Link>Ecma\EcmaType.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\PrimitiveTypeProvider.cs">
       <Link>Ecma\PrimitiveTypeProvider.cs</Link>
     </Compile>
@@ -344,11 +356,17 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
       <Link>IL\TypeSystemContext.EnumMethods.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>Interop\IL\Marshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeILEmitterConfiguration.cs">
       <Link>Interop\IL\PInvokeILEmitterConfiguration.cs</Link>
@@ -440,6 +458,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs</Link>
     </Compile>
@@ -455,9 +476,33 @@
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\ArrayType.Sorting.cs">
+      <Link>TypeSystem\Sorting\ArrayType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\FunctionPointerType.Sorting.cs">
+      <Link>TypeSystem\Sorting\FunctionPointerType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\InstantiatedType.Sorting.cs">
+      <Link>TypeSystem\Sorting\InstantiatedType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\MethodSignature.Sorting.cs">
+      <Link>TypeSystem\Sorting\MethodSignature.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\ParameterizedType.Sorting.cs">
+      <Link>TypeSystem\Sorting\ParameterizedType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\SignatureVariable.Sorting.cs">
+      <Link>TypeSystem\Sorting\SignatureVariable.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\TypeDesc.Sorting.cs">
+      <Link>TypeSystem\Sorting\TypeDesc.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\TypeSystemComparer.cs">
+      <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>
