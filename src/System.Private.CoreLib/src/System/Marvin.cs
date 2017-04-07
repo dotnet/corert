@@ -9,14 +9,28 @@ namespace System
 {
     internal static class Marvin
     {
-        public static uint ComputeStringHash(ref byte data, uint count, ulong seed)
+        /// <summary>
+        /// Convenience method to compute a Marvin hash and collapse it into a 32-bit hash.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ComputeHash32(ref byte data, int count, ulong seed)
         {
+            long hash64 = ComputeHash(ref data, count, seed);
+            return ((int)(hash64 >> 32)) ^ (int)hash64;
+        }
+
+        /// <summary>
+        /// Computes a 64-hash using the Marvin algorithm.
+        /// </summary>
+        public static long ComputeHash(ref byte data, int count, ulong seed)
+        {
+            uint ucount = (uint)count;
             uint p0 = (uint)seed;
             uint p1 = (uint)(seed >> 32);
 
             int byteOffset = 0;  // declared as signed int so we don't have to cast everywhere (it's passed to Unsafe.Add() and used for nothing else.)
 
-            while (count >= 8)
+            while (ucount >= 8)
             {
                 p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
                 Block(ref p0, ref p1);
@@ -25,10 +39,10 @@ namespace System
                 Block(ref p0, ref p1);
 
                 byteOffset += 8;
-                count -= 8;
+                ucount -= 8;
             }
 
-            switch (count)
+            switch (ucount)
             {
                 case 4:
                     p0 += Unsafe.As<byte, uint>(ref Unsafe.Add(ref data, byteOffset));
@@ -66,22 +80,18 @@ namespace System
                     goto case 3;
 
                 case 3:
-                    p0 += 0x80000000u | Unsafe.As<byte, ushort>(ref Unsafe.Add(ref data, byteOffset)) | Unsafe.Add(ref data, byteOffset + 2);
+                    p0 += 0x80000000u | (((uint)(Unsafe.Add(ref data, byteOffset + 2))) << 16)| (uint)(Unsafe.As<byte, ushort>(ref Unsafe.Add(ref data, byteOffset)));
                     break;
 
                 default:
                     Debug.Fail("Should not get here.");
-                    throw new InvalidOperationException();
+                    break;
             }
 
             Block(ref p0, ref p1);
             Block(ref p0, ref p1);
 
-            // At this point, p0 and p1 contains the 8-byte Marvin hash result. If we need a general purpose Marvin implementation in the future,
-            // this could be refactored to stop here. For now, String.GetHashCode() is the only user of this function and he wants an 4-byte hash code
-            // so this last step is specific to String.GetHashCode().
-
-            return p0 ^ p1;
+            return (((long)p1) << 32) | p0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
