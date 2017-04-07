@@ -30,7 +30,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public class StructMarshallingThunk : ILStubMethod
+    public partial class StructMarshallingThunk : ILStubMethod
     {
         internal readonly MetadataType ManagedType;
         internal readonly NativeStructType NativeType;
@@ -96,17 +96,17 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                if (ThunkType == StructMarshallingThunkType.ManagedToNative)
+                switch (ThunkType)
                 {
-                    return "ManagedToNative__" + ((MetadataType)ManagedType).Name;
-                }
-                else if (ThunkType == StructMarshallingThunkType.NativeToManage)
-                {
-                    return "NativeToManaged__" + ((MetadataType)ManagedType).Name;
-                }
-                else
-                {
-                    return "Cleanup__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.ManagedToNative:
+                        return "ManagedToNative__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.NativeToManage:
+                        return "NativeToManaged__" + ((MetadataType)ManagedType).Name;
+                    case StructMarshallingThunkType.Cleanup:
+                        return "Cleanup__" + ((MetadataType)ManagedType).Name;
+                    default:
+                        System.Diagnostics.Debug.Assert(false, "Unexpected Struct marshalling thunk type");
+                        return string.Empty;
                 }
             }
         }

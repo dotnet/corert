@@ -368,11 +368,17 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
       <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.Mangling.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
