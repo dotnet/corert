@@ -8,11 +8,7 @@ using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Debug = System.Diagnostics.Debug;
 
-#if CORERT
-using TableElement = System.IntPtr;
-#else
 using TableElement = System.UInt32;
-#endif
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -95,8 +91,9 @@ namespace Internal.Runtime.TypeLoader
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
+            int* elementsTable = (int*)_elements;
 
-            return ((TableElement*)_elements)[index];
+            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
 #else
             uint rva = GetRvaFromIndex(index);
             if ((rva & IndirectionConstants.RVAPointsToIndirection) != 0)
@@ -119,7 +116,9 @@ namespace Internal.Runtime.TypeLoader
 
             // TODO: indirection through IAT
 
-            return ((IntPtr*)_elements)[index];
+            int* elementsTable = (int*)_elements;
+
+            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
 #else
             uint rva = GetRvaFromIndex(index);
 
@@ -152,7 +151,9 @@ namespace Internal.Runtime.TypeLoader
 
             // TODO: indirection through IAT
 
-            return ((IntPtr*)_elements)[index];
+            int* elementsTable = (int*)_elements;
+
+            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
         }
 #endif
 
