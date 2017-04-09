@@ -3894,10 +3894,10 @@ public:
     {
         assert (size >= free_object_base_size);
 
-        assert (g_pFreeObjectMethodTable->GetBaseSize() == free_object_base_size);
-        assert (g_pFreeObjectMethodTable->RawGetComponentSize() == 1);
+        assert (g_gc_pFreeObjectMethodTable->GetBaseSize() == free_object_base_size);
+        assert (g_gc_pFreeObjectMethodTable->RawGetComponentSize() == 1);
 
-        RawSetMethodTable( g_pFreeObjectMethodTable );
+        RawSetMethodTable( g_gc_pFreeObjectMethodTable );
 
         size_t* numComponentsPtr = (size_t*) &((uint8_t*) this)[ArrayBase::GetOffsetOfNumComponents()];
         *numComponentsPtr = size - free_object_base_size;
@@ -3922,7 +3922,7 @@ public:
 
     BOOL IsFree () const
     {
-        return (GetMethodTable() == g_pFreeObjectMethodTable);
+        return (GetMethodTable() == g_gc_pFreeObjectMethodTable);
     }
 
 #ifdef FEATURE_STRUCTALIGN
@@ -21130,7 +21130,7 @@ BOOL gc_heap::plan_loh()
         {
             while (o < heap_segment_allocated (seg) && !marked (o))
             {
-                dprintf (1235, ("%Ix(%Id) F (%d)", o, AlignQword (size (o)), ((method_table (o) == g_pFreeObjectMethodTable) ? 1 : 0)));
+                dprintf (1235, ("%Ix(%Id) F (%d)", o, AlignQword (size (o)), ((method_table (o) == g_gc_pFreeObjectMethodTable) ? 1 : 0)));
                 o = o + AlignQword (size (o));
             }
         }
@@ -24386,7 +24386,7 @@ void gc_heap::walk_survivors_for_bgc (void* profiling_context, record_surv_fn fn
 
         while (o < end)
         {
-            if (method_table(o) == g_pFreeObjectMethodTable)
+            if (method_table(o) == g_gc_pFreeObjectMethodTable)
             {
                 o += Align (size (o), align_const);
                 continue;
@@ -24397,7 +24397,7 @@ void gc_heap::walk_survivors_for_bgc (void* profiling_context, record_surv_fn fn
 
             uint8_t* plug_start = o;
 
-            while (method_table(o) != g_pFreeObjectMethodTable)
+            while (method_table(o) != g_gc_pFreeObjectMethodTable)
             {
                 o += Align (size (o), align_const);
                 if (o >= end)
@@ -31579,7 +31579,7 @@ void gc_heap::background_sweep()
                     seg = start_seg;
                     prev_seg = 0;
                     o = generation_allocation_start (gen);
-                    assert (method_table (o) == g_pFreeObjectMethodTable);
+                    assert (method_table (o) == g_gc_pFreeObjectMethodTable);
                     align_const = get_alignment_constant (FALSE);
                     o = o + Align(size (o), align_const);
                     plug_end = o;
@@ -32921,7 +32921,7 @@ void gc_heap::verify_partial ()
                             //dprintf (3, ("VOM: verifying member %Ix in obj %Ix", (size_t)*oo, o));
                             MethodTable *pMT = method_table (*oo);
 
-                            if (pMT == g_pFreeObjectMethodTable)
+                            if (pMT == g_gc_pFreeObjectMethodTable)
                             {
                                 free_ref_p = TRUE;
                                 FATAL_GC_ERROR();
@@ -33355,12 +33355,12 @@ gc_heap::verify_heap (BOOL begin_gc_p)
             }
         }
 
-        if (*((uint8_t**)curr_object) != (uint8_t *) g_pFreeObjectMethodTable)
+        if (*((uint8_t**)curr_object) != (uint8_t *) g_gc_pFreeObjectMethodTable)
         {
 #ifdef FEATURE_LOH_COMPACTION
             if ((curr_gen_num == (max_generation+1)) && (prev_object != 0))
             {
-                assert (method_table (prev_object) == g_pFreeObjectMethodTable);
+                assert (method_table (prev_object) == g_gc_pFreeObjectMethodTable);
             }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -33665,6 +33665,8 @@ HRESULT GCHeap::Initialize ()
     {
         return E_FAIL;
     }
+
+    g_gc_pFreeObjectMethodTable = GCToEEInterface::GetFreeObjectMethodTable();
 
 //Initialize the static members.
 #ifdef TRACE_GC
