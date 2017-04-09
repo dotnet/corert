@@ -762,8 +762,8 @@
   <data name="ArgumentException_ValueTupleIncorrectType" xml:space="preserve">
     <value>Argument must be of type {0}.</value>
   </data>
-  <data name="ArgumentException_ValueTupleLastArgumentNotATuple" xml:space="preserve">
-    <value>The TRest type argument of ValueTuple`8 must be a ValueTuple.</value>
+  <data name="ArgumentException_ValueTupleLastArgumentNotAValueTuple" xml:space="preserve">
+    <value>The last element of an eight element ValueTuple must be a ValueTuple.</value>
   </data>
   <data name="ArgumentNull_Array" xml:space="preserve">
     <value>Array cannot be null.</value>
