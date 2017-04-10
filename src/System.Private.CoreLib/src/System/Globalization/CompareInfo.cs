@@ -15,6 +15,7 @@
 using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -32,7 +33,8 @@ namespace System.Globalization
         Ordinal = 0x40000000,   // This flag can not be used with other flags.
     }
 
-    public partial class CompareInfo
+    [Serializable]
+    public partial class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
         private const CompareOptions ValidIndexMaskOffFlags =
@@ -61,9 +63,17 @@ namespace System.Globalization
         // locale, which is what SCOMPAREINFO does.
 
         private String _name;  // The name used to construct this CompareInfo
+        
+        [NonSerialized]
         private String _sortName; // The name that defines our behavior
 
         private SortVersion _sortVersion;
+
+        internal CompareInfo(CultureInfo culture)
+        {
+            _name = culture.m_name;
+            InitSort(culture);
+        }
 
         /*=================================GetCompareInfo==========================
         **Action: Get the CompareInfo constructed from the data table in the specified assembly for the specified culture.
@@ -186,6 +196,36 @@ namespace System.Globalization
             {
                 return IsSortable(pChar, text.Length);
             }
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx)
+        {
+            _name = null;
+        }
+
+        void IDeserializationCallback.OnDeserialization(object sender)
+        {
+            OnDeserialized();
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            OnDeserialized();
+        }
+
+        private void OnDeserialized()
+        {
+            if (_name != null)
+            {
+                InitSort(CultureInfo.GetCultureInfo(_name));
+            }
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx)
+        {
         }
 
         ///////////////////////////----- Name -----/////////////////////////////////

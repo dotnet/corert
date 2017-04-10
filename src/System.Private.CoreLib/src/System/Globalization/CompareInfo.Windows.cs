@@ -9,11 +9,10 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal unsafe CompareInfo(CultureInfo culture)
+        private unsafe void InitSort(CultureInfo culture)
         {
             const uint LCMAP_SORTHANDLE = 0x20000000;
 
-            _name = culture.m_name;
             _sortName = culture.SortName;
 
             IntPtr handle;
@@ -273,7 +272,7 @@ namespace System.Globalization
 
         // PAL ends here
         [NonSerialized]
-        private readonly IntPtr _sortHandle;
+        private IntPtr _sortHandle;
 
         private const uint LCMAP_HASH = 0x00040000;
 
