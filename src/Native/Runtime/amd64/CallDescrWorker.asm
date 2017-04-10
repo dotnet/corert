@@ -56,8 +56,14 @@ StackCopyLoop:                          ; copy the arguments to stack top-down t
         movdqa  xmm3, [rax + 30h]       ;
 DoCall:
         call    qword ptr [rbx + OFFSETOF__CallDescrData__pTarget]     ; call target function
-LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk ; Symbol used to identify thunk call to managed function so the special 
-                                                ; case unwinder can unwind through this function
+
+ReturnFromCallDescrThunk label proc
+
+        ; Symbol used to identify thunk call to managed function so the special 
+        ; case unwinder can unwind through this function. Sadly we cannot directly
+        ; export this symbol right now because it confuses DIA unwinder to believe
+        ; it's the beginning of a new method, therefore we export the address
+        ; of an auxiliary variable holding the address instead.
 
         ; Save FP return value
 
@@ -96,5 +102,15 @@ ReturnsDouble:
         jmp     Epilog
 
         NESTED_END RhCallDescrWorker, _TEXT
+
+        .const
+
+        align   8
+ 
+PointerToReturnFromCallDescrThunk label qword
+
+        dq      offset ReturnFromCallDescrThunk
+
+        public  PointerToReturnFromCallDescrThunk
 
 end

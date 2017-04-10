@@ -6,7 +6,17 @@
 #include <unixasmmacros.inc>
 
 NESTED_ENTRY RhCallDescrWorker, _TEXT, NoHandler
-ALTERNATE_ENTRY ReturnFromCallDescrThunk
+LOCAL_LABEL(ReturnFromCallDescrThunk):
+
     // UNIXTODO: Implement this function
     int 3
 NESTED_END RhCallDescrWorker, _TEXT
+
+    .text
+
+    .align      8
+
+C_FUNC(PointerToReturnFromCallDescrThunk):
+    .quad       LOCAL_LABEL(ReturnFromCallDescrThunk)
+
+    .global     C_FUNC(PointerToReturnFromCallDescrThunk)
