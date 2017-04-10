@@ -41,14 +41,14 @@ GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
 EXTERN_C void * RhpUniversalTransition();
 GPTR_IMPL_INIT(PTR_VOID, g_RhpUniversalTransitionAddr, (void**)&RhpUniversalTransition);
 
-EXTERN_C void * ReturnFromUniversalTransition;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, &ReturnFromUniversalTransition);
+EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, PointerToReturnFromUniversalTransition);
 
-EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, &ReturnFromUniversalTransition_DebugStepTailCall);
+EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition_DebugStepTailCall;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, PointerToReturnFromUniversalTransition_DebugStepTailCall);
 
-EXTERN_C void * ReturnFromCallDescrThunk;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, &ReturnFromCallDescrThunk);
+EXTERN_C PTR_VOID PointerToReturnFromCallDescrThunk;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, PointerToReturnFromCallDescrThunk);
 #endif
 
 #ifdef _TARGET_X86_
@@ -72,10 +72,17 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
 // against immediates than to fetch the global. This macro hides the difference.
+//
+// We use a special code path for the return address from thunks as
+// having the return address public confuses today DIA stackwalker. Before we can
+// ingest the updated DIA, we're instead exposing a global void * variable
+// holding the return address.
 #ifdef DACCESS_COMPILE
 #define EQUALS_CODE_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
+#define EQUALS_RETURN_ADDRESS(x, func_name) EQUALS_CODE_ADDRESS((x), func_name)
 #else
 #define EQUALS_CODE_ADDRESS(x, func_name) ((x) == &func_name)
+#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -1605,12 +1612,12 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #else // defined(USE_PORTABLE_HELPERS)
 
 #if defined(FEATURE_DYNAMIC_CODE)
-    if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromCallDescrThunk))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromCallDescrThunk))
     {
         return InCallDescrThunk;
     }
-    else if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
-             EQUALS_CODE_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
+    else if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
+             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
     {
         return InUniversalTransitionThunk;
     }

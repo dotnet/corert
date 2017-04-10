@@ -126,7 +126,12 @@ endif ; TRASH_SAVED_ARGUMENT_REGISTERS
         mov  rdx, r11
         lea  rcx, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
-LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
+
+ReturnFrom&FunctionName label proc
+
+        ; We cannot make the label public as that tricks DIA stackwalker into thinking
+        ; it's the beginning of a method. For this reason we export the address
+        ; by means of an auxiliary variable.
 
         ; restore fp argument registers
         movdqa          xmm0, [rsp + DISTANCE_FROM_CHILDSP_TO_FP_REGS      ]
@@ -149,6 +154,18 @@ LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
         TAILJMP_RAX
 
 NESTED_END Rhp&FunctionName, _TEXT
+
+        .const
+
+        align           8
+
+PointerToReturnFrom&FunctionName label qword
+
+        dq              offset ReturnFrom&FunctionName
+
+        public          PointerToReturnFrom&FunctionName
+
+        .code
 
         endm
 
