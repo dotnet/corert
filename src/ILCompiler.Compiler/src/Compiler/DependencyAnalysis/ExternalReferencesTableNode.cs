@@ -97,14 +97,14 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
-                if (factory.Target.Abi == Internal.TypeSystem.TargetAbi.CoreRT)
+                if (factory.Target.Abi == TargetAbi.CoreRT)
                 {
                     // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
-                    builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_RELPTR32, symbolAndDelta.Delta);
                 }
                 else
                 {
-                    Debug.Assert(factory.Target.Abi == Internal.TypeSystem.TargetAbi.ProjectN);
+                    Debug.Assert(factory.Target.Abi == TargetAbi.ProjectN);
                     int delta = symbolAndDelta.Delta;
                     if (symbolAndDelta.Symbol.RepresentsIndirectionCell)
                     {

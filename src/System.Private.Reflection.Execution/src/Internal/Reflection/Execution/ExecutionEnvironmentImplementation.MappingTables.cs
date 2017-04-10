@@ -451,7 +451,7 @@ namespace Internal.Reflection.Execution
                 if (module.Handle.IsTypeManager)
                 {
                     // CoreRT uses 32bit relative relocs
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)((byte*)(&pBlob[1]) + (int)(pBlob[0])));
+                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
                 }
                 else
                 {
@@ -474,7 +474,8 @@ namespace Internal.Reflection.Execution
                 if (module.Handle.IsTypeManager)
                 {
                     // CoreRT uses 32bit relative relocs
-                    dynamicInvokeMethod = (IntPtr)((byte*)(&pBlob[index + 2]) + (int)(pBlob[index + 1]));
+                    int* pRelPtr32 = &((int*)pBlob)[index + 1];
+                    dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
                 }
                 else
                 {
