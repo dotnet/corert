@@ -25,10 +25,10 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
-        internal static unsafe void InitializeModules(IntPtr osModule, IntPtr moduleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
+        internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);
-            TypeManagerHandle[] modules = CreateTypeManagers(osModule, moduleHeaders, count, pClasslibFunctions, nClasslibFunctions);
+            TypeManagerHandle[] modules = CreateTypeManagers(osModule, pModuleHeaders, count, pClasslibFunctions, nClasslibFunctions);
 
             for (int i = 0; i < modules.Length; i++)
             {
@@ -48,7 +48,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr moduleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
+        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
             // At this stage of startup, complex collection classes will not work.
@@ -58,7 +58,7 @@ namespace Internal.Runtime.CompilerHelpers
                 // The null pointers are sentinel values and padding inserted as side-effect of
                 // the section merging. (The global static constructors section used by C++ has 
                 // them too.)
-                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
+                if (pModuleHeaders[i] != IntPtr.Zero)
                     moduleCount++;
             }
 
@@ -66,8 +66,8 @@ namespace Internal.Runtime.CompilerHelpers
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
-                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, ((IntPtr*)moduleHeaders)[i], pClasslibFunctions, nClasslibFunctions);
+                if (pModuleHeaders[i] != IntPtr.Zero)
+                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
             }
 
             return modules;

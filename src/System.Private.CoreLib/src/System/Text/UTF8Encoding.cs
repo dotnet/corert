@@ -14,7 +14,8 @@
 // the problem is fastloop-specific.
 #define FASTLOOP
 
-
+using System;
+using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -33,6 +34,7 @@ namespace System.Text
     // used mostly to distinguish UTF-8 text from other encodings, and doesn't
     // switch the byte orderings.
 
+    [Serializable]
     public class UTF8Encoding : Encoding
     {
         /*
@@ -50,9 +52,16 @@ namespace System.Text
 
         private const int UTF8_CODEPAGE = 65001;
 
+        // Allow for devirtualization (see https://github.com/dotnet/coreclr/pull/9230)
+        [Serializable]
+        internal sealed class UTF8EncodingSealed : UTF8Encoding
+        {
+            public UTF8EncodingSealed() : base(encoderShouldEmitUTF8Identifier: true) { }
+        }
+
         // Used by Encoding.UTF8 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
-        internal static readonly UTF8Encoding s_default = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+        internal static readonly UTF8EncodingSealed s_default = new UTF8EncodingSealed();
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
@@ -98,43 +107,110 @@ namespace System.Text
             }
         }
 
-        // NOTE: Many methods in this class forward to EncodingForwarder for
-        // validating arguments/wrapping the unsafe methods in this class 
-        // which do the actual work. That class contains
-        // shared logic for doing this which is used by
-        // ASCIIEncoding, EncodingNLS, UnicodeEncoding, UTF32Encoding,
-        // UTF7Encoding, and UTF8Encoding.
-        // The reason the code is separated out into a static class, rather
-        // than a base class which overrides all of these methods for us
-        // (which is what EncodingNLS is for internal Encodings) is because
-        // that's really more of an implementation detail so it's internal.
-        // At the same time, C# doesn't allow a public class subclassing an
-        // internal/private one, so we end up having to re-override these
-        // methods in all of the public Encodings + EncodingNLS.
+
+        // WARNING: GetByteCount(string chars)
+        // WARNING: has different variable names than EncodingNLS.cs, so this can't just be cut & pasted,
+        // WARNING: otherwise it'll break VB's way of declaring these.
+        //
+        // The following methods are copied from EncodingNLS.cs.
+        // Unfortunately EncodingNLS.cs is internal and we're public, so we have to reimpliment them here.
+        // These should be kept in sync for the following classes:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         // Returns the number of bytes required to encode a range of characters in
         // a character array.
+        //
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
 
-        public override int GetByteCount(char[] chars, int index, int count)
+        public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            return EncodingForwarder.GetByteCount(this, chars, index, count);
+            // Validate input parameters
+            if (chars == null)
+                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+
+            if (index < 0 || count < 0)
+                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (chars.Length - index < count)
+                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+            Contract.EndContractBlock();
+
+            // If no input, return 0, avoid fixed empty array problem
+            if (count == 0)
+                return 0;
+
+            // Just call the pointer version
+            fixed (char* pChars = chars)
+                return GetByteCount(pChars + index, count, null);
         }
 
-        public override int GetByteCount(String chars)
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
+
+        public override unsafe int GetByteCount(String chars)
         {
-            return EncodingForwarder.GetByteCount(this, chars);
+            // Validate input
+            if (chars==null)
+                throw new ArgumentNullException("s");
+            Contract.EndContractBlock();
+
+            fixed (char* pChars = chars)
+                return GetByteCount(pChars, chars.Length, null);
         }
+
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
-            return EncodingForwarder.GetByteCount(this, chars, count);
+            // Validate Parameters
+            if (chars == null)
+                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            // Call it with empty encoder
+            return GetByteCount(chars, count, null);
         }
 
-        public override int GetBytes(String s, int charIndex, int charCount,
+        // Parent method is safe.
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+
+        public override unsafe int GetBytes(String s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
-            return EncodingForwarder.GetBytes(this, s, charIndex, charCount, bytes, byteIndex);
+            if (s == null || bytes == null)
+                throw new ArgumentNullException((s == null ? "s" : "bytes"), SR.ArgumentNull_Array);
+
+            if (charIndex < 0 || charCount < 0)
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (s.Length - charIndex < charCount)
+                throw new ArgumentOutOfRangeException("s", SR.ArgumentOutOfRange_IndexCount);
+
+            if (byteIndex < 0 || byteIndex > bytes.Length)
+                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+            Contract.EndContractBlock();
+
+            int byteCount = bytes.Length - byteIndex;
+
+            // Fixed doesn't like 0 length arrays.
+            if (bytes.Length == 0)
+                bytes = new byte[1];
+
+            fixed (char* pChars = s) fixed (byte* pBytes = &bytes[0])
+                return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
         }
 
         // Encodes a range of characters in a character array into a range of bytes
@@ -145,54 +221,199 @@ namespace System.Text
         // Alternatively, the GetMaxByteCount method can be used to
         // determine the maximum number of bytes that will be produced for a given
         // number of characters, regardless of the actual character values.
+        //
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
 
-        public override int GetBytes(char[] chars, int charIndex, int charCount,
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
-            return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
+            // Validate parameters
+            if (chars == null || bytes == null)
+                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+
+            if (charIndex < 0 || charCount < 0)
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (chars.Length - charIndex < charCount)
+                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+
+            if (byteIndex < 0 || byteIndex > bytes.Length)
+                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+            Contract.EndContractBlock();
+
+            // If nothing to encode return 0, avoid fixed problem
+            if (charCount == 0)
+                return 0;
+
+            // Just call pointer version
+            int byteCount = bytes.Length - byteIndex;
+
+            // Fixed doesn't like 0 length arrays.
+            if (bytes.Length == 0)
+                bytes = new byte[1];
+
+            fixed (char* pChars = chars) fixed (byte* pBytes = &bytes[0])
+                // Remember that byteCount is # to decode, not size of array.
+                return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
         }
+
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
-            return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
+            // Validate Parameters
+            if (bytes == null || chars == null)
+                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+
+            if (charCount < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            return GetBytes(chars, charCount, bytes, byteCount, null);
         }
 
         // Returns the number of characters produced by decoding a range of bytes
         // in a byte array.
+        //
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
 
-        public override int GetCharCount(byte[] bytes, int index, int count)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            return EncodingForwarder.GetCharCount(this, bytes, index, count);
+            // Validate Parameters
+            if (bytes == null)
+                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+
+            if (index < 0 || count < 0)
+                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (bytes.Length - index < count)
+                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+            Contract.EndContractBlock();
+
+            // If no input just return 0, fixed doesn't like 0 length arrays.
+            if (count == 0)
+                return 0;
+
+            // Just call pointer version
+            fixed (byte* pBytes = bytes)
+                return GetCharCount(pBytes + index, count, null);
         }
+
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
-            return EncodingForwarder.GetCharCount(this, bytes, count);
+            // Validate Parameters
+            if (bytes == null)
+                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            return GetCharCount(bytes, count, null);
         }
 
-        public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
+
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
-            return EncodingForwarder.GetChars(this, bytes, byteIndex, byteCount, chars, charIndex);
+            // Validate Parameters
+            if (bytes == null || chars == null)
+                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+
+            if (byteIndex < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if ( bytes.Length - byteIndex < byteCount)
+                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+
+            if (charIndex < 0 || charIndex > chars.Length)
+                throw new ArgumentOutOfRangeException("charIndex", SR.ArgumentOutOfRange_Index);
+            Contract.EndContractBlock();
+
+            // If no input, return 0 & avoid fixed problem
+            if (byteCount == 0)
+                return 0;
+
+            // Just call pointer version
+            int charCount = chars.Length - charIndex;
+
+            // Fixed doesn't like 0 length arrays.
+            if (chars.Length == 0)
+                chars = new char[1];
+
+            fixed (byte* pBytes = bytes) fixed (char* pChars = &chars[0])
+                // Remember that charCount is # to decode, not size of array
+                return GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, null);
         }
+
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
-            return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);
+            // Validate Parameters
+            if (bytes == null || chars == null)
+                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+
+            if (charCount < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            Contract.EndContractBlock();
+
+            return GetChars(bytes, byteCount, chars, charCount, null);
         }
 
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
+        //
+        // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
+        // So if you fix this, fix the others.  Currently those include:
+        // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
+        // parent method is safe
 
-        public override String GetString(byte[] bytes, int index, int count)
+        public override unsafe String GetString(byte[] bytes, int index, int count)
         {
-            return EncodingForwarder.GetString(this, bytes, index, count);
+            // Validate Parameters
+            if (bytes == null)
+                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+
+            if (index < 0 || count < 0)
+                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (bytes.Length - index < count)
+                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+            Contract.EndContractBlock();
+
+            // Avoid problems with empty input buffer
+            if (count == 0) return String.Empty;
+
+            fixed (byte* pBytes = bytes)
+                return String.CreateStringFromEncoding(
+                    pBytes + index, count, this);
         }
 
-        // End of overridden methods which use EncodingForwarder
+        //
+        // End of standard methods copied from EncodingNLS.cs
+        //
 
         // To simplify maintenance, the structure of GetByteCount and GetBytes should be
         // kept the same as much as possible
@@ -201,6 +422,8 @@ namespace System.Text
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* pSrcForFallback;
+
             char* pSrc = chars;
             char* pEnd = pSrc + count;
 
@@ -219,8 +442,7 @@ namespace System.Text
                 {
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty,
-                        this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, false);
@@ -248,7 +470,7 @@ namespace System.Text
                         if (fallbackBuffer != null && fallbackBuffer.bFallingBack)
                         {
                             Debug.Assert(ch >= 0xD800 && ch <= 0xDBFF,
-                                "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", FormatProvider.InvariantCulture));
+                                "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", CultureInfo.InvariantCulture));
 
                             ch = fallbackBuffer.InternalGetNextChar();
                             byteCount++;
@@ -288,7 +510,7 @@ namespace System.Text
                 if (ch > 0)
                 {
                     Debug.Assert(ch >= 0xD800 && ch <= 0xDBFF,
-                        "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", FormatProvider.InvariantCulture));
+                        "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", CultureInfo.InvariantCulture));
 
                     // use separate helper variables for local contexts so that the jit optimizations
                     // won't get confused about the variable lifetimes
@@ -366,7 +588,9 @@ namespace System.Text
 
                     // Do our fallback.  Actually we already know its a mixed up surrogate,
                     // so the ref pSrc isn't gonna do anything.
-                    fallbackBuffer.InternalFallback(unchecked((char)ch), ref pSrc);
+                    pSrcForFallback = pSrc; // Avoid passing pSrc by reference to allow it to be enregistered
+                    fallbackBuffer.InternalFallback(unchecked((char)ch), ref pSrcForFallback);
+                    pSrc = pSrcForFallback;
 
                     // Ignore it if we don't throw (we had preallocated this ch)
                     byteCount--;
@@ -548,11 +772,13 @@ namespace System.Text
                                 break;
                             }
                             pSrc++;
+
                             // byteCount - this byte is compensated by the second surrogate character
                         }
                         byteCount++;
                     }
                     byteCount++;
+
                     // byteCount - the last byte is already included
                 }
 #endif // FASTLOOP
@@ -610,6 +836,8 @@ namespace System.Text
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* pSrcForFallback;
+
             char* pSrc = chars;
             byte* pTarget = bytes;
 
@@ -631,8 +859,7 @@ namespace System.Text
                     // We always need the fallback buffer in get bytes so we can flush any remaining ones if necessary
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0 && encoder.m_throwOnOverflow)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty,
-                        this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, true);
@@ -660,7 +887,7 @@ namespace System.Text
                         if (fallbackBuffer != null && fallbackBuffer.bFallingBack)
                         {
                             Debug.Assert(ch >= 0xD800 && ch <= 0xDBFF,
-                                "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", FormatProvider.InvariantCulture));
+                                "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", CultureInfo.InvariantCulture));
 
                             int cha = ch;
 
@@ -694,7 +921,7 @@ namespace System.Text
                 {
                     // We have a high surrogate left over from a previous loop.
                     Debug.Assert(ch >= 0xD800 && ch <= 0xDBFF,
-                        "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", FormatProvider.InvariantCulture));
+                        "[UTF8Encoding.GetBytes]expected high surrogate, not 0x" + ((int)ch).ToString("X4", CultureInfo.InvariantCulture));
 
                     // use separate helper variables for local contexts so that the jit optimizations
                     // won't get confused about the variable lifetimes
@@ -759,7 +986,9 @@ namespace System.Text
 
                     // Do our fallback.  Actually we already know its a mixed up surrogate,
                     // so the ref pSrc isn't gonna do anything.
-                    fallbackBuffer.InternalFallback(unchecked((char)ch), ref pSrc);
+                    pSrcForFallback = pSrc; // Avoid passing pSrc by reference to allow it to be enregistered
+                    fallbackBuffer.InternalFallback(unchecked((char)ch), ref pSrcForFallback);
+                    pSrc = pSrcForFallback;
 
                     // Ignore it if we don't throw
                     ch = 0;
@@ -936,11 +1165,11 @@ namespace System.Text
 
                         // Unfortunately, this is endianess sensitive
 #if BIGENDIAN
-                        *pTarget = (byte)(ch >> 16);
-                        *(pTarget + 1) = (byte)ch;
+                        *pTarget = (byte)(ch>>16);
+                        *(pTarget+1) = (byte)ch;
                         pSrc += 4;
-                        *(pTarget + 2) = (byte)(chc >> 16);
-                        *(pTarget + 3) = (byte)chc;
+                        *(pTarget+2) = (byte)(chc>>16);
+                        *(pTarget+3) = (byte)chc;
                         pTarget += 4;
 #else // BIGENDIAN
                         *pTarget = (byte)ch;
@@ -1049,7 +1278,7 @@ namespace System.Text
             if (encoder != null)
             {
                 Debug.Assert(!encoder.MustFlush || ch == 0,
-                    "[UTF8Encoding.GetBytes] Expected no mustflush or 0 leftover ch");
+                    "[UTF8Encoding.GetBytes] Expected no mustflush or 0 leftover ch " + ch.ToString("X2", CultureInfo.InvariantCulture));
 
                 encoder.surrogateChar = ch;
                 encoder.m_charsUsed = (int)(pSrc - chars);
@@ -1523,6 +1752,8 @@ namespace System.Text
             int ch = 0;
 
             DecoderFallbackBuffer fallback = null;
+            byte* pSrcForFallback;
+            char* pTargetForFallback;
             if (baseDecoder != null)
             {
                 UTF8Decoder decoder = (UTF8Decoder)baseDecoder;
@@ -1634,7 +1865,13 @@ namespace System.Text
                     fallback.InternalInitialize(bytes, pAllocatedBufferEnd);
                 }
                 // This'll back us up the appropriate # of bytes if we didn't get anywhere
-                if (!FallbackInvalidByteSequence(ref pSrc, ch, fallback, ref pTarget))
+                pSrcForFallback = pSrc; // Avoid passing pSrc by reference to allow it to be enregistered
+                pTargetForFallback = pTarget; // Avoid passing pTarget by reference to allow it to be enregistered
+                bool fallbackResult = FallbackInvalidByteSequence(ref pSrcForFallback, ch, fallback, ref pTargetForFallback);
+                pSrc = pSrcForFallback;
+                pTarget = pTargetForFallback;
+
+                if (!fallbackResult)
                 {
                     // Ran out of buffer space
                     // Need to throw an exception?
@@ -1836,7 +2073,7 @@ namespace System.Text
 #if BIGENDIAN
                         *pTarget = (char)((ch >> 8) & 0x7F);
                         pSrc += 2;
-                        *(pTarget + 1) = (char)(ch & 0x7F);
+                        *(pTarget+1) = (char)(ch & 0x7F);
                         pTarget += 2;
 #else // BIGENDIAN
                         *pTarget = (char)(ch & 0x7F);
@@ -1859,14 +2096,14 @@ namespace System.Text
                         // Unfortunately, this is endianess sensitive
 #if BIGENDIAN
                         *pTarget = (char)((ch >> 24) & 0x7F);
-                        *(pTarget + 1) = (char)((ch >> 16) & 0x7F);
-                        *(pTarget + 2) = (char)((ch >> 8) & 0x7F);
-                        *(pTarget + 3) = (char)(ch & 0x7F);
+                        *(pTarget+1) = (char)((ch >> 16) & 0x7F);
+                        *(pTarget+2) = (char)((ch >> 8) & 0x7F);
+                        *(pTarget+3) = (char)(ch & 0x7F);
                         pSrc += 8;
-                        *(pTarget + 4) = (char)((chb >> 24) & 0x7F);
-                        *(pTarget + 5) = (char)((chb >> 16) & 0x7F);
-                        *(pTarget + 6) = (char)((chb >> 8) & 0x7F);
-                        *(pTarget + 7) = (char)(chb & 0x7F);
+                        *(pTarget+4) = (char)((chb >> 24) & 0x7F);
+                        *(pTarget+5) = (char)((chb >> 16) & 0x7F);
+                        *(pTarget+6) = (char)((chb >> 8) & 0x7F);
+                        *(pTarget+7) = (char)(chb & 0x7F);
                         pTarget += 8;
 #else // BIGENDIAN
                         *pTarget = (char)(ch & 0x7F);
@@ -2036,7 +2273,13 @@ namespace System.Text
                 }
 
                 // This'll back us up the appropriate # of bytes if we didn't get anywhere
-                if (!FallbackInvalidByteSequence(ref pSrc, ch, fallback, ref pTarget))
+                pSrcForFallback = pSrc; // Avoid passing pSrc by reference to allow it to be enregistered
+                pTargetForFallback = pTarget; // Avoid passing pTarget by reference to allow it to be enregistered
+                bool fallbackResult = FallbackInvalidByteSequence(ref pSrcForFallback, ch, fallback, ref pTargetForFallback);
+                pSrc = pSrcForFallback;
+                pTarget = pTargetForFallback;
+
+                if (!fallbackResult)
                 {
                     Debug.Assert(pSrc >= bytes || pTarget == chars,
                         "[UTF8Encoding.GetChars]Expected to throw or remain in byte buffer while flushing");
@@ -2264,7 +2507,6 @@ namespace System.Text
             if (that != null)
             {
                 return (_emitUTF8Identifier == that._emitUTF8Identifier) &&
-                       //                       (isThrowException == that.isThrowException) && // Same as encoder/decoderfallbacks being exception
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
@@ -2279,7 +2521,8 @@ namespace System.Text
                    UTF8_CODEPAGE + (_emitUTF8Identifier ? 1 : 0);
         }
 
-        internal class UTF8Encoder : EncoderNLS
+        [Serializable]
+        private sealed class UTF8Encoder : EncoderNLS, ISerializable
         {
             // We must save a high surrogate value until the next call, looking
             // for a low surrogate value.
@@ -2288,6 +2531,48 @@ namespace System.Text
             public UTF8Encoder(UTF8Encoding encoding) : base(encoding)
             {
                 // base calls reset
+            }
+
+            // Constructor called by serialization, have to handle deserializing from Everett
+            internal UTF8Encoder(SerializationInfo info, StreamingContext context)
+            {
+                // Any info?
+                if (info == null) throw new ArgumentNullException(nameof(info));
+                Contract.EndContractBlock();
+
+                // Get common info
+                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
+
+                // SurrogateChar happens to mean the same thing
+                this.surrogateChar = (int)info.GetValue("surrogateChar", typeof(int));
+
+                try
+                {
+                    this.m_fallback = (EncoderFallback)info.GetValue("m_fallback", typeof(EncoderFallback));
+                }
+                catch (SerializationException)
+                {
+                    this.m_fallback = null;
+                }
+            }
+
+            // ISerializable implementation, get data for this object
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // Any info?
+                if (info == null) throw new ArgumentNullException(nameof(info));
+                Contract.EndContractBlock();
+
+                // Save Whidbey data
+                // Just need Everett maxCharSize (BaseCodePageEncoding) or m_maxByteSize (MLangBaseCodePageEncoding)
+                info.AddValue("encoding", this.m_encoding);
+                info.AddValue("surrogateChar", this.surrogateChar);
+
+                info.AddValue("m_fallback", this.m_fallback);
+
+                // Extra stuff for Everett that Whidbey doesn't use
+                info.AddValue("storedSurrogate", this.surrogateChar > 0 ? true : false);
+                info.AddValue("mustFlush", false);  // Everett doesn't actually use this either, but it accidently serialized it!
             }
 
             public override void Reset()
@@ -2308,7 +2593,8 @@ namespace System.Text
             }
         }
 
-        internal class UTF8Decoder : DecoderNLS
+        [Serializable]
+        private sealed class UTF8Decoder : DecoderNLS, ISerializable
         {
             // We'll need to remember the previous information. See the comments around definition
             // of FinalByte for details.
@@ -2317,6 +2603,49 @@ namespace System.Text
             public UTF8Decoder(UTF8Encoding encoding) : base(encoding)
             {
                 // base calls reset
+            }
+
+            // Constructor called by serialization, have to handle deserializing from Everett
+            internal UTF8Decoder(SerializationInfo info, StreamingContext context)
+            {
+                // Any info?
+                if (info == null) throw new ArgumentNullException(nameof(info));
+                Contract.EndContractBlock();
+
+                // Get common info
+                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
+
+                try
+                {
+                    // Get whidbey version of bits
+                    this.bits = (int)info.GetValue("wbits", typeof(int));
+                    this.m_fallback = (DecoderFallback)info.GetValue("m_fallback", typeof(DecoderFallback));
+                }
+                catch (SerializationException)
+                {
+                    // Everett calls bits bits instead of wbits, so this is Everett
+                    this.bits = 0;
+                    this.m_fallback = null;
+                }
+            }
+
+            // ISerializable implementation, get data for this object
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // Any info?
+                if (info == null) throw new ArgumentNullException(nameof(info));
+                Contract.EndContractBlock();
+
+                // Save new Whidbey data
+                info.AddValue("encoding", this.m_encoding);
+                info.AddValue("wbits", this.bits);          // Special whidbey bits name
+                info.AddValue("m_fallback", this.m_fallback);
+
+                // Everett has extra stuff, we set it all to 0 in case this deserializes in Everett
+                info.AddValue("bits", (int)0);
+                info.AddValue("trailCount", (int)0);
+                info.AddValue("isSurrogate", false);
+                info.AddValue("byteSequence", (int)0);
             }
 
             public override void Reset()

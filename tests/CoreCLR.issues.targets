@@ -403,15 +403,12 @@
     <ExcludeList Include="$(XunitTestBinBase)\Exceptions\ForeignThread\ForeignThreadExceptions\ForeignThreadExceptions.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\structs\systemvbringup\structinregs\structinregs.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\ByValArray\MarshalArrayByValTest\MarshalArrayByValTest.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\SizeConst\SizeConstTest\SizeConstTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\UTF8\UTF8Test\UTF8Test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\StructMarshalling\PInvoke\MarshalStructAsLayoutExp\MarshalStructAsLayoutExp.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\StructMarshalling\PInvoke\MarshalStructAsLayoutSeq\MarshalStructAsLayoutSeq.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\EnumMarshalling\EnumTest\EnumTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\RefCharArray\RefCharArrayTest\RefCharArrayTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\RefInt\RefIntTest\RefIntTest.*" />
@@ -585,21 +582,12 @@
     <!--  https://github.com/dotnet/corert/issues/1497 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\AddMemoryPressureTest\AddMemoryPressureTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\RemoveMemoryPressureTest\RemoveMemoryPressureTest.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant\GetObjectForNativeVariant.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants\GetObjectsForNativeVariants.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\IUnknown\IUnknownTest\IUnknownTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\MarshalStructure\MarshalStructure\MarshalStructure.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Miscellaneous\AutoLayoutStructure\AutoLayoutStructure.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Miscellaneous\MarshalClassTests\MarshalClassTests.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\OffsetOf\OffsetOf\OffsetOf.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteByte\ReadWriteByte.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt16\ReadWriteInt16.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt32\ReadWriteInt32.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt64\ReadWriteInt64.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteIntPtr\ReadWriteIntPtr.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\SimpleStruct\SimpleStruct\SimpleStruct.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\explicitlayout\Regressions\369794\repro369794\repro369794.*" />
 

@@ -338,14 +338,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitLdArg(1);
                 codeStream.Emit(ILOpcode.conv_i4);
 
-                if (elementType.IsPrimitive)
-                {
-                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
-                }
-                else
-                {
-                    codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(Context.GetWellKnownType(WellKnownType.IntPtr)));
-                }
+                codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(elementType));
 
                 codeStream.Emit(ILOpcode.conv_i4);
                 codeStream.Emit(ILOpcode.mul);

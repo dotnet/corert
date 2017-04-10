@@ -1,0 +1,54 @@
+<!--
+
+    Running all 7000 Pri-0 CoreCLR tests would take forever. Exclude down to a set that provides
+    broad coverage and an expected reasonable run time (< 30 minutes)
+
+-->
+<Project DefaultTargets = "GetListOfTestCmds"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+  <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyCharArray\CopyCharArray.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyDoubleArray\CopyDoubleArray.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt16Array\CopyInt16Array.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt32Array\CopyInt32Array.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyInt64Array\CopyInt64Array.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyIntPtrArray\CopyIntPtrArray.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopySingleArray\CopySingleArray.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\EnumMarshalling\EnumTest\EnumTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam\FuncPtrAsDelegateParam.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetExceptionForHR\GetExceptionForHR\GetExceptionForHR.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant\GetObjectForNativeVariant.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants\GetObjectsForNativeVariants.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\IUnknown\IUnknownTest\IUnknownTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPTSTR\LPTSTRTest\LPTSTRTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\ByValArray\MarshalArrayByValTest\MarshalArrayByValTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Miscellaneous\MarshalClassTests\MarshalClassTests.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\StructMarshalling\PInvoke\MarshalStructAsLayoutExp\MarshalStructAsLayoutExp.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\StructMarshalling\PInvoke\MarshalStructAsLayoutSeq\MarshalStructAsLayoutSeq.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\MarshalStructure\MarshalStructure\MarshalStructure.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\OffsetOf\OffsetOf\OffsetOf.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\UIntPtr\PInvokeUIntPtrTest\PInvokeUIntPtrTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteByte\ReadWriteByte.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt16\ReadWriteInt16.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt32\ReadWriteInt32.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteInt64\ReadWriteInt64.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\ReadWrite\ReadWriteIntPtr\ReadWriteIntPtr.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\RefCharArray\RefCharArrayTest\RefCharArrayTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\RefInt\RefIntTest\RefIntTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\SimpleStruct\SimpleStruct\SimpleStruct.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\SizeConst\SizeConstTest\SizeConstTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\String\StringMarshalingTest\StringMarshalingTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\UTF8\UTF8Test\UTF8Test.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Miscellaneous\AutoLayoutStructure\AutoLayoutStructure.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" />
+    <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyByteArray\CopyByteArray.cmd" />
+  </ItemGroup>
+</Project>

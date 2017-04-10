@@ -9,14 +9,11 @@ using System.Security;
 
 namespace System.Diagnostics
 {
-    // .NET Native-specific Debug implementation
     public static partial class Debug
     {
-        private static string NewLine => "\r\n";
-
         private static void ShowAssertDialog(string stackTrace, string message, string detailMessage)
         {
-            string fullMessage = message + NewLine + detailMessage;
+            string fullMessage = message + Environment.NewLine + detailMessage;
             bool result = DeveloperExperience.Default.OnContractFailure(stackTrace, ContractFailureKind.Assert, fullMessage, null, null, null);
             if (!result)
             {

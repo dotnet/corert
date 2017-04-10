@@ -11,6 +11,7 @@ using System.Text;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -31,7 +32,7 @@ namespace ILCompiler
             set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
             get
             {
-                System.Diagnostics.Debug.Assert(_compilationUnitPrefix != null);
+                Debug.Assert(_compilationUnitPrefix != null);
                 return _compilationUnitPrefix;
             }
         }
@@ -165,7 +166,15 @@ namespace ILCompiler
             {
                 EcmaType ecmaType = (EcmaType)type;
 
-                string prependAssemblyName = SanitizeName(((EcmaAssembly)ecmaType.EcmaModule).GetName().Name);
+                string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
+                bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
+                
+                // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
+                // but we already have a problem due to running SanitizeName without disambiguating the result
+                // This problem needs a better fix.
+                if (isSystemPrivate && !_mangleForCplusPlus)
+                    assemblyName = "S.P." + assemblyName.Substring(15);
+                string prependAssemblyName = SanitizeName(assemblyName);
 
                 var deduplicator = new HashSet<string>();
 
@@ -173,9 +182,11 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
+                    bool isSystemModule = ecmaType.Module == ecmaType.Context.SystemModule;
+
                     if (!_mangledTypeNames.ContainsKey(type))
                     {
-                        foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
+                        foreach (MetadataType t in ecmaType.EcmaModule.GetAllTypes())
                         {
                             string name = t.GetFullName();
 
@@ -197,6 +208,36 @@ namespace ILCompiler
                             else
                             {
                                 name = prependAssemblyName + "_" + name;
+
+                                // If this is one of the well known types, use a shorter name
+                                // We know this won't conflict because all the other types are
+                                // prefixed by the assembly name.
+                                if (isSystemModule)
+                                {
+                                    switch (t.Category)
+                                    {
+                                        case TypeFlags.Boolean: name = "Bool"; break;
+                                        case TypeFlags.Byte: name = "UInt8"; break;
+                                        case TypeFlags.SByte: name = "Int8"; break;
+                                        case TypeFlags.UInt16: name = "UInt16"; break;
+                                        case TypeFlags.Int16: name = "Int16"; break;
+                                        case TypeFlags.UInt32: name = "UInt32"; break;
+                                        case TypeFlags.Int32: name = "Int32"; break;
+                                        case TypeFlags.UInt64: name = "UInt64"; break;
+                                        case TypeFlags.Int64: name = "Int64"; break;
+                                        case TypeFlags.Char: name = "Char"; break;
+                                        case TypeFlags.Double: name = "Double"; break;
+                                        case TypeFlags.Single: name = "Single"; break;
+                                        case TypeFlags.IntPtr: name = "IntPtr"; break;
+                                        case TypeFlags.UIntPtr: name = "UIntPtr"; break;
+                                        default:
+                                            if (t.IsObject)
+                                                name = "Object";
+                                            else if (t.IsString)
+                                                name = "String";
+                                            break;
+                                    }
+                                }
                             }
 
                             // Ensure that name is unique and update our tables accordingly.
@@ -257,10 +298,13 @@ namespace ILCompiler
                         }
                         mangledName += NestMangledName(mangledInstantiation);
                     }
+                    else if (type is IPrefixMangledMethod)
+                    {
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type).ToString();
+                    }
                     else if (type is IPrefixMangledType)
                     {
-                        var prefixMangledType = (IPrefixMangledType)type;
-                        mangledName = NestMangledName(prefixMangledType.Prefix) + GetMangledTypeName(prefixMangledType.BaseType);
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type).ToString();
                     }
                     else
                     {
@@ -280,22 +324,83 @@ namespace ILCompiler
         }
 
         private ImmutableDictionary<MethodDesc, Utf8String> _mangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
+        private ImmutableDictionary<MethodDesc, Utf8String> _unqualifiedMangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
 
         public override Utf8String GetMangledMethodName(MethodDesc method)
         {
-            Utf8String mangledName;
-            if (_mangledMethodNames.TryGetValue(method, out mangledName))
-                return mangledName;
+            if (_mangleForCplusPlus)
+            {
+                return GetUnqualifiedMangledMethodName(method);
+            }
+            else
+            {
+                Utf8String utf8MangledName;
+                if (_mangledMethodNames.TryGetValue(method, out utf8MangledName))
+                    return utf8MangledName;
 
-            return ComputeMangledMethodName(method);
+                Utf8StringBuilder sb = new Utf8StringBuilder();
+                sb.Append(GetMangledTypeName(method.OwningType));
+                sb.Append("__");
+                sb.Append(GetUnqualifiedMangledMethodName(method));
+                utf8MangledName = sb.ToUtf8String();
+
+                lock (this)
+                {
+                    if (!_mangledMethodNames.ContainsKey(method))
+                        _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
+                }
+
+                return utf8MangledName;
+            }
         }
 
-        private Utf8String ComputeMangledMethodName(MethodDesc method)
+        private Utf8String GetUnqualifiedMangledMethodName(MethodDesc method)
         {
-            string prependTypeName = null;
-            if (!_mangleForCplusPlus)
-                prependTypeName = GetMangledTypeName(method.OwningType);
+            Utf8String mangledName;
+            if (_unqualifiedMangledMethodNames.TryGetValue(method, out mangledName))
+                return mangledName;
 
+            return ComputeUnqualifiedMangledMethodName(method);
+        }
+
+        private Utf8String GetPrefixMangledTypeName(IPrefixMangledType prefixMangledType)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledType.Prefix).Append(ExitNameScopeSequence);
+
+            if (_mangleForCplusPlus)
+            {
+                string name = GetMangledTypeName(prefixMangledType.BaseType).ToString().Replace("::", "_");
+                sb.Append(name);
+            }
+            else
+            {
+                sb.Append(GetMangledTypeName(prefixMangledType.BaseType));
+            }
+
+            return sb.ToUtf8String();
+        }
+
+        private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
+        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledMetod.Prefix).Append(ExitNameScopeSequence);
+
+            if (_mangleForCplusPlus)
+            {
+                string name = GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString().Replace("::", "_");
+                sb.Append(name);
+            }
+            else
+            {
+                sb.Append(GetMangledMethodName(prefixMangledMetod.BaseMethod));
+            }
+
+            return sb.ToUtf8String();
+        }
+
+        private Utf8String ComputeUnqualifiedMangledMethodName(MethodDesc method)
+        {
             if (method is EcmaMethod)
             {
                 var deduplicator = new HashSet<string>();
@@ -304,7 +409,7 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    if (!_mangledMethodNames.ContainsKey(method))
+                    if (!_unqualifiedMangledMethodNames.ContainsKey(method))
                     {
                         foreach (var m in method.OwningType.GetMethods())
                         {
@@ -313,38 +418,39 @@ namespace ILCompiler
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
 
-                            if (prependTypeName != null)
-                                name = prependTypeName + "__" + name;
-
-                            _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                            _unqualifiedMangledMethodNames = _unqualifiedMangledMethodNames.Add(m, name);
                         }
                     }
                 }
 
-                return _mangledMethodNames[method];
+                return _unqualifiedMangledMethodNames[method];
             }
 
-
-            string mangledName;
+            Utf8String utf8MangledName;
 
             var methodDefinition = method.GetMethodDefinition();
             if (methodDefinition != method)
             {
                 // Instantiated generic method
-                mangledName = GetMangledMethodName(methodDefinition).ToString();
+                Utf8StringBuilder sb = new Utf8StringBuilder();
+                sb.Append(GetUnqualifiedMangledMethodName(methodDefinition.GetTypicalMethodDefinition()));
+
+                sb.Append(EnterNameScopeSequence);
 
                 var inst = method.Instantiation;
-                string mangledInstantiation = "";
                 for (int i = 0; i < inst.Length; i++)
                 {
                     string instArgName = GetMangledTypeName(inst[i]);
                     if (_mangleForCplusPlus)
                         instArgName = instArgName.Replace("::", "_");
                     if (i > 0)
-                        mangledInstantiation += "__";
-                    mangledInstantiation += instArgName;
+                        sb.Append("__");
+                    sb.Append(instArgName);
                 }
-                mangledName += NestMangledName(mangledInstantiation);
+
+                sb.Append(ExitNameScopeSequence);
+
+                utf8MangledName = sb.ToUtf8String();
             }
             else
             {
@@ -352,29 +458,33 @@ namespace ILCompiler
                 if (typicalMethodDefinition != method)
                 {
                     // Method on an instantiated type
-                    mangledName = GetMangledMethodName(typicalMethodDefinition).ToString();
+                    utf8MangledName = GetUnqualifiedMangledMethodName(typicalMethodDefinition);
                 }
                 else if (method is IPrefixMangledMethod)
                 {
-                    var prefixMangledMetod = (IPrefixMangledMethod)method;
-                    mangledName = NestMangledName(prefixMangledMetod.Prefix) + GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString();
+                    utf8MangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)method);
+                }
+                else if (method is IPrefixMangledType)
+                {
+                    utf8MangledName = GetPrefixMangledTypeName((IPrefixMangledType)method);
                 }
                 else
                 {
                     // Assume that Name is unique for all other methods
-                    mangledName = SanitizeName(method.Name);
+                    utf8MangledName = new Utf8String(SanitizeName(method.Name));
                 }
-
-                if (prependTypeName != null)
-                    mangledName = prependTypeName + "__" + mangledName;
             }
 
-            Utf8String utf8MangledName = new Utf8String(mangledName);
-
-            lock (this)
+            // Unless we're doing CPP mangling, there's no point in caching the unqualified
+            // method name. We only needed it to construct the fully qualified name. Nobody
+            // is going to ask for the unqualified name again.
+            if (_mangleForCplusPlus)
             {
-                if (!_mangledMethodNames.ContainsKey(method))
-                    _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
+                lock (this)
+                {
+                    if (!_unqualifiedMangledMethodNames.ContainsKey(method))
+                        _unqualifiedMangledMethodNames = _unqualifiedMangledMethodNames.Add(method, utf8MangledName);
+                }
             }
 
             return utf8MangledName;
