@@ -91,9 +91,8 @@ namespace Internal.Runtime.TypeLoader
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
-            int* elementsTable = (int*)_elements;
-
-            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
+            int* pRelPtr32 = &((int*)_elements)[index];
+            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
 #else
             uint rva = GetRvaFromIndex(index);
             if ((rva & IndirectionConstants.RVAPointsToIndirection) != 0)
@@ -115,10 +114,8 @@ namespace Internal.Runtime.TypeLoader
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
-
-            int* elementsTable = (int*)_elements;
-
-            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
+            int* pRelPtr32 = &((int*)_elements)[index];
+            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
 #else
             uint rva = GetRvaFromIndex(index);
 
@@ -150,10 +147,8 @@ namespace Internal.Runtime.TypeLoader
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
-
-            int* elementsTable = (int*)_elements;
-
-            return (IntPtr)((byte*)&elementsTable[index + 1] + elementsTable[index]);
+            int* pRelPtr32 = &((int*)_elements)[index];
+            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
         }
 #endif
 

@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            objData.EmitReloc(factory.NecessaryTypeSymbol(_dynamicInvokeMethodContainerType), RelocType.IMAGE_REL_BASED_REL32);
+            objData.EmitReloc(factory.NecessaryTypeSymbol(_dynamicInvokeMethodContainerType), RelocType.IMAGE_REL_BASED_RELPTR32);
 
             List<KeyValuePair<MethodDesc, int>> sortedList = new List<KeyValuePair<MethodDesc, int>>(_methodToTemplateIndex);
             sortedList.Sort((firstEntry, secondEntry) => firstEntry.Value.CompareTo(secondEntry.Value));
@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
                 var nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(sortedList[i].Key));
 
                 objData.EmitInt(nameAndSig.SavedVertex.VertexOffset);
-                objData.EmitReloc(factory.MethodEntrypoint(sortedList[i].Key), RelocType.IMAGE_REL_BASED_REL32);
+                objData.EmitReloc(factory.MethodEntrypoint(sortedList[i].Key), RelocType.IMAGE_REL_BASED_RELPTR32);
             }
 
             _endSymbol.SetSymbolOffset(objData.CountBytes);

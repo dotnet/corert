@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.Target.Abi == TargetAbi.CoreRT)
                 {
                     // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
-                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_REL32, symbolAndDelta.Delta);
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_RELPTR32, symbolAndDelta.Delta);
                 }
                 else
                 {
