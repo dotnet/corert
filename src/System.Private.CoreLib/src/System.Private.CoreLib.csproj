@@ -296,7 +296,6 @@
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CompilationRelaxations.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
@@ -311,7 +310,6 @@
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
-    <Compile Include="System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
@@ -327,7 +325,6 @@
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
@@ -337,9 +334,6 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
-    <Compile Include="System\Runtime\InteropServices\VarEnum.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
@@ -378,14 +372,11 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="System\Text\ASCIIEncoding.cs" />
-    <Compile Include="System\Text\Decoder.cs" />
     <Compile Include="System\Text\DecoderBestFitFallback.cs" />
     <Compile Include="System\Text\DecoderExceptionFallback.cs" />
     <Compile Include="System\Text\DecoderFallback.cs" />
     <Compile Include="System\Text\DecoderNLS.cs" />
     <Compile Include="System\Text\DecoderReplacementFallback.cs" />
-    <Compile Include="System\Text\Encoder.cs" />
     <Compile Include="System\Text\EncoderBestFitFallback.cs" />
     <Compile Include="System\Text\EncoderExceptionFallback.cs" />
     <Compile Include="System\Text\EncoderFallback.cs" />
@@ -393,17 +384,11 @@
     <Compile Include="System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="System\Text\Encoding.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
-    <Compile Include="System\Text\EncodingInfo.cs" />
-    <Compile Include="System\Text\EncodingNLS.cs" />
-    <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
     <Compile Include="System\Text\StringBuilder.CoreRT.cs"/>
     <Compile Include="System\Text\StringBuilderCache.cs" />
-    <Compile Include="System\Text\UnicodeEncoding.cs" />
-    <Compile Include="System\Text\UTF32Encoding.cs" />
     <Compile Include="System\Text\UTF7Encoding.cs" />
-    <Compile Include="System\Text\UTF8Encoding.cs" />
     <Compile Include="System\Threading\AbandonedMutexException.cs" />
     <Compile Include="System\Threading\ApartmentState.cs" />
     <Compile Include="System\Threading\AsyncLocal.cs" />
@@ -553,10 +538,6 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="System\Runtime\MemoryFailPoint.cs" />
-    <Compile Include="System\Security\SecureString.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\ntdll\Interop.ZeroMemory.cs">
-      <Link>Interop\Windows\ntdll\Interop.ZeroMemory.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
       <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
     </Compile>
@@ -565,12 +546,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
-      <Link>Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\oleaut32\Interop.SysStringLen.cs">
-      <Link>Interop\Windows\oleaut32\Interop.SysStringLen.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
@@ -768,9 +743,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Native\Interop.SysConf.cs</Link>
