@@ -58,8 +58,16 @@ LNoFloatingPoint
         ;; Note that remoting expect target in r4.
         ldr     r4, [r5,#OFFSETOF__CallDescrData__pTarget]
         blx     r4
-    LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk
 
+ReturnFromCallDescrThunk
+        rout
+
+        ;; Symbol used to identify thunk call to managed function so the special
+        ;; case unwinder can unwind through this function. Sadly we cannot directly
+        ;; export this symbol right now because it confuses DIA unwinder to believe
+        ;; it's the beginning of a new method, therefore we export the address
+        ;; of an auxiliary variable holding the address instead.
+        
         ldr     r3, [r5,#OFFSETOF__CallDescrData__fpReturnSize]
 
         ;; Save FP return value if appropriate
@@ -118,5 +126,13 @@ LReturnDone
         EPILOG_POP              {r4,r5,r7,pc}
 
         NESTED_END RhCallDescrWorker
+
+        AREA        |.rdata|, ALIGN=4, DATA, READONLY
+
+PointerToReturnFromCallDescrThunk
+
+        DCD         ReturnFromCallDescrThunk
+
+        EXPORT      PointerToReturnFromCallDescrThunk
 
         END
