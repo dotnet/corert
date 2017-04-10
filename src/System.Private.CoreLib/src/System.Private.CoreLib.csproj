@@ -37,6 +37,9 @@
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)'=='true'">
+    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
     <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
