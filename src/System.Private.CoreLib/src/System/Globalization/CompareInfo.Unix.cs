@@ -18,12 +18,6 @@ namespace System.Globalization
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
-        internal CompareInfo(CultureInfo culture)
-        {
-            _name = culture.m_name;
-            InitSort(culture);
-        }
-
         private void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
