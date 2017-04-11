@@ -13,7 +13,6 @@ namespace System
     // converting an array of bytes to one of the base data 
     // types, as well as for converting a base data type to an
     // array of bytes.
-    [RelocatedType("System.Runtime.Extensions")]
     public static class BitConverter
     {
         // This field indicates the "endianess" of the architecture.
