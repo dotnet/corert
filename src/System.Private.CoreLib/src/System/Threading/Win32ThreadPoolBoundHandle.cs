@@ -14,7 +14,6 @@ namespace System.Threading
     //
     // Implementation of ThreadPoolBoundHandle that sits on top of the Win32 ThreadPool
     //
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Threading.Overlapped")]
     public sealed class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
         private readonly SafeHandle _handle;

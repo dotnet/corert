@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 namespace System.Threading
 {
     [StructLayout(LayoutKind.Sequential)]
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Threading.Overlapped")]
     public struct NativeOverlapped
     {
         public IntPtr InternalLow;

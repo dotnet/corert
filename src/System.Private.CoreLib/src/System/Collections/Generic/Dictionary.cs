@@ -33,13 +33,11 @@ namespace System.Collections.Generic
         ThrowOnExisting = 2
     }
 
-    [RelocatedType("System.Collections")]
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
     {
-        [RelocatedType("System.Collections")]
         private struct Entry
         {
             public int hashCode;    // Lower 31 bits of hash code, -1 if unused
@@ -831,7 +829,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [RelocatedType("System.Collections")]
         [Serializable]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
@@ -959,7 +956,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [RelocatedType("System.Collections")]
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
@@ -1114,7 +1110,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [RelocatedType("System.Collections")]
             [Serializable]
             public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
             {
@@ -1192,7 +1187,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [RelocatedType("System.Collections")]
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
@@ -1345,7 +1339,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [RelocatedType("System.Collections")]
             [Serializable]
             public struct Enumerator : IEnumerator<TValue>, System.Collections.IEnumerator
             {

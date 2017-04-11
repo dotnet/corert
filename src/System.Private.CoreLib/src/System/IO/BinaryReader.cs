@@ -8,8 +8,6 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-    [RelocatedType("System.IO")]
-    [RelocatedType("System.Runtime.Extensions")]
     public class BinaryReader : IDisposable
     {
         private const int MaxCharBytesSize = 128;
