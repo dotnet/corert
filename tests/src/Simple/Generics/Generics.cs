@@ -344,12 +344,12 @@ class Program
             }
 
             // Delegate to a shared nongeneric value type instance method
-            /*{
+            {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
                 Func<string> f = g.MakeString;
                 if (f() != "Bar: 42")
                     throw new Exception();
-            }*/
+            }
 
             // Delegate to a unshared nongeneric value type instance method
             {
@@ -360,12 +360,12 @@ class Program
             }
 
             // Delegate to a shared generic value type instance method
-            /*{
+            {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
                 Func<string> f = g.MakeGenString<Bar>;
                 if (f() != "Bar, Bar: 42")
                     throw new Exception();
-            }*/
+            }
 
             // Delegate to a unshared generic value type instance method
             {
