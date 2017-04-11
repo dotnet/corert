@@ -1000,6 +1000,57 @@ namespace System
             return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, Marvin.DefaultSeed);
         }
 
+        // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
+        // hash table).
+        internal int GetLegacyNonRandomizedHashCode()
+        {
+            unsafe
+            {
+                fixed (char* src = &_firstChar)
+                {
+                    Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                    Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
+#if BIT64
+                    int hash1 = 5381;
+#else // !BIT64 (32)
+                    int hash1 = (5381<<16) + 5381;
+#endif
+                    int hash2 = hash1;
+
+#if BIT64
+                    int c;
+                    char* s = src;
+                    while ((c = s[0]) != 0)
+                    {
+                        hash1 = ((hash1 << 5) + hash1) ^ c;
+                        c = s[1];
+                        if (c == 0)
+                            break;
+                        hash2 = ((hash2 << 5) + hash2) ^ c;
+                        s += 2;
+                    }
+#else // !BIT64 (32)
+                    // 32 bit machines.
+                    int* pint = (int *)src;
+                    int len = this.Length;
+                    while (len > 2)
+                    {
+                        hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
+                        hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ pint[1];
+                        pint += 2;
+                        len  -= 4;
+                    }
+
+                    if (len > 0)
+                    {
+                        hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
+                    }
+#endif
+                    return hash1 + (hash2 * 1566083941);
+                }
+            }
+        }
+
         // Determines whether a specified string is a prefix of the current instance
         //
         public Boolean StartsWith(String value)
