@@ -1510,8 +1510,12 @@ namespace Internal.TypeSystem.Interop
                 PropagateFromByRefArg(marshallingCodeStream, _managedHome);
             }
 
-            // we don't support [IN,OUT] together yet, either IN or OUT
-            Debug.Assert(!(Out && In));
+            // TODO: https://github.com/dotnet/corert/issues/3291
+            // We don't support [IN,OUT] together yet, either IN or OUT.
+            if (Out && In)
+            {
+                throw new NotImplementedException("Marshalling an argument as both in and out not yet implemented");
+            }
 
             var safeHandleType = InteropTypes.GetSafeHandleType(Context);
 
