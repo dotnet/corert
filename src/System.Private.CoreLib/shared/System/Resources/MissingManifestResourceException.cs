@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.CompilerServices;
 using System;
 using System.Runtime.Serialization;
 
 namespace System.Resources
 {
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedType("System.Resources.ResourceManager")]
-#endif
     [Serializable]
     public class MissingManifestResourceException : SystemException
     {
