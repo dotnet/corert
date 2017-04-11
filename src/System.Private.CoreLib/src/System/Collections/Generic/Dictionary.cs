@@ -75,6 +75,11 @@ namespace System.Collections.Generic
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             if (capacity > 0) Initialize(capacity);
             this.comparer = comparer ?? EqualityComparer<TKey>.Default;
+
+            if (this.comparer == EqualityComparer<string>.Default)
+            {
+                this.comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.Default;
+            }
         }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
@@ -384,10 +389,7 @@ namespace System.Collections.Generic
             if (buckets == null) Initialize(0);
             int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
             int targetBucket = hashCode % buckets.Length;
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
             int collisionCount = 0;
-#endif
 
             for (int i = buckets[targetBucket]; i >= 0; i = entries[i].next)
             {
@@ -407,9 +409,7 @@ namespace System.Collections.Generic
 
                     return false;
                 }
-#if FEATURE_RANDOMIZED_STRING_HASHING
                 collisionCount++;
-#endif
             }
 
             int index;
@@ -437,13 +437,12 @@ namespace System.Collections.Generic
             entries[index].value = value;
             buckets[targetBucket] = index;
             version++;
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            if (collisionCount > HashHelpers.HashCollisionThreshold && HashHelpers.IsWellKnownEqualityComparer(comparer))
+
+            if (collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
-                comparer = (IEqualityComparer<TKey>)HashHelpers.GetRandomizedEqualityComparer(comparer);
+                comparer = (IEqualityComparer<TKey>)EqualityComparer<string>.Default;
                 Resize(entries.Length, true);
             }
-#endif
 
             return true;
         }
