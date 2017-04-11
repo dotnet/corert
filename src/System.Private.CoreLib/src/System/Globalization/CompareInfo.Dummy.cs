@@ -9,9 +9,8 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal unsafe CompareInfo(CultureInfo culture)
+        private void InitSort(CultureInfo culture)
         {
-            _name = culture.m_name;
             _sortName = culture.SortName;
         }
 

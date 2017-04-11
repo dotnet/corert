@@ -73,6 +73,7 @@
     <Compile Include="Shared\McgGeneratedMarshallingCodeAttribute.cs" />
     <Compile Include="Shared\McgGeneratedNativeCallCodeAttribute.cs" />
     <Compile Include="Shared\McgHelpers.cs" />
+    <Compile Include="Shared\McgInternalTypeAttribute.cs" />
     <Compile Include="Shared\McgIntrinsics.cs" />
     <Compile Include="Shared\McgMarshal.cs" />
     <Compile Include="Shared\McgMethodNameAttribute.cs" />
