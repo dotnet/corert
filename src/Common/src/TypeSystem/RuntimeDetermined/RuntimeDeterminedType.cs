@@ -25,7 +25,7 @@ namespace Internal.TypeSystem
     /// Runtime determined types also behave like signature variables in the sense that they allow being
     /// substituted during signature instantiation.
     /// </remarks>
-    public sealed class RuntimeDeterminedType : DefType
+    public sealed partial class RuntimeDeterminedType : DefType
     {
         private DefType _rawCanonType;
         private GenericParameterDesc _runtimeDeterminedDetailsType;
