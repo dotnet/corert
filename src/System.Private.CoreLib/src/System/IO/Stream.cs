@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract class Stream : IDisposable
+    public abstract class Stream : MarshalByRefObject, IDisposable
     {
         public static readonly Stream Null = new NullStream();
 
