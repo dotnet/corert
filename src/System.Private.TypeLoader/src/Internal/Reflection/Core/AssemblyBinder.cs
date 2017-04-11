@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
-using Internal.Runtime.TypeLoader;
+using System.Reflection.Runtime.Assemblies;
 using System.Runtime.InteropServices;
 
 namespace Internal.Reflection.Core
@@ -31,18 +31,10 @@ namespace Internal.Reflection.Core
     {
         public const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
-        public abstract bool Bind(AssemblyName refName, out AssemblyBindResult result, out Exception exception);
+        public abstract bool Bind(RuntimeAssemblyName refName, out AssemblyBindResult result, out Exception exception);
 
         public abstract bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult result, out Exception exception);
 
         public abstract IList<AssemblyBindResult> GetLoadedAssemblies();
-
-        // This helper is a concession to the fact that third-party binders running on top of the Win8P surface area have no sensible way
-        // to perform this task due to the lack of a SetCulture() api on the AssemblyName class. Reflection.Core *is* able to do this 
-        // thanks to the Internal.Reflection.Augment contract so we will expose this helper for the convenience of binders. 
-        protected AssemblyName CreateAssemblyNameFromMetadata(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle)
-        {
-            return scopeDefinitionHandle.ToRuntimeAssemblyName(reader).ToAssemblyName();
-        }
     }
 }
