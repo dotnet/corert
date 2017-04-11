@@ -263,6 +263,34 @@ class Program
             }
         }
 
+        class FooShared
+        {
+            public readonly int Value;
+            public FooShared(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
+        class BarShared
+        {
+            public readonly int Value;
+            public BarShared(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
         class GenClass<T>
         {
             public readonly T X;
@@ -306,6 +334,44 @@ class Program
                 // Use a constructed type that is not used elsewhere
                 return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
+            }
+        }
+
+        private static void RunReferenceTypeShared<T>(T value)
+        {
+            // Delegate to a shared nongeneric reference type instance method
+            {
+                GenClass<T> g = new GenClass<T>(value);
+                Func<string> f = g.MakeString;
+                if (f() != "FooShared: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic reference type instance method
+            {
+                GenClass<T> g = new GenClass<T>(value);
+                Func<string> f = g.MakeGenString<T>;
+                if (f() != "FooShared, FooShared: 42")
+                    throw new Exception();
+            }
+        }
+
+        private static void RunValueTypeShared<T>(T value)
+        {
+            // Delegate to a shared nongeneric value type instance method
+            {
+                GenStruct<T> g = new GenStruct<T>(value);
+                Func<string> f = g.MakeString;
+                if (f() != "BarShared: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic value type instance method
+            {
+                GenStruct<T> g = new GenStruct<T>(value);
+                Func<string> f = g.MakeGenString<T>;
+                if (f() != "BarShared, BarShared: 42")
+                    throw new Exception();
             }
         }
 
@@ -375,6 +441,9 @@ class Program
                     throw new Exception();
             }
 
+            // Now the same from shared code
+            RunReferenceTypeShared<FooShared>(new FooShared(42));
+            RunValueTypeShared<BarShared>(new BarShared(42));
         }
     }
 
