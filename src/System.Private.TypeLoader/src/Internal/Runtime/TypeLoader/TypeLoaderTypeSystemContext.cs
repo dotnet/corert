@@ -5,6 +5,8 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Reflection.Runtime.Assemblies;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -193,12 +195,12 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwErrorIfNotFound)
+        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwErrorIfNotFound)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             AssemblyBindResult bindResult;
             Exception failureException;
-            if (!AssemblyBinderImplementation.Instance.Bind(name, out bindResult, out failureException))
+            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), out bindResult, out failureException))
             {
                 if (throwErrorIfNotFound)
                     throw failureException;

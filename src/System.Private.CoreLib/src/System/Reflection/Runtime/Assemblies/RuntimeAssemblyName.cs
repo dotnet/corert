@@ -142,9 +142,9 @@ namespace System.Reflection.Runtime.Assemblies
 
             // Our "Flags" contain both the classic flags and the ProcessorArchitecture + ContentType bits. The public AssemblyName has separate properties for
             // these. The setters for these properties quietly mask out any bits intended for the other one, so we needn't do that ourselves..
-            blank.Flags = AssemblyNameHelpers.ExtractAssemblyNameFlags(this.Flags);
-            blank.ContentType = AssemblyNameHelpers.ExtractAssemblyContentType(this.Flags);
-            blank.ProcessorArchitecture = AssemblyNameHelpers.ExtractProcessorArchitecture(this.Flags);
+            blank.Flags = this.Flags.ExtractAssemblyNameFlags();
+            blank.ContentType = this.Flags.ExtractAssemblyContentType();
+            blank.ProcessorArchitecture = this.Flags.ExtractProcessorArchitecture();
 
             if (this.PublicKeyOrToken != null)
             {

@@ -85,10 +85,9 @@ namespace System.Reflection.Runtime.Assemblies
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
-                    AssemblyName convertedAssemblyRefName = assemblyRefName.ToAssemblyName();
                     AssemblyBindResult bindResult;
                     Exception exception;
-                    if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
+                    if (!binder.Bind(assemblyRefName, out bindResult, out exception))
                         return null;
 
                     return GetRuntimeAssembly(bindResult);

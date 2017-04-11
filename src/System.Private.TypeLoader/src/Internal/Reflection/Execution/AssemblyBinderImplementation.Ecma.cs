@@ -32,14 +32,14 @@ namespace Internal.Reflection.Execution
         /// Abstraction to hold PE data for an ECMA module
         private class PEInfo
         {
-            public PEInfo(AssemblyName name, MetadataReader reader, PEReader pe)
+            public PEInfo(RuntimeAssemblyName name, MetadataReader reader, PEReader pe)
             {
                 Name = name;
                 Reader = reader;
                 PE = pe;
             }
 
-            public readonly AssemblyName Name;
+            public readonly RuntimeAssemblyName Name;
             public readonly MetadataReader Reader;
             public readonly PEReader PE;
         }
@@ -55,13 +55,11 @@ namespace Internal.Reflection.Execution
 
             // 2. Create AssemblyName from MetadataReader
             RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
-            AssemblyName asmName = new AssemblyName();
-            runtimeAssemblyName.CopyToAssemblyName(asmName);
 
             lock(s_ecmaLoadedAssemblies)
             {
                 // 3. Attempt to bind to already loaded assembly
-                if (Bind(asmName, out bindResult, out exception))
+                if (Bind(runtimeAssemblyName, out bindResult, out exception))
                 {
                     result = true;
                     return;
@@ -69,7 +67,7 @@ namespace Internal.Reflection.Execution
                 exception = null;
 
                 // 4. If that fails, then add newly created metareader to global cache of byte array loaded modules
-                PEInfo peinfo = new PEInfo(asmName, reader, pe);
+                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, pe);
 
                 s_ecmaLoadedAssemblies.Add(peinfo);
                 ModuleList moduleList = ModuleList.Instance;
@@ -77,7 +75,7 @@ namespace Internal.Reflection.Execution
                 moduleList.RegisterModule(newModuleInfo);
 
                 // 5. Then try to load by name again. This load should always succeed
-                if (Bind(asmName, out bindResult, out exception))
+                if (Bind(runtimeAssemblyName, out bindResult, out exception))
                 {
                     result = true;
                     return;
@@ -88,7 +86,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        partial void BindEcmaAssemblyName(AssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool foundMatch)
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool foundMatch)
         {
             lock(s_ecmaLoadedAssemblies)
             {
