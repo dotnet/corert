@@ -38,7 +38,7 @@ namespace Internal.TypeSystem
             int result = x.ClassCode - y.ClassCode;
             if (result == 0)
             {
-                Debug.Assert(x.GetType() != y.GetType());
+                Debug.Assert(x.GetType() == y.GetType());
 
                 result = x.CompareToImpl(y, this);
 
