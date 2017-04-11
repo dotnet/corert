@@ -220,6 +220,7 @@
     <Compile Include="System\Collections\Generic\List.cs" />
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
     <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />

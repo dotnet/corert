@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Threading.Overlapped")]
     public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
         internal unsafe readonly Win32ThreadPoolNativeOverlapped* _overlapped;

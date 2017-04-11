@@ -4,7 +4,6 @@
 
 namespace System.Threading
 {
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Threading.Overlapped")]
     [CLSCompliant(false)]
     public unsafe delegate void IOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pOVERLAP);
 }

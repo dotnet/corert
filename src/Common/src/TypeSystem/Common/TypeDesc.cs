@@ -288,7 +288,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(ArrayType);
+                return this is ArrayType;
             }
         }
 
@@ -323,7 +323,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(ByRefType);
+                return this is ByRefType;
             }
         }
 
@@ -334,7 +334,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(PointerType);
+                return this is PointerType;
             }
         }
 
@@ -345,7 +345,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(FunctionPointerType);
+                return this is FunctionPointerType;
             }
         }
 
@@ -356,7 +356,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(SignatureTypeVariable) || this.GetType() == typeof(SignatureMethodVariable);
+                return this is SignatureTypeVariable || this is SignatureMethodVariable;
             }
         }
 
