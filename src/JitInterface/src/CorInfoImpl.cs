@@ -1426,9 +1426,6 @@ namespace Internal.JitInterface
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
-            // TODO: maybe instead of the isLdvirtftn flag, RyuJIT should just populate pTargetMethod.tokenType with a flag
-            // that says the token comes from a ldvirtftn...
-
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
@@ -1454,9 +1451,7 @@ namespace Internal.JitInterface
 
                 MethodDesc contextMethod = methodFromContext(pTargetMethod.tokenContext);
 
-                // TODO: Sergey, I would expect we aborted inlining already. If that's not the case,
-                // the best we can do is a `return` at this point. We can't compute a runtime lookup
-                // in inlined methods.
+                // We should not be inlining these. RyuJIT should have aborted inlining already.
                 Debug.Assert(contextMethod == MethodBeingCompiled);
                 
                 pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);

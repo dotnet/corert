@@ -6,6 +6,7 @@ using System;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.Text;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
@@ -20,8 +21,8 @@ namespace ILCompiler
     {
         private enum TargetKind
         {
-            Direct,
-            FatPointer,
+            CanonicalEntrypoint,
+            ExactCallableAddress,
             InterfaceDispatch,
             VTableLookup,
         }
@@ -51,7 +52,7 @@ namespace ILCompiler
 
         public bool TargetNeedsVTableLookup => _targetKind == TargetKind.VTableLookup;
 
-        public bool PerformsVirtualDispatch
+        public bool NeedsVirtualMethodUseTracking
         {
             get
             {
@@ -68,8 +69,8 @@ namespace ILCompiler
                     case TargetKind.VTableLookup:
                         return false;
 
-                    case TargetKind.Direct:
-                    case TargetKind.FatPointer:
+                    case TargetKind.CanonicalEntrypoint:
+                    case TargetKind.ExactCallableAddress:
                     case TargetKind.InterfaceDispatch:
                         return TargetMethod.IsRuntimeDeterminedExactMethod;
 
@@ -78,24 +79,6 @@ namespace ILCompiler
                         return false;
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the node representing the target method of the delegate if no runtime lookup is needed.
-        /// </summary>
-        public ISymbolNode GetTargetNode(NodeFactory factory)
-        {
-            Debug.Assert(!NeedsRuntimeLookup);
-            return GetTargetNode(factory, TargetMethod);
-        }
-
-        /// <summary>
-        /// Gets the node representing the target method of the delegate if runtime lookup is needed.
-        /// </summary>
-        public ISymbolNode GetTargetNode(NodeFactory factory, Instantiation typeInst, Instantiation methodInst)
-        {
-            Debug.Assert(NeedsRuntimeLookup);
-            return GetTargetNode(factory, TargetMethod.InstantiateSignature(typeInst, methodInst));
         }
 
         // None of the data structures that support shared generics have been ported to the JIT
@@ -107,7 +90,7 @@ namespace ILCompiler
             Debug.Assert(NeedsRuntimeLookup);
             switch (_targetKind)
             {
-                case TargetKind.FatPointer:
+                case TargetKind.ExactCallableAddress:
                     return factory.GenericLookup.MethodEntry(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
@@ -120,26 +103,30 @@ namespace ILCompiler
         }
 #endif
 
-        private ISymbolNode GetTargetNode(NodeFactory factory, MethodDesc exactTargetMethod)
+        /// <summary>
+        /// Gets the node representing the target method of the delegate if no runtime lookup is needed.
+        /// </summary>
+        public ISymbolNode GetTargetNode(NodeFactory factory)
         {
-            MethodDesc canonTargetMethod = exactTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            Debug.Assert(!NeedsRuntimeLookup);
+            MethodDesc canonTargetMethod = TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             switch (_targetKind)
             {
-                case TargetKind.Direct:
-                    if (exactTargetMethod != canonTargetMethod)
-                        return factory.ShadowConcreteMethod(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                case TargetKind.CanonicalEntrypoint:
+                    if (TargetMethod != canonTargetMethod)
+                        return factory.ShadowConcreteMethod(TargetMethod, TargetMethodIsUnboxingThunk);
                     else
-                        return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                        return factory.MethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
 
-                case TargetKind.FatPointer:
-                    if (exactTargetMethod != canonTargetMethod)
-                        return factory.FatFunctionPointer(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                case TargetKind.ExactCallableAddress:
+                    if (TargetMethod != canonTargetMethod)
+                        return factory.FatFunctionPointer(TargetMethod, TargetMethodIsUnboxingThunk);
                     else
-                        return factory.MethodEntrypoint(exactTargetMethod, TargetMethodIsUnboxingThunk);
+                        return factory.MethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
-                    return factory.InterfaceDispatchCell(exactTargetMethod);
+                    return factory.InterfaceDispatchCell(TargetMethod);
 
                 case TargetKind.VTableLookup:
                     Debug.Assert(false, "Need to do runtime lookup");
@@ -236,7 +223,7 @@ namespace ILCompiler
                 return new DelegateCreationInfo(
                     factory.MethodEntrypoint(initMethod),
                     targetMethod,
-                    TargetKind.FatPointer,
+                    TargetKind.ExactCallableAddress,
                     factory.MethodEntrypoint(invokeThunk));
             }
             else
@@ -258,12 +245,9 @@ namespace ILCompiler
                         // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
                         // the invocation if necessary.
                         initializeMethodName = "InitializeClosedInstanceSlow";
-                        kind = TargetKind.FatPointer;
                     }
-                    else
-                    {
-                        kind = TargetKind.Direct;
-                    }
+
+                    kind = TargetKind.ExactCallableAddress;
                 }
                 else
                 {
@@ -282,7 +266,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        kind = TargetKind.Direct;
+                        kind = TargetKind.CanonicalEntrypoint;
                         targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     }
                 }
@@ -291,6 +275,21 @@ namespace ILCompiler
                     factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                     targetMethod,
                     kind);
+            }
+        }
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("__DelegateCtor_");
+            if (TargetNeedsVTableLookup)
+                sb.Append("FromVtbl_");
+            Constructor.AppendMangledName(nameMangler, sb);
+            sb.Append("__");
+            sb.Append(nameMangler.GetMangledMethodName(TargetMethod));
+            if (Thunk != null)
+            {
+                sb.Append("__");
+                Thunk.AppendMangledName(nameMangler, sb);
             }
         }
 

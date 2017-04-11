@@ -109,11 +109,31 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.DelegateCtor:
                     {
                         DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
-                        if (createInfo.PerformsVirtualDispatch)
+                        if (createInfo.NeedsVirtualMethodUseTracking)
+                        {
+                            MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
+                            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTargetMethod.OwningType))
+                            {
+                                return new[] {
+                                    new DependencyListEntry(
+                                        factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                        "Dictionary dependency"),
+                                    new DependencyListEntry(
+                                        _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                        "Dictionary dependency") };
+                            }
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    {
+                        MethodDesc instantiatedTarget = ((MethodDesc)_target).InstantiateSignature(typeInstantiation, methodInstantiation);
+                        if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTarget.OwningType))
                         {
                             return new[] {
                                 new DependencyListEntry(
-                                    factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                    factory.VirtualMethodUse(instantiatedTarget),
                                     "Dictionary dependency"),
                                 new DependencyListEntry(
                                     _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
@@ -121,18 +141,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
-
-                case ReadyToRunHelperId.ResolveVirtualFunction:
-                    {
-                        MethodDesc target = (MethodDesc)_target;
-                        return new[] {
-                            new DependencyListEntry(
-                                factory.VirtualMethodUse(target.InstantiateSignature(typeInstantiation, methodInstantiation)),
-                                "Dictionary dependency"),
-                            new DependencyListEntry(
-                                _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
-                                "Dictionary dependency") };
-                    }
             }
 
             // All other generic lookups just depend on the thing they point to
@@ -149,16 +157,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                var createInfo = (DelegateCreationInfo)_target;
-                sb.Append("__DelegateCtor_");
-                createInfo.Constructor.AppendMangledName(nameMangler, sb);
-                sb.Append("__");
-                sb.Append(nameMangler.GetMangledMethodName(createInfo.TargetMethod));
-                if (createInfo.Thunk != null)
-                {
-                    sb.Append("__");
-                    createInfo.Thunk.AppendMangledName(nameMangler, sb);
-                }
+                ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
             }
         }
 

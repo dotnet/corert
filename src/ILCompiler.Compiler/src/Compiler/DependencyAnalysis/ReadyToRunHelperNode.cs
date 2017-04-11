@@ -121,20 +121,7 @@ namespace ILCompiler.DependencyAnalysis
                     sb.Append("__GetThreadStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.DelegateCtor:
-                    {
-                        var createInfo = (DelegateCreationInfo)_target;
-                        sb.Append("__DelegateCtor_");
-                        if (createInfo.TargetNeedsVTableLookup)
-                            sb.Append("FromVtbl_");
-                        createInfo.Constructor.AppendMangledName(nameMangler, sb);
-                        sb.Append("__");
-                        sb.Append(nameMangler.GetMangledMethodName(createInfo.TargetMethod));
-                        if (createInfo.Thunk != null)
-                        {
-                            sb.Append("__");
-                            createInfo.Thunk.AppendMangledName(nameMangler, sb);
-                        }
-                    }
+                    ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     sb.Append("__ResolveVirtualFunction_");
@@ -164,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
                 var info = (DelegateCreationInfo)_target;
-                if (info.PerformsVirtualDispatch)
+                if (info.NeedsVirtualMethodUseTracking)
                 {
 #if !SUPPORT_JIT
                     if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(info.TargetMethod.OwningType))
