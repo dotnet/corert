@@ -173,7 +173,6 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    [RelocatedType("System.Resources.ResourceManager")]
     [Serializable]
     public class ResourceManager
     {
