@@ -18,6 +18,8 @@ namespace Internal.TypeSystem
         private readonly NativeStructTypeHashtable _nativeStructHashtable;
         private readonly StructMarshallingThunkHashTable _structMarshallingThunkHashtable;
         private readonly DelegateMarshallingStubHashtable _delegateMarshallingThunkHashtable;
+        private readonly ForwardDelegateCreationStubHashtable _forwardDelegateCreationStubHashtable;
+        private readonly PInvokeDelegateWrapperHashtable _pInvokeDelegateWrapperHashtable;
         private readonly InlineArrayHashTable _inlineArrayHashtable;
 
         public InteropStateManager(ModuleDesc generatedAssembly)
@@ -26,6 +28,8 @@ namespace Internal.TypeSystem
             _structMarshallingThunkHashtable = new StructMarshallingThunkHashTable(this, _generatedAssembly.GetGlobalModuleType());
             _nativeStructHashtable = new NativeStructTypeHashtable(this, _generatedAssembly);
             _delegateMarshallingThunkHashtable = new DelegateMarshallingStubHashtable(this, _generatedAssembly.GetGlobalModuleType());
+            _forwardDelegateCreationStubHashtable = new ForwardDelegateCreationStubHashtable(this, _generatedAssembly.GetGlobalModuleType());
+            _pInvokeDelegateWrapperHashtable = new PInvokeDelegateWrapperHashtable(this, _generatedAssembly);
             _inlineArrayHashtable = new InlineArrayHashTable(this, _generatedAssembly);
         }
         //
@@ -46,7 +50,7 @@ namespace Internal.TypeSystem
 
 
             // Get the stub for marshalling open static delegate
-            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, isOpenStaticDelegate: true);
+            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, DelegateMarshallingMethodThunkKind.ReverseOpenStatic);
             return _delegateMarshallingThunkHashtable.GetOrCreateValue(stubKey);
         }
 
@@ -64,10 +68,38 @@ namespace Internal.TypeSystem
 
 
             // Get the stub for marshalling open static delegate
-            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, isOpenStaticDelegate: false);
+            var stubKey = new DelegateMarshallingStubHashtableKey((MetadataType)delegateType, DelegateMarshallingMethodThunkKind.ReverseClosed);
             return _delegateMarshallingThunkHashtable.GetOrCreateValue(stubKey);
         }
 
+        /// <summary>
+        /// Generates thunk for creating delegate
+        /// </summary>
+        public ForwardDelegateCreationThunk GetForwardDelegateCreationThunk(TypeDesc delegateType)
+        {
+            if (delegateType is ByRefType)
+            {
+                delegateType = delegateType.GetParameterType();
+            }
+
+            Debug.Assert(delegateType is MetadataType);
+
+            // Get the stub for creating delegate
+            return _forwardDelegateCreationStubHashtable.GetOrCreateValue((MetadataType)delegateType);
+        }
+
+        public PInvokeDelegateWrapper GetPInvokeDelegateWrapper(TypeDesc delegateType)
+        {
+            if (delegateType is ByRefType)
+            {
+                delegateType = delegateType.GetParameterType();
+            }
+
+            Debug.Assert(delegateType is MetadataType);
+
+            // Get the Type that wraps the native function
+            return _pInvokeDelegateWrapperHashtable.GetOrCreateValue((MetadataType)delegateType);
+        }
 
         //
         //  Struct Marshalling 
@@ -279,41 +311,42 @@ namespace Internal.TypeSystem
         private struct DelegateMarshallingStubHashtableKey
         {
             public readonly MetadataType DelegateType;
-            public readonly bool IsOpenStaticDelegate;
+            public readonly DelegateMarshallingMethodThunkKind Kind;
 
-            public DelegateMarshallingStubHashtableKey(MetadataType type, bool isOpenStaticDelegate)
+            public DelegateMarshallingStubHashtableKey(MetadataType type, DelegateMarshallingMethodThunkKind kind)
             {
                 DelegateType = type;
-                IsOpenStaticDelegate = isOpenStaticDelegate;
+                Kind = kind;
             }
         }
         private class DelegateMarshallingStubHashtable : LockFreeReaderHashtable<DelegateMarshallingStubHashtableKey, DelegateMarshallingMethodThunk>
         {
             protected override int GetKeyHashCode(DelegateMarshallingStubHashtableKey key)
             {
-                return key.DelegateType.GetHashCode() ^ (key.IsOpenStaticDelegate ? 1 : 0);
+                return key.DelegateType.GetHashCode() ^ (int)key.Kind;
             }
 
             protected override int GetValueHashCode(DelegateMarshallingMethodThunk value)
             {
-                return value.DelegateType.GetHashCode() ^ (value.IsOpenStaticDelegate ? 1 : 0);
+                return value.DelegateType.GetHashCode() ^ (int)value.Kind;
             }
 
             protected override bool CompareKeyToValue(DelegateMarshallingStubHashtableKey key, DelegateMarshallingMethodThunk value)
             {
                 return Object.ReferenceEquals(key.DelegateType, value.DelegateType) &&
-                    key.IsOpenStaticDelegate == value.IsOpenStaticDelegate;
+                    key.Kind== value.Kind;
             }
 
             protected override bool CompareValueToValue(DelegateMarshallingMethodThunk value1, DelegateMarshallingMethodThunk value2)
             {
                 return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType) &&
-                    value1.IsOpenStaticDelegate == value2.IsOpenStaticDelegate;
+                    value1.Kind== value2.Kind;
             }
 
             protected override DelegateMarshallingMethodThunk CreateValueFromKey(DelegateMarshallingStubHashtableKey key)
             {
-                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType, _interopStateManager, isOpenStaticDelegate: key.IsOpenStaticDelegate);
+                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType, 
+                    _interopStateManager, key.Kind);
             }
 
             private TypeDesc _owningType;
@@ -323,8 +356,83 @@ namespace Internal.TypeSystem
             {
                 _interopStateManager = interopStateManager;
                 _owningType = owningType;
-                
             }
         }
+
+        private class ForwardDelegateCreationStubHashtable : LockFreeReaderHashtable<MetadataType, ForwardDelegateCreationThunk>
+        {
+            protected override int GetKeyHashCode(MetadataType key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(ForwardDelegateCreationThunk value)
+            {
+                return value.DelegateType.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MetadataType key, ForwardDelegateCreationThunk value)
+            {
+                return Object.ReferenceEquals(key, value.DelegateType);
+            }
+
+            protected override bool CompareValueToValue(ForwardDelegateCreationThunk value1, ForwardDelegateCreationThunk value2)
+            {
+                return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType);
+            }
+
+            protected override ForwardDelegateCreationThunk CreateValueFromKey(MetadataType key)
+            {
+                return new ForwardDelegateCreationThunk(key, _owningType, _interopStateManager);
+            }
+
+            private TypeDesc _owningType;
+            private InteropStateManager _interopStateManager;
+
+            public ForwardDelegateCreationStubHashtable(InteropStateManager interopStateManager, TypeDesc owningType)
+            {
+                _interopStateManager = interopStateManager;
+                _owningType = owningType;
+            }
+        }
+
+        private class PInvokeDelegateWrapperHashtable : LockFreeReaderHashtable<MetadataType, PInvokeDelegateWrapper>
+        {
+            protected override int GetKeyHashCode(MetadataType key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(PInvokeDelegateWrapper value)
+            {
+                return value.DelegateType.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MetadataType key, PInvokeDelegateWrapper value)
+            {
+                return Object.ReferenceEquals(key, value.DelegateType);
+            }
+
+            protected override bool CompareValueToValue(PInvokeDelegateWrapper value1, PInvokeDelegateWrapper value2)
+            {
+                return Object.ReferenceEquals(value1.DelegateType, value2.DelegateType);
+            }
+
+            protected override PInvokeDelegateWrapper CreateValueFromKey(MetadataType key)
+            {
+                return new PInvokeDelegateWrapper(_owningModule, key, _interopStateManager);
+            }
+
+            private readonly InteropStateManager _interopStateManager;
+            private readonly ModuleDesc _owningModule;
+
+            public PInvokeDelegateWrapperHashtable(InteropStateManager interopStateManager, ModuleDesc owningModule)
+            {
+                _interopStateManager = interopStateManager;
+                _owningModule = owningModule;
+            }
+        }
+
+
     }
 }

@@ -6,13 +6,16 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    public partial class StructMarshallingThunk : IPrefixMangledType
+    /// <summary>
+    /// contains functionality related to name mangling
+    /// </summary>
+    public partial class ForwardDelegateCreationThunk : IPrefixMangledType
     {
         TypeDesc IPrefixMangledType.BaseType
         {
             get
             {
-                return ManagedType;
+                return _delegateType;
             }
         }
 
@@ -20,7 +23,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix;
+                return "ForwardDelegateCreationStub";
             }
         }
     }

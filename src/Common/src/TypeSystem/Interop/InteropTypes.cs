@@ -40,6 +40,12 @@ namespace Internal.TypeSystem.Interop
                     }
                 }
         */
+
+        public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
+        }
+
         public static MetadataType GetStringBuilder(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Text", "StringBuilder");

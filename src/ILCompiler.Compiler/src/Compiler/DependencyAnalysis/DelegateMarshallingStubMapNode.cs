@@ -52,11 +52,16 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var delegateEntry in factory.InteropStubManager.GetDelegateMarshallingThunks())
             {
-                var delegateType = delegateEntry.Item1;
+                var delegateType = delegateEntry.DelegateType;
+                Vertex thunks= writer.GetTuple(
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.OpenStaticDelegateMarshallingThunk))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.ClosedDelegateMarshallingThunk))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.DelegateCreationThunk)))
+                    );
+
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(delegateType))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item2))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.Item3)))
+                    thunks
                 );
 
                 int hashCode = delegateType.GetHashCode();

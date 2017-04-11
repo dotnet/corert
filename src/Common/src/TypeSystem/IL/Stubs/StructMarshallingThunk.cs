@@ -92,22 +92,30 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        private string NamePrefix
         {
             get
             {
                 switch (ThunkType)
                 {
                     case StructMarshallingThunkType.ManagedToNative:
-                        return "ManagedToNative__" + ((MetadataType)ManagedType).Name;
+                        return "ManagedToNative";
                     case StructMarshallingThunkType.NativeToManage:
-                        return "NativeToManaged__" + ((MetadataType)ManagedType).Name;
+                        return "NativeToManaged";
                     case StructMarshallingThunkType.Cleanup:
-                        return "Cleanup__" + ((MetadataType)ManagedType).Name;
+                        return "Cleanup";
                     default:
                         System.Diagnostics.Debug.Assert(false, "Unexpected Struct marshalling thunk type");
                         return string.Empty;
                 }
+            }
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return NamePrefix + "__" + ((MetadataType)ManagedType).Name;
             }
         }
 

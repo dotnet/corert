@@ -324,10 +324,31 @@ DLL_EXPORT bool __stdcall ReversePInvoke_Int(int(__stdcall *fnPtr) (int, int, in
     return fnPtr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 55;
 }
 
-DLL_EXPORT bool __stdcall ReversePInvoke_String(bool(__stdcall *fnPtr) (char *))
+typedef bool(__stdcall *StringFuncPtr) (char *);
+DLL_EXPORT bool __stdcall ReversePInvoke_String(StringFuncPtr fnPtr)
 {
     char str[] = "Hello World";
     return fnPtr(str);
+}
+
+bool CheckString(char *str)
+{
+   return CompareAnsiString(str, "Hello World!") == 1;
+}
+
+
+DLL_EXPORT StringFuncPtr __stdcall GetDelegate()
+{
+    return CheckString;
+}
+
+DLL_EXPORT bool __stdcall Callback(StringFuncPtr *fnPtr)
+{
+    char str[] = "Hello World";
+    if ((*fnPtr)(str) == false)
+      return false;
+   *fnPtr = CheckString;
+   return true;
 }
 
 DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)

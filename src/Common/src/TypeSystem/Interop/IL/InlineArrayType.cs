@@ -180,7 +180,9 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override int GetHashCode()
+        private int _hashCode;
+
+        private void InitializeHashCode()
         {
             var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(Namespace);
 
@@ -190,7 +192,16 @@ namespace Internal.TypeSystem.Interop
             }
 
             hashCodeBuilder.Append(Name);
-            return hashCodeBuilder.ToHashCode();
+            _hashCode = hashCodeBuilder.ToHashCode();
+        }
+
+        public override int GetHashCode()
+        {
+            if (_hashCode == 0)
+            {
+                InitializeHashCode();
+            }
+            return _hashCode;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

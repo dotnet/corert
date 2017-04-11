@@ -74,6 +74,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ArrayMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\CalliIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMarshallingMethodThunk.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ForwardDelegateCreationThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILEmitter.cs" />
@@ -85,6 +86,8 @@
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapper.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapperConstructor.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\InlineArrayType.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeILEmitterConfiguration.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropTypes.cs" />

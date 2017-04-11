@@ -416,6 +416,15 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
@@ -445,6 +454,21 @@
     </Compile>
     <Compile Include="TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs</Link>
+    </Compile>
+    <Compile Include="TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\InlineArrayType.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
