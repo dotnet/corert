@@ -9,6 +9,8 @@ namespace Internal.TypeSystem
     // Functionality related to determinstic ordering of types
     partial class InstantiatedType
     {
+        protected internal override int ClassCode => 1150020412;
+
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             var otherType = (InstantiatedType)other;

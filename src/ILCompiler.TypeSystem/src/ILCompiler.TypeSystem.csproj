@@ -479,6 +479,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\ArrayType.Sorting.cs">
       <Link>TypeSystem\Sorting\ArrayType.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\ByRefType.Sorting.cs">
+      <Link>TypeSystem\Sorting\ByRefType.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\FunctionPointerType.Sorting.cs">
       <Link>TypeSystem\Sorting\FunctionPointerType.Sorting.cs</Link>
     </Compile>
@@ -488,8 +491,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\MethodSignature.Sorting.cs">
       <Link>TypeSystem\Sorting\MethodSignature.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Sorting\ParameterizedType.Sorting.cs">
-      <Link>TypeSystem\Sorting\ParameterizedType.Sorting.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\PointerType.Sorting.cs">
+      <Link>TypeSystem\Sorting\PointerType.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\SignatureVariable.Sorting.cs">
       <Link>TypeSystem\Sorting\SignatureVariable.Sorting.cs</Link>

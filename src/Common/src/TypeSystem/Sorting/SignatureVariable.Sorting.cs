@@ -9,6 +9,8 @@ namespace Internal.TypeSystem
     // Functionality related to determinstic ordering of types
     partial class SignatureVariable
     {
+        protected internal override int ClassCode => throw new NotSupportedException();
+
         protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             // Who needs this and why?

@@ -7,6 +7,8 @@ namespace Internal.TypeSystem
     // Functionality related to determinstic ordering of types
     partial class RuntimeDeterminedType
     {
+        protected internal override int ClassCode => 351938209;
+
         protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             var otherType = (RuntimeDeterminedType)other;

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -36,6 +34,8 @@ namespace Internal.IL.Stubs
 
         partial class DynamicInvokeThunkGenericParameter
         {
+            protected override int ClassCode => -234393261;
+
             protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
             {
                 var otherType = (DynamicInvokeThunkGenericParameter)other;

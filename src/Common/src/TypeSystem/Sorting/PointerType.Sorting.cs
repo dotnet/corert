@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     // Functionality related to determinstic ordering of types
-    partial class ParameterizedType
+    partial class PointerType
     {
+        protected internal override int ClassCode => -2124247792;
+
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
-            Debug.Assert(GetType() == other.GetType());
-            Debug.Assert(!IsArray);
-            return comparer.Compare(ParameterType, ((ParameterizedType)other).ParameterType);
+            return comparer.Compare(ParameterType, ((PointerType)other).ParameterType);
         }
     }
 }

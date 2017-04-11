@@ -7,6 +7,8 @@ namespace Internal.TypeSystem.Interop
     // Functionality related to determinstic ordering of types
     partial class NativeStructType
     {
+        protected internal override int ClassCode => -377751537;
+
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             return comparer.Compare(ManagedStructType, ((NativeStructType)other).ManagedStructType);

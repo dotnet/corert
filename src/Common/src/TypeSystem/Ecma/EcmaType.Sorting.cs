@@ -9,6 +9,8 @@ namespace Internal.TypeSystem.Ecma
     // Functionality related to determinstic ordering of types
     partial class EcmaType
     {
+        protected internal override int ClassCode => 1340416537;
+
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             var otherType = (EcmaType)other;

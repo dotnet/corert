@@ -11,6 +11,8 @@ namespace ILCompiler
     {
         partial class BoxedValueType
         {
+            protected override int ClassCode => 1062019524;
+
             protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
             {
                 return comparer.Compare(ValueTypeRepresented, ((BoxedValueType)other).ValueTypeRepresented);

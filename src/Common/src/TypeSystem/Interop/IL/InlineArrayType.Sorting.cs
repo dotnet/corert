@@ -7,6 +7,8 @@ namespace Internal.TypeSystem.Interop
     // Functionality related to determinstic ordering of types
     partial class InlineArrayType
     {
+        protected internal override int ClassCode => 226817075;
+
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             var otherType = (InlineArrayType)other;

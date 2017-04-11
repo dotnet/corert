@@ -26,46 +26,30 @@ namespace Internal.TypeSystem
     // to sort itself with respect to other instances of the same type.
     // Comparisons between different categories of types are centralized to a single location that
     // can provide rules to sort them.
-    public abstract class TypeSystemComparer : IComparer<TypeDesc>
+    public class TypeSystemComparer : IComparer<TypeDesc>
     {
-        public abstract int Compare(TypeDesc x, TypeDesc y);
-    }
-
-    public class TypeSystemComparer<T> : TypeSystemComparer
-        where T: struct, ITypeSystemClassComparer /* We require a struct for perf reasons - it avoids interface calls */
-    {
-        private T _classComparer;
-
-        public TypeSystemComparer(T classComparer)
-        {
-            _classComparer = classComparer;
-        }
-
-        public override int Compare(TypeDesc x, TypeDesc y)
+        public int Compare(TypeDesc x, TypeDesc y)
         {
             if (x == y)
             {
                 return 0;
             }
 
-            // This comparison should be optimized by most .NET codegens to not actually require reflection.
-            if (x.GetType() != y.GetType())
+            int result = x.ClassCode - y.ClassCode;
+            if (result == 0)
             {
-                int result = _classComparer.CompareClasses(x, y);
+                result = x.CompareToImpl(y, this);
+
+                // We did a reference equality check above so an "Equal" result is not expected
                 Debug.Assert(result != 0);
+
                 return result;
             }
             else
             {
-                int result = x.CompareToImpl(y, this);
-                Debug.Assert(result != 0);
+                Debug.Assert(x.GetType() != y.GetType());
                 return result;
             }
         }
-    }
-
-    public interface ITypeSystemClassComparer
-    {
-        int CompareClasses(TypeDesc x, TypeDesc y);
     }
 }

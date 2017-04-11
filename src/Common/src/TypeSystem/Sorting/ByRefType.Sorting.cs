@@ -5,18 +5,13 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to determinstic ordering of types
-    partial class ArrayType
+    partial class ByRefType
     {
-        protected internal override int ClassCode => -1274559616;
+        protected internal override int ClassCode => -959602231;
 
         protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
-            var otherType = (ArrayType)other;
-            int result = _rank - otherType._rank;
-            if (result != 0)
-                return result;
-
-            return comparer.Compare(ElementType, otherType.ElementType);
+            return comparer.Compare(ParameterType, ((ByRefType)other).ParameterType);
         }
     }
 }

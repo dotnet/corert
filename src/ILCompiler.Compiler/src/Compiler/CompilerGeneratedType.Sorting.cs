@@ -11,6 +11,8 @@ namespace ILCompiler
     // Functionality related to determinstic ordering of types and members
     internal sealed partial class CompilerGeneratedType : MetadataType
     {
+        protected override int ClassCode => -1036681447;
+
         protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
             // Should be a singleton

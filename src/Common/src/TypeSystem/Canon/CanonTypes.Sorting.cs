@@ -16,4 +16,14 @@ namespace Internal.TypeSystem
             return 0;
         }
     }
+
+    partial class CanonType
+    {
+        protected internal override int ClassCode => 46114331;
+    }
+
+    partial class UniversalCanonType
+    {
+        protected internal override int ClassCode => 1687626054;
+    }
 }
