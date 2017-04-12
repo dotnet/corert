@@ -537,6 +537,9 @@ namespace System.Collections.Generic
             entries = newEntries;
         }
 
+        // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
+        // statement to copy the value for entry being removed into the output parameter.
+        // Code has been intentionally duplicated for performance reasons.
         public bool Remove(TKey key)
         {
             if (key == null)
@@ -575,11 +578,13 @@ namespace System.Collections.Generic
             return false;
         }
 
+        // This overload is a copy of the overload Remove(TKey key) with one additional
+        // statement to copy the value for entry being removed into the output parameter.
+        // Code has been intentionally duplicated for performance reasons.
         public bool Remove(TKey key, out TValue value)
         {
             if (key == null)
             {
-                value = default(TValue);
                 throw new ArgumentNullException(nameof(key));
             }
 
