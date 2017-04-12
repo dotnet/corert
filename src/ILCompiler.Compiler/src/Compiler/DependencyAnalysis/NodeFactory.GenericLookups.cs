@@ -48,9 +48,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new MethodDictionaryGenericLookupResult(method);
                 });
 
-                _methodEntrypoints = new NodeCache<MethodDesc, GenericLookupResult>(method =>
+                _methodEntrypoints = new NodeCache<MethodKey, GenericLookupResult>(key =>
                 {
-                    return new MethodEntryGenericLookupResult(method);
+                    return new MethodEntryGenericLookupResult(key.Method, key.IsUnboxingStub);
                 });
 
                 _virtualCallHelpers = new NodeCache<MethodDesc, GenericLookupResult>(method =>
@@ -210,11 +210,11 @@ namespace ILCompiler.DependencyAnalysis
                 return _virtualResolveHelpers.GetOrAdd(method);
             }
 
-            private NodeCache<MethodDesc, GenericLookupResult> _methodEntrypoints;
+            private NodeCache<MethodKey, GenericLookupResult> _methodEntrypoints;
 
-            public GenericLookupResult MethodEntry(MethodDesc method)
+            public GenericLookupResult MethodEntry(MethodDesc method, bool isUnboxingThunk = false)
             {
-                return _methodEntrypoints.GetOrAdd(method);
+                return _methodEntrypoints.GetOrAdd(new MethodKey(method, isUnboxingThunk));
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _objectAllocators;

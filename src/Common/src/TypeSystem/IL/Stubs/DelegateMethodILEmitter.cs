@@ -28,25 +28,16 @@ namespace Internal.IL.Stubs
 
             if (method.Name == ".ctor")
             {
-                // TODO: this should be an assert that codegen never asks for this.
-                // This is just a workaround for https://github.com/dotnet/corert/issues/2102
-                // The code below is making a wild guess that we're creating a closed
-                // instance delegate. Without shared generics, this should only happen
-                // for virtual method (so we're fine there). With shared generics, this can
-                // happen for anything and might be pretty wrong.
-                TypeSystemContext context = method.Context;
-
+                // We only support delegate creation if the IL follows the delegate creation verifiability requirements
+                // described in ECMA-335 III.4.21 (newobj – create a new object). The codegen is expected to
+                // intrinsically expand the pattern.
+                // If the delegate creation doesn't follow the pattern, we generate code that throws at runtime.
+                // We could potentially implement this (unreliably) through the use of reflection metadata,
+                // but it remains to be proven that this is an actual customer scenario.
                 ILEmitter emit = new ILEmitter();
-                TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
-                MethodDesc initializeMethod = delegateType.GetKnownMethod("InitializeClosedInstanceSlow", null);
                 ILCodeStream codeStream = emit.NewCodeStream();
-
-                codeStream.EmitLdArg(0);
-                codeStream.EmitLdArg(1);
-                codeStream.EmitLdArg(2);
-                codeStream.Emit(ILOpcode.call, emit.NewToken(initializeMethod));
-                codeStream.Emit(ILOpcode.ret);
-
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
 

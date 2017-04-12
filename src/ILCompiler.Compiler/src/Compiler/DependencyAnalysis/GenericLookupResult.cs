@@ -372,17 +372,19 @@ namespace ILCompiler.DependencyAnalysis
     internal sealed class MethodEntryGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
+        private bool _isUnboxingThunk;
 
-        public MethodEntryGenericLookupResult(MethodDesc method)
+        public MethodEntryGenericLookupResult(MethodDesc method, bool isUnboxingThunk)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             _method = method;
+            _isUnboxingThunk = isUnboxingThunk;
         }
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return factory.FatFunctionPointer(instantiatedMethod);
+            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
@@ -392,7 +394,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodEntry_");
+            if (!_isUnboxingThunk)
+                sb.Append("MethodEntry_");
+            else
+                sb.Append("UnboxMethodEntry_");
+
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
@@ -481,10 +487,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
-
-                // https://github.com/dotnet/corert/issues/2342 - we put a pointer to the virtual call helper into the dictionary
-                // but this should be something that will let us compute the target of the dipatch (e.g. interface dispatch cell).
-                return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
+                return factory.InterfaceDispatchCell(instantiatedMethod);
             }
             else
             {
@@ -505,6 +508,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
+                // We should be able to get rid of this custom ABI handling
+                // once https://github.com/dotnet/corert/issues/3248 is fixed.
                 return factory.NativeLayout.NotSupportedDictionarySlot;
             }
             else

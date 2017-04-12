@@ -276,7 +276,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(CreateShadowConcreteMethodNode);
+            _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(methodKey =>
+            {
+                MethodDesc canonMethod = methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                if (methodKey.IsUnboxingStub)
+                {
+                    return new ShadowConcreteUnboxingThunkNode(methodKey.Method, MethodEntrypoint(canonMethod, true));
+                }
+                else
+                {
+                    return new ShadowConcreteMethodNode(methodKey.Method, MethodEntrypoint(canonMethod));
+                }
+            });
 
             _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
             {
@@ -406,8 +418,6 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract IMethodNode CreateUnboxingStubNode(MethodDesc method);
 
         protected abstract ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall);
-
-        protected abstract IMethodNode CreateShadowConcreteMethodNode(MethodKey method);
 
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 

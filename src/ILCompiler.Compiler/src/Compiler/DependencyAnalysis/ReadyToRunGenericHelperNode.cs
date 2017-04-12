@@ -53,6 +53,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)target).GetLookupKind(factory);
                 default:
                     throw new NotImplementedException();
             }
@@ -78,6 +80,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
+            ArrayBuilder<DependencyListEntry> result = new ArrayBuilder<DependencyListEntry>();
+
             switch (_id)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
@@ -93,22 +97,63 @@ namespace ILCompiler.DependencyAnalysis
                             // typeInstantiation/methodInstantiation to get a concrete type. Then pass the generic dictionary
                             // node of the concrete type to the GetTarget call. Also change the signature of GetTarget to 
                             // take only the factory and dictionary as input.
-                            return new[] {
+                            result.Add(
                                 new DependencyListEntry(
                                     factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, typeInstantiation, methodInstantiation, null),
-                                    "Dictionary dependency"),
+                                    "Dictionary dependency"));
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
+                        if (createInfo.NeedsVirtualMethodUseTracking)
+                        {
+                            MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
+                            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTargetMethod.OwningType))
+                            {
+                                result.Add(
+                                    new DependencyListEntry(
+                                        factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                        "Dictionary dependency"));
+                            }
+                        }
+                    }
+                    break;
+
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    {
+                        MethodDesc instantiatedTarget = ((MethodDesc)_target).InstantiateSignature(typeInstantiation, methodInstantiation);
+                        if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTarget.OwningType))
+                        {
+                            result.Add(
                                 new DependencyListEntry(
-                                    _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
-                                    "Dictionary dependency") };
+                                    factory.VirtualMethodUse(instantiatedTarget),
+                                    "Dictionary dependency"));
                         }
                     }
                     break;
             }
 
-            // All other generic lookups just depend on the thing they point to
-            return new[] { new DependencyListEntry(
+            // All generic lookups depend on the thing they point to
+            result.Add(new DependencyListEntry(
                         _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
-                        "Dictionary dependency") };
+                        "Dictionary dependency"));
+
+            return result.ToArray();
+        }
+
+        protected void AppendLookupSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            if (_id != ReadyToRunHelperId.DelegateCtor)
+            {
+                _lookupSignature.AppendMangledName(nameMangler, sb);
+            }
+            else
+            {
+                ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
+            }
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -190,7 +235,7 @@ namespace ILCompiler.DependencyAnalysis
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
-            _lookupSignature.AppendMangledName(nameMangler, sb);
+            AppendLookupSignatureMangledName(nameMangler, sb);
         }
     }
 
@@ -210,7 +255,7 @@ namespace ILCompiler.DependencyAnalysis
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
             sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
-            _lookupSignature.AppendMangledName(nameMangler, sb);
+            AppendLookupSignatureMangledName(nameMangler, sb);
         }
     }
 }

@@ -121,18 +121,7 @@ namespace ILCompiler.DependencyAnalysis
                     sb.Append("__GetThreadStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.DelegateCtor:
-                    {
-                        var createInfo = (DelegateCreationInfo)_target;
-                        sb.Append("__DelegateCtor_");
-                        createInfo.Constructor.AppendMangledName(nameMangler, sb);
-                        sb.Append("__");
-                        createInfo.Target.AppendMangledName(nameMangler, sb);
-                        if (createInfo.Thunk != null)
-                        {
-                            sb.Append("__");
-                            createInfo.Thunk.AppendMangledName(nameMangler, sb);
-                        }
-                    }
+                    ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     sb.Append("__ResolveVirtualFunction_");
@@ -157,6 +146,21 @@ namespace ILCompiler.DependencyAnalysis
                     DependencyList dependencyList = new DependencyList();
                     dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
                     return dependencyList;
+                }
+            }
+            else if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                var info = (DelegateCreationInfo)_target;
+                if (info.NeedsVirtualMethodUseTracking)
+                {
+#if !SUPPORT_JIT
+                    if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(info.TargetMethod.OwningType))
+#endif
+                    {
+                        DependencyList dependencyList = new DependencyList();
+                        dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
+                        return dependencyList;
+                    }
                 }
             }
 
