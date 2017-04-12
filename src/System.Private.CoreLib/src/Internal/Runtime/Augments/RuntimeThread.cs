@@ -64,18 +64,6 @@ namespace Internal.Runtime.Augments
             _managedThreadId = new ManagedThreadId();
         }
 
-        /// <summary>
-        /// Callers must ensure to clear the array after use
-        /// </summary>
-        internal SafeWaitHandle[] GetWaitedSafeWaitHandleArray(int requiredCapacity)
-        {
-            Debug.Assert(this == CurrentThread);
-
-            _waitedSafeWaitHandles.VerifyElementsAreDefault();
-            _waitedSafeWaitHandles.EnsureCapacity(requiredCapacity);
-            return _waitedSafeWaitHandles.Items;
-        }
-
         public static RuntimeThread Create(ThreadStart start) => new RuntimeThread(start, 0);
         public static RuntimeThread Create(ThreadStart start, int maxStackSize) => new RuntimeThread(start, maxStackSize);
 
