@@ -169,7 +169,13 @@ namespace TypeSystemTests
                 _name = name;
             }
 
-            protected override int ClassCode => throw new NotImplementedException();
+            protected override int ClassCode
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
 
             protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
             {
