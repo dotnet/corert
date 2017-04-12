@@ -2386,4 +2386,10 @@
   <data name="EventSource_NoManifest" xml:space="preserve">
     <value>A manifest could not be generated for this EventSource because it contains one or more ill-formed event methods.</value>
   </data>
+  <data name="Argument_StreamNotWritable" xml:space="preserve">
+    <value>Stream was not writable.</value>
+  </data>
+  <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
+    <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
+  </data>
 </root>

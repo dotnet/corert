@@ -242,6 +242,8 @@
     <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
+    <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\EncodingCache.cs" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
