@@ -2392,4 +2392,10 @@
   <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
     <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
   </data>
+  <data name="CustomAttributeFormat_InvalidFieldFail" xml:space="preserve">
+    <value>'{0}' field specified was not found.</value>
+  </data>
+  <data name="CustomAttributeFormat_InvalidPropertyFail" xml:space="preserve">
+    <value>'{0}' property specified was not found.</value>
+  </data>
 </root>
