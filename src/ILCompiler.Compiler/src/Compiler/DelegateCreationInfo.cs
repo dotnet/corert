@@ -236,6 +236,7 @@ namespace ILCompiler
                 TargetKind kind;
                 if (targetMethod.HasInstantiation)
                 {
+                    // https://github.com/dotnet/corert/issues/2796
                     Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
 
                     if (targetMethod != targetCanonMethod)

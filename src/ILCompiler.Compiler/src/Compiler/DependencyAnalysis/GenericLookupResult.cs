@@ -506,14 +506,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                return factory.NativeLayout.NotSupportedDictionarySlot;
-            }
-            else
-            {
-                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
-            }
+            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
         }
     }
 
