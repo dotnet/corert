@@ -67,8 +67,17 @@ namespace PInvokeTests
         private static extern bool VerifySizeParamIndex(
                 [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out byte[] arrByte, out byte arrSize);
 
-        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        private static extern int VerifyStringBuilder(StringBuilder sb);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, EntryPoint = "VerifyUnicodeStringBuilder")]
+        private static extern int VerifyUnicodeStringBuilder(StringBuilder sb);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, EntryPoint = "VerifyUnicodeStringBuilder")]
+        private static extern int VerifyUnicodeStringBuilderIn([In]StringBuilder sb);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi, EntryPoint = "VerifyAnsiStringBuilder")]
+        private static extern int VerifyAnsiStringBuilder(StringBuilder sb);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi, EntryPoint = "VerifyAnsiStringBuilder")]
+        private static extern int VerifyAnsiStringBuilderIn([In]StringBuilder sb);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SafeHandleTest(SafeMemoryHandle sh1, Int64 sh1Value);
@@ -279,10 +288,32 @@ namespace PInvokeTests
         private static void TestStringBuilder()
         {
             Console.WriteLine("Testing marshalling string builder");
-            StringBuilder sb = new StringBuilder(16);
-            VerifyStringBuilder(sb);
-            bool result = (sb.ToString() == "Hello World");
-            ThrowIfNotEquals(true, result, "Unicode String builder marshalling failed.");
+            StringBuilder sb = new StringBuilder("Hello World");
+            ThrowIfNotEquals(1, VerifyUnicodeStringBuilder(sb), "Unicode StringBuilder marshalling failed");
+            ThrowIfNotEquals("HELLO WORLD", sb.ToString(), "Unicode StringBuilder marshalling failed.");
+
+            StringBuilder sb1 = null;
+            // for null stringbuilder it should return -1
+            ThrowIfNotEquals(-1, VerifyUnicodeStringBuilder(sb1), "Null unicode StringBuilder marshalling failed");
+
+            StringBuilder sb2 = new StringBuilder("Hello World");
+            ThrowIfNotEquals(1, VerifyUnicodeStringBuilderIn(sb2), "In unicode StringBuilder marshalling failed");
+            // Only [In] should change stringbuilder value
+            ThrowIfNotEquals("Hello World", sb2.ToString(), "In unicode StringBuilder marshalling failed");
+
+
+            StringBuilder sb3 = new StringBuilder("Hello World");
+            ThrowIfNotEquals(1, VerifyAnsiStringBuilder(sb3), "Ansi StringBuilder marshalling failed");
+            ThrowIfNotEquals("HELLO WORLD", sb3.ToString(), "Ansi StringBuilder marshalling failed.");
+
+            StringBuilder sb4 = null;
+            // for null stringbuilder it should return -1
+            ThrowIfNotEquals(-1, VerifyAnsiStringBuilder(sb4), "Null Ansi StringBuilder marshalling failed");
+
+            StringBuilder sb5 = new StringBuilder("Hello World");
+            ThrowIfNotEquals(1, VerifyAnsiStringBuilderIn(sb5), "In unicode StringBuilder marshalling failed");
+            // Only [In] should change stringbuilder value
+            ThrowIfNotEquals("Hello World", sb5.ToString(), "In unicode StringBuilder marshalling failed");
         }
 
 
