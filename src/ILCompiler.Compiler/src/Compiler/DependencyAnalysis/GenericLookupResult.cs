@@ -506,7 +506,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // We should be able to get rid of this custom ABI handling
+                // once https://github.com/dotnet/corert/issues/3248 is fixed.
+                return factory.NativeLayout.NotSupportedDictionarySlot;
+            }
+            else
+            {
+                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
         }
     }
 
