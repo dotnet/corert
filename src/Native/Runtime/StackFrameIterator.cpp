@@ -1016,7 +1016,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
     const UIntNative STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
     const UIntNative SIZEOF_OutgoingScratch = 0x20;
 #else
     const UIntNative SIZEOF_OutgoingScratch = 0;

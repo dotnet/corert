@@ -233,12 +233,9 @@ extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvR
 
 extern "C" void RhpShutdown();
 
-#if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
+#if defined(CPPCODEGEN)
 extern "C" int32_t RhpEnableConservativeStackReporting();
-#endif
-
-#ifndef CPPCODEGEN
-
+#else
 extern "C" bool RhpRegisterCoffModule(void * pModule,
     void * pvStartRange, uint32_t cbRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
@@ -284,11 +281,10 @@ int main(int argc, char* argv[])
     if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
         return -1;
 
-#if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
+#if defined(CPPCODEGEN)
     if (!RhpEnableConservativeStackReporting())
         return -1;
-#endif
-#ifndef CPPCODEGEN
+#else
     void *osModule;
 
 #if defined(_WIN32)
