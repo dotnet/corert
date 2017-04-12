@@ -182,6 +182,35 @@ namespace System
             }
         }
 
+        // This function is known to the compiler.
+        protected void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        {
+            if (firstParameter == null)
+                throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+
+            if (functionResolution == IntPtr.Zero)
+            {
+                // TODO! What to do when GVM resolution fails. Should never happen
+                throw new InvalidOperationException();
+            }
+            if (!FunctionPointerOps.IsGenericMethodPointer(functionResolution))
+            {
+                m_functionPointer = functionResolution;
+                m_firstParameter = firstParameter;
+            }
+            else
+            {
+                m_firstParameter = this;
+                m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
+                m_extraFunctionPointerOrData = functionResolution;
+                m_helperObject = firstParameter;
+            }
+
+            return;
+        }
+
         private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter == null)

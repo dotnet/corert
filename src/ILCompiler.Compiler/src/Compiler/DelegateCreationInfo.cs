@@ -25,6 +25,7 @@ namespace ILCompiler
             ExactCallableAddress,
             InterfaceDispatch,
             VTableLookup,
+            MethodHandle,
         }
 
         private TargetKind _targetKind;
@@ -72,6 +73,7 @@ namespace ILCompiler
                     case TargetKind.CanonicalEntrypoint:
                     case TargetKind.ExactCallableAddress:
                     case TargetKind.InterfaceDispatch:
+                    case TargetKind.MethodHandle:
                         return TargetMethod.IsRuntimeDeterminedExactMethod;
 
                     default:
@@ -127,6 +129,9 @@ namespace ILCompiler
 
                 case TargetKind.InterfaceDispatch:
                     return factory.InterfaceDispatchCell(TargetMethod);
+
+                case TargetKind.MethodHandle:
+                    return factory.RuntimeMethodHandle(TargetMethod);
 
                 case TargetKind.VTableLookup:
                     Debug.Assert(false, "Need to do runtime lookup");
@@ -236,19 +241,24 @@ namespace ILCompiler
                 TargetKind kind;
                 if (targetMethod.HasInstantiation)
                 {
-                    // https://github.com/dotnet/corert/issues/2796
-                    Debug.Assert(!targetMethod.IsVirtual, "TODO: delegate to generic virtual method");
-
-                    if (targetMethod != targetCanonMethod)
+                    if (targetMethod.IsVirtual)
                     {
-                        // Closed delegates to generic instance methods need to be constructed through a slow helper that
-                        // checks for the fat function pointer case (function pointer + instantiation argument in a single
-                        // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
-                        // the invocation if necessary.
-                        initializeMethodName = "InitializeClosedInstanceSlow";
+                        initializeMethodName = "InitializeClosedInstanceWithGVMResolution";
+                        kind = TargetKind.MethodHandle;
                     }
+                    else
+                    {
+                        if (targetMethod != targetCanonMethod)
+                        {
+                            // Closed delegates to generic instance methods need to be constructed through a slow helper that
+                            // checks for the fat function pointer case (function pointer + instantiation argument in a single
+                            // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
+                            // the invocation if necessary.
+                            initializeMethodName = "InitializeClosedInstanceSlow";
+                        }
 
-                    kind = TargetKind.ExactCallableAddress;
+                        kind = TargetKind.ExactCallableAddress;
+                    }
                 }
                 else
                 {
