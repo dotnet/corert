@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
     // to sort itself with respect to other instances of the same type.
     // Comparisons between different categories of types are centralized to a single location that
     // can provide rules to sort them.
-    public class TypeSystemComparer : IComparer<TypeDesc>
+    public class TypeSystemComparer
     {
         public int Compare(TypeDesc x, TypeDesc y)
         {
@@ -53,5 +53,52 @@ namespace Internal.TypeSystem
                 return result;
             }
         }
+
+        internal int CompareWithinClass<T>(T x, T y) where T : TypeDesc
+        {
+            Debug.Assert(x.GetType() == y.GetType());
+
+            if (x == y)
+                return 0;
+
+            int result = x.CompareToImpl(y, this);
+            
+            // We did a reference equality check above so an "Equal" result is not expected
+            Debug.Assert(result != 0);
+
+            return result;
+        }
+
+        public int Compare(MethodDesc x, MethodDesc y)
+        {
+            if (x == y)
+            {
+                return 0;
+            }
+
+            int result = x.ClassCode - y.ClassCode;
+            if (result == 0)
+            {
+                Debug.Assert(x.GetType() == y.GetType());
+
+                result = x.CompareToImpl(y, this);
+
+                // We did a reference equality check above so an "Equal" result is not expected
+                Debug.Assert(result != 0);
+
+                return result;
+            }
+            else
+            {
+                Debug.Assert(x.GetType() != y.GetType());
+                return result;
+            }
+        }
+
+        public int Compare(MethodSignature x, MethodSignature y)
+        {
+            return x.CompareTo(y, this);
+        }
     }
 }
+

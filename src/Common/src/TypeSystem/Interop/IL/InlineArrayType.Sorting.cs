@@ -18,5 +18,21 @@ namespace Internal.TypeSystem.Interop
 
             return comparer.Compare(ElementType, otherType.ElementType);
         }
+
+        partial class InlineArrayMethod
+        {
+            protected internal override int ClassCode => -1303220581;
+
+            protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                var otherMethod = (InlineArrayMethod)other;
+
+                int result = _kind - otherMethod._kind;
+                if (result != 0)
+                    return result;
+
+                return comparer.CompareWithinClass(OwningType, otherMethod.OwningType);
+            }
+        }
     }
 }

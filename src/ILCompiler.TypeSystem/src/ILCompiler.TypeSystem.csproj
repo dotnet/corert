@@ -263,6 +263,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
       <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaMethod.Sorting.cs">
+      <Link>Ecma\EcmaMethod.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Sorting.cs">
       <Link>Ecma\EcmaModule.Sorting.cs</Link>
     </Compile>
@@ -320,8 +323,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
+      <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs">
       <Link>IL\Stubs\EnumThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.Sorting.cs">
+      <Link>IL\Stubs\EnumThunks.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
       <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
@@ -400,6 +418,15 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\InstantiatedMethod.Sorting.cs">
+      <Link>TypeSystem\Sorting\InstantiatedMethod.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\MethodDesc.Sorting.cs">
+      <Link>TypeSystem\Sorting\MethodDesc.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs">
+      <Link>TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs</Link>
     </Compile>
     <Compile Include="TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>

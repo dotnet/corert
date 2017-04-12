@@ -243,7 +243,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<FieldDesc>();
         }
 
-        private class InlineArrayMethod : ILStubMethod
+        private partial class InlineArrayMethod : ILStubMethod
         {
             private InlineArrayType _owningType;
             private InlineArrayMethodKind _kind;

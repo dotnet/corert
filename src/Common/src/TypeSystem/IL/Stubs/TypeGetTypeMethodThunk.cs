@@ -13,7 +13,7 @@ namespace Internal.IL.Stubs
     /// the calling assembly for a matching type if the type name supplied by the user code was not assembly qualified.
     /// This thunk calls a helper method, passing it a string for what should be considered the "calling assembly".
     /// </summary>
-    internal class TypeGetTypeMethodThunk : ILStubMethod
+    internal partial class TypeGetTypeMethodThunk : ILStubMethod
     {
         private readonly MethodDesc _helperMethod;
 
