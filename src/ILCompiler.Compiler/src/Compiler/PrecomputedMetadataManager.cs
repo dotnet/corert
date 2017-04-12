@@ -214,8 +214,6 @@ namespace ILCompiler
 
         public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
         {
-            // Until cross module references are understood, and reported by ComputeMetadata
-            // return false here.
             return _compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType);
         }
 

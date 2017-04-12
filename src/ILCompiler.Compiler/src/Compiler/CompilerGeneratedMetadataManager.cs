@@ -86,16 +86,12 @@ namespace ILCompiler
 
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
         {
-            // Until cross module references are understood, and reported by ComputeMetadata
-            // return false here.
-            return false;
+            return _compilationModuleGroup.ContainsType(method.GetTypicalMethodDefinition().OwningType);
         }
 
         public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
         {
-            // Until cross module references are understood, and reported by ComputeMetadata
-            // return false here.
-            return false;
+            return _compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType);
         }
 
         protected override void ComputeMetadata(NodeFactory factory,

@@ -18,7 +18,7 @@ namespace Internal.IL.Stubs
     /// dependencies on the general dynamic invocation infrastructure in System.InvokeUtils and gets called from there
     /// at runtime. See comments in System.InvokeUtils for a more thorough explanation.
     /// </summary>
-    internal class DynamicInvokeMethodThunk : ILStubMethod
+    internal partial class DynamicInvokeMethodThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private DynamicInvokeMethodSignature _targetSignature;
@@ -97,11 +97,11 @@ namespace Internal.IL.Stubs
                         new TypeDesc[_targetSignature.HasReturnValue ? _targetSignature.Length + 1 : _targetSignature.Length];
 
                     for (int i = 0; i < _targetSignature.Length; i++)
-                        instantiation[i] = new DynamicInvokeThunkGenericParameter(Context, i);
+                        instantiation[i] = new DynamicInvokeThunkGenericParameter(this, i);
 
                     if (_targetSignature.HasReturnValue)
                         instantiation[_targetSignature.Length] =
-                            new DynamicInvokeThunkGenericParameter(Context, _targetSignature.Length);
+                            new DynamicInvokeThunkGenericParameter(this, _targetSignature.Length);
 
                     Interlocked.CompareExchange(ref _instantiation, instantiation, null);
                 }
@@ -266,17 +266,22 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        private class DynamicInvokeThunkGenericParameter : GenericParameterDesc
+        private partial class DynamicInvokeThunkGenericParameter : GenericParameterDesc
         {
-            public DynamicInvokeThunkGenericParameter(TypeSystemContext context, int index)
+            private DynamicInvokeMethodThunk _owningMethod;
+
+            public DynamicInvokeThunkGenericParameter(DynamicInvokeMethodThunk owningMethod, int index)
             {
-                Context = context;
+                _owningMethod = owningMethod;
                 Index = index;
             }
 
             public override TypeSystemContext Context
             {
-                get;
+                get
+                {
+                    return _owningMethod.Context;
+                }
             }
 
             public override int Index

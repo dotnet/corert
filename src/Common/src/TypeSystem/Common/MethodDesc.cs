@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed class MethodSignature
+    public sealed partial class MethodSignature
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
