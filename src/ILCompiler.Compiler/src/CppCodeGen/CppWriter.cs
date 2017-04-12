@@ -266,10 +266,10 @@ namespace ILCompiler.CppCodeGen
         /// <param name="owningType">Type where <param name="methodName"/> belongs.</param>
         /// <param name="methodName">Name of method from <param name="owningType"/>.</param>
         /// <returns>C++ declaration name for <param name="methodName"/>.</returns>
-        public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName)
+        public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName, bool isDeclaration = true)
         {
             var s = _compilation.NameMangler.GetMangledTypeName(owningType);
-            if (s.StartsWith("::"))
+            if (isDeclaration && s.StartsWith("::"))
             {
                 // For a Method declaration we do not need the starting ::
                 s = s.Substring(2, s.Length - 2);
@@ -810,11 +810,11 @@ namespace ILCompiler.CppCodeGen
                 var method = reloc.Target as CppMethodCodeNode;
 
                 relocCode.Append("(void*)&");
-                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method)));
+                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method), false));
             }
             else if (reloc.Target is EETypeNode && node is EETypeNode)
             {
-                relocCode.Append(GetCppMethodDeclarationName((reloc.Target as EETypeNode).Type, "__getMethodTable"));
+                relocCode.Append(GetCppMethodDeclarationName((reloc.Target as EETypeNode).Type, "__getMethodTable", false));
                 relocCode.Append("()");
             }
             // Node is either an non-emitted type or a generic composition - both are ignored for CPP codegen
