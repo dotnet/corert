@@ -27,7 +27,7 @@ namespace System.Diagnostics
         public DebuggerStepThroughAttribute() { }
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
     public sealed class DebuggerGuidedStepThroughAttribute : Attribute
     {
         public DebuggerGuidedStepThroughAttribute() { }
