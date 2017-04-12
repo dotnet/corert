@@ -68,6 +68,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.cs">
       <Link>IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
     </Compile>
@@ -86,8 +89,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\TypeGetTypeMethodThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
@@ -274,6 +283,7 @@
     <Compile Include="CppCodeGen\NodeDataSection.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
+    <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
     <Compile Include="Logger.cs" />
   </ItemGroup>
   <ItemGroup>

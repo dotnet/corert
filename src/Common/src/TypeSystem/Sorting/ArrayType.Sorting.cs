@@ -19,4 +19,19 @@ namespace Internal.TypeSystem
             return comparer.Compare(ElementType, otherType.ElementType);
         }
     }
+
+    partial class ArrayMethod
+    {
+        protected internal override int ClassCode => 487354154;
+
+        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        {
+            var otherMethod = (ArrayMethod)other;
+            int result = _kind - otherMethod._kind;
+            if (result != 0)
+                return result;
+
+            return comparer.CompareWithinClass(OwningArray, otherMethod.OwningArray);
+        }
+    }
 }

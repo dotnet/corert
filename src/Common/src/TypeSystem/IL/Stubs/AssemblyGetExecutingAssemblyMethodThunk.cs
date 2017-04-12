@@ -11,7 +11,7 @@ namespace Internal.IL.Stubs
     /// is to load something that will let us identify the current assembly and call a class library
     /// helper that will let us get the Assembly.
     /// </summary>
-    internal class AssemblyGetExecutingAssemblyMethodThunk : ILStubMethod
+    internal partial class AssemblyGetExecutingAssemblyMethodThunk : ILStubMethod
     {
         public AssemblyGetExecutingAssemblyMethodThunk(TypeDesc owningType, IAssemblyDesc executingAssembly)
         {

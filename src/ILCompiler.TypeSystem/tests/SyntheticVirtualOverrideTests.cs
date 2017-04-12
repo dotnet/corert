@@ -169,6 +169,13 @@ namespace TypeSystemTests
                 _name = name;
             }
 
+            protected override int ClassCode => throw new NotImplementedException();
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool IsVirtual
             {
                 get
