@@ -22,8 +22,9 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <CoreFxPackageVersion>4.4.0-beta-24913-02</CoreFxPackageVersion>
-            <NetCoreAppPackageVersion>2.0.0-beta-001663-00</NetCoreAppPackageVersion>
+            <CoreFxPackageVersion>4.4.0-preview1-25210-01</CoreFxPackageVersion>
+            <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
+            <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
             <JitPackageVersion>2.0.0-preview1-25204-02</JitPackageVersion>
             <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx.10.12-x64</JitNuPkgRid>
@@ -124,56 +125,64 @@
             <!-- TODO: Obtain this via nuget once the framework is properly packaged -->
             <ILCompilerAnyFrameworkFiles Include="Microsoft.Win32.Primitives" />
             <ILCompilerAnyFrameworkFiles Include="mscorlib" />
+            <ILCompilerAnyFrameworkFiles Include="System.AppContext" />
             <ILCompilerAnyFrameworkFiles Include="System.Buffers" />
             <ILCompilerAnyFrameworkFiles Include="System.Collections" />
             <ILCompilerAnyFrameworkFiles Include="System.Collections.Concurrent" />
             <ILCompilerAnyFrameworkFiles Include="System.Collections.NonGeneric" />
+            <ILCompilerAnyFrameworkFiles Include="System.Collections.Specialized" />
             <ILCompilerAnyFrameworkFiles Include="System.Console" />
+            <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Debug" />
             <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tools" />
+            <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.TraceSource" />
             <ILCompilerAnyFrameworkFiles Include="System.Diagnostics.Tracing" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization" />
             <ILCompilerAnyFrameworkFiles Include="System.Globalization.Calendars" />
             <ILCompilerAnyFrameworkFiles Include="System.IO" />
             <ILCompilerAnyFrameworkFiles Include="System.IO.FileSystem" />
             <ILCompilerAnyFrameworkFiles Include="System.IO.FileSystem.Primitives" />
+            <ILCompilerAnyFrameworkFiles Include="System.Linq" />
+            <ILCompilerAnyFrameworkFiles Include="System.Net.Primitives" />
+            <ILCompilerAnyFrameworkFiles Include="System.ObjectModel" />
+            <ILCompilerAnyFrameworkFiles Include="System.Private.Uri" />
             <ILCompilerAnyFrameworkFiles Include="System.Reflection" />
             <ILCompilerAnyFrameworkFiles Include="System.Reflection.Extensions" />
             <ILCompilerAnyFrameworkFiles Include="System.Reflection.TypeExtensions" />
             <ILCompilerAnyFrameworkFiles Include="System.Resources.ResourceManager" />
+            <ILCompilerAnyFrameworkFiles Include="System.Runtime" />
+            <ILCompilerAnyFrameworkFiles Include="System.Runtime.Extensions" />
             <ILCompilerAnyFrameworkFiles Include="System.Runtime.Handles" />
             <ILCompilerAnyFrameworkFiles Include="System.Runtime.InteropServices.RuntimeInformation" />
             <ILCompilerAnyFrameworkFiles Include="System.Runtime.Numerics" />
             <ILCompilerAnyFrameworkFiles Include="System.Security.Principal" />
+            <ILCompilerAnyFrameworkFiles Include="System.Security.Cryptography.Algorithms" />
+            <ILCompilerAnyFrameworkFiles Include="System.Security.Cryptography.Primitives" />
+            <ILCompilerAnyFrameworkFiles Include="System.Security.Cryptography.Encoding" />
             <ILCompilerAnyFrameworkFiles Include="System.Text.Encoding" />
             <ILCompilerAnyFrameworkFiles Include="System.Text.Encoding.Extensions" />
+            <ILCompilerAnyFrameworkFiles Include="System.Text.RegularExpressions" />
+            <ILCompilerAnyFrameworkFiles Include="System.Threading" />
             <ILCompilerAnyFrameworkFiles Include="System.Threading.Overlapped" />
+            <ILCompilerAnyFrameworkFiles Include="System.Threading.Tasks" />
+            <ILCompilerAnyFrameworkFiles Include="System.Threading.Tasks.Extensions" />
+            <ILCompilerAnyFrameworkFiles Include="System.Threading.Tasks.Parallel" />
             <ILCompilerAnyFrameworkFiles Include="System.Threading.Thread" />
             <ILCompilerAnyFrameworkFiles Include="System.Threading.Timer" />
+            <ILCompilerAnyFrameworkFiles Include="System.ValueTuple" />
             <ILCompilerSdkBinPlace Include="@(ILCompilerAnyFrameworkFiles)">
-              <Text><![CDATA[        <file src="packages/runtime.$(NuPkgRid).Microsoft.NETCore.App/$(NetCoreAppPackageVersion)/runtimes/$(NuPkgRid)/lib/netcoreapp2.0/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
+              <Text><![CDATA[        <file src="packages/runtime.$(CoreFxNuPkgRid).Microsoft.Private.CoreFx.NETCoreApp/$(CoreFxPackageVersion)/runtimes/$(CoreFxNuPkgRid)/lib/netcoreapp2.0/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
 
-            <!-- Libraries with netcoreapp1.2corert configuration -->
-            <ILCompilerFrameworkFiles Include="runtime.win7.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.Private.Uri/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Private.Uri.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.win.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.Runtime.Extensions/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Runtime.Extensions.dll" Condition="'$(OsEnvironment)'!='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Reflection.Primitives/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Reflection.Primitives.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Runtime.InteropServices/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Runtime.InteropServices.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.any.System.Threading.Tasks/$(CoreFxPackageVersion)/runtimes/corert/lib/netcoreapp1.2/System.Threading.Tasks.dll" />
-            <ILCompilerFrameworkFiles Include="runtime.win.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/win-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'=='Windows_NT'" />
-            <ILCompilerFrameworkFiles Include="runtime.unix.System.Diagnostics.Debug/$(CoreFxPackageVersion)/runtimes/unix-corert/lib/netcoreapp1.2/System.Diagnostics.Debug.dll" Condition="'$(OsEnvironment)'!='Windows_NT'"/>
-
-            <!-- End: Libraries with netcoreapp1.2corert configuration -->
-
-            <ILCompilerFrameworkFiles Include="System.Threading/$(CoreFxPackageVersion)/lib/netstandard1.7/System.Threading.dll" />
-
-            <ILCompilerFrameworkFiles Include="System.Linq/$(CoreFxPackageVersion)/lib/netcore50/System.Linq.dll" />
+            <ILCompilerAotFrameworkFiles Include="System.Linq.Expressions" />
+            <ILCompilerAotFrameworkFiles Include="System.Reflection.Primitives" />
+            <ILCompilerAotFrameworkFiles Include="System.Runtime.InteropServices" />
+            <ILCompilerSdkBinPlace Include="@(ILCompilerAotFrameworkFiles)">
+              <Text><![CDATA[        <file src="packages/runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP/$(CoreFxPackageVersion)/runtimes/win10-x64-aot/lib/uap10.1/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/framework/%(Identity).dll" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
 
             <ILCompilerFrameworkFiles Include="System.Runtime.CompilerServices.Unsafe/$(CoreFxPackageVersion)/lib/netstandard1.0/System.Runtime.CompilerServices.Unsafe.dll" />
 
-            <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).Microsoft.NETCore.App/$(NetCoreAppPackageVersion)/runtimes/$(NuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+            <ILCompilerFrameworkFiles Include="runtime.$(CoreFxNuPkgRid).Microsoft.Private.CoreFx.NETCoreApp/$(CoreFxPackageVersion)/runtimes/$(CoreFxNuPkgRid)/native/System.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
             <ILCompilerFrameworkFiles Include="runtime.$(NuPkgRid).Microsoft.NETCore.Native/$(MicrosoftNetCoreNativePackageVersion)/runtimes/$(NuPkgRid)/native/libSystem.Globalization.Native.a" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerFrameworkFiles)">
