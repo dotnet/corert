@@ -167,6 +167,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetGCSegmentSize")]
         internal static extern ulong RhGetGCSegmentSize();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
+        internal extern static bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
