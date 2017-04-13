@@ -27,6 +27,7 @@ class Program
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
+        TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
 
@@ -1329,6 +1330,51 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception();
+        }
+    }
+
+    class TestGvmDelegates
+    {
+        class Atom { }
+
+        interface IFoo
+        {
+            string Frob<T>(int arg);
+        }
+
+        class FooUnshared : IFoo
+        {
+            public string Frob<T>(int arg)
+            {
+                return typeof(T[,]).GetElementType().Name + arg.ToString();
+            }
+        }
+
+        class FooShared : IFoo
+        {
+            public string Frob<T>(int arg)
+            {
+                return typeof(T[,,]).GetElementType().Name + arg.ToString();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void RunShared<T>(IFoo foo)
+        {
+            Func<int, string> a = foo.Frob<T>;
+            if (a(456) != "Atom456")
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            IFoo foo = new FooUnshared();
+            Func<int, string> a = foo.Frob<Atom>;
+            if (a(123) != "Atom123")
+                throw new Exception();
+
+            // https://github.com/dotnet/corert/issues/2796
+            // RunShared<Atom>(new FooShared());
         }
     }
 
