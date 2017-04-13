@@ -12,6 +12,7 @@
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
+using System.Runtime;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -55,6 +56,25 @@ namespace System.Runtime.CompilerServices
                 return obj;
 
             return RuntimeImports.RhMemberwiseClone(obj);
+        }
+
+        public new static bool Equals(Object obj1, Object obj2)
+        {
+            if (obj1 == obj2)
+                return true;
+
+            if ((obj1 == null) || (obj2 == null))
+                return false;
+
+            // If it's not a value class, don't compare by value
+            if (!obj1.EETypePtr.IsValueType)
+                return false;
+
+            // Make sure they are the same type.
+            if (obj1.EETypePtr != obj2.EETypePtr)
+                return false;
+
+            return RuntimeImports.RhCompareObjectContentsAndPadding(obj1, obj2);
         }
 
 #if !FEATURE_SYNCTABLE

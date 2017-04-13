@@ -164,6 +164,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyObjectContents(object objDest, object objSrc);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpCompareObjectContents")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static bool RhpCompareObjectContentsAndPadding(object obj1, object obj2);
+
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
