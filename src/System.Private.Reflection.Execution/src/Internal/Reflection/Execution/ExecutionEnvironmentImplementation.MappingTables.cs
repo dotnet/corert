@@ -29,7 +29,6 @@ using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 
 
 using Debug = System.Diagnostics.Debug;
-using TargetException = System.ArgumentException;
 using ThunkKind = Internal.Runtime.TypeLoader.CallConverterThunk.ThunkKind;
 using Interlocked = System.Threading.Interlocked;
 
