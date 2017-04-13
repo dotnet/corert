@@ -86,6 +86,19 @@ namespace System.Reflection.Runtime.General
             return new ReadOnlyCollection<T>(enumeration.ToArray());
         }
 
+        public static T[] ReadOnlyCollectionToArray<T>(this IReadOnlyCollection<T> collection)
+        {
+            int count = collection.Count;
+            T[] result = new T[count];
+            int i = 0;
+            foreach (T element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
         public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
         {
             if (nonPublic)
