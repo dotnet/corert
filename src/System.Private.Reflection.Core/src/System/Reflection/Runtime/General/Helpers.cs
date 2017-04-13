@@ -166,7 +166,7 @@ namespace System.Reflection.Runtime.General
         {
             Debug.Assert(delegateType.IsDelegate);
 
-            MethodInfo invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             if (invokeMethod == null)
             {
                 // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
