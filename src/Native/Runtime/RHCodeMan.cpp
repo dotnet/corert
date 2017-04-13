@@ -408,6 +408,19 @@ void EECodeManager::EnumGcRefs(MethodGcInfoPointers *   pMethodInfo,
     if ((pCursor == NULL) || (*pCursor == 0xFF))
         return;
 
+    UInt32 commonVarCount = 0;
+    PTR_UInt8 commonVarStart = NULL;
+    if (pMethodInfo->GetGCInfoHeader()->HasCommonVars())
+    {
+        // remember only the count and the start of the table, to avoid allocating memory
+        // this is a design compromise
+        commonVarCount = VarInt::ReadUnsigned(pCursor);
+        commonVarStart = pCursor;
+        for (UInt32 i = 0; i < commonVarCount; i++)
+        {
+            VarInt::SkipUnsigned(pCursor);
+        }
+    }
 
     // -------------------------------------------------------------------------------------------------------
     // Decode the method GC info 
@@ -516,7 +529,8 @@ ContinueUnconditionally:
     //      a.  l - last descriptor
     //      b.  SSSS - set of "local slots" #0 - #3  - local slot 0 is at offset -8 from the last pushed 
     //          callee saved register, local slot 1 is at offset - 16, etc - in other words, these are the 
-    //          slots normally used for locals
+    //          slots normally used for locals. The non-sensical encoding with SSSS = 0000 is reserved for
+    //          the "common vars" case under 8 below.
     // 
     // 5.  10l0ssss - "local slot" encoding
     //      a.  l - last descriptor
@@ -545,6 +559,15 @@ ContinueUnconditionally:
     //      e.  IIIIIII - interior scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff  'i' is 1
     //      f.  PPPPPPP - pinned scratch register mask for { rax, rcx, rdx, r8, r9, r10, r11 } iff  'p' is 1
     //
+    // 8. 10z10000 [ common var index ] - "common var" encoding - the common var index references a root string
+    //                                    common to several call sites
+    //      a.  z - common var index is 0
+    //      b.  common var index - 0-based index referring to one of the "common var" root strings. 
+    //          only present if z-bit is 0
+    //
+    //      this encoding is case 4, "local stack slot set", with the set SSSS = 0
+    //      this case is non-sensical and hence unused for case 4
+    //
     PTR_UInt8 pbCallsiteString = pbCallsiteStringBlob + (int)infoOffset;
 
     bool isLastEncoding;
@@ -567,7 +590,40 @@ ContinueUnconditionally:
         case 0x80:
             // case 4 -- "local slot set"
             // case 5 -- "local slot"
-            ReportLocalSlots(b, pContext, hCallback, pMethodInfo->GetGCInfoHeader());
+            // case 8 -- "common var"
+            if ((b & 0xDF) == 0x90)
+            {
+                // case 8 -- "common var"
+
+                UInt32 commonVarIndex = 0;
+                if ((b & 0x20) == 0)
+                {
+                    // obtain the 0 - based index
+                    commonVarIndex = VarInt::ReadUnsigned(pCursor);
+                    ASSERT(commonVarIndex < commonVarCount);
+                }
+
+                // skip the info offsets for the common var strings before ours
+                // this is a linear search, but the number of common vars should be
+                // significantly smaller than the number of call sites, 
+                // plus SkipUnsigned is pretty fast, so we should be ok.
+                pCursor = commonVarStart;
+                for (UInt32 i = 0; i < commonVarIndex; i++)
+                {
+                    VarInt::SkipUnsigned(pCursor);
+                }
+
+                // read the info offset for our common var string
+                infoOffset = VarInt::ReadUnsigned(pCursor);
+
+                // continue reading at that location - this is analogous to a tail call...
+                pCursor = pbCallsiteStringBlob + infoOffset;
+                isLastEncoding = false;
+            }
+            else
+            {
+                ReportLocalSlots(b, pContext, hCallback, pMethodInfo->GetGCInfoHeader());
+            }
             break;
         case 0xC0:
             if ((b & 0xC7) == 0xC2)
