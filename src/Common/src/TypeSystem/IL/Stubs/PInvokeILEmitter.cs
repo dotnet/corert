@@ -170,7 +170,7 @@ namespace Internal.IL.Stubs
             else if (MarshalHelpers.UseLazyResolution(_targetMethod, _importMetadata.Module, _pInvokeILEmitterConfiguration))
             {
                 MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
-                FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)_targetMethod.OwningType, _importMetadata);
+                FieldDesc lazyDispatchCell = new PInvokeLazyFixupField(_targetMethod);
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType.GetKnownMethod("ResolvePInvoke", null)));
 
@@ -287,100 +287,6 @@ namespace Internal.IL.Stubs
         {
             Emitter = emitter;
             MarshallingCodeStream = codeStream;
-        }
-    }
-
-    /// <summary>
-    /// Synthetic RVA static field that represents PInvoke fixup cell. The RVA data is
-    /// backed by a small data structure generated on the fly from the <see cref="PInvokeMetadata"/>
-    /// carried by the instance of this class.
-    /// </summary>
-    public sealed class PInvokeLazyFixupField : FieldDesc
-    {
-        private DefType _owningType;
-        private PInvokeMetadata _pInvokeMetadata;
-
-        public PInvokeLazyFixupField(DefType owningType, PInvokeMetadata pInvokeMetadata)
-        {
-            _owningType = owningType;
-            _pInvokeMetadata = pInvokeMetadata;
-        }
-
-        public PInvokeMetadata PInvokeMetadata
-        {
-            get
-            {
-                return _pInvokeMetadata;
-            }
-        }
-
-        public override TypeSystemContext Context
-        {
-            get
-            {
-                return _owningType.Context;
-            }
-        }
-
-        public override TypeDesc FieldType
-        {
-            get
-            {
-                return Context.GetHelperType("InteropHelpers").GetNestedType("MethodFixupCell");
-            }
-        }
-
-        public override bool HasRva
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool IsInitOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool IsLiteral
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool IsStatic
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool IsThreadStatic
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override DefType OwningType
-        {
-            get
-            {
-                return _owningType;
-            }
-        }
-
-        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
-        {
-            return false;
         }
     }
 

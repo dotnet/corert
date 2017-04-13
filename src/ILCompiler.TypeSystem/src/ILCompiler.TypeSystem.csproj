@@ -260,6 +260,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.Sorting.cs">
+      <Link>Ecma\EcmaField.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Sorting.cs">
       <Link>Ecma\EcmaGenericParameter.Sorting.cs</Link>
     </Compile>
@@ -334,6 +337,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.Sorting.cs">
       <Link>IL\Stubs\EnumThunks.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeLazyFixupField.cs">
+      <Link>IL\Stubs\PInvokeLazyFixupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeLazyFixupField.Sorting.cs">
+      <Link>IL\Stubs\PInvokeLazyFixupField.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
@@ -418,6 +427,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\FieldDesc.Sorting.cs">
+      <Link>TypeSystem\Sorting\FieldDesc.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Sorting\FieldForInstantiatedType.Sorting.cs">
+      <Link>TypeSystem\Sorting\FieldForInstantiatedType.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\InstantiatedMethod.Sorting.cs">
       <Link>TypeSystem\Sorting\InstantiatedMethod.Sorting.cs</Link>

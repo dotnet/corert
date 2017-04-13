@@ -17,6 +17,16 @@ namespace ILCompiler
             {
                 return comparer.Compare(ValueTypeRepresented, ((BoxedValueType)other).ValueTypeRepresented);
             }
+
+            partial class BoxedValueField
+            {
+                protected override int ClassCode => 1765873859;
+
+                protected override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
+                {
+                    return comparer.Compare(_owningType, ((BoxedValueField)other)._owningType);
+                }
+            }
         }
 
         partial class GenericUnboxingThunk
