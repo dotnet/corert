@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static unsafe partial class mincore
     {
-        [DllImport(Libraries.ProcessEnvironment, EntryPoint = "GetEnvironmentVariableW")]
+        [DllImport(Libraries.ProcessEnvironment, CharSet = CharSet.Unicode, EntryPoint = "GetEnvironmentVariableW")]
         internal static extern unsafe int GetEnvironmentVariable(string lpName, [Out] char[] lpValue, int size);
 
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
