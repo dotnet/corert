@@ -409,7 +409,7 @@ namespace ILCompiler
                 foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
                 {
                     string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
-                    if (File.Exists(candidateFileName))
+                    if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
                     {
                         pdbFilename = candidateFileName;
                         searchPath = Path.GetDirectoryName(pdbFilename);
