@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 #include "common.h"
+#include "gcenv.h"
+#include "gcheaputilities.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -15,16 +17,12 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
-#include "Crst.h"
-#include "event.h"
 #include "rhbinder.h"
 #include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
-#include "ObjectLayout.h"
 #include "TargetPtrs.h"
-#include "eetype.h"
 
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
@@ -203,12 +201,12 @@ void ThreadStore::UnlockThreadStore()
     m_Lock.ReleaseReadLock();
 }
 
-void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
+void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
-    ThreadStore::SuspendAllThreads(pCompletionEvent, /* fireDebugEvent = */ true);
+    ThreadStore::SuspendAllThreads(waitForGCEvent, /* fireDebugEvent = */ true);
 }
 
-void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireDebugEvent)
+void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
 {    
     // 
     // SuspendAllThreads requires all threads running
@@ -231,7 +229,10 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireD
 
     RhpSuspendingThread = pThisThread;
 
-    pCompletionEvent->Reset();
+    if (waitForGCEvent)
+    {
+        GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
+    }
     m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
@@ -292,7 +293,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireD
     m_SuspendCompleteEvent.Set();
 }
 
-void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
+void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
 {
     m_pRuntimeInstance->UnsychronizedResetHijackedLoops();
 
@@ -308,7 +309,10 @@ void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
     GetRuntimeInstance()->SetLoopHijackFlags(0);
 
     RhpSuspendingThread = NULL;
-    pCompletionEvent->Set();
+    if (waitForGCEvent)
+    {
+        GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
+    }
     UnlockThreadStore();
 } // ResumeAllThreads
 
@@ -323,8 +327,7 @@ void ThreadStore::WaitForSuspendComplete()
 
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
 {
-    CLREventStatic dummyEvent;
-    SuspendAllThreads(&dummyEvent, /* fireDebugEvent = */ false);
+    SuspendAllThreads(/* waitForGCEvent = */ false, /* fireDebugEvent = */ false);
     // TODO: consider enabling multiple thread aborts running in parallel on different threads
     ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) == 0);
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::AbortInProgress;
@@ -358,13 +361,12 @@ void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbort
         transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
     }
 
-    ResumeAllThreads(&dummyEvent);
+    ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
 void ThreadStore::CancelThreadAbort(Thread* targetThread)
 {
-    CLREventStatic dummyEvent;
-    SuspendAllThreads(&dummyEvent, /* fireDebugEvent = */ false);
+    SuspendAllThreads(/* waitForGCEvent = */ false, /* fireDebugEvent = */ false);
 
     ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) != 0);
     RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::AbortInProgress;
@@ -377,7 +379,7 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
 
     targetThread->SetThreadAbortException(nullptr);
 
-    ResumeAllThreads(&dummyEvent);
+    ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
 COOP_PINVOKE_HELPER(void *, RhpGetCurrentThread, ())
