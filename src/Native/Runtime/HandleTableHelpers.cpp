@@ -13,17 +13,17 @@
 #include "gcenv.h"
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
-#include "gchandletableutilities.h"
+#include "gchandleutilities.h"
 
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore()->CreateHandleOfType(pObject, type);
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, type);
 }
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, (Object *pPrimary, Object *pSecondary))
 {
-    return GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }
 
 COOP_PINVOKE_HELPER(void, RhHandleFree, (OBJECTHANDLE handle))
@@ -65,7 +65,7 @@ COOP_PINVOKE_HELPER(void, RhUnregisterRefCountedHandleCallback, (void * pCallout
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocVariable, (Object * pObject, UInt32 type)) 
 {
-    return CreateVariableHandle(GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore(), pObject, type);
+    return CreateVariableHandle(GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore(), pObject, type);
 }
 
 COOP_PINVOKE_HELPER(UInt32, RhHandleGetVariableType, (OBJECTHANDLE handle))

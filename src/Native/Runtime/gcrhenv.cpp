@@ -12,7 +12,7 @@
 
 #include "gcenv.h"
 #include "gcheaputilities.h"
-#include "gchandletableutilities.h"
+#include "gchandleutilities.h"
 #include "profheapwalkhelper.h"
 
 #ifdef FEATURE_STANDALONE_GC
@@ -217,15 +217,15 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     IGCToCLR* gcToClr = nullptr;
 #endif // FEATURE_STANDALONE_GC
 
-    IGCHandleTable *pGcHandleTable;
+    IGCHandleManager *pGcHandleManager;
 
     IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleTable, &g_gc_dac_vars))
+    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars))
         return false;
 
     assert(pGCHeap != nullptr);
     g_pGCHeap = pGCHeap;
-    g_pGCHandleTable = pGcHandleTable;
+    g_pGCHandleManager = pGcHandleManager;
     g_gcDacGlobals = &g_gc_dac_vars;
 
     // Apparently the Windows linker removes global variables if they are never
@@ -243,7 +243,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
         return false;
 
     // Initialize HandleTable.
-    if (!GCHandleTableUtilities::GetGCHandleTable()->Initialize())
+    if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
     return true;
@@ -944,12 +944,12 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
 
 void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 {
-    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
 }
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
 {
-    return (void*)GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, type);
+    return (void*)GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, type);
 }
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
