@@ -51,13 +51,15 @@ namespace ILCompiler.DependencyAnalysis
 
         private void ComputeLayout()
         {
-            // TODO: deterministic ordering
             GenericLookupResult[] layout = new GenericLookupResult[_entries.Count];
             int index = 0;
             foreach (GenericLookupResult entry in EntryHashTable.Enumerator.Get(_entries))
             {
                 layout[index++] = entry;
             }
+
+            var comparer = new GenericLookupResult.Comparer(new TypeSystemComparer());
+            Array.Sort(layout, comparer.Compare);
 
             // Only publish after the full layout is computed. Races are fine.
             _layout = layout;
