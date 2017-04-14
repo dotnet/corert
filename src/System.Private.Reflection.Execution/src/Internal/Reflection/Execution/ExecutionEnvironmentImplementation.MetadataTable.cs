@@ -19,8 +19,6 @@ using global::Internal.Runtime;
 
 using Debug = System.Diagnostics.Debug;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution
 {
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment

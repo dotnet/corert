@@ -379,7 +379,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static IEnumerable TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
+        public static Array TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
         {
             exception = null;
 
@@ -387,40 +387,40 @@ namespace System.Reflection.Runtime.General
             switch (handleType)
             {
                 case HandleType.ConstantBooleanArray:
-                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value;
+                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantCharArray:
-                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value;
+                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantByteArray:
-                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value;
+                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantSByteArray:
-                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value;
+                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt16Array:
-                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value;
+                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt16Array:
-                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value;
+                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt32Array:
-                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value;
+                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt32Array:
-                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value;
+                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt64Array:
-                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value;
+                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt64Array:
-                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value;
+                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantSingleArray:
-                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value;
+                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantDoubleArray:
-                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value;
+                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantStringArray:
                     {

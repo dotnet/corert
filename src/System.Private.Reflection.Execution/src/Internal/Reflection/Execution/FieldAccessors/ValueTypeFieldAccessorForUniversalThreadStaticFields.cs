@@ -14,8 +14,6 @@ using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ValueTypeFieldAccessorForUniversalThreadStaticFields : WritableStaticFieldAccessor

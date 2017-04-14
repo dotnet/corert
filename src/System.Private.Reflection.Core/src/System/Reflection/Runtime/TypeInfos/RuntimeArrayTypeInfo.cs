@@ -13,8 +13,6 @@ using System.Reflection.Runtime.MethodInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     //

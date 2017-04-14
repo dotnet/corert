@@ -330,7 +330,9 @@ private:
         {
             UInt8 logStackAlignment : 4;    // [0:3]    binary logarithm of frame alignment (3..15) or 0
             UInt8 hasGSCookie       : 1;    // [4]      1: frame uses GS cookie
-            UInt8 extraDataUnused   : 3;    // [5:7]    unused bits
+            UInt8 hasCommonVars     : 1;    // [5]      1: method has a list of "common vars"
+                                            //          as an optimization for methods with many call sites and variables
+            UInt8 extraDataUnused   : 2;    // [6:7]    unused bits
 #pragma warning(suppress:4201) // nameless struct
         };
         UInt8 extraDataHeader;
@@ -480,6 +482,12 @@ public:
         hasExtraData = 1;
         hasGSCookie = 1;
         gsCookieOffset = offsetInBytes / POINTER_SIZE;
+    }
+
+    void SetHasCommonVars()
+    {
+        hasExtraData = 1;
+        hasCommonVars = 1;
     }
 
     void SetParamPointer(RegNumber regNum, UInt32 offsetInBytes, bool isOffsetFromSP = false)
@@ -723,6 +731,11 @@ public:
     {
         ASSERT(hasGSCookie);
         return gsCookieOffset * POINTER_SIZE;
+    }
+
+    bool HasCommonVars()
+    {
+        return hasCommonVars;
     }
 
 #if defined(RHDUMP) && !defined(_TARGET_AMD64_)
@@ -1105,6 +1118,7 @@ public:
             UInt8  mainEpilogAtEnd      = epilogAtEnd;
             UInt16 mainEpilogCount      = epilogCount;
             UInt16 mainFixedEpilogSize  = fixedEpilogSize;
+            UInt8  mainHasCommonVars    = hasCommonVars;
             // -------
 
             int nFunclets = (int)VarInt::ReadUnsigned(pbDecode);
@@ -1156,6 +1170,7 @@ public:
             this->epilogAtEnd      = mainEpilogAtEnd;
             this->epilogCount      = mainEpilogCount;
             this->fixedEpilogSize  = mainFixedEpilogSize;
+            this->hasCommonVars    = mainHasCommonVars;
 
             // -------
         }
