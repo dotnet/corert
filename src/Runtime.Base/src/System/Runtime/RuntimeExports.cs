@@ -28,6 +28,7 @@ namespace System.Runtime
             // below will call into the assert defined in the class library (and not the MRT version of it). The one
             // in the class library is not low level enough to be callable when GC statics are not initialized yet.
             // Feel free to restructure once that's not a problem.
+#if DEBUG
             bool isValid = !ptrEEType->IsGenericTypeDefinition &&
                 !ptrEEType->IsInterface &&
                 !ptrEEType->IsArray &&
@@ -35,6 +36,7 @@ namespace System.Runtime
                 !ptrEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
+#endif
 
 #if FEATURE_64BIT_ALIGNMENT
             if (ptrEEType->RequiresAlign8)
