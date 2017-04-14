@@ -286,7 +286,7 @@ namespace ILCompiler
             /// <summary>
             /// Synthetic field on <see cref="BoxedValueType"/>.
             /// </summary>
-            private class BoxedValueField : FieldDesc
+            private partial class BoxedValueField : FieldDesc
             {
                 private BoxedValueType _owningType;
 

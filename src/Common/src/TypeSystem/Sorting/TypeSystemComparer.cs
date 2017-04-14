@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -70,6 +68,32 @@ namespace Internal.TypeSystem
         }
 
         public int Compare(MethodDesc x, MethodDesc y)
+        {
+            if (x == y)
+            {
+                return 0;
+            }
+
+            int result = x.ClassCode - y.ClassCode;
+            if (result == 0)
+            {
+                Debug.Assert(x.GetType() == y.GetType());
+
+                result = x.CompareToImpl(y, this);
+
+                // We did a reference equality check above so an "Equal" result is not expected
+                Debug.Assert(result != 0);
+
+                return result;
+            }
+            else
+            {
+                Debug.Assert(x.GetType() != y.GetType());
+                return result;
+            }
+        }
+
+        public int Compare(FieldDesc x, FieldDesc y)
         {
             if (x == y)
             {
