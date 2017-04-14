@@ -23,6 +23,19 @@ namespace System.Runtime
         public static unsafe object RhNewObject(EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+
+            // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
+            // below will call into the assert defined in the class library (and not the MRT version of it). The one
+            // in the class library is not low level enough to be callable when GC statics are not initialized yet.
+            // Feel free to restructure once that's not a problem.
+            bool isValid = !ptrEEType->IsGenericTypeDefinition &&
+                !ptrEEType->IsInterface &&
+                !ptrEEType->IsArray &&
+                !ptrEEType->IsString &&
+                !ptrEEType->IsByRefLike;
+            if (!isValid)
+                Debug.Assert(false);
+
 #if FEATURE_64BIT_ALIGNMENT
             if (ptrEEType->RequiresAlign8)
             {
@@ -45,6 +58,9 @@ namespace System.Runtime
         public static unsafe object RhNewArray(EETypePtr pEEType, int length)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+
+            Debug.Assert(ptrEEType->IsArray || ptrEEType->IsString);
+
 #if FEATURE_64BIT_ALIGNMENT
             if (ptrEEType->RequiresAlign8)
             {

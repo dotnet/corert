@@ -352,6 +352,15 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsString
+        {
+            get
+            {
+                // String is currently the only non-array type with a non-zero component size.
+                return ComponentSize == StringComponentSize.Value && !IsArray && !IsGenericTypeDefinition;
+            }
+        }
+
         internal bool IsArray
         {
             get

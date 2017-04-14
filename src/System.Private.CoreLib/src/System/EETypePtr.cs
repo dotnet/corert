@@ -146,8 +146,7 @@ namespace System
         {
             get
             {
-                // String is currently the only non-array type with a non-zero component size.
-                return (_value->ComponentSize == sizeof(char)) && !_value->IsArray && !_value->IsGenericTypeDefinition;
+                return _value->IsString;
             }
         }
 
