@@ -88,6 +88,12 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_String(Delegate_String del);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern Delegate_String GetDelegate();
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool Callback(ref Delegate_String d);
+
         delegate void Delegate_Unused();
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
@@ -362,6 +368,13 @@ namespace PInvokeTests
 
             Delegate_Int closed = new Delegate_Int((new ClosedDelegateCLass()).Sum);
             ThrowIfNotEquals(true, ReversePInvoke_Int(closed), "Closed Delegate marshalling failed.");
+
+            Delegate_String ret = GetDelegate();
+            ThrowIfNotEquals(true, ret("Hello World!"), "Delegate as P/Invoke return failed");
+
+            Delegate_String d = new Delegate_String(new ClosedDelegateCLass().GetString);
+            ThrowIfNotEquals(true, Callback(ref d), "Delegate IN marshalling failed");
+            ThrowIfNotEquals(true, d("Hello World!"), "Delegate OUT marshalling failed");
 
             Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
             ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");

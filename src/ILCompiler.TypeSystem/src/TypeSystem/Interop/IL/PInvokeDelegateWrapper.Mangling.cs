@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
-
-namespace Internal.IL.Stubs
+namespace Internal.TypeSystem.Interop
 {
-    public partial class StructMarshallingThunk : IPrefixMangledType
+    partial class PInvokeDelegateWrapper : IPrefixMangledType
     {
         TypeDesc IPrefixMangledType.BaseType
         {
             get
             {
-                return ManagedType;
+                return DelegateType;
             }
         }
 
@@ -20,7 +18,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix;
+                return "PInvokeDelegateWrapper";
             }
         }
     }

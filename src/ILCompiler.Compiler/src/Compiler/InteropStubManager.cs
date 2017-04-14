@@ -53,7 +53,14 @@ namespace ILCompiler
             _delegateMarshalingTypes.Add(delegateType);
             return stub;
         }
+        internal MethodDesc GetForwardDelegateCreationStub(TypeDesc delegateType)
+        {
+            var stub = InteropStateManager.GetForwardDelegateCreationThunk(delegateType);
+            Debug.Assert(stub != null);
 
+            _delegateMarshalingTypes.Add(delegateType);
+            return stub;
+        }
 
         internal TypeDesc GetStructMarshallingType(TypeDesc structType)
         {
@@ -91,13 +98,29 @@ namespace ILCompiler
             return inlineArrayType;
         }
 
-        internal IEnumerable<Tuple<TypeDesc, DelegateMarshallingMethodThunk, DelegateMarshallingMethodThunk>> GetDelegateMarshallingThunks()
+        internal struct DelegateMarshallingThunks
+        {
+            public TypeDesc DelegateType;
+            public DelegateMarshallingMethodThunk OpenStaticDelegateMarshallingThunk;
+            public DelegateMarshallingMethodThunk ClosedDelegateMarshallingThunk;
+            public ForwardDelegateCreationThunk DelegateCreationThunk;
+        }
+
+        internal IEnumerable<DelegateMarshallingThunks> GetDelegateMarshallingThunks()
         {
             foreach (var delegateType in _delegateMarshalingTypes)
             {
                 var openStub = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType);
                 var closedStub = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType);
-                yield return new Tuple<TypeDesc, DelegateMarshallingMethodThunk, DelegateMarshallingMethodThunk>(delegateType, openStub, closedStub);
+                var delegateCreationStub = InteropStateManager.GetForwardDelegateCreationThunk(delegateType);
+                yield return 
+                    new DelegateMarshallingThunks()
+                    {
+                        DelegateType = delegateType,
+                        OpenStaticDelegateMarshallingThunk = openStub,
+                        ClosedDelegateMarshallingThunk = closedStub,
+                        DelegateCreationThunk = delegateCreationStub
+                    };
             }
         }
 

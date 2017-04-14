@@ -10,6 +10,12 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
+    public enum DelegateMarshallingMethodThunkKind : byte
+    {
+        ReverseOpenStatic,
+        ReverseClosed,
+        ForwardNativeFunctionWrapper
+    }
     /// <summary>
     /// Thunk to marshal delegate parameters and invoke the appropriate delegate function pointer
     /// </summary>
@@ -21,19 +27,30 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _invokeMethod;
         private MethodSignature _signature;         // signature of the native callable marshalling stub
 
-        public bool IsOpenStaticDelegate
+        public DelegateMarshallingMethodThunkKind Kind
         {
             get;
         }
 
+        public MarshalDirection Direction
+        {
+            get
+            {
+                if (Kind == DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper)
+                    return MarshalDirection.Forward;
+                else
+                    return MarshalDirection.Reverse;
+            }
+        }
+
         public DelegateMarshallingMethodThunk(MetadataType delegateType, TypeDesc owningType,
-                InteropStateManager interopStateManager, bool isOpenStaticDelegate)
+                InteropStateManager interopStateManager, DelegateMarshallingMethodThunkKind kind)
         {
             _owningType = owningType;
             _delegateType = delegateType;
             _invokeMethod = delegateType.GetMethod("Invoke", null);
             _interopStateManager = interopStateManager;
-            IsOpenStaticDelegate = isOpenStaticDelegate;
+            Kind = kind;
         }
 
         public override TypeSystemContext Context
@@ -48,7 +65,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return true;
+                return Direction == MarshalDirection.Reverse;
             }
         }
 
@@ -74,48 +91,55 @@ namespace Internal.IL.Stubs
             {
                 if (_signature == null)
                 {
-                    bool isAnsi = true;
-                    var ecmaType = _delegateType as EcmaType;
-                    if (ecmaType != null)
+                    if (Kind == DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper)
                     {
-                        isAnsi = ecmaType.GetDelegatePInvokeFlags().CharSet == System.Runtime.InteropServices.CharSet.Ansi;
+                        _signature = _invokeMethod.Signature;
                     }
-
-                    MethodSignature delegateSignature = _invokeMethod.Signature;
-                    TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
-                    ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
-                    int parameterIndex = 0;
-
-                    MarshalAsDescriptor marshalAs = null;
-                    if (parameterMetadataArray != null && parameterMetadataArray.Length > 0 && parameterMetadataArray[0].Index == 0)
+                    else
                     {
-                        marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
-                    }
-
-                    TypeDesc nativeReturnType = MarshalHelpers.GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
-                    for (int i = 0; i < delegateSignature.Length; i++)
-                    {
-                        int sequence = i + 1;
-                        Debug.Assert(parameterIndex == parameterMetadataArray.Length || sequence <= parameterMetadataArray[parameterIndex].Index);
-                        if (parameterIndex == parameterMetadataArray.Length || sequence < parameterMetadataArray[parameterIndex].Index)
+                        bool isAnsi = true;
+                        var ecmaType = _delegateType as EcmaType;
+                        if (ecmaType != null)
                         {
-                            // if we don't have metadata for the parameter, marshalAs is null
-                            marshalAs = null;
+                            isAnsi = ecmaType.GetDelegatePInvokeFlags().CharSet == System.Runtime.InteropServices.CharSet.Ansi;
                         }
-                        else
+
+                        MethodSignature delegateSignature = _invokeMethod.Signature;
+                        TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
+                        ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
+                        int parameterIndex = 0;
+
+                        MarshalAsDescriptor marshalAs = null;
+                        if (parameterMetadataArray != null && parameterMetadataArray.Length > 0 && parameterMetadataArray[0].Index == 0)
                         {
-                            Debug.Assert(sequence == parameterMetadataArray[parameterIndex].Index);
                             marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
                         }
-                        bool isByRefType = delegateSignature[i].IsByRef;
 
-                        var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
+                        TypeDesc nativeReturnType = MarshalHelpers.GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
+                        for (int i = 0; i < delegateSignature.Length; i++)
+                        {
+                            int sequence = i + 1;
+                            Debug.Assert(parameterIndex == parameterMetadataArray.Length || sequence <= parameterMetadataArray[parameterIndex].Index);
+                            if (parameterIndex == parameterMetadataArray.Length || sequence < parameterMetadataArray[parameterIndex].Index)
+                            {
+                                // if we don't have metadata for the parameter, marshalAs is null
+                                marshalAs = null;
+                            }
+                            else
+                            {
+                                Debug.Assert(sequence == parameterMetadataArray[parameterIndex].Index);
+                                marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
+                            }
+                            bool isByRefType = delegateSignature[i].IsByRef;
 
-                        var nativeType = MarshalHelpers.GetNativeMethodParameterType(managedType, marshalAs, _interopStateManager, false, isAnsi);
+                            var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
 
-                        nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
-                     }
-                    _signature = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                            var nativeType = MarshalHelpers.GetNativeMethodParameterType(managedType, marshalAs, _interopStateManager, false, isAnsi);
+
+                            nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
+                        }
+                        _signature = new MethodSignature(MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                    }
                 }
                 return _signature;
             }
@@ -139,19 +163,30 @@ namespace Internal.IL.Stubs
             }
         }
 
+        private string NamePrefix
+        {
+            get
+            {
+                switch (Kind)
+                {
+                    case DelegateMarshallingMethodThunkKind.ReverseOpenStatic:
+                        return "ReverseOpenStaticDelegateStub";
+                    case DelegateMarshallingMethodThunkKind.ReverseClosed:
+                        return "ReverseDelegateStub";
+                    case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
+                        return "ForwardNativeFunctionWrapper";
+                    default:
+                        System.Diagnostics.Debug.Assert(false, "Unexpected DelegateMarshallingMethodThunkKind.");
+                        return String.Empty;
+                }
+            }
+        }
 
         public override string Name
         {
             get
             {
-                if (IsOpenStaticDelegate)
-                {
-                    return "ReverseOpenStaticDelegateStub__" + DelegateType.Name;
-                }
-                else
-                {
-                    return "ReverseDelegateStub__" + DelegateType.Name;
-                }
+                return NamePrefix + "__" + DelegateType.Name;
             }
         }
 

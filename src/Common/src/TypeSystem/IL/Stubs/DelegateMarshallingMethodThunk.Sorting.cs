@@ -6,7 +6,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    // Functionality related to deterministic ordering of types
+    // Functionality related to deterministic ordering of methods
     partial class DelegateMarshallingMethodThunk
     {
         protected internal override int ClassCode => 1018037605;
@@ -14,8 +14,7 @@ namespace Internal.IL.Stubs
         protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (DelegateMarshallingMethodThunk)other;
-
-            int result = (IsOpenStaticDelegate ? 0 : 1) - (otherMethod.IsOpenStaticDelegate ? 0 : 1);
+            int result = Kind - otherMethod.Kind;
             if (result != 0)
                 return result;
 

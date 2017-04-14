@@ -348,12 +348,27 @@ namespace Internal.Runtime.CompilerHelpers
 
         }
     
-    internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
+        internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
         {
             if (del == null)
                 return IntPtr.Zero;
 
-            return AllocateThunk(del);
+            NativeFunctionPointerWrapper fpWrapper = del.Target as NativeFunctionPointerWrapper;
+            if (fpWrapper != null)
+            {
+                //
+                // Marshalling a delegate created from native function pointer back into function pointer
+                // This is easy - just return the 'wrapped' native function pointer
+                //
+                return fpWrapper.NativeFunctionPointer;
+            }
+            else
+            {
+                //
+                // Marshalling a managed delegate created from managed code into a native function pointer
+                //
+                return AllocateThunk(del);
+            }
         }
 
         private static object s_thunkPoolHeap;
@@ -410,6 +425,60 @@ namespace Internal.Runtime.CompilerHelpers
                 return pThunk;
             }
         }
+
+        /// <summary>
+        /// Retrieve the corresponding P/invoke instance from the stub
+        /// </summary>
+        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        {
+            if (pStub == IntPtr.Zero)
+                return null;
+            //
+            // First try to see if this is one of the thunks we've allocated when we marshal a managed
+            // delegate to native code
+            // s_thunkPoolHeap will be null if there isn't any managed delegate to native
+            //
+            IntPtr pContext;
+            IntPtr pTarget;
+            if (s_thunkPoolHeap != null && RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
+            {
+                GCHandle handle;
+                unsafe
+                {
+                    // Pull out Handle from context
+                    handle = (*((ThunkContextData*)pContext)).Handle;
+                }
+                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
+
+                //
+                // The delegate might already been garbage collected
+                // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
+                // until they are done with the native function pointer
+                //
+                if (target == null)
+                {
+                    Environment.FailFast(SR.Delegate_GarbageCollected);
+                }
+
+                return target;
+            }
+            //
+            // Otherwise, the stub must be a pure native function pointer
+            // We need to create the delegate that points to the invoke method of a
+            // NativeFunctionPointerWrapper derived class
+            //
+            McgPInvokeDelegateData pinvokeDelegateData;
+            if (!RuntimeAugments.InteropCallbacks.TryGetMarshallerDataForDelegate(delegateType, out pinvokeDelegateData))
+            {
+                Environment.FailFast("Couldn't find marshalling stubs for delegate.");
+            }
+
+            return CalliIntrinsics.Call<Delegate>(
+                pinvokeDelegateData.ForwardDelegateCreationStub,
+                pStub
+            );
+        }
+
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct ModuleFixupCell
