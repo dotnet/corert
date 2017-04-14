@@ -207,7 +207,7 @@ namespace ILCompiler
             try
             {
                 PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
-                pdbReader = OpenAssociatedSymbolFile(filePath);
+                pdbReader = OpenAssociatedSymbolFile(filePath, peReader);
 
                 EcmaModule module = EcmaModule.Create(this, peReader, pdbReader);
 
@@ -395,20 +395,38 @@ namespace ILCompiler
         // Symbols
         //
 
-        private PdbSymbolReader OpenAssociatedSymbolFile(string peFilePath)
+        private PdbSymbolReader OpenAssociatedSymbolFile(string peFilePath, PEReader peReader)
         {
             // Assume that the .pdb file is next to the binary
             var pdbFilename = Path.ChangeExtension(peFilePath, ".pdb");
+            string searchPath = "";
 
             if (!File.Exists(pdbFilename))
-                return null;
+            {
+                pdbFilename = null;
+
+                // If the file doesn't exist, try the path specified in the CodeView section of the image
+                foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+                {
+                    string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
+                    if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
+                    {
+                        pdbFilename = candidateFileName;
+                        searchPath = Path.GetDirectoryName(pdbFilename);
+                        break;
+                    }
+                }
+
+                if (pdbFilename == null)
+                    return null;
+            }
 
             // Try to open the symbol file as portable pdb first
             PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
             if (reader == null)
             {
                 // Fallback to the diasymreader for non-portable pdbs
-                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath);
+                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, searchPath);
             }
 
             return reader;
