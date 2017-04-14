@@ -22,7 +22,7 @@ This will result in the following:
 
 You should now be able to use the `dotnet` commands of the CLI tools.
 
-# Compiling source to native code using the ILCompiler you built#
+# Compiling source to native code using the ILCompiler you built #
 
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
