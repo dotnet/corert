@@ -132,17 +132,13 @@ namespace ILCompiler.DependencyAnalysis
                                 {
                                     MetadataType metadataType = (MetadataType)field.OwningType;
 
-                                    int cctorOffset = 0;
-                                    if (!field.HasGCStaticBase && factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
-                                        cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
-
                                     ISymbolNode staticsNode = field.HasGCStaticBase ?
                                         factory.TypeGCStaticsSymbol(metadataType) :
                                         factory.TypeNonGCStaticsSymbol(metadataType);
 
                                     if (!field.HasGCStaticBase || factory.Target.Abi == TargetAbi.ProjectN)
                                     {
-                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt + cctorOffset);
+                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
                                     }
                                     else
@@ -151,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
 
                                         uint index = _externalReferences.GetIndex(staticsNode);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
-                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt + cctorOffset)));
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
                                     }
                                 }
                             }

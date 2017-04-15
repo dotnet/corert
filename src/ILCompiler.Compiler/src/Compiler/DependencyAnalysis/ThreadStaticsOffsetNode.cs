@@ -49,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             result[1] = new DependencyListEntry(factory.TypeThreadStaticsSymbol(_type), "ThreadStatics Base");
             return result;
         }
+        public MetadataType Type => _type;
 
         int ISymbolNode.Offset
         {
