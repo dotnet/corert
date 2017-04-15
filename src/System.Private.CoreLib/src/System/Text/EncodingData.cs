@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
@@ -174,7 +174,8 @@ namespace System.Text
         // given codepage. This is used to index WebNameIndices to get the start
         // index of the web name in the string WebNames, and to index
         // s_englishNameIndices to get the start of the English name in
-        // s_englishNames.
+        // s_englishNames. In addition, this arrays indices correspond to the indices
+        // into s_uiFamilyCodePages and s_flags.
         //
         private static readonly UInt16[] s_mappedCodePages = new UInt16[]
         {
@@ -186,6 +187,21 @@ namespace System.Text
             28591, // iso-8859-1
             65000, // utf-7
             65001 // utf-8
+        };
+
+        // 
+        // s_uiFamilyCodePages is indexed by the corresponding index in s_mappedCodePages.
+        //
+        private static readonly int[] s_uiFamilyCodePages = new int[]
+        {
+            1200,
+            1200,
+            1200,
+            1200,
+            1252,
+            1252,
+            1200,
+            1200
         };
 
         // 
@@ -256,6 +272,27 @@ namespace System.Text
             100, // Unicode (UTF-7) (65000)
             115, // Unicode (UTF-8) (65001)
             130
+        };
+        
+        // redeclaring these constants here for readability below
+        private const uint MIMECONTF_MAILNEWS = Encoding.MIMECONTF_MAILNEWS;
+        private const uint MIMECONTF_BROWSER = Encoding.MIMECONTF_BROWSER;
+        private const uint MIMECONTF_SAVABLE_MAILNEWS = Encoding.MIMECONTF_SAVABLE_MAILNEWS;
+        private const uint MIMECONTF_SAVABLE_BROWSER = Encoding.MIMECONTF_SAVABLE_BROWSER;
+
+        //
+        //s_flags is indexed by the corresponding index in s_mappedCodePages.
+        //
+        private static readonly uint[] s_flags = new uint[]
+        {
+            MIMECONTF_SAVABLE_BROWSER,
+            0,
+            0,
+            0,
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS,
+            MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER,
+            MIMECONTF_MAILNEWS | MIMECONTF_SAVABLE_MAILNEWS,
+            MIMECONTF_MAILNEWS | MIMECONTF_BROWSER | MIMECONTF_SAVABLE_MAILNEWS | MIMECONTF_SAVABLE_BROWSER
         };
     }
 }
