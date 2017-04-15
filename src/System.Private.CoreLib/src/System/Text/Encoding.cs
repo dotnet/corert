@@ -74,6 +74,11 @@ namespace System.Text
     public abstract class Encoding : ICloneable
     {
         private static Encoding defaultEncoding;
+        
+        internal const int MIMECONTF_MAILNEWS = 0x00000001;
+        internal const int MIMECONTF_BROWSER = 0x00000002;
+        internal const int MIMECONTF_SAVABLE_MAILNEWS = 0x00000100;
+        internal const int MIMECONTF_SAVABLE_BROWSER = 0x00000200;
 
         // Special Case Code Pages
         private const int CodePageDefault = 0;
@@ -139,6 +144,8 @@ namespace System.Text
         private const int CodePageUTF32BE = 12001;
 
         internal int m_codePage = 0;
+        
+        internal CodePageDataItem dataItem = null;
 
         private string _webName = null;
         private string _encodingName = null;
@@ -289,7 +296,7 @@ namespace System.Text
             }
 
             // Is it a valid code page?
-            if (EncodingTable.GetWebNameFromCodePage(codepage) == null)
+            if (EncodingTable.GetCodePageDataItem(codepage) == null)
             {
                 throw new NotSupportedException(
                     SR.Format(SR.NotSupported_NoCodepageData, codepage));
@@ -355,12 +362,47 @@ namespace System.Text
             return (GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback));
         }
 
+        // Return a list of all EncodingInfo objects describing all of our encodings
+        [Pure]
+        public static EncodingInfo[] GetEncodings()
+        {
+            return EncodingTable.GetEncodings();
+        }
+
         [Pure]
         public virtual byte[] GetPreamble()
         {
             return Array.Empty<byte>();
         }
-        
+
+        private void GetDataItem()
+        {
+            if (dataItem == null)
+            {
+                dataItem = EncodingTable.GetCodePageDataItem(m_codePage);
+                if (dataItem == null)
+                {
+                    throw new NotSupportedException(
+                        SR.Format(SR.NotSupported_NoCodepageData, m_codePage));
+                }
+            }
+        }
+
+        // Returns the name for this encoding that can be used with mail agent body tags.
+        // If the encoding may not be used, the string is empty.
+
+        public virtual String BodyName
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.BodyName);
+            }
+        }
+
         // Returns the human-readable description of the encoding ( e.g. Hebrew (DOS)).
 
         public virtual String EncodingName
@@ -383,7 +425,7 @@ namespace System.Text
                         // but we don't localize ProjectN, we specifically need to do something reasonable
                         // in this case. This currently returns the English name of the encoding from a
                         // static data table.
-                        _encodingName = EncodingTable.GetEnglishNameFromCodePage(this.CodePage);
+                        _encodingName = EncodingTable.GetCodePageDataItem(this.CodePage).EnglishName;
                         if (_encodingName == null)
                         {
                             throw new NotSupportedException(
@@ -411,21 +453,104 @@ namespace System.Text
             }
         }
 
+        // Returns the name for this encoding that can be used with mail agent header
+        // tags.  If the encoding may not be used, the string is empty.
+
+        public virtual String HeaderName
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.HeaderName);
+            }
+        }
+
         // Returns the IANA preferred name for this encoding.
         public virtual String WebName
         {
             get
             {
-                if (_webName == null)
+                if (dataItem == null)
                 {
-                    _webName = EncodingTable.GetWebNameFromCodePage(m_codePage);
-                    if (_webName == null)
-                    {
-                        throw new NotSupportedException(
-                            SR.Format(SR.NotSupported_NoCodepageData, m_codePage));
-                    }
+                    GetDataItem();
                 }
-                return _webName;
+                return (dataItem.WebName);
+            }
+        }
+
+        // Returns the windows code page that most closely corresponds to this encoding.
+
+        public virtual int WindowsCodePage
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.UIFamilyCodePage);
+            }
+        }
+
+
+        // True if and only if the encoding is used for display by browsers clients.
+
+        public virtual bool IsBrowserDisplay
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_BROWSER) != 0);
+            }
+        }
+
+        // True if and only if the encoding is used for saving by browsers clients.
+
+        public virtual bool IsBrowserSave
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_SAVABLE_BROWSER) != 0);
+            }
+        }
+
+        // True if and only if the encoding is used for display by mail and news clients.
+
+        public virtual bool IsMailNewsDisplay
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_MAILNEWS) != 0);
+            }
+        }
+
+
+        // True if and only if the encoding is used for saving documents by mail and
+        // news clients
+
+        public virtual bool IsMailNewsSave
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_SAVABLE_MAILNEWS) != 0);
             }
         }
 
