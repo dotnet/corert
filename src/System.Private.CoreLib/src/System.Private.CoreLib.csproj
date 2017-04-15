@@ -194,6 +194,7 @@
     <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
     <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="System\Text\CodePageDataItem.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
@@ -381,7 +382,7 @@
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
-    <Compile Include="System\Text\StringBuilder.CoreRT.cs"/>
+    <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
     <Compile Include="System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Text\UTF7Encoding.cs" />
     <Compile Include="System\Threading\CancellationToken.cs" />
