@@ -21,11 +21,13 @@ namespace ILCompiler.DependencyAnalysis
     public class NonGCStaticsNode : ObjectNode, ISymbolNode
     {
         private MetadataType _type;
+        private NodeFactory _factory;
 
         public NonGCStaticsNode(MetadataType type, NodeFactory factory)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
+            _factory = factory;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -42,7 +44,22 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__NonGCStaticBase_").Append(nameMangler.GetMangledTypeName(_type)); 
         }
 
-        public int Offset => 0;
+        public int Offset
+        {
+            get
+            {
+                // Make sure the NonGCStatics symbol always points to the beginning of the data.
+                if (_factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+                {
+                    return GetClassConstructorContextStorageSize(_factory.Target, _type);
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public MetadataType Type => _type;

@@ -4,15 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -95,9 +93,25 @@ namespace ILCompiler
                 return new GCStaticDescNode(type, true);
             });
 
-            _threadStaticsOffset = new NodeCache<MetadataType, ThreadStaticsOffsetNode>((MetadataType type) =>
+            _threadStaticsOffset = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
             {
-                return new ThreadStaticsOffsetNode(type, this);
+                if (CompilationModuleGroup.ContainsType(type))
+                {
+                    return new ThreadStaticsOffsetNode(type, this);
+                }
+                else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
+                {
+                    return new ImportedThreadStaticsOffsetNode(type, this);
+                }
+                else
+                {
+                    return new ExternSymbolNode(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
+                }
+            });
+
+            _importedThreadStaticsIndices = new NodeCache<MetadataType, ImportedThreadStaticsIndexNode>((MetadataType type) =>
+            {
+                return new ImportedThreadStaticsIndexNode(this);
             });
 
             _hostedGenericDictionaryLayouts = new NodeCache<TypeSystemEntity, UtcDictionaryLayoutNode>((TypeSystemEntity methodOrType) =>
@@ -241,25 +255,24 @@ namespace ILCompiler
             }
         }
 
-        private NodeCache<MetadataType, ThreadStaticsOffsetNode> _threadStaticsOffset;
+        private NodeCache<MetadataType, ISymbolNode> _threadStaticsOffset;
 
         public ISymbolNode TypeThreadStaticsOffsetSymbol(MetadataType type)
         {
-            if (CompilationModuleGroup.ContainsType(type))
-            {
-                return _threadStaticsOffset.GetOrAdd(type);
-            }
-            else
-            {
-                return ExternSymbol(ThreadStaticsOffsetNode.GetMangledName(NameMangler, type));
-            }
+            return _threadStaticsOffset.GetOrAdd(type);            
         }
+
+        private NodeCache<MetadataType, ImportedThreadStaticsIndexNode> _importedThreadStaticsIndices;
 
         public ISymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
         {
             if (CompilationModuleGroup.ContainsType(type))
             {
                 return ThreadStaticsIndex;
+            }
+            else if (CompilationModuleGroup.ShouldReferenceThroughImportTable(type))
+            {
+                return _importedThreadStaticsIndices.GetOrAdd((MetadataType)type);
             }
             else
             {

@@ -181,15 +181,9 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
                     if (_type.HasInstantiation)
                     {
-                        // The entry in the StaticsInfoHashtable points at the begining of the static fields data, so we need to add
-                        // the cctor context offset to the indirection cell.
-
-                        int cctorOffset = 0;
-                        if (factory.TypeSystemContext.HasLazyStaticConstructor(metadataType))
-                            cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
-
-                        nonGCStatic = factory.Indirection(nonGCStatic, cctorOffset);
-
+                        // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
+                        // context offset.
+                        nonGCStatic = factory.Indirection(nonGCStatic);
                         dependencies.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
                     }
                     else

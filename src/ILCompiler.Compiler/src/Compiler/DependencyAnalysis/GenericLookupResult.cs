@@ -536,17 +536,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
-            ISymbolNode target = factory.TypeNonGCStaticsSymbol(instantiatedType);
-
-            // The dictionary entry always points to the beginning of the data.
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(instantiatedType))
-            {
-                return factory.Indirection(target, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, instantiatedType));
-            }
-            else
-            {
-                return factory.Indirection(target);
-            }
+            return factory.Indirection(factory.TypeNonGCStaticsSymbol(instantiatedType));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -771,7 +761,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
             Debug.Assert(instantiatedType is MetadataType);
-            return factory.Indirection(utcNodeFactory.TypeThreadStaticsOffsetSymbol(instantiatedType as MetadataType));
+            return factory.Indirection(utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -863,7 +853,7 @@ namespace ILCompiler.DependencyAnalysis
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("CallingConventionConverterLookupResult_");
-            sb.Append(_callingConventionConverter.GetName(nameMangler));
+            sb.Append(_callingConventionConverter.GetName());
         }
 
         public override string ToString() => "CallingConventionConverterLookupResult";

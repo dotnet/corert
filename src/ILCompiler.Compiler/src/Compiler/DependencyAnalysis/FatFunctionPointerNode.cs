@@ -88,7 +88,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // The next entry is a pointer to the pointer to the context to be used for the canonical method
-            // TODO: in multi-module, this points to the import cell, and is no longer this weird pointer
             builder.EmitPointerReloc(factory.Indirection(contextParameter));
             
             return builder.ToObjectData();

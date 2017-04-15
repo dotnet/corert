@@ -205,14 +205,36 @@ namespace ILCompiler.DependencyAnalysis
                 return new ClonedConstructedEETypeNode(this, type);
             });
 
-            _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
+            _nonGCStatics = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
             {
-                return new NonGCStaticsNode(type, this);
+                if (_compilationModuleGroup.ContainsType(type))
+                {
+                    return new NonGCStaticsNode(type, this);
+                }
+                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+                {
+                    return new ImportedNonGCStaticsNode(this, type);
+                }
+                else
+                {
+                    return new ExternSymbolNode(NonGCStaticsNode.GetMangledName(type, NameMangler));
+                }
             });
 
-            _GCStatics = new NodeCache<MetadataType, GCStaticsNode>((MetadataType type) =>
+            _GCStatics = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
             {
-                return new GCStaticsNode(type);
+                if (_compilationModuleGroup.ContainsType(type))
+                {
+                    return new GCStaticsNode(type);
+                }
+                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+                {
+                    return new ImportedGCStaticsNode(this, type);
+                }
+                else
+                {
+                    return new ExternSymbolNode(GCStaticsNode.GetMangledName(type, NameMangler));
+                }
             });
 
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
@@ -317,9 +339,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReadyToRunGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
             });
 
-            _indirectionNodes = new NodeCache<Tuple<ISymbolNode, int>, IndirectionNode>(indirectionData =>
+            _indirectionNodes = new NodeCache<ISymbolNode, ISymbolNode>(indirectedNode =>
             {
-                return new IndirectionNode(Target, indirectionData.Item1, indirectionData.Item2);
+                return new IndirectionNode(Target, indirectedNode, 0);                
             });
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
@@ -449,34 +471,20 @@ namespace ILCompiler.DependencyAnalysis
             return _clonedTypeSymbols.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, NonGCStaticsNode> _nonGCStatics;
+        private NodeCache<MetadataType, ISymbolNode> _nonGCStatics;
 
         public ISymbolNode TypeNonGCStaticsSymbol(MetadataType type)
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
-            if (_compilationModuleGroup.ContainsType(type))
-            {
-                return _nonGCStatics.GetOrAdd(type);
-            }
-            else
-            {
-                return ExternSymbol(NonGCStaticsNode.GetMangledName(type, NameMangler));
-            }
+            return _nonGCStatics.GetOrAdd(type);
         }
-        
-        private NodeCache<MetadataType, GCStaticsNode> _GCStatics;
+
+        private NodeCache<MetadataType, ISymbolNode> _GCStatics;
 
         public ISymbolNode TypeGCStaticsSymbol(MetadataType type)
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
-            if (_compilationModuleGroup.ContainsType(type))
-            {
-                return _GCStatics.GetOrAdd(type);
-            }
-            else
-            {
-                return ExternSymbol(GCStaticsNode.GetMangledName(type, NameMangler));
-            }
+            return _GCStatics.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
@@ -496,7 +504,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_compilationModuleGroup.ContainsType(type));
             return _threadStatics.GetOrAdd(type);
         }
-
 
         private NodeCache<MetadataType, TypeThreadStaticIndexNode> _typeThreadStaticIndices;
 
@@ -765,11 +772,18 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<Tuple<ISymbolNode, int>, IndirectionNode> _indirectionNodes;
+        private NodeCache<ISymbolNode, ISymbolNode> _indirectionNodes;
 
-        public IndirectionNode Indirection(ISymbolNode symbol, int offsetDelta = 0)
+        public ISymbolNode Indirection(ISymbolNode symbol)
         {
-            return _indirectionNodes.GetOrAdd(new Tuple<ISymbolNode, int>(symbol, offsetDelta));
+            if (symbol.RepresentsIndirectionCell)
+            {
+                return symbol;
+            }
+            else
+            {
+                return _indirectionNodes.GetOrAdd(symbol);
+            }
         }
 
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;

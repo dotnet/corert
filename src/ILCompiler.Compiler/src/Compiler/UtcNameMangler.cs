@@ -284,6 +284,7 @@ namespace ILCompiler
                 case TypeFlags.Pointer:
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
+
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type
@@ -545,6 +546,20 @@ namespace ILCompiler
                 // A module that doesn't have imports or exports, e.g, a single app binary, uses its CompilationUnitPrefix
                 // as the tls index a prefix.
                 return CompilationUnitPrefix;
+            }
+        }
+
+        public string GetTlsIndexPrefix(MetadataType type)
+        {
+            uint ordinal;
+
+            if (HasImport && _importOrdinals.typeOrdinals.TryGetValue(type, out ordinal))
+            {
+                return GetImportedTlsIndexPrefix();
+            }
+            else
+            {
+                return GetCurrentModuleTlsIndexPrefix();
             }
         }
     }
