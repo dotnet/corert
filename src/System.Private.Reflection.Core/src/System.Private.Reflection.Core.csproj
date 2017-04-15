@@ -32,7 +32,6 @@
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <!-- TODO: We should always include this -->
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />

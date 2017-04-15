@@ -13,8 +13,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
@@ -24,8 +28,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Console.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
-    
-    <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

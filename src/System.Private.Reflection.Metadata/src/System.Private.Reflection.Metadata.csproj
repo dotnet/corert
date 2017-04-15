@@ -13,8 +13,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
