@@ -64,13 +64,9 @@ namespace ILCompiler.DependencyAnalysis
                 // Hash table is hashed by the hashcode of the owning type.
                 // Each entry has: the EEType of the type, followed by the non-GC static base.
                 // The non-GC static base is prefixed by the class constructor context.
-
-                // Unfortunately we need to adjust for the cctor context just so that we can subtract it again at runtime...
-                int delta = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, type);
-
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(type))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(node, delta))
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(node))
                     );
 
                 int hashCode = type.GetHashCode();

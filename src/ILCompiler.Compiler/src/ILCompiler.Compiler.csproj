@@ -163,7 +163,9 @@
     <Compile Include="Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportedStaticsNode.cs" />    
+	<Compile Include="Compiler\DependencyAnalysis\ImportedThreadStaticsNode.cs" />    
+	<Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />

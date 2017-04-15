@@ -70,11 +70,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 if (metadataType.NonGCStaticFieldSize.AsInt > 0)
                 {
-                    int cctorOffset = 0;
-                    if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
-                        cctorOffset += NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.TypeSystemContext.Target, metadataType);
-
-                    ISymbolNode nonGCStaticIndirection = factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType), cctorOffset);
+                    ISymbolNode nonGCStaticIndirection = factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.NonGcStaticData, _nativeStaticsReferences.GetIndex(nonGCStaticIndirection));
                 }
 

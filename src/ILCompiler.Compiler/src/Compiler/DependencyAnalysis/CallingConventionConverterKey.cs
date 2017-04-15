@@ -41,27 +41,26 @@ namespace ILCompiler.DependencyAnalysis
             return Signature.GetHashCode() ^ (int)ConverterKind;
         }
 
-        public string GetName(NameMangler nameMangler)
+        public string GetName()
         {
-            return ConverterKind.ToString() + Signature.GetMangledName(nameMangler);
+            return ConverterKind.ToString() + Signature.GetName();
         }
     }
 
     public static class MethodSignatureExtensions
     {
-        public static string GetMangledName(this MethodSignature signature, NameMangler nameMangler)
+        public static string GetName(this MethodSignature signature)
         {
             StringBuilder nameBuilder = new StringBuilder();
             if (signature.GenericParameterCount > 0)
                 nameBuilder.Append("GenParams:" + signature.GenericParameterCount);
             if (signature.IsStatic)
                 nameBuilder.Append("Static");
-            nameBuilder.Append(nameMangler.GetMangledTypeName(signature.ReturnType));
+            nameBuilder.Append(signature.ReturnType.ToString());
             for (int i = 0; i < signature.Length; i++)
-                nameBuilder.Append(nameMangler.GetMangledTypeName(signature[i]));
+                nameBuilder.Append(signature[i].ToString());
 
             return nameBuilder.ToString();
         }
     }
-
 }
