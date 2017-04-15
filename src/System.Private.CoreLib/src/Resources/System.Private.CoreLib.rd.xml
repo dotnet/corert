@@ -112,8 +112,6 @@
       </Namespace>
     </Assembly>
     
-    <!-- ResourceManager lights up WindowsRuntimeResourceManager with reflection -->
-    <Type Name="System.Resources.WindowsRuntimeResourceManager" Activate="Required Public" />
     <Type Name="Internal.Runtime.CompilerServices.HasEmbeddedStringResourcesAttribute" Browse="Required Public" />
   </Library>
 </Directives>
