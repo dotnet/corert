@@ -21,7 +21,6 @@ prepare_managed_build()
     ls "$__dotnetclipath/sdk"
 }
 
-
 build_managed_corert()
 {
     __buildproj=$__ProjectRoot/build.proj
@@ -50,6 +49,55 @@ build_managed_corert()
     fi
 }
 
+get_official_cross_builds()
+{
+    if [ $__CrossBuild == 1 ]; then
+        __corefxsite="https://ci.dot.net/job/dotnet_corefx/job/master/view/Official%20Builds/job/"
+        __coreclrsite="https://ci.dot.net/job/dotnet_coreclr/job/master/view/Official%20Builds/job/"
+        __corefxsource=
+        __coreclrsource=
+        __buildtype=
+        if [ $__BuildType = "Debug" ]; then
+            __buildtype="debug"
+        else
+            __buildtype="release"
+        fi
+        case $__BuildArch in
+            arm)
+            ;;
+            arm64)
+            ;;
+            armel)
+                ID=
+                if [ -e $ROOTFS_DIR/etc/os-release ]; then
+                    source $ROOTFS_DIR/etc/os-release
+                fi
+                if [ "$ID" = "tizen" ]; then
+                   __corefxsource="tizen_armel_cross_${__buildtype}/lastSuccessfulBuild/artifact/bin/build.tar.gz"
+                   __coreclrsource="armel_cross_${__buildtype}_tizen/lastSuccessfulBuild/artifact/bin/Product/Linux.armel.${__BuildType}/libSystem.Globalization.Native.a"
+                fi
+                ;;
+        esac
+        if [ -n "${__corefxsource}" ]; then
+            wget "${__corefxsite}${__corefxsource}"
+            export BUILDERRORLEVEL=$?
+            if [ $BUILDERRORLEVEL != 0 ]; then
+                exit $BUILDERRORLEVEL
+            fi
+            tar xvf ./build.tar.gz ./System.Native.a
+            mv ./System.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/packaging/publish1/framework
+            rm -rf ./build.tar.gz
+        fi
+        if [ -n ${__coreclrsource} ]; then
+            wget "${__coreclrsite}${__coreclrsource}"
+            export BUILDERRORLEVEL=$?
+            if [ $BUILDERRORLEVEL != 0 ]; then
+                exit $BUILDERRORLEVEL
+            fi
+            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/packaging/publish1/framework
+        fi
+     fi
+}
 
 if $__buildmanaged; then
 
@@ -60,6 +108,10 @@ if $__buildmanaged; then
     # Build the corert native components.
 
     build_managed_corert
+
+    # Get cross builds from official sites
+
+    get_official_cross_builds
 
     # Build complete
 fi
