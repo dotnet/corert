@@ -33,18 +33,55 @@ namespace Internal.Runtime.Augments
             _waitedHandles = new WaitHandleArray<IntPtr>(elementInitializer: null);
         }
 
-        internal IntPtr[] GetWaitedHandleArray(int requiredCapacity)
-        {
-            Debug.Assert(this == CurrentThread);
-
-            _waitedHandles.EnsureCapacity(requiredCapacity);
-            return _waitedHandles.Items;
-        }
-
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {
             _osHandle = GetOSHandleForCurrentThread();
+        }
+
+        /// <summary>
+        /// Callers must ensure to clear and return the array after use
+        /// </summary>
+        internal SafeWaitHandle[] RentWaitedSafeWaitHandleArray(int requiredCapacity)
+        {
+            Debug.Assert(this == CurrentThread);
+
+            if (_waitedSafeWaitHandles.Items == null)
+            {
+                return null;
+            }
+
+            _waitedSafeWaitHandles.VerifyElementsAreDefault();
+            _waitedSafeWaitHandles.EnsureCapacity(requiredCapacity);
+            return _waitedSafeWaitHandles.RentItems();
+        }
+
+        internal void ReturnWaitedSafeWaitHandleArray(SafeWaitHandle[] waitedSafeWaitHandles)
+        {
+            Debug.Assert(this == CurrentThread);
+            _waitedSafeWaitHandles.ReturnItems(waitedSafeWaitHandles);
+        }
+
+        /// <summary>
+        /// Callers must ensure to return the array after use
+        /// </summary>
+        internal IntPtr[] RentWaitedHandleArray(int requiredCapacity)
+        {
+            Debug.Assert(this == CurrentThread);
+
+            if (_waitedHandles.Items == null)
+            {
+                return null;
+            }
+
+            _waitedHandles.EnsureCapacity(requiredCapacity);
+            return _waitedHandles.RentItems();
+        }
+
+        internal void ReturnWaitedHandleArray(IntPtr[] waitedHandles)
+        {
+            Debug.Assert(this == CurrentThread);
+            _waitedHandles.ReturnItems(waitedHandles);
         }
 
         private static SafeWaitHandle GetOSHandleForCurrentThread()

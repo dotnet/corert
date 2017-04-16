@@ -287,7 +287,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_type.IsString)
             {
-                objData.EmitShort(2);
+                objData.EmitShort(StringComponentSize.Value);
             }
             else
             {

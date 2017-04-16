@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
     {
         private static class FieldFlags
         {

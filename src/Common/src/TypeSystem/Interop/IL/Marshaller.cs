@@ -1625,9 +1625,23 @@ namespace Internal.TypeSystem.Interop
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
         {
             LoadManagedValue(codeStream);
+
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-            Context.GetHelperEntryPoint("InteropHelpers", "GetStubForPInvokeDelegate")));
+                Context.GetHelperEntryPoint("InteropHelpers", "GetStubForPInvokeDelegate")));
+
             StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            LoadNativeValue(codeStream);
+
+            codeStream.Emit(ILOpcode.ldtoken, _ilCodeStreams.Emitter.NewToken(ManagedType));
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                Context.GetHelperEntryPoint("InteropHelpers", "GetPInvokeDelegateForStub")));
+
+            StoreManagedValue(codeStream);
+
         }
     }
 

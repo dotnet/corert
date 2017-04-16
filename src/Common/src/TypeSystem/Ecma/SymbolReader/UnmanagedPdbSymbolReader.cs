@@ -126,7 +126,7 @@ namespace Internal.TypeSystem.Ecma
         private static IMetaDataDispenser s_metadataDispenser;
         private static ISymUnmanagedBinder s_symBinder;
 
-        public static PdbSymbolReader TryOpenSymbolReaderForMetadataFile(string metadataFileName)
+        public static PdbSymbolReader TryOpenSymbolReaderForMetadataFile(string metadataFileName, string searchPath)
         {
             try
             {
@@ -142,7 +142,7 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 ISymUnmanagedReader reader;
-                if (s_symBinder.GetReaderForFile(objImporter, metadataFileName, "", out reader) < 0)
+                if (s_symBinder.GetReaderForFile(objImporter, metadataFileName, searchPath, out reader) < 0)
                     return null;
 
                 return new UnmanagedPdbSymbolReader(reader);

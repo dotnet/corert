@@ -27,6 +27,7 @@ class Program
         TestMDArrayAddressMethod.Run();
         TestNameManglingCollisionRegression.Run();
         TestSimpleGVMScenarios.Run();
+        TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
 
@@ -263,6 +264,34 @@ class Program
             }
         }
 
+        class FooShared
+        {
+            public readonly int Value;
+            public FooShared(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
+        class BarShared
+        {
+            public readonly int Value;
+            public BarShared(int value)
+            {
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+
         class GenClass<T>
         {
             public readonly T X;
@@ -309,6 +338,44 @@ class Program
             }
         }
 
+        private static void RunReferenceTypeShared<T>(T value)
+        {
+            // Delegate to a shared nongeneric reference type instance method
+            {
+                GenClass<T> g = new GenClass<T>(value);
+                Func<string> f = g.MakeString;
+                if (f() != "FooShared: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic reference type instance method
+            {
+                GenClass<T> g = new GenClass<T>(value);
+                Func<string> f = g.MakeGenString<T>;
+                if (f() != "FooShared, FooShared: 42")
+                    throw new Exception();
+            }
+        }
+
+        private static void RunValueTypeShared<T>(T value)
+        {
+            // Delegate to a shared nongeneric value type instance method
+            {
+                GenStruct<T> g = new GenStruct<T>(value);
+                Func<string> f = g.MakeString;
+                if (f() != "BarShared: 42")
+                    throw new Exception();
+            }
+
+            // Delegate to a shared generic value type instance method
+            {
+                GenStruct<T> g = new GenStruct<T>(value);
+                Func<string> f = g.MakeGenString<T>;
+                if (f() != "BarShared, BarShared: 42")
+                    throw new Exception();
+            }
+        }
+
         public static void Run()
         {
             // Delegate to a shared nongeneric reference type instance method
@@ -344,12 +411,12 @@ class Program
             }
 
             // Delegate to a shared nongeneric value type instance method
-            /*{
+            {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
                 Func<string> f = g.MakeString;
                 if (f() != "Bar: 42")
                     throw new Exception();
-            }*/
+            }
 
             // Delegate to a unshared nongeneric value type instance method
             {
@@ -360,12 +427,12 @@ class Program
             }
 
             // Delegate to a shared generic value type instance method
-            /*{
+            {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
                 Func<string> f = g.MakeGenString<Bar>;
                 if (f() != "Bar, Bar: 42")
                     throw new Exception();
-            }*/
+            }
 
             // Delegate to a unshared generic value type instance method
             {
@@ -375,6 +442,9 @@ class Program
                     throw new Exception();
             }
 
+            // Now the same from shared code
+            RunReferenceTypeShared<FooShared>(new FooShared(42));
+            RunValueTypeShared<BarShared>(new BarShared(42));
         }
     }
 
@@ -1260,6 +1330,51 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception();
+        }
+    }
+
+    class TestGvmDelegates
+    {
+        class Atom { }
+
+        interface IFoo
+        {
+            string Frob<T>(int arg);
+        }
+
+        class FooUnshared : IFoo
+        {
+            public string Frob<T>(int arg)
+            {
+                return typeof(T[,]).GetElementType().Name + arg.ToString();
+            }
+        }
+
+        class FooShared : IFoo
+        {
+            public string Frob<T>(int arg)
+            {
+                return typeof(T[,,]).GetElementType().Name + arg.ToString();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void RunShared<T>(IFoo foo)
+        {
+            Func<int, string> a = foo.Frob<T>;
+            if (a(456) != "Atom456")
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            IFoo foo = new FooUnshared();
+            Func<int, string> a = foo.Frob<Atom>;
+            if (a(123) != "Atom123")
+                throw new Exception();
+
+            // https://github.com/dotnet/corert/issues/2796
+            // RunShared<Atom>(new FooShared());
         }
     }
 

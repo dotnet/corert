@@ -938,7 +938,7 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
-                        delegateInfo = _compilation.GetDelegateCtor(owningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken);
+                        delegateInfo = _compilation.GetDelegateCtor(owningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken, followVirtualDispatch: false);
                         method = delegateInfo.Constructor.Method;
                     }
                 }

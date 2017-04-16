@@ -1409,7 +1409,11 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        object helperArg;
+                        if (helperId != ReadyToRunHelperId.DelegateCtor)
+                            helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
+                        else
+                            helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
@@ -1422,13 +1426,43 @@ namespace Internal.JitInterface
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
-            MethodDesc method = HandleToObject(pTargetMethod.hMethod);
-            TypeDesc type = HandleToObject(delegateType);
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_LOOKUP* tmp = &pLookup)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
+#endif
 
-            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
+            MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
+            TypeDesc delegateTypeDesc = HandleToObject(delegateType);
 
-            pLookup.lookupKind.needsRuntimeLookup = false;
-            pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            if (targetMethod.IsSharedByGenericInstantiations)
+            {
+                // If the method is not exact, fetch it as a runtime determined method.
+                targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod);
+            }
+
+            bool isLdvirtftn = pTargetMethod.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldvirtftn;
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(delegateTypeDesc, targetMethod, isLdvirtftn);
+
+            if (delegateInfo.NeedsRuntimeLookup)
+            {
+                pLookup.lookupKind.needsRuntimeLookup = true;
+
+                MethodDesc contextMethod = methodFromContext(pTargetMethod.tokenContext);
+
+                // We should not be inlining these. RyuJIT should have aborted inlining already.
+                Debug.Assert(contextMethod == MethodBeingCompiled);
+                
+                pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
+                pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+            }
+            else
+            {
+                pLookup.lookupKind.needsRuntimeLookup = false;
+                pLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            }
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)

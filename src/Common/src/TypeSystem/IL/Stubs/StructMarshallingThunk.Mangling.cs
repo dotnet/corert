@@ -20,18 +20,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                switch (ThunkType)
-                {
-                    case StructMarshallingThunkType.ManagedToNative:
-                        return "ManagedToNative";
-                    case StructMarshallingThunkType.NativeToManage:
-                        return "NativeToManaged";
-                    case StructMarshallingThunkType.Cleanup:
-                        return "Cleanup";
-                    default:
-                        System.Diagnostics.Debug.Assert(false, "Unexpected Struct marshalling thunk type");
-                        return string.Empty;
-                }
+                return NamePrefix;
             }
         }
     }

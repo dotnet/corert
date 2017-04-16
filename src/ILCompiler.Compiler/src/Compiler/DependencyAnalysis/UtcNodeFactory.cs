@@ -205,15 +205,6 @@ namespace ILCompiler
             return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
 
-        protected override IMethodNode CreateShadowConcreteMethodNode(MethodKey methodKey)
-        {
-            IMethodNode methodCodeNode = MethodEntrypoint(
-                    methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific),
-                    methodKey.IsUnboxingStub);
-
-            return new ShadowConcreteMethodNode(methodKey.Method, methodCodeNode);
-        }
-
         public GCStaticDescRegionNode GCStaticDescRegion = new GCStaticDescRegionNode(
             CompilationUnitPrefix + "__GCStaticDescStart", 
             CompilationUnitPrefix + "__GCStaticDescEnd");

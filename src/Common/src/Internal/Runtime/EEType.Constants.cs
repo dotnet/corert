@@ -301,4 +301,9 @@ namespace Internal.Runtime
         public const int Pointer = 0;
         public const int ByRef = 1;
     }
+
+    internal static class StringComponentSize
+    {
+        public const int Value = sizeof(char);
+    }
 }

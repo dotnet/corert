@@ -38,13 +38,27 @@ namespace System.Threading
             }
         }
 
-        public T[] Items
+        public T[] Items => _items;
+
+        public T[] RentItems()
         {
-            get
-            {
-                Debug.Assert(_items != null);
-                return _items;
-            }
+            Debug.Assert(_items != null);
+
+            T[] items = _items;
+            _items = null;
+            return items;
+        }
+
+        public void ReturnItems(T[] items)
+        {
+            Debug.Assert(items != null);
+            Debug.Assert(items.Length >= InitialCapacity);
+            Debug.Assert(items.Length <= MaximumCapacity);
+            Debug.Assert((items.Length & (items.Length - 1)) == 0); // is a power of 2
+
+            Debug.Assert(_items == null);
+
+            _items = items;
         }
 
         [Conditional("DEBUG")]

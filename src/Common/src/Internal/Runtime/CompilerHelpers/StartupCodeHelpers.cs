@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
@@ -158,14 +157,6 @@ namespace Internal.Runtime.CompilerHelpers
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
                 }
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int CStrLen(byte* str)
-        {
-            int len = 0;
-            for (; str[len] != 0; len++) { }
-            return len;
         }
     }
 

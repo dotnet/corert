@@ -13,7 +13,7 @@ namespace Internal.IL.Stubs
     /// This method prevents boxing of 'this' that would be required before a call to
     /// the System.Enum's default implementation.
     /// </summary>
-    internal class EnumGetHashCodeThunk : ILStubMethod
+    internal partial class EnumGetHashCodeThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private MethodSignature _signature;
@@ -96,7 +96,7 @@ namespace Internal.IL.Stubs
     /// This method prevents boxing of 'this' that would be required before a call to
     /// the System.Enum's default implementation.
     /// </summary>
-    internal class EnumEqualsThunk : ILStubMethod
+    internal partial class EnumEqualsThunk : ILStubMethod
     {
         private TypeDesc _owningType;
         private MethodSignature _signature;

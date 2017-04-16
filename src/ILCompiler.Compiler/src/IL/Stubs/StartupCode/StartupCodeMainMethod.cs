@@ -16,7 +16,7 @@ namespace Internal.IL.Stubs.StartupCode
     /// Startup code that does initialization, Main invocation
     /// and shutdown of the runtime.
     /// </summary>
-    public sealed class StartupCodeMainMethod : ILStubMethod
+    public sealed partial class StartupCodeMainMethod : ILStubMethod
     {
         private TypeDesc _owningType;
         private MainMethodWrapper _mainMethod;
@@ -167,7 +167,7 @@ namespace Internal.IL.Stubs.StartupCode
         /// environment without it being fully initialized. (In particular, the unhandled exception experience
         /// won't be initialized, making this difficult to diagnose.)
         /// </summary>
-        private class MainMethodWrapper : ILStubMethod
+        private partial class MainMethodWrapper : ILStubMethod
         {
             public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
             {

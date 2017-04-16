@@ -116,13 +116,24 @@ namespace System.Threading
             Debug.Assert(safeWaitHandles != null);
             Debug.Assert(safeWaitHandles.Length >= count);
 
-            IntPtr[] handles = currentThread.GetWaitedHandleArray(count);
-            for (int i = 0; i < count; i++)
+            IntPtr[] rentedHandles = currentThread.RentWaitedHandleArray(count);
+            IntPtr[] handles = rentedHandles ?? new IntPtr[count];
+            try
             {
-                handles[i] = safeWaitHandles[i].DangerousGetHandle();
-            }
+                for (int i = 0; i < count; i++)
+                {
+                    handles[i] = safeWaitHandles[i].DangerousGetHandle();
+                }
 
-            return WaitForMultipleObjects(handles, count, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjects(handles, count, waitAll, millisecondsTimeout);
+            }
+            finally
+            {
+                if (rentedHandles != null)
+                {
+                    currentThread.ReturnWaitedHandleArray(rentedHandles);
+                }
+            }
         }
 
         private static int WaitAnyCore(
