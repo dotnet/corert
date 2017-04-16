@@ -28,19 +28,17 @@
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
-  </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' != 'true'">
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' == 'true'">
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+    <ReferencePath Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
