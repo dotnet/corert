@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
-using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
 namespace System
@@ -18,20 +16,12 @@ namespace System
     public struct TypedReference
     {
         // Do not change the ordering of these fields. The JIT has a dependency on this layout.
-#if CORERT
         private readonly ByReference<byte> _value;
-#else
-        private readonly ByReferenceOfByte _value;
-#endif
         private readonly RuntimeTypeHandle _typeHandle;
 
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
-#if CORERT
             _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
-#else
-            _value = new ByReferenceOfByte(target, offset);
-#endif
             _typeHandle = typeHandle;
         }
 
@@ -93,22 +83,6 @@ namespace System
             {
                 return ref _value.Value;
             }
-        }
-
-        // @todo: ByReferenceOfByte is a workaround for the fact that ByReference<T> is broken on Project N right now.
-        // Once that's fixed, delete this class and replace references to ByReferenceOfByte to ByReference<byte>.
-        private struct ByReferenceOfByte
-        {
-            public ByReferenceOfByte(object target, int offset)
-            {
-                _target = target;
-                _offset = offset;
-            }
-
-            public ref byte Value => ref Unsafe.Add<byte>(ref _target.GetRawData(), _offset);
-
-            private readonly object _target;
-            private readonly int _offset;
         }
     }
 }
