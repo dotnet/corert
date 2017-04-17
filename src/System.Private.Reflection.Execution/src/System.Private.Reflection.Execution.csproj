@@ -29,12 +29,6 @@
 
   <!-- Setup the right references -->
   <ItemGroup>
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
 
