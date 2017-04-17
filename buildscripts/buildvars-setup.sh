@@ -250,14 +250,12 @@ fi
 
 # Set the remaining variables based upon the determined build configuration
 export __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
-export __IntermediatesHostDir=
 if [ $__CrossBuild = 1 ]; then
-    __IntermediatesHostDir="$__rootbinpath/obj/Native/$__BuildOS.$__HostArch.$__BuildType"
+    export __IntermediatesHostDir="$__rootbinpath/obj/Native/$__BuildOS.$__HostArch.$__BuildType"
 fi
 export __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
-export __ProductHostBinDir=
 if [ $__CrossBuild = 1 ]; then
-    __ProductHostBinDir="$__rootbinpath/Product/$__BuildOS.$__HostArch.$__BuildType"
+    export __ProductHostBinDir="$__rootbinpath/Product/$__BuildOS.$__HostArch.$__BuildType"
 fi
 export __RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
