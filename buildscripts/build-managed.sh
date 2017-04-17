@@ -49,6 +49,8 @@ build_managed_corert()
     fi
 }
 
+# TODO It's a temporary decision because of there are no armel tizen nuget packages getting published today
+
 get_official_cross_builds()
 {
     if [ $__CrossBuild == 1 ]; then
