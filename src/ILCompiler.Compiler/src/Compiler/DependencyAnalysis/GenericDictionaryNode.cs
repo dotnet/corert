@@ -103,6 +103,49 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
+        private static bool ContributesToDictionaryLayout(MethodDesc method)
+        {
+            // Generic methods have their own generic dictionaries
+            if (method.HasInstantiation)
+                return false;
+
+            // Abstract methods don't have a body
+            if (method.IsAbstract)
+                return false;
+
+            // PInvoke methods, runtime imports, etc. are not permitted on generic types,
+            // but let's not crash the compilation because of that.
+            if (method.IsPInvoke || method.IsRuntimeImplemented)
+                return false;
+
+            return true;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList result = null;
+
+            if (factory.CompilationModuleGroup.ShouldPromoteToFullType(_owningType))
+            {
+                result = new DependencyList();
+
+                // If the compilation group wants this type to be fully promoted, it means the EEType is going to be
+                // COMDAT folded with other EETypes generated in a different object file. This means their generic
+                // dictionaries need to have identical contents. The only way to achieve that is by generating
+                // the entries for all methods that contribute to the dictionary, and sorting the dictionaries.
+                foreach (var method in _owningType.GetAllMethods())
+                {
+                    if (!ContributesToDictionaryLayout(method))
+                        continue;
+
+                    result.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        "Cross-objectfile equivalent dictionary");
+                }
+            }
+
+            return result;
+        }
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             // The generic dictionary layout is shared between all the canonically equivalent
@@ -110,12 +153,7 @@ namespace ILCompiler.DependencyAnalysis
             // that use the same dictionary layout.
             foreach (var method in _owningType.GetAllMethods())
             {
-                // Generic methods have their own generic dictionaries
-                if (method.HasInstantiation)
-                    continue;
-
-                // Abstract methods don't have a body
-                if (method.IsAbstract)
+                if (!ContributesToDictionaryLayout(method))
                     continue;
 
                 // If a canonical method body was compiled, we need to track the dictionary
