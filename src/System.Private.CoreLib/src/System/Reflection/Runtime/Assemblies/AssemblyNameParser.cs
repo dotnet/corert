@@ -28,20 +28,22 @@ namespace System.Reflection.Runtime.Assemblies
         public static RuntimeAssemblyName Parse(String s)
         {
             Debug.Assert(s != null);
+
+            int indexOfNul = s.IndexOf((char)0);
+            if (indexOfNul != -1)
+                s = s.Substring(0, indexOfNul);
+            if (s.Length == 0)
+                throw new ArgumentException(SR.Format_StringZeroLength);
+
             AssemblyNameLexer lexer = new AssemblyNameLexer(s);
 
             // Name must come first.
             String name;
             AssemblyNameLexer.Token token = lexer.GetNext(out name);
             if (token != AssemblyNameLexer.Token.String)
-            {
-                if (token == AssemblyNameLexer.Token.End)
-                    throw new ArgumentException(SR.Format_StringZeroLength);
-                else
-                    throw new FileLoadException();
-            }
+                throw new FileLoadException();
 
-            if (name == String.Empty)
+            if (name == String.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
                 throw new FileLoadException();
 
             Version version = null;
@@ -227,5 +229,7 @@ namespace System.Reflection.Runtime.Assemblies
                 return (byte)(c - 'A' + 10);
             throw new FileLoadException();
         }
+
+        private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
     }
 }
