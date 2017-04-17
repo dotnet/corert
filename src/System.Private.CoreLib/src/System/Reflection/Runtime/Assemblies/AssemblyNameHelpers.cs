@@ -32,8 +32,18 @@ namespace System.Reflection.Runtime.Assemblies
 
             if (a.Version != null)
             {
-                sb.Append(", Version=");
-                sb.Append(a.Version.ToString());
+                Version canonicalizedVersion = a.Version.CanonicalizeVersion();
+                if (canonicalizedVersion.Major != ushort.MaxValue)
+                {
+                    sb.Append(", Version=");
+                    sb.Append(canonicalizedVersion.Major);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Minor);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Build);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Revision);
+                }
             }
 
             String cultureName = a.CultureName;
@@ -147,6 +157,19 @@ namespace System.Reflection.Runtime.Assemblies
             }
 
             return new RuntimeAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, combinedFlags, pkCopy);
+        }
+
+        public static Version CanonicalizeVersion(this Version version)
+        {
+            ushort major = (ushort)version.Major;
+            ushort minor = (ushort)version.Minor;
+            ushort build = (ushort)version.Build;
+            ushort revision = (ushort)version.Revision;
+
+            if (major == version.Major && minor == version.Minor && build == version.Build && revision == version.Revision)
+                return version;
+
+            return new Version(major, minor, build, revision);
         }
 
         //
