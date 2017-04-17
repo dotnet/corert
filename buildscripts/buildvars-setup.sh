@@ -23,6 +23,10 @@ setup_dirs()
 
     mkdir -p "$__ProductBinDir"
     mkdir -p "$__IntermediatesDir"
+    if [ $__CrossBuild = 1 ]; then
+        mkdir -p "$__ProductHostBinDir"
+        mkdir -p "$__IntermediatesHostDir"
+    fi
 }
 
 # Performs "clean build" type actions (deleting and remaking directories)
@@ -32,6 +36,10 @@ clean()
     echo "Cleaning previous output for the selected configuration"
     rm -rf "$__ProductBinDir"
     rm -rf "$__IntermediatesDir"
+    if [ $__CrossBuild = 1 ]; then
+        rm -rf "$__ProductHostBinDir"
+        rm -rf "$__IntermediatesHostDir"
+    fi
 }
 
 
@@ -107,6 +115,7 @@ case $CPUName in
         export __BuildArch=x64
         ;;
 esac
+export __HostArch=$__BuildArch
 
 # Use uname to determine what the OS is.
 export OSName=$(uname -s)
@@ -241,7 +250,15 @@ fi
 
 # Set the remaining variables based upon the determined build configuration
 export __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
+export __IntermediatesHostDir=
+if [ $__CrossBuild = 1 ]; then
+    __IntermediatesHostDir="$__rootbinpath/obj/Native/$__BuildOS.$__HostArch.$__BuildType"
+fi
 export __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
+export __ProductHostBinDir=
+if [ $__CrossBuild = 1 ]; then
+    __ProductHostBinDir="$__rootbinpath/Product/$__BuildOS.$__HostArch.$__BuildType"
+fi
 export __RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.

@@ -106,6 +106,25 @@ initTargetDistroRid()
     fi
 }
 
+build_host_native_corert()
+{
+    __SavedBuildArch=$__BuildArch
+    __SavedIntermediatesDir=$__IntermediatesDir
+
+    export __IntermediatesDir=$__IntermediatesHostDir
+    export __BuildArch=$__HostArch
+    export __CMakeBinDir="$__ProductHostBinDir"
+    export CROSSCOMPILE=
+
+    build_native_corert
+
+    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}
+    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}/packaging/publish1
+
+    export __BuildArch=$__SavedBuildArch
+    export __IntermediatesDir=$__SavedIntermediatesDir
+    export CROSSCOMPILE=1
+}
 
 if $__buildnative; then
 
@@ -126,6 +145,10 @@ if $__buildnative; then
     # Build the corert native components.
 
     build_native_corert
+
+    if [ $__CrossBuild = 1 ]; then
+        build_host_native_corert
+    fi
 
     # Build complete
 fi
