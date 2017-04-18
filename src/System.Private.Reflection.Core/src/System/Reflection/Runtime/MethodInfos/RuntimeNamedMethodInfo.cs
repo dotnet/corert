@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.DefiningTypeInfo);
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.ContextTypeInfo);
             }
         }
 
@@ -249,7 +249,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (_reflectedType.Equals(_common.DefiningTypeInfo))
                     return this;
 
-                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.DefiningTypeInfo);
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.ContextTypeInfo);
             }
         }
 
