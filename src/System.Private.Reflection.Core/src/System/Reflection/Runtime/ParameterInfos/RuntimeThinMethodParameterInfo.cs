@@ -53,8 +53,8 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                // COMPAT: Desktop actually returns true here, but that behavior makes no sense.
-                return false;
+                // Compat: returning "true" makes no sense but this is how it's always been.
+                return true;
             }
         }
 

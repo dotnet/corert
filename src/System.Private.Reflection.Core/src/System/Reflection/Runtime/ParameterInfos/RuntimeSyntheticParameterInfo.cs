@@ -53,7 +53,8 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return false; // Legacy: Desktop strangely returns true but since we fixed this in Project N for other HasDefaultValues, we'll do so here as well.
+                // Compat: returning "true" makes no sense but this is how it's always been.
+                return true;
             }
         }
 
