@@ -19,6 +19,10 @@ namespace System
         private readonly ByReference<byte> _value;
         private readonly RuntimeTypeHandle _typeHandle;
 
+#if PROJECTN
+        // VSO 410005. Fix the issue and remove the attribute.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
             _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
