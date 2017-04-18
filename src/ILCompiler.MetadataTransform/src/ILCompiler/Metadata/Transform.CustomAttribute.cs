@@ -147,7 +147,17 @@ namespace ILCompiler.Metadata
         {
             Cts.TypeDesc elementType = type.ElementType;
 
-            switch (elementType.UnderlyingType.Category)
+            if (elementType.IsEnum)
+            {
+                Cts.TypeSystemContext context = type.Context;
+                return new ConstantEnumArray
+                {
+                    ElementType = HandleType(elementType),
+                    Value = HandleCustomAttributeConstantArray(context.GetArrayType(elementType.UnderlyingType), value),
+                };
+            }
+
+            switch (elementType.Category)
             {
                 case Cts.TypeFlags.Boolean:
                     return new ConstantBooleanArray { Value = GetCustomAttributeConstantArrayElements<bool>(value) };

@@ -99,6 +99,22 @@ namespace System.Reflection.Runtime.General
             return result;
         }
 
+        public static Array ReadOnlyCollectionToEnumArray<T>(this IReadOnlyCollection<T> collection, Type enumType) where T : struct
+        {
+            Debug.Assert(typeof(T).IsPrimitive);
+            Debug.Assert(enumType.IsEnum);
+
+            int count = collection.Count;
+            T[] result = (T[])Array.CreateInstance(enumType, count);
+            int i = 0;
+            foreach (T element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
         public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
         {
             if (nonPublic)
