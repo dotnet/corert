@@ -212,6 +212,15 @@ namespace System.Reflection.Runtime.MethodInfos
             return parameters;
         }
 
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                Debug.Assert(ReflectedType.Equals(DeclaringType));
+                return this;
+            }
+        }
+
         private readonly String _name;
         private readonly SyntheticMethodId _syntheticMethodId;
         private readonly RuntimeTypeInfo _declaringType;

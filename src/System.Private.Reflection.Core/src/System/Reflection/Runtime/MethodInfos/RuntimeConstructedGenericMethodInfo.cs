@@ -195,6 +195,18 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.GetRuntimeParameters(this, out returnParameter);
         }
 
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                if (_genericMethodDefinition.ReflectedType.Equals(_genericMethodDefinition.DeclaringType))
+                    return this;
+
+                RuntimeNamedMethodInfo newGenericMethodDefinition = (RuntimeNamedMethodInfo)(_genericMethodDefinition.WithReflectedTypeSetToDeclaringType);
+                return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(newGenericMethodDefinition, _genericTypeArguments);
+            }
+        }
+
         private readonly RuntimeNamedMethodInfo _genericMethodDefinition;
         private readonly RuntimeTypeInfo[] _genericTypeArguments;
     }
