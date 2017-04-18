@@ -242,6 +242,17 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                if (_reflectedType.Equals(_common.DefiningTypeInfo))
+                    return this;
+
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.DefiningTypeInfo);
+            }
+        }
+
         private RuntimeTypeInfo[] GenericTypeParameters
         {
             get

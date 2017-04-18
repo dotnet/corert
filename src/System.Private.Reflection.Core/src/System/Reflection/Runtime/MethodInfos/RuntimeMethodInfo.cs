@@ -124,12 +124,22 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override MethodInfo GetBaseDefinition()
         {
+            // This check is for compatibility. Yes, it happens before we normalize constructed generic methods back to their backing definition.
+            Type declaringType = DeclaringType;
+            if (!IsVirtual || IsStatic || declaringType == null || declaringType.IsInterface)
+                return this;
+
             MethodInfo method = this;
+
+            // For compat: Remove any instantation on generic methods.
+            if (method.IsConstructedGenericMethod)
+                method = method.GetGenericMethodDefinition();
+
             while (true)
             {
                 MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
                 if (next == null)
-                    return method;
+                    return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
                 method = next;
             }
@@ -293,6 +303,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get;
         }
+
+        internal abstract RuntimeMethodInfo WithReflectedTypeSetToDeclaringType { get; }
 
         protected abstract MethodInvoker UncachedMethodInvoker { get; }
 
