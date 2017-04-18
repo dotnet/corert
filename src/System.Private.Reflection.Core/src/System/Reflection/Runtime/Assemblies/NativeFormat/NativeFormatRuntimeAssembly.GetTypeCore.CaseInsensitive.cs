@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         {
             LowLevelDictionary<string, QHandle> dict = CaseInsensitiveTypeDictionary;
             QHandle qualifiedHandle;
-            if (!dict.TryGetValue(fullName.ToLower(), out qualifiedHandle))
+            if (!dict.TryGetValue(fullName.ToLowerInvariant(), out qualifiedHandle))
             {
                 return null;
             }
@@ -94,12 +94,12 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     string ns = namespaceHandle.ToNamespaceName(reader);
                     if (ns.Length != 0)
                         ns = ns + ".";
-                    ns = ns.ToLower();
+                    ns = ns.ToLowerInvariant();
 
                     NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in namespaceDefinition.TypeDefinitions)
                     {
-                        string fullName = ns + typeDefinitionHandle.GetTypeDefinition(reader).Name.GetString(reader).ToLower();
+                        string fullName = ns + typeDefinitionHandle.GetTypeDefinition(reader).Name.GetString(reader).ToLowerInvariant();
                         QHandle existingValue;
                         if (!dict.TryGetValue(fullName, out existingValue))
                         {
@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 
                     foreach (TypeForwarderHandle typeForwarderHandle in namespaceDefinition.TypeForwarders)
                     {
-                        string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLower();
+                        string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLowerInvariant();
                         QHandle existingValue;
                         if (!dict.TryGetValue(fullName, out existingValue))
                         {

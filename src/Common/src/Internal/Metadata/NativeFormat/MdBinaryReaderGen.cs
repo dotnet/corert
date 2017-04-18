@@ -364,6 +364,15 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out ConstantEnumArrayHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new ConstantEnumArrayHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out ConstantHandleArrayHandle handle)
         {
             uint value;
