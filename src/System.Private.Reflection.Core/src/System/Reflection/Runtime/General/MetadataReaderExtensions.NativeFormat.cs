@@ -379,7 +379,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static Array TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
+        private static Array TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
         {
             exception = null;
 
@@ -422,6 +422,9 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ConstantDoubleArray:
                     return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ReadOnlyCollectionToArray();
 
+                case HandleType.ConstantEnumArray:
+                    return TryParseConstantEnumArray(handle.ToConstantEnumArrayHandle(reader), reader, out exception);
+
                 case HandleType.ConstantStringArray:
                     {
                         Handle[] constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value.ToArray();
@@ -449,6 +452,46 @@ namespace System.Reflection.Runtime.General
                         }
                         return elements;
                     }
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
+        private static Array TryParseConstantEnumArray(this ConstantEnumArrayHandle handle, MetadataReader reader, out Exception exception)
+        {
+            exception = null;
+
+            ConstantEnumArray enumArray = handle.GetConstantEnumArray(reader);
+            Type elementType = enumArray.ElementType.TryResolve(reader, new TypeContext(null, null), ref exception);
+            if (exception != null)
+                return null;
+
+            switch (enumArray.Value.HandleType)
+            {
+                case HandleType.ConstantByteArray:
+                    return enumArray.Value.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantSByteArray:
+                    return enumArray.Value.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt16Array:
+                    return enumArray.Value.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt16Array:
+                    return enumArray.Value.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt32Array:
+                    return enumArray.Value.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt32Array:
+                    return enumArray.Value.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt64Array:
+                    return enumArray.Value.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt64Array:
+                    return enumArray.Value.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
                 default:
                     throw new BadImageFormatException();
             }
