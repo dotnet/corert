@@ -38,6 +38,16 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ExportsType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool ExportsMethod(MethodDesc method)
+        {
+            return false;
+        }
+
         public override bool ShouldProduceFullVTable(TypeDesc type)
         {
             return false;

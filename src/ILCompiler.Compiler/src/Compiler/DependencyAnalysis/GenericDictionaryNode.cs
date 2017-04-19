@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    public abstract class GenericDictionaryNode : ObjectNode, ISymbolNode
+    public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode
     {
         protected const string MangledNamePrefix = "__GenericDict_";
 
@@ -42,6 +42,8 @@ namespace ILCompiler.DependencyAnalysis
                 new DependencyListEntry(GetDictionaryLayout(factory), "Dictionary layout"),
             };
         }
+
+        public abstract bool IsExported(NodeFactory factory);
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract int Offset { get; }
@@ -88,6 +90,8 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
+
+        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
 
         public TypeDesc OwningType => _owningType;
 
@@ -149,7 +153,9 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
-                
+
+        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(OwningMethod);
+
         public MethodDesc OwningMethod => _owningMethod;
 
         public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
