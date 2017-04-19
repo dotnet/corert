@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using Internal.Runtime.Augments;
 using Internal.NativeFormat;
@@ -17,7 +16,7 @@ namespace Internal.Runtime.CompilerHelpers
         public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
             IntPtr openStub, closedStub, delegateCreationStub;
-            if (!InteropCallbackManager.Instance.TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub))
+            if (!TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub))
             {
                 data = default(McgPInvokeDelegateData);
                 return false;
@@ -30,19 +29,6 @@ namespace Internal.Runtime.CompilerHelpers
                 ForwardDelegateCreationStub = delegateCreationStub
             };
             return true;
-        }
-    }
-
-    [CLSCompliant(false)]
-    public sealed class InteropCallbackManager
-    {
-        public static InteropCallbackManager Instance { get; private set; }
-
-        // Eager initialization called from LibraryInitializer for the assembly.
-        internal static void Initialize()
-        {
-            Instance = new InteropCallbackManager();
-            RuntimeAugments.InitializeInteropLookups(new Callbacks());
         }
 
         private static unsafe bool TryGetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob, out NativeReader reader)
@@ -60,7 +46,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        public unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
+        private unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
             openStub = IntPtr.Zero;
@@ -101,4 +87,5 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
     }
+
 }

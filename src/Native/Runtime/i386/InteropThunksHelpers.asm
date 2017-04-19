@@ -42,9 +42,9 @@ EXTRN   __tls_index:DWORD
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interop Thunks Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
-;; InteropNative_CommonStub
+;; RhCommonStub
 ;;
-LEAF_ENTRY InteropNative_CommonStub, _TEXT
+LEAF_ENTRY RhCommonStub, _TEXT
         ;; There are arbitrary callers passing arguments with arbitrary signatures.
         ;; Custom calling convention:
         ;;      eax: pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
@@ -75,28 +75,28 @@ LEAF_ENTRY InteropNative_CommonStub, _TEXT
 
         ;; jump to the target
         jmp     eax
-LEAF_END InteropNative_CommonStub, _TEXT
+LEAF_END RhCommonStub, _TEXT
 
 
 ;;
-;; IntPtr InteropNative_GetCommonStubAddress()
+;; IntPtr RhGetCommonStubAddress()
 ;;
-LEAF_ENTRY InteropNative_GetCommonStubAddress, _TEXT
-        lea     eax, [InteropNative_CommonStub]
+LEAF_ENTRY RhGetCommonStubAddress, _TEXT
+        lea     eax, [RhCommonStub]
         ret
-LEAF_END InteropNative_GetCommonStubAddress, _TEXT
+LEAF_END RhGetCommonStubAddress, _TEXT
 
 
 ;;
-;; IntPtr InteropNative_GetCurrentThunkContext()
+;; IntPtr RhGetCurrentThunkContext()
 ;;
-LEAF_ENTRY InteropNative_GetCurrentThunkContext, _TEXT
+LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
         mov     ecx, [__tls_index]
         mov     edx, fs:[__tls_array]
         mov     ecx, [edx + ecx * POINTER_SIZE]
         mov     eax, [ecx + OFFSET ThunkParamSlot]                 ;;   eax <- ThunkParamSlot
         ret
-LEAF_END InteropNative_GetCurrentThunkContext, _TEXT
+LEAF_END RhGetCurrentThunkContext, _TEXT
 
 
 end

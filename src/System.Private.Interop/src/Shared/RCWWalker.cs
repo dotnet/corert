@@ -47,8 +47,7 @@ namespace System.Runtime.InteropServices
     /// The unmanaged calli and reverse calli thunks does a GC wait which again would deadlock. The simple
     /// solution here is to simply converts all of them to managed calls (CalliIntrinsics.Call) and callbacks
     /// (Simply don't add NativeCallable) and only utilize them under x64/arm (where the calling convention
-    /// doesn't matter). This works out just fine because x86 isn't a supported platform in .NET Native anyway,
-    /// and under x86 we can "safely" just let everything leak.
+    /// doesn't matter).
     ///
     /// See __vtable_IFindDependentWrappers for how to do this
     ///

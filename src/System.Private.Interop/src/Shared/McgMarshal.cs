@@ -44,10 +44,6 @@ namespace System.Runtime.InteropServices
     [CLSCompliant(false)]
     public static partial class McgMarshal
     {
-#if ENABLE_WINRT
-        private static object s_thunkPoolHeap;
-#endif
-
         public static void SaveLastWin32Error()
         {
             PInvokeMarshal.SaveLastWin32Error();
@@ -801,9 +797,9 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle interfaceType)
         {
             return McgComHelpers.ComInterfaceToObjectInternal(
-                pComItf, 
-                interfaceType, 
-                default(RuntimeTypeHandle), 
+                pComItf,
+                interfaceType,
+                default(RuntimeTypeHandle),
                 McgComHelpers.CreateComObjectFlags.SkipTypeResolutionAndUnboxing
             );
         }
@@ -1280,7 +1276,7 @@ namespace System.Runtime.InteropServices
 #elif CORECLR
             return Marshal.GetExceptionForHR(hr);
 #else
-            return new COMException(hr.ToString(),hr);
+            return new COMException(hr.ToString(), hr);
 #endif
         }
 
@@ -1343,7 +1339,7 @@ namespace System.Runtime.InteropServices
         {
             return obj.QueryInterface_NoAddRef_Internal(
                 typeHnd);
-        }     
+        }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType)
@@ -1354,274 +1350,14 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType)
         {
-            return obj.GetDynamicAdapter(requestedType,default(RuntimeTypeHandle));
+            return obj.GetDynamicAdapter(requestedType, default(RuntimeTypeHandle));
         }
-        
+
         #region "PInvoke Delegate"
-
-#if !CORECLR && !CORERT
-        private static class AsmCode
-        {
-            private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
-
-            [MethodImplAttribute(InternalCall)]
-            [RuntimeImport("*", "InteropNative_GetCurrentThunkContext")]
-            public static extern IntPtr GetCurrentInteropThunkContext();
-
-            [MethodImplAttribute(InternalCall)]
-
-            [RuntimeImport("*", "InteropNative_GetCommonStubAddress")]
-
-            public static extern IntPtr GetInteropCommonStubAddress();
-        }
-#endif
 
         public static IntPtr GetStubForPInvokeDelegate(RuntimeTypeHandle delegateType, Delegate dele)
         {
-            return GetStubForPInvokeDelegate(dele);
-        }
-
-        /// <summary>
-        /// Return the stub to the pinvoke marshalling stub
-        /// </summary>
-        /// <param name="del">The delegate</param>
-        internal static IntPtr GetStubForPInvokeDelegate(Delegate del)
-        {
-            if (del == null)
-                return IntPtr.Zero;
-
-            NativeFunctionPointerWrapper fpWrapper = del.Target as NativeFunctionPointerWrapper;
-            if (fpWrapper != null)
-            {
-                //
-                // Marshalling a delegate created from native function pointer back into function pointer
-                // This is easy - just return the 'wrapped' native function pointer
-                //
-                return fpWrapper.NativeFunctionPointer;
-            }
-            else
-            {
-                //
-                // Marshalling a managed delegate created from managed code into a native function pointer
-                //
-                return GetOrAllocateThunk(del);
-            }
-        }
-        /// <summary>
-        /// Used to lookup whether a delegate already has an entry
-        /// </summary>
-        private static System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> s_pInvokeDelegateThunkHashSet;
-
-        static Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> GetDelegateThunkHashSet()
-        {
-            //
-            // Create the hashset on-demand to avoid the dependency in the McgModule.ctor
-            // Otherwise NUTC will complain that McgModule being eager ctor depends on a deferred
-            // ctor type
-            //
-            if (s_pInvokeDelegateThunkHashSet == null)
-            {
-                const int DefaultSize = 101; // small prime number to avoid resizing in start up code
-
-                Interlocked.CompareExchange(
-                    ref s_pInvokeDelegateThunkHashSet,
-                    new System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk>(DefaultSize, true),
-                    null
-                );
-            }
-
-            return s_pInvokeDelegateThunkHashSet;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal unsafe struct ThunkContextData
-        {
-            public GCHandle Handle;        //  A weak GCHandle to the delegate
-            public IntPtr FunctionPtr;     // Function pointer for open static delegates
-        };
-
-        internal class EquatablePInvokeDelegateThunk : IEquatable<EquatablePInvokeDelegateThunk>
-        {
-            internal IntPtr Thunk;       //  Thunk pointer
-            internal GCHandle Handle;    //  A weak GCHandle to the delegate
-            internal IntPtr ContextData;     //   ThunkContextData pointer which will be stored in the context slot of the thunk
-            internal int HashCode;
-            internal EquatablePInvokeDelegateThunk(Delegate del, IntPtr pThunk)
-            {
-                // if it is an open static delegate get the function pointer
-                IntPtr functionPtr  = del.GetRawFunctionPointerForOpenStaticDelegate();
-
-                //
-                // Allocate a weak GC handle pointing to the delegate
-                // Whenever the delegate dies, we'll know next time when we recycle thunks
-                //
-                Handle = GCHandle.Alloc(del, GCHandleType.Weak);
-                Thunk = pThunk;
-                HashCode = GetHashCodeOfDelegate(del);
-
-                ThunkContextData context;
-                context.Handle = Handle;
-                context.FunctionPtr = functionPtr;
-
-                //
-                // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
-                // We will store this pointer on the context slot of thunk data
-                //
-                ContextData = Marshal.AllocHGlobal(2*IntPtr.Size);
-                unsafe
-                {
-                    ThunkContextData* thunkData = (ThunkContextData*)ContextData;
-
-                    (*thunkData).Handle = context.Handle;
-                    (*thunkData).FunctionPtr = context.FunctionPtr;
-                }
-            }
-
-            ~EquatablePInvokeDelegateThunk()
-            {
-                Handle.Free();
-                Marshal.FreeHGlobal(ContextData);
-            }
-
-            public static int GetHashCodeOfDelegate(Delegate del)
-            {
-                return RuntimeHelpers.GetHashCode(del);
-            }
-
-            public bool Equals(EquatablePInvokeDelegateThunk other)
-            {
-                return Thunk == other.Thunk;
-            }
-
-            public bool Equals(Delegate del)
-            {
-                return (Object.ReferenceEquals(del, Handle.Target));
-            }
-
-            public override int GetHashCode()
-            {
-                return HashCode;
-            }
-
-            public override bool Equals(Object obj)
-            {
-                // If parameter is null return false.
-                if (obj == null)
-                {
-                    return false;
-                }
-
-                // If parameter cannot be cast to EquatablePInvokeDelegateThunk return false.
-                EquatablePInvokeDelegateThunk other = obj as EquatablePInvokeDelegateThunk;
-                if ((Object)other == null)
-                {
-                    return false;
-                }
-
-                // Return true if the thunks match
-                return Thunk == other.Thunk;
-            }
-
-        }
-
-        const int THUNK_RECYCLING_FREQUENCY = 200;                                                  // Every 200 thunks that we allocate, do a round of cleanup
-
-#if ENABLE_WINRT
-        private static int s_numInteropThunksAllocatedSinceLastCleanup = 0;
-#endif
-
-        private static IntPtr GetOrAllocateThunk(Delegate del)
-        {
-#if ENABLE_WINRT
-            System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> delegateHashSet = GetDelegateThunkHashSet();
-            try
-            {
-                delegateHashSet.LockAcquire();
-
-                EquatablePInvokeDelegateThunk key = null;
-                int hashCode = EquatablePInvokeDelegateThunk.GetHashCodeOfDelegate(del);
-                for (int entry = delegateHashSet.FindFirstKey(ref key, hashCode); entry >= 0; entry = delegateHashSet.FindNextKey(ref key, entry))
-                {
-                    if (key.Equals(del))
-                        return key.Thunk;
-                }
-                
-                if (s_thunkPoolHeap == null)
-                {
-                    s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(AsmCode.GetInteropCommonStubAddress());
-                    Debug.Assert(s_thunkPoolHeap != null);
-                }
-
-                //
-                // Keep allocating thunks until we reach the recycling frequency - we have a virtually unlimited
-                // number of thunks that we can allocate (until we run out of virtual address space), but we
-                // still need to cleanup thunks that are no longer being used, to avoid leaking memory.
-                // This is helpful to detect bugs where user are calling into thunks whose delegate are already
-                // collected. In desktop CLR, they'll simple AV, while in .NET Native, there is a good chance we'll
-                // detect the delegate instance is NULL (by looking at the GCHandle in the map) and throw out a
-                // good exception
-                //
-                if (s_numInteropThunksAllocatedSinceLastCleanup == THUNK_RECYCLING_FREQUENCY)
-                {
-                    //
-                    // Cleanup the thunks that were previously allocated and are no longer in use to avoid memory leaks
-                    //
-
-                    GC.Collect();
-
-                    foreach (EquatablePInvokeDelegateThunk delegateThunk in delegateHashSet.Keys)
-                    {
-                        // if the delegate has already been collected free the thunk and remove the entry from the hashset
-                        if (delegateThunk.Handle.Target == null)
-                        {
-                            RuntimeAugments.FreeThunk(s_thunkPoolHeap, delegateThunk.Thunk);
-                            bool removed = delegateHashSet.Remove(delegateThunk, delegateThunk.HashCode);
-                            if (!removed)
-                                Environment.FailFast("Inconsistency in delegate map");
-                        }
-                    }
-                    s_numInteropThunksAllocatedSinceLastCleanup = 0;
-                }
-
-
-                IntPtr pThunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
-                Debug.Assert(pThunk != IntPtr.Zero);
-
-                if (pThunk == IntPtr.Zero)
-                {
-                    // We've either run out of memory, or failed to allocate a new thunk due to some other bug. Now we should fail fast
-                    Environment.FailFast("Insufficient number of thunks.");
-                    return IntPtr.Zero;
-                }
-                else
-                {
-                    McgPInvokeDelegateData pinvokeDelegateData;
-                    McgModuleManager.GetPInvokeDelegateData(del.GetTypeHandle(), out pinvokeDelegateData);
-
-                    s_numInteropThunksAllocatedSinceLastCleanup++;
-
-                    
-                    EquatablePInvokeDelegateThunk delegateThunk = new EquatablePInvokeDelegateThunk(del, pThunk);
-                    
-                    delegateHashSet.Add(delegateThunk , delegateThunk.HashCode);
-                    
-                    //
-                    //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
-                    //
-                    IntPtr pTarget =  del.GetRawFunctionPointerForOpenStaticDelegate()  == IntPtr.Zero  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
-                    
-                    RuntimeAugments.SetThunkData(s_thunkPoolHeap, pThunk, delegateThunk.ContextData, pTarget);
-
-                    return pThunk;
-                }
-            }
-            finally
-            {
-                delegateHashSet.LockRelease();
-            }
-#else
-            throw new PlatformNotSupportedException("GetOrAllocateThunk");
-#endif
+            return PInvokeMarshal.GetStubForPInvokeDelegate(dele);
         }
 
         /// <summary>
@@ -1629,57 +1365,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
         {
-            if (pStub == IntPtr.Zero)
-                return null;
-#if ENABLE_WINRT
-            //
-            // First try to see if this is one of the thunks we've allocated when we marshal a managed
-            // delegate to native code
-            // s_thunkPoolHeap will be null if there isn't any managed delegate to native
-            //
-            IntPtr pContext;
-            IntPtr pTarget;
-            if (s_thunkPoolHeap != null && RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
-            {
-                GCHandle handle;
-                unsafe
-                {
-                    // Pull out Handle from context
-                    handle = (*((ThunkContextData*)pContext)).Handle;
-                }
-                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
-
-                //
-                // The delegate might already been garbage collected
-                // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
-                // until they are done with the native function pointer
-                //
-                if (target == null)
-                {
-                    Environment.FailFast(
-                        "The corresponding delegate has been garbage collected. " +
-                        "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
-                    );
-                }
-
-                return target;
-            }
-#endif
-            //
-            // Otherwise, the stub must be a pure native function pointer
-            // We need to create the delegate that points to the invoke method of a
-            // NativeFunctionPointerWrapper derived class
-            //
-            McgPInvokeDelegateData pInvokeDelegateData;
-            if (!McgModuleManager.GetPInvokeDelegateData(delegateType, out pInvokeDelegateData))
-            {
-                return null;
-            }
-
-            return CalliIntrinsics.Call__Delegate(
-                pInvokeDelegateData.ForwardDelegateCreationStub,
-                pStub
-            );
+            return PInvokeMarshal.GetPInvokeDelegateForStub(pStub, delegateType);
         }
 
         /// <summary>
@@ -1690,23 +1376,7 @@ namespace System.Runtime.InteropServices
 #if RHTESTCL || CORECLR || CORERT
             throw new NotSupportedException();
 #else
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
-            Debug.Assert(pContext != null);
-
-            IntPtr fnPtr;
-            unsafe
-            {
-                // Pull out function pointer for open static delegate
-                fnPtr = (*((ThunkContextData*)pContext)).FunctionPtr;
-            }
-            Debug.Assert(fnPtr != null);
-
-            return fnPtr;
+            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
 #endif
         }
 
@@ -1718,42 +1388,10 @@ namespace System.Runtime.InteropServices
 #if RHTESTCL || CORECLR || CORERT
             throw new NotSupportedException();
 #else
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
-
-            Debug.Assert(pContext != null);
-
-            GCHandle handle;
-            unsafe
-            {
-                // Pull out Handle from context
-                handle = (*((ThunkContextData*)pContext)).Handle;
-
-            }
-
-            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
-
-            //
-            // The delegate might already been garbage collected
-            // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
-            // until they are done with the native function pointer
-            //
-            if (target == null)
-            {
-                Environment.FailFast(
-                    "The corresponding delegate has been garbage collected. " +
-                    "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
-                );
-            }
-            return target;
-
+            return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
 #endif
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1827,7 +1465,7 @@ namespace System.Runtime.InteropServices
             int boxingPropertyType;
             if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target, out boxingWrapperType, out boxingPropertyType, out boxingStub))
             {
-                if(!boxingWrapperType.IsInvalid())
+                if (!boxingWrapperType.IsInvalid())
                 {
                     //
                     // IReference<T> / IReferenceArray<T> / IKeyValuePair<K, V>

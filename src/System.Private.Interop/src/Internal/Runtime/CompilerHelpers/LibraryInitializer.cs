@@ -6,6 +6,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -17,12 +18,11 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
-#if CORERT
-            InteropCallbackManager.Initialize();
-#else 
+#if !CORERT
             __vtable_IUnknown.Initialize();
             McgModuleManager.Initialize();
 #endif
+            RuntimeAugments.InitializeInteropLookups(new Callbacks());
         }
     }
 }
