@@ -467,6 +467,12 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
 
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, strB, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, strB, CompareOptions.IgnoreCase);
+
                 default:
                     throw new NotSupportedException(SR.NotSupported_StringComparison);
             }
@@ -645,6 +651,12 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
 
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.Compare(strA, indexA, lengthA, strB, indexB, lengthB, CompareOptions.IgnoreCase);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison);
             }
@@ -801,6 +813,12 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.IsSuffix(this, value, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.IsSuffix(this, value, CompareOptions.IgnoreCase);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
@@ -913,6 +931,12 @@ namespace System
                         return FormatProvider.CompareOrdinalIgnoreCase(this, 0, this.Length, value, 0, value.Length) == 0;
                     }
 
+                case StringComparison.InvariantCulture:
+                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(this, value, CompareOptions.None) == 0);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(this, value, CompareOptions.IgnoreCase) == 0);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
@@ -970,6 +994,13 @@ namespace System
                     {
                         return FormatProvider.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0;
                     }
+
+                case StringComparison.InvariantCulture:
+                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(a, b, CompareOptions.None) == 0);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return (CultureInfo.InvariantCulture.CompareInfo.Compare(a, b, CompareOptions.IgnoreCase) == 0);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
@@ -1107,6 +1138,12 @@ namespace System
                         return false;
                     }
                     return FormatProvider.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0;
+
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.IsPrefix(this, value, CompareOptions.IgnoreCase);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
