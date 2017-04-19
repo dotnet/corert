@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    public partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    public partial class EETypeNode : ObjectNode, IExportableSymbolNode, IEETypeNode
     {
         protected TypeDesc _type;
         internal EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
@@ -89,6 +89,13 @@ namespace ILCompiler.DependencyAnalysis
 
             return false;
         }
+
+        public override ObjectNode NodeForLinkage(NodeFactory factory)
+        {
+            return (ObjectNode)factory.NecessaryTypeSymbol(_type);
+        }
+
+        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
 
         public TypeDesc Type => _type;
 

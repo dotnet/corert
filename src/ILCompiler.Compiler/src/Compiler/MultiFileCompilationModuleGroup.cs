@@ -47,6 +47,16 @@ namespace ILCompiler
             return ContainsType(method.OwningType);
         }
 
+        public sealed override bool ExportsType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public sealed override bool ExportsMethod(MethodDesc method)
+        {
+            return false;
+        }
+        
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);

@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // The TLS slot index allocated for this module by the OS loader. We keep a pointer to this
     // value in the module header.
-    public class ThreadStaticsIndexNode : ObjectNode, ISymbolNode
+    public class ThreadStaticsIndexNode : ObjectNode, IExportableSymbolNode
     {
         string _prefix;
 
@@ -55,6 +55,8 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
             }
         }
+
+        public bool IsExported(NodeFactory factory) => true;
 
         public override bool IsShareable => false;            
 
