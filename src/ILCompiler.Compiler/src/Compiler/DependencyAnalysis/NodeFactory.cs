@@ -135,6 +135,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     if (type.IsGenericDefinition)
@@ -162,10 +163,6 @@ namespace ILCompiler.DependencyAnalysis
                         return new EETypeNode(this, type);
                     }
                 }
-                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedEETypeSymbolNode(this, type);
-                }
                 else
                 {
                     return new ExternEETypeSymbolNode(this, type);
@@ -176,6 +173,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
                 Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
 
                 if (_compilationModuleGroup.ContainsType(type))
                 {
@@ -188,10 +186,6 @@ namespace ILCompiler.DependencyAnalysis
                         return new ConstructedEETypeNode(this, type);
                     }
                 }
-                else if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
-                {
-                    return new ImportedEETypeSymbolNode(this, type);
-                }
                 else
                 {
                     return new ExternEETypeSymbolNode(this, type);
@@ -203,6 +197,12 @@ namespace ILCompiler.DependencyAnalysis
                 // Only types that reside in other binaries should be cloned
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
                 return new ClonedConstructedEETypeNode(this, type);
+            });
+
+            _importedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
+            {
+                Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+                return new ImportedEETypeSymbolNode(this, type);
             });
 
             _nonGCStatics = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
@@ -445,6 +445,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
+            if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+            {
+                return ImportedEETypeSymbol(type);
+            }
+
             if (_compilationModuleGroup.ShouldPromoteToFullType(type))
             {
                 return ConstructedTypeSymbol(type);
@@ -459,7 +464,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
+            if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+            {
+                return ImportedEETypeSymbol(type);
+            }
+
             Debug.Assert(!TypeCannotHaveEEType(type));
+
             return _constructedTypeSymbols.GetOrAdd(type);
         }
 
@@ -469,6 +480,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _clonedTypeSymbols.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
+
+        private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
+        {
+            Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+            return _importedTypeSymbols.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, ISymbolNode> _nonGCStatics;
