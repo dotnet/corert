@@ -429,13 +429,13 @@ COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pRet
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void *, RhpGetCommonStubAddress, ())
+COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(void *, RhpGetCurrentThunkContext, ())
+COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
