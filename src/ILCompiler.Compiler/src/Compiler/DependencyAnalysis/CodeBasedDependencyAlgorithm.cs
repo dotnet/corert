@@ -67,15 +67,6 @@ namespace ILCompiler.DependencyAnalysis
                         "UniversalCanon signature of method"));
                 }
 
-                if (method.IsVirtual && !method.HasInstantiation)
-                {
-                    int hierarchyDistance;
-                    MethodDesc declaringMethodForSlot = ReflectionVirtualInvokeMapNode.GetDeclaringVirtualMethodAndHierarchyDistance(method, out hierarchyDistance);
-
-                    if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(declaringMethodForSlot.OwningType))
-                        dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(declaringMethodForSlot), "Reflection virtual invoke VTable entry"));
-                }
-
                 dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
 
