@@ -15,8 +15,8 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
-            IntPtr openStub, closedStub;
-            if (!TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub))
+            IntPtr openStub, closedStub, delegateCreationStub;
+            if (!TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub))
             {
                 data = default(McgPInvokeDelegateData);
                 return false;
@@ -25,7 +25,8 @@ namespace Internal.Runtime.CompilerHelpers
             data = new global::System.Runtime.InteropServices.McgPInvokeDelegateData()
             {
                 ReverseOpenStaticDelegateStub = openStub,
-                ReverseStub = closedStub
+                ReverseStub = closedStub,
+                ForwardDelegateCreationStub = delegateCreationStub
             };
             return true;
         }
@@ -45,11 +46,12 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub)
+        private unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
             openStub = IntPtr.Zero;
             closedStub = IntPtr.Zero;
+            delegateCreationStub = IntPtr.Zero;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -71,8 +73,10 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             byte* pOpen = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                             byte* pClose = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                            byte* pDelegateCreation = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                             openStub = (IntPtr)pOpen;
                             closedStub = (IntPtr)pClose;
+                            delegateCreationStub = (IntPtr)pDelegateCreation;
                             return true;
                         }
                     }
