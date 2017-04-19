@@ -172,6 +172,11 @@ inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJEC
     return GCHandleUtilities::GetGCHandleManager()->CompareAndSwapObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
 }
 
+inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
+{
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, NULL);
+}
+
 // Handle destruction convenience functions
 
 inline void DestroyHandle(OBJECTHANDLE handle)
