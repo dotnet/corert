@@ -421,6 +421,37 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        //--------------------------------------------------------------------------------------------
+        // key: key to get or add. May not be null.
+        // value: value to associate with key.
+        //
+        // If the key is already entered into the dictionary, this method will return associated value 
+        // otherwise it will add a new entry to the dictionary
+        //--------------------------------------------------------------------------------------------
+        internal TValue GetOrAdd(TKey key, TValue value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            using (LockHolder.Hold(_lock))
+            {
+                object prevValue;
+                int entryIndex = _container.FindEntry(key, out prevValue);
+
+                // if we found a key we should just return the associated value, otherwise we should create a new entry.
+                if (entryIndex != -1)
+                {
+                    return Unsafe.As<TValue>(prevValue);
+                }
+                else
+                {
+                    CreateEntry(key, value);
+                    return value;
+                }
+            }
+        }
         #endregion
 
         #region Private Members

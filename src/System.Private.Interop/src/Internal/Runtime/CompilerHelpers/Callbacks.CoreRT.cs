@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using Internal.Runtime.Augments;
 using Internal.NativeFormat;
@@ -16,8 +15,8 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
-            IntPtr openStub, closedStub, delegateCreationStub;
-            if (!InteropCallbackManager.Instance.TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub))
+            IntPtr openStub, closedStub;
+            if (!TryGetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub))
             {
                 data = default(McgPInvokeDelegateData);
                 return false;
@@ -26,23 +25,9 @@ namespace Internal.Runtime.CompilerHelpers
             data = new global::System.Runtime.InteropServices.McgPInvokeDelegateData()
             {
                 ReverseOpenStaticDelegateStub = openStub,
-                ReverseStub = closedStub,
-                ForwardDelegateCreationStub = delegateCreationStub
+                ReverseStub = closedStub
             };
             return true;
-        }
-    }
-
-    [CLSCompliant(false)]
-    public sealed class InteropCallbackManager
-    {
-        public static InteropCallbackManager Instance { get; private set; }
-
-        // Eager initialization called from LibraryInitializer for the assembly.
-        internal static void Initialize()
-        {
-            Instance = new InteropCallbackManager();
-            RuntimeAugments.InitializeInteropLookups(new Callbacks());
         }
 
         private static unsafe bool TryGetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob, out NativeReader reader)
@@ -60,12 +45,11 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        public unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out IntPtr delegateCreationStub)
+        private unsafe bool TryGetMarshallersForDelegate(RuntimeTypeHandle delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub)
         {
             int delegateHashcode = delegateTypeHandle.GetHashCode();
             openStub = IntPtr.Zero;
             closedStub = IntPtr.Zero;
-            delegateCreationStub = IntPtr.Zero;
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
@@ -87,10 +71,8 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             byte* pOpen = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                             byte* pClose = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                            byte* pDelegateCreation = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                             openStub = (IntPtr)pOpen;
                             closedStub = (IntPtr)pClose;
-                            delegateCreationStub = (IntPtr)pDelegateCreation;
                             return true;
                         }
                     }
@@ -101,4 +83,5 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
     }
+
 }

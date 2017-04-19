@@ -41,9 +41,9 @@ EXTRN   _tls_index:DWORD
 ;;;;;;;;;;;;;;;;;;;;;;; Interop Thunks Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
-;; RhpCommonStub
+;; RhCommonStub
 ;;
-LEAF_ENTRY RhpCommonStub, _TEXT
+LEAF_ENTRY RhCommonStub, _TEXT
         ;; There are arbitrary callers passing arguments with arbitrary signatures.
         ;; Custom calling convention:
         ;;      r10: pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
@@ -70,29 +70,29 @@ LEAF_ENTRY RhpCommonStub, _TEXT
         ;; jump to the target
         mov     rax, [r10 + POINTER_SIZE]
         TAILJMP_RAX
-LEAF_END RhpCommonStub, _TEXT
+LEAF_END RhCommonStub, _TEXT
 
 
 ;;
-;; IntPtr RhpGetCommonStubAddress()
+;; IntPtr RhGetCommonStubAddress()
 ;;
-LEAF_ENTRY RhpGetCommonStubAddress, _TEXT
-        lea     rax, [RhpCommonStub]
+LEAF_ENTRY RhGetCommonStubAddress, _TEXT
+        lea     rax, [RhCommonStub]
         ret
-LEAF_END RhpGetCommonStubAddress, _TEXT
+LEAF_END RhGetCommonStubAddress, _TEXT
 
 
 ;;
-;; IntPtr RhpGetCurrentThunkContext()
+;; IntPtr RhGetCurrentThunkContext()
 ;;
-LEAF_ENTRY RhpGetCurrentThunkContext, _TEXT
+LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
         mov     r10d, [_tls_index]
         mov     r11, gs:[_tls_array]
         mov     r10, [r11 + r10 * POINTER_SIZE]
         mov     r8d, SECTIONREL ThunkParamSlot
         mov     rax, [r10 + r8]                 ;;   rax <- ThunkParamSlot
         ret
-LEAF_END RhpGetCurrentThunkContext, _TEXT
+LEAF_END RhGetCurrentThunkContext, _TEXT
 
 
 end

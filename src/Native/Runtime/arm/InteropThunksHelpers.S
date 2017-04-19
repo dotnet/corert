@@ -10,28 +10,28 @@
 // TODO: Implement Arm support
 
 //
-// InteropNative_CommonStub
+// RhCommonStub
 //
-NESTED_ENTRY InteropNative_CommonStub, _TEXT, NoHandler
+NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 #ifdef _DEBUG
     bl C_FUNC(NYI_Assert)
 #endif
-NESTED_END InteropNative_CommonStub, _TEXT
+NESTED_END RhCommonStub, _TEXT
 
 //
-// IntPtr InteropNative_GetCommonStubAddress()
+// IntPtr RhGetCommonStubAddress()
 //
-LEAF_ENTRY InteropNative_GetCommonStubAddress, _TEXT
+LEAF_ENTRY RhGetCommonStubAddress, _TEXT
 #ifdef _DEBUG
     bl C_FUNC(NYI_Assert)
 #endif
-LEAF_END InteropNative_GetCommonStubAddress, _TEXT
+LEAF_END RhGetCommonStubAddress, _TEXT
 
 //
-// IntPtr InteropNative_GetCurrentThunkContext()
+// IntPtr RhGetCurrentThunkContext()
 //
-LEAF_ENTRY InteropNative_GetCurrentThunkContext, _TEXT
+LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 #ifdef _DEBUG
     bl C_FUNC(NYI_Assert)
 #endif
-LEAF_END 	InteropNative_GetCurrentThunkContext, _TEXT
+LEAF_END RhGetCurrentThunkContext, _TEXT
