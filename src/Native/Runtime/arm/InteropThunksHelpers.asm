@@ -23,9 +23,9 @@ ThunkParamSlot % 0x4
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Interop Thunks Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;;
-    ;; InteropNative_CommonStub
+    ;; RhCommonStub
     ;;
-    NESTED_ENTRY InteropNative_CommonStub
+    NESTED_ENTRY RhCommonStub
         ;; Custom calling convention:
         ;;      red zone has pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
         ;;      Copy red zone value into r12 so that the PROLOG_PUSH doesn't destroy it
@@ -52,22 +52,22 @@ ThunkParamSlot % 0x4
         ldr         r12, [r12, #POINTER_SIZE]
         EPILOG_POP  {r0-r3}
         bx          r12
-    NESTED_END InteropNative_CommonStub
+    NESTED_END RhCommonStub
 
 
     ;;
-    ;; IntPtr InteropNative_GetCommonStubAddress()
+    ;; IntPtr RhGetCommonStubAddress()
     ;;
-    LEAF_ENTRY InteropNative_GetCommonStubAddress
-        ldr     r0, =InteropNative_CommonStub
+    LEAF_ENTRY RhGetCommonStubAddress
+        ldr     r0, =RhCommonStub
         bx      lr
-    LEAF_END InteropNative_GetCommonStubAddress
+    LEAF_END RhGetCommonStubAddress
 
 
     ;;
-    ;; IntPtr InteropNative_GetCurrentThunkContext()
+    ;; IntPtr RhGetCurrentThunkContext()
     ;;
-    LEAF_ENTRY InteropNative_GetCurrentThunkContext
+    LEAF_ENTRY RhGetCurrentThunkContext
 
         ldr         r3, =_tls_index
         ldr         r2, [r3]
@@ -79,6 +79,6 @@ ThunkParamSlot % 0x4
         ldr         r0, [r2, r3]            ;; r0 <- ThunkParamSlot
 
         bx          lr
-    LEAF_END InteropNative_GetCurrentThunkContext
+    LEAF_END RhGetCurrentThunkContext
 
     END

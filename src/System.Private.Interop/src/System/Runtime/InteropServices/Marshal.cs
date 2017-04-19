@@ -653,7 +653,7 @@ namespace System.Runtime.InteropServices
             {
                 throw GetExceptionForHR(errorCode, errorInfo);
             }
-        }  
+        }
 
         //====================================================================
         // Memory allocation and deallocation.
@@ -858,7 +858,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = new IntPtr( ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
+                IntPtr hglobal = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
 
                 if (hglobal == IntPtr.Zero)
                 {
@@ -1023,7 +1023,7 @@ namespace System.Runtime.InteropServices
 
             fixed (char* pch = s)
             {
-                IntPtr bstr = new IntPtr( ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
+                IntPtr bstr = new IntPtr(ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
                 if (bstr == IntPtr.Zero)
                     throw new OutOfMemoryException();
 
@@ -1074,7 +1074,7 @@ namespace System.Runtime.InteropServices
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            return McgMarshal.GetStubForPInvokeDelegate(d);
+            return PInvokeMarshal.GetStubForPInvokeDelegate(d);
         }
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
