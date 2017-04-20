@@ -84,7 +84,7 @@ COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefsWithWriteBarrier, (void * dest, co
     ASSERT(src != nullptr);
 
     InlineForwardGCSafeCopy(dest, src, len);
-    InlinedBulkWriteBarrier(dest, (UInt32)len);
+    InlinedBulkWriteBarrier(dest, len);
 
     // memcpy returns the destination buffer
     return dest;
@@ -128,7 +128,7 @@ void GCSafeZeroMemory(void * dest, size_t len)
 void GCSafeCopyMemoryWithWriteBarrier(void * dest, const void *src, size_t len)
 {
     InlineForwardGCSafeCopy(dest, src, len);
-    InlinedBulkWriteBarrier(dest, (UInt32)len);
+    InlinedBulkWriteBarrier(dest, len);
 }
 
 void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
