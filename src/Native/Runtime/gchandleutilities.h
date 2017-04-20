@@ -169,7 +169,7 @@ inline bool StoreFirstObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
 
 inline void* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, OBJECTREF object, OBJECTREF comparandObject)
 {
-    return GCHandleUtilities::GetGCHandleManager()->CompareAndSwapObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
+    return GCHandleUtilities::GetGCHandleManager()->InterlockedCompareExchangeObjectInHandle(handle, OBJECTREFToObject(object), OBJECTREFToObject(comparandObject));
 }
 
 inline void ResetOBJECTHANDLE(OBJECTHANDLE handle)
