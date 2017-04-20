@@ -49,6 +49,16 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
+        /// <summary>
+        /// Return a node that is used for linkage
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public virtual ObjectNode NodeForLinkage(NodeFactory factory)
+        {
+            return this;
+        }
+
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;

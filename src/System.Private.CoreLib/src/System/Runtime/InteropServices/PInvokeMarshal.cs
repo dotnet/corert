@@ -208,9 +208,21 @@ namespace System.Runtime.InteropServices
             {
                 // Free the thunk
                 RuntimeAugments.FreeThunk(s_thunkPoolHeap, Thunk);
-
-                // Free the allocated context data memory
-                FreeHGlobal(ContextData);
+                unsafe
+                {
+                    if (ContextData != IntPtr.Zero)
+                    {
+                        // free the GCHandle
+                        GCHandle handle = ((ThunkContextData*)ContextData)->Handle;
+                        if (handle != null)
+                        {
+                            handle.Free();
+                        }
+                
+                        // Free the allocated context data memory
+                        FreeHGlobal(ContextData);
+                    }
+                }
             }
         }
 

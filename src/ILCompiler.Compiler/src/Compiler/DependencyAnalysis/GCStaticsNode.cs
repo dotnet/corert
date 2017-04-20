@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticsNode : ObjectNode, ISymbolNode
+    public class GCStaticsNode : ObjectNode, IExportableSymbolNode
     {
         private MetadataType _type;
 
@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
         {
            return "__GCStaticBase_" + nameMangler.GetMangledTypeName(type);
         }
+
+        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
