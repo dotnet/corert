@@ -660,7 +660,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
         else
             InlineBackwardGCSafeCopy(pDestinationData, pSourceData, size);
 
-        InlinedBulkWriteBarrier(pDestinationData, (UInt32)size);
+        InlinedBulkWriteBarrier(pDestinationData, size);
     }
     else
     {
