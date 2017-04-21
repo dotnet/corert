@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     class EmptyMetadataManager : MetadataManager
@@ -40,6 +42,7 @@ namespace ILCompiler
         /// </summary>
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
+            Debug.Assert(IsReflectionInvokable(method));
             return false;
         }
 

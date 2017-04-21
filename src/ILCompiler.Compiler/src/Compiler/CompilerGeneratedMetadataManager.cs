@@ -173,6 +173,7 @@ namespace ILCompiler
         /// </summary>
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
+            Debug.Assert(IsReflectionInvokable(method));
             return true;
         }
 
