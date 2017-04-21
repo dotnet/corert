@@ -311,11 +311,11 @@ namespace System
             {
                 if (!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer)
                 {
-                    CopyImplGcRefArray((Object[])sourceArray, sourceIndex, (Object[])destinationArray, destinationIndex, length, reliable);
+                    CopyImplGcRefArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                 }
                 else if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
                 {
-                    CopyImplValueTypeArrayToReferenceArray(sourceArray, sourceIndex, (Object[])destinationArray, destinationIndex, length, reliable);
+                    CopyImplValueTypeArrayToReferenceArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                 }
                 else
                 {
@@ -345,13 +345,17 @@ namespace System
                 }
                 else if (IsSourceElementABaseClassOrInterfaceOfDestinationValueType(sourceElementEEType, destinationElementEEType))
                 {
-                    CopyImplReferenceArrayToValueTypeArray((Object[])sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
+                    CopyImplReferenceArrayToValueTypeArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                 }
-                else
+                else if (sourceElementEEType.IsPrimitive && destinationElementEEType.IsPrimitive)
                 {
                     // The only case remaining is that primitive types could have a widening conversion between the source element type and the destination
                     // If a widening conversion does not exist we are going to throw an ArrayTypeMismatchException from it.
-                    CopyImplPrimitiveTypeWithWidening(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                    CopyImplPrimitiveTypeWithWidening(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
+                }
+                else
+                {
+                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
                 }
             }
         }
@@ -372,20 +376,25 @@ namespace System
         //
         // Array.CopyImpl case: Gc-ref array to gc-ref array copy.
         //
-        private static unsafe void CopyImplGcRefArray(Object[] sourceArray, int sourceIndex, Object[] destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplGcRefArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             // For mismatched array types, the desktop Array.Copy has a policy that determines whether to throw an ArrayTypeMismatch without any attempt to copy
             // or to throw an InvalidCastException in the middle of a copy. This code replicates that policy.
-            bool attemptCopy = false;
+            EETypePtr sourceElementEEType = sourceArray.ElementEEType;
+            EETypePtr destinationElementEEType = destinationArray.ElementEEType;
+
+            Debug.Assert(!sourceElementEEType.IsValueType && !sourceElementEEType.IsPointer);
+            Debug.Assert(!destinationElementEEType.IsValueType && !destinationElementEEType.IsPointer);
+
+            bool attemptCopy = RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType);
+            bool mustCastCheckEachElement = !attemptCopy;
             if (reliable)
             {
-                attemptCopy = (sourceArray.EETypePtr == destinationArray.EETypePtr);
+                if (mustCastCheckEachElement)
+                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
             }
             else
             {
-                EETypePtr sourceElementEEType = sourceArray.ElementEEType;
-                EETypePtr destinationElementEEType = destinationArray.ElementEEType;
-                attemptCopy = attemptCopy || RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType);
                 attemptCopy = attemptCopy || RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType);
 
                 // If either array is an interface array, we allow the attempt to copy even if the other element type does not statically implement the interface.
@@ -393,39 +402,51 @@ namespace System
                 // System.Object but if that were the case, we would already have passed one of the AreTypesAssignable checks above.
                 attemptCopy = attemptCopy || sourceElementEEType.BaseType.IsNull;
                 attemptCopy = attemptCopy || destinationElementEEType.BaseType.IsNull;
+
+                if (!attemptCopy)
+                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
             }
-            if (!attemptCopy)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
-            try
+            ref object refDestinationArray = ref Unsafe.As<byte, object>(ref destinationArray.GetRawArrayData());
+            ref object refSourceArray = ref Unsafe.As<byte, object>(ref sourceArray.GetRawArrayData());
+            if (reverseCopy)
             {
-                if (reverseCopy)
+                sourceIndex += length - 1;
+                destinationIndex += length - 1;
+                for (int i = 0; i < length; i++)
                 {
-                    sourceIndex += length - 1;
-                    destinationIndex += length - 1;
-                    for (int i = 0; i < length; i++)
-                        destinationArray[destinationIndex - i] = sourceArray[sourceIndex - i];
-                }
-                else
-                {
-                    for (int i = 0; i < length; i++)
-                        destinationArray[destinationIndex + i] = sourceArray[sourceIndex + i];
+                    object value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
+                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(value, destinationElementEEType) == null)
+                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                    Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
                 }
             }
-            catch (ArrayTypeMismatchException)
+            else
             {
-                throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                for (int i = 0; i < length; i++)
+                {
+                    object value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
+                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(value, destinationElementEEType) == null)
+                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
+                }
             }
         }
 
         //
         // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
         //
-        private static unsafe void CopyImplValueTypeArrayToReferenceArray(Array sourceArray, int sourceIndex, Object[] destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplValueTypeArrayToReferenceArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
+            Debug.Assert(sourceArray.ElementEEType.IsValueType || sourceArray.ElementEEType.IsPointer);
+            Debug.Assert(!destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.IsPointer);
+
+            // Caller has already validated this.
+            Debug.Assert(RuntimeImports.AreTypesAssignable(sourceArray.ElementEEType, destinationArray.ElementEEType));
+
             if (reliable)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
 
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
             nuint sourceElementSize = sourceArray.ElementSize;
@@ -433,11 +454,11 @@ namespace System
             fixed (byte* pSourceArray = &sourceArray.GetRawArrayData())
             {
                 byte* pElement = pSourceArray + (nuint)sourceIndex * sourceElementSize;
-
+                ref object refDestinationArray = ref Unsafe.As<byte, object>(ref destinationArray.GetRawArrayData());
                 for (int i = 0; i < length; i++)
                 {
                     Object boxedValue = RuntimeImports.RhBox(sourceElementEEType, pElement);
-                    destinationArray[destinationIndex + i] = boxedValue;
+                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = boxedValue;
                     pElement += sourceElementSize;
                 }
             }
@@ -446,10 +467,13 @@ namespace System
         //
         // Array.CopyImpl case: Object[] or interface array to value-type array copy.
         //
-        private static unsafe void CopyImplReferenceArrayToValueTypeArray(Object[] sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe void CopyImplReferenceArrayToValueTypeArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
+            Debug.Assert(!sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.IsPointer);
+            Debug.Assert(destinationArray.ElementEEType.IsValueType || destinationArray.ElementEEType.IsPointer);
+
             if (reliable)
-                throw new ArrayTypeMismatchException();
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
             nuint destinationElementSize = destinationArray.ElementSize;
@@ -457,12 +481,12 @@ namespace System
 
             fixed (byte* pDestinationArray = &destinationArray.GetRawArrayData())
             {
+                ref object refSourceArray = ref Unsafe.As<byte, object>(ref sourceArray.GetRawArrayData());
                 byte* pElement = pDestinationArray + (nuint)destinationIndex * destinationElementSize;
 
                 for (int i = 0; i < length; i++)
                 {
-                    Object boxedValue = sourceArray[sourceIndex + i];
-
+                    Object boxedValue = Unsafe.Add(ref refSourceArray, sourceIndex + i);
                     if (boxedValue == null)
                     {
                         if (!isNullable)
@@ -487,6 +511,9 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
+            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.EETypePtr, destinationArray.EETypePtr));
+            Debug.Assert(sourceArray.ElementEEType.IsValueType);
+
             EETypePtr sourceElementEEType = sourceArray.EETypePtr.ArrayElementType;
             bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
 
@@ -562,18 +589,54 @@ namespace System
         //
         // Array.CopyImpl case: Primitive types that have a widening conversion
         //
-        private static unsafe void CopyImplPrimitiveTypeWithWidening(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopyImplPrimitiveTypeWithWidening(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            RuntimeImports.RhCorElementType sourceElementType = sourceArray.EETypePtr.ArrayElementType.CorElementType;
-            RuntimeImports.RhCorElementType destElementType = destinationArray.EETypePtr.ArrayElementType.CorElementType;
+            EETypePtr sourceElementEEType = sourceArray.ElementEEType;
+            EETypePtr destinationElementEEType = destinationArray.ElementEEType;
+
+            Debug.Assert(sourceElementEEType.IsPrimitive && destinationElementEEType.IsPrimitive); // Caller has already validated this.
+
+            RuntimeImports.RhCorElementType sourceElementType = sourceElementEEType.CorElementType;
+            RuntimeImports.RhCorElementType destElementType = destinationElementEEType.CorElementType;
 
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
+
+            // Compat: Why this asymmetrical treatment of enums?
+            if (destinationElementEEType.IsEnum)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+
+            if (sourceElementEEType.IsEnum && sourceElementType != destElementType)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+
+            if (reliable)
+            {
+                // ContrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
+                if (sourceElementType != destElementType)
+                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
+            }
 
             fixed (byte* pSrcArray = &sourceArray.GetRawArrayData(), pDstArray = &destinationArray.GetRawArrayData())
             {
                 byte* srcData = pSrcArray + (nuint)sourceIndex * srcElementSize;
                 byte* data = pDstArray + (nuint)destinationIndex * destElementSize;
+
+                if (sourceElementType == destElementType)
+                {
+                    // Multidim arrays and enum->int copies can still reach this path.
+                    Buffer.Memmove(dest: data, src: srcData, len: (nuint)length * srcElementSize);
+                    return;
+                }
+
+                ulong dummyElementForZeroLengthCopies = 0;
+                // If the element types aren't identical and the length is zero, we're still obliged to check the types for widening compatibility.
+                // We do this by forcing the loop below to copy one dummy element.
+                if (length == 0)
+                {
+                    srcData = (byte*)&dummyElementForZeroLengthCopies;
+                    data = (byte*)&dummyElementForZeroLengthCopies;
+                    length = 1;
+                }
 
                 for (int i = 0; i < length; i++, srcData += srcElementSize, data += destElementSize)
                 {
