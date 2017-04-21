@@ -1613,10 +1613,18 @@ namespace Internal.TypeSystem.Interop
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            ILCodeLabel lNullStringBuilder = emitter.NewCodeLabel();
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullStringBuilder);
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
                 InteropTypes.GetStringBuilder(Context).GetKnownMethod("ReplaceBuffer", null)));
+
+            codeStream.EmitLabel(lNullStringBuilder);
         }
     }
 

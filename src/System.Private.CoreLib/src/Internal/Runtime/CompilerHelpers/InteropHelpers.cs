@@ -143,6 +143,9 @@ namespace Internal.Runtime.CompilerHelpers
         internal static char[] GetEmptyStringBuilderBuffer(StringBuilder sb)
         {
             // CORERT-TODO: Reuse buffer from string builder where possible?
+            if (sb == null)
+                return null;
+
             return new char[sb.Capacity + 1];
         }
 
