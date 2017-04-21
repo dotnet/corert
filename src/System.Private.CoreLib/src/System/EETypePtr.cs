@@ -150,6 +150,9 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        /// </summary>
         internal bool IsPrimitive
         {
             get
