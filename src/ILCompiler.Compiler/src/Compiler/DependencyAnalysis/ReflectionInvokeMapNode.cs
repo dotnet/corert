@@ -138,9 +138,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 {
-                    MethodDesc invokeStubMethod = factory.MetadataManager.GetReflectionInvokeStub(method);
-                    MethodDesc canonInvokeStubMethod = invokeStubMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (invokeStubMethod != canonInvokeStubMethod)
+                    MethodDesc canonInvokeStubMethod = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
+                    if (canonInvokeStubMethod.IsSharedByGenericInstantiations)
                     {
                         vertex = writer.GetTuple(vertex,
                             writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod) << 1) | 1));
@@ -148,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
                     else
                     {
                         vertex = writer.GetTuple(vertex,
-                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(invokeStubMethod)) << 1));
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(canonInvokeStubMethod)) << 1));
                     }
                 }
 

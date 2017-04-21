@@ -30,15 +30,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method) && !method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
                 {
-                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
-                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (invokeStub != canonInvokeStub)
+                    MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
+                    if (canonInvokeStub.IsSharedByGenericInstantiations)
                     {
                         dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
                         factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
                     }
                     else
-                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
 
                 bool skipUnboxingStubDependency = false;

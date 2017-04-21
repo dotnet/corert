@@ -46,7 +46,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
             return null;
         }

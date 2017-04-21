@@ -179,7 +179,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
             TypeSystemContext context = method.Context;
             var sig = method.Signature;
@@ -193,7 +193,7 @@ namespace ILCompiler
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 
-            return InstantiateDynamicInvokeMethodForMethod(thunk, method);
+            return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
         }
 
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy

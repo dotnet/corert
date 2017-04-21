@@ -304,19 +304,16 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
+        public abstract MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method);
 
         /// <summary>
-        /// Compute the particular instantiation of a dynamic invoke thunk needed to invoke a method
+        /// Compute the canonical instantiation of a dynamic invoke thunk needed to invoke a method
         /// This algorithm is shared with the runtime, so if a thunk requires generic instantiation
         /// to be used, it must match this algorithm, and cannot be different with different MetadataManagers
         /// NOTE: This function may return null in cases where an exact instantiation does not exist. (Universal Generics)
         /// </summary>
-        protected MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
+        protected MethodDesc InstantiateCanonicalDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
         {
-            // Methods we see here shouldn't be canonicalized, or we'll end up creating unsupported instantiations
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Specific));
-
             if (thunk.Instantiation.Length == 0)
             {
                 // nothing to instantiate
@@ -400,7 +397,11 @@ namespace ILCompiler
                     return null;
             }
 
-            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+            // If the thunk ends up being shared code, return the canonical method body.
+            // The concrete dictionary for the thunk will be built at runtime and is not interesting for the compiler.
+            Instantiation canonInstantiation = context.ConvertInstantiationToCanonForm(new Instantiation(instantiation), CanonicalFormKind.Specific);
+
+            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, canonInstantiation);
             return instantiatedDynamicInvokeMethod;
         }
 

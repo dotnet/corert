@@ -49,15 +49,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (context.MetadataManager.HasReflectionInvokeStubForInvokableMethod(_method) && !_method.IsCanonicalMethod(CanonicalFormKind.Any))
                 {
-                    MethodDesc invokeStub = context.MetadataManager.GetReflectionInvokeStub(_method);
-                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (invokeStub != canonInvokeStub)
+                    MethodDesc canonInvokeStub = context.MetadataManager.GetCanonicalReflectionInvokeStub(_method);
+                    if (canonInvokeStub.IsSharedByGenericInstantiations)
                     {
                         dependencies.Add(new DependencyListEntry(context.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
                         context.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, context, canonInvokeStub);
                     }
                     else
-                        dependencies.Add(new DependencyListEntry(context.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                        dependencies.Add(new DependencyListEntry(context.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
 
                 dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(context, _method));
