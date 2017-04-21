@@ -174,6 +174,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(!owningType.IsRuntimeDeterminedSubtype);
             Debug.Assert(owningType.HasInstantiation);
+            Debug.Assert(owningType.ConvertToCanonForm(CanonicalFormKind.Specific) != owningType);
 
             _owningType = owningType;
         }
@@ -229,6 +230,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
+            Debug.Assert(owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != owningMethod);
 
             _owningMethod = owningMethod;
         }

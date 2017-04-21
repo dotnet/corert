@@ -28,6 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public UnboxingStubNode(MethodDesc target)
         {
+            Debug.Assert(target.GetCanonMethodTarget(CanonicalFormKind.Specific) == target);
             Debug.Assert(target.OwningType.IsValueType);
             _target = target;
         }
