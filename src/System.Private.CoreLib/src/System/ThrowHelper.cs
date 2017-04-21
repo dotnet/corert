@@ -85,6 +85,8 @@ namespace System
                     return "array";
                 case ExceptionArgument.text:
                     return "text";
+                case ExceptionArgument.values:
+                    return "values";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -100,5 +102,6 @@ namespace System
     {
         array,
         text,
+        values,
     }
 }
