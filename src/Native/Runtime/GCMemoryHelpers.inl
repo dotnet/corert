@@ -162,7 +162,7 @@ FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
     InlineWriteBarrier(dst, ref);
 }
 
-FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
+FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 {
     // Check whether the writes were even into the heap. If not there's no card update required.
     // Also if the size is smaller than a pointer, no write barrier is required.

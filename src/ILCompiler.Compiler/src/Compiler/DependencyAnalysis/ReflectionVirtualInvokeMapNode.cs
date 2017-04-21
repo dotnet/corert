@@ -58,6 +58,34 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
+        public static MethodDesc GetDeclaringVirtualMethodAndHierarchyDistance(MethodDesc method, out int parentHierarchyDistance)
+        {
+            parentHierarchyDistance = 0;
+
+            MethodDesc declaringMethodForSlot = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetTypicalMethodDefinition());
+            TypeDesc typeOfDeclaringMethodForSlot = declaringMethodForSlot.OwningType.GetTypeDefinition();
+            TypeDesc currentType = method.OwningType.GetTypeDefinition();
+            TypeDesc containingTypeOfDeclaringMethodForSlot = method.OwningType;
+
+            while (typeOfDeclaringMethodForSlot != currentType)
+            {
+                parentHierarchyDistance++;
+                currentType = currentType.BaseType.GetTypeDefinition();
+                containingTypeOfDeclaringMethodForSlot = containingTypeOfDeclaringMethodForSlot.BaseType;
+            }
+
+            if (containingTypeOfDeclaringMethodForSlot.HasInstantiation)
+            {
+                declaringMethodForSlot = method.Context.GetMethodForInstantiatedType(
+                    declaringMethodForSlot.GetTypicalMethodDefinition(), 
+                    (InstantiatedType)containingTypeOfDeclaringMethodForSlot);
+            }
+
+            Debug.Assert(declaringMethodForSlot != null);
+
+            return declaringMethodForSlot;
+        }
+
         public static IEnumerable<DependencyListEntry> GetVirtualInvokeMapDependencies(NodeFactory factory, MethodDesc method)
         {
             if (NeedsVirtualInvokeInfo(method))
@@ -157,16 +185,8 @@ namespace ILCompiler.DependencyAnalysis
                 // Generic Virtual Method 
                 // TypeKey + NameAndSig metadata offset into the native layout metadata + (NumberOfStepsUpParentHierarchyToType << 1 + 1)
 
-                MethodDesc declaringMethodForSlot = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetTypicalMethodDefinition());
-                uint parentHierarchyDistance = 0;
-                TypeDesc typeOfDeclaringMethodForSlot = declaringMethodForSlot.OwningType.GetTypeDefinition();
-                TypeDesc currentType = method.OwningType.GetTypeDefinition();
-
-                while (typeOfDeclaringMethodForSlot != currentType)
-                {
-                    parentHierarchyDistance++;
-                    currentType = currentType.BaseType.GetTypeDefinition();
-                }
+                int parentHierarchyDistance;
+                MethodDesc declaringMethodForSlot = GetDeclaringVirtualMethodAndHierarchyDistance(method, out parentHierarchyDistance);
 
                 Vertex vertex = null;
 
@@ -179,19 +199,11 @@ namespace ILCompiler.DependencyAnalysis
                     vertex = writer.GetTuple(
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(containingTypeKeyNode)),
                         writer.GetUnsignedConstant((uint)placedNameAndSig.SavedVertex.VertexOffset),
-                        writer.GetUnsignedConstant((parentHierarchyDistance << 1) + VirtualInvokeTableEntry.GenericVirtualMethod));
+                        writer.GetUnsignedConstant(((uint)parentHierarchyDistance << 1) + VirtualInvokeTableEntry.GenericVirtualMethod));
                 }
                 else
                 {
                     // Get the declaring method for slot on the instantiated declaring type
-                    if (method.OwningType.HasInstantiation)
-                    {
-                        TypeDesc containingTypeOfDeclaringMethodForSlot = method.OwningType;
-                        for (int i = 0; i < parentHierarchyDistance; i++)
-                            containingTypeOfDeclaringMethodForSlot = containingTypeOfDeclaringMethodForSlot.BaseType;
-                        declaringMethodForSlot = containingTypeOfDeclaringMethodForSlot.GetMethod(declaringMethodForSlot.Name, declaringMethodForSlot.Signature);
-                    }
-
                     int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, factory.Target.Abi != TargetAbi.ProjectN);
 
                     if (slot == -1)
@@ -206,7 +218,7 @@ namespace ILCompiler.DependencyAnalysis
                         writer.GetUnsignedConstant((uint)placedNameAndSig.SavedVertex.VertexOffset));
 
                     vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant(parentHierarchyDistance << 1),
+                        writer.GetUnsignedConstant((uint)parentHierarchyDistance << 1),
                         writer.GetUnsignedConstant((uint)slot));
                 }
 
