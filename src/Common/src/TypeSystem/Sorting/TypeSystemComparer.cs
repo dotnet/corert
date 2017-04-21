@@ -33,12 +33,13 @@ namespace Internal.TypeSystem
                 return 0;
             }
 
-            int result = x.ClassCode - y.ClassCode;
-            if (result == 0)
+            int codeX = x.ClassCode;
+            int codeY = y.ClassCode;
+            if (codeX == codeY)
             {
                 Debug.Assert(x.GetType() == y.GetType());
 
-                result = x.CompareToImpl(y, this);
+                int result = x.CompareToImpl(y, this);
 
                 // We did a reference equality check above so an "Equal" result is not expected
                 Debug.Assert(result != 0);
@@ -48,7 +49,7 @@ namespace Internal.TypeSystem
             else
             {
                 Debug.Assert(x.GetType() != y.GetType());
-                return result;
+                return codeX > codeY ? -1 : 1;
             }
         }
 
@@ -74,12 +75,13 @@ namespace Internal.TypeSystem
                 return 0;
             }
 
-            int result = x.ClassCode - y.ClassCode;
-            if (result == 0)
+            int codeX = x.ClassCode;
+            int codeY = y.ClassCode;
+            if (codeX == codeY)
             {
                 Debug.Assert(x.GetType() == y.GetType());
 
-                result = x.CompareToImpl(y, this);
+                int result = x.CompareToImpl(y, this);
 
                 // We did a reference equality check above so an "Equal" result is not expected
                 Debug.Assert(result != 0);
@@ -89,7 +91,7 @@ namespace Internal.TypeSystem
             else
             {
                 Debug.Assert(x.GetType() != y.GetType());
-                return result;
+                return codeX > codeY ? -1 : 1;
             }
         }
 
@@ -100,12 +102,13 @@ namespace Internal.TypeSystem
                 return 0;
             }
 
-            int result = x.ClassCode - y.ClassCode;
-            if (result == 0)
+            int codeX = x.ClassCode;
+            int codeY = y.ClassCode;
+            if (codeX == codeY)
             {
                 Debug.Assert(x.GetType() == y.GetType());
 
-                result = x.CompareToImpl(y, this);
+                int result = x.CompareToImpl(y, this);
 
                 // We did a reference equality check above so an "Equal" result is not expected
                 Debug.Assert(result != 0);
@@ -115,7 +118,7 @@ namespace Internal.TypeSystem
             else
             {
                 Debug.Assert(x.GetType() != y.GetType());
-                return result;
+                return codeX > codeY ? -1 : 1;
             }
         }
 

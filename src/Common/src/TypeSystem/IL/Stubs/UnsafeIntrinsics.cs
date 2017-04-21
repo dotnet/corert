@@ -29,6 +29,12 @@ namespace Internal.IL.Stubs
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "AddByteOffset":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.add, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "InitBlockUnaligned":
+                    return new ILStubMethodIL(method, new byte[] {
+                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.ldarg_2,
+                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.unaligned), 0x01,
+                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.initblk),
+                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
 
             return null;

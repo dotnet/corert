@@ -430,6 +430,7 @@
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\TimeSpan.cs" />
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />

@@ -8,6 +8,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime
 {
     // CONTRACT with Runtime
@@ -636,7 +642,7 @@ namespace System.Runtime
         // heap memory
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
-        internal static extern unsafe void RhBulkMoveWithWriteBarrier(byte* dmem, byte* smem, int size);
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
         // The GC conservative reporting descriptor is a special structure of data that the GC
         // parses to determine whether there are specific regions of memory that it should not
@@ -844,13 +850,21 @@ namespace System.Runtime
         internal static extern unsafe void _ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign);
 #endif
 
-#if BIT64
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void memmove(byte* dmem, byte* smem, ulong size);
-#else
+        internal static extern unsafe void memmove(byte* dmem, byte* smem, nuint size);
+
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void memmove(byte* dmem, byte* smem, uint size);
-#endif
+        internal static extern unsafe void memset(byte* mem, int value, nuint size);
+
+        // Non-inlinable wrapper around the PInvoke that avoids poluting the fast path with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
+        {
+            fixed (byte* bytePointer = &b)
+            {
+                memset(bytePointer, 0, byteLength);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]

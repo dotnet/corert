@@ -28,6 +28,10 @@ namespace System
 
     public struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
     {
+        // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
+        // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
+        public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
+
         private readonly T[] _array;
         private readonly int _offset;
         private readonly int _count;
@@ -66,12 +70,31 @@ namespace System
 
         public int Count => _count;
 
+        public T this[int index]
+        {
+            get
+            {
+                if ((uint)index >= (uint)_count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+
+                return _array[_offset + index];
+            }
+            set
+            {
+                if ((uint)index >= (uint)_count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+
+                _array[_offset + index] = value;
+            }
+        }
+
         public Enumerator GetEnumerator()
         {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
-            Contract.EndContractBlock();
-
+            ThrowInvalidOperationIfDefault();
             return new Enumerator(this);
         }
 
@@ -92,6 +115,27 @@ namespace System
             return hash;
         }
 
+        public void CopyTo(T[] destination) => CopyTo(destination, 0);
+
+        public void CopyTo(T[] destination, int destinationIndex)
+        {
+            ThrowInvalidOperationIfDefault();
+            System.Array.Copy(_array, _offset, destination, destinationIndex, _count);
+        }
+
+        public void CopyTo(ArraySegment<T> destination)
+        {
+            ThrowInvalidOperationIfDefault();
+            destination.ThrowInvalidOperationIfDefault();
+
+            if (_count > destination._count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            System.Array.Copy(_array, _offset, destination._array, destination._offset, _count);
+        }
+
         public override bool Equals(Object obj)
         {
             if (obj is ArraySegment<T>)
@@ -105,6 +149,44 @@ namespace System
             return obj._array == _array && obj._offset == _offset && obj._count == _count;
         }
 
+        public ArraySegment<T> Slice(int index)
+        {
+            ThrowInvalidOperationIfDefault();
+            
+            if ((uint)index > (uint)_count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return new ArraySegment<T>(_array, _offset + index, _count - index);
+        }
+
+        public ArraySegment<T> Slice(int index, int count)
+        {
+            ThrowInvalidOperationIfDefault();
+
+            if ((uint)index > (uint)_count || (uint)count > (uint)(_count - index))
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            return new ArraySegment<T>(_array, _offset + index, count);
+        }
+
+        public T[] ToArray()
+        {
+            ThrowInvalidOperationIfDefault();
+
+            if (_count == 0)
+            {
+                return Empty._array;
+            }
+
+            var array = new T[_count];
+            System.Array.Copy(_array, _offset, array, 0, _count);
+            return array;
+        }
+
         public static bool operator ==(ArraySegment<T> a, ArraySegment<T> b)
         {
             return a.Equals(b);
@@ -115,24 +197,23 @@ namespace System
             return !(a == b);
         }
 
+        public static implicit operator ArraySegment<T>(T[] array) => new ArraySegment<T>(array);
+
         #region IList<T>
         T IList<T>.this[int index]
         {
             get
             {
-                if (_array == null)
-                    throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+                ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
 
                 return _array[_offset + index];
             }
-
             set
             {
-                if (_array == null)
-                    throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+                ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
@@ -143,9 +224,7 @@ namespace System
 
         int IList<T>.IndexOf(T item)
         {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
-            Contract.EndContractBlock();
+            ThrowInvalidOperationIfDefault();
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
@@ -171,8 +250,7 @@ namespace System
         {
             get
             {
-                if (_array == null)
-                    throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+                ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
                 Contract.EndContractBlock();
@@ -205,9 +283,7 @@ namespace System
 
         bool ICollection<T>.Contains(T item)
         {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
-            Contract.EndContractBlock();
+            ThrowInvalidOperationIfDefault();
 
             int index = System.Array.IndexOf<T>(_array, item, _offset, _count);
 
@@ -219,8 +295,7 @@ namespace System
 
         void ICollection<T>.CopyTo(T[] array, int arrayIndex)
         {
-            if (_array == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+            ThrowInvalidOperationIfDefault();
             System.Array.Copy(_array, _offset, array, arrayIndex, _count);
         }
 
@@ -237,6 +312,14 @@ namespace System
         #region IEnumerable
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
+
+        private void ThrowInvalidOperationIfDefault()
+        {
+            if (_array == null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NullArray);
+            }
+        }
 
         public struct Enumerator : IEnumerator<T>
         {

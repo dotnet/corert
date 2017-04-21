@@ -22,12 +22,12 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Contains generic, low-level functionality for manipulating pointers.
     /// </summary>
+    [CLSCompliant(false)]
     public static class Unsafe
     {
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
-        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe T Read<T>(void* source)
@@ -38,7 +38,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
-        [CLSCompliant(false)]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Write<T>(void* source, T value)
@@ -49,7 +48,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
-        [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -111,6 +109,14 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        {
+            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+        }
+
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
         {
             // This method is implemented by the toolchain
@@ -121,15 +127,6 @@ namespace System.Runtime.CompilerServices
             // add
             // ret
         }
-
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T AddByteOffset<T>(ref T source, nuint byteOffset)
-        {
-            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
-        }
-
 
         /// <summary>
         /// Adds an element offset to the given reference.
@@ -156,6 +153,19 @@ namespace System.Runtime.CompilerServices
             // ldarg.1
             // ceq
             // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value 
+        /// without assuming architecture dependent alignment of the address.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
+        {
+            for (uint i = 0; i < byteCount; i++)
+                AddByteOffset(ref startAddress, i) = value;
         }
     }
 }

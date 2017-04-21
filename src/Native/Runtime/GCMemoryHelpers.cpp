@@ -84,7 +84,7 @@ COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefsWithWriteBarrier, (void * dest, co
     ASSERT(src != nullptr);
 
     InlineForwardGCSafeCopy(dest, src, len);
-    InlinedBulkWriteBarrier(dest, (UInt32)len);
+    InlinedBulkWriteBarrier(dest, len);
 
     // memcpy returns the destination buffer
     return dest;
@@ -110,7 +110,7 @@ COOP_PINVOKE_CDECL_HELPER(void *, memcpyAnyWithWriteBarrier, (void * dest, const
 // Move memory, in a way that is compatible with a move onto the heap, but
 // does not require the destination pointer to be on the heap.
 
-COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, int cbDest))
+COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, size_t cbDest))
 {
     if (pDest <= pSrc || pSrc + cbDest <= pDest)
         InlineForwardGCSafeCopy(pDest, pSrc, cbDest);
@@ -128,7 +128,7 @@ void GCSafeZeroMemory(void * dest, size_t len)
 void GCSafeCopyMemoryWithWriteBarrier(void * dest, const void *src, size_t len)
 {
     InlineForwardGCSafeCopy(dest, src, len);
-    InlinedBulkWriteBarrier(dest, (UInt32)len);
+    InlinedBulkWriteBarrier(dest, len);
 }
 
 void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
