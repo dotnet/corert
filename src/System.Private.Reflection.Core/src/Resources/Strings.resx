@@ -355,4 +355,10 @@
   <data name="Arg_TypedReference_Null" xml:space="preserve">
     <value>The TypedReference must be initialized.</value>
   </data>
+  <data name="Acc_CreateAbst" xml:space="preserve">
+    <value>Cannot create an abstract class.</value>
+  </data>
+  <data name="Acc_CreateInterface" xml:space="preserve">
+    <value>Cannot create an instance of an interface.</value>
+  </data>
 </root>
