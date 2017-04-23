@@ -46,16 +46,17 @@ endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  STUBS & DATA SECTIONS  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-THUNK_CODESIZE                      equ 14h     ;; 5-byte call, 1 byte pop, 6-byte lea, 6-byte jmp, 2 bytes of nop
+THUNK_CODESIZE                      equ 20h     ;; 5-byte call, 1 byte pop, 6-byte lea, 6-byte jmp, 14 bytes of padding
 THUNK_DATASIZE                      equ 08h     ;; 2 dwords
 
-THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 0C8h    ;; 200 thunks per page
+THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 078h    ;; 120 thunks per page
 
 PAGE_SIZE                           equ 01000h  ;; 4K
 POINTER_SIZE                        equ 04h
 
 
 GET_CURRENT_IP macro
+        ALIGN   10h                             ;; make sure we align to 16-byte boundary for CFG table
         call    @F
     @@: pop     eax
 endm
@@ -72,9 +73,6 @@ JUMP_TO_COMMON macro groupIndex, index
         ;; re-point eax to begining of data page   : eax <- [eax - (THUNK_DATASIZE * current thunk's index)]
         ;; jump to the location pointed at by the last dword in the data page : jump [eax + PAGE_SIZE - POINTER_SIZE]
         jmp     dword ptr[eax - (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index) + PAGE_SIZE - POINTER_SIZE]
-        ;; pad out to 4 byte aligned
-        nop
-        nop
 endm
 
 TenThunks macro groupIndex
@@ -140,14 +138,6 @@ THUNKS_PAGE_BLOCK macro
         TenThunks 9 
         TenThunks 10 
         TenThunks 11 
-        TenThunks 12 
-        TenThunks 13 
-        TenThunks 14 
-        TenThunks 15 
-        TenThunks 16 
-        TenThunks 17 
-        TenThunks 18 
-        TenThunks 19 
 endm
 
 ;;
@@ -275,11 +265,10 @@ FASTCALL_FUNC RhpGetNumThunkBlocksPerMapping, 0
 FASTCALL_ENDFUNC
 
 ;;
-;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+;; int RhpGetThunkBlockSize
 ;;
-FASTCALL_FUNC RhpGetNextThunkStubsBlockAddress, 4
+FASTCALL_FUNC RhpGetThunkBlockSize, 0
         mov     eax, PAGE_SIZE * 2
-        add     eax, ecx
         ret
 FASTCALL_ENDFUNC
 
