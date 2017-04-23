@@ -53,6 +53,8 @@ POINTER_SIZE                        equ 08h
 
 
 LOAD_DATA_ADDRESS macro groupIndex, index, thunkPool
+        ALIGN   10h                             ;; make sure we align to 16-byte boundary for CFG table
+
         ;; set r10 to begining of data page : r10 <- [thunkPool] + PAGE_SIZE
         ;; fix offset of the data           : r10 <- r10 + (THUNK_DATASIZE * current thunk's index)
         lea     r10, [thunkPool + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
@@ -61,10 +63,6 @@ endm
 JUMP_TO_COMMON macro groupIndex, index, thunkPool
         ;; jump to the location pointed at by the last qword in the data page
         jmp     qword ptr[thunkPool + PAGE_SIZE + PAGE_SIZE - POINTER_SIZE]
-        nop
-        nop  ; These nops exist so that the thunks are sufficiently aligned so that none of them
-        nop  ; have an address with the second lowest bit set. (That breaks the ability to use
-             ; these as managed function pointers.
 endm
 
 TenThunks macro groupIndex, thunkPool
@@ -259,13 +257,12 @@ LEAF_ENTRY RhpGetNumThunkBlocksPerMapping, _TEXT
 LEAF_END RhpGetNumThunkBlocksPerMapping, _TEXT
 
 ;;
-;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+;; int RhpGetThunkBlockSize
 ;;
-LEAF_ENTRY RhpGetNextThunkStubsBlockAddress, _TEXT
+LEAF_ENTRY RhpGetThunkBlockSize, _TEXT
         mov     rax, PAGE_SIZE * 2
-        add     rax, rcx
         ret   
-LEAF_END RhpGetNextThunkStubsBlockAddress, _TEXT
+LEAF_END RhpGetThunkBlockSize, _TEXT
 
 ;; 
 ;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
