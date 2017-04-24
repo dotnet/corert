@@ -224,11 +224,15 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
-        internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
+        private static unsafe string GetModuleName(ModuleFixupCell* pCell)
         {
             byte* pModuleName = (byte*)pCell->ModuleName;
-            string moduleName = Encoding.UTF8.GetString(pModuleName, strlen(pModuleName));
+            return Encoding.UTF8.GetString(pModuleName, strlen(pModuleName));
+        }
 
+        internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
+        {
+            string moduleName = GetModuleName(pCell);
             IntPtr hModule = TryResolveModule(moduleName);
             if (hModule != IntPtr.Zero)
             {
@@ -241,8 +245,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
             else
             {
-                // TODO: should be DllNotFoundException, but layering...
-                throw new TypeLoadException(moduleName);
+                throw new DllNotFoundException(SR.Format(SR.Arg_DllNotFoundExceptionParameterized, moduleName));
             }
         }
 
@@ -257,8 +260,8 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
             if (pCell->Target == IntPtr.Zero)
             {
-                // TODO: Shoud be EntryPointNotFoundException, but layering...
-                throw new TypeLoadException(Encoding.UTF8.GetString(methodName, strlen(methodName)));
+                string entryPointName = Encoding.UTF8.GetString(methodName, strlen(methodName));
+                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
 
