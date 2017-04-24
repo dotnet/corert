@@ -383,14 +383,6 @@ namespace System.Runtime
         internal static extern IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetNonGcStaticFieldData")]
-        internal static extern unsafe IntPtr RhGetNonGcStaticFieldData(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetGcStaticFieldData")]
-        internal static extern unsafe IntPtr RhGetGcStaticFieldData(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateThunksHeap")]
         internal static extern object RhCreateThunksHeap(IntPtr commonStubAddress);
 

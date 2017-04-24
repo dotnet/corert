@@ -542,18 +542,6 @@ namespace Internal.Runtime.Augments
             return cell;
         }
 
-        public static IntPtr GetNonGcStaticFieldData(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetNonGcStaticFieldData(eeType);
-        }
-
-        public static IntPtr GetGcStaticFieldData(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetGcStaticFieldData(eeType);
-        }
-
         public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)
         {
             return (int)typeHandle.ToEETypePtr().ValueTypeSize;

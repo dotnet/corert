@@ -113,7 +113,17 @@ namespace Internal.Runtime.TypeLoader
 
             // Not found in hashtable... must be a dynamically created type
             Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            return RuntimeAugments.GetNonGcStaticFieldData(runtimeTypeHandle);
+            unsafe
+            {
+                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+                {
+                    return typeAsEEType->DynamicNonGcStaticsData;
+                }
+            }
+
+            // Type has no non-GC statics
+            return IntPtr.Zero;
         }
 
         /// <summary>
@@ -191,7 +201,17 @@ namespace Internal.Runtime.TypeLoader
 
             // Not found in hashtable... must be a dynamically created type
             Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            return RuntimeAugments.GetGcStaticFieldData(runtimeTypeHandle);
+            unsafe
+            {
+                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+                {
+                    return typeAsEEType->DynamicGcStaticsData;
+                }
+            }
+
+            // Type has no GC statics
+            return IntPtr.Zero;
         }
         #endregion
 
