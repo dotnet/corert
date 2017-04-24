@@ -547,7 +547,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;
 
-        internal RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
+        public RuntimeMethodHandleNode RuntimeMethodHandle(MethodDesc method)
         {
             return _runtimeMethodHandles.GetOrAdd(method);
         }

@@ -389,10 +389,11 @@ namespace System.Runtime
                 // Each mapping consists of multiple blocks of thunk stubs/data pairs. Keep track of those
                 // so that we do not create a new mapping until all blocks in the sections we just mapped are consumed
                 IntPtr currentThunksBlock = nextThunksBlock;
+                int thunkBlockSize = InternalCalls.RhpGetThunkBlockSize();
                 for (int i = 0; i < Constants.NumThunkBlocksPerMapping; i++)
                 {
                     s_currentlyMappedThunkBlocks[i] = currentThunksBlock;
-                    currentThunksBlock = InternalCalls.RhpGetNextThunkStubsBlockAddress(currentThunksBlock);
+                    currentThunksBlock += thunkBlockSize;
                 }
                 s_currentlyMappedThunkBlocksIndex = 1;
             }

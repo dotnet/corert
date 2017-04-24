@@ -273,7 +273,8 @@ namespace ILCompiler
                 {
                     MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
 
-                    methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, token));
+                    if (invokeMapMethod != null)
+                        methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, token));
                 }
                 else if (!WillUseMetadataTokenToReferenceMethod(method) && 
                     _compilationModuleGroup.ContainsMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))
@@ -284,7 +285,8 @@ namespace ILCompiler
                     // and generate a non-metadata backed invoke table entry
                     // TODO, the above computation is overly generous with the set of methods that are placed into the method invoke map
                     // It includes methods which are not reflectable at all.
-                    methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, 0));
+                    if (invokeMapMethod != null)
+                        methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, 0));
                 }
             }
 
@@ -345,7 +347,12 @@ namespace ILCompiler
             MethodDesc invokeMapMethod = method;
             if (method.HasInstantiation && method.IsCanonicalMethod(CanonicalFormKind.Specific))
             {
-                Debug.Assert(canonicalToSpecificMethods.ContainsKey(method));
+                // Under optimization when a generic method makes no use of its generic dictionary
+                // the compiler can sometimes generate code for a canonical generic
+                // method, but not detect the need for a generic dictionary. We cannot currently
+                // represent this state in our invoke mapping tables, and must skip emitting a record into them
+                if (!canonicalToSpecificMethods.ContainsKey(method))
+                    return null;
 
                 invokeMapMethod = canonicalToSpecificMethods[method];
             }

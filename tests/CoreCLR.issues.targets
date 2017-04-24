@@ -578,6 +578,10 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_d\_simpleoddpower_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_r\_simpleoddpower_il_r.*" />
 
+    <!-- Need analysis to determine what delegates to generate runtime data for -->
+    <!-- https://github.com/dotnet/corert/issues/3408 -->
+    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.*" />
+    
     <!-- LNK2001: unresolved external symbol CCWAddRef -->
     <!--  https://github.com/dotnet/corert/issues/1497 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\AddMemoryPressureTest\AddMemoryPressureTest.*" />

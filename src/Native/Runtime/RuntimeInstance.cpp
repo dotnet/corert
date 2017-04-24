@@ -879,29 +879,52 @@ COOP_PINVOKE_HELPER(void *, RhGetGcStaticFieldData, (EEType * pEEType))
 
 COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
+COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
+COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
+
 EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 {
     static void* pThunksTemplateAddress = NULL;
+
+    void *pThunkMap = NULL;
+
+    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
+    int thunkBlockSize = RhpGetThunkBlockSize();
+    int templateSize = thunkBlocksPerMapping * thunkBlockSize;
 
     if (pThunksTemplateAddress == NULL)
     {
         // First, we use the thunks directly from the thunks template sections in the module until all
         // thunks in that template are used up.
         pThunksTemplateAddress = RhpGetThunksBase();
-        return pThunksTemplateAddress;
+        pThunkMap = pThunksTemplateAddress;
+    }
+    else
+    {
+        // We've already used the thunks template in the module for some previous thunks, and we 
+        // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
+        // more thunks
+
+        UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+        int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
+
+        if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
+            return NULL;
     }
 
-    // We've already used the thunks template in the module for some previous thunks, and we 
-    // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
-    // more thunks
+    if (!PalMarkThunksAsValidCallTargets(
+        pThunkMap,
+        RhpGetThunkSize(),
+        RhpGetNumThunksPerBlock(),
+        thunkBlockSize,
+        thunkBlocksPerMapping))
+    {
+        if (pThunkMap != pThunksTemplateAddress)
+            PalFreeThunksFromTemplate(pThunkMap);
 
-    UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
-    int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
-    int templateSize = RhpGetNumThunkBlocksPerMapping() * OS_PAGE_SIZE * 2;
-
-    void* pThunkMap = NULL;
-    if (PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap) == FALSE)
         return NULL;
+    }
 
     return pThunkMap;
 }

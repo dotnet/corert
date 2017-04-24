@@ -22,7 +22,7 @@
     <DefineConstants Condition="'$(METADATA_TYPE_LOADER)' != ''">SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;EETYPE_TYPE_MANAGER;AMD64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>CORERT;EETYPE_TYPE_MANAGER;AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(JitSupport)' == 'true'">
     <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>

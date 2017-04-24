@@ -30,6 +30,8 @@ RW$name % 4
 
     MACRO 
         LOAD_DATA_ADDRESS $groupIndex, $index
+        ALIGN       0x10                        ;; make sure we align to 16-byte boundary for CFG table
+        
         ;; set r12 to begining of data page : r12 <- pc - (THUNK_CODESIZE * current thunk's index - sizeof(mov+add instructions)) + PAGE_SIZE
         ;; fix offset of the data           : r12 <- r12 + (THUNK_DATASIZE * current thunk's index)
         mov.w     r12, PAGE_SIZE + ($groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * $index) - (8 + $groupIndex * THUNK_CODESIZE * 10 + THUNK_CODESIZE * $index)
@@ -244,12 +246,12 @@ RW$name % 4
     LEAF_END RhpGetNumThunkBlocksPerMapping
 
     ;;
-    ;; IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress)
+    ;; int RhpGetThunkBlockSize
     ;;
-    LEAF_ENTRY RhpGetNextThunkStubsBlockAddress
-        add     r0, PAGE_SIZE * 2
+    LEAF_ENTRY RhpGetThunkBlockSize
+        mov     r0, PAGE_SIZE * 2
         bx      lr
-    LEAF_END RhpGetNextThunkStubsBlockAddress
+    LEAF_END RhpGetThunkBlockSize
 
     ;; 
     ;; IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress)
