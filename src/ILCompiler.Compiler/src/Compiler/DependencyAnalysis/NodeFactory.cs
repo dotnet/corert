@@ -148,15 +148,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        if (Target.Abi == TargetAbi.CoreRT)
-                        {
-                            return new CanonicalEETypeNode(this, type);
-                        }
-                        else
-                        {
-                            // Remove this once we stop using the STS dependency analysis.
-                            return new NecessaryCanonicalEETypeNode(this, type);
-                        }
+                        return new NecessaryCanonicalEETypeNode(this, type);
                     }
                     else
                     {

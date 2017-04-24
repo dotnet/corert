@@ -16,8 +16,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         public NecessaryCanonicalEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
-            //TODO: This is used temporarily until we switch from STS dependency analysis.
-            Debug.Assert(factory.Target.Abi == TargetAbi.ProjectN);
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
