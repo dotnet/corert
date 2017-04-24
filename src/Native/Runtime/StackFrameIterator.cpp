@@ -443,12 +443,18 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
     PTR_VOID activeFuncletFramePointer = m_pendingFuncletFramePointer;
     m_pendingFuncletFramePointer = NULL;
 
+#ifdef CORERT
+    // with the JIT, the locals of the enclosing method are reported even for filter funclets,
+    // which are called in the first pass with m_idxCurClause == 0xFFFFFFFF
+    if (activeFuncletFramePointer == NULL)
+#else
     // If we aren't invoking a funclet (i.e. idxCurClause == -1), and we're doing a GC stackwalk, we don't 
     // want the 2nd-pass collided behavior because that behavior assumes that the previous frame was a 
     // funclet, which isn't the case when taking a GC at some points in the EH dispatch code.  So we treat it
     // as if the 2nd pass hasn't actually started yet.
-    if ((pExInfo->m_passNumber == 1) || 
-        (pExInfo->m_idxCurClause == 0xFFFFFFFF)) 
+    if ((pExInfo->m_passNumber == 1) ||
+        (pExInfo->m_idxCurClause == 0xFFFFFFFF))
+#endif // CORERT
     {
         FAILFAST_OR_DAC_FAIL_MSG(!(curFlags & ApplyReturnAddressAdjustment),
             "did not expect to collide with a 1st-pass ExInfo during a EH stackwalk");
@@ -589,25 +595,25 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         );
 #endif
 
+#if defined(UNIX_AMD64_ABI) 
     bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
 
-#if defined(UNIX_AMD64_ABI) 
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
     
+    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+    m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
+    m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
+    m_funcletPtrs.pR12 = m_RegDisplay.pR12;
+    m_funcletPtrs.pR13 = m_RegDisplay.pR13;
+    m_funcletPtrs.pR14 = m_RegDisplay.pR14;
+    m_funcletPtrs.pR15 = m_RegDisplay.pR15;
+
     if (isFilterInvoke)
     {
         SP++; // stack alignment
     }
     else
     {
-        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-        m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
-        m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
-        m_funcletPtrs.pR12 = m_RegDisplay.pR12;
-        m_funcletPtrs.pR13 = m_RegDisplay.pR13;
-        m_funcletPtrs.pR14 = m_RegDisplay.pR14;
-        m_funcletPtrs.pR15 = m_RegDisplay.pR15;
-
         if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
             SP += 6 + 1; // 6 locals and stack alignment
@@ -625,6 +631,8 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
 #elif defined(_TARGET_AMD64_)
+    bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+
     static const int ArgumentsScratchAreaSize = 4 * 8;
     
     PTR_Fp128 xmm = (PTR_Fp128)(m_RegDisplay.SP + ArgumentsScratchAreaSize);
@@ -636,22 +644,22 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     SP = (PTR_UIntNative)xmm;
 
+    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+    m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
+    m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
+    m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
+    m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
+    m_funcletPtrs.pR12 = m_RegDisplay.pR12;
+    m_funcletPtrs.pR13 = m_RegDisplay.pR13;
+    m_funcletPtrs.pR14 = m_RegDisplay.pR14;
+    m_funcletPtrs.pR15 = m_RegDisplay.pR15;
+
     if (isFilterInvoke)
     {
         SP++; // stack alignment
     }
     else
-    {
-        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-        m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
-        m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
-        m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
-        m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
-        m_funcletPtrs.pR12 = m_RegDisplay.pR12;
-        m_funcletPtrs.pR13 = m_RegDisplay.pR13;
-        m_funcletPtrs.pR14 = m_RegDisplay.pR14;
-        m_funcletPtrs.pR15 = m_RegDisplay.pR15;
-        
+    {        
         if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
             SP += 2 + 1; // 2 locals and stack alignment
@@ -674,14 +682,11 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #elif defined(_TARGET_X86_)
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
 
-    if (!isFilterInvoke)
-    {
-        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-        m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
-        m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
-        m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
-        m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
-    }
+    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+    m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
+    m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
+    m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
+    m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
 
     SP++; // local / stack alignment
     m_RegDisplay.pRdi = SP++;
@@ -689,6 +694,8 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pRbx = SP++;
     m_RegDisplay.pRbp = SP++;
 #elif defined(_TARGET_ARM_)
+bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+
 
     PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
 
@@ -704,17 +711,17 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
         SP += EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
-
-        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-        m_funcletPtrs.pR4  = m_RegDisplay.pR4;
-        m_funcletPtrs.pR5  = m_RegDisplay.pR5;
-        m_funcletPtrs.pR6  = m_RegDisplay.pR6;
-        m_funcletPtrs.pR7  = m_RegDisplay.pR7;
-        m_funcletPtrs.pR8  = m_RegDisplay.pR8;
-        m_funcletPtrs.pR9  = m_RegDisplay.pR9;
-        m_funcletPtrs.pR10 = m_RegDisplay.pR10;
-        m_funcletPtrs.pR11 = m_RegDisplay.pR11;
     }
+
+    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+    m_funcletPtrs.pR4 = m_RegDisplay.pR4;
+    m_funcletPtrs.pR5 = m_RegDisplay.pR5;
+    m_funcletPtrs.pR6 = m_RegDisplay.pR6;
+    m_funcletPtrs.pR7 = m_RegDisplay.pR7;
+    m_funcletPtrs.pR8 = m_RegDisplay.pR8;
+    m_funcletPtrs.pR9 = m_RegDisplay.pR9;
+    m_funcletPtrs.pR10 = m_RegDisplay.pR10;
+    m_funcletPtrs.pR11 = m_RegDisplay.pR11;
 
     m_RegDisplay.pR4 = SP++;
     m_RegDisplay.pR5 = SP++;
