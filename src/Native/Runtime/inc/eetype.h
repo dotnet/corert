@@ -597,11 +597,9 @@ public:
     EEType * get_DynamicTemplateType();
 
     bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicGcStaticsPointer();
     void set_DynamicGcStatics(UInt8 *pStatics);
 
     bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicNonGcStaticsPointer();
     void set_DynamicNonGcStatics(UInt8 *pStatics);
 
     bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }

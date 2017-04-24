@@ -844,37 +844,6 @@ COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (UInt32 uO
     return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
 }
 
-COOP_PINVOKE_HELPER(void *, RhGetNonGcStaticFieldData, (EEType * pEEType))
-{
-    // We shouldn't be attempting to get the gc/non-gc statics data for non-dynamic types...
-    // For non-dynamic types, that info should have been hashed in a table and stored in its corresponding blob in the image.
-    ASSERT(pEEType->IsDynamicType());
-
-    if (pEEType->HasDynamicNonGcStatics())
-    {
-        return pEEType->get_DynamicNonGcStaticsPointer();
-    }
-
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(void *, RhGetGcStaticFieldData, (EEType * pEEType))
-{
-    // We shouldn't be attempting to get the gc/non-gc statics data for non-dynamic types...
-    // For non-dynamic types, that info should have been hashed in a table and stored in its corresponding blob in the image.
-    // The reason we don't want to do the lookup for non-dynamic types is that LookupGenericInstance will do the lookup in 
-    // a hashtable that *only* has the GIDs with variance. If we were to store all GIDs in that hashtable, we'd be violating
-    // pay-for-play principles
-    ASSERT(pEEType->IsDynamicType());
-
-    if (pEEType->HasDynamicGcStatics())
-    {
-        return pEEType->get_DynamicGcStaticsPointer();
-    }
-
-    return NULL;
-}
-
 #ifndef FEATURE_RX_THUNKS
 
 COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());

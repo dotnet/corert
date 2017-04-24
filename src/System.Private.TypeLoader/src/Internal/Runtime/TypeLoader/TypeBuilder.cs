@@ -1225,7 +1225,7 @@ namespace Internal.Runtime.TypeLoader
                 canonicalClassConstructorFunctionPointer = templateTypeGenericMethodDescriptor->MethodFunctionPointer;
             }
 
-            IntPtr generatedTypeStaticData = RuntimeAugments.GetNonGcStaticFieldData(GetRuntimeTypeHandle(type));
+            IntPtr generatedTypeStaticData = GetRuntimeTypeHandle(type).ToEETypePtr()->DynamicNonGcStaticsData;
             IntPtr* generatedTypeClassConstructorSlotPointer = (IntPtr*)((byte*)*((IntPtr*)generatedTypeStaticData) + ClassConstructorOffset);
 
             if (exactClassConstructorFunctionPointer != IntPtr.Zero)

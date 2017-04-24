@@ -512,25 +512,11 @@ inline EEType * EEType::get_DynamicTemplateType()
 #endif
 }
 
-inline UInt8 ** EEType::get_DynamicGcStaticsPointer()
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicGcStatics);
-
-    return (UInt8**)((UInt8*)this + cbOffset);
-}
-
 inline void EEType::set_DynamicGcStatics(UInt8 *pStatics)
 {
     UInt32 cbOffset = GetFieldOffset(ETF_DynamicGcStatics);
 
     *(UInt8**)((UInt8*)this + cbOffset) = pStatics;
-}
-
-inline UInt8 ** EEType::get_DynamicNonGcStaticsPointer()
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicNonGcStatics);
-
-    return (UInt8**)((UInt8*)this + cbOffset);
 }
 
 inline void EEType::set_DynamicNonGcStatics(UInt8 *pStatics)
