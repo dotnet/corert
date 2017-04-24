@@ -233,7 +233,7 @@ extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvR
 
 extern "C" void RhpShutdown();
 
-#ifdef CPPCODEGEN
+#if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
 extern "C" int32_t RhpEnableConservativeStackReporting();
 #else
 
@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
     if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
         return -1;
 
-#ifdef CPPCODEGEN
+#if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
     if (!RhpEnableConservativeStackReporting())
         return -1;
 #else
