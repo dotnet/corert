@@ -20,6 +20,8 @@ public class BringUpTest
 
     static BringUpTest g = null;
 
+    static int finallyCounter = 0;
+
     public static int Main()
     {
         if (string.Empty.Length > 0)
@@ -102,6 +104,27 @@ public class BringUpTest
             counter++;
         }
 
+        // test interaction of filters and finally clauses with GC
+        try
+        {
+            ThrowExcThroughMethodsWithFinalizers1("Main");
+        }
+        catch (Exception e) when (FilterWithGC() && counter++ > 0)
+        {
+            Console.WriteLine(e.Message);
+            if (e.Message != "ThrowExcThroughMethodsWithFinalizers2")
+            {
+                Console.WriteLine("Unexpected exception message!");
+                return Fail;
+            }
+            if (finallyCounter != 2)
+            {
+                Console.WriteLine("Finalizers didn't execute!");
+                return Fail;
+            }
+            counter++;
+        }
+
         try
         {
             try
@@ -121,7 +144,7 @@ public class BringUpTest
             counter++;
         }
 
-        if (counter != 8)
+        if (counter != 10)
         {
             Console.WriteLine("Unexpected counter value");
             return Fail;
@@ -129,4 +152,52 @@ public class BringUpTest
 
         return Pass;
     }
+    static void CreateSomeGarbage()
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            string s = new string('.', 100);
+        }
+    }
+
+    static void ThrowExcThroughMethodsWithFinalizers1(string caller)
+    {
+        CreateSomeGarbage();
+        string s = caller + " + ThrowExcThroughMethodsWithFinalizers1";
+        CreateSomeGarbage();
+        try
+        {
+            ThrowExcThroughMethodsWithFinalizers2(s);
+        }
+        finally
+        {
+            Console.WriteLine("Executing finally in {0}", s);
+            finallyCounter++;
+        }
+    }
+
+    static void ThrowExcThroughMethodsWithFinalizers2(string caller)
+    {
+        CreateSomeGarbage();
+        string s = caller + " + ThrowExcThroughMethodsWithFinalizers2";
+        CreateSomeGarbage();
+        try
+        {
+            throw new Exception("ThrowExcThroughMethodsWithFinalizers2");
+        }
+        finally
+        {
+            Console.WriteLine("Executing finally in {0}", s);
+            finallyCounter++;
+        }
+    }
+
+    static bool FilterWithGC()
+    {
+        CreateSomeGarbage();
+        GC.Collect();
+        CreateSomeGarbage();
+        return true;
+    }
 }
+
