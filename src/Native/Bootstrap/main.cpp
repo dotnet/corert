@@ -235,7 +235,9 @@ extern "C" void RhpShutdown();
 
 #if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
 extern "C" int32_t RhpEnableConservativeStackReporting();
-#else
+#endif
+
+#ifndef CPPCODEGEN
 
 extern "C" bool RhpRegisterCoffModule(void * pModule,
     void * pvStartRange, uint32_t cbRange,
@@ -285,7 +287,8 @@ int main(int argc, char* argv[])
 #if defined(CPPCODEGEN) || defined(PLATFORM_UNIX)
     if (!RhpEnableConservativeStackReporting())
         return -1;
-#else
+#endif
+#ifndef CPPCODEGEN
     void *osModule;
 
 #if defined(_WIN32)
