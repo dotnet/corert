@@ -3297,12 +3297,7 @@ namespace Internal.JitInterface
                 default:
                     // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject((IntPtr)target);
-
                     relocTarget = (ISymbolNode)targetObject;
-
-                    if (relocTarget is IFatFunctionPointerNode)
-                        relocDelta = Runtime.FatFunctionPointerConstants.Offset;
-
                     break;
             }
 

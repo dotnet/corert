@@ -109,7 +109,6 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunHelperNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\HelperEntrypoint.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IFatFunctionPointerNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ISymbolNode.cs" />

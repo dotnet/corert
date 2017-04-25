@@ -169,7 +169,6 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IFatFunctionPointerNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />

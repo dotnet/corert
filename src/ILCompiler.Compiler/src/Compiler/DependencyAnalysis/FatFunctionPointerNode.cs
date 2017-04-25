@@ -6,6 +6,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -14,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method body along with the instantiation context the canonical body requires.
     /// Pointers to these structures can be created by e.g. ldftn/ldvirtftn of a method with a canonical body.
     /// </summary>
-    public class FatFunctionPointerNode : ObjectNode, IMethodNode, IFatFunctionPointerNode, ISymbolDefinitionNode
+    public class FatFunctionPointerNode : ObjectNode, IMethodNode, ISymbolDefinitionNode
     {
         private bool _isUnboxingStub;
 
@@ -32,7 +33,10 @@ namespace ILCompiler.DependencyAnalysis
             string prefix = _isUnboxingStub ? "__fatunboxpointer_" : "__fatpointer_";
             sb.Append(prefix).Append(nameMangler.GetMangledMethodName(Method));
         }
-        public int Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => 0;
+        int ISymbolNode.Offset => FatFunctionPointerConstants.Offset;
+
         public override bool IsShareable => true;
 
         public MethodDesc Method { get; }
