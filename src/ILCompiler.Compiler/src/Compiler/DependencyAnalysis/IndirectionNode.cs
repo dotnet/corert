@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a general-purpose pointer indirection to another symbol.
     /// </summary>
-    public class IndirectionNode : ObjectNode, ISymbolNode
+    public class IndirectionNode : ObjectNode, ISymbolDefinitionNode
     {
         private ISymbolNode _indirectedNode;
         private int _offsetDelta;

@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all generic method templates used by the TypeLoader at runtime
     /// </summary>
-    internal sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolNode
+    internal sealed class GenericMethodsTemplateMap : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // Dependencies for this node are tracked by the method code nodes
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Ensure the native layout data has been saved, in order to get valid Vertex offsets for the signature Vertices
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _endSymbol.SetSymbolOffset(streamBytes.Length);
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
 
         public static DependencyList GetTemplateMethodDependencies(NodeFactory factory, MethodDesc method)

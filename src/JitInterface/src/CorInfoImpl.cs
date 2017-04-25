@@ -354,7 +354,7 @@ namespace Internal.JitInterface
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
-                                                       new ISymbolNode[] { _methodCodeNode });
+                                                       new ISymbolDefinitionNode[] { _methodCodeNode });
 
             _methodCodeNode.SetCode(objectData);
 

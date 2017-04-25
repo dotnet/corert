@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method body along with the instantiation context the canonical body requires.
     /// Pointers to these structures can be created by e.g. ldftn/ldvirtftn of a method with a canonical body.
     /// </summary>
-    public class FatFunctionPointerNode : ObjectNode, IMethodNode, IFatFunctionPointerNode
+    public class FatFunctionPointerNode : ObjectNode, IMethodNode, IFatFunctionPointerNode, ISymbolDefinitionNode
     {
         private bool _isUnboxingStub;
 

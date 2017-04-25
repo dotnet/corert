@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Native layout info blob.
     /// </summary>
-    internal sealed class NativeLayoutInfoNode : ObjectNode, ISymbolNode
+    internal sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -84,13 +84,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             // Dependencies of the NativeLayoutInfo node are tracked by the callers that emit data into the native layout writer
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             SaveNativeLayoutInfoWriter(factory);
 
             _endSymbol.SetSymbolOffset(_writerSavedBytes.Length);
 
-            return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
     }
 }

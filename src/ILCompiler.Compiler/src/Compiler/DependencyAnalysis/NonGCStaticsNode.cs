@@ -44,7 +44,9 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__NonGCStaticBase_").Append(nameMangler.GetMangledTypeName(_type)); 
         }
 
-        public int Offset
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset
         {
             get
             {

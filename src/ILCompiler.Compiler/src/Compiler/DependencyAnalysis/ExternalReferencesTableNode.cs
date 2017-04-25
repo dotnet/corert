@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolNode
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ObjectAndOffsetSymbolNode _endSymbol;
         private readonly string _blobName;
@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             _nodeFactory = nodeFactory;
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        public ISymbolDefinitionNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Zero out the dictionary so that we AV if someone tries to insert after we're done.
             _insertedSymbolsDictionary = null;

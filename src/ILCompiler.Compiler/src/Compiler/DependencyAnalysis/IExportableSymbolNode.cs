@@ -8,7 +8,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface IExportableSymbolNode : ISymbolNode
+    public interface IExportableSymbolNode : ISymbolDefinitionNode
     {
         /// <summary>
         /// Set the return value of this property to true to indicate that this symbol
