@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices
             return System.Text.Encoding.UTF8.GetCharCount(multiByteStr, multiByteLen);
         }
 
-        private static unsafe int GetSystemMaxDBCSCharSize()
+        public static unsafe int GetSystemMaxDBCSCharSize()
         {
             return 3;
         }
