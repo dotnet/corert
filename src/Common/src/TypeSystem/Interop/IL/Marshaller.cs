@@ -1514,7 +1514,7 @@ namespace Internal.TypeSystem.Interop
             // We don't support [IN,OUT] together yet, either IN or OUT.
             if (Out && In)
             {
-                throw new NotImplementedException("Marshalling an argument as both in and out not yet implemented");
+                throw new NotSupportedException("Marshalling an argument as both in and out not yet implemented");
             }
 
             var safeHandleType = InteropTypes.GetSafeHandleType(Context);
