@@ -3331,18 +3331,21 @@ namespace Internal.JitInterface
         {
             TargetArchitecture arch = _compilation.TypeSystemContext.Target.Architecture;
 
-            if (arch == TargetArchitecture.X86)
-                return (uint)ImageFileMachine.I386;
-            else if (arch == TargetArchitecture.X64)
-                return (uint)ImageFileMachine.AMD64;
-            else if (arch == TargetArchitecture.ARM)
-                return (uint)ImageFileMachine.ARM;
-            else if (arch == TargetArchitecture.ARMEL)
-                return (uint)ImageFileMachine.ARM;
-            else if (arch == TargetArchitecture.ARM64)
-                return (uint)ImageFileMachine.ARM;
-            else
-                throw new NotImplementedException("Expected target architecture is not supported");
+            switch (arch)
+            {
+                case TargetArchitecture.X86:
+                    return (uint)ImageFileMachine.I386;
+                case TargetArchitecture.X64:
+                    return (uint)ImageFileMachine.AMD64;
+                case TargetArchitecture.ARM:
+                    return (uint)ImageFileMachine.ARM;
+                case TargetArchitecture.ARMEL:
+                    return (uint)ImageFileMachine.ARM;
+                case TargetArchitecture.ARM64:
+                    return (uint)ImageFileMachine.ARM;
+                default:
+                    throw new NotImplementedException("Expected target architecture is not supported");
+            }
         }
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
