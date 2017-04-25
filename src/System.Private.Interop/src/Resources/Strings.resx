@@ -138,9 +138,6 @@
   <data name="Arg_InvalidThreshold" xml:space="preserve">
     <value>maximumThreshold cannot be less than initialThreshold.</value>
   </data>
-  <data name="Arg_MarshalDirectiveException" xml:space="preserve">
-    <value>Marshaling directives are invalid.</value>
-  </data>
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
   </data>
@@ -198,9 +195,6 @@
   <data name="StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
   </data>
-  <data name="WrongSizeArrayInNStruct" xml:space="preserve">
-    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
-  </data>
   <data name="CustomPropertyProvider_DataBindingError" xml:space="preserve">
     <value>Failed to bind to property '{0}'.  {1}</value>
   </data>
@@ -236,9 +230,6 @@
   </data>
   <data name="Arg_InvalidCustomTypeNameValue" xml:space="preserve">
     <value>Invalid custom TypeName value.</value>
-  </data>
-  <data name="Arg_InteropMarshalUnmappableChar" xml:space="preserve">
-    <value>Cannot marshal: Encountered unmappable character.</value>
   </data>
   <data name="Argument_MustHaveLayoutOrBeBlittable" xml:space="preserve">
     <value>The specified structure '{0}' must be blittable or have layout information.</value>
