@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchMapNode : ObjectNode, ISymbolDefinitionNode
     {
         const int IndexNotSet = int.MaxValue;
 

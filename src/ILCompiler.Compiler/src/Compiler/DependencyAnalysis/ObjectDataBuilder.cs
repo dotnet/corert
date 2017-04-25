@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
             _data = new ArrayBuilder<byte>();
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
-            _definedSymbols = new ArrayBuilder<ISymbolNode>();
+            _definedSymbols = new ArrayBuilder<ISymbolDefinitionNode>();
 #if DEBUG
             _numReservations = 0;
             _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         private ArrayBuilder<Relocation> _relocs;
         private ArrayBuilder<byte> _data;
         public int Alignment { get; private set; }
-        private ArrayBuilder<ISymbolNode> _definedSymbols;
+        private ArrayBuilder<ISymbolDefinitionNode> _definedSymbols;
 
 #if DEBUG
         private int _numReservations;
@@ -302,7 +302,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public enum Reservation { }
 
-        public void AddSymbol(ISymbolNode node)
+        public void AddSymbol(ISymbolDefinitionNode node)
         {
             _definedSymbols.Add(node);
         }

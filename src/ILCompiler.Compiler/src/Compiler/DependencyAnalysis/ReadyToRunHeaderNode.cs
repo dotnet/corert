@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ReadyToRunHeaderNode : ObjectNode, ISymbolNode
+    public class ReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {

@@ -6,7 +6,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    interface IMethodCodeNode : IMethodNode
+    interface IMethodCodeNode : IMethodNode, ISymbolDefinitionNode
     {
         void SetCode(ObjectNode.ObjectData data);
         void InitializeFrameInfos(FrameInfo[] frameInfos);

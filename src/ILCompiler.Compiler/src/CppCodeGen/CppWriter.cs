@@ -699,9 +699,9 @@ namespace ILCompiler.CppCodeGen
             int offset = 0;
             CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
 
-            if (node is ISymbolNode)
+            if (node is ISymbolDefinitionNode)
             {
-                offset = (node as ISymbolNode).Offset;
+                offset = (node as ISymbolDefinitionNode).Offset;
                 i = offset;
                 lastByteIndex = offset;
             }

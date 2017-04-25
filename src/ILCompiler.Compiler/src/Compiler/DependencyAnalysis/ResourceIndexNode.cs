@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal class ResourceIndexNode : ObjectNode, ISymbolNode
+    internal class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
     {
         private ResourceDataNode _resourceDataNode;
 
@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ObjectAndOffsetSymbolNode _endSymbol;
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        public ISymbolDefinitionNode EndSymbol => _endSymbol;
 
         public override bool IsShareable => false;
 
@@ -45,14 +45,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node has no relocations.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             byte[] blob = GenerateIndexBlob(factory);
             return new ObjectData(
                 blob,
                 Array.Empty<Relocation>(),
                 1,
-                new ISymbolNode[]
+                new ISymbolDefinitionNode[]
                 {
                     this,
                     EndSymbol

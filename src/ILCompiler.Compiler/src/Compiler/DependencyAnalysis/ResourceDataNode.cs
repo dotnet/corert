@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Resources are simply copied from the inputs and concatenated into this blob.
     /// All format information is provided by <see cref="ResourceIndexNode"/>
     /// </summary>
-    internal class ResourceDataNode : ObjectNode, ISymbolNode
+    internal class ResourceDataNode : ObjectNode, ISymbolDefinitionNode
     {
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolNode EndSymbol => _endSymbol;
+        public ISymbolDefinitionNode EndSymbol => _endSymbol;
 
         public override bool IsShareable => false;
 
@@ -53,14 +53,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node has no relocations.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             
             byte[] blob = GenerateResourceBlob(factory);
             return new ObjectData(
                 blob,
                 Array.Empty<Relocation>(),
                 1,
-                new ISymbolNode[]
+                new ISymbolDefinitionNode[]
                 {
                     this,
                     EndSymbol

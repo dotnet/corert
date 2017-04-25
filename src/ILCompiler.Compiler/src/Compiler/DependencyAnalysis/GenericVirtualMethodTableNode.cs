@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    internal sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolNode
+    internal sealed class GenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Build the GVM table entries from the list of interesting GVMTableEntryNodes
             foreach (var interestingEntry in factory.MetadataManager.GetTypeGVMEntries())
@@ -142,7 +142,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _endSymbol.SetSymbolOffset(streamBytes.Length);
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
     }
 }

@@ -10,7 +10,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class GenericDefinitionEETypeNode : EETypeNode, ISymbolNode
+    internal sealed class GenericDefinitionEETypeNode : EETypeNode
     {
         public GenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {

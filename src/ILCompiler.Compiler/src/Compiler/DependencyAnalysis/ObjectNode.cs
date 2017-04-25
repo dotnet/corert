@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public class ObjectData
         {
-            public ObjectData(byte[] data, Relocation[] relocs, int alignment, ISymbolNode[] definedSymbols)
+            public ObjectData(byte[] data, Relocation[] relocs, int alignment, ISymbolDefinitionNode[] definedSymbols)
             {
                 Data = data;
                 Relocs = relocs;
@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             public readonly Relocation[] Relocs;
             public readonly byte[] Data;
             public readonly int Alignment;
-            public readonly ISymbolNode[] DefinedSymbols;
+            public readonly ISymbolDefinitionNode[] DefinedSymbols;
         }
 
         public virtual bool RepresentsIndirectionCell => false;

@@ -57,13 +57,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataType Type => _type;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return Offset;
-            }
-        }
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
 
         public override bool StaticDependenciesAreComputed
         {

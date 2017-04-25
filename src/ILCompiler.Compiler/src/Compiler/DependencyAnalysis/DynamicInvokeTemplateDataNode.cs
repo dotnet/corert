@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a map between method name / signature and CanonicalEntryPoint for the corresponding invoke stub.
     /// The first entry is the containing type of the invoke stubs.
     /// </summary>
-    internal sealed class DynamicInvokeTemplateDataNode : ObjectNode, ISymbolNode
+    internal sealed class DynamicInvokeTemplateDataNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             Debug.Assert(_dynamicInvokeMethodContainerType != null);
 

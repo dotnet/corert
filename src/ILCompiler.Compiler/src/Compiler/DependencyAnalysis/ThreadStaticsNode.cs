@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents the thread static region of a given type. This is very similar to <see cref="GCStaticsNode"/>,
     /// since the actual storage will be allocated on the GC heap at runtime and is allowed to contain GC pointers.
     /// </summary>
-    public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolNode
+    public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
 
@@ -33,6 +33,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             return nameMangler.CompilationUnitPrefix + "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
         }
+
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
