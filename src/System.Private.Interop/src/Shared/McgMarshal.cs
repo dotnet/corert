@@ -1357,7 +1357,11 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr GetStubForPInvokeDelegate(RuntimeTypeHandle delegateType, Delegate dele)
         {
+#if CORECLR
+             throw new NotSupportedException();
+#else
             return PInvokeMarshal.GetStubForPInvokeDelegate(dele);
+#endif
         }
 
         /// <summary>
@@ -1365,7 +1369,23 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
         {
+#if CORECLR
+            if (pStub == IntPtr.Zero)
+                return null;
+
+            McgPInvokeDelegateData pInvokeDelegateData;
+            if (!McgModuleManager.GetPInvokeDelegateData(delegateType, out pInvokeDelegateData))
+            {
+                return null;
+            }
+
+            return CalliIntrinsics.Call__Delegate(
+                pInvokeDelegateData.ForwardDelegateCreationStub,
+                pStub
+            );
+#else
             return PInvokeMarshal.GetPInvokeDelegateForStub(pStub, delegateType);
+#endif
         }
 
         /// <summary>
@@ -1391,7 +1411,7 @@ namespace System.Runtime.InteropServices
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
 #endif
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
