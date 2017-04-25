@@ -366,4 +366,13 @@
   <data name="DirectUI_Empty" xml:space="preserve">
     <value>Empty.</value>
   </data>
+  <data name="PInvoke_GetProcAddress_NoName" xml:space="preserve">
+    <value>A library name must be specified in a DllImport attribute applied to non-IJW methods.</value>
+  </data>
+  <data name="PInvoke_LoadLib" xml:space="preserve">
+    <value>Unable to load DLL '{0}': {1}</value>
+  </data>
+  <data name="PInvoke_GetProcAddress" xml:space="preserve">
+    <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
+  </data>
 </root>
