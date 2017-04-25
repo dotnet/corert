@@ -83,8 +83,16 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            uint flags = 0,
-                                                            IntPtr usedDefaultChar = IntPtr.Zero)
+                                                            uint flags,
+                                                            IntPtr usedDefaultChar)
+        {
+            return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
+        }
+
+        public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr,
+                                                            int wideCharLen,
+                                                            byte* multiByteStr,
+                                                            int multiByteLen)
         {
             return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
         }
