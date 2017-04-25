@@ -188,13 +188,13 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void StringBuilderToUnicodeString(System.Text.StringBuilder stringBuilder, ushort* destination)
         {
-            stringBuilder.UnsafeCopyTo((char*)destination);
+            PInvokeMarshal.StringBuilderToUnicodeString(stringBuilder, destination);
         }
 
         [CLSCompliant(false)]
         public static unsafe void UnicodeStringToStringBuilder(ushort* newBuffer, System.Text.StringBuilder stringBuilder)
         {
-            stringBuilder.ReplaceBuffer((char*)newBuffer);
+            PInvokeMarshal.UnicodeStringToStringBuilder(newBuffer, stringBuilder);
         }
 
 #if !RHTESTCL
@@ -203,59 +203,13 @@ namespace System.Runtime.InteropServices
         public static unsafe void StringBuilderToAnsiString(System.Text.StringBuilder stringBuilder, byte* pNative,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            int len;
-
-            // Convert StringBuilder to UNICODE string
-
-            // Optimize for the most common case. If there is only a single char[] in the StringBuilder,
-            // get it and convert it to ANSI
-            char[] buffer = stringBuilder.GetBuffer(out len);
-
-            if (buffer != null)
-            {
-                fixed (char* pManaged = buffer)
-                {
-                    StringToAnsiString(pManaged, len, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-            else // Otherwise, convert StringBuilder to string and then convert to ANSI
-            {
-                string str = stringBuilder.ToString();
-
-                // Convert UNICODE string to ANSI string
-                fixed (char* pManaged = str)
-                {
-                    StringToAnsiString(pManaged, str.Length, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
+            PInvokeMarshal.StringBuilderToAnsiString(stringBuilder, pNative, bestFit, throwOnUnmappableChar);
         }
 
         [CLSCompliant(false)]
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
-            if (newBuffer == null)
-                throw new ArgumentNullException(nameof(newBuffer));
-
-            int lenAnsi;
-            int lenUnicode;
-            CalculateStringLength(newBuffer, out lenAnsi, out lenUnicode);
-
-            if (lenUnicode > 0)
-            {
-                char[] buffer = new char[lenUnicode];
-                fixed (char* pTemp = &buffer[0])
-                {
-                    ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(newBuffer),
-                                                               lenAnsi,
-                                                               new System.IntPtr(pTemp),
-                                                               lenUnicode);
-                }
-                stringBuilder.ReplaceBuffer(buffer);
-            }
-            else
-            {
-                stringBuilder.Clear();
-            }
+            PInvokeMarshal.AnsiStringToStringBuilder(newBuffer, stringBuilder);
         }
 
         /// <summary>
@@ -267,31 +221,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe string AnsiStringToString(byte* pchBuffer)
         {
-            if (pchBuffer == null)
-            {
-                return null;
-            }
-
-            int lenAnsi;
-            int lenUnicode;
-            CalculateStringLength(pchBuffer, out lenAnsi, out lenUnicode);
-
-            string result = String.Empty;
-
-            if (lenUnicode > 0)
-            {
-                result = new String(' ', lenUnicode); // TODO: FastAllocate not accessible here
-
-                fixed (char* pTemp = result)
-                {
-                    ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pchBuffer),
-                                                               lenAnsi,
-                                                               new System.IntPtr(pTemp),
-                                                               lenUnicode);
-                }
-            }
-
-            return result;
+            return PInvokeMarshal.AnsiStringToString(pchBuffer);
         }
 
         /// <summary>
@@ -302,17 +232,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
         {
-            if (str != null)
-            {
-                int lenUnicode = str.Length;
-
-                fixed (char* pManaged = str)
-                {
-                    return StringToAnsiString(pManaged, lenUnicode, null, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-
-            return null;
+            return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -328,63 +248,19 @@ namespace System.Runtime.InteropServices
         public static unsafe void ByValWideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, int expectedCharCount,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            // Zero-init pNative if it is NULL
-            if (managedArray == null)
-            {
-                // @TODO - Create a more efficient version of zero initialization
-                for (int i = 0; i < expectedCharCount; i++)
-                {
-                    pNative[i] = 0;
-                }
-            }
-
-            int lenUnicode = managedArray.Length;
-            if (lenUnicode < expectedCharCount)
-                throw new ArgumentException(SR.WrongSizeArrayInNStruct);
-
-            fixed (char* pManaged = managedArray)
-            {
-                StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            }
+            PInvokeMarshal.ByValWideCharArrayToAnsiCharArray(managedArray, pNative, expectedCharCount, bestFit, throwOnUnmappableChar);
         }
 
         [CLSCompliant(false)]
         public static unsafe void ByValAnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
         {
-            // This should never happen because it is a embedded array
-            Debug.Assert(pNative != null);
-
-            // This should never happen because the array is always allocated by the marshaller
-            Debug.Assert(managedArray != null);
-
-            // COMPAT: Use the managed array length as the maximum length of native buffer
-            // This obviously doesn't make sense but desktop CLR does that
-            int lenInBytes = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pNative),
-                                                           lenInBytes,
-                                                           new System.IntPtr(pManaged),
-                                                           lenInBytes);
-            }
+            PInvokeMarshal.ByValAnsiCharArrayToWideCharArray(pNative, managedArray);
         }
 
         [CLSCompliant(false)]
         public static unsafe void WideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, bool bestFit, bool throwOnUnmappableChar)
         {
-            // Do nothing if array is NULL. This matches desktop CLR behavior
-            if (managedArray == null)
-                return;
-
-            // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (pNative == null)
-                throw new ArgumentNullException(nameof(pNative));
-
-            int lenUnicode = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            }
+            PInvokeMarshal.WideCharArrayToAnsiCharArray(managedArray, pNative, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -401,24 +277,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void AnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
         {
-            // Do nothing if native is NULL. This matches desktop CLR behavior
-            if (pNative == null)
-                return;
-
-            // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (managedArray == null)
-                throw new ArgumentNullException(nameof(managedArray));
-
-            // COMPAT: Use the managed array length as the maximum length of native buffer
-            // This obviously doesn't make sense but desktop CLR does that
-            int lenInBytes = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pNative),
-                                                           lenInBytes,
-                                                           new System.IntPtr(pManaged),
-                                                           lenInBytes);
-            }
+            PInvokeMarshal.AnsiCharArrayToWideCharArray(pNative, managedArray);
         }
 
         /// <summary>
@@ -427,11 +286,7 @@ namespace System.Runtime.InteropServices
         /// <param name="managedArray">single UNICODE wide char value</param>
         public static unsafe byte WideCharToAnsiChar(char managedValue, bool bestFit, bool throwOnUnmappableChar)
         {
-            // @TODO - we really shouldn't allocate one-byte arrays and then destroy it
-            byte* nativeArray = StringToAnsiString(&managedValue, 1, null, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            byte native = (*nativeArray);
-            ExternalInterop.CoTaskMemFree(nativeArray);
-            return native;
+            return PInvokeMarshal.WideCharToAnsiChar(managedValue, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -440,9 +295,7 @@ namespace System.Runtime.InteropServices
         /// <param name="nativeValue">Single ANSI byte value.</param>
         public static unsafe char AnsiCharToWideChar(byte nativeValue)
         {
-            char ch;
-            ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(&nativeValue), 1, new System.IntPtr(&ch), 1);
-            return ch;
+            return PInvokeMarshal.AnsiCharToWideChar(nativeValue);
         }
 
         /// <summary>
@@ -455,25 +308,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
-            if (pNative == null)
-                throw new ArgumentNullException(nameof(pNative));
-
-            if (str != null)
-            {
-                // Truncate the string if it is larger than specified by SizeConst
-                int lenUnicode = str.Length;
-                if (lenUnicode >= charCount)
-                    lenUnicode = charCount - 1;
-
-                fixed (char* pManaged = str)
-                {
-                    StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-            else
-            {
-                (*pNative) = (byte)'\0';
-            }
+            PInvokeMarshal.StringToByValAnsiString(str, pNative, charCount, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -485,149 +320,8 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe string ByValAnsiStringToString(byte* pchBuffer, int charCount)
         {
-            // Match desktop CLR behavior
-            if (charCount == 0)
-                throw new MarshalDirectiveException();
-
-            int lenAnsi = GetAnsiStringLen(pchBuffer);
-            int lenUnicode = charCount;
-
-            string result = String.Empty;
-
-            if (lenUnicode > 0)
-            {
-                char* unicodeBuf = stackalloc char[lenUnicode];
-                int unicodeCharWritten = ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pchBuffer),
-                                                                                    lenAnsi,
-                                                                                    new System.IntPtr(unicodeBuf),
-                                                                                    lenUnicode);
-
-                // If conversion failure, return empty string to match desktop CLR behavior
-                if (unicodeCharWritten > 0)
-                    result = new string(unicodeBuf, 0, unicodeCharWritten);
-            }
-
-            return result;
+            return PInvokeMarshal.ByValAnsiStringToString(pchBuffer, charCount);
         }
-
-        private static unsafe int GetAnsiStringLen(byte* pchBuffer)
-        {
-            byte* pchBufferOriginal = pchBuffer;
-            while (*pchBuffer != 0)
-            {
-                pchBuffer++;
-            }
-
-            return (int)(pchBuffer - pchBufferOriginal);
-        }
-
-        // c# string (UTF-16) to UTF-8 encoded byte array
-        private static unsafe byte* StringToAnsiString(char* pManaged, int lenUnicode, byte* pNative, bool terminateWithNull,
-            bool bestFit, bool throwOnUnmappableChar)
-        {
-            bool allAscii = true;
-
-            for (int i = 0; i < lenUnicode; i++)
-            {
-                if (pManaged[i] >= 128)
-                {
-                    allAscii = false;
-                    break;
-                }
-            }
-
-            int length;
-
-            if (allAscii) // If all ASCII, map one UNICODE character to one ANSI char
-            {
-                length = lenUnicode;
-            }
-            else // otherwise, let OS count number of ANSI chars
-            {
-                length = ExternalInterop.GetByteCount(pManaged, lenUnicode);
-            }
-
-            if (pNative == null)
-            {
-                pNative = (byte*)ExternalInterop.CoTaskMemAlloc((System.IntPtr)(length + 1));
-            }
-            if (allAscii) // ASCII conversion
-            {
-                byte* pDst = pNative;
-                char* pSrc = pManaged;
-
-                while (lenUnicode > 0)
-                {
-                    unchecked
-                    {
-                        *pDst++ = (byte)(*pSrc++);
-                        lenUnicode--;
-                    }
-                }
-            }
-            else // Let OS convert
-            {
-                uint flags = (bestFit ? 0 : ExternalInterop.Constants.WC_NO_BEST_FIT_CHARS);
-                int defaultCharUsed = 0;
-                ExternalInterop.ConvertWideCharToMultiByte(pManaged,
-                                                           lenUnicode,
-                                                           new System.IntPtr(pNative),
-                                                           length,
-                                                           flags,
-                                                           throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
-                                                           );
-                if (defaultCharUsed != 0)
-                {
-                    throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
-                }
-            }
-
-            // Zero terminate
-            if (terminateWithNull)
-                *(pNative + length) = 0;
-
-            return pNative;
-        }
-
-        /// <summary>
-        /// This is a auxiliary function that counts the length of the ansi buffer and
-        ///  estimate the length of the buffer in Unicode. It returns true if all bytes
-        ///  in the buffer are ANSII.
-        /// </summary>
-        private static unsafe bool CalculateStringLength(byte* pchBuffer, out int ansiBufferLen, out int unicodeBufferLen)
-        {
-            ansiBufferLen = 0;
-
-            bool allAscii = true;
-
-            {
-                byte* p = pchBuffer;
-                byte b = *p++;
-
-                while (b != 0)
-                {
-                    if (b >= 128)
-                    {
-                        allAscii = false;
-                    }
-
-                    ansiBufferLen++;
-
-                    b = *p++;
-                }
-            }
-
-            if (allAscii)
-            {
-                unicodeBufferLen = ansiBufferLen;
-            }
-            else // If non ASCII, let OS calculate number of characters
-            {
-                unicodeBufferLen = ExternalInterop.GetCharCount(new IntPtr(pchBuffer), ansiBufferLen);
-            }
-            return allAscii;
-        }
-
 #endif
 
 #if ENABLE_WINRT

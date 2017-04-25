@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices
             Interop.mincore.SetLastError(0);
         }
 
-        internal static unsafe IntPtr MemAlloc(IntPtr cb)
+        public static unsafe IntPtr MemAlloc(IntPtr cb)
         {
             return Interop.MemAlloc((UIntPtr)(void*)cb);
         }
@@ -56,12 +56,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static IntPtr CoTaskMemAlloc(UIntPtr bytes)
+        public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.mincore.CoTaskMemAlloc(bytes);
         }
 
-        internal static void CoTaskMemFree(IntPtr allocatedMemory)
+        public static void CoTaskMemFree(IntPtr allocatedMemory)
         {
             if (IsNotWin32Atom(allocatedMemory))
             {
@@ -77,5 +77,80 @@ namespace System.Runtime.InteropServices
             }
             return s.MarshalToBSTR();
         }
+
+        #region String marshalling
+        private const uint WC_NO_BEST_FIT_CHARS = Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
+
+        public static unsafe int ConvertMultiByteToWideChar(byte* buffer, int ansiLength, char* pWChar, int uniLength)
+        {
+            return Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, 0, buffer, ansiLength, pWChar, uniLength);
+        }
+
+        // Convert a UTF16 string to ANSI byte array
+        public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr, int wideCharLen, byte* multiByteStr, int multiByteLen)
+        {
+            return Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
+                                                        0,
+                                                        wideCharStr,
+                                                        wideCharLen,
+                                                        multiByteStr,
+                                                        multiByteLen,
+                                                        default(IntPtr),
+                                                        default(IntPtr)
+                                                        );
+        }
+
+        // Convert a UTF16 string to ANSI byte array using flags
+        public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr,
+                                                            int wideCharLen,
+                                                            byte* multiByteStr,
+                                                            int multiByteLen,
+                                                            uint flags,
+                                                            IntPtr usedDefaultChar)
+        {
+            return Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
+                                                        flags,
+                                                        wideCharStr,
+                                                        wideCharLen,
+                                                        multiByteStr,
+                                                        multiByteLen,
+                                                        default(IntPtr),
+                                                        usedDefaultChar
+                                                        );
+        }
+
+        // Return size in bytes required to convert a UTF16 string to byte array.
+        public static unsafe int GetByteCount(char* wStr, int wideStrLen)
+        {
+            return Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
+                                                        0,
+                                                        wStr,
+                                                        wideStrLen,
+                                                        default(byte*),
+                                                        0,
+                                                        default(IntPtr),
+                                                        default(IntPtr)
+                                                        );
+        }
+
+        // Return number of charaters encoded in native byte array lpMultiByteStr
+        unsafe public static int GetCharCount(byte* multiByteStr, int multiByteLen)
+        {
+            return Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, 0, multiByteStr, multiByteLen, default(char*), 0);
+        }
+
+        public static unsafe int GetSystemMaxDBCSCharSize()
+        {
+            Interop.Kernel32.CPINFO cpInfo;
+            if (Interop.Kernel32.GetCPInfo(Interop.Kernel32.CP_ACP, &cpInfo) != 0)
+            {
+                return cpInfo.MaxCharSize;
+            }
+            else
+            {
+                return 2;
+            }
+        }
+        #endregion
     }
 }

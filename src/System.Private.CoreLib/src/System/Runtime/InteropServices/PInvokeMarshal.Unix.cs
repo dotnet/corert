@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
             return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
         }
 
-        internal static unsafe IntPtr MemAlloc(IntPtr cb)
+        public static unsafe IntPtr MemAlloc(IntPtr cb)
         {
             return Interop.MemAlloc((UIntPtr)(void*)cb);
         }
@@ -49,12 +49,12 @@ namespace System.Runtime.InteropServices
             Interop.MemFree(hglobal);
         }
 
-        internal static IntPtr CoTaskMemAlloc(UIntPtr bytes)
+        public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.MemAlloc(bytes);
         }
 
-        internal static void CoTaskMemFree(IntPtr allocatedMemory)
+        public static void CoTaskMemFree(IntPtr allocatedMemory)
         {
             Interop.MemFree(allocatedMemory);
         }
@@ -67,5 +67,42 @@ namespace System.Runtime.InteropServices
             }
             throw new PlatformNotSupportedException();
         }
+
+        #region String marshalling
+        private const uint WC_NO_BEST_FIT_CHARS = 0;
+
+        public static unsafe int ConvertMultiByteToWideChar(byte* multiByteStr,
+                                                            int multiByteLen,
+                                                            char* wideCharStr,
+                                                            int wideCharLen)
+        {
+            return System.Text.Encoding.UTF8.GetChars(multiByteStr, multiByteLen, wideCharStr, wideCharLen);
+        }
+
+        public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr,
+                                                            int wideCharLen,
+                                                            byte* multiByteStr,
+                                                            int multiByteLen,
+                                                            uint flags = 0,
+                                                            IntPtr usedDefaultChar = IntPtr.Zero)
+        {
+            return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
+        }
+
+        public static unsafe int GetByteCount(char* wideCharStr, int wideCharLen)
+        {
+            return System.Text.Encoding.UTF8.GetByteCount(wideCharStr, wideCharLen);
+        }
+
+        public static unsafe int GetCharCount(byte* multiByteStr, int multiByteLen)
+        {
+            return System.Text.Encoding.UTF8.GetCharCount(multiByteStr, multiByteLen);
+        }
+
+        private static unsafe int GetSystemMaxDBCSCharSize()
+        {
+            return 3;
+        }
+        #endregion
     }
 }
