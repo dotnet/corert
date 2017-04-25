@@ -10,9 +10,11 @@ internal static partial class Interop
 {
     internal static unsafe partial class mincore
     {
+        [McgGeneratedNativeCallCodeAttribute]
         [DllImport("ole32.dll")]
         internal static extern IntPtr CoTaskMemAlloc(UIntPtr bytes);
 
+        [McgGeneratedNativeCallCodeAttribute]
         [DllImport("ole32.dll")]
         internal static extern void CoTaskMemFree(IntPtr allocatedMemory);
     }
