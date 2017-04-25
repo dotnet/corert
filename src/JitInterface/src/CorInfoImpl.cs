@@ -3343,8 +3343,6 @@ namespace Internal.JitInterface
                 return (uint)ImageFileMachine.ARM;
             else
                 throw new NotImplementedException("Expected target architecture is not supported");
-
-            // return 0x8664; // AMD64
         }
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
