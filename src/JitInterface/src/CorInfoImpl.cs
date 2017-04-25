@@ -10,6 +10,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Reflection;
 
 using Internal.TypeSystem;
 
@@ -25,6 +26,14 @@ namespace Internal.JitInterface
         //
         // Global initialization and state
         //
+        private enum ImageFileMachine
+        {
+            I386 = 0x014c,
+            IA64 = 0x0200,
+            AMD64 = 0x8664,
+            ARM = 0x01c4,
+        }
+
         private IntPtr _jit;
 
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
@@ -3321,7 +3330,22 @@ namespace Internal.JitInterface
 
         private uint getExpectedTargetArchitecture()
         {
-            return 0x8664; // AMD64
+            TargetArchitecture arch = _compilation.TypeSystemContext.Target.Architecture;
+
+            if (arch == TargetArchitecture.X86)
+                return (uint)ImageFileMachine.I386;
+            else if (arch == TargetArchitecture.X64)
+                return (uint)ImageFileMachine.AMD64;
+            else if (arch == TargetArchitecture.ARM)
+                return (uint)ImageFileMachine.ARM;
+            else if (arch == TargetArchitecture.ARMEL)
+                return (uint)ImageFileMachine.ARM;
+            else if (arch == TargetArchitecture.ARM64)
+                return (uint)ImageFileMachine.ARM;
+            else
+                throw new NotImplementedException("Expected target architecture is not supported");
+
+            // return 0x8664; // AMD64
         }
 
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
