@@ -298,8 +298,8 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     push_nonvol_reg rbx                         //   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    // save the register bitmask
     push_register   \trashReg                   // Thread * (unused by stackwalker)
-    push_register   rbp                         // save caller's RBP
-    mov             \trashReg, [rsp + 9*8]     // Find the return address
+    push_nonvol_reg rbp                         // save caller's RBP
+    mov             \trashReg, [rsp + 9*8]      // Find the return address
     push_register   \trashReg                   // save m_RIP
     lea             \trashReg, [rsp]            // trashReg == address of frame
 
@@ -308,11 +308,10 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
-    // stack alignment
-    free_stack 8
+    // Adjust for stack alignment and discard RIP
+    free_stack 16
 
-    pop_register r10    // discard RIP
-    pop_register r10    // discarp RBP
+    pop_nonvol_reg rbp  // restore RBP
     pop_register r10    // discard thread
     pop_register r10    // discard bitmask
     pop_nonvol_reg rbx
