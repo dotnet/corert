@@ -251,6 +251,18 @@ bool CoffNativeCodeManager::IsFunclet(MethodInfo * pMethInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
+bool CoffNativeCodeManager::IsFilter(MethodInfo * pMethInfo)
+{
+    CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethInfo;
+
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    uint8_t unwindBlockFlags = *(dac_cast<DPTR(uint8_t)>(pUnwindDataBlob) + unwindDataBlobSize);
+
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER;
+}
+
 PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
                                          REGDISPLAY *   pRegisterSet)
 {
@@ -296,10 +308,16 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         codeOffset - 1 // TODO: Is this adjustment correct?
         );
 
+    ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    if (pNativeMethodInfo->executionAborted)
+        flags = ICodeManagerFlags::ExecutionAborted;
+    if (IsFilter(pMethodInfo))
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
         false /* reportScratchSlots */, 
-        pNativeMethodInfo->executionAborted ? ICodeManagerFlags::ExecutionAborted : 0, // TODO: Flags?
+        flags,
         hCallback->pCallback,
         hCallback
         ))

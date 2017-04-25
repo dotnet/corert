@@ -95,6 +95,14 @@ bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
+bool UnixNativeCodeManager::IsFilter(MethodInfo * pMethodInfo)
+{
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    uint8_t unwindBlockFlags = *(pNativeMethodInfo->pLSDA);
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER;
+}
+
 PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
                                                 REGDISPLAY *   pRegisterSet)
 {
@@ -132,10 +140,16 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         codeOffset - 1 // TODO: Is this adjustment correct?
     );
 
+    ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    if (pNativeMethodInfo->executionAborted)
+        flags = ICodeManagerFlags::ExecutionAborted;
+    if (IsFilter(pMethodInfo))
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
         false /* reportScratchSlots */,
-        pNativeMethodInfo->executionAborted ? ICodeManagerFlags::ExecutionAborted : 0, // TODO: Flags?
+        flags,
         hCallback->pCallback,
         hCallback
         ))
