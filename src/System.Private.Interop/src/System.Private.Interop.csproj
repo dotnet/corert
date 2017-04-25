@@ -125,7 +125,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PreserveSigAttribute.cs" />
