@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a single PInvoke MethodFixupCell as defined in the core library.
     /// </summary>
-    public class PInvokeMethodFixupNode : ObjectNode, ISymbolNode
+    public class PInvokeMethodFixupNode : ObjectNode, ISymbolDefinitionNode
     {
         private string _moduleName;
         private string _entryPointName;

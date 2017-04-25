@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override bool IsShareable => true;
 
+        int ISymbolNode.Offset => 0;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             return new DependencyList
@@ -46,7 +48,10 @@ namespace ILCompiler.DependencyAnalysis
         public abstract bool IsExported(NodeFactory factory);
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
-        public abstract int Offset { get; }
+
+        protected abstract int HeaderSize { get; }
+
+        int ISymbolDefinitionNode.Offset => HeaderSize;
 
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -86,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledTypeName(_owningType));
         }
-        public override int Offset => 0;
+        protected override int HeaderSize => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
@@ -188,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
-        public override int Offset => _owningMethod.Context.Target.PointerSize;
+        protected override int HeaderSize => _owningMethod.Context.Target.PointerSize;
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
@@ -221,7 +226,7 @@ namespace ILCompiler.DependencyAnalysis
             if (builder.TargetPointerSize == 8)
                 builder.EmitInt(0);
 
-            Debug.Assert(builder.CountBytes == Offset);
+            Debug.Assert(builder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
             base.EmitDataInternal(ref builder, factory);
         }

@@ -8,7 +8,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class BlobNode : ObjectNode, ISymbolNode
+    public class BlobNode : ObjectNode, ISymbolDefinitionNode
     {
         private Utf8String _name;
         private ObjectNodeSection _section;
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolNode[] { this });
+            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolDefinitionNode[] { this });
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

@@ -10,7 +10,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    public class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolDefinitionNode
     {
         private ObjectNode _object;
         private int _offset;
@@ -38,7 +38,9 @@ namespace ILCompiler.DependencyAnalysis
                 sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append(_name);
         }
-        public int Offset => _offset;
+
+        int ISymbolNode.Offset => 0;
+        int ISymbolDefinitionNode.Offset => _offset;
         public bool RepresentsIndirectionCell => false;
 
         public void SetSymbolOffset(int offset)

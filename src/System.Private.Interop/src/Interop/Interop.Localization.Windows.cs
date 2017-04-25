@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="errorCode">HRESULT</param>
         /// <returns></returns>
-        internal static unsafe String GetMessage(int errorCode)
+        public static unsafe String GetMessage(int errorCode)
         {
             string errorMsg;
             int bufferSize = 1024;

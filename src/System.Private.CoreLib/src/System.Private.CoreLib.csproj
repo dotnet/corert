@@ -765,6 +765,9 @@
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
+      <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
       <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>

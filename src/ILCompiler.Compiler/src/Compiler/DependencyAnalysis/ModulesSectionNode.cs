@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ModulesSectionNode : ObjectNode, ISymbolNode
+    public class ModulesSectionNode : ObjectNode, ISymbolDefinitionNode
     {
         // Each compilation unit produces one module. When all compilation units are linked
         // together in multifile mode, the runtime needs to get list of modules present

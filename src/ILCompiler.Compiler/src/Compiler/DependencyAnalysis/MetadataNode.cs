@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    internal sealed class MetadataNode : ObjectNode, ISymbolNode
+    internal sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
         ObjectAndOffsetSymbolNode _endSymbol;
 
@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node has no relocations.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
             _endSymbol.SetSymbolOffset(blob.Length);
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
                 blob,
                 Array.Empty<Relocation>(),
                 1,
-                new ISymbolNode[]
+                new ISymbolDefinitionNode[]
                 {
                     this,
                     _endSymbol

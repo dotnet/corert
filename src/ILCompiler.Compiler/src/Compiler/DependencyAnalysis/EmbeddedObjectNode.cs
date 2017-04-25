@@ -21,18 +21,19 @@ namespace ILCompiler.DependencyAnalysis
             _offset = InvalidOffset;
         }
 
-        public virtual int Offset
+        protected int OffsetFromBeginningOfArray
         {
             get
             {
                 Debug.Assert(_offset != InvalidOffset);
                 return _offset;
             }
-            set
-            {
-                Debug.Assert(_offset == InvalidOffset || _offset == value);
-                _offset = value;
-            }
+        }
+
+        internal void InitializeOffsetFromBeginningOfArray(int offset)
+        {
+            Debug.Assert(_offset == InvalidOffset || _offset == offset);
+            _offset = offset;
         }
 
         public virtual bool IsShareable => false;

@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// types. It only fills out enough pieces of the EEType structure so that the GC can operate on it. Runtime should
     /// never see these.
     /// </summary>
-    internal class GCStaticEETypeNode : ObjectNode, ISymbolNode
+    internal class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
         }
 
-        public int Offset
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
@@ -57,6 +57,9 @@ namespace ILCompiler.DependencyAnalysis
                 return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
             }
         }
+
+        int ISymbolNode.Offset => 0;
+
         public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -78,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
                 GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
             }
 
-            Debug.Assert(dataBuilder.CountBytes == Offset);
+            Debug.Assert(dataBuilder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 

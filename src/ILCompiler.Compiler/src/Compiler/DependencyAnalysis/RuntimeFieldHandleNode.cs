@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class RuntimeFieldHandleNode : ObjectNode, ISymbolNode
+    public class RuntimeFieldHandleNode : ObjectNode, ISymbolDefinitionNode
     {
         private FieldDesc _targetField;
 

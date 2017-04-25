@@ -10,7 +10,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class AssemblyStubNode : ObjectNode, ISymbolNode
+    public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode
     {
         public AssemblyStubNode()
         {

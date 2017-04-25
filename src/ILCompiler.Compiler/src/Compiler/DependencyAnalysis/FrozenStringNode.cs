@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FrozenStringNode : EmbeddedObjectNode, ISymbolNode
+    public class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private string _data;
         private int _syncBlockSize;
@@ -27,12 +27,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override int Offset
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
                 // The frozen string symbol points at the EEType portion of the object, skipping over the sync block
-                return base.Offset + _syncBlockSize;
+                return OffsetFromBeginningOfArray + _syncBlockSize;
             }
         }
 

@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticDescNode : EmbeddedObjectNode, ISymbolNode
+    public class GCStaticDescNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
         private GCPointerMap _gcMap;
@@ -46,6 +46,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _gcMap.NumSeries;                
             }
         }
+
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
         
         private GCStaticDescRegionNode Region(NodeFactory factory)
         {
@@ -188,7 +192,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (GCStaticDescNode node in NodesList)
             {
                 if (!relocsOnly)
-                    node.Offset = builder.CountBytes;
+                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
 
                 node.EncodeData(ref builder, factory, relocsOnly);
                 builder.AddSymbol(node);
@@ -217,7 +221,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialPointerAlignment();
 
             builder.AddSymbol(_standaloneGCStaticDesc);
-            _standaloneGCStaticDesc.Offset = 0;
+            _standaloneGCStaticDesc.InitializeOffsetFromBeginningOfArray(0);
             builder.EmitInt(_standaloneGCStaticDesc.NumSeries);
             _standaloneGCStaticDesc.EncodeData(ref builder, factory, relocsOnly);
 

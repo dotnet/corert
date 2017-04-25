@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolNode
+        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
         {
             private int _id;
 
@@ -107,6 +107,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _id = id;
             }
+
+
+            int ISymbolNode.Offset => 0;
+
+            int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
 
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {

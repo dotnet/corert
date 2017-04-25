@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     // The data structure used by the OS loader to load TLS chunks. 
-    public class ThreadStaticsDirectoryNode : ObjectNode, ISymbolNode
+    public class ThreadStaticsDirectoryNode : ObjectNode, ISymbolDefinitionNode
     {
         string _prefix;
         public ThreadStaticsDirectoryNode(string prefix)

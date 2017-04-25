@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<int, DebugLocInfo> _offsetToDebugLoc = new Dictionary<int, DebugLocInfo>();
 
         // Code offset to defined names
-        private Dictionary<int, List<ISymbolNode>> _offsetToDefName = new Dictionary<int, List<ISymbolNode>>();
+        private Dictionary<int, List<ISymbolDefinitionNode>> _offsetToDefName = new Dictionary<int, List<ISymbolDefinitionNode>>();
 
         // Code offset to Cfi blobs
         private Dictionary<int, List<byte[]>> _offsetToCfis = new Dictionary<int, List<byte[]>>();
@@ -629,20 +629,20 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void BuildSymbolDefinitionMap(ObjectNode node, ISymbolNode[] definedSymbols)
+        public void BuildSymbolDefinitionMap(ObjectNode node, ISymbolDefinitionNode[] definedSymbols)
         {
             _offsetToDefName.Clear();
-            foreach (ISymbolNode n in definedSymbols)
+            foreach (ISymbolDefinitionNode n in definedSymbols)
             {
                 if (!_offsetToDefName.ContainsKey(n.Offset))
                 {
-                    _offsetToDefName[n.Offset] = new List<ISymbolNode>();
+                    _offsetToDefName[n.Offset] = new List<ISymbolDefinitionNode>();
                 }
 
                 _offsetToDefName[n.Offset].Add(n);
             }
 
-            var symbolNode = node as ISymbolNode;
+            var symbolNode = node as ISymbolDefinitionNode;
             if (symbolNode != null)
             {
                 _sb.Clear();
@@ -673,7 +673,7 @@ namespace ILCompiler.DependencyAnalysis
             AppendExternCPrefix(_sb);
             target.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-            return EmitSymbolRef(_sb, relocType, delta);
+            return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset));
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -720,7 +720,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitSymbolDefinition(int currentOffset)
         {
-            List<ISymbolNode> nodes;
+            List<ISymbolDefinitionNode> nodes;
             if (_offsetToDefName.TryGetValue(currentOffset, out nodes))
             {
                 foreach (var name in nodes)

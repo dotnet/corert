@@ -28,12 +28,12 @@ namespace ILCompiler.DependencyAnalysis
                 AlignNextObject(ref builder, factory);
 
                 if (!relocsOnly)
-                    node.Offset = builder.CountBytes;
+                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
 
                 node.EncodeData(ref builder, factory, relocsOnly);
-                if (node is ISymbolNode)
+                if (node is ISymbolDefinitionNode)
                 {
-                    builder.AddSymbol((ISymbolNode)node);
+                    builder.AddSymbol((ISymbolDefinitionNode)node);
                 }
             }
 

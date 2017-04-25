@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// to the TypeManager that contains the native layout info blob of interest, and the second item
     /// is an offset into that native layout info blob
     /// </summary>
-    public class NativeLayoutSignatureNode : ObjectNode, ISymbolNode
+    public class NativeLayoutSignatureNode : ObjectNode, ISymbolDefinitionNode
     {
         private TypeSystemEntity _identity;
         private Utf8String _identityPrefix;
@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Ensure native layout is saved to get valid Vertex offsets
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);

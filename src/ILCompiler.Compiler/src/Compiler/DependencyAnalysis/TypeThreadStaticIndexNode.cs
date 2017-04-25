@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node containing information necessary at runtime to locate type's thread static base.
     /// </summary>
-    internal class TypeThreadStaticIndexNode : ObjectNode, ISymbolNode
+    internal class TypeThreadStaticIndexNode : ObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
 
