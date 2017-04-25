@@ -58,7 +58,7 @@
     <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'armel'">
-    <DefineConstants>ARMEL;$(DefineConstants)</DefineConstants>
+    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
