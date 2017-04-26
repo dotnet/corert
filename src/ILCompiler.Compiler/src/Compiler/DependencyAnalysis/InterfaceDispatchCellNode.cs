@@ -68,15 +68,15 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
-            if (!interfaceType.RepresentsIndirectionCell)
+            if (interfaceType.RepresentsIndirectionCell)
             {
                 objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
             }
             else
             {
                 objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
             }
 
             if (objData.TargetPointerSize == 8)
