@@ -373,6 +373,27 @@ DLL_EXPORT int __stdcall VerifyUnicodeStringBuilder(unsigned short *val)
     return 1;
 }
 
+DLL_EXPORT int __stdcall VerifyUnicodeStringBuilderOut(unsigned short *val)
+{
+    if (val == NULL)
+        return 0;
+
+    unsigned short src[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0 };
+    for (int i = 0; i < 12; i++)
+        val[i] = src[i];
+    
+    return 1;
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiStringBuilderOut(char *val)
+{
+    if (val == NULL)
+        return 0;
+
+    CopyAnsiString(val, "Hello World!");
+    return 1;
+}
+
 // returns
 // -1 if val is null
 //  1 if val is "Hello World"

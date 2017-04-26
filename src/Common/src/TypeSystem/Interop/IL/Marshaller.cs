@@ -74,7 +74,7 @@ namespace Internal.TypeSystem.Interop
         public int Index;
         public TypeDesc ManagedType;
         public TypeDesc ManagedParameterType;
-        public PInvokeFlags PinvokeFlags;
+        public PInvokeFlags PInvokeFlags;
         protected Marshaller[] Marshallers;
         private TypeDesc _nativeType;
         private TypeDesc _nativeParamType;
@@ -298,7 +298,7 @@ namespace Internal.TypeSystem.Interop
             marshaller.MarshalAsDescriptor = marshalAs;
             marshaller.Marshallers = marshallers;
             marshaller.Index = index;
-            marshaller.PinvokeFlags = flags;
+            marshaller.PInvokeFlags = flags;
 
             //
             // Desktop ignores [Out] on marshaling scenarios where they don't make sense (such as passing
@@ -969,6 +969,7 @@ namespace Internal.TypeSystem.Interop
                 _elementMarshaller.Context = Context;
                 _elementMarshaller.ManagedType = ManagedElementType;
                 _elementMarshaller.MarshalAsDescriptor = MarshalAsDescriptor;
+                _elementMarshaller.PInvokeFlags = PInvokeFlags;
             }
             _elementMarshaller.In = (direction == MarshalDirection);
             _elementMarshaller.Out = !In;
@@ -1160,6 +1161,12 @@ namespace Internal.TypeSystem.Interop
 
             ILCodeLabel lRangeCheck = emitter.NewCodeLabel();
             ILCodeLabel lLoopHeader = emitter.NewCodeLabel();
+            var lNullArray = emitter.NewCodeLabel();
+            
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullArray);
+
 
             EmitElementCount(codeStream, MarshalDirection.Reverse);
 
@@ -1208,6 +1215,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdLoc(vLength);
             codeStream.Emit(ILOpcode.clt);
             codeStream.Emit(ILOpcode.brtrue, lLoopHeader);
+            codeStream.EmitLabel(lNullArray);
         }
 
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
@@ -1223,6 +1231,13 @@ namespace Internal.TypeSystem.Interop
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             Marshaller elementMarshaller = GetElementMarshaller(MarshalDirection.Forward);
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            var lNullArray = emitter.NewCodeLabel();
+
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // generate cleanup code only if it is necessary
             if (elementMarshaller.CleanupRequired)
@@ -1231,7 +1246,6 @@ namespace Internal.TypeSystem.Interop
                 //     for (index=0; index< array.length; index++)
                 //         Cleanup(array[i]);
                 //
-                ILEmitter emitter = _ilCodeStreams.Emitter;
                 var vIndex = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
                 ILLocalVariable vLength = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
 
@@ -1284,10 +1298,10 @@ namespace Internal.TypeSystem.Interop
             }
 
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+            codeStream.EmitLabel(lNullArray);
         }
-
     }
 
     class BlittableArrayMarshaller : ArrayMarshaller
@@ -1451,9 +1465,18 @@ namespace Internal.TypeSystem.Interop
         {
             if (CleanupRequired)
             {
+                var emitter = _ilCodeStreams.Emitter;
+                var lNullCheck = emitter.NewCodeLabel();
+
+                // Check for null array
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+
                 LoadNativeValue(codeStream);
-                codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                     Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+
+                codeStream.EmitLabel(lNullCheck);
             }
         }
     }
@@ -1481,8 +1504,11 @@ namespace Internal.TypeSystem.Interop
             //
             // ANSI marshalling. Allocate a byte array, copy characters
             //
-            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsi");
+            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiString");
             LoadManagedValue(codeStream);
+
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
 
@@ -1500,9 +1526,18 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
+            var emitter = _ilCodeStreams.Emitter;
+            var lNullCheck = emitter.NewCodeLabel();
+
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+
+            codeStream.EmitLabel(lNullCheck);
         }
 
     }
@@ -1617,10 +1652,10 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void AllocManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            string helperMethodName = _isAnsi ? "StringBuilderToAnsi" : "StringBuilderToUnicode";
+            string helperMethodName = _isAnsi ? "AllocMemoryForAnsiStringBuilder" : "AllocMemoryForUnicodeStringBuilder";
             var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
             LoadManagedValue(codeStream);
 
@@ -1629,21 +1664,37 @@ namespace Internal.TypeSystem.Interop
             StoreNativeValue(codeStream);
         }
 
-        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
-            string helperMethodName = _isAnsi ? "AnsiToStringBuilder" : "UnicodeToStringBuilder";
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            string helperMethodName = _isAnsi ? "StringBuilderToAnsiString" : "StringBuilderToUnicodeString";
             var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
-            LoadNativeValue(codeStream);
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(helper));
-        }
 
+            LoadManagedValue(codeStream);
+            LoadNativeValue(codeStream);
+            if (_isAnsi)
+            {
+                codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+                codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            }
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+        }
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
         {
             codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
                 InteropTypes.GetStringBuilder(Context).GetParameterlessConstructor()));
             StoreManagedValue(codeStream);
         }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            string helperMethodName = _isAnsi ? "AnsiStringToStringBuilder" : "UnicodeStringToStringBuilder";
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", helperMethodName);
+            LoadNativeValue(codeStream);
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(helper));
+        }
+
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
@@ -1776,6 +1827,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitLdc(sizeConst);
             }
         }
+
         protected override void EmitMarshalFieldManagedToNative()
         {
 
@@ -1941,6 +1993,11 @@ namespace Internal.TypeSystem.Interop
 
     abstract class ByValStringMarshaller : ByValArrayMarshaller
     {
+        protected virtual bool IsAnsi
+        {
+            get;    
+        }
+
         protected virtual MethodDesc GetManagedToNativeHelper()
         {
             return null;
@@ -1968,6 +2025,12 @@ namespace Internal.TypeSystem.Interop
 
             EmitElementCount(codeStream, MarshalDirection.Forward);
 
+            if (IsAnsi)
+            {
+                codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+                codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            }
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(GetManagedToNativeHelper()));
         }
 
@@ -1992,19 +2055,35 @@ namespace Internal.TypeSystem.Interop
 
     class ByValAnsiStringMarshaller : ByValStringMarshaller
     {
+        protected override bool IsAnsi
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         protected override MethodDesc GetManagedToNativeHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiFixedArray");
+            return Context.GetHelperEntryPoint("InteropHelpers", "StringToByValAnsiString");
         }
 
         protected override MethodDesc GetNativeToManagedHelper()
         {
-            return Context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToStringFixedArray");
+            return Context.GetHelperEntryPoint("InteropHelpers", "ByValAnsiStringToString");
         }
     }
 
     class ByValUnicodeStringMarshaller : ByValStringMarshaller
     {
+        protected override bool IsAnsi
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         protected override MethodDesc GetManagedToNativeHelper()
         {
             return Context.GetHelperEntryPoint("InteropHelpers", "StringToUnicodeFixedArray");

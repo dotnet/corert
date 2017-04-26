@@ -6,7 +6,6 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-
 using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -16,74 +15,27 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class InteropHelpers
     {
-        private static unsafe byte* CharArrayToAnsi(char* pStr, int stringLength)
+        internal static unsafe byte* StringToAnsiString(String str, bool bestFit, bool throwOnUnmappableChar)
         {
-            // CORERT-TODO: Use same encoding as the rest of the interop
-            var encoding = Encoding.UTF8;
-            int bufferLength = encoding.GetByteCount(pStr, stringLength);
-            byte* buffer = (byte*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(void*)(bufferLength + 1)).ToPointer();
-
-            encoding.GetBytes(pStr, stringLength, buffer, bufferLength);
-            *(buffer + bufferLength) = 0;
-            return buffer;
-        }
-
-        internal static unsafe byte* StringToAnsi(String str)
-        {
-            if (str == null)
-                return null;
-
-            fixed (char* pStr = str)
-            {
-                return CharArrayToAnsi(pStr, str.Length);
-            }
-        }
-        internal static unsafe void StringToAnsiFixedArray(String str, byte* buffer, int length)
-        {
-            if (buffer == null)
-                return;
-
-            Debug.Assert(str.Length >= length);
-
-            var encoding = Encoding.UTF8;
-            fixed (char* pStr = str)
-            {
-                int bufferLength = encoding.GetByteCount(pStr, length);
-                encoding.GetBytes(pStr, length, buffer, bufferLength);
-                *(buffer + bufferLength) = 0;
-            }
+            return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
         }
 
         public static unsafe string AnsiStringToString(byte* buffer)
         {
-            if (buffer == null)
-                return String.Empty;
-
-            int length = strlen(buffer);
-
-            return AnsiStringToStringFixedArray(buffer, length);
-
+            return PInvokeMarshal.AnsiStringToString(buffer);
         }
 
-        public static unsafe string AnsiStringToStringFixedArray(byte* buffer, int length)
+
+        internal static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
-            if (buffer == null)
-                return String.Empty;
+            // In CoreRT charCount = Min(SizeConst, str.Length). So we don't need to truncate again.
+            PInvokeMarshal.StringToByValAnsiString(str, pNative, charCount, bestFit, throwOnUnmappableChar, truncate: false);
+        }
 
-            string result = String.Empty;
 
-            if (length > 0)
-            {
-                result = new String(' ', length);
-
-                fixed (char* pTemp = result)
-                {
-                    int charCount = Encoding.UTF8.GetCharCount(buffer, length);
-                    // TODO: support ansi semantics in windows
-                    Encoding.UTF8.GetChars(buffer, charCount, pTemp, length);
-                }
-            }
-            return result;
+        public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
+        {
+            return PInvokeMarshal.ByValAnsiStringToString(buffer, length);
         }
 
         internal static unsafe void StringToUnicodeFixedArray(String str, UInt16* buffer, int length)
@@ -144,95 +96,56 @@ namespace Internal.Runtime.CompilerHelpers
             return new String(buffer);
         }
 
-        public static unsafe char* StringBuilderToUnicode(StringBuilder sb)
+        public static unsafe byte* AllocMemoryForAnsiStringBuilder(StringBuilder sb)
         {
             if (sb == null)
             {
                 return null;
             }
-
-            char* buffer = (char*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(sizeof(char) * (sb.Capacity + 1))).ToPointer();
-            sb.UnsafeCopyTo(buffer);
-            return buffer;
+            return (byte *)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((sb.Capacity + 2) * PInvokeMarshal.GetSystemMaxDBCSCharSize())));
         }
 
-        public static unsafe void UnicodeToStringBuilder(char* pNative, StringBuilder sb)
-        {
-            if (pNative == null)
-            {
-                sb = null;
-                return;
-            }
-
-            if (sb == null)
-            {
-                sb = new StringBuilder();
-            }
-            sb.ReplaceBuffer(pNative);
-        }
-
-        public static unsafe byte* StringBuilderToAnsi(StringBuilder sb)
+        public static unsafe char* AllocMemoryForUnicodeStringBuilder(StringBuilder sb)
         {
             if (sb == null)
             {
                 return null;
             }
-
-            int len;
-            
-            // Optimize for the most common case. If there is only a single char[] in the StringBuilder,
-            // get it and convert it to ANSI
-            char[] buffer = sb.GetBuffer(out len);
-
-            if (buffer != null)
-            {
-                fixed (char* pManaged = buffer)
-                {
-                    return CharArrayToAnsi(pManaged, len);
-                }
-            }
-            else // Otherwise, convert StringBuilder to string and then convert to ANSI
-            {
-                string str = sb.ToString();
-
-                // Convert UNICODE string to ANSI string
-                fixed (char* pManaged = str)
-                {
-                    return CharArrayToAnsi(pManaged, str.Length);
-                }
-            }
+            return (char *)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((sb.Capacity + 2) * 2)));
         }
 
-        public static unsafe void AnsiToStringBuilder(byte* pNative, StringBuilder sb)
+
+        public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+                return;
+
+            PInvokeMarshal.AnsiStringToStringBuilder(newBuffer, stringBuilder);
+        }
+
+        public static unsafe void UnicodeStringToStringBuilder(ushort* newBuffer, System.Text.StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+                return;
+
+            PInvokeMarshal.UnicodeStringToStringBuilder(newBuffer, stringBuilder);
+        }
+
+        public static unsafe void StringBuilderToAnsiString(System.Text.StringBuilder stringBuilder, byte* pNative,
+            bool bestFit, bool throwOnUnmappableChar)
         {
             if (pNative == null)
-            {
-                sb = null;
                 return;
-            }
 
-            if (sb == null)
-            {
-                sb = new StringBuilder();
-            }
+            PInvokeMarshal.StringBuilderToAnsiString(stringBuilder, pNative, bestFit, throwOnUnmappableChar);
+        }
 
-            int length = strlen(pNative);
-            int charCount = Encoding.UTF8.GetCharCount(pNative, length);
+        public static unsafe void StringBuilderToUnicodeString(System.Text.StringBuilder stringBuilder, ushort* destination)
+        {
+            if (destination == null)
+                return;
 
-            if (charCount > 0)
-            {
-                char[] buffer = new char[charCount];
-                fixed (char* pTemp = &buffer[0])
-                {
-                    // TODO: support ansi semantics in windows
-                    Encoding.UTF8.GetChars(pNative, charCount, pTemp, length);
-                }
-                sb.ReplaceBuffer(buffer);
-            }
-            else
-            {
-                sb.Clear();
-            }
+            PInvokeMarshal.StringBuilderToUnicodeString(stringBuilder, destination);
         }
 
         internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)
