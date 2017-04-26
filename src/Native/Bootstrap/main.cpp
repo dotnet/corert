@@ -231,9 +231,9 @@ extern "C" bool REDHAWK_PALAPI PalInit();
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
 
-extern "C" int32_t RhpEnableConservativeStackReporting();
-
 extern "C" void RhpShutdown();
+
+extern "C" int32_t RhpEnableConservativeStackReporting();
 
 #ifndef CPPCODEGEN
 
@@ -282,8 +282,10 @@ int main(int argc, char* argv[])
     if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
         return -1;
 
+#if defined(CPPCODEGEN)
     if (!RhpEnableConservativeStackReporting())
         return -1;
+#endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
     void *osModule;

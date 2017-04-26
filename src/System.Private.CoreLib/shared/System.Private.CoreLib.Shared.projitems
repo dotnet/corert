@@ -74,6 +74,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DivideByZeroException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\DllNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DuplicateWaitObjectException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\EntryPointNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs"/>
@@ -407,7 +408,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventActivityOptions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSource.cs" />

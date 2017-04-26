@@ -374,6 +374,12 @@ struct NativeSequentialStruct
     char *str;
 };
 
+struct NativeSequentialStruct2
+{
+    float a;
+    int b;
+};
+
 DLL_EXPORT bool __stdcall StructTest(NativeSequentialStruct nss)
 {
     if (nss.s != 100)
@@ -388,6 +394,17 @@ DLL_EXPORT bool __stdcall StructTest(NativeSequentialStruct nss)
 
     if (!CompareAnsiString(nss.str, "Hello"))
         return false;
+
+    return true;
+}
+
+DLL_EXPORT bool __stdcall StructTest_Sequential2(NativeSequentialStruct2 nss)
+{
+    if (nss.a != 10.0)
+        return false;
+
+    if (nss.b != 123)
+       return false;
 
     return true;
 }

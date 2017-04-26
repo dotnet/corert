@@ -452,13 +452,13 @@
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs">
       <Link>TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs</Link>
     </Compile>
-    <Compile Include="TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs">
       <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs</Link>
     </Compile>
-    <Compile Include="TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs">
       <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs">

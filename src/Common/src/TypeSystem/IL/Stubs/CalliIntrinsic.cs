@@ -5,7 +5,6 @@
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace Internal.IL.Stubs
 {

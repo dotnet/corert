@@ -8,7 +8,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -126,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
                 MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (cctorMethod != canonCctorMethod)
-                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod), FatFunctionPointerConstants.Offset);
+                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod));
                 else
                     builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
                 builder.EmitZeroPointer();

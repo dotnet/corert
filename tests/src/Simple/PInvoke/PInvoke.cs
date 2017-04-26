@@ -102,6 +102,9 @@ namespace PInvokeTests
         static extern bool StructTest_Auto(AutoStruct ss);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool StructTest_Sequential2(NesterOfSequentialStruct.SequentialStruct ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest(SequentialStruct ss);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
@@ -404,6 +407,18 @@ namespace PInvokeTests
             public String f3;
         }
 
+        // A second struct with the same name but nested. Regression test against native types being mangled into
+        // the compiler-generated type and losing fully qualified type name information.
+        class NesterOfSequentialStruct
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            public struct SequentialStruct
+            {
+                public float f1;
+                public int f2;
+            }
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         public struct ExplicitStruct
         {
@@ -443,6 +458,12 @@ namespace PInvokeTests
             SequentialStruct ss2 = new SequentialStruct();
             StructTest_ByOut(out ss2);
             ThrowIfNotEquals(true, ss2.f0 == 1 && ss2.f1 == 1.0 &&  ss2.f2 == 1.0 && ss2.f3.Equals("0123456"), "Struct marshalling scenario3 failed.");
+
+            NesterOfSequentialStruct.SequentialStruct ss3 = new NesterOfSequentialStruct.SequentialStruct();
+            ss3.f1 = 10.0f;
+            ss3.f2 = 123;
+
+            ThrowIfNotEquals(true, StructTest_Sequential2(ss3), "Struct marshalling scenario1 failed.");
 
             ExplicitStruct es = new ExplicitStruct();
             es.f1 = 100;

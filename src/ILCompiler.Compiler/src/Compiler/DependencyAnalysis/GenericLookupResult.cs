@@ -12,8 +12,6 @@ using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
-
 namespace ILCompiler.DependencyAnalysis
 {
     public enum GenericLookupResultReferenceType
@@ -475,11 +473,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
             return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
-        }
-
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
-        {
-            builder.EmitPointerReloc(GetTarget(factory, typeInstantiation, methodInstantiation, dictionary), FatFunctionPointerConstants.Offset);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1135,19 +1128,6 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 return factory.MethodEntrypoint(implMethod);
-            }
-        }
-
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
-        {
-            ISymbolNode target = GetTarget(factory, typeInstantiation, methodInstantiation, dictionary);
-            if (target is IFatFunctionPointerNode)
-            {
-                builder.EmitPointerReloc(target, FatFunctionPointerConstants.Offset);
-            }
-            else
-            {
-                builder.EmitPointerReloc(target);
             }
         }
 
