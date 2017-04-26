@@ -3265,6 +3265,9 @@ namespace Internal.JitInterface
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
+            if (PointerSize == 4)
+                return;
+
             // slotNum is not unused
             Debug.Assert(slotNum == 0);
 
