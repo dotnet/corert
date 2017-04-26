@@ -8,6 +8,8 @@ Build your repo by issuing the following command at repo root:
 build[.cmd|.sh] clean [Debug|Release]
 ```
 
+If you're using Visual Studio 2017, you need to run the above command from the "Developer Command Prompt for VS 2017". Visual Studio setup puts a shortcut to this in the Start menu.
+
 This will result in the following:
 
 - Restore nuget packages required for building
