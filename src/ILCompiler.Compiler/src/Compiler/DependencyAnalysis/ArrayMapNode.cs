@@ -6,6 +6,7 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -50,13 +51,12 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var arrayType in factory.MetadataManager.GetArrayTypeMapping())
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
-                if (!arrayType.IsSzArray)
+                if (!type.IsSzArray)
                     continue;
 
-                if (!factory.MetadataManager.TypeGeneratesEEType(arrayType))
-                    continue;
+                var arrayType = (ArrayType)type;
 
                 if (!arrayType.ElementType.IsValueType)
                     continue;

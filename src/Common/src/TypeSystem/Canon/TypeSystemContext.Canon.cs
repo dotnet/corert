@@ -66,7 +66,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Converts the instantiation into a canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
+        /// Converts an instantiation into its canonical form.
+        /// </summary>
+        public Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind)
+        {
+            bool changed;
+            return ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+        }
+
+        /// <summary>
+        /// Converts an instantiation into its canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
         /// parameter indicates whether the returned canonical instantiation is different from the specific instantiation
         /// passed as the input.
         /// </summary>

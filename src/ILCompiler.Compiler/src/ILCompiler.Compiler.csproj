@@ -111,6 +111,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedGenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteUnboxingThunkNode.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
