@@ -110,6 +110,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.MethodImpls.cs">
       <Link>TypeSystem\Common\InstantiatedType.MethodImpls.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\LayoutInt.cs">
+      <Link>TypeSystem\Common\LayoutInt.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.cs">
       <Link>TypeSystem\Common\MetadataType.cs</Link>
     </Compile>
@@ -230,6 +233,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\PrimitiveTypeProvider.cs">
+      <Link>Ecma\PrimitiveTypeProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
     </Compile>
@@ -259,6 +265,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>Interop\MethodDesc.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
+      <Link>TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>
