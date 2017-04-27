@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // movt  reg, [reloc] & 0xFFFF0000
         public void EmitMOV(Register destination, ISymbolNode symbol)
         {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_THUMB_MOV32);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32);
             Builder.EmitShort(unchecked((short)0xf240));
             Builder.EmitShort((short)((byte)destination << 8));
             Builder.EmitShort(unchecked((short)0xf2c0));
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // b symbol
         public void EmitJMP(ISymbolNode symbol)
         {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_THUMB_BRANCH24);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_BRANCH24);
             Builder.EmitByte(0);
             Builder.EmitByte(0xF0);
             Builder.EmitByte(0);
