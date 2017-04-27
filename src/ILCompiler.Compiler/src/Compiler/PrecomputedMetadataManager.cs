@@ -36,7 +36,6 @@ namespace ILCompiler
             public HashSet<MethodDesc> DynamicInvokeCompiledMethods = new HashSet<MethodDesc>();
         }
 
-        private readonly HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
         private readonly ModuleDesc _metadataDescribingModule;
         private readonly HashSet<ModuleDesc> _compilationModules;
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
@@ -50,20 +49,6 @@ namespace ILCompiler
             _loadedMetadata = new Lazy<MetadataLoadedInfo>(LoadMetadata);
             _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
-        }
-
-        protected override void AddGeneratedType(TypeDesc type)
-        {
-            if (type.IsDefType && type.IsTypeDefinition)
-            {
-                var mdType = type as MetadataType;
-                if (mdType != null)
-                {
-                    _typeDefinitionsGenerated.Add(mdType);
-                }
-            }
-
-            base.AddGeneratedType(type);
         }
 
         /// <summary>
@@ -250,8 +235,12 @@ namespace ILCompiler
             }
 
             // Generate type definition mappings
-            foreach (var definition in _typeDefinitionsGenerated)
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
+                MetadataType definition = type.IsTypeDefinition ? type as MetadataType : null;
+                if (definition == null)
+                    continue;
+
                 int token;
                 if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token))
                 {

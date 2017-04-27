@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public static class CodeBasedDependencyAlgorithm
     {
-        public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // TODO: https://github.com/dotnet/corert/issues/3224
             // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
@@ -68,6 +68,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
+        }
+
+        public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            AddDependenciesDueToReflectability(ref dependencies, factory, method);
 
             if (method.HasInstantiation)
             {

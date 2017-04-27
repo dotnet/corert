@@ -37,7 +37,6 @@ namespace ILCompiler
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
 
-        private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
@@ -148,7 +147,6 @@ namespace ILCompiler
             if (eetypeNode != null)
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
-                AddGeneratedType(eetypeNode.Type);
 
                 if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
                 {
@@ -167,17 +165,14 @@ namespace ILCompiler
 
             if (methodNode != null)
             {
-                MethodDesc method = methodNode.Method;
-
-                AddGeneratedMethod(method);
+                _methodsGenerated.Add(methodNode.Method);
                 return;
             }
 
-            var runtimeMethodHandleNode = obj as RuntimeMethodHandleNode;
-            if (runtimeMethodHandleNode != null)
+            var reflectableMethodNode = obj as ReflectableMethodNode;
+            if (reflectableMethodNode != null)
             {
-                AddMetadataOnlyMethod(runtimeMethodHandleNode.Method);
-                return;
+                _methodsGenerated.Add(reflectableMethodNode.Method);
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
@@ -196,19 +191,6 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
-            }
-
-            var virtualMethodUseNode = obj as VirtualMethodUseNode;
-            if (virtualMethodUseNode != null && virtualMethodUseNode.Method.IsAbstract)
-            {
-                AddGeneratedMethod(virtualMethodUseNode.Method);
-                return;
-            }
-
-            var gvmDependenciesNode = obj as GVMDependenciesNode;
-            if(gvmDependenciesNode != null && gvmDependenciesNode.Method.IsAbstract)
-            {
-                AddGeneratedMethod(gvmDependenciesNode.Method);
             }
         }
 
@@ -405,29 +387,6 @@ namespace ILCompiler
             return instantiatedDynamicInvokeMethod;
         }
 
-        protected virtual void AddGeneratedType(TypeDesc type)
-        {
-            Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
-
-            if (type.IsArray)
-            {
-                var arrayType = (ArrayType)type;
-                _arrayTypesGenerated.Add(arrayType);
-            }
-
-            // TODO: track generic types, etc.
-        }
-
-        protected virtual void AddGeneratedMethod(MethodDesc method)
-        {
-            Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
-            _methodsGenerated.Add(method);
-        }
-
-        protected virtual void AddMetadataOnlyMethod(MethodDesc method)
-        {
-        }
-
         private void EnsureMetadataGenerated(NodeFactory factory)
         {
             if (_metadataBlob != null)
@@ -476,11 +435,6 @@ namespace ILCompiler
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
-        }
-
-        internal IEnumerable<ArrayType> GetArrayTypeMapping()
-        {
-            return _arrayTypesGenerated;
         }
 
         internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()

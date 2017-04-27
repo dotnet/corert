@@ -118,6 +118,12 @@ namespace ILCompiler.DependencyAnalysis
                                         factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
                                         "Dictionary dependency"));
                             }
+
+                            // TODO: https://github.com/dotnet/corert/issues/3224 
+                            if (instantiatedTargetMethod.IsAbstract)
+                            {
+                                result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTargetMethod), "Abstract reflectable method"));
+                            }
                         }
                     }
                     break;
@@ -131,6 +137,12 @@ namespace ILCompiler.DependencyAnalysis
                                 new DependencyListEntry(
                                     factory.VirtualMethodUse(instantiatedTarget),
                                     "Dictionary dependency"));
+                        }
+
+                        // TODO: https://github.com/dotnet/corert/issues/3224 
+                        if (instantiatedTarget.IsAbstract)
+                        {
+                            result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTarget), "Abstract reflectable method"));
                         }
                     }
                     break;
