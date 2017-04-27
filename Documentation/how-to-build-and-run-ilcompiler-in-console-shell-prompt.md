@@ -20,7 +20,7 @@ This will result in the following:
 
 * Download latest CLI tools from [https://github.com/dotnet/cli/](https://github.com/dotnet/cli/) and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on. These instructions have been tested with build `1.0.0-rc4-004812`.
 * On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017' or 'VS2015 x64 Native Tools Command Prompt'
-    (This is distinct from the 'Developer Command Prompt for VS2015')
+    (This is distinct from the 'Developer Command Prompt for VS 2017')
 
 You should now be able to use the `dotnet` commands of the CLI tools.
 
@@ -89,18 +89,6 @@ If you are seeing errors such as:
 
 - Make sure to use release build, or pass the extra `/p:AdditionalCppCompilerFlags=/MTd` argument above.
 
-If you are seeing errors such as: 
-
-```
-    LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
-    Linking of intermediate files failed.
-```
-
- - Make sure you run these commands from the 'VS2015 x64 Native Tools Command Prompt' instead of a vanilla command prompt
- - Search for the missing lib files in your SDK, for example under C:\Program Files (x86)\Windows Kits\10\lib. Make sure the path to these libraries is included in the LIB environment variable. It appears VS 2015 RTM developer command prompt does not correctly set the LIB paths for the 10586 Windows SDK. VS 2015 Update 1 resolves that issue, so installing it is another alternative.
-
-For more details see the discussion in issue #606
-
 If you are seeing errors such as:
 
 ```
@@ -108,7 +96,6 @@ libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' confl
 C:\Users\[omitted]\nativetest\bin\Product\Windows_NT.x64.Debug\packaging\publish1\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp1.0\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
 ```
 
-- Make sure you run these commands from the `VS2015 x64 Native Tools Command Prompt` instead of a vanilla command prompt
-- Try running command `"c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64` to force x64 target
+Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2017` instead of a vanilla command prompt
 
 For more details see discussion in issue #2679
