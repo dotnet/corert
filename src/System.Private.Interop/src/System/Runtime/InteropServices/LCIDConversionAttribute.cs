@@ -11,7 +11,7 @@ using System;
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    internal sealed class LCIDConversionAttribute : Attribute
+    public sealed class LCIDConversionAttribute : Attribute
     {
         internal int _val;
         public LCIDConversionAttribute(int lcid)

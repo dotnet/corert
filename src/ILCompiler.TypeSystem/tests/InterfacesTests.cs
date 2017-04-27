@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Linq;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -136,6 +136,56 @@ namespace TypeSystemTests
 
             // Pointer arrays should have the same set of interfaces as System.Array
             Assert.Equal(systemArrayType.RuntimeInterfaces, intPointerArray.RuntimeInterfaces);
+        }
+
+        [Fact]
+        public void TestInterafaceMethodResolution()
+        {
+            MetadataType fooType = _testModule.GetType("InterfaceArrangements", "Foo");
+            MetadataType derivedType = _testModule.GetType("InterfaceArrangements", "DerivedFromFoo");
+            MetadataType superDerivedType = _testModule.GetType("InterfaceArrangements", "SuperDerivedFromFoo");
+
+            MetadataType ifooOfInt = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MetadataType ifooOfString = _testModule.GetType("InterfaceArrangements", "IFoo`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.String));
+
+            MethodDesc ifooOfIntMethod = ifooOfInt.GetMethods().Where(m => m.Name == "IMethod").Single();
+            MethodDesc ifooOfStringMethod = ifooOfString.GetMethods().Where(m => m.Name == "IMethod").Single();
+
+            MethodDesc result;
+
+            // Resolve on type Foo
+            {
+                result = fooType.ResolveInterfaceMethodTarget(ifooOfIntMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, fooType);
+
+                result = fooType.ResolveInterfaceMethodTarget(ifooOfStringMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, fooType);
+            }
+
+            // Resolve on type DerivedFromFoo
+            {
+                result = derivedType.ResolveInterfaceMethodTarget(ifooOfIntMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, fooType);
+
+                result = derivedType.ResolveInterfaceMethodTarget(ifooOfStringMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, derivedType);
+            }
+
+
+            // Resolve on type SuperDerivedFromFoo
+            {
+                result = superDerivedType.ResolveInterfaceMethodTarget(ifooOfIntMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, superDerivedType);
+
+                result = superDerivedType.ResolveInterfaceMethodTarget(ifooOfStringMethod);
+                Assert.NotNull(result);
+                Assert.Equal(result.OwningType, derivedType);
+            }
         }
     }
 }

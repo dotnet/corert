@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
@@ -20,7 +21,8 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of ConstructorInfo.
     //
-    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo
+    [Serializable]
+    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo, ISerializable
     {
         public abstract override MethodAttributes Attributes { get; }
 
@@ -42,6 +44,18 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             // Constructors cannot be generic. Desktop compat dictates that We throw NotSupported rather than returning a 0-length array.
             throw new NotSupportedException();
+        }
+
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         public sealed override ParameterInfo[] GetParameters()
@@ -73,8 +87,6 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker;
@@ -102,15 +114,14 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw;
             }
 
-            return methodInvoker.Invoke(obj, parameters);
+            return methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
         }
 
-        public sealed override int MetadataToken
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
+        public abstract override int MetadataToken 
+        { 
+            get; 
         }
 
         public sealed override Module Module
@@ -118,6 +129,14 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 return DeclaringType.Module;
+            }
+        }
+
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
             }
         }
 
@@ -156,6 +175,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override String ToString();
 
+        public abstract override RuntimeMethodHandle MethodHandle { get; }
+
         protected MethodInvoker MethodInvoker
         {
             get
@@ -167,6 +188,8 @@ namespace System.Reflection.Runtime.MethodInfos
                 return _lazyMethodInvoker;
             }
         }
+
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
 
         protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 

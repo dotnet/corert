@@ -130,6 +130,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return base.GetGenericTypeDefinition();
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override string ToString()
         {
             StringBuilder sb = null;
@@ -194,7 +202,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             ConstantStringValueHandle nameHandle = _typeDefinition.Name;
             string name = nameHandle.GetString(_reader);

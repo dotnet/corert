@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+
+using MethodBase = System.Reflection.MethodBase;
 
 using Internal.Diagnostics;
-using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -70,6 +66,8 @@ namespace System
             }
         }
 
+        public new Type GetType() => base.GetType();
+
         public virtual IDictionary Data
         {
             get
@@ -79,6 +77,16 @@ namespace System
 
                 return _data;
             }
+        }
+
+        // TargetSite is not supported on CoreRT. Because it's likely use is diagnostic logging, returning null (a permitted return value)
+        // seems more useful than throwing a PlatformNotSupportedException here.
+        public MethodBase TargetSite => null;
+
+        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
+        {
+            add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
+            remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
         }
 
         #region Interop Helpers
@@ -175,21 +183,8 @@ namespace System
 
         private string GetClassName()
         {
-            Type thisType = this.GetType();
-            ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
-            if (callbacks != null)
-            {
-                String preferredString = callbacks.GetBetterDiagnosticInfoIfAvailable(thisType.TypeHandle);
-                if (preferredString != null)
-                    return preferredString;
-            }
-
-            // If all else fails, fall back to the classic GetType().ToString() behavior (which will likely
-            // provide an unfriendly-looking string on Project N.)
-            return thisType.ToString();
+            return GetType().ToString();
         }
-
-
 
         // Retrieves the lowest exception (inner most) for the given Exception.
         // This will traverse exceptions using the innerException property.
@@ -411,6 +406,7 @@ namespace System
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
                 // CORERT-TODO: RhpEtwExceptionThrown
+                // https://github.com/dotnet/corert/issues/2457
 #if !CORERT
                 if (isFirstFrame)
                 {
@@ -512,7 +508,7 @@ namespace System
                 int cbBuffer = sizeof(SERIALIZED_EXCEPTION_HEADER) + (nStackTraceElements * IntPtr.Size);
 
                 byte[] buffer = new byte[cbBuffer];
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &buffer[0])
                 {
                     SERIALIZED_EXCEPTION_HEADER* pHeader = (SERIALIZED_EXCEPTION_HEADER*)pBuffer;
                     pHeader->HResult = _HResult;

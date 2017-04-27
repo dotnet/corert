@@ -1,20 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.TypeLoader</AssemblyName>
+    <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
+    <METADATA_TYPE_LOADER>true</METADATA_TYPE_LOADER>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(METADATA_TYPE_LOADER)' != ''">SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;AMD64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(JitSupport)' == 'true'">
+    <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_INTERPRETER;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TYPE_SYSTEM_SINGLE_THREADED;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Setup the right references -->
   <ItemGroup>
@@ -23,17 +42,119 @@
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
-
+    <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
+  <ItemGroup Condition="'$(JitSupport)' == 'true'">
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\SignatureVariable.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.Symbols.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs" />
+    <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\JitSupport.MethodEntrypointStubs.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'" >
+    <Compile Include="System\Reflection\Runtime\General\QHandles.Ecma.cs" />
+    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.Ecma.cs" />
+    <Compile Include="Internal\TypeSystem\EcmaMethod.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\EcmaModule.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\NativeFormatType.Interop.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.Ecma.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\ModuleList.Ecma.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.Ecma.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
+      <Link>Internal\TypeSystem\Ecma\CachingMetadataStringDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
+      <Link>Internal\TypeSystem\Ecma\CustomAttributeTypeProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\PrimitiveTypeProvider.cs">
+      <Link>Internal\TypeSystem\Ecma\PrimitiveTypeProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaGenericParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaMethod.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaSignatureParser.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaSignatureParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Interfaces.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaType.Interfaces.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
+      <Link>Internal\TypeSystem\Ecma\EcmaType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs">
+      <Link>Internal\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\MetadataExtensions.cs">
+      <Link>Internal\TypeSystem\Ecma\MetadataExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\PropertySignature.cs">
+      <Link>Internal\TypeSystem\Common\PropertySignature.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
+      <Link>Internal\TypeSystem\Common\LocalVariableDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\MetadataType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\MethodDesc.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
+      <Link>Internal\TypeSystem\Utilities\CustomAttributeTypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
+      <Link>Internal\TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
+      <Link>Internal\TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
@@ -53,8 +174,14 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>EETypeBuilderHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\UniversalGenericParameterLayout.cs">
+      <Link>UniversalGenericParameterLayout.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
@@ -183,6 +310,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Instantiation.cs">
       <Link>Internal\TypeSystem\Instantiation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\LayoutInt.cs">
+      <Link>Internal\TypeSystem\LayoutInt.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs">
       <Link>Internal\TypeSystem\MetadataFieldLayoutAlgorithm.cs</Link>
     </Compile>
@@ -249,8 +379,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>Internal\TypeSystem\TypeSystemHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
-      <Link>LockFreeReaderHashtable.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
+      <Link>UniversalCanonLayoutAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>LockFreeReaderHashtableOfPointers.cs</Link>
@@ -264,6 +394,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs">
       <Link>Internal\TypeSystem\WellKnownType.cs</Link>
     </Compile>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionParameters.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.cs" />
@@ -271,6 +402,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\CallInterceptor.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ConstrainedCallSupport.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\DebugFuncEval.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\DispatchCellInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
@@ -285,6 +417,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\genericdictionarycell.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LazyVtableResolverThunk.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\McgIntrinsics.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataFixupKind.cs" />
@@ -334,6 +467,7 @@
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\MetadataExtensions.cs">
       <Link>NativeFormat\MetadataExtensions.cs</Link>
     </Compile>

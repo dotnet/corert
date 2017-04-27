@@ -49,6 +49,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         protected sealed override int InternalGetHashCode()
         {
             return GenericParameterHandle.GetHashCode();
@@ -58,7 +66,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         protected MetadataReader Reader { get; }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             if (_genericParameter.Name.IsNull(Reader))
                 return string.Empty;

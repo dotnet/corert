@@ -69,6 +69,15 @@ namespace Internal.Reflection.Execution
             }
         }
 
+        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
+        {
+            unsafe
+            {
+                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeDefinition);
+                return *(TypeDefinitionHandle*)&i;
+            }
+        }
+
         public static int WithoutHandleType(this int constantStringValueHandle)
         {
             unsafe

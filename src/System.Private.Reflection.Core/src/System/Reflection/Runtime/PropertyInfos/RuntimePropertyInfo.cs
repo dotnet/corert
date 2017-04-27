@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
@@ -27,7 +28,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     // The runtime's implementation of PropertyInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ITraceableTypeMember
+    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ISerializable, ITraceableTypeMember
     {
         //
         // propertyHandle - the "tkPropertyDef" that identifies the property.
@@ -120,6 +121,13 @@ namespace System.Reflection.Runtime.PropertyInfos
             return result;
         }
 
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+        }
+
         public sealed override MethodInfo GetMethod
         {
             get
@@ -133,14 +141,16 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: false);
+
         public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazyGetterInvoker == null)
             {
                 if (!CanRead)
@@ -150,7 +160,7 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
             if (index == null)
                 index = Array.Empty<Object>();
-            return _lazyGetterInvoker.Invoke(obj, index);
+            return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
 
         public sealed override Module Module
@@ -215,8 +225,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazySetterInvoker == null)
             {
                 if (!CanWrite)
@@ -238,7 +246,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 }
                 arguments[index.Length] = value;
             }
-            _lazySetterInvoker.Invoke(obj, arguments);
+            _lazySetterInvoker.Invoke(obj, arguments, binder, invokeAttr, culture);
         }
 
         public sealed override String ToString()
@@ -345,7 +353,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         /// <summary>
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>
-        protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
+        protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
 
         protected enum PropertyMethodSemantics
         {

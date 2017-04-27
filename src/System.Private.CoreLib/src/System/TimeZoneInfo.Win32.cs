@@ -368,7 +368,7 @@ namespace System
 
             if (id == null)
             {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
             if (id.Length == 0 || id.Length > c_maxKeyLength || id.Contains("\0"))
             {
@@ -830,7 +830,7 @@ namespace System
             // filePath   = "C:\Windows\System32\tzres.dll"
             // resourceId = -100
             //
-            string[] resources = resource.Split(new char[] { ',' }, StringSplitOptions.None);
+            string[] resources = resource.Split(',');
             if (resources.Length != 2)
             {
                 return String.Empty;
@@ -845,7 +845,7 @@ namespace System
             string system32 = sb.ToString();
 
             // trim the string "@tzres.dll" => "tzres.dll"
-            string tzresDll = resources[0].TrimStart(new char[] { '@' });
+            string tzresDll = resources[0].TrimStart('@');
 
             try
             {
@@ -900,26 +900,24 @@ namespace System
         //
         static unsafe private string TryGetLocalizedNameByNativeResource(string filePath, int resource)
         {
-            fixed (char* file = filePath.ToCharArray())
+            using (SafeLibraryHandle handle =
+                       new SafeLibraryHandle(Interop.mincore.LoadLibraryEx(filePath, IntPtr.Zero, Interop.mincore.LOAD_LIBRARY_AS_DATAFILE)))
             {
-                using (SafeLibraryHandle handle =
-                           new SafeLibraryHandle(Interop.mincore.LoadLibraryEx(file, IntPtr.Zero, Interop.mincore.LOAD_LIBRARY_AS_DATAFILE)))
+                if (!handle.IsInvalid)
                 {
-                    if (!handle.IsInvalid)
+                    StringBuilder localizedResource = StringBuilderCache.Acquire(Interop.mincore.LOAD_STRING_MAX_LENGTH);
+                    localizedResource.Length = Interop.mincore.LOAD_STRING_MAX_LENGTH;
+
+                    int result = Interop.mincore.LoadString(handle, resource,
+                                     localizedResource, localizedResource.Length);
+
+                    if (result != 0)
                     {
-                        StringBuilder localizedResource = StringBuilderCache.Acquire(Interop.mincore.LOAD_STRING_MAX_LENGTH);
-                        localizedResource.Length = Interop.mincore.LOAD_STRING_MAX_LENGTH;
-
-                        int result = Interop.mincore.LoadString(handle, resource,
-                                         localizedResource, localizedResource.Length);
-
-                        if (result != 0)
-                        {
-                            return StringBuilderCache.GetStringAndRelease(localizedResource);
-                        }
+                        return StringBuilderCache.GetStringAndRelease(localizedResource);
                     }
                 }
             }
+
             return String.Empty;
         }
 

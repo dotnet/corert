@@ -25,18 +25,27 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, roots, new NameMangler(false), logger)
+            : base(dependencyGraph, nodeFactory, roots, logger)
         {
             _jitConfigProvider = configProvider;
         }
 
-        protected override void CompileInternal(string outputFile)
+        protected override bool GenerateDebugInfo
+        {
+            get
+            {
+                return _jitConfigProvider.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+            }
+        }
+
+        protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory);
+            NodeFactory.SetMarkingComplete();
+            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
@@ -48,8 +57,8 @@ namespace ILCompiler
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
-                    var dependencyMethod = (ShadowConcreteMethodNode<MethodCodeNode>)dependency;
-                    methodCodeNodeNeedingCode = dependencyMethod.CanonicalMethodNode;
+                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
+                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
                 }
 
                 // We might have already compiled this method.

@@ -588,7 +588,64 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
 PTR_VOID Module::GetMethodStartAddress(MethodInfo * pMethodInfo)
 {
     EEMethodInfo * pInfo = GetEEMethodInfo(pMethodInfo);
-    return pInfo->GetCode();
+    PTR_VOID pvStartAddress = pInfo->GetCode();
+#ifndef DACCESS_COMPILE
+    // this may be the start of the cold section of a method -
+    // we really want to obtain the start of the hot section instead
+
+    // obtain the mapping information - if there is none, return what we have
+    ColdToHotMapping *pColdToHotMapping = (ColdToHotMapping *)m_pModuleHeader->GetColdToHotMappingInfo();
+    if (pColdToHotMapping == nullptr)
+        return pvStartAddress;
+
+    // this start address better be in this module
+    ASSERT(ContainsCodeAddress(pvStartAddress));
+
+    PTR_UInt8 pbStartAddress = dac_cast<PTR_UInt8>(pvStartAddress);
+
+    UInt32 uMethodSize;
+    UInt32 uMethodIndex;
+    UInt32 uMethodStartSectionOffset;
+
+    // repeat the lookup of the method index - this is a bit inefficient, but probably
+    // better than burdening the EEMethodInfo with storing the rarely required index
+    PTR_UInt8 pbTextSectionStart = m_pModuleHeader->RegionPtr[ModuleHeader::TEXT_REGION];
+    UInt32 uTextSectionOffset = (UInt32)(pbStartAddress - pbTextSectionStart);
+    m_MethodList.GetMethodInfo(uTextSectionOffset, &uMethodIndex, &uMethodStartSectionOffset, &uMethodSize);
+
+    // we should have got the start of this body already, whether hot or cold
+    ASSERT(uMethodStartSectionOffset == uTextSectionOffset);
+
+    UInt32 uSubSectionCount = pColdToHotMapping->subSectionCount;
+    SubSectionDesc *pSubSection = (SubSectionDesc *)pColdToHotMapping->subSection;
+    UInt32 *pHotRVA = (UInt32 *)(pSubSection + uSubSectionCount);
+
+    // iterate over the subsections, trying to find the correct range
+    for (UInt32 uSubSectionIndex = 0; uSubSectionIndex < uSubSectionCount; uSubSectionIndex++)
+    {
+        // is the method index in the hot range? If so, we are done
+        if (uMethodIndex < pSubSection->hotMethodCount)
+            return pvStartAddress;
+        uMethodIndex -= pSubSection->hotMethodCount;
+        
+        // is the method index in the cold range?
+        if (uMethodIndex < pSubSection->coldMethodCount)
+        {
+            UInt32 hotRVA = pHotRVA[uMethodIndex];
+            pvStartAddress = GetBaseAddress() + hotRVA;
+
+            // this start address better be in this module
+            ASSERT(ContainsCodeAddress(pvStartAddress));
+
+            return pvStartAddress;
+        }
+        uMethodIndex -= pSubSection->coldMethodCount;
+        pHotRVA += pSubSection->coldMethodCount;
+        pSubSection += 1;
+    }
+    ASSERT_UNCONDITIONALLY("MethodIndex not found");
+#endif // DACCESS_COMPILE
+    return pvStartAddress;
 }
 
 static PTR_VOID GetFuncletSafePointForIncomingLiveReferences(Module * pModule, EEMethodInfo * pInfo, UInt32 funcletStart)
@@ -760,6 +817,9 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
         break;
     case ClasslibFunctionId::UnhandledExceptionHandler:
         pMethod = m_pModuleHeader->Get_UnhandledExceptionHandler();
+        break;
+    case ClasslibFunctionId::CheckStaticClassConstruction:
+        pMethod = m_pModuleHeader->Get_CheckStaticClassConstruction();
         break;
     }
 

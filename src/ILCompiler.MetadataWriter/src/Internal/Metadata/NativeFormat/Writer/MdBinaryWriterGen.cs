@@ -46,20 +46,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, string[] values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Length);
-            foreach (string value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, byte[] values)
         {
             if (values == null)
@@ -531,6 +517,28 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantDoubleValue value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ConstantEnumArray record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, List<ConstantEnumArray> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count);
+            foreach (ConstantEnumArray value in values)
             {
                 writer.Write(value);
             }

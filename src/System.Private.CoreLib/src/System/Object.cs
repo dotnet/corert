@@ -57,6 +57,7 @@ namespace System
         // CONTRACT with runtime: This method's virtual slot number is hardcoded in the binder and the runtime.
         // **** Do not add any virtual methods in this class ahead of this ****
         [NonVersionable]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~Object()
         {
         }

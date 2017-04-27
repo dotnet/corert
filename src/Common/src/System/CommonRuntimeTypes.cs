@@ -35,6 +35,7 @@ namespace System
         internal static Type DateTime { get { return s_datetime; } }
         internal static Type Nullable { get { return s_nullable; } }
         internal static Type Void { get { return s_void; } }
+        internal static Type MulticastDelegate { get { return s_multicastDelegate; } }
 
         private static Type s_object = typeof(Object);
         private static Type s_valuetype = typeof(ValueType);
@@ -61,5 +62,6 @@ namespace System
         private static Type s_datetime = typeof(DateTime);
         private static Type s_nullable = typeof(Nullable<>);
         private static Type s_void = typeof(void);
+        private static Type s_multicastDelegate = typeof(MulticastDelegate);
     }
 }

@@ -18,12 +18,6 @@ namespace System.Globalization
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
-        internal CompareInfo(CultureInfo culture)
-        {
-            _name = culture.m_name;
-            InitSort(culture);
-        }
-
         private void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
@@ -159,30 +153,46 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            int index;
+
             if (target.Length == 0)
             {
+                if(matchLengthPtr != null)
+                    *matchLengthPtr = 0;
                 return startIndex;
             }
 
             if (options == CompareOptions.Ordinal)
             {
-                return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+                index = IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+                if(index != -1)
+                {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                }
+                return index;
             }
-
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
-                return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+                index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+                if(index != -1)
+                {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                }
+                return index;
             }
-
+#endif
             fixed (char* pSource = source)
             {
-                int index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options);
+                index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
 
                 return index != -1 ? index + startIndex : -1;
             }
@@ -204,10 +214,12 @@ namespace System.Globalization
                 return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
             }
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
+#endif
 
             // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
             // of the start of the string that is count characters away from startIndex.
@@ -227,10 +239,12 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && prefix.IsFastSort())
             {
                 return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
             }
+#endif
 
             return Interop.GlobalizationInterop.StartsWith(_sortHandle, prefix, prefix.Length, source, source.Length, options);
         }
@@ -241,10 +255,12 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && suffix.IsFastSort())
             {
                 return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
             }
+#endif
 
             return Interop.GlobalizationInterop.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
@@ -256,13 +272,13 @@ namespace System.Globalization
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), nameof(options));
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
             
             byte [] keyData;
             if (source.Length == 0)
             { 
-                keyData = EmptyArray<Byte>.Value;
+                keyData = Array.Empty<Byte>();
             }
             else
             {
@@ -341,16 +357,42 @@ namespace System.Globalization
 
             byte[] sortKey = new byte[sortKeyLength];
 
-            fixed(byte* pSortKey = sortKey)
+            fixed (byte* pSortKey = &sortKey[0])
             {
                 Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
                 return InternalHashSortKey(pSortKey, sortKeyLength, false, additionalEntropy);
             }
         }
 
-        [DllImport(JitHelpers.QCall)]
-        [SuppressUnmanagedCodeSecurity]
-        private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength, [MarshalAs(UnmanagedType.Bool)] bool forceRandomizedHashing, long additionalEntropy);
+        private static unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength, bool forceRandomizedHashing, long additionalEntropy)
+        {
+            if (forceRandomizedHashing || additionalEntropy != 0)
+            {
+                // TODO: Random hashing is yet to be done
+                // Active Issue: https://github.com/dotnet/corert/issues/2588
+                throw new NotImplementedException();
+            }
+            else
+            {
+                int hash1 = 5381;
+                int hash2 = hash1;
+                if (sortKeyLength == 0)
+                {
+                    return 0;
+                }
+                if (sortKeyLength == 1)
+                {
+                    return (((hash1 << 5) + hash1) ^ sortKey[0]) + (hash2 * 1566083941);
+                }
+
+                for (int i = 0; i < (sortKeyLength & ~1); i += 2) 
+                {
+                    hash1 = ((hash1 << 5) + hash1) ^ sortKey[i];
+                    hash2 = ((hash2 << 5) + hash2) ^ sortKey[i+1];
+                }
+                return hash1 + (hash2 * 1566083941);
+            }
+        }
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
         {

@@ -26,15 +26,7 @@
         PROLOG_NOP mov r2, r0       ;; save exception code into r2
         PROLOG_NOP mov r0, sp       ;; get SP of fault site
 
-        PROLOG_NOP add lr, r1, #2   ;; 'faulting IP' += 2, we do this because everywhere else we treat the 
-                                    ;; faulting IP as a return-address and optionally subtract one when doing 
-                                    ;; EH-related things (but not subtracting 2 when doing GC-related things).
-                                    ;; The fault IP here will be the start of the faulting instruction, so +2 
-                                    ;; will point to either the next instruction or the middle of this 
-                                    ;; instruction.  Either way, when the dispatch / stackwalk code deals with
-                                    ;; this address it'll apply a -2 for EH range checks and the GC-related 
-                                    ;; operations don't need to be precise here because the fault location 
-                                    ;; isn't a GC safe point 
+        PROLOG_NOP mov lr, r1       ;; set IP of fault site
 
         ;; Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_NOP vpush {d8-d15}

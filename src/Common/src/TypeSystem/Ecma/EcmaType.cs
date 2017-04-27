@@ -9,7 +9,6 @@ using System.Reflection.Metadata;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.Ecma
@@ -195,15 +194,6 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                // TODO: Do we really want to get the instantiation to figure out whether the type is generic?
-                if (this.HasInstantiation)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 TypeDesc baseType = this.BaseType;
@@ -313,10 +303,36 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetMethods())
             {
                 var methodDefinition = metadataReader.GetMethodDefinition(handle);
-                if ((methodDefinition.Attributes & MethodAttributes.SpecialName) != 0 &&
+                if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
                     MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            if (IsAbstract)
+                return null;
+
+            MetadataReader metadataReader = this.MetadataReader;
+            MetadataStringComparer stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                var methodDefinition = metadataReader.GetMethodDefinition(handle);
+                MethodAttributes attributes = methodDefinition.Attributes;
+                if (attributes.IsRuntimeSpecialName() && attributes.IsPublic()
+                    && stringComparer.Equals(methodDefinition.Name, ".ctor"))
+                {
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    if (method.Signature.Length != 0)
+                        continue;
+
                     return method;
                 }
             }
@@ -467,11 +483,10 @@ namespace Internal.TypeSystem.Ecma
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), fieldDefinition.GetOffset());
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }
@@ -480,6 +495,40 @@ namespace Internal.TypeSystem.Ecma
                 result.Offsets = null;
 
             return result;
+        }
+
+        public override MarshalAsDescriptor[] GetFieldMarshalAsDescriptors()
+        {
+            var fieldDefinitionHandles = _typeDefinition.GetFields();
+
+            MarshalAsDescriptor[] marshalAsDescriptors = new MarshalAsDescriptor[fieldDefinitionHandles.Count];
+            int index = 0;
+            foreach (var handle in fieldDefinitionHandles)
+            {
+                var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
+
+                if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
+                    continue;
+
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(fieldDefinition);
+                marshalAsDescriptors[index++] = marshalAsDescriptor;
+            }
+
+            return marshalAsDescriptors;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(FieldDefinition fieldDefinition)
+        {
+            if ((fieldDefinition.Attributes & FieldAttributes.HasFieldMarshal) == FieldAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(fieldDefinition.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(EcmaModule, marshalAsReader);
+                MarshalAsDescriptor marshalAs =  parser.ParseMarshalAsDescriptor();
+                Debug.Assert(marshalAs != null);
+                return marshalAs;
+            }
+            return null;
         }
 
         public override bool IsExplicitLayout
@@ -511,6 +560,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.Abstract) != 0;
             }
         }
 

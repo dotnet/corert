@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -10,7 +11,7 @@ using System.Threading;
 namespace System.Runtime.CompilerServices
 {
     #region ConditionalWeakTable
-    public sealed class ConditionalWeakTable<TKey, TValue>
+    public sealed class ConditionalWeakTable<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class
     {
@@ -125,6 +126,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        //--------------------------------------------------------------------------------------------
+        // Clear all the key/value pairs
+        //--------------------------------------------------------------------------------------------
+        public void Clear()
+        {
+            using (LockHolder.Hold(_lock))
+            {
+                // To clear, we would prefer to simply drop the existing container
+                // and replace it with an empty one, as that's overall more efficient.
+                // However, if there are any active enumerators, we don't want to do
+                // that as it will end up removing all of the existing entries and
+                // allowing new items to be added at the same indices when the container
+                // is filled and replaced, and one of the guarantees we try to make with
+                // enumeration is that new items added after enumeration starts won't be
+                // included in the enumeration. As such, if there are active enumerators,
+                // we simply use the container's removal functionality to remove all of the
+                // keys; then when the table is resized, if there are still active enumerators,
+                // these empty slots will be maintained.
+                if (_activeEnumeratorRefCount > 0)
+                {
+                    _container.RemoveAllKeys();
+                }
+                else
+                {
+                    _container = new Container(this);
+                }
+            }
+        }
 
         //--------------------------------------------------------------------------------------------
         // key:                 key of the value to find. Cannot be null.
@@ -202,6 +231,148 @@ namespace System.Runtime.CompilerServices
 
         public delegate TValue CreateValueCallback(TKey key);
 
+        //--------------------------------------------------------------------------------------------
+        // Gets an enumerator for the table.  The returned enumerator will not extend the lifetime of
+        // any object pairs in the table, other than the one that's Current.  It will not return entries
+        // that have already been collected, nor will it return entries added after the enumerator was
+        // retrieved.  It may not return all entries that were present when the enumerat was retrieved,
+        // however, such as not returning entries that were collected or removed after the enumerator
+        // was retrieved but before they were enumerated.
+        //--------------------------------------------------------------------------------------------
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
+        {
+            using (LockHolder.Hold(_lock))
+            {
+                Container c = _container;
+                return c == null || c.FirstFreeEntry == 0 ?
+                    ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
+                    new Enumerator(this);
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
+
+        /// <summary>Provides an enumerator for the table.</summary>
+        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        {
+            // The enumerator would ideally hold a reference to the Container and the end index within that
+            // container.  However, the safety of the CWT depends on the only reference to the Container being
+            // from the CWT itself; the Container then employs a two-phase finalization scheme, where the first
+            // phase nulls out that parent CWT's reference, guaranteeing that the second time it's finalized there
+            // can be no other existing references to it in use that would allow for concurrent usage of the
+            // native handles with finalization.  We would break that if we allowed this Enumerator to hold a
+            // reference to the Container.  Instead, the Enumerator holds a reference to the CWT rather than to
+            // the Container, and it maintains the CWT._activeEnumeratorRefCount field to track whether there
+            // are outstanding enumerators that have yet to be disposed/finalized.  If there aren't any, the CWT
+            // behaves as it normally does.  If there are, certain operations are affected, in particular resizes.
+            // Normally when the CWT is resized, it enumerates the contents of the table looking for indices that
+            // contain entries which have been collected or removed, and it frees those up, effectively moving
+            // down all subsequent entries in the container (not in the existing container, but in a replacement).
+            // This, however, would cause the enumerator's understanding of indices to break.  So, as long as
+            // there is any outstanding enumerator, no compaction is performed.
+
+            private ConditionalWeakTable<TKey, TValue> _table; // parent table, set to null when disposed
+            private readonly int _maxIndexInclusive;           // last index in the container that should be enumerated
+            private int _currentIndex = -1;                    // the current index into the container
+            private KeyValuePair<TKey, TValue> _current;       // the current entry set by MoveNext and returned from Current
+
+            public Enumerator(ConditionalWeakTable<TKey, TValue> table)
+            {
+                Debug.Assert(table != null, "Must provide a valid table");
+                Debug.Assert(table._lock.IsAcquired, "Must hold the _lock lock to construct the enumerator");
+                Debug.Assert(table._container != null, "Should not be used on a finalized table");
+                Debug.Assert(table._container.FirstFreeEntry > 0, "Should have returned an empty enumerator instead");
+
+                // Store a reference to the parent table and increase its active enumerator count.
+                _table = table;
+                Debug.Assert(table._activeEnumeratorRefCount >= 0, "Should never have a negative ref count before incrementing");
+                table._activeEnumeratorRefCount++;
+
+                // Store the max index to be enumerated.
+                _maxIndexInclusive = table._container.FirstFreeEntry - 1;
+                _currentIndex = -1;
+            }
+
+            ~Enumerator() { Dispose(); }
+
+            public void Dispose()
+            {
+                // Use an interlocked operation to ensure that only one thread can get access to
+                // the _table for disposal and thus only decrement the ref count once.
+                ConditionalWeakTable<TKey, TValue> table = Interlocked.Exchange(ref _table, null);
+                if (table != null)
+                {
+                    // Ensure we don't keep the last current alive unnecessarily
+                    _current = default(KeyValuePair<TKey, TValue>);
+
+                    // Decrement the ref count that was incremented when constructed
+                    using (LockHolder.Hold(table._lock))
+                    {
+                        table._activeEnumeratorRefCount--;
+                        Debug.Assert(table._activeEnumeratorRefCount >= 0, "Should never have a negative ref count after decrementing");
+                    }
+
+                    // Finalization is purely to decrement the ref count.  We can suppress it now.
+                    GC.SuppressFinalize(this);
+                }
+            }
+
+            public bool MoveNext()
+            {
+                // Start by getting the current table.  If it's already been disposed, it will be null.
+                ConditionalWeakTable<TKey, TValue> table = _table;
+                if (table != null)
+                {
+                    // Once have the table, we need to lock to synchronize with other operations on
+                    // the table, like adding.
+                    using (LockHolder.Hold(table._lock))
+                    {
+                        // From the table, we have to get the current container.  This could have changed
+                        // since we grabbed the enumerator, but the index-to-pair mapping should not have
+                        // due to there being at least one active enumerator.  If the table (or rather its
+                        // container at the time) has already been finalized, this will be null.
+                        Container c = table._container;
+                        if (c != null)
+                        {
+                            // We have the container.  Find the next entry to return, if there is one.
+                            // We need to loop as we may try to get an entry that's already been removed
+                            // or collected, in which case we try again.
+                            while (_currentIndex < _maxIndexInclusive)
+                            {
+                                _currentIndex++;
+                                TKey key;
+                                TValue value;
+                                if (c.TryGetEntry(_currentIndex, out key, out value))
+                                {
+                                    _current = new KeyValuePair<TKey, TValue>(key, value);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Nothing more to enumerate.
+                return false;
+            }
+
+            public KeyValuePair<TKey, TValue> Current
+            {
+                get
+                {
+                    if (_currentIndex < 0)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                    }
+                    return _current;
+                }
+            }
+
+            object IEnumerator.Current => Current;
+
+            public void Reset() { }
+        }
+
         #endregion
 
         #region internal members
@@ -251,16 +422,36 @@ namespace System.Runtime.CompilerServices
         }
 
         //--------------------------------------------------------------------------------------------
-        // Clear all the key/value pairs
+        // key: key to get or add. May not be null.
+        // value: value to associate with key.
+        //
+        // If the key is already entered into the dictionary, this method will return associated value 
+        // otherwise it will add a new entry to the dictionary
         //--------------------------------------------------------------------------------------------
-        internal void Clear()
+        internal TValue GetOrAdd(TKey key, TValue value)
         {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             using (LockHolder.Hold(_lock))
             {
-                _container = new Container(this);
+                object prevValue;
+                int entryIndex = _container.FindEntry(key, out prevValue);
+
+                // if we found a key we should just return the associated value, otherwise we should create a new entry.
+                if (entryIndex != -1)
+                {
+                    return Unsafe.As<TValue>(prevValue);
+                }
+                else
+                {
+                    CreateEntry(key, value);
+                    return value;
+                }
             }
         }
-
         #endregion
 
         #region Private Members
@@ -337,7 +528,7 @@ namespace System.Runtime.CompilerServices
         // more capacity, we create a new Container, copy the old one into the new one, and discard the old one.  This helps enable lock-free
         // reads from the table, as readers never need to deal with motion of entries due to rehashing.
         //
-        private class Container
+        private sealed class Container
         {
             internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
@@ -374,6 +565,8 @@ namespace System.Runtime.CompilerServices
                     return _firstFreeEntry < _entries.Length;
                 }
             }
+
+            internal int FirstFreeEntry => _firstFreeEntry;
 
             //----------------------------------------------------------------------------------------
             // Worker for adding a new key/value pair.
@@ -442,6 +635,44 @@ namespace System.Runtime.CompilerServices
                 return -1;
             }
 
+            //----------------------------------------------------------------------------------------
+            // Gets the entry at the specified entry index.
+            //----------------------------------------------------------------------------------------
+            internal bool TryGetEntry(int index, out TKey key, out TValue value)
+            {
+                if (index < _entries.Length)
+                {
+                    object oValue;
+                    object oKey = _entries[index].depHnd.GetPrimaryAndSecondary(out oValue);
+                    GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
+
+                    if (oKey != null)
+                    {
+                        key = Unsafe.As<TKey>(oKey);
+                        value = Unsafe.As<TValue>(oValue);
+                        return true;
+                    }
+                }
+
+                key = default(TKey);
+                value = default(TValue);
+                return false;
+            }
+
+            //----------------------------------------------------------------------------------------
+            // Removes all of the keys in the table.
+            //----------------------------------------------------------------------------------------
+            internal void RemoveAllKeys()
+            {
+                for (int i = 0; i < _firstFreeEntry; i++)
+                {
+                    RemoveIndex(i);
+                }
+            }
+
+            //----------------------------------------------------------------------------------------
+            // Removes the specified key from the table, if it exists.
+            //----------------------------------------------------------------------------------------
             internal bool Remove(TKey key)
             {
                 VerifyIntegrity();
@@ -450,21 +681,28 @@ namespace System.Runtime.CompilerServices
                 int entryIndex = FindEntry(key, out value);
                 if (entryIndex != -1)
                 {
-                    ref Entry entry = ref _entries[entryIndex];
-
-                    //
-                    // We do not free the handle here, as we may be racing with readers who already saw the hash code.
-                    // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
-                    // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
-                    //
-                    Volatile.Write(ref entry.hashCode, -1);
-
-                    // Also, clear the key to allow GC to collect objects pointed to by the entry 
-                    entry.depHnd.SetPrimary(null);
-
+                    RemoveIndex(entryIndex);
                     return true;
                 }
+
                 return false;
+            }
+
+            private void RemoveIndex(int entryIndex)
+            {
+                Debug.Assert(entryIndex >= 0 && entryIndex < _firstFreeEntry);
+
+                ref Entry entry = ref _entries[entryIndex];
+
+                //
+                // We do not free the handle here, as we may be racing with readers who already saw the hash code.
+                // Instead, we simply overwrite the entry's hash code, so subsequent reads will ignore it.
+                // The handle will be free'd in Container's finalizer, after the table is resized or discarded.
+                //
+                Volatile.Write(ref entry.hashCode, -1);
+
+                // Also, clear the key to allow GC to collect objects pointed to by the entry
+                entry.depHnd.SetPrimary(null);
             }
 
             internal void UpdateValue(int entryIndex, TValue newValue)
@@ -490,25 +728,33 @@ namespace System.Runtime.CompilerServices
             //----------------------------------------------------------------------------------------
             internal Container Resize()
             {
-                // Start by assuming we won't resize.
+                Debug.Assert(!HasCapacity);
+
+                bool hasExpiredEntries = false;
                 int newSize = _buckets.Length;
 
-                // If any expired or removed keys exist, we won't resize.
-                bool hasExpiredEntries = false;
-                for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
+                if (_parent == null || _parent._activeEnumeratorRefCount == 0)
                 {
-                    if (_entries[entriesIndex].hashCode == -1)
+                    // If any expired or removed keys exist, we won't resize.
+                    // If there any active enumerators, though, we don't want
+                    // to compact and thus have no expired entries.
+                    for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                     {
-                        // the entry was removed
-                        hasExpiredEntries = true;
-                        break;
-                    }
+                        ref Entry entry = ref _entries[entriesIndex];
 
-                    if (_entries[entriesIndex].depHnd.IsAllocated && _entries[entriesIndex].depHnd.GetPrimary() == null)
-                    {
-                        // the entry has expired
-                        hasExpiredEntries = true;
-                        break;
+                        if (entry.hashCode == -1)
+                        {
+                            // the entry was removed
+                            hasExpiredEntries = true;
+                            break;
+                        }
+
+                        if (entry.depHnd.IsAllocated && entry.depHnd.GetPrimary() == null)
+                        {
+                            // the entry has expired
+                            hasExpiredEntries = true;
+                            break;
+                        }
                     }
                 }
 
@@ -523,40 +769,69 @@ namespace System.Runtime.CompilerServices
 
             internal Container Resize(int newSize)
             {
+                Debug.Assert(newSize >= _buckets.Length);
                 Debug.Assert(IsPowerOfTwo(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.
                 int[] newBuckets = new int[newSize];
-                for (int bucketIndex = 0; bucketIndex < newSize; bucketIndex++)
+                for (int bucketIndex = 0; bucketIndex < newBuckets.Length; bucketIndex++)
                 {
                     newBuckets[bucketIndex] = -1;
                 }
                 Entry[] newEntries = new Entry[newSize];
                 int newEntriesIndex = 0;
+                bool activeEnumerators = _parent != null && _parent._activeEnumeratorRefCount > 0;
 
                 // Migrate existing entries to the new table.
-                for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
+                if (activeEnumerators)
                 {
-                    int hashCode = _entries[entriesIndex].hashCode;
-                    DependentHandle depHnd = _entries[entriesIndex].depHnd;
-                    if (hashCode != -1 && depHnd.IsAllocated)
+                    // There's at least one active enumerator, which means we don't want to
+                    // remove any expired/removed entries, in order to not affect existing
+                    // entries indices.  Copy over the entries while rebuilding the buckets list,
+                    // as the buckets are dependent on the buckets list length, which is changing.
+                    for (; newEntriesIndex < _entries.Length; newEntriesIndex++)
                     {
-                        if (depHnd.GetPrimary() != null)
+                        ref Entry oldEntry = ref _entries[newEntriesIndex];
+                        ref Entry newEntry = ref newEntries[newEntriesIndex];
+                        int hashCode = oldEntry.hashCode;
+
+                        newEntry.hashCode = hashCode;
+                        newEntry.depHnd = oldEntry.depHnd;
+                        int bucket = hashCode & (newBuckets.Length - 1);
+                        newEntry.next = newBuckets[bucket];
+                        newBuckets[bucket] = newEntriesIndex;
+                    }
+                }
+                else
+                {
+                    // There are no active enumerators, which means we want to compact by
+                    // removing expired/removed entries.
+                    for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
+                    {
+                        ref Entry oldEntry = ref _entries[entriesIndex];
+                        int hashCode = oldEntry.hashCode;
+                        DependentHandle depHnd = oldEntry.depHnd;
+                        if (hashCode != -1 && depHnd.IsAllocated)
                         {
-                            // Entry is used and has not expired. Link it into the appropriate bucket list.
-                            newEntries[newEntriesIndex].hashCode = hashCode;
-                            newEntries[newEntriesIndex].depHnd = depHnd;
-                            int bucket = hashCode & (newBuckets.Length - 1);
-                            newEntries[newEntriesIndex].next = newBuckets[bucket];
-                            newBuckets[bucket] = newEntriesIndex;
-                            newEntriesIndex++;
-                        }
-                        else
-                        {
-                            // Pretend the item was removed, so that this container's finalizer
-                            // will clean up this dependent handle.
-                            Volatile.Write(ref _entries[entriesIndex].hashCode, -1);
+                            if (depHnd.GetPrimary() != null)
+                            {
+                                ref Entry newEntry = ref newEntries[newEntriesIndex];
+
+                                // Entry is used and has not expired. Link it into the appropriate bucket list.
+                                newEntry.hashCode = hashCode;
+                                newEntry.depHnd = depHnd;
+                                int bucket = hashCode & (newBuckets.Length - 1);
+                                newEntry.next = newBuckets[bucket];
+                                newBuckets[bucket] = newEntriesIndex;
+                                newEntriesIndex++;
+                            }
+                            else
+                            {
+                                // Pretend the item was removed, so that this container's finalizer
+                                // will clean up this dependent handle.
+                                Volatile.Write(ref oldEntry.hashCode, -1);
+                            }
                         }
                     }
                 }
@@ -566,6 +841,14 @@ namespace System.Runtime.CompilerServices
                 // while the old container may still be in use.  As such, we store a reference from the old container
                 // to the new one, which will keep the new container alive as long as the old one is.
                 var newContainer = new Container(_parent, newBuckets, newEntries, newEntriesIndex);
+                if (activeEnumerators)
+                {
+                    // If there are active enumerators, both the old container and the new container may be storing
+                    // the same entries with -1 hash codes, which the finalizer will clean up even if the container
+                    // is not the active container for the table.  To prevent that, we want to stop the old container
+                    // from being finalized, as it no longer has any responsibility for any cleanup.
+                    GC.SuppressFinalize(this);
+                }
                 _oldKeepAlive = newContainer; // once this is set, the old container's finalizer will not free transferred dependent handles
 
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
@@ -741,6 +1024,7 @@ namespace System.Runtime.CompilerServices
 
         private volatile Container _container;
         private readonly Lock _lock;            // This lock protects all mutation of data in the table.  Readers do not take this lock.
+        private int _activeEnumeratorRefCount;  // The number of outstanding enumerators on the table
 
         private const int InitialCapacity = 8;  // Must be a power of two
         #endregion

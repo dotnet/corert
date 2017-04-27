@@ -55,7 +55,7 @@ namespace Internal.Reflection.Execution
             if (pertainant is MethodBase)
             {
                 MethodBase methodBase = (MethodBase)pertainant;
-                resourceName = (methodBase.IsGenericMethod && !methodBase.IsGenericMethodDefinition) ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
+                resourceName = methodBase.IsConstructedGenericMethod ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
                 if (methodBase is ConstructorInfo)
                 {
                     TypeInfo declaringTypeInfo = methodBase.DeclaringType.GetTypeInfo();

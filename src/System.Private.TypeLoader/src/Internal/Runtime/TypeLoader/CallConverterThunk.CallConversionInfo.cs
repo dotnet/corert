@@ -177,22 +177,18 @@ namespace Internal.Runtime.TypeLoader
 
                 TypeSystemContext context = TypeSystemContextFactory.Create();
                 {
-                    NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-
-                    nativeLayoutContext._moduleHandle = _methodSignature.ModuleHandle;
-                    nativeLayoutContext._typeSystemContext = context;
-                    nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
-                    nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
+                    Instantiation typeInstantiation = Instantiation.Empty;
+                    Instantiation methodInstantiation = Instantiation.Empty;
 
                     if (_typeArgs != null && _typeArgs.Length > 0)
-                        nativeLayoutContext._typeArgumentHandles = context.ResolveRuntimeTypeHandles(_typeArgs);
+                        typeInstantiation = context.ResolveRuntimeTypeHandles(_typeArgs);
                     if (_methodArgs != null && _methodArgs.Length > 0)
-                        nativeLayoutContext._methodArgumentHandles = context.ResolveRuntimeTypeHandles(_methodArgs);
+                        methodInstantiation = context.ResolveRuntimeTypeHandles(_methodArgs);
 
                     bool hasThis;
                     TypeDesc[] parameters;
                     bool[] paramsByRefForced;
-                    if (!TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature(context, _methodSignature, nativeLayoutContext, out hasThis, out parameters, out paramsByRefForced))
+                    if (!TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature(context, _methodSignature, typeInstantiation, methodInstantiation, out hasThis, out parameters, out paramsByRefForced))
                     {
                         Debug.Assert(false);
                         Environment.FailFast("Failed to get type handles for parameters in method signature");

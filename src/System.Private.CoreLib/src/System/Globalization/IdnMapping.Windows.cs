@@ -30,7 +30,7 @@ namespace System.Globalization
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = output)
+                fixed (char* pOutput = &output[0])
                 {
                     return GetAsciiCore(unicode, count, flags, pOutput, length);
                 }
@@ -69,7 +69,7 @@ namespace System.Globalization
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = output)
+                fixed (char* pOutput = &output[0])
                 {
                     return GetUnicodeCore(ascii, count, flags, pOutput, length);
                 }

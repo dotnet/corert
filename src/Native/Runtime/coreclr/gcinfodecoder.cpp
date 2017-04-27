@@ -283,7 +283,7 @@ GcInfoDecoder::GcInfoDecoder(
 
     if (hasReversePInvokeFrame)
     {
-        m_ReversePInvokeFrameStackSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
+        m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
     }
     else
     {
@@ -1476,26 +1476,31 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
 
+#ifdef FEATURE_REDHAWK
+    PTR_UIntNative *ppReg = &pRD->pR0;
+    if (regNum > 12) regNum--; // rsp is skipped in Redhawk RegDisplay
+    return (OBJECTREF*)*(ppReg + regNum);
+#else
     DWORD **ppReg;
 
     if(regNum <= 3)
     {
-        ppReg = &pRD->volatileCurrContextPointers.R0;
+        ppReg = &pRD->pR0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else if(regNum == 12)
     {
-        return (OBJECTREF*) pRD->volatileCurrContextPointers.R12;
+        return (OBJECTREF*) pRD->pR12;
     }
     else if(regNum == 14)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Lr;
+        return (OBJECTREF*) pRD->pLR;
     }
 
-    ppReg = &pRD->pCurrentContextPointers->R4;
+    ppReg = &pRD->pR4;
 	
     return (OBJECTREF*)*(ppReg + regNum-4);
-
+#endif
 }
 
 #ifdef FEATURE_PAL

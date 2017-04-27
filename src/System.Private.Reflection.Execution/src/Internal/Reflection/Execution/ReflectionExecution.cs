@@ -35,15 +35,14 @@ using global::Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Execution
 {
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.ReflectionExecution)]
     public static class ReflectionExecution
     {
         /// <summary>
-        /// This eager constructor initializes runtime reflection support. As part of ExecutionEnvironmentImplementation
+        /// Eager initialization of runtime reflection support. As part of ExecutionEnvironmentImplementation
         /// initialization it enumerates the modules and registers the ones containing EmbeddedMetadata reflection blobs
         /// in its _moduleToMetadataReader map.
         /// </summary>
-        static ReflectionExecution()
+        internal static void Initialize()
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             ExecutionEnvironmentImplementation executionEnvironment = new ExecutionEnvironmentImplementation();
@@ -62,6 +61,10 @@ namespace Internal.Reflection.Execution
                 };
 
             ExecutionEnvironment = executionEnvironment;
+
+#if SUPPORT_JIT
+            Internal.Runtime.TypeLoader.MethodExecutionStrategy.GlobalExecutionStrategy = new Internal.Runtime.JitSupport.RyuJitExecutionStrategy();
+#endif
         }
 
         //
@@ -85,7 +88,7 @@ namespace Internal.Reflection.Execution
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
-        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; }
+        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
 
         internal static IList<string> DefaultAssemblyNamesForGetType;
     }

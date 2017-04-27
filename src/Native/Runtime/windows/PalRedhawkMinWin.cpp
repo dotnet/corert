@@ -192,21 +192,17 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 
 extern "C" int __stdcall PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
-HRESULT STDMETHODCALLTYPE AllocateThunksFromTemplate(
-    _In_ HANDLE hTemplateModule,
-    DWORD templateRva,
-    SIZE_T templateSize,
-    __RPC__out_ecount(templateSize) /* [retval][out] */ PVOID * newThunksOut)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
     return E_NOTIMPL;
 #else
-    bool success = false;
+    BOOL success = FALSE;
     HANDLE hMap = NULL, hFile = INVALID_HANDLE_VALUE;
 
     const WCHAR * wszModuleFileName = NULL;
     if (PalGetModuleFileName(&wszModuleFileName, hTemplateModule) == 0 || wszModuleFileName == NULL)
-        return E_FAIL;
+        return FALSE;
 
     hFile = CreateFileW(wszModuleFileName, GENERIC_READ | GENERIC_EXECUTE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
@@ -223,13 +219,29 @@ cleanup:
     CloseHandle(hMap);
     CloseHandle(hFile);
 
-    RETURN_RESULT(success);
+    return success;
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
 {
-    return (AllocateThunksFromTemplate(hTemplateModule, templateRva, templateSize, newThunksOut) == S_OK);
+#ifdef XBOX_ONE
+    return TRUE;
+#else 
+    return UnmapViewOfFile(pBaseAddress);
+#endif    
+}
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+    void *virtualAddress, 
+    int thunkSize,
+    int thunksPerBlock,
+    int thunkBlockSize,
+    int thunkBlocksPerMapping)
+{
+    // For CoreRT we are using RWX pages so there is no need for this API for now.
+    // Once we have a scenario for non-RWX pages we should be able to put the implementation here
+    return TRUE;
 }
 
 REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
@@ -432,6 +444,14 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
+}
+
+REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+{
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    DWORD dwBytesWritten;
+    WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)strlen(message), &dwBytesWritten, NULL);
 }
 
 //
@@ -1482,7 +1502,7 @@ void GCToOSInterface::YieldThread(uint32_t /*switchCount*/)
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
 {
     DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
     return ::VirtualAlloc(0, size, memFlags, PAGE_READWRITE);

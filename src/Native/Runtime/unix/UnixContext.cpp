@@ -207,12 +207,12 @@ static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unw
     // initialized by unw_init_local(), which are not updated by
     // unw_set_reg().
 
-#define ASSIGN_REG(regIndex, regName) \
-    unwContext->regs[regIndex] = regDisplay->regName2;
+#define ASSIGN_REG(regIndex, regName)                           \
+    unwContext->data[regIndex] = (regDisplay->regName);
 
 #define ASSIGN_REG_PTR(regIndex, regName) \
-    if (regDisplay->p##regName2 != NULL) \
-        unwContext->regs[regIndex] = *(regDisplay->p##regName2);
+    if (regDisplay->p##regName != NULL) \
+        unwContext->data[regIndex] = *(regDisplay->p##regName);
 
     ASSIGN_REG_PTR(4, R4);
     ASSIGN_REG_PTR(5, R5);

@@ -5,18 +5,17 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// SpinLock.cs
 // A spin lock is a mutual exclusion lock primitive where a thread trying to acquire the lock waits in a loop ("spins")
 // repeatedly checking until the lock becomes available. As the thread remains active performing a non-useful task,
 // the use of such a lock is a kind of busy waiting and consumes CPU resources without performing real work. 
-//
-
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
+using Internal.Runtime.Augments;
 using Internal.Threading.Tracing;
 
 namespace System.Threading
@@ -104,7 +103,7 @@ namespace System.Threading
         // The waiters count is calculated by m_owner & WAITERS_MASK 01111....110
         private static int MAXIMUM_WAITERS = WAITERS_MASK;
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int CompareExchange(ref int location, int value, int comparand, ref bool success)
         {
             int result = Interlocked.CompareExchange(ref location, value, comparand);
@@ -130,7 +129,6 @@ namespace System.Threading
                 Debug.Assert(!IsThreadOwnerTrackingEnabled, "property should be false by now");
             }
         }
-
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.SpinLock"/>
@@ -189,7 +187,22 @@ namespace System.Threading
         /// </exception>
         public void TryEnter(ref bool lockTaken)
         {
-            TryEnter(0, ref lockTaken);
+            int observedOwner = m_owner;
+            if (((observedOwner & LOCK_ID_DISABLE_MASK) == 0) | lockTaken)
+            {
+                // Thread tracking enabled or invalid arg. Take slow path.
+                ContinueTryEnter(0, ref lockTaken);
+            }
+            else if ((observedOwner & LOCK_ANONYMOUS_OWNED) != 0)
+            {
+                // Lock already held by someone
+                lockTaken = false;
+            }
+            else
+            {
+                // Lock wasn't held; try to acquire it.
+                CompareExchange(ref m_owner, observedOwner | LOCK_ANONYMOUS_OWNED, observedOwner, ref lockTaken);
+            }
         }
 
         /// <summary>
@@ -286,7 +299,6 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
-
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout != 0)
             {
@@ -323,10 +335,15 @@ namespace System.Threading
             observedOwner = m_owner;
             if ((observedOwner & LOCK_ANONYMOUS_OWNED) == LOCK_UNOWNED)
             {
-                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner
-                     || millisecondsTimeout == 0)
+                if (CompareExchange(ref m_owner, observedOwner | 1, observedOwner, ref lockTaken) == observedOwner)
                 {
-                    // Aquired lock, or did not aquire lock as owned but timeout is 0 so fail fast
+                    // Aquired lock
+                    return;
+                }
+
+                if (millisecondsTimeout == 0)
+                {
+                    // Did not aquire lock in CompareExchange and timeout is 0 so fail fast
                     return;
                 }
             }
@@ -349,7 +366,7 @@ namespace System.Threading
                 int processFactor = 1;
                 for (int i = 1; i <= turn * SPINNING_FACTOR; i++)
                 {
-                    SpinWait.Spin((turn + i) * SPINNING_FACTOR * processFactor);
+                    RuntimeThread.SpinWait((turn + i) * SPINNING_FACTOR * processFactor);
                     if (processFactor < processorCount)
                         processFactor++;
                     observedOwner = m_owner;
@@ -396,15 +413,15 @@ namespace System.Threading
 
                 if (yieldsoFar % SLEEP_ONE_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if (yieldsoFar % SLEEP_ZERO_FREQUENCY == 0)
                 {
-                    Interop.mincore.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
-                    SpinWait.Yield();
+                    RuntimeThread.Yield();
                 }
 
                 if (yieldsoFar % TIMEOUT_CHECK_FREQUENCY == 0)
@@ -496,7 +513,6 @@ namespace System.Threading
         /// <exception cref="SynchronizationLockException">
         /// Thread ownership tracking is enabled, and the current thread is not the owner of this lock.
         /// </exception>
-        //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void Exit()
         {
             //This is the fast path for the thread tracking is disabled, otherwise go to the slow path
@@ -522,15 +538,14 @@ namespace System.Threading
         /// <exception cref="SynchronizationLockException">
         /// Thread ownership tracking is enabled, and the current thread is not the owner of this lock.
         /// </exception>
-        //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void Exit(bool useMemoryBarrier)
         {
             // This is the fast path for the thread tracking is diabled and not to use memory barrier, otherwise go to the slow path
             // The reason not to add else statement if the usememorybarrier is that it will add more barnching in the code and will prevent
-            // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true
-            if ((m_owner & LOCK_ID_DISABLE_MASK) != 0 && !useMemoryBarrier)
+            // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true.
+            int tmpOwner = m_owner;
+            if ((tmpOwner & LOCK_ID_DISABLE_MASK) != 0 & !useMemoryBarrier)
             {
-                int tmpOwner = m_owner;
                 m_owner = tmpOwner & (~LOCK_ANONYMOUS_OWNED);
             }
             else
@@ -577,7 +592,6 @@ namespace System.Threading
         /// </summary>
         public bool IsHeld
         {
-            //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get
             {
                 if (IsThreadOwnerTrackingEnabled)
@@ -603,7 +617,6 @@ namespace System.Threading
         /// </exception>
         public bool IsHeldByCurrentThread
         {
-            //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get
             {
                 if (!IsThreadOwnerTrackingEnabled)
@@ -617,7 +630,6 @@ namespace System.Threading
         /// <summary>Gets whether thread ownership tracking is enabled for this instance.</summary>
         public bool IsThreadOwnerTrackingEnabled
         {
-            //[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get { return (m_owner & LOCK_ID_DISABLE_MASK) == 0; }
         }
 

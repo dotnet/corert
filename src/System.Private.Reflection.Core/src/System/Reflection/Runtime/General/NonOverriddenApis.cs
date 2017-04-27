@@ -11,7 +11,7 @@
 // but since it doesn't, we'll make do with this instead.
 //
 // In DEBUG builds, we'll add a base-delegating override so that it's clear we made an explicit decision
-// to accept the base class's implemention. In RELEASE builds, we'll #if'd these out to avoid the extra metadata and runtime
+// to accept the base class's implementation. In RELEASE builds, we'll #if'd these out to avoid the extra metadata and runtime
 // cost. That way, every overridable member is accounted for (i.e. the codebase should always be kept in a state
 // where hitting "override" + SPACE never brings up additional suggestions in Intellisense.)
 //
@@ -32,10 +32,13 @@ namespace System.Reflection.Runtime.Assemblies
     internal partial class RuntimeAssembly
     {
 #if DEBUG
+        public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) => base.CreateInstance(typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes);
         public sealed override Type GetType(string name) => base.GetType(name);
         public sealed override Type GetType(string name, bool throwOnError) => base.GetType(name, throwOnError);
         public sealed override bool IsDynamic => base.IsDynamic;
         public sealed override string ToString() => base.ToString();
+        public sealed override string EscapedCodeBase => base.EscapedCodeBase;
+        public sealed override FileStream[] GetFiles() => base.GetFiles();
 #endif //DEBUG
     }
 }

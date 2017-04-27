@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            protected override string GetName() => $"Embedded pointer to {Target.GetMangledName()}";
+            protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
             protected override void OnMarked(NodeFactory factory)
             {
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolNode
+        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
         {
             private int _id;
 
@@ -108,9 +108,14 @@ namespace ILCompiler.DependencyAnalysis
                 _id = id;
             }
 
+
+            int ISymbolNode.Offset => 0;
+
+            int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {
-                sb.Append(_parentNode._startSymbolMangledName).Append("_").Append(_id.ToStringInvariant());
+                sb.Append(nameMangler.CompilationUnitPrefix).Append(_parentNode._startSymbolMangledName).Append("_").Append(_id.ToStringInvariant());
             }
         }
         

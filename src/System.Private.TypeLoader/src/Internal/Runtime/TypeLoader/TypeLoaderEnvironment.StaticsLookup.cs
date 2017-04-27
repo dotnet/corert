@@ -113,7 +113,17 @@ namespace Internal.Runtime.TypeLoader
 
             // Not found in hashtable... must be a dynamically created type
             Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            return RuntimeAugments.GetNonGcStaticFieldData(runtimeTypeHandle);
+            unsafe
+            {
+                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+                {
+                    return typeAsEEType->DynamicNonGcStaticsData;
+                }
+            }
+
+            // Type has no non-GC statics
+            return IntPtr.Zero;
         }
 
         /// <summary>
@@ -191,7 +201,17 @@ namespace Internal.Runtime.TypeLoader
 
             // Not found in hashtable... must be a dynamically created type
             Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            return RuntimeAugments.GetGcStaticFieldData(runtimeTypeHandle);
+            unsafe
+            {
+                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+                {
+                    return typeAsEEType->DynamicGcStaticsData;
+                }
+            }
+
+            // Type has no GC statics
+            return IntPtr.Zero;
         }
         #endregion
 
@@ -276,7 +296,7 @@ namespace Internal.Runtime.TypeLoader
         #region Privates
         // get the statics hash table, external references, and static info table for a module
         // TODO multi-file: consider whether we want to cache this info
-        private unsafe bool GetStaticsInfoHashtable(IntPtr moduleHandle, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
+        private unsafe bool GetStaticsInfoHashtable(NativeFormatModuleInfo module, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
         {
             byte* pBlob;
             uint cbBlob;
@@ -286,15 +306,15 @@ namespace Internal.Runtime.TypeLoader
             staticInfoLookup = default(ExternalReferencesTable);
 
             // Load statics info hashtable
-            if (!RuntimeAugments.FindBlob(moduleHandle, (int)ReflectionMapBlob.StaticsInfoHashtable, new IntPtr(&pBlob), new IntPtr(&cbBlob)))
+            if (!module.TryFindBlob(ReflectionMapBlob.StaticsInfoHashtable, out pBlob, out cbBlob))
                 return false;
             NativeReader reader = new NativeReader(pBlob, cbBlob);
             NativeParser parser = new NativeParser(reader, 0);
 
-            if (!externalReferencesLookup.InitializeNativeReferences(moduleHandle))
+            if (!externalReferencesLookup.InitializeNativeReferences(module))
                 return false;
 
-            if (!staticInfoLookup.InitializeNativeStatics(moduleHandle))
+            if (!staticInfoLookup.InitializeNativeStatics(module))
                 return false;
 
             staticsInfoHashtable = new NativeHashtable(parser);
@@ -304,10 +324,11 @@ namespace Internal.Runtime.TypeLoader
 
         private NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
         {
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(instantiatedType);
+            TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(instantiatedType);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
-            if (!GetStaticsInfoHashtable(moduleHandle, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
+            if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
                 return new NativeParser();
 
             int lookupHashcode = instantiatedType.GetHashCode();

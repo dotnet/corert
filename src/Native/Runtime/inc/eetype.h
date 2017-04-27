@@ -13,6 +13,7 @@ class MdilModule;
 class EEType;
 class OptionalFields;
 class TypeManager;
+struct TypeManagerHandle;
 class DynamicModule;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
@@ -224,8 +225,8 @@ private:
     UInt16              m_usNumVtableSlots;
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
-#if defined(CORERT)
-    TypeManager**     m_ppTypeManager;
+#if defined(EETYPE_TYPE_MANAGER)
+    TypeManagerHandle*  m_ppTypeManager;
 #endif
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
@@ -308,28 +309,34 @@ public:
 
         // This EEType was constructed from a universal canonical template, and has
         // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        HasDynamicallyAllocatedDispatchMapFlag      = 0x00000080,
 
         // This EEType represents a structure that is an HFA (only ARM currently)
-        IsHFAFlag               = 0x00000100,
+        IsHFAFlag                           = 0x00000100,
 
         // This EEType has sealed vtable entries
         // This is for statically generated types - we need two different flags because
         // the sealed vtable entries are reached in different ways in the static and dynamic case
-        HasSealedVTableEntriesFlag = 0x00000200,
+        HasSealedVTableEntriesFlag          = 0x00000200,
 
         // This dynamically created type has gc statics
-        IsDynamicTypeWithGcStaticsFlag = 0x00000400,
+        IsDynamicTypeWithGcStaticsFlag      = 0x00000400,
 
         // This dynamically created type has non gc statics
-        IsDynamicTypeWithNonGcStaticsFlag = 0x00000800,
+        IsDynamicTypeWithNonGcStaticsFlag   = 0x00000800,
 
         // This dynamically created type has thread statics
-        IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
+        IsDynamicTypeWithThreadStaticsFlag  = 0x00001000,
 
         // This EEType was constructed from a module where the open type is defined in
         // a dynamically loaded type
-        HasDynamicModuleFlag    = 0x00002000,
+        HasDynamicModuleFlag                = 0x00002000,
+
+        // This EEType is for an abstract (but non-interface) type
+        IsAbstractClassFlag                 = 0x00004000,  
+
+        // This EEType is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        IsByRefLikeFlag                     = 0x00008000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -470,9 +477,21 @@ public:
 
     DynamicModule* get_DynamicModule();
 
-#if defined(CORERT)
-    TypeManager* GetTypeManager()
-         { return *m_ppTypeManager; }
+#if defined(EETYPE_TYPE_MANAGER)
+    TypeManagerHandle* GetTypeManagerPtr()
+         { return m_ppTypeManager; }
+#endif
+
+#if defined(EETYPE_TYPE_MANAGER)
+    //
+    // PROJX-TODO
+    // Needed while we exist in a world where some things are built using CoreRT and some built using 
+    // the traditional .NET Native tool chain.
+    //
+    bool HasTypeManager()
+    {
+        return m_ppTypeManager != nullptr;
+    }
 #endif
 
 #ifndef BINDER
@@ -578,11 +597,9 @@ public:
     EEType * get_DynamicTemplateType();
 
     bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicGcStaticsPointer();
     void set_DynamicGcStatics(UInt8 *pStatics);
 
     bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicNonGcStaticsPointer();
     void set_DynamicNonGcStatics(UInt8 *pStatics);
 
     bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }

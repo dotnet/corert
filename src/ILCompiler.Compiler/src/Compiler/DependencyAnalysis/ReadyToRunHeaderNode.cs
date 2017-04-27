@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ReadyToRunHeaderNode : ObjectNode, ISymbolNode
+    public class ReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        internal void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
+        public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol = null)
         {
             _items.Add(new HeaderItem(id, node, startSymbol, endSymbol));
         }
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -66,9 +66,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.Alignment = factory.Target.PointerSize;
-            builder.DefinedSymbols.Add(this);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialPointerAlignment();
+            builder.AddSymbol(this);
 
             // Don't bother sorting if we're not emitting the contents
             if (!relocsOnly)
@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var item in _items)
             {
                 // Skip empty entries
-                if (item.Node.ShouldSkipEmittingObjectNode(factory))
+                if (!relocsOnly && item.Node.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
                 builder.EmitInt((int)item.Id);

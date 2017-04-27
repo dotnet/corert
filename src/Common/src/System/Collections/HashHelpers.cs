@@ -19,6 +19,8 @@ namespace System.Collections
 {
     internal static class HashHelpers
     {
+        public const int HashCollisionThreshold = 100;
+
         private const Int32 HashPrime = 101;
 
         // Table of prime numbers to use as hash table sizes. 

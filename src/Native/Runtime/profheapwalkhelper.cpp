@@ -141,7 +141,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     //if (pMT->ContainsPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
-        GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
+        GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
 
         if (cNumRefs > 0)
         {
@@ -166,7 +166,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
             // Second round saves off all of the ref values
             OBJECTREF * pCurObjRef = arrObjRef;
-            GCHeapUtilities::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
+            GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
         }
     }
 

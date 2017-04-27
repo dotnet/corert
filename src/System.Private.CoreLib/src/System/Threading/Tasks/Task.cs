@@ -4,7 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// Task.cs
 //
 
 //
@@ -14,18 +13,19 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 using Internal.Threading.Tasks.Tracing;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
 using CausalitySource = Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
 using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
+using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
+using RuntimeThread = Internal.Runtime.Augments.RuntimeThread;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -128,7 +128,7 @@ namespace System.Threading.Tasks
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskDebugView))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}")]
-    public class Task : IThreadPoolWorkItem, IAsyncResult
+    public class Task : IThreadPoolWorkItem, IAsyncResult, IDisposable
     {
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
 
@@ -211,9 +211,9 @@ namespace System.Threading.Tasks
         internal class ContingentProperties
         {
             // Additional context
- 
+
             internal ExecutionContext m_capturedContext; // The execution context to run the task within, if any.
- 
+
             // Completion fields (exceptions and event)
 
             internal volatile ManualResetEventSlim m_completionEvent; // Lazily created if waiting is required.
@@ -1546,8 +1546,7 @@ namespace System.Threading.Tasks
             return (flags & TASK_STATE_COMPLETED_MASK) != 0;
         }
 
-        // For use in InternalWait -- marginally faster than (Task.Status == TaskStatus.RanToCompletion)
-        internal bool IsRanToCompletion
+        public bool IsCompletedSuccessfully
         {
             get { return (m_stateFlags & TASK_STATE_COMPLETED_MASK) == TASK_STATE_RAN_TO_COMPLETION; }
         }
@@ -1625,33 +1624,10 @@ namespace System.Threading.Tasks
         /// of <see cref="System.Threading.Tasks.TaskFactory"/>, as would result from using
         /// the default constructor on TaskFactory.
         /// </remarks>
-        public static TaskFactory Factory
-        {
-            get
-            {
-                if (s_defaultTaskFactory == null)
-                    Interlocked.CompareExchange(ref s_defaultTaskFactory, new TaskFactory(), null);
-                return s_defaultTaskFactory;
-            }
-        }
-
-        private static TaskFactory s_defaultTaskFactory;
-
-        /// <summary>A task that's already been completed successfully.</summary>
-        private static Task s_completedTask;
+        public static TaskFactory Factory { get; } = new TaskFactory();
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        /// <remarks>May not always return the same instance.</remarks>        
-        public static Task CompletedTask
-        {
-            get
-            {
-                var completedTask = s_completedTask;
-                if (completedTask == null)
-                    s_completedTask = completedTask = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken)); // benign initialization race condition
-                return completedTask;
-            }
-        }
+        public static Task CompletedTask { get; } = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
@@ -1713,11 +1689,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        #endregion properties
-
-
-        #region internal helpers
-
         /// <summary>
         /// The captured execution context for the current task to run inside
         /// If the TASK_STATE_EXECUTIONCONTEXT_IS_NULL flag is set, this means ExecutionContext.Capture returned null, otherwise
@@ -1729,18 +1700,112 @@ namespace System.Threading.Tasks
             {
                 var props = m_contingentProperties;
                 if (props != null && props.m_capturedContext != null) return props.m_capturedContext;
-                else return ExecutionContext.PreAllocatedDefault;
+                else return ExecutionContext.Default;
             }
             set
             {
-                if (!value.IsPreAllocatedDefault) // not the default context, then inflate the contingent properties and set it
+                if (value != ExecutionContext.Default) // not the default context, then inflate the contingent properties and set it
                 {
                     EnsureContingentPropertiesInitialized(needsProtection: false).m_capturedContext = value;
                 }
                 //else do nothing, this is the default context
             }
         }
-        
+
+        #endregion properties
+
+
+        #region IDisposable implementation
+
+        /// <summary>
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
+        /// </summary>
+        /// <remarks>
+        /// Unlike most of the members of <see cref="Task"/>, this method is not thread-safe.
+        /// Also, <see cref="Dispose()"/> may only be called on a <see cref="Task"/> that is in one of
+        /// the final states: <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
+        /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
+        /// </remarks>
+        /// <exception cref="T:System.InvalidOperationException">
+        /// The exception that is thrown if the <see cref="Task"/> is not in
+        /// one of the final states: <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
+        /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
+        /// </exception>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes the <see cref="Task"/>, releasing all of its unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">
+        /// A Boolean value that indicates whether this method is being called due to a call to <see
+        /// cref="Dispose()"/>.
+        /// </param>
+        /// <remarks>
+        /// Unlike most of the members of <see cref="Task"/>, this method is not thread-safe.
+        /// </remarks>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose is a nop if this task was created with the DoNotDispose internal option.
+                // This is done before the completed check, because if we're not touching any
+                // state on the task, it's ok for it to happen before completion.
+                if ((Options & (TaskCreationOptions)InternalTaskOptions.DoNotDispose) != 0)
+                {
+                    return;
+                }
+
+                // Task must be completed to dispose
+                if (!IsCompleted)
+                {
+                    throw new InvalidOperationException(SR.Task_Dispose_NotCompleted);
+                }
+
+                // Dispose of the underlying completion event if it exists
+                var cp = Volatile.Read(ref m_contingentProperties);
+                if (cp != null)
+                {
+                    // Make a copy to protect against racing Disposes.
+                    // If we wanted to make this a bit safer, we could use an interlocked here,
+                    // but we state that Dispose is not thread safe.
+                    var ev = cp.m_completionEvent;
+                    if (ev != null)
+                    {
+                        // Null out the completion event in contingent props; we'll use our copy from here on out
+                        cp.m_completionEvent = null;
+
+                        // In the unlikely event that our completion event is inflated but not yet signaled,
+                        // go ahead and signal the event.  If you dispose of an unsignaled MRES, then any waiters
+                        // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
+                        // there is no guarantee that anyone else is going to signal the event, and it does no harm to
+                        // call Set() twice on m_completionEvent.
+                        if (!ev.IsSet) ev.Set();
+
+                        // Finally, dispose of the event
+                        ev.Dispose();
+                    }
+                }
+            }
+
+            // We OR the flags to indicate the object has been disposed. The task
+            // has already completed at this point, and the only conceivable race condition would
+            // be with the unsetting of the TASK_STATE_WAIT_COMPLETION_NOTIFICATION flag, which
+            // is extremely unlikely and also benign.  (Worst case: we hit a breakpoint
+            // twice instead of once in the debugger.  Weird, but not lethal.)
+            m_stateFlags |= TASK_STATE_DISPOSED;
+        }
+
+        #endregion IDisposable implementation
+
+
+        #region internal helpers
+
         /// <summary>
         /// Schedules the task for execution.
         /// </summary>
@@ -2902,11 +2967,11 @@ namespace System.Threading.Tasks
 
                 if (i == spinCount / 2)
                 {
-                    System.Threading.SpinWait.Yield();
+                    RuntimeThread.Yield();
                 }
                 else
                 {
-                    System.Threading.SpinWait.Spin(PlatformHelper.ProcessorCount * (4 << i));
+                    RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                 }
             }
 
@@ -4169,7 +4234,7 @@ namespace System.Threading.Tasks
         {
             AddCompletionAction(action, addBeforeOthers: false);
         }
-        
+
         private void AddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers)
         {
             if (!AddTaskContinuation(action, addBeforeOthers))
@@ -5977,7 +6042,7 @@ namespace System.Threading.Tasks
         [DependencyReductionRoot]
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
-            return GetDelegatesFromContinuationObject(this.m_continuationObject);
+            return GetDelegatesFromContinuationObject(m_continuationObject);
         }
 
         private static Delegate[] GetDelegatesFromContinuationObject(object continuationObject)
@@ -6302,7 +6367,6 @@ namespace System.Threading.Tasks
             // do the right thing just in case...
             if (m_inliningDepth < 0) m_inliningDepth = 0;
         }
-
     }  // class StackGuard
 
     // Special internal struct that we use to signify that we are not interested in
@@ -6324,18 +6388,18 @@ namespace System.Threading.Tasks
     // TaskFactory.CompleteOnCountdownPromise<T>, and TaskFactory.CompleteOnInvokePromise.
     internal interface ITaskCompletionAction
     {
-         /// <summary>Invoked to run the completion action.</summary>
-         void Invoke(Task completingTask);
-  
-         /// <summary>
-         /// Some completion actions are considered internal implementation details of tasks,
-         /// using the continuation mechanism only for performance reasons.  Such actions perform
-         /// known quantities and types of work, and can be invoked safely as a continuation even
-         /// if the system wants to prevent arbitrary continuations from running synchronously.
-         /// This should only return false for a limited set of implementations where a small amount
-         /// of work is guaranteed to be performed, e.g. setting a ManualResetEventSlim.
-         /// </summary>
-         bool InvokeMayRunArbitraryCode { get; }
+        /// <summary>Invoked to run the completion action.</summary>
+        void Invoke(Task completingTask);
+
+        /// <summary>
+        /// Some completion actions are considered internal implementation details of tasks,
+        /// using the continuation mechanism only for performance reasons.  Such actions perform
+        /// known quantities and types of work, and can be invoked safely as a continuation even
+        /// if the system wants to prevent arbitrary continuations from running synchronously.
+        /// This should only return false for a limited set of implementations where a small amount
+        /// of work is guaranteed to be performed, e.g. setting a ManualResetEventSlim.
+        /// </summary>
+        bool InvokeMayRunArbitraryCode { get; }
     }
 
     // This class encapsulates all "unwrap" logic, and also implements ITaskCompletionAction,

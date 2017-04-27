@@ -43,6 +43,11 @@ namespace Internal.TypeSystem
         /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
         /// </summary>
         public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
+
+        /// <summary>
+        /// Compute whether '<paramref name="type"/>' is a ByRef-like value type (TypedReference, Span&lt;T&gt;, etc.).
+        /// </summary>
+        public abstract bool ComputeIsByRefLike(DefType type);
     }
 
     /// <summary>
@@ -80,10 +85,10 @@ namespace Internal.TypeSystem
     public struct ComputedInstanceFieldLayout
     {
         public int PackValue;
-        public int FieldSize;
-        public int FieldAlignment;
-        public int ByteCountUnaligned;
-        public int ByteCountAlignment;
+        public LayoutInt FieldSize;
+        public LayoutInt FieldAlignment;
+        public LayoutInt ByteCountUnaligned;
+        public LayoutInt ByteCountAlignment;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.
@@ -94,8 +99,8 @@ namespace Internal.TypeSystem
 
     public struct StaticsBlock
     {
-        public int Size;
-        public int LargestAlignment;
+        public LayoutInt Size;
+        public LayoutInt LargestAlignment;
     }
 
     public struct ComputedStaticFieldLayout

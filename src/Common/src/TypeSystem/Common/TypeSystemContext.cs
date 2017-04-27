@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown))
+        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
         }
 

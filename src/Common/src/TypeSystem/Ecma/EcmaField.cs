@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
     {
         private static class FieldFlags
         {
@@ -269,7 +269,7 @@ namespace Internal.TypeSystem.Ecma
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
             var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
 
-            int size = field.FieldType.GetElementSize();
+            int size = field.FieldType.GetElementSize().AsInt;
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 

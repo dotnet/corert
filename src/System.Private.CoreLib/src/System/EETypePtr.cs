@@ -146,11 +146,13 @@ namespace System
         {
             get
             {
-                // String is currently the only non-array type with a non-zero component size.
-                return (_value->ComponentSize == sizeof(char)) && !_value->IsArray && !_value->IsGenericTypeDefinition;
+                return _value->IsString;
             }
         }
 
+        /// <summary>
+        /// Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        /// </summary>
         internal bool IsPrimitive
         {
             get
@@ -237,6 +239,22 @@ namespace System
             get
             {
                 return _value->IsInterface;
+            }
+        }
+
+        internal bool IsAbstract
+        {
+            get
+            {
+                return _value->IsAbstract;
+            }
+        }
+
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return _value->IsByRefLike;
             }
         }
 

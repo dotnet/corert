@@ -213,9 +213,6 @@
   <data name="ArgumentException_InvalidArrayElementType" xml:space="preserve">
     <value>The type '{0}' may not be used as an array element type.</value>
   </data>
-  <data name="PlatformNotSupported_NoTypeHandleForByRef" xml:space="preserve">
-    <value>TypeHandles are not supported for types that return true for IsByRef.</value>
-  </data>
   <data name="PlatformNotSupported_NoTypeHandleForOpenTypes" xml:space="preserve">
     <value>TypeHandles are not supported for types that return true for ContainsGenericParameters.</value>
   </data>
@@ -263,9 +260,6 @@
   </data>
   <data name="NotSupported_ChangeType" xml:space="preserve">
     <value>ChangeType operation is not supported.</value>
-  </data>
-  <data name="PlatformNotSupported_CustomBinder" xml:space="preserve">
-    <value>Passing a binder object other than Type.DefaultBinder is not supported on this platform.</value>
   </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for this object.</value>
@@ -333,5 +327,38 @@
   </data>
   <data name="Arg_PlatformNotSupportedInvokeMemberCom" xml:space="preserve">
     <value>InvokeMember on a COM object is not supported on this platform.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeType" xml:space="preserve">
+    <value>Type must be a runtime Type object.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
+    <value>MethodInfo must be a runtime MethodInfo object.</value>
+  </data>
+  <data name="Arg_ArrayZeroError" xml:space="preserve">
+    <value>Array must not be of length zero.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeFieldInfo" xml:space="preserve">
+    <value>FieldInfo must be a runtime FieldInfo object.</value>
+  </data>
+  <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
+    <value>Field in TypedReferences cannot be static or init only.</value>
+  </data>
+  <data name="MissingMemberTypeRef" xml:space="preserve">
+    <value>FieldInfo does not match the target Type.</value>
+  </data>
+  <data name="Arg_TypeRefPrimitve" xml:space="preserve">
+    <value>TypedReferences cannot be redefined as primitives.</value>
+  </data>
+  <data name="MissingMemberNestErr" xml:space="preserve">
+    <value>TypedReference can only be made on nested value Types.</value>
+  </data>
+  <data name="Arg_TypedReference_Null" xml:space="preserve">
+    <value>The TypedReference must be initialized.</value>
+  </data>
+  <data name="Acc_CreateAbst" xml:space="preserve">
+    <value>Cannot create an abstract class.</value>
+  </data>
+  <data name="Acc_CreateInterface" xml:space="preserve">
+    <value>Cannot create an instance of an interface.</value>
   </data>
 </root>

@@ -75,11 +75,11 @@ namespace System.Text
                 bytes = new byte[1];
 
             // Just call pointer version
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &bytes[0])
                 return GetCharCount(pBytes + index, count, flush);
         }
 
-        internal unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+        public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate parameters
             if (bytes == null)
@@ -136,14 +136,14 @@ namespace System.Text
                 chars = new char[1];
 
             // Just call pointer version
-            fixed (byte* pBytes = bytes)
-                fixed (char* pChars = chars)
-                    // Remember that charCount is # to decode, not size of array
-                    return GetChars(pBytes + byteIndex, byteCount,
-                                    pChars + charIndex, charCount, flush);
+            fixed (byte* pBytes = &bytes[0])
+            fixed (char* pChars = &chars[0])
+                // Remember that charCount is # to decode, not size of array
+                return GetChars(pBytes + byteIndex, byteCount,
+                                pChars + charIndex, charCount, flush);
         }
 
-        internal unsafe override int GetChars(byte* bytes, int byteCount,
+        public unsafe override int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush)
         {
             // Validate parameters
@@ -200,9 +200,9 @@ namespace System.Text
                 chars = new char[1];
 
             // Just call the pointer version (public overrides can't do this)
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &bytes[0])
             {
-                fixed (char* pChars = chars)
+                fixed (char* pChars = &chars[0])
                 {
                     Convert(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, flush,
                         out bytesUsed, out charsUsed, out completed);
@@ -212,7 +212,7 @@ namespace System.Text
 
         // This is the version that used pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting chars
-        internal unsafe void Convert(byte* bytes, int byteCount,
+        public unsafe override void Convert(byte* bytes, int byteCount,
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {

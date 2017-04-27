@@ -87,7 +87,31 @@
         <!-- System.TimeSpan is well known to the serializers and must not be explicitly specified to sg.exe -->
         <Type Name="TimeSpan" DataContractJsonSerializer="Excluded" DataContractSerializer="Excluded"/>
       </Namespace>
+      <Namespace Name="System.Reflection">
+        <Type Name="MethodInfo">
+          <Method Name="CreateDelegate">
+            <TypeParameter Name="delegateType" Activate="Public"/>
+          </Method>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Diagnostics.Tracing">
+        <Type Name="EventSourceAttribute" Dynamic="Required All">
+          <AttributeImplies Serialize="Required Public"/>
+        </Type>
+        <Type Name="EventDataAttribute" Dynamic="Required All">
+          <AttributeImplies Serialize="Required Public"/>
+        </Type>
+        <Type Name="EventAttribute" Dynamic="Required All"/>
+        <Type Name="EventSource">
+          <Method Name="Write{T}">
+            <GenericParameter Name="T" Serialize="Required Public"/>
+          </Method>
+          <Subtypes Dynamic="Required Public"/>
+        </Type>
+        <Type Name="PropertyValue.ReferenceTypeHelper{System.Object}" Dynamic="Required Public"/>
+      </Namespace>
     </Assembly>
+    
+    <Type Name="Internal.Runtime.CompilerServices.HasEmbeddedStringResourcesAttribute" Browse="Required Public" />
   </Library>
 </Directives>
-

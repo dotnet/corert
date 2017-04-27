@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/time.h>
 
 static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */

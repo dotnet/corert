@@ -20,13 +20,12 @@ namespace ILCompiler.DependencyAnalysis
     /// method body, as if it was generated. The node acts as a symbol for the canonical
     /// method for convenience.
     /// </summary>
-    internal class ShadowConcreteMethodNode<T> : DependencyNodeCore<NodeFactory>, IMethodNode
-        where T : DependencyNodeCore<NodeFactory>, IMethodNode
+    internal class ShadowConcreteMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
         /// </summary>
-        public T CanonicalMethodNode { get; }
+        public IMethodNode CanonicalMethodNode { get; }
 
         /// <summary>
         /// Gets the concrete method represented by this node.
@@ -39,11 +38,12 @@ namespace ILCompiler.DependencyAnalysis
             CanonicalMethodNode.AppendMangledName(nameMangler, sb);
         }
         public int Offset => CanonicalMethodNode.Offset;
+        public bool RepresentsIndirectionCell => CanonicalMethodNode.RepresentsIndirectionCell;
 
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
 
-        public ShadowConcreteMethodNode(MethodDesc method, T canonicalMethod)
+        public ShadowConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
             Debug.Assert(!method.IsSharedByGenericInstantiations);
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
@@ -55,42 +55,63 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+
             // Make sure the canonical body gets generated
-            yield return new DependencyListEntry(CanonicalMethodNode, "Canonical body");
+            dependencies.Add(new DependencyListEntry(CanonicalMethodNode, "Canonical body"));
 
             // Instantiate the runtime determined dependencies of the canonical method body
             // with the concrete instantiation of the method to get concrete dependencies.
             Instantiation typeInst = Method.OwningType.Instantiation;
             Instantiation methodInst = Method.Instantiation;
+            IEnumerable<DependencyListEntry> staticDependencies = CanonicalMethodNode.GetStaticDependencies(factory);
 
-            foreach (DependencyListEntry canonDep in CanonicalMethodNode.GetStaticDependencies(factory))
+            if (staticDependencies != null)
             {
-                var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
-                if (runtimeDep != null)
+                foreach (DependencyListEntry canonDep in staticDependencies)
                 {
-                    foreach (var d in runtimeDep.InstantiateDependencies(factory, typeInst, methodInst))
+                    var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
+                    if (runtimeDep != null)
                     {
-                        yield return d;
+                        dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst));
                     }
                 }
             }
 
-            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
-            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
-            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
-            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
-            if (factory.MetadataManager.HasReflectionInvokeStub(Method))
+            if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
-                MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (invokeStub != canonInvokeStub)
-                    yield return new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke");
-                else
-                    yield return new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
+                // TODO: https://github.com/dotnet/corert/issues/3224
+                // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
+                // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
+                // we even start the compilation process (with the invocation stubs being compilation roots like any other).
+                // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
+                if (factory.MetadataManager.HasReflectionInvokeStub(Method))
+                {
+                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
+                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    if (invokeStub != canonInvokeStub)
+                    {
+                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
+                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                    }
+                    else
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                }
             }
+
+            if (Method.HasInstantiation)
+            {
+                if (Method.IsVirtual)
+                    dependencies.Add(new DependencyListEntry(factory.GVMDependencies(Method), "GVM Dependencies Support for method dictionary"));
+
+                // Dictionary dependency
+                dependencies.Add(new DependencyListEntry(factory.MethodGenericDictionary(Method), "Method dictionary"));
+            }
+
+            return dependencies;
         }
 
-        protected override string GetName() => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName()}";
+        protected override string GetName(NodeFactory factory) => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName(factory.NameMangler)}";
 
         public sealed override bool HasConditionalStaticDependencies => false;
         public sealed override bool HasDynamicDependencies => false;

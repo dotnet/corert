@@ -7,34 +7,23 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{AD10E5A4-FBA5-4135-9BA4-008723F319B8}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SharedOpenSourcePath>$(FxOpenSourceRootPath)System.Threading\src</SharedOpenSourcePath>
+    <CLSCompliant>true</CLSCompliant>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
   </ItemGroup>
+
   <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Threading\SpinLockTraceCallbacksImplementation.cs" />
     <Compile Include="Internal\Threading\TaskTraceCallbacksImplementation.cs" />
-    <Compile Include="Internal\Threading\ThreadingTracingInitializer.cs" />
-    <Compile Include="System\Threading\Barrier.cs" />
-    <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
-    <Compile Include="System\Threading\Progress.cs" />
     <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
-    <Compile Include="TypeForwarders.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

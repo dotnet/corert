@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.NETCore.Native.Windows.props
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file defines Windows-specific steps in the build process for native AOT compilation.
+
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+See the LICENSE file in the project root for more information.
+***********************************************************************************************
+-->
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <CppCompiler>cl</CppCompiler>
+    <CppLinker>link</CppLinker>
+    <CppLibCreator>lib</CppLibCreator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
+    <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
+    <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
+    <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
+    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
+    <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
+    <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+    <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalNativeLibrary Include="kernel32.lib" />
+    <AdditionalNativeLibrary Include="user32.lib" />
+    <AdditionalNativeLibrary Include="gdi32.lib" />
+    <AdditionalNativeLibrary Include="winspool.lib" />
+    <AdditionalNativeLibrary Include="comdlg32.lib" />
+    <AdditionalNativeLibrary Include="advapi32.lib" />
+    <AdditionalNativeLibrary Include="shell32.lib" />
+    <AdditionalNativeLibrary Include="ole32.lib" />
+    <AdditionalNativeLibrary Include="oleaut32.lib" />
+    <AdditionalNativeLibrary Include="uuid.lib" />
+    <AdditionalNativeLibrary Include="bcrypt.lib" />
+    <AdditionalNativeLibrary Include="normaliz.lib" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LinkerArg Include="@(NativeLibrary)" />
+    <LinkerArg Include="@(AdditionalNativeLibrary)" />
+    <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
+    <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
+    <LinkerArg Include="/INCREMENTAL:NO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
+  </ItemGroup>
+ 
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <LinkerArg Include="/OPT:REF" />
+    <LinkerArg Include="/OPT:ICF" />
+  </ItemGroup>
+
+</Project>

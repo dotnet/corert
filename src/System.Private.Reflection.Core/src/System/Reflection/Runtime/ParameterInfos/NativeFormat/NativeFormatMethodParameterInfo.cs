@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
     //
     internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private NativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+        private NativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
             _methodHandle = methodHandle;
@@ -83,6 +83,14 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+        
         private Tuple<bool, Object> DefaultValueInfo
         {
             get

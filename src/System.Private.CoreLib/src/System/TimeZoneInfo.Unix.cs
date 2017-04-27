@@ -113,8 +113,8 @@ namespace System
                 return Array.Empty<AdjustmentRule>();
             }
 
-            // The rules we use in Unix cares mostly about the start and end dates but doesn’t fill the transition start and end info. 
-            // as the rules now is public, we should fill it properly so the caller doesn’t have to know how we use it internally 
+            // The rules we use in Unix cares mostly about the start and end dates but doesn't fill the transition start and end info. 
+            // as the rules now is public, we should fill it properly so the caller doesn't have to know how we use it internally 
             // and can use it as it is used in Windows
 
             AdjustmentRule[] rules = new AdjustmentRule[_adjustmentRules.Length];
@@ -873,7 +873,7 @@ namespace System
             {
                 if (data == null || data.Length < index + c_len)
                 {
-                    throw new ArgumentException(SR.Argument_TimeZoneInfoInvalidTZif, "data");
+                    throw new ArgumentException(SR.Argument_TimeZoneInfoInvalidTZif, nameof(data));
                 }
                 Contract.EndContractBlock();
                 UtcOffset = new TimeSpan(0, 0, TZif_ToInt32(data, index + 00));
@@ -897,7 +897,7 @@ namespace System
             {
                 if (data == null || data.Length < c_len)
                 {
-                    throw new ArgumentException("bad data", "data");
+                    throw new ArgumentException("bad data", nameof(data));
                 }
                 Contract.EndContractBlock();
 
@@ -906,7 +906,7 @@ namespace System
                 if (Magic != 0x545A6966)
                 {
                     // 0x545A6966 = {0x54, 0x5A, 0x69, 0x66} = "TZif"
-                    throw new ArgumentException(SR.Argument_TimeZoneInfoBadTZif, "data");
+                    throw new ArgumentException(SR.Argument_TimeZoneInfoBadTZif, nameof(data));
                 }
 
                 // don't use the BitConverter class which parses data

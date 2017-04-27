@@ -14,5 +14,7 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
         internal extern static unsafe IntPtr SetThreadpoolTimer(IntPtr pti, long* pftDueTime, uint msPeriod, uint msWindowLength);
+
+        internal delegate void TimerCallback(IntPtr Instance, IntPtr Context, IntPtr Timer);
     }
 }

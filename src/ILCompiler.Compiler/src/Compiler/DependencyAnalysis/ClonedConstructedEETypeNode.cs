@@ -7,13 +7,19 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ClonedConstructedEETypeNode : ConstructedEETypeNode, ISymbolNode
+    internal sealed class ClonedConstructedEETypeNode : ConstructedEETypeNode, ISymbolDefinitionNode
     {
         public ClonedConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
         }
 
-        protected override string GetName() => this.GetMangledName() + " cloned";
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " cloned";
+
+        public override ObjectNode NodeForLinkage(NodeFactory factory) => this;
+
+        // Cloned EEType does not have its own interface dispatch map. The runtime dispatching
+        // routine will use its primary type's dispatch map instead.
+        protected override bool TrackInterfaceDispatchMapDepenendency => false;
 
         //
         // A cloned type must be named differently than the type it is a clone of so the linker

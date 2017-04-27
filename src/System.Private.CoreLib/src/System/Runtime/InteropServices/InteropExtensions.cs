@@ -64,10 +64,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe IntPtr GetAddrOfPinnedArrayFromEETypeField(this Array array)
         {
-            fixed (IntPtr* pEEType = &array.m_pEEType)
-            {
-                return (IntPtr)Array.GetAddrOfPinnedArrayFromEETypeField(pEEType);
-            }
+            return (IntPtr)Unsafe.AsPointer(ref array.GetRawArrayData());
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)
@@ -215,6 +212,11 @@ namespace System.Runtime.InteropServices
             return handle.ToEETypePtr().IsValueType;
         }
 
+        public static bool IsClass(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsDefType && !handle.ToEETypePtr().IsInterface && !handle.ToEETypePtr().IsValueType;
+        }
+
         public static bool IsEnum(this RuntimeTypeHandle handle)
         {
             return handle.ToEETypePtr().IsEnum;
@@ -223,6 +225,17 @@ namespace System.Runtime.InteropServices
         public static bool IsInterface(this RuntimeTypeHandle handle)
         {
             return handle.ToEETypePtr().IsInterface;
+        }
+
+        public static bool IsPrimitive(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsPrimitive;
+        }
+
+        public static bool IsDelegate(this RuntimeTypeHandle handle)
+        {
+            return InteropExtensions.AreTypesAssignable(handle, typeof(MulticastDelegate).TypeHandle) ||
+                InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)
@@ -459,12 +472,12 @@ namespace System.Runtime.InteropServices
 
         public static void SuppressReentrantWaits()
         {
-            System.Threading.LowLevelThread.SuppressReentrantWaits();
+            RuntimeThread.SuppressReentrantWaits();
         }
 
         public static void RestoreReentrantWaits()
         {
-            System.Threading.LowLevelThread.RestoreReentrantWaits();
+            RuntimeThread.RestoreReentrantWaits();
         }
 
         public static IntPtr MemAlloc(UIntPtr sizeInBytes)
@@ -475,6 +488,16 @@ namespace System.Runtime.InteropServices
         public static void MemFree(IntPtr allocatedMemory)
         {
             Interop.MemFree(allocatedMemory);
+        }
+
+        public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)
+        {
+            return criticalHandle.GetHandleInternal();
+        }
+
+        public static void SetCriticalHandle(CriticalHandle criticalHandle, IntPtr handle)
+        {
+            criticalHandle.SetHandleInternal(handle);
         }
     }
 }

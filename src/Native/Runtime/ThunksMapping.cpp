@@ -87,9 +87,9 @@ COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddres
     return (void*)(((UIntNative)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThunkStubsBlockAddress))
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
-    return (UInt8*)pCurrentThunkStubsBlockAddress + OS_PAGE_SIZE;
+    return OS_PAGE_SIZE;
 }
 
 EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()

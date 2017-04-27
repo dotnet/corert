@@ -4,7 +4,6 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// SemaphoreSlim.cs
 //
 
 //
@@ -72,6 +71,9 @@ namespace System.Threading
         // A pre-completed task with Result==true
         private static readonly Task<bool> s_trueTask =
             new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+        // A pre-completed task with Result==false
+        private readonly static Task<bool> s_falseTask =
+            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
 
         // No maximum constant
         private const int NO_MAXIMUM = Int32.MaxValue;
@@ -309,10 +311,17 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Perf: Check the stack timeout parameter before checking the volatile count
+            if (millisecondsTimeout == 0 && m_currentCount == 0)
+            {
+                // Pessimistic fail fast, check volatile count outside lock (only when timeout is zero!)
+                return false;
+            }
 
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
@@ -597,7 +606,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
             // Bail early for cancellation
@@ -612,6 +621,11 @@ namespace System.Threading
                     --m_currentCount;
                     if (m_waitHandle != null && m_currentCount == 0) m_waitHandle.Reset();
                     return s_trueTask;
+                }
+                else if (millisecondsTimeout == 0)
+                {
+                    // No counts, if timeout is zero fail fast
+                    return s_falseTask;
                 }
                 // If there aren't, create and return a task to the caller.
                 // The task will be completed either when they've successfully acquired
@@ -777,7 +791,7 @@ namespace System.Threading
 
                 // Signal to any synchronous waiters
                 int waitCount = m_waitCount;
-                
+
                 int waitersToNotify = Math.Min(releaseCount, waitCount);
                 for (int i = 0; i < waitersToNotify; i++)
                 {

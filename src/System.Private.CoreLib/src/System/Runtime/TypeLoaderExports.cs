@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    // Initialize the cache eagerly to avoid null checks
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemRuntimeTypeLoaderExports)]
     public static class TypeLoaderExports
     {
         [RuntimeExport("GetThreadStaticsForDynamicType")]
@@ -73,12 +71,19 @@ namespace System.Runtime
         // Initialize the cache eagerly to avoid null checks.
         // Use array with just single element to make this pay-for-play. The actual cache will be allocated only 
         // once the lazy lookups are actually needed.
-        private static Entry[] s_cache = new Entry[1];
+        private static Entry[] s_cache;
 
         private static Lock s_lock;
         private static GCHandle s_previousCache;
-        private volatile static IntPtr[] s_resolutionFunctionPointers = new IntPtr[4];
-        private static int s_nextResolutionFunctionPointerIndex = (int)SignatureKind.Count;
+        private volatile static IntPtr[] s_resolutionFunctionPointers;
+        private static int s_nextResolutionFunctionPointerIndex;
+
+        internal static void Initialize()
+        {
+            s_cache = new Entry[1];
+            s_resolutionFunctionPointers = new IntPtr[4];
+            s_nextResolutionFunctionPointerIndex = (int)SignatureKind.Count;
+        }
 
         [RuntimeExport("GenericLookup")]
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
@@ -459,6 +464,12 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, Object arg1, IntPtr arg2)
+        {
+            return default(T);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static T Call<T>(IntPtr pfn, string[] arg0)
         {
             return default(T);
         }

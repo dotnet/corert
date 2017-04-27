@@ -19,6 +19,8 @@ namespace ILCompiler
         protected Logger _logger = Logger.Null;
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
+        protected OptimizationMode _optimizationMode = OptimizationMode.None;
+        protected bool _generateDebugInfo = false;
 
         public CompilationBuilder(NodeFactory nodeFactory)
         {
@@ -40,6 +42,18 @@ namespace ILCompiler
         public CompilationBuilder UseCompilationRoots(IEnumerable<ICompilationRootProvider> compilationRoots)
         {
             _compilationRoots = compilationRoots;
+            return this;
+        }
+
+        public CompilationBuilder UseOptimizationMode(OptimizationMode mode)
+        {
+            _optimizationMode = mode;
+            return this;
+        }
+
+        public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
+        {
+            _generateDebugInfo = generateDebugInfo;
             return this;
         }
 
@@ -86,5 +100,31 @@ namespace ILCompiler
         /// The graph keeps track of all dependencies.
         /// </summary>
         All
+    }
+
+    /// <summary>
+    /// Represents the level of optimizations performed by the compiler.
+    /// </summary>
+    public enum OptimizationMode
+    {
+        /// <summary>
+        /// Do not optimize.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Minimize code space.
+        /// </summary>
+        PreferSize,
+
+        /// <summary>
+        /// Generate blended code. (E.g. favor size for rarely executed code such as class constructors.)
+        /// </summary>
+        Blended,
+
+        /// <summary>
+        /// Maximize execution speed.
+        /// </summary>
+        PreferSpeed,
     }
 }

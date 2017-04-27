@@ -21,6 +21,7 @@
 #include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 #include "stressLog.h"
 
 #include "shash.h"
@@ -33,15 +34,21 @@
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
 
+EXTERN_C void * RhpDebugFuncEvalHelper;
+GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
+
 #if defined(FEATURE_DYNAMIC_CODE)
-EXTERN_C void * ReturnFromUniversalTransition;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, &ReturnFromUniversalTransition);
+EXTERN_C void * RhpUniversalTransition();
+GPTR_IMPL_INIT(PTR_VOID, g_RhpUniversalTransitionAddr, (void**)&RhpUniversalTransition);
 
-EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, &ReturnFromUniversalTransition_DebugStepTailCall);
+EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, PointerToReturnFromUniversalTransition);
 
-EXTERN_C void * ReturnFromCallDescrThunk;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, &ReturnFromCallDescrThunk);
+EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition_DebugStepTailCall;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, PointerToReturnFromUniversalTransition_DebugStepTailCall);
+
+EXTERN_C PTR_VOID PointerToReturnFromCallDescrThunk;
+GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, PointerToReturnFromCallDescrThunk);
 #endif
 
 #ifdef _TARGET_X86_
@@ -65,10 +72,17 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
 // against immediates than to fetch the global. This macro hides the difference.
+//
+// We use a special code path for the return address from thunks as
+// having the return address public confuses today DIA stackwalker. Before we can
+// ingest the updated DIA, we're instead exposing a global void * variable
+// holding the return address.
 #ifdef DACCESS_COMPILE
 #define EQUALS_CODE_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
+#define EQUALS_RETURN_ADDRESS(x, func_name) EQUALS_CODE_ADDRESS((x), func_name)
 #else
 #define EQUALS_CODE_ADDRESS(x, func_name) ((x) == &func_name)
+#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -81,12 +95,13 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
 #define FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY(msg) { ASSERT_UNCONDITIONALLY(msg); RhFailFast(); }
 #endif
 
-
 PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
 {
     return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
 }
 
+// TODO: Remove the assumption that there is only 1 func eval in progress
+GVAL_IMPL_INIT(UInt64, g_debuggermagic, 0);
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
 {
@@ -118,6 +133,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_HijackedReturnValueKind = GCRK_Unknown;
     m_pConservativeStackRangeLowerBound = NULL;
     m_pConservativeStackRangeUpperBound = NULL;
+    m_ShouldSkipRegularGcReporting = false;
     m_pendingFuncletFramePointer = NULL;
     m_pNextExInfo = pThreadToWalk->GetCurExInfo();
     m_ControlPC = 0;
@@ -271,10 +287,18 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
 #ifndef DACCESS_COMPILE
 
-void StackFrameIterator::InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx)
+void StackFrameIterator::InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ EH ]\n");
     InternalInit(pThreadToWalk, pCtx, EHStackWalkFlags);
+
+    // Counteract m_ControlPC adjustment that will be done by PrepareToYieldFrame
+    // We treat the IP as a return-address and adjust backward when doing EH-related things.  The faulting
+    // instruction IP here will be the start of the faulting instruction and so we have the right IP for
+    // EH-related things already.
+    if (instructionFault)
+        m_ControlPC = AdjustReturnAddressForward(m_ControlPC);
+
     PrepareToYieldFrame();
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -433,7 +457,7 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         CalculateCurrentMethodState();
         ASSERT(IsValid());
 
-        if ((pExInfo->m_kind == EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
+        if ((pExInfo->m_kind & EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
             m_effectiveSafePointAddress = GetCodeManager()->RemapHardwareFaultToGCSafePoint(&m_methodInfo, m_ControlPC);
     }
     else
@@ -992,7 +1016,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
     const UIntNative STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
     const UIntNative SIZEOF_OutgoingScratch = 0x20;
 #else
     const UIntNative SIZEOF_OutgoingScratch = 0;
@@ -1084,6 +1108,7 @@ UnwindOutOfCurrentManagedFrame:
 
     PTR_VOID pPreviousTransitionFrame;
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
+    
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
 
     if (pPreviousTransitionFrame != NULL)
@@ -1343,8 +1368,23 @@ void StackFrameIterator::PrepareToYieldFrame()
 
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
 
+    bool atDebuggerHijackSite = (this->m_ControlPC == (PTR_VOID)(TADDR)g_debuggermagic);
+
+    if (atDebuggerHijackSite)
+    {
+        FAILFAST_OR_DAC_FAIL_MSG(m_pConservativeStackRangeLowerBound != NULL,
+            "Debugger hijack unwind is missing the required conservative range from a preceding transition thunk.");
+    }
+
     if (m_dwFlags & ApplyReturnAddressAdjustment)
+    {
+        FAILFAST_OR_DAC_FAIL_MSG(!atDebuggerHijackSite,
+            "EH stack walk is attempting to propagate an exception across a debugger hijack site.");
+
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
+    }
+
+    m_ShouldSkipRegularGcReporting = false;
 
     // Each time a managed frame is yielded, configure the iterator to explicitly indicate
     // whether or not unwinding to the current frame has revealed a stack range that must be
@@ -1369,8 +1409,45 @@ void StackFrameIterator::PrepareToYieldFrame()
         // that the upper bound computation never mutates m_RegDisplay.
         CalculateCurrentMethodState();
         ASSERT(IsValid());
-        UIntNative rawUpperBound = GetCodeManager()->GetConservativeUpperBoundForOutgoingArgs(&m_methodInfo, &m_RegDisplay);
-        m_pConservativeStackRangeUpperBound = (PTR_UIntNative)rawUpperBound;
+
+        if (!atDebuggerHijackSite)
+        {
+            UIntNative rawUpperBound = GetCodeManager()->GetConservativeUpperBoundForOutgoingArgs(&m_methodInfo, &m_RegDisplay);
+            m_pConservativeStackRangeUpperBound = (PTR_UIntNative)rawUpperBound;
+        }
+        else
+        {
+            // Debugger hijack points differ from all other unwind cases in that they are not
+            // guaranteed to be GC safe points, which implies that regular GC reporting will not
+            // protect the GC references that the function was using (in registers and/or in local
+            // stack slots) at the time of the hijack.
+            //
+            // GC references held in registers at the time of the hijack are reported by the
+            // debugger and therefore do not need to be handled here.  (The debugger does this by
+            // conservatively reporting the entire CONTEXT record which lists the full register
+            // set that was observed when the thread was stopped at the hijack point.)
+            //
+            // This code is therefore only responsible for reporting the GC references that were
+            // stored on the stack at the time of the hijack.  Conceptually, this is done by
+            // conservatively reporting the entire stack frame.  Since debugger hijack unwind
+            // always occurs via a UniversalTransitionThunk, the conservative lower bound
+            // published by the thunk can be used as a workable lower bound for the entire stack
+            // frame.
+            //
+            // Computing a workable upper bound is more difficult, especially because the stack
+            // frame of a funclet can contain FP-relative locals which reside arbitrarily far up
+            // the stack compared to the current SP.  The top of the thread's stack is currently
+            // used as an extremely conservative upper bound as away to cover all cases without
+            // introducing more stack walker complexity.
+
+            PTR_VOID pStackLow;
+            PTR_VOID pStackHigh;
+#ifndef DACCESS_COMPILE
+            m_pThread->GetStackBounds(&pStackLow, &pStackHigh);
+#endif
+            m_pConservativeStackRangeUpperBound = (PTR_UIntNative)pStackHigh;
+            m_ShouldSkipRegularGcReporting = true;
+        }
 
         ASSERT(m_pConservativeStackRangeLowerBound != NULL);
         ASSERT(m_pConservativeStackRangeUpperBound != NULL);
@@ -1505,7 +1582,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 2);
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    return (PTR_VOID)(((PTR_UInt8)controlPC) + 4);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 1);
 #endif
@@ -1515,7 +1592,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 2);
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    return (PTR_VOID)(((PTR_UInt8)controlPC) - 4);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 1);
 #endif
@@ -1527,7 +1604,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
-{
+{    
 #if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable thunks are defined
 
     return InManagedCode;
@@ -1535,12 +1612,12 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #else // defined(USE_PORTABLE_HELPERS)
 
 #if defined(FEATURE_DYNAMIC_CODE)
-    if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromCallDescrThunk))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromCallDescrThunk))
     {
         return InCallDescrThunk;
     }
-    else if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
-             EQUALS_CODE_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
+    else if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
+             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
     {
         return InUniversalTransitionThunk;
     }
@@ -1570,9 +1647,14 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
+bool StackFrameIterator::ShouldSkipRegularGcReporting()
+{
+    return m_ShouldSkipRegularGcReporting;
+}
+
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx))
+COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault))
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1586,7 +1668,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED
     if (pStackwalkCtx == NULL)
         pThis->InternalInitForStackTrace();
     else
-        pThis->InternalInitForEH(pCurThread, pStackwalkCtx);
+        pThis->InternalInitForEH(pCurThread, pStackwalkCtx, instructionFault);
 
     bool isValid = pThis->IsValid();
     if (isValid)
@@ -1614,7 +1696,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiNext, (StackFrameIterator* pThis, UInt32* puE
     {
         ASSERT(pCurExInfo->m_idxCurClause != MaxTryRegionIdx);
         *puExCollideClauseIdx = pCurExInfo->m_idxCurClause;
-        pCurExInfo->m_kind = (ExKind)(pCurExInfo->m_kind | EK_SuperscededFlag);
+        pCurExInfo->m_kind = (ExKind)(pCurExInfo->m_kind | EK_SupersededFlag);
     }
     else
     {

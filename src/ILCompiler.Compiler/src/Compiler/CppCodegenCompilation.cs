@@ -24,9 +24,18 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
             CppCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), new NameMangler(true), logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), logger)
         {
             Options = options;
+        }
+
+        protected override bool GenerateDebugInfo
+        {
+            get
+            {
+                /// Some degree of control exposed by <see cref="CppCodegenConfigProvider.NoLineNumbersString"/>.
+                return true;
+            }
         }
 
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
@@ -37,7 +46,7 @@ namespace ILCompiler
                 yield return existingRoot;
         }
 
-        protected override void CompileInternal(string outputFile)
+        protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             _cppWriter = new CppWriter(this, outputFile);
 

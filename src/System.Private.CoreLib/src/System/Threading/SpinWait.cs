@@ -9,7 +9,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Runtime;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -130,15 +130,15 @@ namespace System.Threading
 
                 if ((yieldsSoFar % SLEEP_1_EVERY_HOW_MANY_TIMES) == (SLEEP_1_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Interop.mincore.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if ((yieldsSoFar % SLEEP_0_EVERY_HOW_MANY_TIMES) == (SLEEP_0_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Interop.mincore.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
-                    RuntimeImports.RhYield();
+                    RuntimeThread.Yield();
                 }
             }
             else
@@ -154,7 +154,7 @@ namespace System.Threading
                 // number of spins we are willing to tolerate to reduce delay to the caller,
                 // since we expect most callers will eventually block anyway.
                 //
-                RuntimeImports.RhSpinWait(4 << _count);
+                RuntimeThread.SpinWait(4 << _count);
             }
 
             // Finally, increment our spin counter.
@@ -263,18 +263,7 @@ namespace System.Threading
             }
             return true;
         }
-
-        public static void Spin(int spins)
-        {
-            RuntimeImports.RhSpinWait(spins);
-        }
-
-        public static void Yield()
-        {
-            RuntimeImports.RhYield();
-        }
         #endregion
-
     }
 
     /// <summary>

@@ -12,8 +12,6 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ReferenceTypeFieldAccessorForInstanceFields : InstanceFieldAccessor
@@ -26,14 +24,26 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _offset = offset;
         }
 
+        public sealed override int Offset => _offset - RuntimeAugments.ObjectHeaderSize;
+
         protected sealed override Object UncheckedGetField(Object obj)
         {
             return RuntimeAugments.LoadReferenceTypeField(obj, _offset);
         }
 
+        protected sealed override object UncheckedGetFieldDirectFromValueType(TypedReference typedReference)
+        {
+            return RuntimeAugments.LoadReferenceTypeFieldValueFromValueType(typedReference, this.Offset);
+        }
+
         protected sealed override void UncheckedSetField(Object obj, Object value)
         {
             RuntimeAugments.StoreReferenceTypeField(obj, _offset, value);
+        }
+
+        protected sealed override void UncheckedSetFieldDirectIntoValueType(TypedReference typedReference, object value)
+        {
+            RuntimeAugments.StoreReferenceTypeFieldValueIntoValueType(typedReference, this.Offset, value);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace System.Reflection.Runtime.MethodInfos
 {
     internal sealed class OpenMethodInvoker : MethodInvoker
     {
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
@@ -23,6 +23,14 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+            }
         }
     }
 }

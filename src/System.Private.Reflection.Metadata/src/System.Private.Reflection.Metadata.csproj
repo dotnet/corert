@@ -7,23 +7,14 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{45A617DF-FEC7-59C8-FD0D-BD27938DC940}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Ignore the CLSCompliance of the generated cs files we are using here -->
-    <NoWarn>$(NoWarn);3003</NoWarn>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
   </ItemGroup>
 
   <PropertyGroup>

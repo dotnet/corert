@@ -482,6 +482,8 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumName(value);
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             ulong rawValue;
@@ -500,6 +502,10 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumNames();
+
             KeyValuePair<String, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
             String[] names = new String[namesAndValues.Length];
             for (int i = 0; i < namesAndValues.Length; i++)
@@ -588,6 +594,10 @@ namespace System
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.IsEnumDefined(value);
+
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
@@ -606,7 +616,7 @@ namespace System
                 ulong rawValue;
                 if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 {
-                    if (IsIntegerType(value.GetType()))
+                    if (Type.IsIntegerType(value.GetType()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), Enum.GetUnderlyingType(enumType)));
                     else
                         throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
@@ -660,27 +670,97 @@ namespace System
             return (TEnum)result;
         }
 
-        public static unsafe Object ToObject(Type enumType, Object value)
+        //
+        // Non-boxing overloads for Enum.ToObject().
+        //
+        // The underlying integer type of the enum does not have to match the type of "value." If
+        // the enum type is larger, this api does a value-preserving widening if possible (or a 2's complement
+        // conversion if not.) If the enum type is smaller, the api discards the higher order bits.
+        // Either way, no exception is thrown upon overflow.
+        //
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, sbyte value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, byte value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ushort value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, short value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, uint value) => ToObjectWorker(enumType, value);
+        public static object ToObject(Type enumType, int value) => ToObjectWorker(enumType, value);
+        [CLSCompliant(false)]
+        public static object ToObject(Type enumType, ulong value) => ToObjectWorker(enumType, (long)value);
+        public static object ToObject(Type enumType, long value) => ToObjectWorker(enumType, value);
+
+        // These are needed to service ToObject(Type, Object).
+        private static object ToObject(Type enumType, char value) => ToObjectWorker(enumType, value);
+        private static object ToObject(Type enumType, bool value) => ToObjectWorker(enumType, value ? 1 : 0);
+
+        // Common helper for the non-boxing Enum.ToObject() overloads.
+        private static object ToObjectWorker(Type enumType, long value)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
 
-            if (!enumType.TypeHandle.ToEETypePtr().IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            ulong rawValue;
-            bool success = TryGetUnboxedValueOfEnumOrInteger(value, out rawValue);
-            if (!success)
-                throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum);
-
-            if (value.EETypePtr.IsEnum && !ValueTypeMatchesEnumType(enumType, value))
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), enumType));
+            if (!enumType.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
 
             EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            return RuntimeImports.RhBox(enumEEType, &rawValue);  //@todo: Not big-endian compatible.
+            if (!enumEEType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
+            unsafe
+            {
+                byte* pValue = (byte*)&value;
+                AdjustForEndianness(ref pValue, enumEEType);
+                return RuntimeImports.RhBox(enumEEType, pValue);
+            }
+        }
+
+        public static Object ToObject(Type enumType, Object value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            Contract.EndContractBlock();
+
+            // Delegate rest of error checking to the other functions
+            TypeCode typeCode = Convert.GetTypeCode(value);
+
+            switch (typeCode)
+            {
+                case TypeCode.Int32:
+                    return ToObject(enumType, (int)value);
+
+                case TypeCode.SByte:
+                    return ToObject(enumType, (sbyte)value);
+
+                case TypeCode.Int16:
+                    return ToObject(enumType, (short)value);
+
+                case TypeCode.Int64:
+                    return ToObject(enumType, (long)value);
+
+                case TypeCode.UInt32:
+                    return ToObject(enumType, (uint)value);
+
+                case TypeCode.Byte:
+                    return ToObject(enumType, (byte)value);
+
+                case TypeCode.UInt16:
+                    return ToObject(enumType, (ushort)value);
+
+                case TypeCode.UInt64:
+                    return ToObject(enumType, (ulong)value);
+
+                case TypeCode.Char:
+                    return ToObject(enumType, (char)value);
+
+                case TypeCode.Boolean:
+                    return ToObject(enumType, (bool)value);
+
+                default:
+                    // All unsigned types will be directly cast
+                    throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
+            }
         }
 
         public static bool TryParse(Type enumType, String value, bool ignoreCase, out Object result)
@@ -742,13 +822,13 @@ namespace System
             return Format(enumInfo, this, format);
         }
 
-        String IFormattable.ToString(String format, IFormatProvider provider)
+        public String ToString(String format, IFormatProvider provider)
         {
             return ToString(format);
         }
 
         [Obsolete("The provider argument is not used. Please use ToString().")]
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             return ToString();
         }
@@ -787,6 +867,15 @@ namespace System
             if (!(enumEEType == value.EETypePtr))
                 return false;
             return true;
+        }
+
+        // Exported for use by legacy user-defined Type Enum apis.
+        internal static ulong ToUInt64(object value)
+        {
+            ulong result;
+            if (!TryGetUnboxedValueOfEnumOrInteger(value, out result))
+                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            return result;
         }
 
         //
@@ -888,7 +977,7 @@ namespace System
 
             if (value == null)
             {
-                exception = new ArgumentNullException("null");
+                exception = new ArgumentNullException(nameof(value));
                 return false;
             }
 
@@ -1086,6 +1175,40 @@ namespace System
             }
         }
 
+        [Conditional("BIGENDIAN")]
+        private static unsafe void AdjustForEndianness(ref byte* pValue, EETypePtr enumEEType)
+        {
+            // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian). 
+            // On Release builds, exclude code to deter IL bloat and toolchain work.
+#if BIGENDIAN || DEBUG
+            RuntimeImports.RhCorElementType corElementType = enumEEType.CorElementType;
+            switch (corElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    pValue += sizeof(long) - sizeof(byte);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    pValue += sizeof(long) - sizeof(short);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    pValue += sizeof(long) - sizeof(int);
+                    break;
+
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
+#endif //BIGENDIAN || DEBUG
+        }
+
         //
         // Sort comparer for NamesAndValues
         //
@@ -1102,20 +1225,6 @@ namespace System
                 else
                     return 0;
             }
-        }
-
-        private static bool IsIntegerType(Type t)
-        {
-            return (t == typeof(int) ||
-                    t == typeof(short) ||
-                    t == typeof(ushort) ||
-                    t == typeof(byte) ||
-                    t == typeof(sbyte) ||
-                    t == typeof(uint) ||
-                    t == typeof(long) ||
-                    t == typeof(ulong) ||
-                    t == typeof(char) ||
-                    t == typeof(bool));
         }
 
         private static NamesAndValueComparer s_nameAndValueComparer = new NamesAndValueComparer();
@@ -1141,7 +1250,7 @@ namespace System
 
 
         #region IConvertible
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             Type enumType = this.GetType();
             Type underlyingType = GetUnderlyingType(enumType);
@@ -1200,91 +1309,76 @@ namespace System
             throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 
-        /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
             return Convert.ToBoolean(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
             return Convert.ToChar(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
             return Convert.ToSByte(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         byte IConvertible.ToByte(IFormatProvider provider)
         {
             return Convert.ToByte(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         short IConvertible.ToInt16(IFormatProvider provider)
         {
             return Convert.ToInt16(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
             return Convert.ToUInt16(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         int IConvertible.ToInt32(IFormatProvider provider)
         {
             return Convert.ToInt32(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
             return Convert.ToUInt32(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         long IConvertible.ToInt64(IFormatProvider provider)
         {
             return Convert.ToInt64(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
             return Convert.ToUInt64(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
             return Convert.ToSingle(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
             return Convert.ToDouble(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(GetValue(), CultureInfo.CurrentCulture);
         }
 
-        /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
             throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Enum", "DateTime"));
         }
 
-        /// <internalonly/>
         Object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);

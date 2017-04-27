@@ -370,7 +370,7 @@ namespace System.Runtime.InteropServices
         // We need to call via an imported stub to do a stdcall without triggering GC
         // We can't use managed calli because the native target address could potentially satisfy a magic
         // bit check and causing the stub to believe it is a managed method which leads to crash.
-#if !RHTESTCL && !CORECLR
+#if !RHTESTCL && !CORECLR && !CORERT
         [MethodImplAttribute(InternalCall)]
 #if X86
         [RuntimeImport("*", "@StdCallCOOP0@8")]
@@ -618,7 +618,7 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfIStreamRead(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbRead);
         internal delegate int AddrOfIStreamSeek(IntPtr pComThis, long dlibMove, int dwOrigin, IntPtr plibNewPosition);
         internal delegate int AddrOfIStreamSetSize(IntPtr pComThis, long libNewSize);
-        internal delegate int AddrOfIStreamStat(IntPtr pComThis, out System.Runtime.InteropServices.ComTypes.STATSTG pstatstg, int grfStatFlag);
+        internal delegate int AddrOfIStreamStat(IntPtr pComThis, IntPtr pstatstg, int grfStatFlag);
         internal delegate int AddrOfIStreamUnlockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamWrite(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbWritten);
 

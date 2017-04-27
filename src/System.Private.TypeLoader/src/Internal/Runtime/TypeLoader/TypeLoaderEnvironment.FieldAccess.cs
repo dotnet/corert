@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -28,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module containing the relevant metadata, null when not found
         /// </summary>
-        public IntPtr MappingTableModule;
+        public TypeManagerHandle MappingTableModule;
 
         /// <summary>
         /// Cookie for field access. This field is set to IntPtr.Zero when the value is not available.
@@ -116,12 +118,12 @@ namespace Internal.Runtime.TypeLoader
             ref FieldAccessMetadata fieldAccessMetadata)
         {
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            IntPtr fieldHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
+            TypeManagerHandle fieldHandleModule = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
             bool isDynamicType = RuntimeAugments.IsDynamicType(declaringTypeHandle);
             string fieldName = null;
             RuntimeTypeHandle declaringTypeHandleDefinition = Instance.GetTypeDefinition(declaringTypeHandle);
 
-            foreach (IntPtr mappingTableModule in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
                 NativeReader fieldMapReader;
                 if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.FieldAccessMap, out fieldMapReader))
@@ -146,7 +148,7 @@ namespace Internal.Runtime.TypeLoader
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
 
-                    if ((canonFormKind == CanonicalFormKind.Universal) != entryFlags.HasFlag(FieldTableFlags.IsUniversalCanonicalEntry))
+                    if ((canonFormKind == CanonicalFormKind.Universal) != ((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) != 0))
                         continue;
 
                     RuntimeTypeHandle entryDeclaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
@@ -154,7 +156,7 @@ namespace Internal.Runtime.TypeLoader
                         && !canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle))
                         continue;
 
-                    if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
+                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
                     {
                         Handle entryFieldHandle = (((int)HandleType.Field << 24) | (int)entryParser.GetUnsigned()).AsHandle();
                         if (!fieldHandle.Equals(entryFieldHandle))
@@ -164,15 +166,16 @@ namespace Internal.Runtime.TypeLoader
                     {
                         if (fieldName == null)
                         {
-                            MetadataReader mdReader;
-                            TypeDefinitionHandle typeDefHandleUnused;
+                            QTypeDefinition qTypeDefinition;
+
                             bool success = Instance.TryGetMetadataForNamedType(
                                 declaringTypeHandleDefinition,
-                                out mdReader,
-                                out typeDefHandleUnused);
+                                out qTypeDefinition);
                             Debug.Assert(success);
 
-                            fieldName = mdReader.GetString(fieldHandle.GetField(mdReader).Name);
+                            MetadataReader nativeFormatMetadataReader = qTypeDefinition.NativeFormatReader;
+
+                            fieldName = nativeFormatMetadataReader.GetString(fieldHandle.GetField(nativeFormatMetadataReader).Name);
                         }
 
                         string entryFieldName = entryParser.GetString();
@@ -195,18 +198,29 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
+                        if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
+                            fieldOffset = cookieOrOffsetOrOrdinal;
+                        else
+                        {
 #if CORERT
-                        fieldOffset = cookieOrOffsetOrOrdinal;
+                            fieldOffset = 0;
+                            fieldAddressCookie = externalReferences.GetFieldAddressFromIndex((uint)cookieOrOffsetOrOrdinal);
+
+                            if((entryFlags & FieldTableFlags.IsGcSection) != 0)
+                                fieldOffset = (int)entryParser.GetUnsigned();
 #else
-                        fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
+                            fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
 #endif
+                        }
                     }
 
                     if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
                     {
+                        // TODO: CoreRT support
+
                         if (canonFormKind != CanonicalFormKind.Universal)
                         {
-                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
+                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, fieldOffset);
                         }
 
                         if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
@@ -226,7 +240,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
 
-                    fieldAccessMetadata.MappingTableModule = mappingTableModule;
+                    fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;
                     fieldAccessMetadata.Cookie = fieldAddressCookie;
                     fieldAccessMetadata.Flags = entryFlags;
                     fieldAccessMetadata.Offset = fieldOffset;
@@ -275,18 +289,18 @@ namespace Internal.Runtime.TypeLoader
         /// RVA of static field for local fields; for remote fields, RVA of a RemoteStaticFieldDescriptor
         /// structure for the field or-ed with the FieldAccessFlags.RemoteStaticFieldRVA bit
         /// </param>
-        private static unsafe IntPtr RvaToNonGenericStaticFieldAddress(IntPtr moduleHandle, int staticFieldRVA)
+        public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
             IntPtr staticFieldAddress;
 
             if ((staticFieldRVA & FieldAccessFlags.RemoteStaticFieldRVA) != 0)
             {
-                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle +
+                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle.ConvertRVAToPointer
                    (staticFieldRVA & ~FieldAccessFlags.RemoteStaticFieldRVA));
                 staticFieldAddress = *descriptor->IndirectionCell + descriptor->Offset;
             }
             else
-                staticFieldAddress = (IntPtr)(moduleHandle + staticFieldRVA);
+                staticFieldAddress = (IntPtr)(moduleHandle.ConvertRVAToPointer(staticFieldRVA));
 
             return staticFieldAddress;
         }
@@ -312,7 +326,7 @@ namespace Internal.Runtime.TypeLoader
             if (RuntimeAugments.IsDynamicType(declaringTypeHandle) || RuntimeAugments.IsGenericType(declaringTypeHandle))
                 return false;
 
-            foreach (IntPtr mappingTableModule in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
                 NativeReader fieldMapReader;
                 if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.FieldAccessMap, out fieldMapReader))
@@ -337,23 +351,23 @@ namespace Internal.Runtime.TypeLoader
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
 
-                    Debug.Assert(!entryFlags.HasFlag(FieldTableFlags.IsUniversalCanonicalEntry));
+                    Debug.Assert((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
 
-                    if (!entryFlags.HasFlag(FieldTableFlags.Static))
+                    if ((entryFlags & FieldTableFlags.Static) == 0)
                         continue;
 
                     switch (fieldAccessKind)
                     {
                         case FieldAccessStaticDataKind.NonGC:
-                            if (entryFlags.HasFlag(FieldTableFlags.IsGcSection))
+                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                 continue;
-                            if (entryFlags.HasFlag(FieldTableFlags.ThreadStatic))
+                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
                                 continue;
                             break;
                         case FieldAccessStaticDataKind.GC:
-                            if (!entryFlags.HasFlag(FieldTableFlags.IsGcSection))
+                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                 continue;
-                            if (entryFlags.HasFlag(FieldTableFlags.ThreadStatic))
+                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
                                 continue;
                             break;
 
@@ -368,7 +382,7 @@ namespace Internal.Runtime.TypeLoader
                     if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
                         continue;
 
-                    if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
+                    if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
                     {
                         // skip metadata handle
                         entryParser.GetUnsigned();
@@ -383,7 +397,7 @@ namespace Internal.Runtime.TypeLoader
                     int fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
 
                     IntPtr fieldAddress = RvaToNonGenericStaticFieldAddress(
-                        mappingTableModule, fieldOffset);
+                        mappingTableModule.Handle, fieldOffset);
 
                     if ((comparableStaticRegionAddress == null) || (comparableStaticRegionAddress > fieldAddress.ToPointer()))
                     {
@@ -457,12 +471,12 @@ namespace Internal.Runtime.TypeLoader
                 return false;
             }
 
-            fieldAccessMetadata.MappingTableModule = IntPtr.Zero;
+            fieldAccessMetadata.MappingTableModule = default(TypeManagerHandle);
 
 #if SUPPORTS_R2R_LOADING
             fieldAccessMetadata.MappingTableModule = ModuleList.Instance.GetModuleForMetadataReader(((NativeFormatType)type.GetTypeDefinition()).MetadataReader);
 #endif
-            fieldAccessMetadata.Offset = fieldDesc.Offset;
+            fieldAccessMetadata.Offset = fieldDesc.Offset.AsInt;
             fieldAccessMetadata.Flags = FieldTableFlags.HasMetadataHandle;
 
             if (fieldDesc.IsThreadStatic)

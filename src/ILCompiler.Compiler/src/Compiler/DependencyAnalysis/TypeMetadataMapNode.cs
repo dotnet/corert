@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 
 using Internal.NativeFormat;
 using Internal.Text;
@@ -13,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between EETypes and metadata records within the <see cref="MetadataNode"/>.
     /// </summary>
-    internal sealed class TypeMetadataMapNode : ObjectNode, ISymbolNode
+    internal sealed class TypeMetadataMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -33,17 +32,17 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             var writer = new NativeWriter();
             var typeMapHashTable = new VertexHashtable();
@@ -51,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
+            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping(factory))
             {
                 if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
                     continue;
@@ -73,13 +72,11 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
     }
 }

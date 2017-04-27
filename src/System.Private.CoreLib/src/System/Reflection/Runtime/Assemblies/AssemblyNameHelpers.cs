@@ -32,8 +32,18 @@ namespace System.Reflection.Runtime.Assemblies
 
             if (a.Version != null)
             {
-                sb.Append(", Version=");
-                sb.Append(a.Version.ToString());
+                Version canonicalizedVersion = a.Version.CanonicalizeVersion();
+                if (canonicalizedVersion.Major != ushort.MaxValue)
+                {
+                    sb.Append(", Version=");
+                    sb.Append(canonicalizedVersion.Major);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Minor);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Build);
+                    sb.Append('.');
+                    sb.Append(canonicalizedVersion.Revision);
+                }
             }
 
             String cultureName = a.CultureName;
@@ -69,7 +79,7 @@ namespace System.Reflection.Runtime.Assemblies
             if (0 != (a.Flags & AssemblyNameFlags.Retargetable))
                 sb.Append(", Retargetable=Yes");
 
-            AssemblyContentType contentType = ExtractAssemblyContentType(a.Flags);
+            AssemblyContentType contentType = a.Flags.ExtractAssemblyContentType();
             if (contentType == AssemblyContentType.WindowsRuntime)
                 sb.Append(", ContentType=WindowsRuntime");
 
@@ -149,23 +159,53 @@ namespace System.Reflection.Runtime.Assemblies
             return new RuntimeAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, combinedFlags, pkCopy);
         }
 
+        public static Version CanonicalizeVersion(this Version version)
+        {
+            ushort major = (ushort)version.Major;
+            ushort minor = (ushort)version.Minor;
+            ushort build = (ushort)version.Build;
+            ushort revision = (ushort)version.Revision;
+
+            if (major == version.Major && minor == version.Minor && build == version.Build && revision == version.Revision)
+                return version;
+
+            return new Version(major, minor, build, revision);
+        }
+
+        //
+        // Ensure that the PublicKeyOrPublicKeyToken (if non-null) is the short token form.
+        //
+        public static RuntimeAssemblyName CanonicalizePublicKeyToken(this RuntimeAssemblyName name)
+        {
+            AssemblyNameFlags flags = name.Flags;
+            if ((flags & AssemblyNameFlags.PublicKey) == 0)
+                return name;
+
+            flags &= ~AssemblyNameFlags.PublicKey;
+            byte[] publicKeyOrToken = name.PublicKeyOrToken;
+            if (publicKeyOrToken != null)
+                publicKeyOrToken = ComputePublicKeyToken(publicKeyOrToken);
+
+            return new RuntimeAssemblyName(name.Name, name.Version, name.CultureName, flags, publicKeyOrToken);
+        }
+
         //
         // These helpers convert between the combined flags+contentType+processorArchitecture value and the separated parts.
         //
         // Since these are only for trusted callers, they do NOT check for out of bound bits. 
         //
 
-        internal static AssemblyContentType ExtractAssemblyContentType(AssemblyNameFlags flags)
+        internal static AssemblyContentType ExtractAssemblyContentType(this AssemblyNameFlags flags)
         {
             return (AssemblyContentType)((((int)flags) >> 9) & 0x7);
         }
 
-        internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
+        internal static ProcessorArchitecture ExtractProcessorArchitecture(this AssemblyNameFlags flags)
         {
             return (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
         }
 
-        internal static AssemblyNameFlags ExtractAssemblyNameFlags(AssemblyNameFlags combinedFlags)
+        public static AssemblyNameFlags ExtractAssemblyNameFlags(this AssemblyNameFlags combinedFlags)
         {
             return combinedFlags & unchecked((AssemblyNameFlags)0xFFFFF10F);
         }

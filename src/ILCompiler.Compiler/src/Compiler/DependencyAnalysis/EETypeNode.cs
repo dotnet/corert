@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
-using ILCompiler.DependencyAnalysisFramework;
+using System.Collections.Generic;
 
 using Internal.IL;
 using Internal.Runtime;
@@ -57,15 +56,19 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    public partial class EETypeNode : ObjectNode, IExportableSymbolNode, IEETypeNode, ISymbolDefinitionNode
     {
         protected TypeDesc _type;
-        protected EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        protected EETypeOptionalFieldsNode _optionalFieldsNode;
+        internal EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        internal EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                Debug.Assert(this is CanonicalDefinitionEETypeNode);
+            else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
+
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
@@ -76,16 +79,23 @@ namespace ILCompiler.DependencyAnalysis
             CheckCanGenerateEEType(factory, type);
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             // If there is a constructed version of this node in the graph, emit that instead
             if (ConstructedEETypeNode.CreationAllowed(_type))
-                return ((DependencyNode)factory.ConstructedTypeSymbol(_type)).Marked;
+                return factory.ConstructedTypeSymbol(_type).Marked;
 
             return false;
         }
+
+        public override ObjectNode NodeForLinkage(NodeFactory factory)
+        {
+            return (ObjectNode)factory.NecessaryTypeSymbol(_type);
+        }
+
+        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
 
         public TypeDesc Type => _type;
 
@@ -100,12 +110,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public int MinimumObjectSize => _type.Context.Target.PointerSize * 3;
+
+        protected virtual bool EmitVirtualSlotsAndInterfaces => false;
+
         internal bool HasOptionalFields
         {
             get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
         }
 
-        internal byte[] GetOptionalFieldsData()
+        internal byte[] GetOptionalFieldsData(NodeFactory factory)
         {
             return _optionalFieldsBuilder.GetBytes();
         }
@@ -117,11 +131,19 @@ namespace ILCompiler.DependencyAnalysis
             _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
         }
 
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return "__EEType_" + nameMangler.GetMangledTypeName(type);
+        }
+
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-        public int Offset => GCDescSize;
+
+        int ISymbolNode.Offset => 0;
+        int ISymbolDefinitionNode.Offset => GCDescSize;
+
         public override bool IsShareable => IsTypeNodeShareable(_type);
 
         public static bool IsTypeNodeShareable(TypeDesc type)
@@ -131,26 +153,71 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            DependencyList dependencies = new DependencyList();
+
+            // Include the optional fields by default. We don't know if optional fields will be needed until
+            // all of the interface usage has been stabilized. If we end up not needing it, the EEType node will not
+            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
+            // emitting it.
+            dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
+
+            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
+            if (_type is MetadataType && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
-                // We need to make sure this is possible.
-                return new DependencyList
+                MetadataType metadataType = (MetadataType)_type;
+
+                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
+                // The StaticsInfoHashtable entries only exist for static fields on generic types.
+
+                if (metadataType.GCStaticFieldSize.AsInt > 0)
                 {
-                    new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor")
-                };
+                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
+                    if (_type.HasInstantiation)
+                    {
+                        dependencies.Add(factory.Indirection(gcStatics), "GC statics indirection for StaticsInfoHashtable");
+                    }
+                    else
+                    {
+                        // TODO: https://github.com/dotnet/corert/issues/3224
+                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
+                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
+                        // we even start the compilation process (with the static bases being compilation roots like any other).
+                        dependencies.Add(gcStatics, "GC statics for ReflectionFieldMap entry");
+                    }
+                }
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                {
+                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
+                    if (_type.HasInstantiation)
+                    {
+                        // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
+                        // context offset.
+                        nonGCStatic = factory.Indirection(nonGCStatic);
+                        dependencies.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
+                    }
+                    else
+                    {
+                        // TODO: https://github.com/dotnet/corert/issues/3224
+                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
+                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
+                        // we even start the compilation process (with the static bases being compilation roots like any other).
+                        dependencies.Add(nonGCStatic, "Non-GC statics for ReflectionFieldMap entry");
+                    }
+                }
+
+                // TODO: TLS dependencies
             }
 
-            return null;
+            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = objData.TargetPointerSize;
-            objData.DefinedSymbols.Add(this);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
-            ComputeOptionalEETypeFields(factory);
+            ComputeOptionalEETypeFields(factory, relocsOnly);
 
             OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
@@ -158,27 +225,47 @@ namespace ILCompiler.DependencyAnalysis
             OutputBaseSize(ref objData);
             OutputRelatedType(factory, ref objData);
 
-            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-            if (!relocsOnly)
-            {
-                OutputVirtualSlotAndInterfaceCount(factory, ref objData);
-            }
+            // Number of vtable slots will be only known later. Reseve the bytes for it.
+            var vtableSlotCountReservation = objData.ReserveShort();
+
+            // Number of interfaces will only be known later. Reserve the bytes for it.
+            var interfaceCountReservation = objData.ReserveShort();
 
             objData.EmitInt(_type.GetHashCode());
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
-            
-            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-            if (!relocsOnly)
+
+            if (EmitVirtualSlotsAndInterfaces)
             {
-                OutputVirtualSlots(factory, ref objData, _type, _type);
+                // Emit VTable
+                Debug.Assert(objData.CountBytes - ((ISymbolDefinitionNode)this).Offset == GetVTableOffset(objData.TargetPointerSize));
+                SlotCounter virtualSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
+                OutputVirtualSlots(factory, ref objData, _type, _type, relocsOnly);
+
+                // Update slot count
+                int numberOfVtableSlots = virtualSlotCounter.CountSlots(ref /* readonly */ objData);
+                objData.EmitShort(vtableSlotCountReservation, checked((short)numberOfVtableSlots));
+
+                // Emit interface map
+                SlotCounter interfaceSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
+                OutputInterfaceMap(factory, ref objData);
+
+                // Update slot count
+                int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
+                objData.EmitShort(interfaceCountReservation, checked((short)numberOfInterfaceSlots));
+
+            }
+            else
+            {
+                // If we're not emitting any slots, the number of slots is zero.
+                objData.EmitShort(vtableSlotCountReservation, 0);
+                objData.EmitShort(interfaceCountReservation, 0);
             }
 
-            OutputInterfaceMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputNullableTypeParameter(factory, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
-            
+
             return objData.ToObjectData();
         }
 
@@ -192,7 +279,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected virtual int GCDescSize => 0;
-        
+
         protected virtual void OutputGCDesc(ref ObjectDataBuilder builder)
         {
             // Non-constructed EETypeNodes get no GC Desc
@@ -203,13 +290,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.IsArray)
             {
-                int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
+                int elementSize = ((ArrayType)_type).ElementType.GetElementSize().AsInt;
                 // We validated that this will fit the short when the node was constructed. No need for nice messages.
                 objData.EmitShort((short)checked((ushort)elementSize));
             }
             else if (_type.IsString)
             {
-                objData.EmitShort(2);
+                objData.EmitShort(StringComponentSize.Value);
             }
             else
             {
@@ -227,8 +314,23 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
-            // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
-            // Todo: Generic Type Definition EETypes
+            if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            {
+                // Runtime casting logic relies on all interface types implemented on arrays
+                // to have the variant flag set (even if all the arguments are non-variant).
+                // This supports e.g. casting uint[] to ICollection<int>
+                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+            }
+
+            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
+
+            // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
+            // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
+            // that it should indirect through the import address table
+            if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
+            {
+                flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
+            }
 
             if (HasOptionalFields)
             {
@@ -238,16 +340,15 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitShort((short)flags);
         }
 
-        private void OutputBaseSize(ref ObjectDataBuilder objData)
+        protected virtual void OutputBaseSize(ref ObjectDataBuilder objData)
         {
             int pointerSize = _type.Context.Target.PointerSize;
-            int minimumObjectSize = pointerSize * 3;
             int objectSize;
 
             if (_type.IsDefType)
             {
                 objectSize = pointerSize +
-                    ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+                    ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
 
                 if (_type.IsValueType)
                     objectSize += pointerSize; // + EETypePtr field inherited from System.Object
@@ -257,7 +358,7 @@ namespace ILCompiler.DependencyAnalysis
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
                 if (_type.IsMdArray)
                     objectSize +=
-                        2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
+                        2 * sizeof(int) * ((ArrayType)_type).Rank;
             }
             else if (_type.IsPointer)
             {
@@ -275,18 +376,34 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotImplementedException();
 
             objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
-            objectSize = Math.Max(minimumObjectSize, objectSize);
+            objectSize = Math.Max(MinimumObjectSize, objectSize);
 
             if (_type.IsString)
             {
                 // If this is a string, throw away objectSize we computed so far. Strings are special.
                 // SyncBlock + EETypePtr + length + firstChar
                 objectSize = 2 * pointerSize +
-                    _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() +
-                    _type.Context.GetWellKnownType(WellKnownType.Char).GetElementSize();
+                    sizeof(int) +
+                    sizeof(char);
             }
 
             objData.EmitInt(objectSize);
+        }
+
+        protected static TypeDesc GetFullCanonicalTypeForCanonicalType(TypeDesc type)
+        {
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            }
+            else if (type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                return type.ConvertToCanonForm(CanonicalFormKind.Universal);
+            }
+            else
+            {
+                return type;
+            }
         }
 
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
@@ -294,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
-        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
@@ -312,6 +429,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            return relatedTypeNode;
+        }
+
+        protected virtual void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
+
             if (relatedTypeNode != null)
             {
                 objData.EmitPointerReloc(relatedTypeNode);
@@ -322,20 +446,64 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual void OutputVirtualSlotAndInterfaceCount(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected virtual void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, bool relocsOnly)
         {
-            objData.EmitShort(0);
-            objData.EmitShort(0);
-        }
+            Debug.Assert(EmitVirtualSlotsAndInterfaces);
 
-        protected virtual void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
-        {
-            // Non-constructed EETypes have no VTable
+            declType = declType.GetClosestDefType();
+
+            var baseType = declType.BaseType;
+            if (baseType != null)
+                OutputVirtualSlots(factory, ref objData, implType, baseType, relocsOnly);
+
+            // The generic dictionary pointer occupies the first slot of each type vtable slice
+            if (declType.HasGenericDictionarySlot())
+            {
+                // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
+                // TODO: emit the correction dictionary slot for interfaces (needed when we start supporting static methods on interfaces)
+                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    objData.EmitZeroPointer();
+                else
+                    objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
+            }
+
+            // It's only okay to touch the actual list of slots if we're in the final emission phase
+            // or the vtable is not built lazily.
+            if (relocsOnly && !factory.CompilationModuleGroup.ShouldProduceFullVTable(declType))
+                return;
+
+            // Actual vtable slots follow
+            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
+
+            for (int i = 0; i < virtualSlots.Count; i++)
+            {
+                MethodDesc declMethod = virtualSlots[i];
+
+                // No generic virtual methods can appear in the vtable!
+                Debug.Assert(!declMethod.HasInstantiation);
+
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+
+                if (!implMethod.IsAbstract)
+                {
+                    MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType));
+                }
+                else
+                {
+                    objData.EmitZeroPointer();
+                }
+            }
         }
         
         protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            // Non-constructed EETypes have no interface map
+            Debug.Assert(EmitVirtualSlotsAndInterfaces);
+
+            foreach (var itf in _type.RuntimeInterfaces)
+            {
+                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(itf));
+            }
         }
 
         private void OutputFinalizerMethod(NodeFactory factory, ref ObjectDataBuilder objData)
@@ -369,13 +537,20 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.HasInstantiation && !_type.IsTypeDefinition)
             {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
                     details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
+                }
+                else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                {
+                    // Runtime casting logic relies on all interface types implemented on arrays
+                    // to have the variant flag set (even if all the arguments are non-variant).
+                    // This supports e.g. casting uint[] to ICollection<int>
+                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
                 }
                 else
                     details = new GenericCompositionDetails(_type);
@@ -387,11 +562,12 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
-        private void ComputeOptionalEETypeFields(NodeFactory factory)
+        protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
-            ComputeICastableVirtualMethodSlots(factory);
+            if (!relocsOnly)
+                ComputeICastableVirtualMethodSlots(factory);
             ComputeValueTypeFieldPadding();
         }
 
@@ -399,9 +575,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint flags = 0;
 
+            MetadataType metadataType = _type as MetadataType;
+
             if (_type.IsNullable)
             {
                 flags |= (uint)EETypeRareFlags.IsNullableFlag;
+
+                // If the nullable type is not part of this compilation group, and
+                // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
+                // that it should indirect through the import address table
+                if (factory.NecessaryTypeSymbol(_type.Instantiation[0]).RepresentsIndirectionCell)
+                    flags |= (uint)EETypeRareFlags.NullableTypeViaIATFlag;
             }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
@@ -414,9 +598,28 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (_type.IsDefType && ((DefType)_type).IsHfa)
+            if (metadataType != null && metadataType.IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
+            }
+
+            foreach (DefType itf in _type.RuntimeInterfaces)
+            {
+                if (itf == factory.ICastableInterface)
+                {
+                    flags |= (uint)EETypeRareFlags.ICastableFlag;
+                    break;
+                }
+            }
+
+            if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
+            {
+                flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
+            }
+
+            if (metadataType != null && metadataType.IsByRefLike)
+            {
+                flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
             }
 
             if (flags != 0)
@@ -434,14 +637,17 @@ namespace ILCompiler.DependencyAnalysis
             if (!_type.IsNullable)
                 return;
 
-            var field = _type.GetKnownField("value");
+            if (!_type.Instantiation[0].IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                var field = _type.GetKnownField("value");
 
-            // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
-            Debug.Assert(field.Offset > 0);
+                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
+                Debug.Assert(field.Offset.AsInt > 0);
 
-            // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
-            // to get a small encoding size win.
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset - 1);
+                // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
+                // to get a small encoding size win.
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
+            }
         }
 
         /// <summary>
@@ -449,42 +655,33 @@ namespace ILCompiler.DependencyAnalysis
         /// Instead, their VTable slots are recorded on the EEType of an object implementing ICastable and are
         /// called directly.
         /// </summary>
-        void ComputeICastableVirtualMethodSlots(NodeFactory factory)
+        protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
         {
-            // TODO: This method is untested (we don't support interfaces yet)
-            if (_type.IsInterface)
+            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces)
                 return;
 
             foreach (DefType itf in _type.RuntimeInterfaces)
             {
                 if (itf == factory.ICastableInterface)
                 {
-                    var isInstMethod = itf.GetKnownMethod("IsInstanceOfInterface", null);
-                    var getImplTypeMethod = itf.GetKnownMethod("GetImplType", null);
+                    MethodDesc isInstDecl = itf.GetKnownMethod("IsInstanceOfInterface", null);
+                    MethodDesc getImplTypeDecl = itf.GetKnownMethod("GetImplType", null);
 
-                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethod);
-                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethod);
+                    MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
+                    MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
 
-                    if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
-                    {
-                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
-                        rareFlags |= (uint)EETypeRareFlags.ICastableFlag;
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
-                    }
+                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethodImpl);
+                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethodImpl);
 
-                    if (isInstMethodSlot != -1)
-                    {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
-                    }
-                    if (getImplTypeMethodSlot != -1)
-                    {
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
-                    }
+                    Debug.Assert(isInstMethodSlot != -1 && getImplTypeMethodSlot != -1);
+
+                    _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
+                    _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
                 }
             }
         }
 
-        void ComputeValueTypeFieldPadding()
+        protected virtual void ComputeValueTypeFieldPadding()
         {
             // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding. 
             // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
@@ -496,8 +693,8 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type as DefType;
             Debug.Assert(defType != null);
 
-            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount - defType.InstanceByteCountUnaligned));
-            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment);
+            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
+            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
@@ -521,19 +718,25 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            // System.__Canon or System.__UniversalCanon
+            if(type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return;
+            }
+
             // It must be possible to create an EEType for the base type of this type
             TypeDesc baseType = type.BaseType;
             if (baseType != null)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(baseType);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(baseType));
             }
             
             // We need EETypes for interfaces
             foreach (var intf in type.RuntimeInterfaces)
             {
                 // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(intf);
+                factory.NecessaryTypeSymbol(GetFullCanonicalTypeForCanonicalType(intf));
             }
 
             // Validate classes, structs, enums, interfaces, and delegates
@@ -562,7 +765,11 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {
                     // ByRefs, pointers, function pointers, and System.Void are never valid instantiation arguments
-                    if (typeArg.IsByRef || typeArg.IsPointer || typeArg.IsFunctionPointer || typeArg.IsVoid)
+                    if (typeArg.IsByRef
+                        || typeArg.IsPointer
+                        || typeArg.IsFunctionPointer
+                        || typeArg.IsVoid
+                        || (typeArg.IsValueType && ((DefType)typeArg).IsByRefLike))
                     {
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
@@ -585,13 +792,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (parameterizedType.IsArray)
                 {
-                    if (parameterType.IsPointer || parameterType.IsFunctionPointer)
+                    if (parameterType.IsFunctionPointer)
                     {
-                        // Arrays of pointers and function pointers are not currently supported
+                        // Arrays of function pointers are not currently supported
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    int elementSize = parameterType.GetElementSize();
+                    int elementSize = parameterType.GetElementSize().AsInt;
                     if (elementSize >= ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc
@@ -601,6 +808,12 @@ namespace ILCompiler.DependencyAnalysis
                     if (((ArrayType)parameterizedType).Rank > 32)
                     {
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
+                    }
+
+                    if ((parameterType.IsDefType) && ((DefType)parameterType).IsByRefLike)
+                    {
+                        // Arrays of byref-like types are not allowed
+                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
                 }
 
@@ -621,6 +834,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
+        }
+
+        private struct SlotCounter
+        {
+            private int _startBytes;
+
+            public static SlotCounter BeginCounting(ref /* readonly */ ObjectDataBuilder builder)
+                => new SlotCounter { _startBytes = builder.CountBytes };
+
+            public int CountSlots(ref /* readonly */ ObjectDataBuilder builder)
+            {
+                int bytesEmitted = builder.CountBytes - _startBytes;
+                Debug.Assert(bytesEmitted % builder.TargetPointerSize == 0);
+                return bytesEmitted / builder.TargetPointerSize;
+            }
+
         }
     }
 }

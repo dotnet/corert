@@ -25,6 +25,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\System.Private.CoreLib\shared\System.Private.CoreLib.Shared.projitems*{be95c560-b508-4588-8907-f9fc5bc1a0cf}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Release|x64 = Release|x64

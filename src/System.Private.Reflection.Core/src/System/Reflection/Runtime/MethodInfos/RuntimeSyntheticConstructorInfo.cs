@@ -61,14 +61,28 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 
-            Object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters);
+            Object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters, binder, invokeAttr, culture);
             return ctorAllocatedObject;
         }
 
@@ -110,6 +124,14 @@ namespace System.Reflection.Runtime.MethodInfos
             // A constructor's "return type" is always System.Void and we don't want to allocate a ParameterInfo object to record that revelation. 
             // In deference to that, ComputeToString() lets us pass null as a synonym for "void."
             return RuntimeMethodHelpers.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, returnParameter: null);
+        }
+
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters

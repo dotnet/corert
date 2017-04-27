@@ -33,13 +33,6 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = TypeFlags.ByRef;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-                if (this.ParameterType.ContainsGenericVariables)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             flags |= TypeFlags.HasGenericVarianceComputed;
 
             return flags;

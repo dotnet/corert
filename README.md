@@ -2,14 +2,14 @@
 This repo contains the .NET Core runtime optimized for AOT compilation
 
 |         |Ubuntu 14.04 |Windows |Mac OS X |
-|---------|:------:|:------:|:------:|:------:|:-------:|:-------:|
+|---------|:------:|:------:|:------:|
 |**Debug**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/debug_osx/)|
 |**Release**|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_ubuntu/)|[![Build status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_windows_nt/)|[![Build Status](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx/badge/icon)](https://ci.dot.net/job/dotnet_corert/job/master/job/release_osx/)|
 
 ## How to Engage, Contribute and Provide Feedback
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
 
-Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/UpForGrabs) issues are a great place to start or take a look at our [documentation](Documentation).
+Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/up-for-grabs) issues are a great place to start or take a look at our [documentation](Documentation).
 
 This project follows the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).
 

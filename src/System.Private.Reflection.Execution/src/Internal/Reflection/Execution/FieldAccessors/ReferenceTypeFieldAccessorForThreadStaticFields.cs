@@ -12,11 +12,9 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ReferenceTypeFieldAccessorForThreadStaticFields : StaticFieldAccessor
+    internal sealed class ReferenceTypeFieldAccessorForThreadStaticFields : WritableStaticFieldAccessor
     {
         private IntPtr _cookie;
         private RuntimeTypeHandle _declaringTypeHandle;
@@ -28,15 +26,14 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _declaringTypeHandle = declaringTypeHandle;
         }
 
-        protected sealed override Object GetFieldBypassCctor(Object obj)
+        protected sealed override Object GetFieldBypassCctor()
         {
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
             return RuntimeAugments.LoadReferenceTypeField(fieldAddress);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value)
+        protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle);
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
             RuntimeAugments.StoreReferenceTypeField(fieldAddress, value);
         }

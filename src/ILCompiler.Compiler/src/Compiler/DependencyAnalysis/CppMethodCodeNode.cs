@@ -48,15 +48,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
+        public bool RepresentsIndirectionCell => false;
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;

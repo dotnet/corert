@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     [CLSCompliant(false)]
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.VtableIUnknown)]
     public unsafe struct __vtable_IUnknown
     {
         // IUnknown
@@ -39,12 +38,22 @@ namespace System.Runtime.InteropServices
         internal IntPtr pfnRelease;
 
         public static IntPtr pNativeVtable;
-        private static __vtable_IUnknown s_theCcwVtable = new __vtable_IUnknown
+
+        private static __vtable_IUnknown s_theCcwVtable;
+
+        /// <summary>
+        /// Eager library initializer called from LibraryInitializer.cs for the module
+        /// </summary>
+        internal static void Initialize()
         {
-            pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(QueryInterface),
-            pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(AddRef),
-            pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(Release),
-        };
+            s_theCcwVtable = new __vtable_IUnknown
+            {
+                pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(QueryInterface),
+                pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(AddRef),
+                pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(Release),
+            };
+        }
+
         internal static IntPtr GetVtableFuncPtr()
         {
             return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_IUnknown);
@@ -1815,6 +1824,25 @@ namespace System.Runtime.InteropServices
         }
     }
 
+    /// <summary>
+    /// Native Value for STATSTG
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    struct STATSTG_UnsafeType
+    {
+        public IntPtr pwcsName;
+        public int type;
+        public long cbSize;
+        public ComTypes.FILETIME mtime;
+        public ComTypes.FILETIME ctime;
+        public ComTypes.FILETIME atime;
+        public int grfMode;
+        public int grfLocksSupported;
+        public Guid clsid;
+        public int grfStateBits;
+        public int reserved;
+    }
+
     unsafe internal struct __vtable_IStream
     {
         // IUnknown
@@ -2031,13 +2059,18 @@ namespace System.Runtime.InteropServices
             return Interop.COM.S_OK;
         }
 
+        const int STG_E_INVALIDPOINTER = unchecked((int)0x80030009);
+
         [NativeCallable]
-        internal static unsafe int Stat(System.IntPtr pComThis, out ComTypes.STATSTG pstatstg, int grfStatFlag)
+        internal static unsafe int Stat(System.IntPtr pComThis, IntPtr pstatstg, int grfStatFlag)
         {
             __com_IStream* pIStream = (__com_IStream*)pComThis;
-            pstatstg = new ComTypes.STATSTG();
-            pstatstg.cbSize = pIStream->m_cbSize;
-            pstatstg.type = 2; // STGTY_STREAM
+            STATSTG_UnsafeType* pUnsafeStatstg = (STATSTG_UnsafeType*)pstatstg;
+            if (pUnsafeStatstg == null)
+                return STG_E_INVALIDPOINTER;
+            pUnsafeStatstg->pwcsName = IntPtr.Zero;
+            pUnsafeStatstg->type = 2; // STGTY_STREAM
+            pUnsafeStatstg->cbSize = pIStream->m_cbSize;
             return Interop.COM.S_OK;
         }
 

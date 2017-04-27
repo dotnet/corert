@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using Internal.Reflection.Extensions.NonPortable;
 
 using Internal.LowLevelLinq;
@@ -330,8 +331,9 @@ namespace System.Reflection
 
         //==============================================================================================================================
         // Helper for the GetCustomAttributes() methods that take a specific attribute type. For desktop compatibility, 
-        // we return an array of the specific attribute type even though the api's return type promises only an IEnumerable<Attribute>.
-        // There are known store apps that cast the results of apis and expect the cast to work.
+        // we return a freshly allocated array of the specific attribute type even though the api's return type promises only an IEnumerable<Attribute>.
+        // There are known store apps that cast the results of apis and expect the cast to work. The implementation of Attribute.GetCustomAttribute()
+        // also relies on this (it performs an unsafe cast to Attribute[] and does not re-copy the array.)
         //==============================================================================================================================
         private static IEnumerable<Attribute> Instantiate(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
@@ -347,5 +349,16 @@ namespace System.Reflection
             attributes.CopyTo(result, 0);
             return result;
         }
+
+        //==============================================================================================================================
+        // This is used to "convert" the output of CustomAttributeExtensions.GetCustomAttributes() from IEnumerable<Attribute> to Attribute[] 
+        // as required by the Attribute.GetCustomAttributes() members.
+        //
+        // This relies on the fact that CustomAttributeExtensions.GetCustomAttribute()'s actual return type is an array whose element type is that 
+        // of the specific attributeType searched on. (Though this isn't explicitly promised, real world code does in fact rely on this so 
+        // this is a compat thing we're stuck with now.)
+        //==============================================================================================================================
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Attribute[] AsAttributeArray(this IEnumerable<Attribute> attributes) => (Attribute[])attributes;
     }
 }

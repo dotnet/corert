@@ -28,10 +28,15 @@ namespace ILCompiler
         private bool _generateFullDgmlLog;
 
         private TargetArchitecture _targetArchitecture;
+        private string _targetArchitectureStr;
         private TargetOS _targetOS;
+        private string _targetOSStr;
+        private OptimizationMode _optimizationMode;
+        private bool _enableDebugInfo;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
+        private string _mapFileName;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -100,6 +105,8 @@ namespace ILCompiler
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
+            bool optimize = false;
+
             bool waitForDebugger = false;
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
@@ -113,6 +120,8 @@ namespace ILCompiler
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOption("o|out", ref _outputFilePath, "Output file path");
+                syntax.DefineOption("O", ref optimize, "Enable optimizations");
+                syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
@@ -123,6 +132,10 @@ namespace ILCompiler
                 syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+
+                syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
+                syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -135,6 +148,9 @@ namespace ILCompiler
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
             }
+
+            _optimizationMode = optimize ? OptimizationMode.Blended : OptimizationMode.None;
+
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
@@ -154,12 +170,39 @@ namespace ILCompiler
                 Help(syntax.GetHelpText());
                 return 1;
             }
-
-            if (_inputFilePaths.Count == 0)
-                throw new CommandLineException("No input files specified");
-
+            
             if (_outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
+
+            //
+            // Set target Architecture and OS
+            //
+            if (_targetArchitectureStr != null)
+            {
+                if (_targetArchitectureStr.Equals("x86", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.X86;
+                else if (_targetArchitectureStr.Equals("x64", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.X64;
+                else if (_targetArchitectureStr.Equals("arm", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARM;
+                else if (_targetArchitectureStr.Equals("armel", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARMEL;
+                else if (_targetArchitectureStr.Equals("arm64", StringComparison.OrdinalIgnoreCase))
+                    _targetArchitecture = TargetArchitecture.ARM64;
+                else
+                    throw new CommandLineException("Target architecture is not supported");
+            }
+            if (_targetOSStr != null)
+            {
+                if (_targetOSStr.Equals("windows", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.Windows;
+                else if (_targetOSStr.Equals("linux", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.Linux;
+                else if (_targetOSStr.Equals("osx", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.OSX;
+                else
+                    throw new CommandLineException("Target OS is not supported");
+            }
 
             //
             // Initialize type system context
@@ -168,11 +211,38 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = _useSharedGenerics ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
-            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS), genericsMode);
-            typeSystemContext.InputFilePaths = _inputFilePaths;
+            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT), genericsMode);
+
+            //
+            // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
+            // some tests contain a mixture of both managed and native binaries.
+            //
+            // See: https://github.com/dotnet/corert/issues/2785
+            //
+            // When we undo this this hack, replace this foreach with
+            //  typeSystemContext.InputFilePaths = _inputFilePaths;
+            //
+            Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
+            foreach (var inputFile in _inputFilePaths)
+            {
+                try
+                {
+                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
+                }
+                catch (TypeSystemException.BadImageFormatException)
+                {
+                    // Keep calm and carry on.
+                }
+            }
+
+            typeSystemContext.InputFilePaths = inputFilePaths;
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+
+            if (typeSystemContext.InputFilePaths.Count == 0)
+                throw new CommandLineException("No input files specified");
 
             //
             // Initialize compilation group and compilation roots
@@ -209,7 +279,9 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule));
+                    LibraryInitializers libraryInitializers =
+                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_multiFile)
@@ -228,10 +300,7 @@ namespace ILCompiler
                         inputModules.Add(module);
                     }
 
-                    if (entrypointModule == null)
-                        compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
-                    else
-                        compilationGroup = new MultiFileLeafCompilationModuleGroup(typeSystemContext, inputModules);
+                    compilationGroup = new MultiFileSharedCompilationModuleGroup(typeSystemContext, inputModules);
                 }
                 else
                 {
@@ -239,20 +308,6 @@ namespace ILCompiler
                         throw new Exception("No entrypoint module");
 
                     compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
-
-                    // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
-                    // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
-                    // a callback object.
-                    //
-                    // Since CoreLib cannot reference anything, the type and it's eager constructor won't be added to the compilation
-                    // unless we explictly add it.
-
-                    var refExec = typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution", false);
-                    if (refExec != null)
-                    {
-                        var exec = refExec.GetType("Internal.Reflection.Execution", "ReflectionExecution");
-                        compilationRoots.Add(new SingleMethodRootProvider(exec.GetStaticConstructor()));
-                    }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
@@ -283,9 +338,13 @@ namespace ILCompiler
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
+                .UseOptimizationMode(_optimizationMode)
+                .UseDebugInfo(_enableDebugInfo)
                 .ToCompilation();
 
-            compilation.Compile(_outputFilePath);
+            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
+
+            compilation.Compile(_outputFilePath, dumper);
 
             if (_dgmlLogFileName != null)
                 compilation.WriteDependencyLog(_dgmlLogFileName);

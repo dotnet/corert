@@ -5,6 +5,7 @@
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -50,8 +51,9 @@ namespace System
     // throw an exception. A conversion from float or double to
     // Decimal throws an OverflowException if the value is not within
     // the range of the Decimal type.
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Decimal : IFormattable, IComparable, IComparable<Decimal>, IEquatable<Decimal>, IConvertible
+    public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
         // positive Decimal value, and a value of one in this bit indicates a
@@ -85,6 +87,8 @@ namespace System
         // Constant representing the smallest possible Decimal value. The value of
         // this constant is -79,228,162,514,264,337,593,543,950,335.
         public const Decimal MinValue = -79228162514264337593543950335m;
+
+        private const int CurrencyScale = 4; // Divide the "Int64" representation by 1E4 to get the "true" value of the Currency.
 
         // The lo, mid, hi, and flags fields contain the representation of the
         // Decimal value. The lo, mid, and hi fields contain the 96-bit integer
@@ -189,6 +193,56 @@ namespace System
             DecCalc.VarDecFromR8(value, out this);
         }
 
+        //
+        // Decimal <==> Currency conversion.
+        //
+        // A Currency represents a positive or negative decimal value with 4 digits past the decimal point. The actual Int64 representation used by these methods
+        // is the currency value multiplied by 10,000. For example, a currency value of $12.99 would be represented by the Int64 value 129,900.
+        //
+
+        public static Decimal FromOACurrency(long cy)
+        {
+            Decimal d = default(Decimal);
+
+            ulong absoluteCy; // has to be ulong to accomodate the case where cy == long.MinValue.
+            if (cy < 0)
+            {
+                d.Sign = true;
+                absoluteCy = (ulong)(-cy);
+            }
+            else
+            {
+                absoluteCy = (ulong)cy;
+            }
+
+            // In most cases, FromOACurrency() produces a Decimal with Scale set to 4. Unless, that is, some of the trailing digits past the decimal point are zero,
+            // in which case, for compatibility with .Net, we reduce the Scale by the number of zeros. While the result is still numerically equivalent, the scale does
+            // affect the ToString() value. In particular, it prevents a converted currency value of $12.95 from printing uglily as "12.9500".
+            int scale = CurrencyScale;
+            if (absoluteCy != 0)  // For compatibility, a currency of 0 emits the Decimal "0.0000" (scale set to 4).
+            {
+                while (scale != 0 && ((absoluteCy % 10) == 0))
+                {
+                    scale--;
+                    absoluteCy /= 10;
+                }
+            }
+
+            // No need to set d.Hi32 - a currency will never go high enough for it to be anything other than zero.
+            d.Low64 = absoluteCy;
+            d.Scale = scale;
+            return d;
+        }
+
+        public static long ToOACurrency(Decimal value)
+        {
+            long cy;
+            DecCalc.VarCyFromDec(ref value, out cy);
+            return cy;
+        }
+
+        private static bool IsValid(uint flags) => (flags & ~(SignMask | ScaleMask)) == 0 && ((flags & ScaleMask) <= (28 << 16));
+
         // Constructs a Decimal from an integer array containing a binary
         // representation. The bits argument must be a non-null integer
         // array with four elements. bits[0], bits[1], and
@@ -225,7 +279,7 @@ namespace System
             if (bits.Length == 4)
             {
                 uint f = (uint)bits[3];
-                if ((f & ~(SignMask | ScaleMask)) == 0 && (f & ScaleMask) <= (28 << 16))
+                if (IsValid(f))
                 {
                     _lo = (uint)bits[0];
                     _mid = (uint)bits[1];
@@ -252,6 +306,19 @@ namespace System
                 _flags |= SignMask;
         }
 
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            // OnDeserialization is called after each instance of this class is deserialized.
+            // This callback method performs decimal validation after being deserialized.
+            try
+            {
+                SetBits(GetBits(this));
+            }
+            catch (ArgumentException e)
+            {
+                throw new SerializationException(SR.Overflow_Decimal, e);
+            }
+        }
 
         // Constructs a Decimal from its constituent parts.
         private Decimal(int lo, int mid, int hi, int flags)
@@ -307,7 +374,7 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Decimal, this method throws an ArgumentException.
         // 
-        int IComparable.CompareTo(Object value)
+        public int CompareTo(Object value)
         {
             if (value == null)
                 return 1;
@@ -539,7 +606,12 @@ namespace System
         // By default a mid-point value is rounded to the nearest even number. If the mode is
         // passed in, it can also round away from zero.
 
-        internal static Decimal Round(Decimal d, int decimals)
+        public static Decimal Round(Decimal d)
+        {
+            return Round(d, 0);
+        }
+
+        public static Decimal Round(Decimal d, int decimals)
         {
             Decimal result = new Decimal();
 
@@ -552,7 +624,12 @@ namespace System
             return d;
         }
 
-        internal static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
+        public static Decimal Round(Decimal d, MidpointRounding mode)
+        {
+            return Round(d, 0, mode);
+        }
+
+        public static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
         {
             if (decimals < 0 || decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
@@ -824,18 +901,18 @@ namespace System
             return new Decimal(value);
         }
 
-        public static explicit operator byte (Decimal value)
+        public static explicit operator byte(Decimal value)
         {
             return ToByte(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator sbyte (Decimal value)
+        public static explicit operator sbyte(Decimal value)
         {
             return ToSByte(value);
         }
 
-        public static explicit operator char (Decimal value)
+        public static explicit operator char(Decimal value)
         {
             UInt16 temp;
             try
@@ -849,45 +926,45 @@ namespace System
             return (char)temp;
         }
 
-        public static explicit operator short (Decimal value)
+        public static explicit operator short(Decimal value)
         {
             return ToInt16(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ushort (Decimal value)
+        public static explicit operator ushort(Decimal value)
         {
             return ToUInt16(value);
         }
 
-        public static explicit operator int (Decimal value)
+        public static explicit operator int(Decimal value)
         {
             return ToInt32(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator uint (Decimal value)
+        public static explicit operator uint(Decimal value)
         {
             return ToUInt32(value);
         }
 
-        public static explicit operator long (Decimal value)
+        public static explicit operator long(Decimal value)
         {
             return ToInt64(value);
         }
 
         [CLSCompliant(false)]
-        public static explicit operator ulong (Decimal value)
+        public static explicit operator ulong(Decimal value)
         {
             return ToUInt64(value);
         }
 
-        public static explicit operator float (Decimal value)
+        public static explicit operator float(Decimal value)
         {
             return ToSingle(value);
         }
 
-        public static explicit operator double (Decimal value)
+        public static explicit operator double(Decimal value)
         {
             return ToDouble(value);
         }
@@ -971,97 +1048,82 @@ namespace System
         // IConvertible implementation
         //
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.Decimal;
         }
 
-        /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
             return Convert.ToBoolean(this);
         }
 
 
-        /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
             throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
         }
 
-        /// <internalonly/>
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
             return Convert.ToSByte(this);
         }
 
-        /// <internalonly/>
         byte IConvertible.ToByte(IFormatProvider provider)
         {
             return Convert.ToByte(this);
         }
 
-        /// <internalonly/>
         short IConvertible.ToInt16(IFormatProvider provider)
         {
             return Convert.ToInt16(this);
         }
 
-        /// <internalonly/>
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
             return Convert.ToUInt16(this);
         }
 
-        /// <internalonly/>
         int IConvertible.ToInt32(IFormatProvider provider)
         {
             return Convert.ToInt32(this);
         }
 
-        /// <internalonly/>
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
             return Convert.ToUInt32(this);
         }
 
-        /// <internalonly/>
         long IConvertible.ToInt64(IFormatProvider provider)
         {
             return Convert.ToInt64(this);
         }
 
-        /// <internalonly/>
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
             return Convert.ToUInt64(this);
         }
 
-        /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
             return Convert.ToSingle(this);
         }
 
-        /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
             return Convert.ToDouble(this);
         }
 
-        /// <internalonly/>
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return this;
         }
 
-        /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
             throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
         }
 
-        /// <internalonly/>
         Object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);

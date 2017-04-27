@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Text
 {
@@ -72,6 +73,13 @@ namespace System.Text
 
     public abstract class Encoding : ICloneable
     {
+        private static Encoding defaultEncoding;
+        
+        internal const int MIMECONTF_MAILNEWS = 0x00000001;
+        internal const int MIMECONTF_BROWSER = 0x00000002;
+        internal const int MIMECONTF_SAVABLE_MAILNEWS = 0x00000100;
+        internal const int MIMECONTF_SAVABLE_BROWSER = 0x00000200;
+
         // Special Case Code Pages
         private const int CodePageDefault = 0;
         private const int CodePageNoOEM = 1;        // OEM Code page not supported
@@ -136,6 +144,8 @@ namespace System.Text
         private const int CodePageUTF32BE = 12001;
 
         internal int m_codePage = 0;
+        
+        internal CodePageDataItem dataItem = null;
 
         private string _webName = null;
         private string _encodingName = null;
@@ -286,7 +296,7 @@ namespace System.Text
             }
 
             // Is it a valid code page?
-            if (EncodingTable.GetWebNameFromCodePage(codepage) == null)
+            if (EncodingTable.GetCodePageDataItem(codepage) == null)
             {
                 throw new NotSupportedException(
                     SR.Format(SR.NotSupported_NoCodepageData, codepage));
@@ -352,10 +362,45 @@ namespace System.Text
             return (GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback));
         }
 
+        // Return a list of all EncodingInfo objects describing all of our encodings
+        [Pure]
+        public static EncodingInfo[] GetEncodings()
+        {
+            return EncodingTable.GetEncodings();
+        }
+
         [Pure]
         public virtual byte[] GetPreamble()
         {
             return Array.Empty<byte>();
+        }
+
+        private void GetDataItem()
+        {
+            if (dataItem == null)
+            {
+                dataItem = EncodingTable.GetCodePageDataItem(m_codePage);
+                if (dataItem == null)
+                {
+                    throw new NotSupportedException(
+                        SR.Format(SR.NotSupported_NoCodepageData, m_codePage));
+                }
+            }
+        }
+
+        // Returns the name for this encoding that can be used with mail agent body tags.
+        // If the encoding may not be used, the string is empty.
+
+        public virtual String BodyName
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.BodyName);
+            }
         }
 
         // Returns the human-readable description of the encoding ( e.g. Hebrew (DOS)).
@@ -380,7 +425,7 @@ namespace System.Text
                         // but we don't localize ProjectN, we specifically need to do something reasonable
                         // in this case. This currently returns the English name of the encoding from a
                         // static data table.
-                        _encodingName = EncodingTable.GetEnglishNameFromCodePage(this.CodePage);
+                        _encodingName = EncodingTable.GetCodePageDataItem(this.CodePage).EnglishName;
                         if (_encodingName == null)
                         {
                             throw new NotSupportedException(
@@ -408,21 +453,104 @@ namespace System.Text
             }
         }
 
+        // Returns the name for this encoding that can be used with mail agent header
+        // tags.  If the encoding may not be used, the string is empty.
+
+        public virtual String HeaderName
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.HeaderName);
+            }
+        }
+
         // Returns the IANA preferred name for this encoding.
         public virtual String WebName
         {
             get
             {
-                if (_webName == null)
+                if (dataItem == null)
                 {
-                    _webName = EncodingTable.GetWebNameFromCodePage(m_codePage);
-                    if (_webName == null)
-                    {
-                        throw new NotSupportedException(
-                            SR.Format(SR.NotSupported_NoCodepageData, m_codePage));
-                    }
+                    GetDataItem();
                 }
-                return _webName;
+                return (dataItem.WebName);
+            }
+        }
+
+        // Returns the windows code page that most closely corresponds to this encoding.
+
+        public virtual int WindowsCodePage
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return (dataItem.UIFamilyCodePage);
+            }
+        }
+
+
+        // True if and only if the encoding is used for display by browsers clients.
+
+        public virtual bool IsBrowserDisplay
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_BROWSER) != 0);
+            }
+        }
+
+        // True if and only if the encoding is used for saving by browsers clients.
+
+        public virtual bool IsBrowserSave
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_SAVABLE_BROWSER) != 0);
+            }
+        }
+
+        // True if and only if the encoding is used for display by mail and news clients.
+
+        public virtual bool IsMailNewsDisplay
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_MAILNEWS) != 0);
+            }
+        }
+
+
+        // True if and only if the encoding is used for saving documents by mail and
+        // news clients
+
+        public virtual bool IsMailNewsSave
+        {
+            get
+            {
+                if (dataItem == null)
+                {
+                    GetDataItem();
+                }
+                return ((dataItem.Flags & MIMECONTF_SAVABLE_MAILNEWS) != 0);
             }
         }
 
@@ -547,12 +675,12 @@ namespace System.Text
         public int GetByteCount(string s, int index, int count)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s), 
+                throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
-            if (index< 0)
+            if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count< 0)
+            if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > s.Length - count)
@@ -562,7 +690,7 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char * pChar = s)
+                fixed (char* pChar = s)
                 {
                     return GetByteCount(pChar + index, count);
                 }
@@ -671,10 +799,10 @@ namespace System.Text
             if (s == null)
                 throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
-            if (index< 0)
+            if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count< 0)
+            if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > s.Length - count)
@@ -684,14 +812,14 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char * pChar = s)
+                fixed (char* pChar = s)
                 {
                     int byteCount = GetByteCount(pChar + index, count);
                     if (byteCount == 0)
                         return Array.Empty<byte>();
 
                     byte[] bytes = new byte[byteCount];
-                    fixed (byte * pBytes = &bytes[0])
+                    fixed (byte* pBytes = &bytes[0])
                     {
                         int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
                         Debug.Assert(byteCount == bytesReceived);
@@ -719,7 +847,7 @@ namespace System.Text
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -728,7 +856,7 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetBytes() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the byte[] to our byte* output buffer.  If the result count was wrong, we
@@ -766,7 +894,7 @@ namespace System.Text
 
             // Copy the byte array
             // WARNING: We MUST make sure that we don't copy too many bytes.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than byteCount bytes no matter the value
             // of result
             if (result < byteCount)
@@ -801,7 +929,7 @@ namespace System.Text
         public abstract int GetCharCount(byte[] bytes, int index, int count);
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         [Pure]
         [CLSCompliant(false)]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
@@ -873,7 +1001,7 @@ namespace System.Text
 
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
-        // ones we need a working (if slow) default implimentation)
+        // ones we need a working (if slow) default implementation)
         //
         // WARNING WARNING WARNING
         //
@@ -882,7 +1010,7 @@ namespace System.Text
         // and indexes are correct when you call this method.
         //
         // In addition, we have internal code, which will be marked as "safe" calling
-        // this code.  However this code is dependent upon the implimentation of an
+        // this code.  However this code is dependent upon the implementation of an
         // external GetChars() method, which could be overridden by a third party and
         // the results of which cannot be guaranteed.  We use that result to copy
         // the char[] to our char* output buffer.  If the result count was wrong, we
@@ -920,7 +1048,7 @@ namespace System.Text
 
             // Copy the char array
             // WARNING: We MUST make sure that we don't copy too many chars.  We can't
-            // rely on result because it could be a 3rd party implimentation.  We need
+            // rely on result because it could be a 3rd party implementation.  We need
             // to make sure we never copy more than charCount chars no matter the value
             // of result
             if (result < charCount)
@@ -969,6 +1097,21 @@ namespace System.Text
             }
         }
 
+        // IsAlwaysNormalized
+        // Returns true if the encoding is always normalized for the specified encoding form
+        [Pure]
+        public bool IsAlwaysNormalized()
+        {
+            return this.IsAlwaysNormalized(NormalizationForm.FormC);
+        }
+
+        [Pure]
+        public virtual bool IsAlwaysNormalized(NormalizationForm form)
+        {
+            // Assume false unless the encoding knows otherwise
+            return false;
+        }
+
         // Returns a Decoder object for this encoding. The returned object
         // can be used to decode a sequence of bytes into a sequence of characters.
         // Contrary to the GetChars family of methods, a Decoder can
@@ -987,6 +1130,26 @@ namespace System.Text
         {
             return new DefaultDecoder(this);
         }
+
+        private static Encoding CreateDefaultEncoding()
+        {
+            // defaultEncoding should be null if we get here, but we can't
+            // assert that in case another thread beat us to the initialization
+
+            Encoding enc;
+
+
+            // For silverlight we use UTF8 since ANSI isn't available
+            enc = UTF8;
+
+
+            // This method should only ever return one Encoding instance
+            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
+        }
+
+        // Returns an encoding for the system's current ANSI code page.
+
+        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
 
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
@@ -1225,7 +1388,7 @@ namespace System.Text
                 return _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
             }
 
-            internal unsafe override int GetBytes(char* chars, int charCount,
+            public unsafe override int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, bool flush)
             {
                 return _encoding.GetBytes(chars, charCount, bytes, byteCount);
@@ -1258,7 +1421,7 @@ namespace System.Text
                 return _encoding.GetCharCount(bytes, index, count);
             }
 
-            internal unsafe override int GetCharCount(byte* bytes, int count, bool flush)
+            public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
             {
                 // By default just call the encoding version, no flush by default
                 return _encoding.GetCharCount(bytes, count);
@@ -1293,7 +1456,7 @@ namespace System.Text
                 return _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             }
 
-            internal unsafe override int GetChars(byte* bytes, int byteCount,
+            public unsafe override int GetChars(byte* bytes, int byteCount,
                                                   char* chars, int charCount, bool flush)
             {
                 // By default just call the encoding's version

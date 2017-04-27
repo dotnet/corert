@@ -23,21 +23,8 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class MetadataReaderExtensions
+    internal static class NativeFormatMetadataReaderExtensions
     {
-        public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
-        // Useful for namespace Name string which can be a null handle.
-        public static String GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            if (reader.IsNull(handle))
-                return null;
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, String valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
@@ -97,14 +84,6 @@ namespace System.Reflection.Runtime.General
         }
 
 
-        public static bool IsTypeDefRefOrSpecHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.TypeDefinition ||
-                handleType == HandleType.TypeReference ||
-                handleType == HandleType.TypeSpecification;
-        }
-
         public static bool IsNamespaceDefinitionHandle(this Handle handle, MetadataReader reader)
         {
             HandleType handleType = handle.HandleType;
@@ -156,16 +135,31 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        // If a typedef/ref/spec handle has one or more custom modifiers wrapped around it, unwrap it. All we care about is the actual type.
-        public static Handle WithoutCustomModifiers(this Handle h, MetadataReader reader)
+        // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
+        // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
+        // safe for returning to api callers.
+        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
         {
-            HandleType handleType;
-            while ((handleType = h.HandleType) == HandleType.ModifiedType)
+            HandleType handleType = handle.HandleType;
+            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
+            if (handleType != HandleType.ModifiedType)
+                return Array.Empty<Type>();
+
+            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            do
             {
-                h = h.ToModifiedTypeHandle(reader).GetModifiedType(reader).Type;
+                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                if (optional == modifiedType.IsOptional)
+                {
+                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
+                    customModifiers.Add(customModifier);
+                }
+
+                handle = modifiedType.Type;
+                handleType = handle.HandleType;
             }
-            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification);
-            return h;
+            while (handleType == HandleType.ModifiedType);
+            return customModifiers.ToArray();
         }
 
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)
@@ -385,7 +379,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static IEnumerable TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
+        private static Array TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
         {
             exception = null;
 
@@ -393,43 +387,58 @@ namespace System.Reflection.Runtime.General
             switch (handleType)
             {
                 case HandleType.ConstantBooleanArray:
-                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value;
-
-                case HandleType.ConstantStringArray:
-                    return handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
+                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantCharArray:
-                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value;
+                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantByteArray:
-                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value;
+                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantSByteArray:
-                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value;
+                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt16Array:
-                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value;
+                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt16Array:
-                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value;
+                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt32Array:
-                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value;
+                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt32Array:
-                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value;
+                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantInt64Array:
-                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value;
+                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantUInt64Array:
-                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value;
+                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantSingleArray:
-                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value;
+                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value.ReadOnlyCollectionToArray();
 
                 case HandleType.ConstantDoubleArray:
-                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value;
+                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ReadOnlyCollectionToArray();
+
+                case HandleType.ConstantEnumArray:
+                    return TryParseConstantEnumArray(handle.ToConstantEnumArrayHandle(reader), reader, out exception);
+
+                case HandleType.ConstantStringArray:
+                    {
+                        Handle[] constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value.ToArray();
+                        string[] elements = new string[constantHandles.Length];
+                        for (int i = 0; i < constantHandles.Length; i++)
+                        {
+                            object elementValue;
+                            exception = constantHandles[i].TryParseConstantValue(reader, out elementValue);
+                            if (exception != null)
+                                return null;
+                            elements[i] = (string)elementValue;
+                        }
+                        return elements;
+                    }
 
                 case HandleType.ConstantHandleArray:
                     {
@@ -443,6 +452,46 @@ namespace System.Reflection.Runtime.General
                         }
                         return elements;
                     }
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
+        private static Array TryParseConstantEnumArray(this ConstantEnumArrayHandle handle, MetadataReader reader, out Exception exception)
+        {
+            exception = null;
+
+            ConstantEnumArray enumArray = handle.GetConstantEnumArray(reader);
+            Type elementType = enumArray.ElementType.TryResolve(reader, new TypeContext(null, null), ref exception);
+            if (exception != null)
+                return null;
+
+            switch (enumArray.Value.HandleType)
+            {
+                case HandleType.ConstantByteArray:
+                    return enumArray.Value.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantSByteArray:
+                    return enumArray.Value.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt16Array:
+                    return enumArray.Value.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt16Array:
+                    return enumArray.Value.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt32Array:
+                    return enumArray.Value.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt32Array:
+                    return enumArray.Value.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantInt64Array:
+                    return enumArray.Value.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
+                case HandleType.ConstantUInt64Array:
+                    return enumArray.Value.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+
                 default:
                     throw new BadImageFormatException();
             }
@@ -633,66 +682,6 @@ namespace System.Reflection.Runtime.General
             ReverseStringInStringBuilder(fullName, 0, fullName.Length);
             fullName.Append(typeName);
             return fullName.ToString();
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
-        {
-            ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeDefinition.Name,
-                scopeDefinition.MajorVersion,
-                scopeDefinition.MinorVersion,
-                scopeDefinition.BuildNumber,
-                scopeDefinition.RevisionNumber,
-                scopeDefinition.Culture,
-                scopeDefinition.PublicKey,
-                scopeDefinition.Flags
-                );
-        }
-
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
-        {
-            ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeReference.Name,
-                scopeReference.MajorVersion,
-                scopeReference.MinorVersion,
-                scopeReference.BuildNumber,
-                scopeReference.RevisionNumber,
-                scopeReference.Culture,
-                scopeReference.PublicKeyOrToken,
-                scopeReference.Flags
-                );
-        }
-
-        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
-            MetadataReader reader,
-            ConstantStringValueHandle name,
-            ushort majorVersion,
-            ushort minorVersion,
-            ushort buildNumber,
-            ushort revisionNumber,
-            ConstantStringValueHandle culture,
-            IEnumerable<byte> publicKeyOrToken,
-            NativeFormatAssemblyFlags assemblyFlags)
-        {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
-
-            return new RuntimeAssemblyName(
-                name.GetString(reader),
-                new Version(majorVersion, minorVersion, buildNumber, revisionNumber),
-                culture.GetStringOrNull(reader),
-                assemblyNameFlags,
-                publicKeyOrToken.ToArray()
-                );
         }
     }
 }

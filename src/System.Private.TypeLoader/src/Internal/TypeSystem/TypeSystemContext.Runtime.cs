@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -93,6 +96,12 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable PointerTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
+        /// <summary>
+        /// Cache of ByRef types created by the builder to prevent duplication
+        /// </summary>
+        internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
+            new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
+
         internal TypeDesc GetTypeFromCorElementType(CorElementType corElementType)
         {
             switch (corElementType)
@@ -159,6 +168,46 @@ namespace Internal.TypeSystem
         private LowLevelDictionary<RuntimeTypeHandle, TypeDesc> _runtimeTypeHandleResolutionCache =
              new LowLevelDictionary<RuntimeTypeHandle, TypeDesc>();
 
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        internal TypeDesc GetTypeDescFromQHandle(QTypeDefinition qTypeDefinition)
+        {
+#if ECMA_METADATA_SUPPORT
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+#endif
+            {
+                MetadataReader nativeFormatMetadataReader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
+                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(nativeFormatMetadataReader);
+                NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(module);
+                NativeFormatType nativeFormatType = (NativeFormatType)metadataUnit.GetType(typeDefinitionHandle);
+                return nativeFormatType;
+            }
+#if ECMA_METADATA_SUPPORT
+            else if (qTypeDefinition.IsEcmaFormatMetadataBased)
+            {
+                EcmaModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(qTypeDefinition.EcmaFormatReader);
+                Ecma.EcmaModule ecmaModule = ResolveEcmaModule(module);
+                Ecma.EcmaType ecmaType = (Ecma.EcmaType)ecmaModule.GetType(qTypeDefinition.EcmaFormatHandle);
+                return ecmaType;
+            }
+#endif
+            return null;
+        }
+#endif
+
+        // Helper routine for ResolveRuntimeTypeHandle, used to handle lookups which may result in a metadata based type.
+        private TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
+        {
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+            QTypeDefinition qTypeDefinition;
+            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+            {
+                return GetTypeDescFromQHandle(qTypeDefinition);
+            }
+#endif
+            return null;
+        }
+
         public TypeDesc ResolveRuntimeTypeHandle(RuntimeTypeHandle rtth)
         {
             TypeDesc returnedType;
@@ -175,19 +224,8 @@ namespace Internal.TypeSystem
             }
             else if (RuntimeAugments.IsGenericTypeDefinition(rtth))
             {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataReader metadataReader;
-                TypeDefinitionHandle typeDefinitionHandle;
-                if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out metadataReader, out typeDefinitionHandle))
-                {
-                    IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
-                    NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(moduleHandle);
-                    NativeFormatType nativeFormatType = (NativeFormatType)metadataUnit.GetType(typeDefinitionHandle);
-
-                    returnedType = nativeFormatType;
-                }
+                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
                 if (returnedType == null)
-#endif
                 {
                     unsafe
                     {
@@ -229,19 +267,16 @@ namespace Internal.TypeSystem
                 TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
                 returnedType = GetPointerType(targetType);
             }
+            else if (RuntimeAugments.IsByRefType(rtth))
+            {
+                RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
+                TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
+                returnedType = GetByRefType(targetType);
+            }
             else
             {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataReader metadataReader;
-                TypeDefinitionHandle typeDefinitionHandle;
-                if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out metadataReader, out typeDefinitionHandle))
-                {
-                    IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(metadataReader);
-                    NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(moduleHandle);
-                    returnedType = metadataUnit.GetType(typeDefinitionHandle);
-                }
-                else
-#endif
+                returnedType = TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(rtth);
+                if (returnedType == null)
                 {
                     returnedType = new NoMetadataType(this, rtth, null, Instantiation.Empty, rtth.GetHashCode());
                 }
@@ -509,7 +544,7 @@ namespace Internal.TypeSystem
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public class ModuleToMetadataUnitHashtable : LockFreeReaderHashtable<IntPtr, NativeFormat.NativeFormatMetadataUnit>
+        public class ModuleToMetadataUnitHashtable : LockFreeReaderHashtable<NativeFormatModuleInfo, NativeFormat.NativeFormatMetadataUnit>
         {
             private TypeSystemContext _context;
 
@@ -518,36 +553,35 @@ namespace Internal.TypeSystem
                 _context = context;
             }
 
-            protected override int GetKeyHashCode(IntPtr key)
+            protected override int GetKeyHashCode(NativeFormatModuleInfo key)
             {
                 return key.GetHashCode();
             }
 
             protected override int GetValueHashCode(NativeFormat.NativeFormatMetadataUnit value)
             {
-                return value.RuntimeModule.GetHashCode();
+                return value.RuntimeModuleInfo.GetHashCode();
             }
 
-            protected override bool CompareKeyToValue(IntPtr key, NativeFormat.NativeFormatMetadataUnit value)
+            protected override bool CompareKeyToValue(NativeFormatModuleInfo key, NativeFormat.NativeFormatMetadataUnit value)
             {
-                return key == value.RuntimeModule;
+                return key == value.RuntimeModuleInfo;
             }
 
             protected override bool CompareValueToValue(NativeFormat.NativeFormatMetadataUnit value1, NativeFormat.NativeFormatMetadataUnit value2)
             {
-                return value1.RuntimeModule == value2.RuntimeModule;
+                return value1.RuntimeModuleInfo == value2.RuntimeModuleInfo;
             }
 
-            protected override NativeFormat.NativeFormatMetadataUnit CreateValueFromKey(IntPtr key)
+            protected override NativeFormat.NativeFormatMetadataUnit CreateValueFromKey(NativeFormatModuleInfo key)
             {
-                var reader = ModuleList.Instance.GetMetadataReaderForModule(key);
-                return new NativeFormat.NativeFormatMetadataUnit(_context, key, reader);
+                return new NativeFormat.NativeFormatMetadataUnit(_context, key, key.MetadataReader);
             }
         }
 
         private ModuleToMetadataUnitHashtable _metadataUnits = null;
 
-        internal NativeFormat.NativeFormatMetadataUnit ResolveMetadataUnit(IntPtr module)
+        internal NativeFormat.NativeFormatMetadataUnit ResolveMetadataUnit(NativeFormatModuleInfo module)
         {
             if (_metadataUnits == null)
                 _metadataUnits = new ModuleToMetadataUnitHashtable(this);
@@ -647,6 +681,55 @@ namespace Internal.TypeSystem
                 return _canonTypeArray;
             }
         }
+
+#if ECMA_METADATA_SUPPORT
+        public class ModuleToEcmaModuleHashtable : LockFreeReaderHashtable<EcmaModuleInfo, Internal.TypeSystem.Ecma.EcmaModule>
+        {
+            private TypeSystemContext _context;
+
+            public ModuleToEcmaModuleHashtable(TypeSystemContext context)
+            {
+                _context = context;
+            }
+
+            protected override int GetKeyHashCode(EcmaModuleInfo key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(Internal.TypeSystem.Ecma.EcmaModule value)
+            {
+                return value.RuntimeModuleInfo.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(EcmaModuleInfo key, Internal.TypeSystem.Ecma.EcmaModule value)
+            {
+                return key == value.RuntimeModuleInfo;
+            }
+
+            protected override bool CompareValueToValue(Internal.TypeSystem.Ecma.EcmaModule value1, Internal.TypeSystem.Ecma.EcmaModule value2)
+            {
+                return value1.RuntimeModuleInfo == value2.RuntimeModuleInfo;
+            }
+
+            protected override Internal.TypeSystem.Ecma.EcmaModule CreateValueFromKey(EcmaModuleInfo key)
+            {
+                Internal.TypeSystem.Ecma.EcmaModule result = new Internal.TypeSystem.Ecma.EcmaModule(_context, key.PE, key.MetadataReader);
+                result.SetRuntimeModuleInfoUNSAFE(key);
+                return result;
+            }
+        }
+
+        private ModuleToEcmaModuleHashtable _ecmaModules = null;
+
+        internal Internal.TypeSystem.Ecma.EcmaModule ResolveEcmaModule(EcmaModuleInfo module)
+        {
+            if (_ecmaModules == null)
+                _ecmaModules = new ModuleToEcmaModuleHashtable(this);
+
+            return _ecmaModules.GetOrCreateValue(module);
+        }        
+#endif // ECMA_METADATA_SUPPORT        
     }
 
     internal static partial class TypeNameHelper

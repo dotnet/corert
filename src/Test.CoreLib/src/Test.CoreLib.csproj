@@ -9,6 +9,8 @@
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Hack to disable analyzers. Replace once https://github.com/dotnet/buildtools/issues/1349 is fixed. -->
+    <CodeAnalyzerDir>$(MSBuildThisFileDirectory)/Documentation</CodeAnalyzerDir>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
@@ -23,23 +25,14 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
-    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- For now, link Runtime.Base into Test.CoreLib until there is proper multifile build -->
   <PropertyGroup>
@@ -48,6 +41,7 @@
   <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
@@ -124,6 +118,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Array.cs">
       <Link>System\Array.cs</Link>
     </Compile>
@@ -159,9 +156,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Nullable.cs">
       <Link>System\Nullable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Object.cs">
-      <Link>System\Object.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\ParamArrayAttribute.cs">
       <Link>System\ParamArrayAttribute.cs</Link>
@@ -252,6 +246,10 @@
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="System\Object.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup>

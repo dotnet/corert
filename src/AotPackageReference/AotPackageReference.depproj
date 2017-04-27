@@ -19,7 +19,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <PropertyGroup>
-    <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     <NuGetRuntimeIdentifier>win8-aot</NuGetRuntimeIdentifier>
   </PropertyGroup>
 </Project>

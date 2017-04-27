@@ -5,9 +5,11 @@
 using System.Text;
 using System.Runtime;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -19,13 +21,33 @@ namespace System
     // sequential layout directive so that Bartok matches it.
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
-    public abstract partial class Delegate : ICloneable
+    public abstract partial class Delegate : ICloneable, ISerializable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
         internal Delegate()
         {
             // ! Do NOT put any code here. Delegate constructers are not guaranteed to be executed.
+        }
+
+        // V1 API: Create closed instance delegates. Method name matching is case sensitive.
+        protected Delegate(Object target, String method)
+        {
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
+        }
+
+        // V1 API: Create open static delegates. Method name matching is case insensitive.
+        protected Delegate(Type target, String method)
+        {
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
         }
 
         // New Delegate Implementation
@@ -120,13 +142,10 @@ namespace System
         // @todo: Not an api but some NativeThreadPool code still depends on it.
         internal IntPtr GetNativeFunctionPointer()
         {
-            // CORERT-TODO: PInvoke delegate marshalling
-#if !CORERT
             if (GetThunk(ReversePinvokeThunk) != m_functionPointer)
             {
                 throw new InvalidOperationException("GetNativeFunctionPointer may only be used on a reverse pinvoke delegate");
             }
-#endif
 
             return m_extraFunctionPointerOrData;
         }
@@ -161,6 +180,44 @@ namespace System
                 m_extraFunctionPointerOrData = functionPointer;
                 m_helperObject = firstParameter;
             }
+        }
+
+        // This function is known to the compiler.
+        protected void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        {
+            if (firstParameter == null)
+                throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+
+            if (functionResolution == IntPtr.Zero)
+            {
+                // TODO! What to do when GVM resolution fails. Should never happen
+                throw new InvalidOperationException();
+            }
+            if (!FunctionPointerOps.IsGenericMethodPointer(functionResolution))
+            {
+                m_functionPointer = functionResolution;
+                m_firstParameter = firstParameter;
+            }
+            else
+            {
+                m_firstParameter = this;
+                m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
+                m_extraFunctionPointerOrData = functionResolution;
+                m_helperObject = firstParameter;
+            }
+
+            return;
+        }
+
+        private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
+        {
+            if (firstParameter == null)
+                throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+            m_functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
+            m_firstParameter = firstParameter;
         }
 
         // This is used to implement MethodInfo.CreateDelegate() in a desktop-compatible way. Yes, the desktop really
@@ -241,7 +298,7 @@ namespace System
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, 0);
+            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
             m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
         }
 
@@ -251,7 +308,7 @@ namespace System
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = GetThunk(OpenInstanceThunk);
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, 0);
+            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
             m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
         }
 
@@ -294,7 +351,7 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public object DynamicInvoke(params object[] args)
+        protected virtual object DynamicInvokeImpl(object[] args)
         {
             if (IsDynamicDelegate())
             {
@@ -306,10 +363,18 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
+                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
+        }
+
+        [DebuggerGuidedStepThroughAttribute]
+        public object DynamicInvoke(params object[] args)
+        {
+            object result = DynamicInvokeImpl(args);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public static unsafe Delegate Combine(Delegate a, Delegate b)
@@ -331,7 +396,7 @@ namespace System
                 return source;
 
             if (!InternalEqualTypes(source, value))
-                throw new ArgumentException("The types of 'source' and 'value' should match.");
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             return source.RemoveImpl(value);
         }
@@ -418,7 +483,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        internal Delegate CombineImpl(Delegate follow)
+        protected virtual Delegate CombineImpl(Delegate follow)
         {
             if ((Object)follow == null) // cast to object for a more efficient test
                 return this;
@@ -541,7 +606,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        internal Delegate RemoveImpl(Delegate value)
+        protected virtual Delegate RemoveImpl(Delegate value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -630,7 +695,7 @@ namespace System
                 int invocationCount = (int)m_extraFunctionPointerOrData;
                 del = new Delegate[invocationCount];
 
-                for (int i = 0; i < invocationCount; i++)
+                for (int i = 0; i < del.Length; i++)
                     del[i] = invocationList[i];
             }
             return del;
@@ -702,9 +767,32 @@ namespace System
             }
         }
 
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
+        public static Delegate CreateDelegate(Type type, MethodInfo method) => CreateDelegate(type, method, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, method, throwOnBindFailure);
+
+        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        public static Delegate CreateDelegate(Type type, object target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+
         public virtual object Clone()
         {
             return MemberwiseClone();
+        }
+
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotSupportedException();
         }
 
         internal bool IsOpenStatic

@@ -56,6 +56,18 @@ public:
     static void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
 
     static Thread* CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg);
+
+    // Diagnostics methods.
+    static void DiagGCStart(int gen, bool isInduced);
+    static void DiagUpdateGenerationBounds();
+    static void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
+    static void DiagWalkFReachableObjects(void* gcContext);
+    static void DiagWalkSurvivors(void* gcContext);
+    static void DiagWalkLOHSurvivors(void* gcContext);
+    static void DiagWalkBGCSurvivors(void* gcContext);
+    static void StompWriteBarrier(WriteBarrierParameters* args);
+
+    static void EnableFinalization(bool foundFinalizers);
 };
 
 #endif // __GCENV_EE_H__

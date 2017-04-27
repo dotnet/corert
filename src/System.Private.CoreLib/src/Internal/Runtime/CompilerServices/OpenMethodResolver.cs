@@ -24,32 +24,36 @@ namespace Internal.Runtime.CompilerServices
         public const short OpenNonVirtualResolve = 2;
 
         private readonly short _resolveType;
+        private readonly GCHandle _readerGCHandle;
         private readonly int _handle;
         private readonly IntPtr _methodHandleOrSlotOrCodePointer;
         private readonly EETypePtr _declaringType;
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, int slot, int handle)
+        public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, int slot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = DispatchResolve;
             _declaringType = declaringTypeOfSlot.ToEETypePtr();
             _methodHandleOrSlotOrCodePointer = new IntPtr(slot);
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
         }
 
-        public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, int handle)
+        public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = GVMResolve;
             _methodHandleOrSlotOrCodePointer = *(IntPtr*)&gvmSlot;
             _declaringType = declaringTypeOfSlot.ToEETypePtr();
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
         }
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, int handle)
+        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
         {
             _resolveType = OpenNonVirtualResolve;
             _methodHandleOrSlotOrCodePointer = codePointer;
             _declaringType = declaringType.ToEETypePtr();
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
         }
 
         public short ResolverType
@@ -83,6 +87,14 @@ namespace Internal.Runtime.CompilerServices
             get
             {
                 return _methodHandleOrSlotOrCodePointer;
+            }
+        }
+
+        public object Reader
+        {
+            get
+            {
+                return _readerGCHandle.Target;
             }
         }
 

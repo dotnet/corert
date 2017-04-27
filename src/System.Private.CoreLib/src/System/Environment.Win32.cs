@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+
 namespace System
 {
-    public static partial class Environment
+    internal static partial class Environment
     {
-        public static unsafe String GetEnvironmentVariable(String variable)
+        public static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
                 throw new ArgumentNullException(nameof(variable));
@@ -18,45 +20,21 @@ namespace System
             // In that case we resize the buffer and try again.
 
             int currentSize = 128;
-            char* blob = stackalloc char[currentSize];   // A somewhat reasonable default size
-
-            int requiredSize;
-            fixed (char* pText = variable)
+            for (;;)
             {
-                requiredSize = Interop.mincore.GetEnvironmentVariable(pText, blob, currentSize);
-            }
+                char[] buffer = ArrayPool<char>.Shared.Rent(currentSize);
 
-            if (requiredSize == 0)
-            {
-                return null;
-            }
-
-            if (requiredSize <= currentSize)
-            {
-                return new string(blob);
-            }
-
-            // Fallback to using heap allocated buffers.
-            char[] newblob = null;
-            while (requiredSize > currentSize)
-            {
-                currentSize = requiredSize;
-                // need to retry since the environment variable might be changed 
-                newblob = new char[currentSize];
-                fixed (char* pText = variable, pBlob = newblob)
+                int actualSize = Interop.mincore.GetEnvironmentVariable(variable, buffer, buffer.Length);
+                if (actualSize <= buffer.Length)
                 {
-                    requiredSize = Interop.mincore.GetEnvironmentVariable(pText, pBlob, currentSize);
+                    string result = (actualSize != 0) ? new string(buffer, 0, actualSize) : null;
+                    ArrayPool<char>.Shared.Return(buffer);
+                    return result;
                 }
 
-                if (requiredSize == 0)
-                {
-                    return null;
-                }
+                ArrayPool<char>.Shared.Return(buffer);
+                currentSize = actualSize;
             }
-            // We should never end up with a null blob
-            Diagnostics.Debug.Assert(newblob != null);
-
-            return new string(newblob);
         }
     }
 }

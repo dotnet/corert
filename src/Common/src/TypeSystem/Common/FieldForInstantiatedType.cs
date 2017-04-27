@@ -6,7 +6,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public sealed class FieldForInstantiatedType : FieldDesc
+    public sealed partial class FieldForInstantiatedType : FieldDesc
     {
         private FieldDesc _fieldDef;
         private InstantiatedType _instantiatedType;

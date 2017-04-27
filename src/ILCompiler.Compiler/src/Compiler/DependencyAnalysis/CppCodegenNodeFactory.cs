@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class CppCodegenNodeFactory : NodeFactory
     {
         public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
-            : base(context, compilationModuleGroup)
+            : base(context, compilationModuleGroup, new CompilerGeneratedMetadataManager(compilationModuleGroup, context), new CoreRTNameMangler(true))
         {
         }
 
@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return new ExternMethodSymbolNode(method);
+                return new ExternMethodSymbolNode(this, method);
             }
         }
 
@@ -33,10 +33,10 @@ namespace ILCompiler.DependencyAnalysis
             return new UnboxingStubNode(method);
         }
 
-        protected override ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, object> helperCall)
+        protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             // TODO: this is wrong: this returns an assembly stub node
-            return new ReadyToRunHelperNode(this, helperCall.Item1, helperCall.Item2);
+            return new ReadyToRunHelperNode(this, helperCall.HelperId, helperCall.Target);
         }
     }
 }

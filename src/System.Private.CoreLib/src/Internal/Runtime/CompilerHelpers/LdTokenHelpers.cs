@@ -17,5 +17,19 @@ namespace Internal.Runtime.CompilerHelpers
         {
             return new RuntimeTypeHandle(new EETypePtr(pEEType));
         }
+
+        private static unsafe RuntimeMethodHandle GetRuntimeMethodHandle(IntPtr pHandleSignature)
+        {
+            RuntimeMethodHandle returnValue;
+            *(IntPtr*)&returnValue = pHandleSignature;
+            return returnValue;
+        }
+
+        private static unsafe RuntimeFieldHandle GetRuntimeFieldHandle(IntPtr pHandleSignature)
+        {
+            RuntimeFieldHandle returnValue;
+            *(IntPtr*)&returnValue = pHandleSignature;
+            return returnValue;
+        }
     }
 }

@@ -13,6 +13,7 @@ using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
@@ -36,11 +37,30 @@ namespace Internal.Reflection.Execution.MethodInvokers
         //
         // Creates the appropriate flavor of Invoker depending on the calling convention "shape" (static, instance or virtual.)
         //
-        internal static MethodInvoker CreateMethodInvoker(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, MethodInvokeInfo methodInvokeInfo)
+        internal static MethodInvoker CreateMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, MethodInvokeInfo methodInvokeInfo)
         {
-            Method method = methodHandle.GetMethod(reader);
-            MethodAttributes methodAttributes = method.Flags;
-            if (0 != (methodAttributes & MethodAttributes.Static))
+            bool isStatic = false;
+            
+            if (methodHandle.IsNativeFormatMetadataBased)
+            {
+                Method method = methodHandle.NativeFormatHandle.GetMethod(methodHandle.NativeFormatReader);
+                MethodAttributes methodAttributes = method.Flags;
+                if (0 != (methodAttributes & MethodAttributes.Static))
+                    isStatic = true;
+            }
+#if ECMA_METADATA_SUPPORT
+            if (methodHandle.IsEcmaFormatMetadataBased)
+            {
+                var reader = methodHandle.EcmaFormatReader;
+                var method = reader.GetMethodDefinition(methodHandle.EcmaFormatHandle);
+                var blobReader = reader.GetBlobReader(method.Signature);
+                byte sigByte = blobReader.ReadByte();
+                if ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Instance) == 0)
+                    isStatic = true;
+            }
+#endif
+
+            if (isStatic)
                 return new StaticMethodInvoker(methodInvokeInfo);
             else if (methodInvokeInfo.VirtualResolveData != IntPtr.Zero)
                 return new VirtualMethodInvoker(methodInvokeInfo, declaringTypeHandle);

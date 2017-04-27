@@ -33,7 +33,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-            QTypeDefRefOrSpec[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
+            QSignatureTypeHandle[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
             int count = typeSignatures.Length;
 
             VirtualRuntimeParameterInfoArray result = new VirtualRuntimeParameterInfoArray(count);
@@ -102,7 +102,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     sep = ",";
                     String name = methodTypeArgument.InternalNameIfAvailable;
                     if (name == null)
-                        name = ToStringUtils.UnavailableType;
+                        name = Type.DefaultTypeNameWhenMissingMetadata;
                     sb.Append(methodTypeArgument.Name);
                 }
                 sb.Append(']');

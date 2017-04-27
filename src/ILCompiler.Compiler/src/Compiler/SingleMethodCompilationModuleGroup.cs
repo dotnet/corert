@@ -38,7 +38,22 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ExportsType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool ExportsMethod(MethodDesc method)
+        {
+            return false;
+        }
+
+        public override bool ShouldProduceFullVTable(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool ShouldPromoteToFullType(TypeDesc type)
         {
             return false;
         }
@@ -46,6 +61,14 @@ namespace ILCompiler
         public override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
             return false;
+        }
+
+        public override bool CanHaveReferenceThroughImportTable
+        {
+            get
+            {
+                return false;
+            }
         }
     }
 }

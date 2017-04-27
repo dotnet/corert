@@ -14,11 +14,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Text;
+
 
 namespace System.Globalization
 {
-    public partial class TextInfo : ICloneable
+    public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         ////--------------------------------------------------------------------//
         ////                        Internal Information                        //
@@ -49,8 +51,8 @@ namespace System.Globalization
         ////      
 
         private readonly String _cultureName;      // Name of the culture that created this text info
-        private readonly CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
-        private readonly String _textInfoName;     // Name of the text info we're using (ie: m_cultureData.STEXTINFO)
+        private CultureData _cultureData;      // Data record for the culture that made us, not for this textinfo
+        private String _textInfoName;     // Name of the text info we're using (ie: _cultureData.STEXTINFO)
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
@@ -64,6 +66,23 @@ namespace System.Globalization
             }
         }
         internal volatile static TextInfo s_Invariant;
+
+        void IDeserializationCallback.OnDeserialization(Object sender)
+        {
+            OnDeserialized();
+        }
+
+        private void OnDeserialized()
+        {
+            // this method will be called twice because of the support of IDeserializationCallback
+            if (_cultureData == null)
+            {
+                // Get the text info name belonging to that culture
+                _cultureData = CultureInfo.GetCultureInfo(_cultureName)._cultureData;
+                _textInfoName = _cultureData.STEXTINFO;
+                FinishInitialization(_textInfoName);
+            }
+        }
 
         //
         // Internal ordinal comparison functions
@@ -597,37 +616,37 @@ namespace System.Globalization
         // considered as word seprator or not.
         //
         private const int c_wordSeparatorMask =
-            /* false */ (0 <<  0) | // UppercaseLetter = 0,
-            /* false */ (0 <<  1) | // LowercaseLetter = 1,
-            /* false */ (0 <<  2) | // TitlecaseLetter = 2,
-            /* false */ (0 <<  3) | // ModifierLetter = 3,
-            /* false */ (0 <<  4) | // OtherLetter = 4,
-            /* false */ (0 <<  5) | // NonSpacingMark = 5,
-            /* false */ (0 <<  6) | // SpacingCombiningMark = 6,
-            /* false */ (0 <<  7) | // EnclosingMark = 7,
-            /* false */ (0 <<  8) | // DecimalDigitNumber = 8,
-            /* false */ (0 <<  9) | // LetterNumber = 9,
-            /* false */ (0 << 10) | // OtherNumber = 10,
-            /* true  */ (1 << 11) | // SpaceSeparator = 11,
-            /* true  */ (1 << 12) | // LineSeparator = 12,
-            /* true  */ (1 << 13) | // ParagraphSeparator = 13,
-            /* true  */ (1 << 14) | // Control = 14,
-            /* true  */ (1 << 15) | // Format = 15,
-            /* false */ (0 << 16) | // Surrogate = 16,
-            /* false */ (0 << 17) | // PrivateUse = 17,
-            /* true  */ (1 << 18) | // ConnectorPunctuation = 18,
-            /* true  */ (1 << 19) | // DashPunctuation = 19,
-            /* true  */ (1 << 20) | // OpenPunctuation = 20,
-            /* true  */ (1 << 21) | // ClosePunctuation = 21,
-            /* true  */ (1 << 22) | // InitialQuotePunctuation = 22,
-            /* true  */ (1 << 23) | // FinalQuotePunctuation = 23,
-            /* true  */ (1 << 24) | // OtherPunctuation = 24,
-            /* true  */ (1 << 25) | // MathSymbol = 25,
-            /* true  */ (1 << 26) | // CurrencySymbol = 26,
-            /* true  */ (1 << 27) | // ModifierSymbol = 27,
-            /* true  */ (1 << 28) | // OtherSymbol = 28,
-            /* false */ (0 << 29);  // OtherNotAssigned = 29;
-        
+            /* false */ (0 << 0) | // UppercaseLetter = 0,
+                                   /* false */ (0 << 1) | // LowercaseLetter = 1,
+                                   /* false */ (0 << 2) | // TitlecaseLetter = 2,
+                                   /* false */ (0 << 3) | // ModifierLetter = 3,
+                                   /* false */ (0 << 4) | // OtherLetter = 4,
+                                   /* false */ (0 << 5) | // NonSpacingMark = 5,
+                                   /* false */ (0 << 6) | // SpacingCombiningMark = 6,
+                                   /* false */ (0 << 7) | // EnclosingMark = 7,
+                                   /* false */ (0 << 8) | // DecimalDigitNumber = 8,
+                                   /* false */ (0 << 9) | // LetterNumber = 9,
+                                   /* false */ (0 << 10) | // OtherNumber = 10,
+                                    /* true  */ (1 << 11) | // SpaceSeparator = 11,
+                                    /* true  */ (1 << 12) | // LineSeparator = 12,
+                                    /* true  */ (1 << 13) | // ParagraphSeparator = 13,
+                                    /* true  */ (1 << 14) | // Control = 14,
+                                    /* true  */ (1 << 15) | // Format = 15,
+                                    /* false */ (0 << 16) | // Surrogate = 16,
+                                    /* false */ (0 << 17) | // PrivateUse = 17,
+                                    /* true  */ (1 << 18) | // ConnectorPunctuation = 18,
+                                    /* true  */ (1 << 19) | // DashPunctuation = 19,
+                                    /* true  */ (1 << 20) | // OpenPunctuation = 20,
+                                    /* true  */ (1 << 21) | // ClosePunctuation = 21,
+                                    /* true  */ (1 << 22) | // InitialQuotePunctuation = 22,
+                                    /* true  */ (1 << 23) | // FinalQuotePunctuation = 23,
+                                    /* true  */ (1 << 24) | // OtherPunctuation = 24,
+                                    /* true  */ (1 << 25) | // MathSymbol = 25,
+                                    /* true  */ (1 << 26) | // CurrencySymbol = 26,
+                                    /* true  */ (1 << 27) | // ModifierSymbol = 27,
+                                    /* true  */ (1 << 28) | // OtherSymbol = 28,
+                                    /* false */ (0 << 29);  // OtherNotAssigned = 29;
+
         private static bool IsWordSeparator(UnicodeCategory category)
         {
             return (c_wordSeparatorMask & (1 << (int)category)) != 0;

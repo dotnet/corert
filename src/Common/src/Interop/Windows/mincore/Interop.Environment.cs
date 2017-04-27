@@ -10,9 +10,8 @@ internal static partial class Interop
 {
     internal static unsafe partial class mincore
     {
-        // TODO: Once we have marshalling setup we probably want to revisit these PInvokes
-        [DllImport(Libraries.ProcessEnvironment, EntryPoint = "GetEnvironmentVariableW")]
-        internal static extern unsafe int GetEnvironmentVariable(char* lpName, char* lpValue, int size);
+        [DllImport(Libraries.ProcessEnvironment, CharSet = CharSet.Unicode, EntryPoint = "GetEnvironmentVariableW")]
+        internal static extern unsafe int GetEnvironmentVariable(string lpName, [Out] char[] lpValue, int size);
 
         [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static extern void ExitProcess(int exitCode);

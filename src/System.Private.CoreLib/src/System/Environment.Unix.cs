@@ -4,52 +4,20 @@
 
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
-    public static partial class Environment
+    internal static partial class Environment
     {
+        internal static int CurrentNativeThreadId => ManagedThreadId.Current;
+
         internal static long TickCount64
         {
             get
             {
                 return (long)Interop.Sys.GetTickCount64();
             }
-        }
-
-        public static unsafe String ExpandEnvironmentVariables(String name)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-            {
-                return name;
-            }
-
-            int currentSize = 100;
-            StringBuilder blob = new StringBuilder(currentSize); // A somewhat reasonable default size
-
-            int lastPos = 0, pos;
-            while (lastPos < name.Length && (pos = name.IndexOf('%', lastPos + 1)) >= 0)
-            {
-                if (name[lastPos] == '%')
-                {
-                    string key = name.Substring(lastPos + 1, pos - lastPos - 1);
-                    string value = Environment.GetEnvironmentVariable(key);
-                    if (value != null)
-                    {
-                        blob.Append(value);
-                        lastPos = pos + 1;
-                        continue;
-                    }
-                }
-                blob.Append(name.Substring(lastPos, pos - lastPos));
-                lastPos = pos;
-            }
-            blob.Append(name.Substring(lastPos));
-
-            return blob.ToString();
         }
 
         public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);

@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-using global::System.Runtime.InteropServices;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Execution.MethodInvokers;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Execution.FieldAccessors;
+using Internal.Reflection.Execution.MethodInvokers;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
@@ -144,6 +144,14 @@ namespace Internal.Reflection.Execution
         public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle)
         {
             return Empty<CustomAttributeData>.Enumerable;
+        }
+
+        //==============================================================================================
+        // Miscellaneous
+        //==============================================================================================
+        public sealed override FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle)
+        {
+            return new LiteralFieldAccessor(value, fieldTypeHandle); 
         }
     }
 }

@@ -4,6 +4,8 @@ set(COMMON_RUNTIME_SOURCES
     CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugEventSource.cpp
+    DebugFuncEval.cpp
+    DebuggerHook.cpp
     dllmain.cpp
     eetype.cpp
     EHHelpers.cpp
@@ -136,9 +138,12 @@ endif()
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/CallingConventionConverterHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}  
   ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
@@ -159,6 +164,7 @@ add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
+add_definitions(-DEETYPE_TYPE_MANAGER)
 
 if(WIN32)
   # There is a problem with undefined symbol g_pConfig, windows don't care since it is in template method, but clang does 

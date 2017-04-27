@@ -32,9 +32,9 @@ namespace System.Threading
         // header (i.e. ends with bit 0) and that (MASK_HASHCODE_INDEX + 1) does not overflow
         // the Int32 type (i.e. the mask may be no longer than 30 bits).
 
-        private  const int IS_HASHCODE_BIT_NUMBER = 26;
-        private  const int BIT_SBLK_IS_HASHCODE   = 1 << IS_HASHCODE_BIT_NUMBER;
-        internal const int MASK_HASHCODE_INDEX    = BIT_SBLK_IS_HASHCODE - 1;
+        private const int IS_HASHCODE_BIT_NUMBER = 26;
+        private const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
+        internal const int MASK_HASHCODE_INDEX = BIT_SBLK_IS_HASHCODE - 1;
 
         /// <summary>
         /// Returns the hash code assigned to the object.  If no hash code has yet been assigned,

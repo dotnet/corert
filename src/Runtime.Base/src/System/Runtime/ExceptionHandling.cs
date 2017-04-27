@@ -162,7 +162,7 @@ namespace System.Runtime
         {
             // Find the classlib function that will fail fast. This is a RuntimeExport function from the 
             // classlib module, and is therefore managed-callable.
-            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress,
+            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress,
                                                                            ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
@@ -198,12 +198,6 @@ namespace System.Runtime
         {
         }
 
-#if ARM
-        private const int c_IPAdjustForHardwareFault = 2;
-#else
-        private const int c_IPAdjustForHardwareFault = 1;
-#endif
-
         internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
@@ -220,7 +214,7 @@ namespace System.Runtime
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
             IntPtr pFailFastFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress, ClassLibFunctionId.FailFast);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(classlibAddress, ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
             {
@@ -234,13 +228,6 @@ namespace System.Runtime
             const int contextAlignment = 16;
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
-
-            // We 'normalized' the faulting IP of hardware faults to behave like return addresses.  Undo this
-            // normalization here so that we report the correct thing in the exception context record.
-            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
-            {
-                exInfo._pExContext->IP = (IntPtr)(((byte*)exInfo._pExContext->IP) - c_IPAdjustForHardwareFault);
-            }
 
             InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
 
@@ -266,7 +253,7 @@ namespace System.Runtime
         private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr IP,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
         {
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(IP,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(IP,
                 ClassLibFunctionId.AppendExceptionStackFrame);
 
             if (pAppendStackFrame != IntPtr.Zero)
@@ -297,7 +284,7 @@ namespace System.Runtime
             // Find the classlib function that will give us the exception object we want to throw. This
             // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
             IntPtr pGetRuntimeExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunction(address, ClassLibFunctionId.GetRuntimeException);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
 
             // Return the exception object we get from the classlib.
             Exception e = null;
@@ -317,6 +304,42 @@ namespace System.Runtime
                     RhFailFastReason.ClassLibDidNotTranslateExceptionID,
                     null,
                     address);
+            }
+
+            return e;
+        }
+
+        // Given an ExceptionID and an EEtype address, get an exception object of a type that the module containing 
+        // the given address will understand. This finds the classlib-defined GetRuntimeException function and asks 
+        // it for the exception object.
+        internal static Exception GetClasslibExceptionFromEEType(ExceptionIDs id, IntPtr pEEType)
+        {
+            // Find the classlib function that will give us the exception object we want to throw. This
+            // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
+            IntPtr pGetRuntimeExceptionFunction = IntPtr.Zero;
+            if (pEEType != IntPtr.Zero)
+            {
+                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype(pEEType, ClassLibFunctionId.GetRuntimeException);
+            }
+
+            // Return the exception object we get from the classlib.
+            Exception e = null;
+            try
+            {
+                e = CalliIntrinsics.Call<Exception>(pGetRuntimeExceptionFunction, id);
+            }
+            catch
+            {
+                // disallow all exceptions leaking out of callbacks
+            }
+
+            // If the helper fails to yield an object, then we fail-fast.
+            if (e == null)
+            {
+                FailFastViaClasslib(
+                    RhFailFastReason.ClassLibDidNotTranslateExceptionID,
+                    null,
+                    pEEType);
             }
 
             return e;
@@ -387,6 +410,7 @@ namespace System.Runtime
         private enum HwExceptionCode : uint
         {
             STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
+            STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE = 0x00000042u,
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
@@ -410,19 +434,20 @@ namespace System.Runtime
             None = 0,
             Throw = 1,
             HardwareFault = 2,
-            // unused: 3
             KindMask = 3,
 
             RethrowFlag = 4,
-            Rethrow = 5,        // RethrowFlag | Throw
-            RethrowFault = 6,   // RethrowFlag | HardwareFault
+
+            SupersededFlag = 8,
+
+            InstructionFaultFlag = 0x10
         }
 
         [StackOnly]
         [StructLayout(LayoutKind.Explicit)]
         public struct ExInfo
         {
-            internal void Init(object exceptionObj)
+            internal void Init(object exceptionObj, bool instructionFault = false)
             {
                 // _pPrevExInfo    -- set by asm helper
                 // _pExContext     -- set by asm helper
@@ -432,6 +457,8 @@ namespace System.Runtime
                 // _frameIter      -- initialized explicitly during dispatch
 
                 _exception = exceptionObj;
+                if (instructionFault)
+                    _kind |= ExKind.InstructionFaultFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
             }
 
@@ -496,11 +523,20 @@ namespace System.Runtime
             InternalCalls.RhpValidateExInfoStack();
 
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
+            bool instructionFault = true;
 
             ExceptionIDs exceptionId;
             switch (exceptionCode)
             {
                 case (uint)HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
+                    exceptionId = ExceptionIDs.NullReference;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE:
+                    // The write barrier where the actual fault happened has been unwound already.
+                    // The IP of this fault needs to be treated as return address, not as IP of 
+                    // faulting instruction.
+                    instructionFault = false;
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
@@ -533,7 +569,7 @@ namespace System.Runtime
 
             Exception exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
 
-            exInfo.Init(exceptionToThrow);
+            exInfo.Init(exceptionToThrow, instructionFault);
             DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
@@ -598,7 +634,7 @@ namespace System.Runtime
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
 
-            bool isValid = frameIter.Init(exInfo._pExContext);
+            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
             DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.ControlPC, frameIter.SP);
             for (; isValid; isValid = frameIter.Next(out startIdx, out unwoundReversePInvoke))
@@ -662,7 +698,7 @@ namespace System.Runtime
 
             exInfo._passNumber = 2;
             startIdx = MaxTryRegionIdx;
-            isValid = frameIter.Init(exInfo._pExContext);
+            isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(out startIdx))
             {
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");

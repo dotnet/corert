@@ -200,7 +200,6 @@ class SchemaDef
     {
         new PrimitiveType("bool", "Boolean"),
         new PrimitiveType("char", "Char"),
-        new PrimitiveType("string", "String"),
         new PrimitiveType("byte", "Byte"),
         new PrimitiveType("sbyte", "SByte"),
         new PrimitiveType("short", "Int16"),
@@ -305,6 +304,12 @@ class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: "Object", flags: MemberDefFlags.NotPersisted)
                     }
+                ),
+                new RecordDef(
+                    name: "ConstantStringValue",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: "string")
+                    }
                 )
             }
         )
@@ -333,7 +338,20 @@ class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
                     }
-                )
+                ),
+                new RecordDef(
+                    name: "ConstantStringArray",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: new string[] { "ConstantStringValue", "ConstantReferenceValue" }, flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
+                    }
+                ),
+                new RecordDef(
+                    name: "ConstantEnumArray",
+                    members: new MemberDef[] {
+                        new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                        new MemberDef("Value", ConstantEnumArrayValue, MemberDefFlags.RecordRef)
+                    }
+                ),
             }
         )
         .ToArray();
@@ -357,6 +375,18 @@ class SchemaDef
         "ConstantUInt32Value",
         "ConstantInt64Value",
         "ConstantUInt64Value",
+    };
+
+    private static readonly string[] ConstantEnumArrayValue = new string[]
+    {
+        "ConstantByteArray",
+        "ConstantSByteArray",
+        "ConstantInt16Array",
+        "ConstantUInt16Array",
+        "ConstantInt32Array",
+        "ConstantUInt32Array",
+        "ConstantInt64Array",
+        "ConstantUInt64Array",
     };
 
     private static readonly string[] TypeDefOrRef = new string[]
@@ -602,7 +632,7 @@ class SchemaDef
             name: "ConstantBoxedEnumValue",
             members: new MemberDef[] {
                 new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRef, MemberDefFlags.RecordRef)
+                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
             }
         ),
         new RecordDef(

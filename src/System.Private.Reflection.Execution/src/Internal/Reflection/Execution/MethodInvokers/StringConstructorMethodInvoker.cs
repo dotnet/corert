@@ -58,31 +58,31 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             switch (_id)
             {
                 case StringConstructorId.CharArray:
                     {
                         CheckArgumentCount(arguments, 1);
-                        char[] value = (char[])(RuntimeAugments.CheckArgument(arguments[0], typeof(char[]).TypeHandle));
+                        char[] value = (char[])(RuntimeAugments.CheckArgument(arguments[0], typeof(char[]).TypeHandle, binderBundle));
                         return new String(value);
                     }
 
                 case StringConstructorId.Char_Int:
                     {
                         CheckArgumentCount(arguments, 2);
-                        char c = (char)(RuntimeAugments.CheckArgument(arguments[0], typeof(char).TypeHandle));
-                        int count = (int)(RuntimeAugments.CheckArgument(arguments[1], typeof(int).TypeHandle));
+                        char c = (char)(RuntimeAugments.CheckArgument(arguments[0], typeof(char).TypeHandle, binderBundle));
+                        int count = (int)(RuntimeAugments.CheckArgument(arguments[1], typeof(int).TypeHandle, binderBundle));
                         return new String(c, count);
                     }
 
                 case StringConstructorId.CharArray_Int_Int:
                     {
                         CheckArgumentCount(arguments, 3);
-                        char[] value = (char[])(RuntimeAugments.CheckArgument(arguments[0], typeof(char[]).TypeHandle));
-                        int startIndex = (int)(RuntimeAugments.CheckArgument(arguments[1], typeof(int).TypeHandle));
-                        int length = (int)(RuntimeAugments.CheckArgument(arguments[2], typeof(int).TypeHandle));
+                        char[] value = (char[])(RuntimeAugments.CheckArgument(arguments[0], typeof(char[]).TypeHandle, binderBundle));
+                        int startIndex = (int)(RuntimeAugments.CheckArgument(arguments[1], typeof(int).TypeHandle, binderBundle));
+                        int length = (int)(RuntimeAugments.CheckArgument(arguments[2], typeof(int).TypeHandle, binderBundle));
                         return new String(value, startIndex, length);
                     }
 
@@ -95,6 +95,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             Debug.Assert(false, "This code should be unreachable. ConstructorInfos do not expose a CreateDelegate().");
             throw NotImplemented.ByDesign;
+        }
+
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         private void CheckArgumentCount(Object[] arguments, int expected)

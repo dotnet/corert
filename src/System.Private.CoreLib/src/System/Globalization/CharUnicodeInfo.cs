@@ -178,7 +178,7 @@ namespace System.Globalization
             fixed (ushort* pUshortPtr = &(s_pNumericLevel1Index[index]))
             {
                 byte* pBytePtr = (byte*)pUshortPtr;
-                fixed (byte* pByteNum = s_pNumericValues)
+                fixed (byte* pByteNum = &s_pNumericValues[0])
                 {
                     double* pDouble = (double*)pByteNum;
                     return pDouble[pBytePtr[(ch & 0x000f)]];

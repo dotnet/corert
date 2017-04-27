@@ -55,6 +55,8 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
+
 namespace Internal.Runtime.TypeLoader
 {
     public class CallConverterThunk
@@ -116,8 +118,6 @@ namespace Internal.Runtime.TypeLoader
 
         static unsafe CallConverterThunk()
         {
-            // TODO: export CallingConventionConverter_GetStubs on CoreRT
-#if !CORERT
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
@@ -131,8 +131,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 CallingConventionConverter_SpecifyCommonStubData((IntPtr)commonStubData);
             }
-#endif
-
 #endif
         }
 

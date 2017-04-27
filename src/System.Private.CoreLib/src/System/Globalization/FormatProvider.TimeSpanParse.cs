@@ -571,7 +571,7 @@ namespace System.Globalization
                 }
 
                 Int64 ticks = ((Int64)days.num * 3600 * 24 + (Int64)hours.num * 3600 + (Int64)minutes.num * 60 + seconds.num) * 1000;
-                if (ticks > InternalGloablizationHelper.MaxMilliSeconds || ticks < InternalGloablizationHelper.MinMilliSeconds)
+                if (ticks > InternalGlobalizationHelper.MaxMilliSeconds || ticks < InternalGlobalizationHelper.MinMilliSeconds)
                 {
                     result = 0;
                     return false;
@@ -588,7 +588,7 @@ namespace System.Globalization
                 long f = fraction.num;
                 if (f != 0)
                 {
-                    long lowerLimit = InternalGloablizationHelper.TicksPerTenthSecond;
+                    long lowerLimit = InternalGlobalizationHelper.TicksPerTenthSecond;
                     if (fraction.zeroes > 0)
                     {
                         long divisor = (long)Math.Pow(10, fraction.zeroes);
@@ -599,7 +599,7 @@ namespace System.Globalization
                         f *= 10;
                     }
                 }
-                result = ((long)ticks * InternalGloablizationHelper.TicksPerMillisecond) + f;
+                result = ((long)ticks * InternalGlobalizationHelper.TicksPerMillisecond) + f;
                 if (positive && result < 0)
                 {
                     result = 0;

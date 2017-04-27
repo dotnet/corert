@@ -35,7 +35,6 @@ namespace System.Runtime.InteropServices
     /// NOTE: Managed debugger depends on class full name: "System.Runtime.InteropServices.McgModuleManager"
     /// </summary>
     [CLSCompliant(false)]
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.McgModuleManager)]
     public static class McgModuleManager
     {
         internal const int NUM_BITS_FOR_MAX_MODULES = 3;
@@ -54,7 +53,10 @@ namespace System.Runtime.InteropServices
         private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToCollectionIndexMap;
         private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, int> s_runtimeTypeHandleToBoxingIndexMap;
 
-        static McgModuleManager()
+        /// <summary>
+        /// Eager initialization code called from LibraryInitializer.
+        /// </summary>
+        internal static void Initialize()
         {
             UseDynamicInterop = false;
             
@@ -132,7 +134,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void Initialize()
+        public static void LateInitialize()
         {
             int totalInterfaces = 0;
             int totalCCWTemplates = 0;
@@ -679,6 +681,17 @@ namespace System.Runtime.InteropServices
                 }
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            // Dynamic boxing support
+            // TODO: Consider to use the field boxingStub for all projected reference types.
+            // TODO: now it is only used for boxing "System.Uri".
+            // TODO: For Projected value types, IReference<T>.get_Value(out T) should marshal it correctly.
+            // TODO: For projected refernce types, IReference<Ojbect> won't do correct marshal for you.
+            boxingStub = default(IntPtr); 
+            if (McgModuleManager.UseDynamicInterop && DynamicInteropBoxingHelpers.Boxing(typeHandle, out boxingWrapperType, out boxingPropertyType))
+                return true;
+#endif
+
             boxingWrapperType = default(RuntimeTypeHandle);
             boxingPropertyType = default(int);
             boxingStub = default(IntPtr);
@@ -698,9 +711,9 @@ namespace System.Runtime.InteropServices
             unboxingStub = default(IntPtr);
             return false;
         }
-        #endregion
+#endregion
 
-        #region "PInvoke Delegate"
+#region "PInvoke Delegate"
         internal static bool GetPInvokeDelegateData(RuntimeTypeHandle delegateType, out McgPInvokeDelegateData pinvokeDelegateData)
         {
             pinvokeDelegateData = default(McgPInvokeDelegateData);
@@ -718,9 +731,9 @@ namespace System.Runtime.InteropServices
             return false;
 #endif
         }
-        #endregion
+#endregion
 
-        #region "GenericArgumentData"
+#region "GenericArgumentData"
         internal static bool TryGetGenericArgumentMarshalInfo(RuntimeTypeHandle interfaceType, out McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo)
         {
             int moduleIndex, typeIndex;
@@ -735,6 +748,6 @@ namespace System.Runtime.InteropServices
             mcgGenericArgumentMarshalInfo = default(McgGenericArgumentMarshalInfo);
             return false;
         }
-        #endregion
+#endregion
     }
 }

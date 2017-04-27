@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
 using System.Diagnostics;
 using Internal.Runtime.Augments;
 
@@ -15,13 +16,34 @@ namespace Internal.Runtime.CompilerServices
         private bool _isNativeLayoutSignature;
 
         [CLSCompliant(false)]
-        public static RuntimeSignature CreateFromNativeLayoutSignature(IntPtr moduleHandle, uint nativeLayoutOffset)
+        public static RuntimeSignature CreateFromNativeLayoutSignature(TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
             return new RuntimeSignature
             {
-                _moduleHandle = moduleHandle,
+                _moduleHandle = moduleHandle.GetIntPtrUNSAFE(),
                 _tokenOrOffset = (int)nativeLayoutOffset,
                 _isNativeLayoutSignature = true,
+            };
+        }
+
+        [CLSCompliant(false)]
+        public static RuntimeSignature CreateFromNativeLayoutSignature(RuntimeSignature oldSignature, uint newNativeLayoutOffset)
+        {
+            return new RuntimeSignature
+            {
+                _moduleHandle = oldSignature._moduleHandle,
+                _tokenOrOffset = (int)newNativeLayoutOffset,
+                _isNativeLayoutSignature = true,
+            };
+        }
+
+        public static RuntimeSignature CreateFromMethodHandle(TypeManagerHandle moduleHandle, int token)
+        {
+            return new RuntimeSignature
+            {
+                _moduleHandle = moduleHandle.GetIntPtrUNSAFE(),
+                _tokenOrOffset = token,
+                _isNativeLayoutSignature = false,
             };
         }
 

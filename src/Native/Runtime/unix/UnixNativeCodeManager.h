@@ -25,6 +25,8 @@ public:
 
     bool IsFunclet(MethodInfo * pMethodInfo);
 
+    bool IsFilter(MethodInfo * pMethodInfo);
+
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 

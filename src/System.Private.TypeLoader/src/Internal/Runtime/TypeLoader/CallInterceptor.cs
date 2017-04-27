@@ -55,6 +55,7 @@ using Internal.TypeSystem;
 using Internal.Runtime.TypeLoader;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
 using CallingConvention = Internal.Runtime.CallConverter.CallingConvention;
 
 namespace Internal.Runtime.CallInterceptor
@@ -1058,9 +1059,9 @@ namespace Internal.Runtime.CallInterceptor
         static CallInterceptor()
         {
             s_managedToManagedCommonStubData = CallConverterThunk.s_commonStubData;
-            s_managedToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<Func<IntPtr, IntPtr, IntPtr>>(CallInterceptorThunk);
+            s_managedToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<CallInterceptorThunkDelegate>(CallInterceptorThunk);
             s_nativeToManagedCommonStubData = CallConverterThunk.s_commonStubData;
-            s_nativeToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<Func<IntPtr, IntPtr, IntPtr>>(CallInterceptorThunkNativeCallable);
+            s_nativeToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<CallInterceptorThunkDelegate>(CallInterceptorThunkNativeCallable);
         }
 
         /// <summary>
@@ -1355,6 +1356,8 @@ namespace Internal.Runtime.CallInterceptor
 
             return callConversionOps.ToArray();
         }
+
+        private delegate IntPtr CallInterceptorThunkDelegate(IntPtr callerTransitionBlockParam, IntPtr thunkId);
 
         private static unsafe IntPtr CallInterceptorThunk(IntPtr callerTransitionBlockParam, IntPtr thunkId)
         {

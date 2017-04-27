@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public class ObjectData
         {
-            public ObjectData(byte[] data, Relocation[] relocs, int alignment, ISymbolNode[] definedSymbols)
+            public ObjectData(byte[] data, Relocation[] relocs, int alignment, ISymbolDefinitionNode[] definedSymbols)
             {
                 Data = data;
                 Relocs = relocs;
@@ -23,8 +23,10 @@ namespace ILCompiler.DependencyAnalysis
             public readonly Relocation[] Relocs;
             public readonly byte[] Data;
             public readonly int Alignment;
-            public readonly ISymbolNode[] DefinedSymbols;
+            public readonly ISymbolDefinitionNode[] DefinedSymbols;
         }
+
+        public virtual bool RepresentsIndirectionCell => false;
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
@@ -45,6 +47,16 @@ namespace ILCompiler.DependencyAnalysis
         public virtual bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
             return false;
+        }
+
+        /// <summary>
+        /// Return a node that is used for linkage
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public virtual ObjectNode NodeForLinkage(NodeFactory factory)
+        {
+            return this;
         }
 
         public override bool HasConditionalStaticDependencies => false;

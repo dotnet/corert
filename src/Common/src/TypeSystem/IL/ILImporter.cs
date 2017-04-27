@@ -778,7 +778,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.endfinally:
                         ImportEndFinally();
-                        break;
+                        return;
                     case ILOpcode.leave:
                         {
                             int delta = (int)ReadILUInt32();
@@ -837,7 +837,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.endfilter:
                         ImportEndFilter();
-                        break;
+                        return;
                     case ILOpcode.unaligned:
                         ImportUnalignedPrefix(ReadILByte());
                         continue;
@@ -864,7 +864,7 @@ namespace Internal.IL
                         continue;
                     case ILOpcode.rethrow:
                         ImportRethrow();
-                        break;
+                        return;
                     case ILOpcode.sizeof_:
                         ImportSizeOf(ReadILToken());
                         break;

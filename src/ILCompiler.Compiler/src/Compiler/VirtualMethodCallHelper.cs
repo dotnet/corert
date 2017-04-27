@@ -10,21 +10,21 @@ using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
-    internal static class VirtualMethodSlotHelper
+    public static class VirtualMethodSlotHelper
     {
         /// <summary>
         /// Given a virtual method decl, return its VTable slot if the method is used on its containing type.
         /// Return -1 if the virtual method is not used.
         /// </summary>
-        public static int GetVirtualMethodSlot(NodeFactory factory, MethodDesc method)
+        public static int GetVirtualMethodSlot(NodeFactory factory, MethodDesc method, bool countDictionarySlots = true)
         {
             // TODO: More efficient lookup of the slot
             TypeDesc owningType = method.OwningType;
-            int baseSlots = GetNumberOfBaseSlots(factory, owningType);
+            int baseSlots = GetNumberOfBaseSlots(factory, owningType, countDictionarySlots);
 
             // For types that have a generic dictionary, the introduced virtual method slots are
             // prefixed with a pointer to the generic dictionary.
-            if (owningType.HasGenericDictionarySlot())
+            if (owningType.HasGenericDictionarySlot() && countDictionarySlots)
                 baseSlots++;
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(owningType).Slots;
@@ -41,7 +41,7 @@ namespace ILCompiler
             return methodSlot == -1 ? -1 : baseSlots + methodSlot;
         }
 
-        private static int GetNumberOfBaseSlots(NodeFactory factory, TypeDesc owningType)
+        private static int GetNumberOfBaseSlots(NodeFactory factory, TypeDesc owningType, bool countDictionarySlots)
         {
             int baseSlots = 0;
             TypeDesc baseType = owningType.BaseType;
@@ -56,7 +56,7 @@ namespace ILCompiler
 
                 // For types that have a generic dictionary, the introduced virtual method slots are
                 // prefixed with a pointer to the generic dictionary.
-                if (baseType.HasGenericDictionarySlot())
+                if (baseType.HasGenericDictionarySlot() && countDictionarySlots)
                     baseSlots++;
 
                 IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
@@ -74,7 +74,7 @@ namespace ILCompiler
         public static int GetGenericDictionarySlot(NodeFactory factory, TypeDesc type)
         {
             Debug.Assert(type.HasGenericDictionarySlot());
-            return GetNumberOfBaseSlots(factory, type);
+            return GetNumberOfBaseSlots(factory, type, countDictionarySlots: true);
         }
 
         /// <summary>
@@ -83,7 +83,13 @@ namespace ILCompiler
         /// </summary>
         public static bool HasGenericDictionarySlot(this TypeDesc type)
         {
-            return !type.IsInterface &&
+            // Dictionary slots on generic interfaces are necessary to support static methods on interfaces
+            // The reason behind making this unconditional is simplicity, and keeping method slot indices for methods on IFoo<int> 
+            // and IFoo<string> identical. That won't change.
+            if (type.IsInterface)
+                return type.HasInstantiation;
+
+            return type.HasInstantiation &&
                 (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type || type.IsCanonicalSubtype(CanonicalFormKind.Any));
         }
     }

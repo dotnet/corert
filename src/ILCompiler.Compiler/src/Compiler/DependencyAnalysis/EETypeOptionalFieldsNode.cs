@@ -6,7 +6,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolNode
+    internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolDefinitionNode
     {
         private EETypeNode _owner;
 
@@ -36,22 +36,24 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
+            _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
             return _owner.ShouldSkipEmittingObjectNode(factory) || !_owner.HasOptionalFields;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.RequirePointerAlignment();
-            objData.DefinedSymbols.Add(this);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.RequireInitialPointerAlignment();
+            objData.AddSymbol(this);
 
             if (!relocsOnly)
             {
-                objData.EmitBytes(_owner.GetOptionalFieldsData());
+                _owner.ComputeOptionalEETypeFields(factory, relocsOnly: false);
+                objData.EmitBytes(_owner.GetOptionalFieldsData(factory));
             }
             
             return objData.ToObjectData();

@@ -239,5 +239,25 @@ namespace Internal.TypeSystem
                 return true;
             }
         }
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                // Do not allow inlining the Address method. The method that actually gets called is
+                // the one that has a hidden argument with the expected array type.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                // We consider Address method an internal call since this will end up calling a different
+                // method at runtime.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
     }
 }

@@ -13,26 +13,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
 
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Console.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    
-    <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConnector.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConsole.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

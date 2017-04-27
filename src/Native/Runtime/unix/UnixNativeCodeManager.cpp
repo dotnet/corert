@@ -95,6 +95,14 @@ bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
+bool UnixNativeCodeManager::IsFilter(MethodInfo * pMethodInfo)
+{
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    uint8_t unwindBlockFlags = *(pNativeMethodInfo->pLSDA);
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER;
+}
+
 PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
                                                 REGDISPLAY *   pRegisterSet)
 {
@@ -115,7 +123,39 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        REGDISPLAY *    pRegisterSet,
                                        GCEnumContext * hCallback)
 {
-    // @TODO: CORERT: EnumGcRefs
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress));
+
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset - 1 // TODO: Is this adjustment correct?
+    );
+
+    ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    if (pNativeMethodInfo->executionAborted)
+        flags = ICodeManagerFlags::ExecutionAborted;
+    if (IsFilter(pMethodInfo))
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
+
+    if (!decoder.EnumerateLiveSlots(
+        pRegisterSet,
+        false /* reportScratchSlots */,
+        flags,
+        hCallback->pCallback,
+        hCallback
+        ))
+    {
+        assert(false);
+    }
 }
 
 UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
@@ -144,12 +184,20 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
             p += sizeof(int32_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
-        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
-        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
-
-        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
         return true;
     }
 

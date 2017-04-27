@@ -55,6 +55,18 @@ namespace System.Runtime
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         private static extern long RhpGetGcTotalMemory();
 
+        [RuntimeExport("RhStartNoGCRegion")]
+        internal static Int32 RhStartNoGCRegion(Int64 totalSize, bool hasLohSize, Int64 lohSize, bool disallowFullBlockingGC)
+        {
+            return RhpStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+        }
+
+        [RuntimeExport("RhEndNoGCRegion")]
+        internal static Int32 RhEndNoGCRegion()
+        {
+            return RhpEndNoGCRegion();
+        }
+
         //
         // internalcalls for System.Runtime.__Finalizer.
         //
@@ -152,6 +164,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyObjectContents(object objDest, object objSrc);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpCompareObjectContents")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static bool RhpCompareObjectContentsAndPadding(object obj1, object obj2);
+
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
@@ -212,15 +229,15 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, EEType* pInstanceType, ref DispatchCellInfo newCellInfo);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunction")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromCodeAddress(IntPtr address, EH.ClassLibFunctionId id);
 
-        [RuntimeImport(Redhawk.BaseName, "RhGetModuleFromPointer")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromEEtype")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhGetModuleFromPointer(void* pointer);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromEEtype(IntPtr pEEType, EH.ClassLibFunctionId id);
 
         //
         // StackFrameIterator
@@ -229,7 +246,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx);
+        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -375,10 +392,10 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNextThunkStubsBlockAddress")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkBlockSize")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetNextThunkStubsBlockAddress(IntPtr currentThunkStubsBlockAddress);
+        internal extern static int RhpGetThunkBlockSize();
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
@@ -414,5 +431,15 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr RhAllocateThunksMapping();
+
+        // Enters a no GC region, possibly doing a blocking GC if there is not enough
+        // memory available to satisfy the caller's request.
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern Int32 RhpStartNoGCRegion(Int64 totalSize, bool hasLohSize, Int64 lohSize, bool disallowFullBlockingGC);
+
+        // Exits a no GC region, possibly doing a GC to clean up the garbage that
+        // the caller allocated.
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern Int32 RhpEndNoGCRegion();
     }
 }

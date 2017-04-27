@@ -5,7 +5,6 @@
 /*============================================================
 **
 **
-**
 ** Purpose: 
 ** This class is used to represent a Dynamic TimeZone.  It
 ** has methods for converting a DateTime between TimeZones.
@@ -17,7 +16,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -45,7 +43,6 @@ namespace System
 
 
     [Serializable]
-    [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
     sealed public partial class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         // ---- SECTION:  members for internal support ---------*
@@ -171,7 +168,7 @@ namespace System
 
             public struct OrdinalIgnoreCaseString : IEquatable<OrdinalIgnoreCaseString>
             {
-                public static implicit operator string (OrdinalIgnoreCaseString ignoreCaseString)
+                public static implicit operator string(OrdinalIgnoreCaseString ignoreCaseString)
                 {
                     return ignoreCaseString._string;
                 }
@@ -989,7 +986,7 @@ namespace System
         //
         // Value equality on the "adjustmentRules" array
         //
-        internal Boolean HasSameRules(TimeZoneInfo other)
+        public Boolean HasSameRules(TimeZoneInfo other)
         {
             if (other == null)
             {
@@ -1091,11 +1088,11 @@ namespace System
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             if (source.Length == 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidSerializedString, "source");
+                throw new ArgumentException(SR.Argument_InvalidSerializedString, nameof(source));
             }
             Contract.EndContractBlock();
 
@@ -1778,7 +1775,7 @@ namespace System
         //
         // Helper function that converts a year and TransitionTime into a DateTime
         //
-        private static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
+        internal static DateTime TransitionTimeToDateTime(Int32 year, TransitionTime transitionTime)
         {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
@@ -1960,7 +1957,7 @@ namespace System
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -1977,7 +1974,7 @@ namespace System
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             _id = (String)info.GetValue("Id", typeof(String));
@@ -2601,7 +2598,6 @@ namespace System
         **
         ============================================================*/
         [Serializable]
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         sealed public class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
@@ -2862,7 +2858,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
 
@@ -2878,7 +2874,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime));
@@ -2910,7 +2906,6 @@ namespace System
         **
         ============================================================*/
         [Serializable]
-        [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=Neutral, PublicKeyToken=b77a5c561934e089")]
         public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
@@ -3135,7 +3130,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
 
@@ -3151,7 +3146,7 @@ namespace System
             {
                 if (info == null)
                 {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime));

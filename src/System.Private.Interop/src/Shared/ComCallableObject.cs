@@ -1075,7 +1075,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         bool m_hasCCWTemplateData;
 
-
+        /// <summary>
+        /// Target object's RuntimeTypeHandle
+        /// </summary>
         RuntimeTypeHandle m_type;
 #endregion
 
@@ -1456,6 +1458,18 @@ namespace System.Runtime.InteropServices
                     }
                 }
             }
+
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            // TODO: Dynamic Boxing support
+            // TODO: Optimize--it is possible that the following dynamic code is faster than above static code(CCWTemplate)
+            // if we cann't find a interfaceType for giving guid, try to enumerate all interfaces implemented by this target object to see anyone matchs given guid
+            if (McgModuleManager.UseDynamicInterop && !m_hasCCWTemplateData && interfaceType.IsNull() && !Internal.Runtime.Augments.RuntimeAugments.IsValueType(m_type))
+            {
+                RuntimeTypeHandle interfaceTypeHandleFromDynamic =  DynamicInteropCCWTemplateHelper.FindInterfaceInCCWTemplate(m_type, ref iid);
+                if (!interfaceTypeHandleFromDynamic.IsNull())
+                    return GetComInterfaceForType_NoCheck(interfaceTypeHandleFromDynamic, ref iid);
+            }
+#endif
 
             //
             // We are not aggregating and don't have a Type for the iid so we must return null

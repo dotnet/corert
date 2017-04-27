@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        protected override string GetName() => $"__vtable_{NodeFactory.NameMangler.GetMangledTypeName(_type).ToString()}";
+        protected override string GetName(NodeFactory factory) => $"__vtable_{factory.NameMangler.GetMangledTypeName(_type).ToString()}";
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -39,6 +39,15 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
+
+        protected IEnumerable<MethodDesc> GetAllVirtualMethods()
+        {
+            foreach (MethodDesc method in _type.GetAllMethods())
+            {
+                if (method.IsVirtual)
+                    yield return method;
+            }
+        }
     }
 
     /// <summary>
@@ -54,10 +63,24 @@ namespace ILCompiler.DependencyAnalysis
         {
             var slots = new ArrayBuilder<MethodDesc>();
 
+            bool isObjectType = type.IsObject;
             DefType defType = _type.GetClosestDefType();
-            foreach (var method in defType.GetAllMethods())
+
+            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
+                GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+
+            foreach (var method in allSlots)
             {
-                if (!method.IsVirtual)
+                // GVMs are not emitted in the type's vtable.
+                if (method.HasInstantiation)
+                    continue;
+
+                // Finalizers are called via a field on the EEType, not through the VTable
+                if (isObjectType && method.Name == "Finalize")
+                    continue;
+
+                // Current type doesn't define this slot.
+                if (method.OwningType != defType)
                     continue;
 
                 slots.Add(method);
@@ -76,18 +99,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            List<DependencyListEntry> dependencies = new List<DependencyListEntry>(_slots.Length + 1);
             if (_type.HasBaseType)
             {
-                dependencies.Add(new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable"));
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable")
+                };
             }
 
-            foreach (MethodDesc method in _slots)
-            {
-                dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(method), "Full vtable dependency"));
-            }
-
-            return dependencies;
+            return null;
         }
     }
 
@@ -97,11 +117,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class LazilyBuiltVTableSliceNode : VTableSliceNode
     {
-        private List<MethodDesc> _slots = new List<MethodDesc>();
-
-#if DEBUG
-        bool _slotsCommitted;
-#endif
+        private HashSet<MethodDesc> _usedMethods = new HashSet<MethodDesc>();
+        private MethodDesc[] _slots;
 
         public LazilyBuiltVTableSliceNode(TypeDesc type)
             : base(type)
@@ -112,24 +129,38 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-#if DEBUG
-                _slotsCommitted = true;
-#endif
+                if (_slots == null)
+                {
+                    // Sort the lazily populated slots in metadata order (the order in which they show up
+                    // in GetAllMethods()).
+                    // This ensures that Foo<string> and Foo<object> will end up with the same vtable
+                    // no matter the order in which VirtualMethodUse nodes populated it.
+                    ArrayBuilder<MethodDesc> slotsBuilder = new ArrayBuilder<MethodDesc>();
+                    DefType defType = _type.GetClosestDefType();
+                    foreach (var method in defType.GetAllMethods())
+                    {
+                        if (_usedMethods.Contains(method))
+                            slotsBuilder.Add(method);
+                    }
+                    Debug.Assert(_usedMethods.Count == slotsBuilder.Count);
+                    _slots = slotsBuilder.ToArray();
+
+                    // Null out used methods so that we AV if someone tries to add now.
+                    _usedMethods = null;
+                }
+
                 return _slots;
             }
         }
 
         public void AddEntry(NodeFactory factory, MethodDesc virtualMethod)
         {
+            // GVMs are not emitted in the type's vtable.
+            Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
-#if DEBUG
-            Debug.Assert(!_slotsCommitted);
-#endif
+            Debug.Assert(_slots == null && _usedMethods != null);
 
-            if (!_slots.Contains(virtualMethod))
-            {
-                _slots.Add(virtualMethod);
-            }
+            _usedMethods.Add(virtualMethod);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -155,15 +186,31 @@ namespace ILCompiler.DependencyAnalysis
             // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
             DefType defType = _type.GetClosestDefType();
-            foreach (var method in defType.GetAllMethods())
+
+            IEnumerable<MethodDesc> allSlots = _type.IsInterface ?
+                GetAllVirtualMethods() : defType.EnumAllVirtualSlots();
+
+            foreach (var method in allSlots)
             {
-                if (!method.IsVirtual)
+                // Generic virtual methods are tracked by an orthogonal mechanism.
+                if (method.HasInstantiation)
                     continue;
 
-                yield return new CombinedDependencyListEntry(
-                    factory.VirtualMethodUse(method),
-                    factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Canonically equivalent virtual method use");
+                // Current type doesn't define this slot. Another VTableSlice will take care of this.
+                if (method.OwningType != defType)
+                    continue;
+
+                if (defType.Context.SupportsCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        "Canonically equivalent virtual method use");
+
+                if (defType.Context.SupportsUniversalCanon)
+                    yield return new CombinedDependencyListEntry(
+                        factory.VirtualMethodUse(method),
+                        factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Universal)),
+                        "Universal Canonically equivalent virtual method use");
             }
         }
     }

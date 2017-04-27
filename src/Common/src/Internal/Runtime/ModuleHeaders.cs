@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 
 namespace Internal.Runtime
@@ -9,8 +10,8 @@ namespace Internal.Runtime
     // Please keep the data structures in this file in sync with the native version at
     //  src/Native/Runtime/inc/ModuleHeaders.h
     //
-    
-    struct ReadyToRunHeaderConstants
+
+    internal struct ReadyToRunHeaderConstants
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
@@ -19,17 +20,17 @@ namespace Internal.Runtime
     }
 
 #pragma warning disable 0169
-    struct ReadyToRunHeader
+    internal struct ReadyToRunHeader
     {
-        UInt32 Signature;      // ReadyToRunHeaderConstants.Signature
-        UInt16 MajorVersion;
-        UInt16 MinorVersion;
+        private UInt32 Signature;      // ReadyToRunHeaderConstants.Signature
+        private UInt16 MajorVersion;
+        private UInt16 MinorVersion;
 
-        UInt32 Flags;
+        private UInt32 Flags;
 
-        UInt16 NumberOfSections;
-        Byte EntrySize;
-        Byte EntryType;
+        private UInt16 NumberOfSections;
+        private Byte EntrySize;
+        private Byte EntryType;
 
         // Array of sections follows.
     };
@@ -43,24 +44,28 @@ namespace Internal.Runtime
     // Eventually this will be reconciled with ReadyToRunSectionType from 
     // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
     //
-    enum ReadyToRunSectionType
+    public enum ReadyToRunSectionType
     {
-        StringTable                 = 200, // Unused
-        GCStaticRegion              = 201,
-        ThreadStaticRegion          = 202,
-        InterfaceDispatchTable      = 203,
-        TypeManagerIndirection      = 204,
-        EagerCctor                  = 205,
-        FrozenObjectRegion          = 206,
+        StringTable = 200, // Unused
+        GCStaticRegion = 201,
+        ThreadStaticRegion = 202,
+        InterfaceDispatchTable = 203,
+        TypeManagerIndirection = 204,
+        EagerCctor = 205,
+        FrozenObjectRegion = 206,
+        GCStaticDesc = 207,
+        ThreadStaticOffsetRegion = 208,
+        ThreadStaticGCDescRegion = 209,
+        ThreadStaticIndex = 210,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
-        ReadonlyBlobRegionStart     = 300,
-        ReadonlyBlobRegionEnd       = 399,
+        ReadonlyBlobRegionStart = 300,
+        ReadonlyBlobRegionEnd = 399,
     }
 
     [Flags]
-    enum ModuleInfoFlags : int
+    internal enum ModuleInfoFlags : int
     {
-        HasEndPointer               = 0x1,
+        HasEndPointer = 0x1,
     }
 }

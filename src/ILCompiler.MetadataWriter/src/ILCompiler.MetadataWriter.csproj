@@ -6,9 +6,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>ILCompiler.MetadataWriter</AssemblyName>
-    <FileAlignment>512</FileAlignment>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);NATIVEFORMAT_PUBLICWRITER;NETFX_45</DefineConstants>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
@@ -21,7 +19,8 @@
 
   <ItemGroup>
     <PackageDestination Include="Tools">
-      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+      <InProject>false</InProject>
+      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
     </PackageDestination>
   </ItemGroup>
   <Import Project="ILCompiler.MetadataWriter.targets" />

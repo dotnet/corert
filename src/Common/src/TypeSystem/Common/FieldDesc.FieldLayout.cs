@@ -11,9 +11,9 @@ namespace Internal.TypeSystem
 
     public partial class FieldDesc
     {
-        private int _offset = FieldAndOffset.InvalidOffset;
+        private LayoutInt _offset = FieldAndOffset.InvalidOffset;
 
-        public int Offset
+        public LayoutInt Offset
         {
             get
             {
@@ -47,7 +47,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        internal void InitializeOffset(int offset)
+        internal void InitializeOffset(LayoutInt offset)
         {
             Debug.Assert(_offset == FieldAndOffset.InvalidOffset || _offset == offset);
             _offset = offset;

@@ -163,7 +163,7 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
+        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
             return new NativeFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
         }

@@ -5,6 +5,7 @@ set __BuildOS=Windows_NT
 
 :: Default to highest Visual Studio version available
 set __VSVersion=vs2015
+if defined VS150COMNTOOLS set __VSVersion=vs2017
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
@@ -37,6 +38,7 @@ if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "vs2017"   (set __VSVersion=vs2017&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"   (set __VSVersion=vs2015&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
@@ -110,14 +112,16 @@ if /i "%__VSVersion%" == "vs2017" set __VSProductVersion=150
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
-echo Visual Studio 2015 (Community is free) is a pre-requisite to build this repository.
+echo Visual Studio 2015 or 2017 (Community is free) is a pre-requisite to build this repository.
+echo If you're using Visual Studio 2017, make sure to run build.cmd from the "Developer Command Prompt
+echo for VS 2017" (find it in the Start menu).
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
 :CheckVSExistence
 :: Does VS VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
-echo Visual Studio 2015 (Community is free) is a pre-requisite to build this repository.
+echo Visual Studio not installed in !VS%__VSProductVersion%COMNTOOLS!.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
@@ -167,7 +171,7 @@ echo.
 echo./? -? /h -h /help -help: view this message.
 echo Build architecture: one of x64, x86, arm ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
-echo Visual Studio version: ^(default: VS2015, VS2017 also supported^).
+echo Visual Studio version: vs2015, vs2017 ^(defaults to highest detected^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo skiptests: skip building tests ^(default: tests are built^).
 exit /b 1

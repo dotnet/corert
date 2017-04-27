@@ -29,6 +29,7 @@
     <Compile Include="Canonicalization.cs" />
     <Compile Include="Casting.cs" />
     <Compile Include="GCPointerMap.cs" />
+    <Compile Include="GenericConstraints.cs" />
     <Compile Include="Hashcode.cs" />
     <Compile Include="InterfaceArrangements.cs" />
     <Compile Include="GenericTypes.cs" />

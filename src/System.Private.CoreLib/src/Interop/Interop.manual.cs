@@ -20,10 +20,13 @@ internal partial class Interop
         CreateEventInitialSet = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
+        DuplicateSameAccess = 0x2u,
         FileTypeChar = 0x2u,
+        CreateSuspended = 0x4u,
         WaitAbandoned0 = 0x80u,
         WaitTimeout = 0x102u,
         MaxPath = 0x104u,
+        StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
         MutexAllAccess = 0x1F0001u,
         EventAllAccess = 0x1F0003u,
@@ -33,7 +36,7 @@ internal partial class Interop
     }
 
     // MCG doesn't currently support constants that are not uint.
-    internal static IntPtr InvalidHandleValue = new IntPtr(-1);
+    internal static IntPtr InvalidHandleValue => new IntPtr(-1);
 
     internal enum _APTTYPE : uint
     {
@@ -74,58 +77,15 @@ internal partial class Interop
 #pragma warning restore 649
     internal partial class mincore
     {
-        [DllImport("api-ms-win-core-handle-l1-1-0.dll", EntryPoint = "CloseHandle", CharSet = CharSet.Unicode)]
-        internal extern static bool CloseHandle(IntPtr hObject);
-
         [DllImport("api-ms-win-core-com-l1-1-0.dll")]
         internal extern static int CoGetApartmentType(out _APTTYPE pAptType, out _APTTYPEQUALIFIER pAptQualifier);
 
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "CreateEventExW", CharSet = CharSet.Unicode)]
-        internal extern static IntPtr CreateEventEx(IntPtr lpEventAttributes, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "CreateMutexExW", CharSet = CharSet.Unicode)]
-        internal extern static IntPtr CreateMutexEx(IntPtr lpMutexAttributes, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "CreateSemaphoreExW", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr CreateSemaphoreEx(IntPtr lpSemaphoreAttributes, int lInitialCount, int lMaximumCount, string lpName, uint dwFlags, uint dwDesiredAccess);
-
-        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
-        internal extern static uint GetCurrentThreadId();
 
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
 
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "OpenEventW", CharSet = CharSet.Unicode)]
-        private extern static IntPtr OpenEvent(uint dwDesiredAccess, int bInheritHandle, string lpName);
-
-        internal static IntPtr OpenEvent(uint dwDesiredAccess, bool bInheritHandle, string lpName)
-        {
-            return OpenEvent(dwDesiredAccess, bInheritHandle ? 1 : 0, lpName);
-        }
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "OpenMutexW", CharSet = CharSet.Unicode)]
-        internal extern static IntPtr OpenMutex(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "OpenSemaphoreW", CharSet = CharSet.Unicode)]
-        internal extern static IntPtr OpenSemaphore(uint dwDesiredAccess, bool bInheritHandle, string lpName);
-
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "OutputDebugStringW", CharSet = CharSet.Unicode)]
         internal extern static void OutputDebugString(string lpOutputString);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "ReleaseMutex", CharSet = CharSet.Unicode)]
-        internal extern static bool ReleaseMutex(IntPtr hMutex);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "ReleaseSemaphore", CharSet = CharSet.Unicode)]
-        internal extern static bool ReleaseSemaphore(IntPtr hSemaphore, int lReleaseCount, out int lpPreviousCount);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "ResetEvent", CharSet = CharSet.Unicode)]
-        internal extern static bool ResetEvent(IntPtr hEvent);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "SetEvent", CharSet = CharSet.Unicode)]
-        internal extern static bool SetEvent(IntPtr hEvent);
-
-        [DllImport("api-ms-win-core-synch-l1-1-0.dll")]
-        internal extern static uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
 
         //
         // Wrapper for calling RaiseFailFastException
@@ -171,15 +131,6 @@ internal partial class Interop
                     _EXCEPTION_RECORD* pExceptionRecord,
                     IntPtr pContextRecord,
                     uint dwFlags);
-
-        private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-        internal static void Sleep(uint milliseconds)
-        {
-            if (milliseconds == 0)
-                System.Threading.SpinWait.Yield();
-            else
-                s_sleepHandle.WaitOne((int)milliseconds);
-        }
     }
     internal unsafe partial class WinRT
     {
@@ -222,28 +173,45 @@ namespace System.Runtime.InteropServices
 {
     internal class Marshal
     {
-        // https://github.com/dotnet/corert/issues/2419
-        // TODO: Need to have access to Marshal.GetLastWin32Error in CoreLib. Add stubbed out implementation for now.
         public static int GetLastWin32Error()
         {
-            return -1;
+            return PInvokeMarshal.GetLastWin32Error();
+        }
+
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static unsafe IntPtr AllocHGlobal(int cb)
+        {
+            return PInvokeMarshal.AllocHGlobal(cb);
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            PInvokeMarshal.FreeHGlobal(hglobal);
+        }
+
+        public static unsafe IntPtr AllocCoTaskMem(int cb)
+        {
+            return PInvokeMarshal.AllocCoTaskMem(cb);
+        }
+
+        public static void FreeCoTaskMem(IntPtr ptr)
+        {
+            PInvokeMarshal.FreeCoTaskMem(ptr);
+        }
+
+        public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
+        { 
+           InteropExtensions.CopyToManaged(source, destination, startIndex, length); 
         }
 
 #if PLATFORM_UNIX
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-
-            int len = Internal.Runtime.CompilerHelpers.InteropHelpers.strlen((byte*)ptr);
-            if (len == 0)
-            {
-                return string.Empty;
-            }
-
-            return System.Text.Encoding.UTF8.GetString((byte*)ptr, len);
+            return PInvokeMarshal.PtrToStringAnsi(ptr);
         }
 #endif
     }

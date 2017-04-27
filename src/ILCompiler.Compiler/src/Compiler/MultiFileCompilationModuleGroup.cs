@@ -47,6 +47,16 @@ namespace ILCompiler
             return ContainsType(method.OwningType);
         }
 
+        public sealed override bool ExportsType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public sealed override bool ExportsMethod(MethodDesc method)
+        {
+            return false;
+        }
+        
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);
@@ -64,6 +74,14 @@ namespace ILCompiler
         {
             return false;
         }
+
+        public override bool CanHaveReferenceThroughImportTable
+        {
+            get
+            {
+                return false;
+            }
+        } 
     }
 
     /// <summary>
@@ -76,34 +94,14 @@ namespace ILCompiler
         {
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ShouldProduceFullVTable(TypeDesc type)
         {
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Represents an unshared multifile compilation group where types contained in the group are expanded as needed.
-    /// </summary>
-    public class MultiFileLeafCompilationModuleGroup : MultiFileCompilationModuleGroup
-    {
-        public MultiFileLeafCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
-            : base(context, compilationModuleSet)
-        {
+            return ConstructedEETypeNode.CreationAllowed(type);
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ShouldPromoteToFullType(TypeDesc type)
         {
-            // Fully build all shareable types so they will be identical in each module
-            if (EETypeNode.IsTypeNodeShareable(type))
-                return true;
-
-            // If referring to a type from another module, VTables, interface maps, etc should assume the
-            // type is fully build.
-            if (!ContainsType(type))
-                return true;
-
-            return false;
+            return ShouldProduceFullVTable(type);
         }
     }
 }

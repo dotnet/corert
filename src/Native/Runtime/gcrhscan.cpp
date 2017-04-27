@@ -32,7 +32,11 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
+#include "DebuggerHook.h"
+
 #ifndef DACCESS_COMPILE
+
+void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 
 void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
 {
@@ -45,6 +49,13 @@ void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
  
 void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
+    DebuggerProtectedBufferList* cursor = DebuggerHook::s_debuggerProtectedBuffers;
+    while (cursor != nullptr)
+    {
+        GcEnumObjectsConservatively((PTR_PTR_Object)cursor->address, (PTR_PTR_Object)(cursor->address + cursor->size), fn, sc);
+        cursor = cursor->next;
+    }
+
     // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
 
     FOREACH_THREAD(pThread)
@@ -94,14 +105,11 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    if (GCHeapUtilities::UseAllocationContexts())
+    FOREACH_THREAD(thread)
     {
-        FOREACH_THREAD(thread)
-        {
-            (*fn) (thread->GetAllocContext(), param);
-        }
-        END_FOREACH_THREAD
+        (*fn) (thread->GetAllocContext(), param);
     }
+    END_FOREACH_THREAD
 }
 
 #endif //!DACCESS_COMPILE

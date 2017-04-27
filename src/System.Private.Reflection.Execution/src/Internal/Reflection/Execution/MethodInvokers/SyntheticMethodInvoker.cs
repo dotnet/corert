@@ -12,8 +12,6 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.MethodInvokers
 {
     //
@@ -29,7 +27,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             _parameterTypes = parameterTypes;
         }
 
-        public override Object Invoke(Object thisObject, Object[] arguments)
+        public override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             //@todo: This does not handle optional parameters (nor does it need to as today we're only using it for three synthetic array methods.)
             if (!(thisObject == null && 0 != (_options & InvokerOptions.AllowNullThis)))
@@ -41,7 +39,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             Object[] convertedArguments = new Object[arguments.Length];
             for (int i = 0; i < arguments.Length; i++)
             {
-                convertedArguments[i] = RuntimeAugments.CheckArgument(arguments[i], _parameterTypes[i]);
+                convertedArguments[i] = RuntimeAugments.CheckArgument(arguments[i], _parameterTypes[i], binderBundle);
             }
             Object result;
             try
@@ -63,6 +61,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new PlatformNotSupportedException();
         }
 
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+        
         private InvokerOptions _options;
         private Func<Object, Object[], Object> _invoker;
         private RuntimeTypeHandle _thisType;

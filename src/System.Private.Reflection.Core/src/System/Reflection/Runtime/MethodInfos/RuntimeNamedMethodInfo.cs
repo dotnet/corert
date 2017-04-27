@@ -20,6 +20,7 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         protected internal abstract String ComputeToString(RuntimeMethodInfo contextMethod);
         internal abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+        internal abstract RuntimeMethodHandle GetRuntimeMethodHandle(Type[] methodArguments);
     }
 
     //
@@ -90,6 +91,14 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException();
         }
 
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public sealed override bool IsGenericMethod
         {
             get
@@ -135,6 +144,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInfo;
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.ContextTypeInfo);
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get
@@ -159,6 +176,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
         public sealed override String ToString()
         {
             return ComputeToString(this);
@@ -180,6 +205,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             return _common.GetHashCode();
         }
+
+        public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(null);
 
         protected internal sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
@@ -212,6 +239,17 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 return _common.Name;
+            }
+        }
+
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                if (_reflectedType.Equals(_common.DefiningTypeInfo))
+                    return this;
+
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.ContextTypeInfo);
             }
         }
 
@@ -248,6 +286,11 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
+        }
+
+        internal sealed override RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
+        {
+            return _common.GetRuntimeMethodHandle(genericArgs);
         }
 
         private TRuntimeMethodCommon _common;

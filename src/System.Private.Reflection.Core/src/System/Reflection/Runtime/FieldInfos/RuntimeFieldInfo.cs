@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.General;
@@ -24,8 +25,9 @@ namespace System.Reflection.Runtime.FieldInfos
     //
     // The Runtime's implementation of fields.
     //
+    [Serializable]
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeFieldInfo : FieldInfo, ISerializable, ITraceableTypeMember
     {
         //
         // contextType    - the type that supplies the type context (i.e. substitutions for generic parameters.) Though you
@@ -71,6 +73,17 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+        }
+
+        public abstract override Type[] GetOptionalCustomModifiers();
+
+        public abstract override Type[] GetRequiredCustomModifiers();
+
         public sealed override Object GetValue(Object obj)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -80,6 +93,15 @@ namespace System.Reflection.Runtime.FieldInfos
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             return fieldAccessor.GetField(obj);
+        }
+
+        public sealed override object GetValueDirect(TypedReference obj)
+        {
+            if (obj.IsNull)
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
+
+            FieldAccessor fieldAccessor = this.FieldAccessor;
+            return fieldAccessor.GetFieldDirect(obj);
         }
 
         public sealed override Module Module
@@ -105,10 +127,18 @@ namespace System.Reflection.Runtime.FieldInfos
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
 
-            binder.EnsureNotCustomBinder();
+            FieldAccessor fieldAccessor = this.FieldAccessor;
+            BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, culture);
+            fieldAccessor.SetField(obj, value, binderBundle);
+        }
+
+        public sealed override void SetValueDirect(TypedReference obj, object value)
+        {
+            if (obj.IsNull)
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
-            fieldAccessor.SetField(obj, value);
+            fieldAccessor.SetFieldDirect(obj, value);
         }
 
         Type ITraceableTypeMember.ContainingType
@@ -153,6 +183,7 @@ namespace System.Reflection.Runtime.FieldInfos
         public abstract override String ToString();
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
+        public abstract override RuntimeFieldHandle FieldHandle { get; }
 
         /// <summary>
         /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.
@@ -182,7 +213,7 @@ namespace System.Reflection.Runtime.FieldInfos
                             throw new BadImageFormatException(); // Field marked literal but has no default value.
                         }
 
-                        _lazyFieldAccessor = fieldAccessor = new LiteralFieldAccessor(defaultValue);
+                        _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.CreateLiteralFieldAccessor(defaultValue, FieldType.TypeHandle);
                     }
                     else
                     {
@@ -221,6 +252,11 @@ namespace System.Reflection.Runtime.FieldInfos
         /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
         /// </summary>
         protected abstract RuntimeTypeInfo DefiningType { get; }
+
+        /// <summary>
+        /// Returns the field offset (asserts and throws if not an instance field). Does not include the size of the object header.
+        /// </summary>
+        internal int Offset => FieldAccessor.Offset;
 
         protected readonly RuntimeTypeInfo _contextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;

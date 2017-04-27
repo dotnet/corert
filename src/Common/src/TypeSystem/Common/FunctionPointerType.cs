@@ -63,25 +63,6 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = TypeFlags.FunctionPointer;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                if (_signature.ReturnType.ContainsGenericVariables)
-                    flags |= TypeFlags.ContainsGenericVariables;
-                else
-                {
-                    for (int i = 0; i < _signature.Length; i++)
-                    {
-                        if (_signature[i].ContainsGenericVariables)
-                        {
-                            flags |= TypeFlags.ContainsGenericVariables;
-                            break;
-                        }
-                    }
-                }
-            }
-
             flags |= TypeFlags.HasGenericVarianceComputed;
 
             return flags;

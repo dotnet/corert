@@ -11,51 +11,38 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    public sealed class Semaphore : WaitHandle
+    public sealed partial class Semaphore : WaitHandle
     {
         private const int MAX_PATH = (int)Interop.Constants.MaxPath;
 
         // creates a nameless semaphore object
         // Win32 only takes maximum count of Int32.MaxValue
-        public Semaphore(int initialCount, int maximumCount) : this(initialCount, maximumCount, null) { }
+        public Semaphore(int initialCount, int maximumCount)
+        {
+            VerifyCounts(initialCount, maximumCount);
+
+            bool createdNew;
+            CreateSemaphoreCore(initialCount, maximumCount, null, out createdNew);
+        }
 
         public Semaphore(int initialCount, int maximumCount, string name)
         {
-            if (initialCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            }
+            VerifyCounts(initialCount, maximumCount);
+            VerifyNameForCreate(name);
 
-            if (maximumCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            if (initialCount > maximumCount)
-            {
-                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
-            }
-
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
-            SafeWaitHandle myHandle = new SafeWaitHandle(Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, (uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize)), true);
-
-            if (myHandle.IsInvalid)
-            {
-                int errorCode = (int)Interop.mincore.GetLastError();
-
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-
-            SafeWaitHandle = myHandle;
+            bool createdNew;
+            CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }
 
-        public unsafe Semaphore(int initialCount, int maximumCount, string name, out bool createdNew)
+        public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew)
+        {
+            VerifyCounts(initialCount, maximumCount);
+            VerifyNameForCreate(name);
+
+            CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
+        }
+
+        private static void VerifyCounts(int initialCount, int maximumCount)
         {
             if (initialCount < 0)
             {
@@ -71,30 +58,6 @@ namespace System.Threading
             {
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
             }
-
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
-
-            SafeWaitHandle myHandle;
-            myHandle = new SafeWaitHandle(Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, (uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize)), true);
-
-            int errorCode = (int)Interop.mincore.GetLastError();
-            if (myHandle.IsInvalid)
-            {
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-            createdNew = errorCode != Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
-
-            SafeWaitHandle = myHandle;
-        }
-
-        private Semaphore(SafeWaitHandle handle)
-        {
-            SafeWaitHandle = handle;
         }
 
         public static Semaphore OpenExisting(string name)
@@ -113,56 +76,11 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, out Semaphore result)
-        {
-            return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
-        }
-
-        private static OpenExistingResult OpenExistingWorker(
-            string name,
-            out Semaphore result)
-        {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(name)), nameof(name));
-            }
-            if (null != name && MAX_PATH < name.Length)
-            {
-                throw new ArgumentException(SR.Argument_WaitHandleNameTooLong);
-            }
-
-            result = null;
-
-            //Pass false to OpenSemaphore to prevent inheritedHandles
-            SafeWaitHandle myHandle = new SafeWaitHandle(Interop.mincore.OpenSemaphore((uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize), false, name), true);
-
-            if (myHandle.IsInvalid)
-            {
-                int errorCode = (int)Interop.mincore.GetLastError();
-
-                if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.mincore.Errors.ERROR_INVALID_NAME == errorCode)
-                    return OpenExistingResult.NameNotFound;
-                if (Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == errorCode)
-                    return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
-                    return OpenExistingResult.NameInvalid;
-                //this is for passed through NativeMethods Errors
-                throw ExceptionFromCreationError(errorCode, name);
-            }
-            result = new Semaphore(myHandle);
-            return OpenExistingResult.Success;
-        }
-
+        public static bool TryOpenExisting(string name, out Semaphore result) =>
+            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 
         // increase the count on a semaphore, returns previous count
-        public int Release()
-        {
-            return Release(1);
-        }
+        public int Release() => ReleaseCore(1);
 
         // increase the count on a semaphore, returns previous count
         public int Release(int releaseCount)
@@ -171,26 +89,29 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             }
-            int previousCount;
 
-            //If ReleaseSempahore returns false when the specified value would cause
-            //   the semaphore's count to exceed the maximum count set when Semaphore was created
-            //Non-Zero return 
+            return ReleaseCore(releaseCount);
+        }
+
+        private int ReleaseCore(int releaseCount)
+        {
+            // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
+            // to ensure that one instance is used in all places in this method
+            SafeWaitHandle waitHandle = _waitHandle;
+            if (waitHandle == null)
+            {
+                ThrowInvalidHandleException();
+            }
 
             waitHandle.DangerousAddRef();
             try
             {
-                if (!Interop.mincore.ReleaseSemaphore(waitHandle.DangerousGetHandle(), releaseCount, out previousCount))
-                {
-                    throw new SemaphoreFullException();
-                }
+                return ReleaseCore(waitHandle.DangerousGetHandle(), releaseCount);
             }
             finally
             {
                 waitHandle.DangerousRelease();
             }
-
-            return previousCount;
         }
     }
 }

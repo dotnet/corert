@@ -2,22 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
-using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
+using System.Reflection.Runtime.MethodInfos;
 
-using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Extensions.NonPortable;
 
 namespace System.Reflection.Runtime.General
 {
@@ -42,11 +42,6 @@ namespace System.Reflection.Runtime.General
                 clonedTypes[i] = types[i];
             }
             return clonedTypes;
-        }
-
-        public static bool IsRuntimeImplemented(this Type type)
-        {
-            return type is IRuntimeImplementedType;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,6 +84,35 @@ namespace System.Reflection.Runtime.General
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
             return new ReadOnlyCollection<T>(enumeration.ToArray());
+        }
+
+        public static T[] ReadOnlyCollectionToArray<T>(this IReadOnlyCollection<T> collection)
+        {
+            int count = collection.Count;
+            T[] result = new T[count];
+            int i = 0;
+            foreach (T element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static Array ReadOnlyCollectionToEnumArray<T>(this IReadOnlyCollection<T> collection, Type enumType) where T : struct
+        {
+            Debug.Assert(typeof(T).IsPrimitive);
+            Debug.Assert(enumType.IsEnum);
+
+            int count = collection.Count;
+            T[] result = (T[])Array.CreateInstance(enumType, count);
+            int i = 0;
+            foreach (T element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
         }
 
         public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
@@ -167,11 +191,46 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureNotCustomBinder(this Binder binder)
+        public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
-            if (!(binder == null || binder is DefaultBinder))
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
+            Debug.Assert(delegateType.IsDelegate);
+
+            MethodInfo invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            if (invokeMethod == null)
+            {
+                // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
+                // a missing Invoke method. 
+
+                // We're deliberating calling FullName rather than ToString() because if it's the type that's missing metadata, 
+                // the FullName property constructs a more informative MissingMetadataException than we can. 
+                string fullName = delegateType.FullName;
+                throw new MissingMetadataException(SR.Format(SR.Arg_InvokeMethodMissingMetadata, fullName)); // No invoke method found.
+            }
+            return (RuntimeMethodInfo)invokeMethod;
+        }
+
+        public static BinderBundle ToBinderBundle(this Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
+        {
+            if (binder == null || binder is DefaultBinder || ((invokeAttr & BindingFlags.ExactBinding) != 0))
+                return null;
+            return new BinderBundle(binder, cultureInfo);
+        }
+
+        // Helper for ICustomAttributeProvider.GetCustomAttributes(). The result of this helper is returned directly to apps
+        // so it must always return a newly allocated array. Unlike most of the newer custom attribute apis, the attribute type
+        // need not derive from System.Attribute. (In particular, it can be an interface or System.Object.)
+        public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
+        {
+            LowLevelList<object> attributes = new LowLevelList<object>();
+            foreach (CustomAttributeData cad in cads)
+            {
+                object instantiatedAttribute = cad.Instantiate();
+                attributes.Add(instantiatedAttribute);
+            }
+            int count = attributes.Count;
+            object[] result = (object[])Array.CreateInstance(actualElementType, count);
+            attributes.CopyTo(result, 0);
+            return result;
         }
     }
 }

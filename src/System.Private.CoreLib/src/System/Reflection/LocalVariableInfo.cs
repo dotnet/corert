@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  LocalVariableInfo
-**
-==============================================================*/
-
 using System.Diagnostics;
 
 namespace System.Reflection
@@ -45,11 +38,11 @@ namespace System.Reflection
             }
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             // Don't laugh - this is really how the desktop behaves if you don't override, including the NullReference when 
             // it calls ToString() on LocalType's null return.
-            String toString = LocalType.ToString() + " (" + LocalIndex + ")";
+            string toString = LocalType.ToString() + " (" + LocalIndex + ")";
 
             if (IsPinned)
                 toString += " (pinned)";

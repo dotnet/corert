@@ -16,6 +16,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -232,7 +233,7 @@ namespace System.Threading
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
         private void Initialize(bool initialState, int spinCount)
         {
-            this.m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
+            m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
             //the spinCount argument has been validated by the ctors.
             //but we now sanity check our predefined constants.
             Debug.Assert(DEFAULT_SPIN_SP >= 0, "Internal error - DEFAULT_SPIN_SP is outside the legal range.");
@@ -587,24 +588,24 @@ namespace System.Threading
                     {
                         if (i == HOW_MANY_SPIN_BEFORE_YIELD / 2)
                         {
-                            SpinWait.Yield();
+                            RuntimeThread.Yield();
                         }
                         else
                         {
-                            SpinWait.Spin(PlatformHelper.ProcessorCount * (4 << i));
+                            RuntimeThread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                         }
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
                     {
-                        Interop.mincore.Sleep(1);
+                        RuntimeThread.Sleep(1);
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_0 == 0)
                     {
-                        Interop.mincore.Sleep(0);
+                        RuntimeThread.Sleep(0);
                     }
                     else
                     {
-                        SpinWait.Yield();
+                        RuntimeThread.Yield();
                     }
 
                     if (i >= 100 && i % 10 == 0) // check the cancellation token if the user passed a very large spin count

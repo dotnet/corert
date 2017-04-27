@@ -149,10 +149,10 @@ namespace Internal.IL
                 var localSlotToInfoMap = new Dictionary<int, ILLocalVariable>();
                 foreach (var v in localVariables)
                 {
-                    string sanitizedName = _compilation.NameMangler.SanitizeName(v.Name);
-                    if (!names.Add(v.Name))
+                    string sanitizedName = _writer.SanitizeCppVarName(v.Name);
+                    if (!names.Add(sanitizedName))
                     {
-                        sanitizedName = string.Format("{0}_local{1}", v.Name, v.Slot);
+                        sanitizedName = string.Format("{0}_local{1}", sanitizedName, v.Slot);
                         names.Add(sanitizedName);
                     }
 
@@ -172,7 +172,7 @@ namespace Internal.IL
             int index = 0;
             foreach (var p in parameters)
             {
-                parameterIndexToNameMap[index] = p;
+                parameterIndexToNameMap[index] = _writer.SanitizeCppVarName(p);
                 ++index;
             }
 
@@ -292,7 +292,7 @@ namespace Internal.IL
         private void AppendCastIfNecessary(TypeDesc destType, StackEntry srcEntry)
         {
             ConstantEntry constant = srcEntry as ConstantEntry;
-            if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType)
+            if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType || destType != srcEntry.Type)
             {
                 Append("(");
                 Append(GetSignatureTypeNameAndAddReference(destType));
@@ -422,7 +422,7 @@ namespace Internal.IL
 
             if (_parameterIndexToNameMap != null && argument && _parameterIndexToNameMap.ContainsKey(index))
             {
-                return _writer.SanitizeCppVarName(_parameterIndexToNameMap[index]);
+                return _parameterIndexToNameMap[index];
             }
 
             return (argument ? "_a" : "_l") + index.ToStringInvariant();
@@ -938,7 +938,7 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
-                        delegateInfo = _compilation.GetDelegateCtor(owningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken);
+                        delegateInfo = _compilation.GetDelegateCtor(owningType, ((LdTokenEntry<MethodDesc>)_stack.Peek()).LdToken, followVirtualDispatch: false);
                         method = delegateInfo.Constructor.Method;
                     }
                 }
@@ -968,7 +968,8 @@ namespace Internal.IL
                     else
                         callViaSlot = true;
 
-                    _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
+                    if (!_nodeFactory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                        _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
                 }
             }
 
@@ -1944,6 +1945,7 @@ namespace Internal.IL
 
             PushTemp(GetStackValueKind(type), type);
 
+            AppendCastIfNecessary(GetStackValueKind(type), type);
             Append("*(");
             Append(_writer.GetCppSignatureTypeName(type));
             Append("*)");
@@ -2164,6 +2166,8 @@ namespace Internal.IL
 
         private void ImportEndFinally()
         {
+            _stack.Clear();
+
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
             AppendLine();
@@ -2417,7 +2421,7 @@ namespace Internal.IL
                     "::",
                     _writer.GetCppMethodName(helper),
                     "((intptr_t)",
-                    _writer.GetCppTypeName((TypeDesc)ldtokenValue),
+                    _compilation.NameMangler.GetMangledTypeName((TypeDesc)ldtokenValue),
                     "::__getMethodTable())");
 
                 value = new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, name, (TypeDesc)ldtokenValue, GetWellKnownType(ldtokenKind));
@@ -2493,7 +2497,7 @@ namespace Internal.IL
 
             GetSignatureTypeNameAndAddReference(type);
 
-            PushExpression(StackValueKind.Int32, "sizeof(" + _writer.GetCppTypeName(type) + ")");
+            PushExpression(StackValueKind.Int32, "(int32_t)sizeof(" + _writer.GetCppTypeName(type) + ")");
         }
 
         private void ImportRefAnyType()
@@ -2575,9 +2579,12 @@ namespace Internal.IL
 
             AddTypeDependency(type, constructed);
 
-            foreach (var field in type.GetFields())
+            if (!type.IsGenericDefinition)
             {
-                AddTypeDependency(field.FieldType, false);
+                foreach (var field in type.GetFields())
+                {
+                    AddTypeDependency(field.FieldType, false);
+                }
             }
         }
         private void AddTypeDependency(TypeDesc type, bool constructed)
@@ -2586,14 +2593,8 @@ namespace Internal.IL
             {
                 return;
             }
-            else if (type.IsPointer || type.IsByRef)
-            {
-                Debug.Assert(type is ParameterizedType);
-                AddTypeDependency((type as ParameterizedType).ParameterType, constructed);
-                return;
-            }
-            Object node;
 
+            Object node;
             if (constructed)
                 node = _nodeFactory.ConstructedTypeSymbol(type);
             else

@@ -49,7 +49,7 @@ struct REGDISPLAY
 
 #elif defined(_TARGET_ARM_)
 
-struct REGDISPLAY 
+struct REGDISPLAY
 {
     PTR_UIntNative pR0;
     PTR_UIntNative pR1;

@@ -32,7 +32,8 @@ internal static partial class Interop
                     int* pcchFound,
                     void* lpVersionInformation,
                     void* lpReserved,
-                    IntPtr sortHandle);
+                    IntPtr sortHandle,
+                    int* matchLengthPtr);
 
         [DllImport("api-ms-win-core-string-l1-1-0.dll", EntryPoint = "CompareStringEx")]
         internal extern static unsafe int CompareStringEx(
@@ -68,6 +69,8 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-localization-l1-2-1.dll")]
         internal extern static bool EnumSystemLocalesEx(IntPtr lpLocaleEnumProcEx, uint dwFlags, IntPtr lParam, IntPtr lpReserved);
+
+        internal delegate BOOL EnumLocalesProcEx(IntPtr lpLocaleString, uint dwFlags, IntPtr lParam);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
@@ -110,6 +113,8 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int EnumTimeFormatsEx(IntPtr lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, IntPtr lParam);
 
+        internal delegate BOOL EnumTimeFormatsProcEx(IntPtr lpTimeFormatString, IntPtr lParam);
+
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int GetCalendarInfoEx(string lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
 
@@ -118,5 +123,7 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int EnumCalendarInfoExEx(IntPtr pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, IntPtr lParam);
+
+        internal delegate BOOL EnumCalendarInfoProcExEx(IntPtr lpCalendarInfoString, uint Calendar, IntPtr lpReserved, IntPtr lParam);
     }
 }

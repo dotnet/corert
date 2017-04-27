@@ -29,4 +29,6 @@
 #cmakedefine01 HAVE_CLOCK_MONOTONIC_COARSE
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 
+#cmakedefine01 HAVE_THREAD_LOCAL
+
 #endif

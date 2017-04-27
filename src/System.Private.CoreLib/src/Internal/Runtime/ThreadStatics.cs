@@ -39,7 +39,6 @@ namespace Internal.Runtime
             storage[typeTlsIndex] = threadStaticBase;
 
             return threadStaticBase;
-
         }
 
         /// <summary>
@@ -74,7 +73,7 @@ namespace Internal.Runtime
         /// This method allocates an object that represents a memory block for all thread static fields of the type
         /// that corresponds to the specified TLS index.
         /// </summary>
-        private static unsafe object AllocateThreadStaticStorageForType(IntPtr typeManager, Int32 typeTlsIndex)
+        private static unsafe object AllocateThreadStaticStorageForType(TypeManagerHandle typeManager, Int32 typeTlsIndex)
         {
             Int32 length;
             IntPtr* threadStaticRegion;

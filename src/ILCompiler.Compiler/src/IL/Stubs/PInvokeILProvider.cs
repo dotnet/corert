@@ -17,20 +17,17 @@ namespace Internal.IL
     class PInvokeILProvider
     {
         private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
+        private readonly InteropStateManager _interopStateManager;
 
-        public PInvokeILProvider(PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration)
+        public PInvokeILProvider(PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration, InteropStateManager interopStateManager)
         {
             _pInvokeILEmitterConfiguration = pInvokeILEmitterConfiguration;
+            _interopStateManager = interopStateManager;
         }
 
         public MethodIL EmitIL(MethodDesc method)
         {
-            return PInvokeILEmitter.EmitIL(method, _pInvokeILEmitterConfiguration);
-        }
-
-        public bool IsStubRequired(MethodDesc method)
-        {
-            return PInvokeILEmitter.IsStubRequired(method, _pInvokeILEmitterConfiguration);
+            return PInvokeILEmitter.EmitIL(method, _pInvokeILEmitterConfiguration, _interopStateManager);
         }
     }
 }

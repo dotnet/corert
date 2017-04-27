@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode
+    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
     {
         public struct DependencyListEntry
         {
@@ -137,6 +137,16 @@ namespace ILCompiler.DependencyAnalysisFramework
         protected virtual void OnMarked(DependencyContextType context)
         {
             // Do nothing by default
+        }
+
+        // Force all non-abstract nodes to provide a name
+        protected abstract string GetName(DependencyContextType context);
+
+        // We would prefer GetName to be "protected internal", but that will break people who want to source
+        // include the dependency analysis framework. When nobody does that, maybe we can get rid of this method.
+        internal string GetNameInternal(DependencyContextType context)
+        {
+            return GetName(context);
         }
     }
 }

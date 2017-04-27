@@ -10,9 +10,6 @@
 //   These source code are being published to InternalAPIs and consumed by RH builds
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
 // ---------------------------------------------------------------------------------
-#if !CORECLR
-extern alias CoreFX_Collections;
-#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -155,7 +152,8 @@ namespace System
         private RCWFinalizer m_finalizer;
 
 #if !RHTESTCL && !CORECLR && !CORERT
-        private static readonly Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = new Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
+        private static readonly System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle> s_DynamicRCWAdapters = 
+            new System.Collections.Generic.Dictionary<RuntimeTypeHandle, RuntimeTypeHandle>();
 #endif
 
         #endregion
@@ -1602,6 +1600,20 @@ namespace System
                     else
                         return McgComHelpers.CreateGenericComDispatcher(typeof(IList_RCWAdapter<>).TypeHandle, genericTypeArgs, this);
                 }
+            } 
+            else if (isReadOnly && !testForIDictionary)
+            {
+                //
+                // Check for a variant type cast in the cache for IReadOnlyList<T>: IReadOnlyList supports CoVariance
+                //
+                IntPtr pComPtr; 
+                RuntimeTypeHandle variantInterfaceType = FindCastableGenericInterfaceInCache(iTypeToQI, out pComPtr);
+                if (!variantInterfaceType.IsInvalid())
+                {
+                    RuntimeTypeHandle[] variantGenericArguments;
+                    RuntimeTypeHandle variantGenericTypeDef = RuntimeAugments.GetGenericInstantiation(variantInterfaceType, out variantGenericArguments);
+                    return McgComHelpers.CreateGenericComDispatcher(typeof(IReadOnlyList_RCWAdapter<>).TypeHandle, variantGenericArguments, this);
+                }
             }
 
             // Cannot cast...
@@ -1690,8 +1702,6 @@ namespace System
             
                 Debug.Assert(genericInterfaceType.IsGenericType());
 
-                InsertIntoCache(interfaceType, ContextCookie.Current, ref pComPtr, true);
-
                 interfaceType = genericInterfaceType;
             }
 
@@ -1741,7 +1751,7 @@ namespace System
                         if (variantInterfaceType.IsInvalid())
                             return null;
 
-                        InsertIntoCache(interfaceType, currentCookie, ref pComPtr, true);
+                        genericTypeDef = RuntimeAugments.GetGenericInstantiation(variantInterfaceType, out genericArguments);
                     }
                 }
 

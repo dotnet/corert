@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
@@ -19,13 +20,15 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Reflection.Tracing;
+using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
+    [Serializable]
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, ISerializable
     {
         public bool Equals(RuntimeAssembly other)
         {
@@ -48,6 +51,14 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+                throw new ArgumentNullException(nameof(info));
+
+            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.AssemblyUnity, FullName, this);
+        }
+
         public sealed override Module ManifestModule
         {
             get
@@ -63,7 +74,6 @@ namespace System.Reflection.Runtime.Assemblies
                 yield return ManifestModule;
             }
         }
-
 
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
         {
@@ -143,6 +153,7 @@ namespace System.Reflection.Runtime.Assemblies
         // Types that derive from RuntimeAssembly must implement the following public surface area members
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override IEnumerable<TypeInfo> DefinedTypes { get; }
+        public abstract override MethodInfo EntryPoint { get; }
         public abstract override IEnumerable<Type> ExportedTypes { get; }
         public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
         public abstract override String[] GetManifestResourceNames();
@@ -150,6 +161,11 @@ namespace System.Reflection.Runtime.Assemblies
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
 
+        /// <summary>
+        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
+        /// loaded and its constructor already ran, we do not run it again.
+        /// </summary>
+        internal abstract void RunModuleConstructor();
 
         /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
@@ -179,6 +195,64 @@ namespace System.Reflection.Runtime.Assemblies
             {
                 return _lazyCaseSensitiveTypeTable ?? (_lazyCaseSensitiveTypeTable = new CaseSensitiveTypeCache(this));
             }
+        }
+
+        public sealed override bool GlobalAssemblyCache
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public sealed override long HostContext
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream GetFile(string name)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream[] GetFiles(bool getResourceModules)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override SecurityRuleSet SecurityRuleSet
+        {
+            get
+            {
+                return SecurityRuleSet.None;
+            }
+        }
+
+        /// <summary>
+        /// Returns a *freshly allocated* array of loaded Assemblies.
+        /// </summary>
+        internal static Assembly[] GetLoadedAssemblies()
+        {
+            // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
+            // so it must return a freshly allocated array on each call.
+
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
+            Assembly[] results = new Assembly[bindResults.Count];
+            for (int i = 0; i < bindResults.Count; i++)
+            {
+                Assembly assembly = GetRuntimeAssembly(bindResults[i]);
+                results[i] = assembly;
+            }
+            return results;
         }
 
         private volatile CaseSensitiveTypeCache _lazyCaseSensitiveTypeTable;

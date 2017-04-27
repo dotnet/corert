@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
+    <CLSCompliant>true</CLSCompliant>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
@@ -16,32 +17,24 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|armel'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|armel'" />
   <PropertyGroup>
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <UseSyncTable>true</UseSyncTable>
+    <DefineConstants>EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWindows)'=='true'">FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  <PropertyGroup>
+    <FeatureCominterop>false</FeatureCominterop>
+    <FeatureCominterop Condition="'$(TargetsWindows)' == 'true'">true</FeatureCominterop>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
-    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
@@ -50,9 +43,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\SR.Core.cs">
-      <Link>Resources\Common</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Threading\Tasks\TaskToApm.cs">
       <Link>System\Threading\Tasks</Link>
     </Compile>
@@ -60,21 +50,32 @@
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\ThreadingHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
-      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.RVA.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.RVA.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
-      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
-      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
@@ -82,12 +83,14 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\TypedReferenceHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\SpinLockTraceCallbacks.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\HasEmbeddedStringResourcesAttribute.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
@@ -95,6 +98,7 @@
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericVirtualMethodSupport.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\RelocatedTypeAttribute.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
@@ -106,10 +110,12 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
+    <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -131,304 +137,149 @@
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
-    <Compile Include="System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
-    <Compile Include="System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
-    <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
-    <Compile Include="System\Reflection\Assembly.cs" />
-    <Compile Include="System\Reflection\AssemblyContentType.cs" />
+    <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
-    <Compile Include="System\Reflection\Binder.cs" />
-    <Compile Include="System\Reflection\BindingFlags.cs" />
-    <Compile Include="System\Reflection\CallingConventions.cs" />
-    <Compile Include="System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\CustomAttributeData.cs" />
     <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
-    <Compile Include="System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="System\Reflection\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
-    <Compile Include="System\Reflection\EventAttributes.cs" />
-    <Compile Include="System\Reflection\EventInfo.cs" />
     <Compile Include="System\Reflection\ExceptionHandlingClause.cs" />
-    <Compile Include="System\Reflection\ExceptionHandlingClauseOptions.cs" />
-    <Compile Include="System\Reflection\FieldAttributes.cs" />
-    <Compile Include="System\Reflection\FieldInfo.cs" />
-    <Compile Include="System\Reflection\GenericParameterAttributes.cs" />
-    <Compile Include="System\Reflection\ICustomAttributeProvider.cs" />
-    <Compile Include="System\Reflection\ImageFileMachine.cs" />
-    <Compile Include="System\Reflection\InterfaceMapping.cs" />
-    <Compile Include="System\Reflection\IntrospectionExtensions.cs" />
-    <Compile Include="System\Reflection\InvalidFilterCriteriaException.cs" />
-    <Compile Include="System\Reflection\IReflect.cs" />
-    <Compile Include="System\Reflection\IReflectableType.cs" />
+    <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\ManifestResourceInfo.cs" />
-    <Compile Include="System\Reflection\MemberFilter.cs" />
-    <Compile Include="System\Reflection\MemberInfo.cs" />
-    <Compile Include="System\Reflection\MemberTypes.cs" />
-    <Compile Include="System\Reflection\MethodAttributes.cs" />
-    <Compile Include="System\Reflection\MethodBase.cs" />
+    <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
+    <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
-    <Compile Include="System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="System\Reflection\MethodInfo.cs" />
-    <Compile Include="System\Reflection\Module.cs" />
-    <Compile Include="System\Reflection\ModuleResolveEventHandler.cs" />
-    <Compile Include="System\Reflection\ParameterAttributes.cs" />
-    <Compile Include="System\Reflection\ParameterInfo.cs" />
-    <Compile Include="System\Reflection\ParameterModifier.cs" />
-    <Compile Include="System\Reflection\Pointer.cs" />
-    <Compile Include="System\Reflection\PortableExecutableKinds.cs" />
-    <Compile Include="System\Reflection\PropertyAttributes.cs" />
-    <Compile Include="System\Reflection\PropertyInfo.cs" />
-    <Compile Include="System\Reflection\ResourceAttributes.cs" />
-    <Compile Include="System\Reflection\ReflectionContext.cs" />
-    <Compile Include="System\Reflection\ReflectionTypeLoadException.cs" />
-    <Compile Include="System\Reflection\ResourceLocation.cs" />
-    <Compile Include="System\Reflection\TargetException.cs" />
-    <Compile Include="System\Reflection\TypeAttributes.cs" />
-    <Compile Include="System\Reflection\TypeFilter.cs" />
-    <Compile Include="System\Reflection\TypeInfo.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeImplementedCustomAttributeData.cs" />
+    <Compile Include="System\Resources\FastResourceComparer.cs" />
+    <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="System\Resources\IResourceGroveler.cs" />
+    <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
+    <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
+    <Compile Include="System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="System\Resources\ResourceManager.cs" />
+    <Compile Include="System\Resources\ResourceReader.cs" />
+    <Compile Include="System\Resources\ResourceSet.cs" />
+    <Compile Include="System\Resources\RuntimeResourceSet.cs" />
+    <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
+    <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="System\Text\CodePageDataItem.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
-    <Compile Include="System\Action.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
-    <Compile Include="System\ApplicationException.cs" />
-    <Compile Include="System\ArgumentException.cs" />
-    <Compile Include="System\ArgumentNullException.cs" />
+    <Compile Include="System\AppContext.cs" />
+    <Compile Include="System\AppContextDefaultValues.cs" />
+    <Compile Include="System\ArgIterator.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
-    <Compile Include="System\ArithmeticException.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\ArrayTypeMismatchException.cs" />
-    <Compile Include="System\AsyncCallback.cs" />
     <Compile Include="System\BadImageFormatException.cs" />
+    <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\ByReference.cs" />
     <Compile Include="System\Byte.cs" />
-    <Compile Include="System\Char.cs" />
-    <Compile Include="System\CharEnumerator.cs" />
-    <Compile Include="System\CLSCompliantAttribute.cs" />
-    <Compile Include="System\Buffers\ArrayPool.cs" />
     <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
-    <Compile Include="System\Buffers\ConfigurableArrayPool.cs" />
-    <Compile Include="System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
-    <Compile Include="System\Buffers\Utilities.cs" />
-    <Compile Include="System\Collections\DictionaryEntry.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\Collections\Generic\ICollection.cs" />
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
-    <Compile Include="System\Collections\Generic\IComparer.cs" />
-    <Compile Include="System\Collections\Generic\IDictionary.cs" />
-    <Compile Include="System\Collections\Generic\IEnumerable.cs" />
-    <Compile Include="System\Collections\Generic\IEnumerator.cs" />
-    <Compile Include="System\Collections\Generic\IEqualitycomparer.cs" />
-    <Compile Include="System\Collections\Generic\IList.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyCollection.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyDictionary.cs" />
-    <Compile Include="System\Collections\Generic\IReadOnlyList.cs" />
-    <Compile Include="System\Collections\Generic\KeyNotFoundException.cs" />
-    <Compile Include="System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="System\Collections\Generic\List.cs" />
-    <Compile Include="System\Collections\ICollection.cs" />
-    <Compile Include="System\Collections\IComparer.cs" />
-    <Compile Include="System\Collections\IDictionary.cs" />
-    <Compile Include="System\Collections\IDictionaryEnumerator.cs" />
-    <Compile Include="System\Collections\IEnumerator.cs" />
-    <Compile Include="System\Collections\IEqualityComparer.cs" />
-    <Compile Include="System\Collections\IList.cs" />
-    <Compile Include="System\Collections\IStructuralComparable.cs" />
-    <Compile Include="System\Collections\IStructuralEquatable.cs" />
+    <Compile Include="System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
     <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
-    <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
-    <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
-    <Compile Include="System\Convert.cs" />
-    <Compile Include="System\ContextBoundObject.cs" />
-    <Compile Include="System\DataMisalignedException.cs" />
-    <Compile Include="System\DBNull.cs" />
+    <Compile Include="System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
+    <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
-    <Compile Include="System\FormattableString.cs" />
+    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
-    <Compile Include="System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="System\Globalization\CultureNotFoundException.cs" />
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
-    <Compile Include="System\Globalization\HebrewCalendar.cs" />
-    <Compile Include="System\Globalization\HebrewNumber.cs" />
-    <Compile Include="System\Globalization\HijriCalendar.cs" />
-    <Compile Include="System\Globalization\InternalGlobalizationHelper.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\FormatProvider.CultureAwareComparer.cs" />
     <Compile Include="System\Globalization\SortKey.cs" />
-    <Compile Include="System\Globalization\SortVersion.cs" />
     <Compile Include="System\Globalization\StringInfo.cs" />
-    <Compile Include="System\Globalization\TaiwanCalendar.cs" />
     <Compile Include="System\Globalization\TextElementEnumerator.cs" />
-    <Compile Include="System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
-    <Compile Include="System\Globalization\UmAlQuraCalendar.cs" />
-    <Compile Include="System\ICloneable.cs" />
     <Compile Include="System\InvokeUtils.cs" />
-    <Compile Include="System\IO\DirectoryNotFoundException.cs" />
-    <Compile Include="System\IO\EndOfStreamException.cs" />
-    <Compile Include="System\IO\Error.cs" />
-    <Compile Include="System\IO\FileAccess.cs" />
-    <Compile Include="System\IO\FileLoadException.cs" />
-    <Compile Include="System\IO\FileMode.cs" />
-    <Compile Include="System\IO\FileNotFoundException.cs" />
-    <Compile Include="System\IO\FileShare.cs" />
+    <Compile Include="System\IO\BinaryReader.cs" />
+    <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\EncodingCache.cs" />
+    <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
-    <Compile Include="System\IO\PathTooLongException.cs" />
-    <!-- TODO: Enable System.Path in ProjectN TFS build -->
-    <Compile Include="System\IO\Path.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\SeekOrigin.cs" />
+    <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\Stream.cs" />
-    <Compile Include="System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
-    <Compile Include="System\Random.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
-    <Compile Include="System\DateTime.cs" />
-    <Compile Include="System\DateTimeKind.cs" />
-    <Compile Include="System\DateTimeOffset.cs" />
-    <Compile Include="System\DayOfWeek.cs" />
     <Compile Include="System\Decimal.cs" />
-    <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
-    <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
-    <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
+    <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
-    <Compile Include="System\DivideByZeroException.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.cs" />
+    <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Double.cs" />
-    <Compile Include="System\DuplicateWaitObjectException.cs" />
     <Compile Include="System\Enum.cs" />
-    <Compile Include="System\EntryPointNotFoundException.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.EnvironmentVariables.cs" />
-    <Compile Include="System\EventArgs.cs" />
-    <Compile Include="System\EventHandler.cs" />
-    <Compile Include="System\ExecutionEngineException.cs" />
-    <Compile Include="System\FormatException.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
     <Compile Include="System\Globalization\CalendarData.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CompareInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\CultureTypes.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
-    <Compile Include="System\Globalization\FormatProvider.DateTimeFormat.cs" />
-    <Compile Include="System\Globalization\DateTimeFormatInfo.cs" />
-    <Compile Include="System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <Compile Include="System\Globalization\FormatProvider.DateTimeParse.cs" />
-    <Compile Include="System\Globalization\DateTimeStyles.cs" />
-    <Compile Include="System\Globalization\DayLightTime.cs" />
-    <Compile Include="System\Globalization\DigitShapes.cs" />
     <Compile Include="System\Globalization\GregorianCalendar.cs" />
-    <Compile Include="System\Globalization\GregorianCalendarTypes.cs" />
-    <Compile Include="System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\ChineseLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\JulianCalendar.cs" />
-    <Compile Include="System\Globalization\KoreanLunisolarCalendar.cs" />
-    <Compile Include="System\Globalization\PersianCalendar.cs" />
-    <Compile Include="System\Globalization\CalendricalCalculationsHelper.cs" />
-    <Compile Include="System\Globalization\TaiwanLunisolarCalendar.cs" />
     <Compile Include="System\Globalization\NumberFormatInfo.cs" />
-    <Compile Include="System\Globalization\NumberStyles.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Globalization\TimeSpanStyles.cs" />
-    <Compile Include="System\Globalization\UnicodeCategory.cs" />
     <Compile Include="System\Guid.cs" />
     <Compile Include="System\Helpers.cs" />
-    <Compile Include="System\IAsyncResult.cs" />
-    <Compile Include="System\IComparable.cs" />
-    <Compile Include="System\IConvertible.cs" />
-    <Compile Include="System\ICustomFormatter.cs" />
-    <Compile Include="System\IEquatable.cs" />
-    <Compile Include="System\IFormatProvider.cs" />
-    <Compile Include="System\IFormattable.cs" />
-    <Compile Include="System\IndexOutOfRangeException.cs" />
-    <Compile Include="System\InsufficientExecutionStackException.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Int16.cs" />
     <Compile Include="System\Int32.cs" />
     <Compile Include="System\Int64.cs" />
-    <Compile Include="System\Intptr.cs" />
-    <Compile Include="System\InvalidCastException.cs" />
-    <Compile Include="System\InvalidOperationException.cs" />
-    <Compile Include="System\InvalidProgramException.cs" />
-    <Compile Include="System\InvalidTimeZoneException.cs" />
-    <Compile Include="System\IObservable.cs" />
-    <Compile Include="System\IObserver.cs" />
-    <Compile Include="System\IProgress.cs" />
-    <Compile Include="System\Lazy.cs" />
+    <Compile Include="System\IntPtr.cs" />
+    <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.cs" />
-    <Compile Include="System\MemberAccessException.cs" />
-    <Compile Include="System\MethodAccessException.cs" />
-    <Compile Include="System\FieldAccessException.cs" />
+    <Compile Include="System\MathF.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
-    <Compile Include="System\MissingMethodException.cs" />
-    <Compile Include="System\MidpointRounding.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
-    <Compile Include="System\MulticastNotSupportedException.cs" />
-    <Compile Include="System\NotFiniteNumberException.cs" />
-    <Compile Include="System\NotImplementedException.cs" />
-    <Compile Include="System\NotSupportedException.cs" />
     <Compile Include="System\Nullable.cs" />
-    <Compile Include="System\NullReferenceException.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
-    <Compile Include="System\ObjectDisposedException.cs" />
-    <Compile Include="System\ObsoleteAttribute.cs" />
     <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
-    <Compile Include="System\OverflowException.cs" />
-    <Compile Include="System\ParamsArray.cs" />
     <Compile Include="System\ParseNumbers.cs" />
-    <Compile Include="System\PlatformNotSupportedException.cs" />
-    <Compile Include="System\RankException.cs" />
-    <Compile Include="System\Reflection\AssemblyAttributes.cs" />
-    <Compile Include="System\Reflection\AssemblyNameFlags.cs" />
-    <Compile Include="System\Reflection\DefaultMemberAttribute.cs" />
-    <Compile Include="System\Reflection\Missing.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
-    <Compile Include="System\Reflection\ProcessorArchitecture.cs" />
-    <Compile Include="System\ResolveEventArgs.cs" />
-    <Compile Include="System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CompilationRelaxations.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
+    <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
@@ -436,36 +287,21 @@
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionConditionallyDependentAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionRootAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
-    <Compile Include="System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\FormattableStringFactory.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ExtensionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ILTransformInjectedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ITuple.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
-    <Compile Include="System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
-    <Compile Include="System\Runtime\CompilerServices\StateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="System\Runtime\CompilerServices\EagerOrderedStaticConstructorAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
-    <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionAttributes.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
@@ -473,79 +309,49 @@
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalAsAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
-    <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-    <Compile Include="System\Runtime\Versioning\NonVersionableAttribute.cs" />
-    <Compile Include="System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\SerializableAttribute.cs" />
     <Compile Include="System\NonSerializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OptionalFieldAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
-    <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
-    <Compile Include="System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <Compile Include="System\Runtime\Serialization\IFormatterConverter.cs" />
-    <Compile Include="System\Runtime\Serialization\IObjectReference.cs" />
-    <Compile Include="System\Runtime\Serialization\ISerializable.cs" />
-    <Compile Include="System\Runtime\Serialization\OnDeserializedAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\OnDeserializingAttribute.cs" />
     <Compile Include="System\SByte.cs" />
-    <Compile Include="System\Security\Attributes.cs" />
-    <Compile Include="System\Security\CryptographicException.cs" />
-    <Compile Include="System\Security\SecurityException.cs" />
-    <Compile Include="System\Security\VerificationException.cs" />
     <Compile Include="System\Single.cs" />
-    <Compile Include="System\StackOverflowException.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
+    <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
-    <Compile Include="System\StringComparer.cs" />
-    <Compile Include="System\StringSplitOptions.cs" />
-    <Compile Include="System\SystemException.cs" />
     <Compile Include="System\Array.cs" />
+    <Compile Include="System\Array.CoreRT.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="System\IDisposable.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
+    <Compile Include="System\DelegateSerializationHolder.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Attribute.cs" />
-    <Compile Include="System\AttributeTargets.cs" />
-    <Compile Include="System\AttributeUsageAttribute.cs" />
-    <Compile Include="System\FlagsAttribute.cs" />
-    <Compile Include="System\MarshalByRefObject.cs" />
     <Compile Include="System\ModuleHandle.cs" />
-    <Compile Include="System\ParamArrayAttribute.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
-    <Compile Include="System\Runtime\CompilerServices\INotifyCompletion.cs" />
     <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="System\StringComparison.cs" />
-    <Compile Include="System\Text\ASCIIEncoding.cs" />
-    <Compile Include="System\Text\Decoder.cs" />
     <Compile Include="System\Text\DecoderBestFitFallback.cs" />
     <Compile Include="System\Text\DecoderExceptionFallback.cs" />
     <Compile Include="System\Text\DecoderFallback.cs" />
     <Compile Include="System\Text\DecoderNLS.cs" />
     <Compile Include="System\Text\DecoderReplacementFallback.cs" />
-    <Compile Include="System\Text\Encoder.cs" />
     <Compile Include="System\Text\EncoderBestFitFallback.cs" />
     <Compile Include="System\Text\EncoderExceptionFallback.cs" />
     <Compile Include="System\Text\EncoderFallback.cs" />
@@ -553,54 +359,34 @@
     <Compile Include="System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="System\Text\Encoding.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
-    <Compile Include="System\Text\EncodingForwarder.cs" />
-    <Compile Include="System\Text\EncodingNLS.cs" />
-    <Compile Include="System\Text\EncodingProvider.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\Latin1Encoding.cs" />
-    <Compile Include="System\Text\StringBuilder.cs" />
-    <Compile Include="System\Text\Normalization.cs" />
+    <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
     <Compile Include="System\Text\StringBuilderCache.cs" />
-    <Compile Include="System\Text\UnicodeEncoding.cs" />
-    <Compile Include="System\Text\UTF32Encoding.cs" />
     <Compile Include="System\Text\UTF7Encoding.cs" />
-    <Compile Include="System\Text\UTF8Encoding.cs" />
-    <Compile Include="System\ThreadAttributes.cs" />
-    <Compile Include="System\Threading\AsyncLocal.cs" />
-    <Compile Include="System\Threading\AbandonedMutexException.cs" />
-    <Compile Include="System\Threading\AutoResetEvent.cs" />
     <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
-    <Compile Include="System\Threading\LowLevelThread.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
-    <Compile Include="System\Threading\EventResetMode.cs" />
     <Compile Include="System\Threading\EventWaitHandle.cs" />
-    <Compile Include="System\Threading\ExecutionContext.cs" />
+    <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LazyInitializer.cs" />
-    <Compile Include="System\Threading\LazyThreadSafetyMode.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
-    <Compile Include="System\Threading\LockRecursionException.cs" />
-    <Compile Include="System\Threading\ManualResetEvent.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
-    <Compile Include="System\Threading\RuntimeThread.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
-    <Compile Include="System\Threading\SemaphoreFullException.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
-    <Compile Include="System\Threading\SendOrPostCallback.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SpinWait.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
-    <Compile Include="System\Threading\SynchronizationLockException.cs" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
@@ -610,69 +396,56 @@
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
-    <Compile Include="System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
     <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
-    <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
     <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
+    <Compile Include="System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
-    <Compile Include="System\Threading\Timeout.cs" />
-    <Compile Include="System\Threading\TimeoutHelper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
-    <Compile Include="System\Threading\WaitHandleCannotBeOpenedException.cs" />
-    <Compile Include="System\ThreadStaticAttribute.cs" />
-    <Compile Include="System\TimeoutException.cs" />
+    <Compile Include="System\Threading\WaitHandleArray.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\TimeSpan.cs" />
     <Compile Include="System\TimeZoneInfo.cs" />
-    <Compile Include="System\TimeZoneNotFoundException.cs" />
     <Compile Include="System\Tuple.cs" />
-    <Compile Include="System\TupleExtensions.cs" />
-    <Compile Include="System\Type.cs" />
-    <Compile Include="System\Type.Helpers.cs" />
+    <Compile Include="System\Type.CoreRT.cs" />
+    <Compile Include="System\Type.Internal.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="System\Type.Win32.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CLSIDFromProgID.cs">
+      <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
+    <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
-    <Compile Include="System\TypeAccessException.cs" />
-    <Compile Include="System\TypeCode.cs" />
-    <Compile Include="System\TypeInitializationException.cs" />
     <Compile Include="System\TypeLoadException.cs" />
+    <Compile Include="System\TypeLoadException.CoreRT.cs" />
     <Compile Include="System\UInt16.cs" />
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
-    <Compile Include="System\UIntptr.cs" />
-    <Compile Include="System\UnauthorizedAccessException.cs" />
-    <Compile Include="System\UnhandledExceptionEventArgs.cs" />
-    <Compile Include="System\UnhandledExceptionEventHandler.cs" />
-    <Compile Include="System\ValueTuple.cs" />
+    <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\ValueType.cs" />
-    <Compile Include="System\Version.cs" />
-    <Compile Include="System\Void.cs" />
-    <Compile Include="System\Collections\IEnumerable.cs" />
-    <Compile Include="System\Reflection\TargetInvocationException.cs" />
-    <Compile Include="System\Reflection\TargetParameterCountException.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="System\Runtime\InteropServices\CallingConvention.cs" />
-    <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
+    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\RegistryHive.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
@@ -710,40 +483,31 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CultureData.Windows.cs" />
-    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
-    <Compile Include="System\Text\Normalization.Windows.cs" />
-    <Compile Include="System\DateTime.Windows.cs" />
+    <Compile Include="System\AppContext.Windows.cs" />
+    <Compile Include="System\DateTime.Windows.CoreRT.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
-      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
+    <Compile Include="System\Runtime\MemoryFailPoint.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
+      <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
+      <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
-      <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.MUI.cs">
       <Link>Interop\Windows\mincore\Interop.MUI.cs</Link>
@@ -753,6 +517,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
+      <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
@@ -772,6 +539,9 @@
     </Compile>
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\ThreadPool.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\ThreadPool.Win32.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
+      <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
+    </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
     </Compile>
@@ -784,38 +554,47 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="System\IO\Path.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathHelper.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\IO\PathInternal.Windows.StringBuffer.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Runtime\InteropServices\StringBuffer.cs" />
-    <Compile Include="System\IO\Win32Marshal.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
+    <Compile Include="System\Threading\IOCompletionCallback.cs" />
+    <Compile Include="System\Threading\Mutex.Windows.cs" />
+    <Compile Include="System\Threading\NativeOverlapped.cs" />
+    <Compile Include="System\Threading\Semaphore.Windows.cs" />
+    <Compile Include="System\Threading\WaitHandle.Windows.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
+    <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPoolIO.cs">
+      <Link>Interop\Windows\mincore\Interop.ThreadPoolIO.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
+    <Compile Include="System\Text\Normalization.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
+      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
+      <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempFileNameW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempFileNameW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTempPathW.cs">
-      <Link>Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
+      <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
@@ -842,9 +621,19 @@
       <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="System\TimeZoneInfo.Unix.cs" />
-    <!--
+  <!-- Dummy globalization implementation -->
+  <ItemGroup Condition="'$(EnableDummyGlobalizationImplementation)' == 'true'">
+    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
+    <Compile Include="System\Text\Normalization.Dummy.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
@@ -854,25 +643,35 @@
     <Compile Include="System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
-    -->
-    <Compile Include="System\DateTime.Unix.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
+      <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
+    <Compile Include="System\AppContext.Unix.cs" />
+    <Compile Include="System\TimeZoneInfo.Unix.cs" />
+    <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
-    <Compile Include="System\IO\Path.Unix.cs" />
-    <Compile Include="System\IO\PathInternal.Unix.cs" />
+    <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
+    <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
+    <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
+    <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
+    <Compile Include="System\Threading\Mutex.Unix.cs" />
+    <Compile Include="System\Threading\Semaphore.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />
+    <Compile Include="System\Threading\WaitHandle.Unix.cs" />
+    <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
+    <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
+    <Compile Include="System\Threading\WaitSubsystem.Unix.cs" />
+    <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetSystemTimeAsTicks.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
@@ -882,9 +681,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetRandomBytes.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
@@ -898,38 +694,20 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SysConf.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Threading.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetCwd.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.SysConf.cs">
+      <Link>Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetUnixName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.MksTemps.cs">
-      <Link>Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Dummy globalization implementation -->
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="System\Globalization\HijriCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
-    <Compile Include="System\Text\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
+      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
@@ -957,9 +735,6 @@
     <Compile Include="..\..\Common\src\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs">
-      <Link>System\Diagnostics\Debug.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs">
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
@@ -968,6 +743,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
+      <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
+      <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>
@@ -998,8 +779,12 @@
   <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Eval.cs">
+      <Link>Runtime.Base\src\System\Diagnostics\Eval.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
       <Link>Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs</Link>
     </Compile>
@@ -1060,5 +845,6 @@
       <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <Import Project="..\shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

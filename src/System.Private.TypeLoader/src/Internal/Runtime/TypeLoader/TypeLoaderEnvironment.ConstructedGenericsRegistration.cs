@@ -16,6 +16,7 @@ using Internal.Runtime.CompilerServices;
 
 using Internal.NativeFormat;
 using Internal.TypeSystem;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -96,12 +97,26 @@ namespace Internal.Runtime.TypeLoader
                                 }
 #endif
 
-                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = (TypeSystem.NativeFormat.NativeFormatType)metadataType;
-                                RegisterNewNamedTypeRuntimeTypeHandle(nativeFormatType.MetadataReader,
-                                    nativeFormatType.Handle,
-                                    nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle,
-                                    nonGcStaticFields,
-                                    gcStaticFields);
+                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = metadataType as TypeSystem.NativeFormat.NativeFormatType;
+                                if (nativeFormatType != null)
+                                {
+                                    RegisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(nativeFormatType.MetadataReader,
+                                                                                nativeFormatType.Handle),
+                                        nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle,
+                                        nonGcStaticFields,
+                                        gcStaticFields);
+                                }
+#if ECMA_METADATA_SUPPORT
+                                TypeSystem.Ecma.EcmaType ecmaFormatType = metadataType as TypeSystem.Ecma.EcmaType;
+                                if (ecmaFormatType != null)
+                                {
+                                    RegisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(ecmaFormatType.MetadataReader,
+                                                                                ecmaFormatType.Handle),
+                                        ecmaFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle,
+                                        nonGcStaticFields,
+                                        gcStaticFields);
+                                }
+#endif
 
                                 nativeFormatTypesRegisteredCount++;
 #else
@@ -162,8 +177,22 @@ namespace Internal.Runtime.TypeLoader
                             else
                             {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = (TypeSystem.NativeFormat.NativeFormatType)typeEntry.MetadataDefinitionType;
-                                UnregisterNewNamedTypeRuntimeTypeHandle(nativeFormatType.MetadataReader, nativeFormatType.Handle, nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
+                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = typeEntry.MetadataDefinitionType as TypeSystem.NativeFormat.NativeFormatType;
+                                if (nativeFormatType != null)
+                                {
+                                    UnregisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(nativeFormatType.MetadataReader, 
+                                                                                nativeFormatType.Handle),
+                                                                            nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
+                                }
+#if ECMA_METADATA_SUPPORT
+                                TypeSystem.Ecma.EcmaType ecmaFormatType = typeEntry.MetadataDefinitionType as TypeSystem.Ecma.EcmaType;
+                                if (ecmaFormatType != null)
+                                {
+                                    UnregisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(ecmaFormatType.MetadataReader, 
+                                                                                ecmaFormatType.Handle),
+                                                                            ecmaFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
+                                }
+#endif
 #else
                                 Environment.FailFast("Ready to Run module type?");
 #endif

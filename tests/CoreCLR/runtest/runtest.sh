@@ -61,6 +61,7 @@ function print_usage {
     echo '  --build-overlay-only             : Exit after overlay directory is populated'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
+    echo '  --logdir=<log folder>            : Specifies a folder to emit logs to. Default is test root folder.'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -117,16 +118,8 @@ case $OSName in
         ;;
 esac
 
-# clean up any existing dumpling remnants from previous runs.
-dumplingsListPath="$PWD/dumplings.txt"
-if [ -f "$dumplingsListPath" ]; then
-    rm "$dumplingsListPath"
-fi
-
-find . -type f -name "local_dumplings.txt" -exec rm {} \;
-
 function xunit_output_begin {
-    xunitOutputPath=$testRootDir/coreclrtests.xml
+    xunitOutputPath=$__LogDir/testResults.xml
     xunitTestOutputPath=${xunitOutputPath}.test
     if [ -e "$xunitOutputPath" ]; then
         rm -f -r "$xunitOutputPath"
@@ -600,7 +593,7 @@ function print_info_from_core_file {
 
 function download_dumpling_script {
     echo "Downloading latest version of dumpling script."
-    wget "https://raw.githubusercontent.com/Microsoft/dotnet-reliability/master/src/triage.python/dumpling.py"
+    wget "https://dumpling.azurewebsites.net/api/client/dumpling.py"
 
     local dumpling_script="dumpling.py"
     chmod +x $dumpling_script
@@ -631,8 +624,11 @@ function upload_core_file_to_dumpling {
         paths_to_add=$coreClrBinDir
     fi
 
+    # Ensure the script has Unix line endings
+    perl -pi -e 's/\r\n|\n|\r/\n/g' "$dumpling_script"
+
     # The output from this will include a unique ID for this dump.
-    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" | tee -a $dumpling_file
+    ./$dumpling_script "upload" "--dumppath" "$core_file_name" "--incpaths" $paths_to_add "--properties" "Project=CoreCLR" "--squelch" | tee -a $dumpling_file
 }
 
 function preserve_core_file {
@@ -791,6 +787,12 @@ function finish_remaining_tests {
 
 function prep_test {
     local scriptFilePath=$1
+
+    # Skip any test that's not in the current playlist, if a playlist was
+    # given to us.
+    if [ -n "$playlistFile" ] && ! is_playlist_test "$scriptFilePath"; then
+        return
+    fi
 
     test "$verbose" == 1 && echo "Preparing $scriptFilePath"
 
@@ -1076,6 +1078,9 @@ do
         --limitedDumpGeneration)
             limitedCoreDumps=ON
             ;;
+        --logdir=*)
+            __LogDir=${i#*=}
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -1103,6 +1108,10 @@ fi
 if [ ! -d "$testRootDir" ]; then
     echo "Directory specified by --testRootDir does not exist: $testRootDir"
     exit $EXIT_CODE_EXCEPTION
+fi
+
+if [ -z "$__LogDir" ]; then
+    __LogDir=$testRootDir
 fi
 
 # Copy native interop test libraries over to the mscorlib path in
@@ -1178,7 +1187,10 @@ fi
 if [ "$ARCH" == "x64" ]
 then
     scriptPath=$(dirname $0)
-    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
+    # Disabled for CoreRT
+    # This is how CoreCLR sets up GCStress. We will probably go the .NET Native route
+    # when we get to GC Stress though.
+    #${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
 else
     echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
 fi
@@ -1186,6 +1198,13 @@ fi
 export __TestEnv=$testEnv
 
 cd "$testRootDir"
+
+dumplingsListPath="$testRootDir/dumplings.txt"
+
+# clean up any existing dumpling remnants from previous runs.
+rm -f "$dumplingsListPath"
+find $testRootDir -type f -name "local_dumplings.txt" -exec rm {} \;
+
 time_start=$(date +"%s")
 if [ -z "$testDirectories" ]
 then
@@ -1207,8 +1226,7 @@ finish_remaining_tests
 
 print_results
 
-echo "constructing $dumplingsListPath"
-find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
+find $testRootDir -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
 
 if [ -s $dumplingsListPath ]; then
     cat $dumplingsListPath

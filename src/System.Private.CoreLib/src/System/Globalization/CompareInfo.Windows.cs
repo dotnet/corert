@@ -9,11 +9,10 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal unsafe CompareInfo(CultureInfo culture)
+        private unsafe void InitSort(CultureInfo culture)
         {
             const uint LCMAP_SORTHANDLE = 0x20000000;
 
-            _name = culture.m_name;
             _sortName = culture.SortName;
 
             IntPtr handle;
@@ -133,7 +132,8 @@ namespace System.Globalization
                     int cchSource,
                     string lpStringValue,
                     int startValue,
-                    int cchValue)
+                    int cchValue,
+                    int* matchLengthPtr)
         {
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
@@ -154,24 +154,35 @@ namespace System.Globalization
                                     null,
                                     null,
                                     null,
-                                    _sortHandle);
+                                    _sortHandle,
+                                    matchLengthPtr);
             }
         }
 
-        private int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            int index;
+
             // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
             // and add a precondition that target is not empty. 
             if (target.Length == 0)
+            {
+                if(matchLengthPtr != null)
+                    *matchLengthPtr = 0;
                 return startIndex;       // keep Whidbey compatibility
+            }
 
             if ((options & CompareOptions.Ordinal) != 0)
             {
-                return FastIndexOfString(source, target, startIndex, count, target.Length, findLastIndex: false);
+                index = FastIndexOfString(source, target, startIndex, count, target.Length, findLastIndex: false);
+                if(index != -1 && matchLengthPtr != null)
+                    *matchLengthPtr = target.Length;
+
+                return index;
             }
             else
             {
@@ -181,7 +192,8 @@ namespace System.Globalization
                                                                count,
                                                                target,
                                                                0,
-                                                               target.Length);
+                                                               target.Length,
+                                                               matchLengthPtr);
                 if (retValue >= 0)
                 {
                     return retValue + startIndex;
@@ -191,7 +203,7 @@ namespace System.Globalization
             return -1;
         }
 
-        private int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
@@ -214,7 +226,8 @@ namespace System.Globalization
                                                                count,
                                                                target,
                                                                0,
-                                                               target.Length);
+                                                               target.Length,
+                                                               null);
 
                 if (retValue >= 0)
                 {
@@ -225,7 +238,7 @@ namespace System.Globalization
             return -1;
         }
 
-        private bool StartsWith(string source, string prefix, CompareOptions options)
+        private unsafe bool StartsWith(string source, string prefix, CompareOptions options)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(prefix));
@@ -237,10 +250,11 @@ namespace System.Globalization
                                                    source.Length,
                                                    prefix,
                                                    0,
-                                                   prefix.Length) >= 0;
+                                                   prefix.Length,
+                                                   null) >= 0;
         }
 
-        private bool EndsWith(string source, string suffix, CompareOptions options)
+        private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(suffix));
@@ -252,11 +266,13 @@ namespace System.Globalization
                                                    source.Length,
                                                    suffix,
                                                    0,
-                                                   suffix.Length) >= 0;
+                                                   suffix.Length,
+                                                   null) >= 0;
         }
 
         // PAL ends here
-        private readonly IntPtr _sortHandle;
+        [NonSerialized]
+        private IntPtr _sortHandle;
 
         private const uint LCMAP_HASH = 0x00040000;
 

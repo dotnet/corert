@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Arg_DllNotFoundException" xml:space="preserve">
-    <value>Dll was not found.</value>
-  </data>
   <data name="Arg_InvalidANSIString" xml:space="preserve">
     <value>The ANSI string passed in could not be converted from the default ANSI code page to Unicode.</value>
   </data>
@@ -137,9 +134,6 @@
   </data>
   <data name="Arg_InvalidThreshold" xml:space="preserve">
     <value>maximumThreshold cannot be less than initialThreshold.</value>
-  </data>
-  <data name="Arg_MarshalDirectiveException" xml:space="preserve">
-    <value>Marshaling directives are invalid.</value>
   </data>
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
@@ -198,9 +192,6 @@
   <data name="StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
   </data>
-  <data name="WrongSizeArrayInNStruct" xml:space="preserve">
-    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
-  </data>
   <data name="CustomPropertyProvider_DataBindingError" xml:space="preserve">
     <value>Failed to bind to property '{0}'.  {1}</value>
   </data>
@@ -236,9 +227,6 @@
   </data>
   <data name="Arg_InvalidCustomTypeNameValue" xml:space="preserve">
     <value>Invalid custom TypeName value.</value>
-  </data>
-  <data name="Arg_InteropMarshalUnmappableChar" xml:space="preserve">
-    <value>Cannot marshal: Encountered unmappable character.</value>
   </data>
   <data name="Argument_MustHaveLayoutOrBeBlittable" xml:space="preserve">
     <value>The specified structure '{0}' must be blittable or have layout information.</value>
@@ -365,5 +353,14 @@
   </data>
   <data name="DirectUI_Empty" xml:space="preserve">
     <value>Empty.</value>
+  </data>
+  <data name="PInvoke_GetProcAddress_NoName" xml:space="preserve">
+    <value>A library name must be specified in a DllImport attribute applied to non-IJW methods.</value>
+  </data>
+  <data name="PInvoke_LoadLib" xml:space="preserve">
+    <value>Unable to load DLL '{0}': {1}</value>
+  </data>
+  <data name="PInvoke_GetProcAddress" xml:space="preserve">
+    <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
   </data>
 </root>

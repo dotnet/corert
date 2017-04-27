@@ -261,14 +261,16 @@ void DllThreadDetach()
     }
 }
 
-void __stdcall RuntimeThreadShutdown(void* thread)
+void RuntimeThreadShutdown(void* thread)
 {
     // Note: loader lock is normally *not* held here!
     // The one exception is that the loader lock may be held during the thread shutdown callback
     // that is made for the single thread that runs the final stages of orderly process
     // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
     // process is being torn down via an ExitProcess call).
+
     UNREFERENCED_PARAMETER(thread);
+
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
     if (!g_processShutdownHasStarted)

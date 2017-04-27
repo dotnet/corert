@@ -13,8 +13,6 @@ using System.Reflection.Runtime.MethodInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -35,12 +33,15 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        public sealed override bool IsSZArray
         {
-            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+            get
+            {
+                return !_multiDim;
+            }
         }
 
-        internal sealed override bool InternalIsMultiDimArray
+        public sealed override bool IsVariableBoundArray
         {
             get
             {
@@ -48,11 +49,16 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+        }
+
         internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
         {
             get
             {
-                bool multiDim = this.InternalIsMultiDimArray;
+                bool multiDim = this.IsVariableBoundArray;
                 int rank = this.GetArrayRank();
 
                 RuntimeTypeInfo arrayType = this;
@@ -266,7 +272,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                if (this.InternalIsMultiDimArray)
+                if (this.IsVariableBoundArray)
                     return Array.Empty<QTypeDefRefOrSpec>();
                 else
                     return TypeDefInfoProjectionForArrays.TypeRefDefOrSpecsForDirectlyImplementedInterfaces;

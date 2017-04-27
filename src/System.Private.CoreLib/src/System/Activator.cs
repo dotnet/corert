@@ -10,6 +10,7 @@
 using System.Reflection;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime;
 
 using Internal.Reflection.Augments;
 
@@ -30,12 +31,19 @@ namespace System
 
             bool missingDefaultConstructor = false;
 
+            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
+
             // ProjectN:936613 - Early exit for variable sized types (strings, arrays, etc.) as we cannot call
             // CreateInstanceIntrinsic on them since the intrinsic will attempt to allocate an instance of these types
             // and that is verboten (it results in silent heap corruption!).
-            if (EETypePtr.EETypePtrOf<T>().ComponentSize != 0)
+            if (eetype.ComponentSize != 0)
             {
                 // ComponentSize > 0 indicates an array-like type (e.g. string, array, etc).
+                missingDefaultConstructor = true;
+            }
+            else if (eetype.IsInterface)
+            {
+                // Do not attempt to allocate interface types either
                 missingDefaultConstructor = true;
             }
             else
@@ -54,19 +62,42 @@ namespace System
                 if (s_createInstanceMissingDefaultConstructor != oldValueOfMissingDefaultCtorMarkerBool)
                 {
                     missingDefaultConstructor = true;
+
+                    // We didn't call the real .ctor (because there wasn't one), but we still allocated
+                    // an uninitialized object. If it has a finalizer, it would run - prevent that.
+                    GC.SuppressFinalize(t);
                 }
             }
 
             if (missingDefaultConstructor)
             {
-                throw new MissingMemberException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
+                throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
             }
 
             return t;
         }
 
         [Intrinsic]
-        private extern static T CreateInstanceIntrinsic<T>();
+        private static T CreateInstanceIntrinsic<T>()
+        {
+            // Fallback implementation for codegens that don't support this intrinsic.
+            // This uses the type loader and doesn't have the kind of guarantees about it always working
+            // as the intrinsic expansion has. Also, it's slower.
+
+            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
+
+            // The default(T) check can be evaluated statically and will result in the body of this method
+            // becoming empty for valuetype Ts. We still need a dynamic IsNullable check to cover Nullables though.
+            // This will obviously need work once we start supporting default valuetype constructors.
+            if (default(T) == null && !eetype.IsNullable)
+            {
+                object o = null;
+                TypeLoaderExports.ActivatorCreateInstanceAny(ref o, eetype.RawValue);
+                return (T)o;
+            }
+
+            return default(T);
+        }
 
         [ThreadStatic]
         internal static bool s_createInstanceMissingDefaultConstructor;

@@ -10,8 +10,6 @@ using global::System.Collections.Generic;
 using global::System.Runtime.CompilerServices;
 using global::Internal.Runtime.Augments;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.MethodInvokers
 {
     internal static class MethodInvokerUtils

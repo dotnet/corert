@@ -8,6 +8,7 @@ typedef DPTR(Module) PTR_Module;
 class ICodeManager;
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
+class TypeManager;
 struct ModuleHeader;
 enum GenericVarianceType : UInt8;
 struct GenericUnificationDesc;
@@ -40,6 +41,27 @@ class RuntimeInstance
     typedef SList<CodeManagerEntry> CodeManagerList;
     CodeManagerList             m_CodeManagerList;
 #endif
+
+public:
+    struct OsModuleEntry
+    {
+        OsModuleEntry*         m_pNext;
+        HANDLE                 m_osModule;
+    };
+
+    typedef SList<OsModuleEntry> OsModuleList;
+
+    struct TypeManagerEntry
+    {
+        TypeManagerEntry*         m_pNext;
+        TypeManager*              m_pTypeManager;
+    };
+
+    typedef SList<TypeManagerEntry> TypeManagerList;
+    
+private:
+    TypeManagerList             m_TypeManagerList;
+    OsModuleList                m_OsModuleList;
 
     // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
     // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
@@ -111,6 +133,8 @@ class RuntimeInstance
 
     SList<Module>* GetModuleList();
 
+    SList<TypeManager*>* GetModuleManagerList();
+
     bool BuildGenericTypeHashTable();
 
 public:
@@ -144,6 +168,11 @@ public:
     void UnregisterCodeManager(ICodeManager * pCodeManager);
 #endif
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
+
+    bool RegisterTypeManager(TypeManager * pTypeManager);
+    TypeManagerList& GetTypeManagerList();
+    OsModuleList& GetOsModuleList();
+    ReaderWriterLock& GetTypeManagerLock();
 
     // This will hold the module list lock over each callback. Make sure
     // the callback will not trigger any operation that needs to make use
@@ -213,5 +242,4 @@ PTR_RuntimeInstance GetRuntimeInstance();
 #define END_FOREACH_MODULE  \
     }                       \
 }                           \
-
 

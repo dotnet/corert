@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal static class TypeSystemContextFactory
+    public static class TypeSystemContextFactory
     {
         // Cache the most recent instance of TypeSystemContext in a weak handle, and reuse it if possible
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
@@ -44,7 +44,8 @@ namespace Internal.Runtime.TypeLoader
 #else
 #error Unknown architecture
 #endif
-            TargetOS.Windows));
+            TargetOS.Windows,
+            TargetAbi.Unknown));
         }
 
         public static void Recycle(TypeSystemContext context)

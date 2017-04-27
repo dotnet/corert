@@ -47,7 +47,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, IntPtr moduleHandle, uint nativeLayoutOffset)
+        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
             NativeParser parser = new NativeParser(nativeLayoutReader, nativeLayoutOffset);
 
@@ -79,14 +79,14 @@ namespace Internal.Runtime.TypeLoader
             return typeHandle;
         }
 
-        private bool FindMatchingInterfaceSlot(IntPtr moduleHandle, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature, RuntimeTypeHandle openTargetTypeHandle, RuntimeTypeHandle[] targetTypeInstantiation, bool variantDispatch)
+        private bool FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature, RuntimeTypeHandle openTargetTypeHandle, RuntimeTypeHandle[] targetTypeInstantiation, bool variantDispatch)
         {
             uint numTargetImplementations = entryParser.GetUnsigned();
 
             for (uint j = 0; j < numTargetImplementations; j++)
             {
-                uint nameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
-                MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, nameAndSigToken);
+                uint nameAndSigToken = extRefs.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, nameAndSigToken);
                 RuntimeTypeHandle targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if REFLECTION_EXECUTION_TRACE
@@ -114,9 +114,9 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle currentIfaceTypeHandle = default(RuntimeTypeHandle);
 
-                        NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned()));
+                        NativeParser ifaceSigParser = new NativeParser(nativeLayoutReader, extRefs.GetExternalNativeLayoutOffset(entryParser.GetUnsigned()));
 
-                        if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, moduleHandle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
+                        if (TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref ifaceSigParser, module.Handle, targetTypeInstantiation, null, out currentIfaceTypeHandle))
                         {
                             Debug.Assert(!currentIfaceTypeHandle.IsNull());
 
@@ -201,21 +201,21 @@ namespace Internal.Runtime.TypeLoader
             ReflectionExecutionLogger.WriteLine("INTERFACE GVM call = " + GetTypeNameDebug(declaringType) + "." + methodNameAndSignature.Name);
 #endif
 
-            foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
             {
                 NativeReader gvmTableReader;
-                if (!TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.InterfaceGenericVirtualMethodTable, out gvmTableReader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.InterfaceGenericVirtualMethodTable, out gvmTableReader))
                     continue;
 
                 NativeReader nativeLayoutReader;
-                if (!TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.NativeLayoutInfo, out nativeLayoutReader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo, out nativeLayoutReader))
                     continue;
 
                 NativeParser gvmTableParser = new NativeParser(gvmTableReader, 0);
                 NativeHashtable gvmHashtable = new NativeHashtable(gvmTableParser);
 
                 ExternalReferencesTable extRefs = default(ExternalReferencesTable);
-                extRefs.InitializeCommonFixupsTable(moduleHandle);
+                extRefs.InitializeCommonFixupsTable(module);
 
                 var lookup = gvmHashtable.Lookup(openCallingTypeHandle.GetHashCode());
 
@@ -226,8 +226,8 @@ namespace Internal.Runtime.TypeLoader
                     if (!openCallingTypeHandle.Equals(interfaceTypeHandle))
                         continue;
 
-                    uint nameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, nameAndSigToken);
+                    uint nameAndSigToken = extRefs.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, nameAndSigToken);
 
                     if (!interfaceMethodNameAndSignature.Equals(methodNameAndSignature))
                         continue;
@@ -301,7 +301,7 @@ namespace Internal.Runtime.TypeLoader
                     uint currentOffset = entryParser.Offset;
 
                     // Non-variant dispatch of a variant generic interface generic virtual method.
-                    if (FindMatchingInterfaceSlot(moduleHandle, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, openTargetTypeHandle, targetTypeInstantiation, false))
+                    if (FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, openTargetTypeHandle, targetTypeInstantiation, false))
                     {
                         return true;
                     }
@@ -309,7 +309,7 @@ namespace Internal.Runtime.TypeLoader
                     entryParser.Offset = currentOffset;
 
                     // Variant dispatch of a variant generic interface generic virtual method.
-                    if (FindMatchingInterfaceSlot(moduleHandle, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, openTargetTypeHandle, targetTypeInstantiation, true))
+                    if (FindMatchingInterfaceSlot(module, nativeLayoutReader, ref entryParser, ref extRefs, ref declaringType, ref methodNameAndSignature, openTargetTypeHandle, targetTypeInstantiation, true))
                     {
                         return true;
                     }
@@ -431,20 +431,20 @@ namespace Internal.Runtime.TypeLoader
             ReflectionExecutionLogger.WriteLine("GVM Target Resolution = " + GetTypeNameDebug(targetTypeHandle) + "." + callingMethodNameAndSignature.Name);
 #endif
 
-            foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(openTargetTypeHandle)))
             {
                 NativeReader gvmTableReader;
-                if (!TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.GenericVirtualMethodTable, out gvmTableReader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.GenericVirtualMethodTable, out gvmTableReader))
                     continue;
 
                 NativeReader nativeLayoutReader;
-                if (!TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.NativeLayoutInfo, out nativeLayoutReader))
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo, out nativeLayoutReader))
                     continue;
 
                 NativeParser gvmTableParser = new NativeParser(gvmTableReader, 0);
                 NativeHashtable gvmHashtable = new NativeHashtable(gvmTableParser);
                 ExternalReferencesTable extRefs = default(ExternalReferencesTable);
-                extRefs.InitializeCommonFixupsTable(moduleHandle);
+                extRefs.InitializeCommonFixupsTable(module);
 
                 var lookup = gvmHashtable.Lookup(hashCode);
 
@@ -459,18 +459,23 @@ namespace Internal.Runtime.TypeLoader
                     if (!parsedTargetTypeHandle.Equals(openTargetTypeHandle))
                         continue;
 
-                    uint parsedCallingNameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, parsedCallingNameAndSigToken);
+                    uint parsedCallingNameAndSigToken = extRefs.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, parsedCallingNameAndSigToken);
 
                     if (!parsedCallingNameAndSignature.Equals(callingMethodNameAndSignature))
                         continue;
 
-                    uint parsedTargetMethodNameAndSigToken = extRefs.GetNativeLayoutOffsetFromIndex(entryParser.GetUnsigned());
-                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, moduleHandle, parsedTargetMethodNameAndSigToken);
+                    uint parsedTargetMethodNameAndSigToken = extRefs.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, parsedTargetMethodNameAndSigToken);
 
                     Debug.Assert(targetMethodNameAndSignature != null);
 
-                    return TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer);
+                    if (!TryGetGenericVirtualMethodPointer(targetTypeHandle, targetMethodNameAndSignature, genericArguments, out methodPointer, out dictionaryPointer))
+                    {
+                        Environment.FailFast("GVM method pointer lookup failure");
+                    }
+
+                    return true;
                 }
             }
 

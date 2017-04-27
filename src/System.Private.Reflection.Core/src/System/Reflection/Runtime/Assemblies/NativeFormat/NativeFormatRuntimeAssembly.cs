@@ -8,8 +8,11 @@ using System.Text;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Collections.Generic;
@@ -91,6 +94,32 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
+        public sealed override MethodInfo EntryPoint
+        {
+            get
+            {
+                // The scope that defines metadata for the owning type of the entrypoint will be the one
+                // to carry the entrypoint token information. Find it by iterating over all scopes.
+
+                foreach (QScopeDefinition scope in AllScopes)
+                {
+                    MetadataReader reader = scope.Reader;
+
+                    QualifiedMethodHandle entrypointHandle = scope.ScopeDefinition.EntryPoint;
+                    if (!entrypointHandle.IsNull(reader))
+                    {
+                        QualifiedMethod entrypointMethod = entrypointHandle.GetQualifiedMethod(reader);
+                        TypeDefinitionHandle declaringTypeHandle = entrypointMethod.EnclosingType;
+                        MethodHandle methodHandle = entrypointMethod.Method;
+                        NativeFormatRuntimeNamedTypeInfo containingType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringTypeHandle, default(RuntimeTypeHandle));
+                        return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, containingType, containingType), containingType);
+                    }
+                }
+
+                return null;
+            }
+        }
+
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
@@ -151,6 +180,13 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     yield return overflowScope;
                 }
             }
+        }
+
+        internal sealed override void RunModuleConstructor()
+        {
+            // Nothing to do for the native format. ILC groups all module cctors into StartupCodeTrigger, and this executes at 
+            // the begining of the process. All module cctors execute eagerly.
+            return;
         }
     }
 }

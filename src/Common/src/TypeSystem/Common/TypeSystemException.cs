@@ -169,6 +169,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public class BadImageFormatException : TypeSystemException
+        {
+            public BadImageFormatException()
+                : base(ExceptionStringID.BadImageFormatGeneric)
+            {
+            }
+        }
+
         #region Formatting helpers
 
         private static class Format

@@ -7,6 +7,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
@@ -19,10 +20,14 @@ using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal abstract class GenericDictionaryCell
+    public abstract class GenericDictionaryCell
     {
         abstract internal void Prepare(TypeBuilder builder);
         abstract internal IntPtr Create(TypeBuilder builder);
+        internal unsafe virtual void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+        {
+            pDictionary[slotIndex] = Create(typeBuilder);
+        }
 
         virtual internal IntPtr CreateLazyLookupCell(TypeBuilder builder, out IntPtr auxResult)
         {
@@ -39,6 +44,31 @@ namespace Internal.Runtime.TypeLoader
             if (RuntimeAugments.IsNullable(th))
                 th = builder.GetRuntimeTypeHandle(((DefType)type).Instantiation[0]);
             return th;
+        }
+
+        private class PointerToOtherDictionarySlotCell : GenericDictionaryCell
+        {
+            internal uint OtherDictionarySlot;
+
+            override internal void Prepare(TypeBuilder builder) { }
+            override internal IntPtr Create(TypeBuilder builder)
+            {
+                // This api should never be called. The intention is that this cell is special
+                // cased to have a value which is relative to other cells being emitted.
+                throw new NotSupportedException(); 
+            }
+
+            internal unsafe override void WriteCellIntoDictionary(TypeBuilder typeBuilder, IntPtr* pDictionary, int slotIndex)
+            {
+                pDictionary[slotIndex] = new IntPtr(pDictionary + OtherDictionarySlot);
+            }
+        }
+
+        public static GenericDictionaryCell CreateTypeHandleCell(TypeDesc type)
+        {
+            TypeHandleCell typeCell = new TypeHandleCell();
+            typeCell.Type = type;
+            return typeCell;
         }
 
         private class TypeHandleCell : GenericDictionaryCell
@@ -85,6 +115,16 @@ namespace Internal.Runtime.TypeLoader
                     return builder.GetRuntimeTypeHandle(Type).ToIntPtr();
             }
         }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateInterfaceCallCell(TypeDesc interfaceType, int slot)
+        {
+            InterfaceCallCell dispatchCell = new InterfaceCallCell();
+            dispatchCell.InterfaceType = interfaceType;
+            dispatchCell.Slot = slot;
+            return dispatchCell;
+        }
+#endif
 
         private class InterfaceCallCell : GenericDictionaryCell
         {
@@ -185,16 +225,16 @@ namespace Internal.Runtime.TypeLoader
 
             override internal IntPtr Create(TypeBuilder builder)
             {
-                RuntimeMethodHandle rmh;
-                TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(
+                RuntimeTypeHandle[] genericArgHandles = ConstrainedMethod.HasInstantiation ?
+                    builder.GetRuntimeTypeHandles(ConstrainedMethod.Instantiation) : null;
+
+                RuntimeMethodHandle rmh = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(ConstrainedMethod.OwningType),
                     MethodName,
                     MethodSignature,
-                    builder.GetRuntimeTypeHandles(ConstrainedMethod.Instantiation),
-                    out rmh);
+                    genericArgHandles);
 
-                return ConstrainedCallSupport.GenericConstrainedCallDesc.Get(builder.GetRuntimeTypeHandle(ConstraintType),
-                                                                             rmh);
+                return ConstrainedCallSupport.GenericConstrainedCallDesc.Get(builder.GetRuntimeTypeHandle(ConstraintType), rmh);
             }
         }
 
@@ -257,6 +297,15 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateMethodDictionaryCell(InstantiatedMethod method)
+        {
+            MethodDictionaryCell methodCell = new MethodDictionaryCell();
+            methodCell.GenericMethod = method;
+            return methodCell;
+        }
+#endif
+
         private class MethodDictionaryCell : GenericDictionaryCell
         {
             internal InstantiatedMethod GenericMethod;
@@ -294,9 +343,11 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleForComponents(
+                RuntimeFieldHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
                     builder.GetRuntimeTypeHandle(ContainingType),
                     FieldName);
+
+                return *(IntPtr*)&handle;
             }
         }
 
@@ -323,11 +374,16 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleForComponents(
+                RuntimeTypeHandle[] genericArgHandles = Method.HasInstantiation && !Method.IsMethodDefinition ?
+                    builder.GetRuntimeTypeHandles(Method.Instantiation) : null;
+
+                RuntimeMethodHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(Method.OwningType),
                     MethodName,
                     MethodSignature,
-                    builder.GetRuntimeTypeHandles(Method.Instantiation));
+                    genericArgHandles);
+
+                return *(IntPtr*)&handle;
             }
         }
 
@@ -368,10 +424,10 @@ namespace Internal.Runtime.TypeLoader
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
                 if (Field != null)
-                    Offset = Field.Offset;
+                    Offset = Field.Offset.AsInt;
                 else
 #endif
-                    Offset = ContainingType.GetFieldByNativeLayoutOrdinal(Ordinal).Offset;
+                    Offset = ContainingType.GetFieldByNativeLayoutOrdinal(Ordinal).Offset.AsInt;
             }
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
@@ -394,7 +450,11 @@ namespace Internal.Runtime.TypeLoader
             {
                 // Debug sanity check for the size of the EEType structure
                 // just to ensure nothing of it gets reduced
+#if EETYPE_TYPE_MANAGER
+                Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 32 : 24));
+#else
                 Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 24 : 20));
+#endif
 
                 int result = (int)VTableSlot;
                 DefType currentType = (DefType)ContainingType;
@@ -499,6 +559,40 @@ namespace Internal.Runtime.TypeLoader
                 return TypeLoaderEnvironment.Instance.TryGetTlsOffsetDictionaryCellForType(builder.GetRuntimeTypeHandle(Type));
             }
         }
+
+        public static GenericDictionaryCell CreateIntPtrCell(IntPtr ptrValue)
+        {
+            IntPtrCell typeCell = new IntPtrCell();
+            typeCell.Value = ptrValue;
+            return typeCell;
+        }
+
+        private class IntPtrCell : GenericDictionaryCell
+        {
+            internal IntPtr Value;
+            internal unsafe override void Prepare(TypeBuilder builder)
+            {
+            }
+
+            internal unsafe override IntPtr Create(TypeBuilder builder)
+            {
+                return Value;
+            }
+        }
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+        public static GenericDictionaryCell CreateExactCallableMethodCell(MethodDesc method)
+        {
+            MethodCell methodCell = new MethodCell();
+            methodCell.Method = method;
+            if (!RuntimeSignatureHelper.TryCreate(method, out methodCell.MethodSignature))
+            {
+                Environment.FailFast("Unable to create method signature, for method reloc");
+            }
+            methodCell.ExactCallableAddressNeeded = true;
+            return methodCell;
+        }
+#endif
 
         private class MethodCell : GenericDictionaryCell
         {
@@ -620,7 +714,7 @@ namespace Internal.Runtime.TypeLoader
                             {
                                 if (Method.IsCanonicalMethod(CanonicalFormKind.Specific) &&
                                     !NeedsDictionaryParameterToCallCanonicalVersion(Method) &&
-                                    !TypeLoaderEnvironment.MethodSignatureHasVarsNeedingCallingConventionConverter_MethodSignature(
+                                    !UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(
                                         Method.GetTypicalMethodDefinition().Signature))
                                 {
                                     _exactFunctionPointer = addressToUse;
@@ -1703,7 +1797,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         CallingConventionConverterKind flags = (CallingConventionConverterKind)parser.GetUnsigned();
                         NativeParser sigParser = parser.GetParserFromRelativeOffset();
-                        RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._moduleHandle, sigParser.Offset);
+                        RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._module.Handle, sigParser.Offset);
 
 #if TYPE_LOADER_TRACE
                         TypeLoaderLogger.WriteLine("CallingConventionConverter on: ");
@@ -1728,6 +1822,20 @@ namespace Internal.Runtime.TypeLoader
                 case FixupSignatureKind.NotYetSupported:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
+
+                case FixupSignatureKind.PointerToOtherSlot:
+                    cell = new PointerToOtherDictionarySlotCell
+                    {
+                        OtherDictionarySlot = parser.GetUnsigned()
+                    };
+                    break;
+
+                case FixupSignatureKind.IntValue:
+                    cell = new IntPtrCell
+                    {
+                        Value = new IntPtr((int)parser.GetUnsigned())
+                    };
+                    break;
 
                 default:
                     parser.ThrowBadImageFormatException();

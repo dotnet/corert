@@ -5,6 +5,8 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Reflection.Runtime.Assemblies;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -20,7 +22,7 @@ namespace Internal.Runtime.TypeLoader
     /// TypeSystemContext that can interfact with the
     /// Redhawk runtime type system and native metadata
     /// </summary>
-    internal class TypeLoaderTypeSystemContext : TypeSystemContext
+    public partial class TypeLoaderTypeSystemContext : TypeSystemContext
     {
         private static readonly MetadataFieldLayoutAlgorithm s_metadataFieldLayoutAlgorithm = new MetadataFieldLayoutAlgorithm();
         private static readonly MetadataRuntimeInterfacesAlgorithm s_metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
@@ -32,12 +34,27 @@ namespace Internal.Runtime.TypeLoader
 
         public TypeLoaderTypeSystemContext(TargetDetails targetDetails) : base(targetDetails)
         {
-            InitializeSystemModule(null);
+            ModuleDesc systemModule = null;
+
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+            systemModule = ((MetadataType)GetWellKnownType(WellKnownType.Void)).Module;
+#endif
+
+            InitializeSystemModule(systemModule);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
+            if ((type == UniversalCanonType)
+#if SUPPORT_JIT
+                || (type.IsRuntimeDeterminedType && (((RuntimeDeterminedType)type).CanonicalType == UniversalCanonType)))
+#else
+                )
+#endif
+            {
+                return UniversalCanonLayoutAlgorithm.Instance;
+            }
+            else if (type.RetrieveRuntimeTypeHandleIfPossible())
             {
                 // If the type is already constructed, use the NoMetadataFieldLayoutAlgorithm.
                 // its more efficient than loading from native layout or metadata.
@@ -178,12 +195,12 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwErrorIfNotFound)
+        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwErrorIfNotFound)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             AssemblyBindResult bindResult;
             Exception failureException;
-            if (!AssemblyBinderImplementation.Instance.Bind(name, out bindResult, out failureException))
+            if (!AssemblyBinderImplementation.Instance.Bind(name.ToRuntimeAssemblyName(), out bindResult, out failureException))
             {
                 if (throwErrorIfNotFound)
                     throw failureException;
@@ -191,9 +208,25 @@ namespace Internal.Runtime.TypeLoader
             }
 
             var moduleList = Internal.Runtime.TypeLoader.ModuleList.Instance;
-            IntPtr primaryModuleHandle = moduleList.GetModuleForMetadataReader(bindResult.Reader);
-            NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(primaryModuleHandle);
-            return metadataUnit.GetModule(bindResult.ScopeDefinitionHandle);
+
+            if (bindResult.Reader != null)
+            {
+                NativeFormatModuleInfo primaryModule = moduleList.GetModuleInfoForMetadataReader(bindResult.Reader);
+                NativeFormatMetadataUnit metadataUnit = ResolveMetadataUnit(primaryModule);
+                return metadataUnit.GetModule(bindResult.ScopeDefinitionHandle);
+            }
+#if ECMA_METADATA_SUPPORT
+            else if (bindResult.EcmaMetadataReader != null)
+            {
+                EcmaModuleInfo ecmaModule = moduleList.GetModuleInfoForMetadataReader(bindResult.EcmaMetadataReader);
+                return ResolveEcmaModule(ecmaModule);
+            }
+#endif
+            else
+            {
+                // Should not be possible to reach here
+                throw new Exception();
+            }
 #else
             return null;
 #endif
@@ -258,5 +291,8 @@ namespace Internal.Runtime.TypeLoader
             }
             return false;
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }

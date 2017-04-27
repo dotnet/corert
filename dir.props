@@ -13,7 +13,7 @@
     Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
   -->
   <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
+    <BuildToolsTargetsDesktop Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
@@ -68,6 +68,8 @@
     <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
     <ProductBinDir Condition="'$(ProductBinDir)'==''">$(BinDir)Product/</ProductBinDir>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
+    <PackageOutputRoot Condition="'$(PackageOutputRoot)'=='' and '$(NonShippingPackage)' == 'true'">$(BinDir)packages_noship/</PackageOutputRoot>
+    <PackageOutputRoot Condition="'$(PackageOutputRoot)'=='' and '$(NonShippingPackage)' != 'true'">$(ProductBinDir)pkg/</PackageOutputRoot>
 
     <!-- Folder where restored Nuget packages will go -->
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
@@ -79,7 +81,7 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargetsDesktop)' == 'true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
   </PropertyGroup>
@@ -92,7 +94,9 @@
     <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProductBinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</OutputPath>
+    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(OSPlatformConfig)/$(MSBuildProjectName)/</PackageOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)</OutputPath>
 
     <!-- Folder where we will drop the Nuget package for the toolchain -->
     <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(BaseOutputPath)$(OSPlatformConfig)/packaging/</ProductPackageDir>
@@ -101,6 +105,7 @@
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
     <AotPackageReferencePath Condition="'$(AotPackageReferencePath)'==''">$(IntermediateOutputRootPath)\CoreRTRef</AotPackageReferencePath>
+    <EcmaMetadataDllPath Condition="'$(EcmaMetadataDllPath)'==''">$(PackagesDir)/runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP/4.4.0-preview1-25218-01/runtimes/win10-x64-aot/lib/uap10.1</EcmaMetadataDllPath>
 
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
 
@@ -148,27 +153,7 @@
     <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 
-  <!--
-    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
-  -->
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <!--
-      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
-    -->
-    <DebugType>Portable</DebugType>
-
-    <!--
-      Delay signing with the ECMA key currently doesn't work.
-      https://github.com/dotnet/roslyn/issues/2444
-    -->
-    <UseECMAKey>false</UseECMAKey>
-
-    <!--
-      Full signing with Open key doesn't work with Portable Csc.
-      https://github.com/dotnet/roslyn/issues/8210
-    -->
-    <UseOpenKey>false</UseOpenKey>
-  </PropertyGroup>
+  <Import Project="$(ToolsDir)Roslyn.Common.props" />
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
@@ -267,9 +252,38 @@
     </Otherwise>
   </Choose>
 
+  <!-- Set up various other constants -->
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)'=='true'">
+    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
+    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsOSX)'=='true'">
+    <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp1.2</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netcoreapp2.0</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 

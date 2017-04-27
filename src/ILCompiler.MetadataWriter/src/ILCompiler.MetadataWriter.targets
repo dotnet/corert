@@ -17,6 +17,7 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriterExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />

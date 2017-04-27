@@ -139,6 +139,8 @@ struct ModuleHeader
     UInt32          RraGenericUnificationIndirCells;
     UInt32          CountOfGenericUnificationIndirCells;
 
+    UInt32          RraColdToHotMappingInfo;
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -194,6 +196,8 @@ struct ModuleHeader
 
     DEFINE_GET_ACCESSOR(GenericUnificationDescs,    RDATA_REGION);
     DEFINE_GET_ACCESSOR(GenericUnificationIndirCells,DATA_REGION);
+
+    DEFINE_GET_ACCESSOR(ColdToHotMappingInfo,       RDATA_REGION);
 
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
@@ -432,11 +436,14 @@ struct InterfaceDispatchCell
                                     // m_pCache field, and in the second lowest 16 bits, a Flags field. For the interface
                                     // case Flags shall be 0, and for the metadata token case, Flags shall be 1.
 
+    //
+    // Keep these in sync with the managed copy in src\Common\src\Internal\Runtime\InterfaceCachePointerType.cs
+    //
     enum Flags
     {
         // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for 
         // extra fields on this type.
-        // OR if the m_pCache value is less than 4096 then this it is a vtable offset and should be used as such
+        // OR if the m_pCache value is less than 0x1000 then this it is a vtable offset and should be used as such
         IDC_CachePointerIsInterfaceRelativePointer = 0x3,
         IDC_CachePointerIsIndirectedInterfaceRelativePointer = 0x2,
         IDC_CachePointerIsInterfacePointerOrMetadataToken = 0x1, // Metadata token is a 30 bit number in this case. 
@@ -446,7 +453,7 @@ struct InterfaceDispatchCell
         IDC_CachePointerPointsAtCache = 0x0,
         IDC_CachePointerMask = 0x3,
         IDC_CachePointerMaskShift = 0x2,
-        IDC_MaxVTableOffsetPlusOne = 4096,
+        IDC_MaxVTableOffsetPlusOne = 0x1000,
     };
 
 #if !defined(RHDUMP) && !defined(BINDER)
@@ -498,7 +505,7 @@ struct InterfaceDispatchCell
             case IDC_CachePointerIsInterfaceRelativePointer:
             case IDC_CachePointerIsIndirectedInterfaceRelativePointer:
                 {
-                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + cachePointerValue;
+                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + (Int32)cachePointerValue;
                     interfacePointerValue &= ~IDC_CachePointerMask;
                     if ((cachePointerValue & IDC_CachePointerMask) == IDC_CachePointerIsInterfaceRelativePointer)
                     {
@@ -746,6 +753,8 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_UNUSED             = 3
 };
 
+#define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
+
 // Structure used to store offsets information of thread static fields, and mainly used
 // by Reflection to get the address of that field in the TLS block
 struct ThreadStaticFieldOffsets
@@ -884,5 +893,37 @@ struct GenericUnificationDesc
     }
 
     bool Equals(GenericUnificationDesc *that);
+};
+
+
+// mapping of cold code blocks to the corresponding hot entry point RVA
+// format is a as follows:
+// -------------------
+// | subSectionCount |     # of subsections, where each subsection has a run of hot bodies
+// -------------------     followed by a run of cold bodies
+// | hotMethodCount  |     # of hot bodies in subsection
+// | coldMethodCount |     # of cold bodies in subsection
+// -------------------
+// ... possibly repeated on ARM
+// -------------------
+// | hotRVA #1       |     RVA of the hot entry point corresponding to the 1st cold body
+// | hotRVA #2       |     RVA of the hot entry point corresponding to the 2nd cold body
+// ... one entry for each cold body containing the corresponding hot entry point
+
+// number of hot and cold bodies in a subsection of code
+// in x86 and x64 there's only one subsection, on ARM there may be several
+// for large modules with > 16 MB of code
+struct SubSectionDesc
+{
+    UInt32          hotMethodCount;
+    UInt32          coldMethodCount;
+};
+
+// this is the structure describing the cold to hot mapping info
+struct ColdToHotMapping
+{
+    UInt32          subSectionCount;
+    SubSectionDesc  subSection[/*subSectionCount*/1];
+    //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
 #endif

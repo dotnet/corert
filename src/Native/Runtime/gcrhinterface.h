@@ -84,12 +84,6 @@ typedef int (*GcScanObjectFunction)(void*, void*);
 //      void ScanFunction(Object** pRoot, void* pContext)
 typedef void (*GcScanRootFunction)(void**, void*);
 
-// Heap scans are scheduled by setting the following global variables and then triggering a full garbage
-// collection. This requires careful synchronization. See the implementation of RedhawkGCInterface::ScanHeap
-// for details.
-extern GcScanObjectFunction g_pfnHeapScan;
-extern void * g_pvHeapScanContext;
-
 typedef void * GcSegmentHandle;
 
 #define RH_LARGE_OBJECT_SIZE 85000
@@ -151,18 +145,10 @@ public:
 
     // Various routines used to enumerate objects contained within a given scope (on the GC heap, as reference
     // fields of an object, on a thread stack, in a static or in one of the handle tables).
-    static void ScanHeap(GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext);
-
-    // These three methods may only be called from a point at which the runtime is suspended.
-    // Currently, this is used by the VSD infrastructure on a SyncClean::CleanUp callback
-    // from the GC when a collection is complete.
-    static bool IsScanInProgress();
-    static GcScanObjectFunction GetCurrentScanCallbackFunction();
-    static void* GetCurrentScanContext();
 
     // Returns size GCDesc. Used by type cloning.
     static UInt32 GetGCDescSize(void * pType);

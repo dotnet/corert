@@ -6,7 +6,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
+    public class TypeManagerIndirectionNode : ObjectNode, ISymbolDefinitionNode
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
@@ -23,9 +23,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.DefinedSymbols.Add(this);
-            objData.RequirePointerAlignment();
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.AddSymbol(this);
+            objData.RequireInitialPointerAlignment();
             objData.EmitZeroPointer();
             objData.EmitZeroPointer();
             return objData.ToObjectData();

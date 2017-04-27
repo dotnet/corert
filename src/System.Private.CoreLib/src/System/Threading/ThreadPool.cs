@@ -4,7 +4,6 @@
 
 /*=============================================================================
 **
-** Class: ThreadPool
 **
 **
 ** Purpose: Class for creating and managing a threadpool
@@ -27,10 +26,9 @@
  * of the previous stack information.
  */
 
+using Internal.Runtime.Augments;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -410,9 +408,9 @@ namespace System.Threading
             public volatile QueueSegment Next;
 
 
-            const int SixteenBits = 0xffff;
+            private const int SixteenBits = 0xffff;
 
-            void GetIndexes(out int upper, out int lower)
+            private void GetIndexes(out int upper, out int lower)
             {
                 int i = indexes;
                 upper = (i >> 16) & SixteenBits;
@@ -425,7 +423,7 @@ namespace System.Threading
                 Debug.Assert(lower >= 0);
             }
 
-            bool CompareExchangeIndexes(ref int prevUpper, int newUpper, ref int prevLower, int newLower)
+            private bool CompareExchangeIndexes(ref int prevUpper, int newUpper, ref int prevLower, int newLower)
             {
                 Debug.Assert(newUpper >= newLower);
                 Debug.Assert(newUpper <= nodes.Length);
@@ -673,7 +671,7 @@ namespace System.Threading
 
         //Per-appDomain quantum (in ms) for which the thread keeps processing
         //requests in the current domain.
-        const uint tpQuantum = 30U;
+        private const uint tpQuantum = 30U;
 
         internal static void Dispatch()
         {
@@ -818,7 +816,9 @@ namespace System.Threading
         }
     }
 
-    internal delegate void WaitCallback(Object state);
+    public delegate void WaitCallback(Object state);
+
+    public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
 
     //
     // Interface to something that can be queued to the TP.  This is implemented by 
@@ -841,8 +841,9 @@ namespace System.Threading
         private Object state;
 
 #if DEBUG
-        volatile int executed;
+        private volatile int executed;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallback()
         {
             Debug.Assert(
@@ -850,7 +851,7 @@ namespace System.Threading
                 "A QueueUserWorkItemCallback was never called!");
         }
 
-        void MarkExecuted()
+        private void MarkExecuted()
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -903,8 +904,9 @@ namespace System.Threading
         private Object state;
 
 #if DEBUG
-        volatile int executed;
+        private volatile int executed;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallbackDefaultContext()
         {
             Debug.Assert(
@@ -912,7 +914,7 @@ namespace System.Threading
                 "A QueueUserWorkItemCallbackDefaultContext was never called!");
         }
 
-        void MarkExecuted()
+        private void MarkExecuted()
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -954,36 +956,41 @@ namespace System.Threading
         }
     }
 
-    internal static partial class ThreadPool
+    public static partial class ThreadPool
     {
-        public static void QueueUserWorkItem(
-             WaitCallback callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object state
-             )
-        {
-            Debug.Assert(callBack != null);
-            ExecutionContext context = ExecutionContext.Capture();
-            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
-                    new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
-                    (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, true);
-        }
-
-        public static void QueueUserWorkItem(
-             WaitCallback callBack     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             )
-        {
+        public static bool QueueUserWorkItem(WaitCallback callBack) =>
             QueueUserWorkItem(callBack, null);
+
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
+        {
+            if (callBack == null)
+            {
+                throw new ArgumentNullException(nameof(callBack));
+            }
+
+            ExecutionContext context = ExecutionContext.Capture();
+
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
+                new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
         }
 
-        public static void UnsafeQueueUserWorkItem(
-             WaitCallback callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object state
-             )
+        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, Object state)
         {
-            Debug.Assert(callBack != null);
-            QueueUserWorkItemCallback tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, true);
+            if (callBack == null)
+            {
+                throw new ArgumentNullException(nameof(callBack));
+            }
+
+            IThreadPoolWorkItem tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
         }
 
         internal static void UnsafeQueueCustomWorkItem(IThreadPoolWorkItem workItem, bool forceGlobal)

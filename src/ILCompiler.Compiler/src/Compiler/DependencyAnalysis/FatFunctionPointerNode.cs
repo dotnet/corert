@@ -6,6 +6,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -14,51 +15,67 @@ namespace ILCompiler.DependencyAnalysis
     /// method body along with the instantiation context the canonical body requires.
     /// Pointers to these structures can be created by e.g. ldftn/ldvirtftn of a method with a canonical body.
     /// </summary>
-    public class FatFunctionPointerNode : ObjectNode, IMethodNode
+    public class FatFunctionPointerNode : ObjectNode, IMethodNode, ISymbolDefinitionNode
     {
-        public FatFunctionPointerNode(MethodDesc methodRepresented)
+        private bool _isUnboxingStub;
+
+        public FatFunctionPointerNode(MethodDesc methodRepresented, bool isUnboxingStub)
         {
             // We should not create these for methods that don't have a canonical method body
             Debug.Assert(methodRepresented.GetCanonMethodTarget(CanonicalFormKind.Specific) != methodRepresented);
 
             Method = methodRepresented;
+            _isUnboxingStub = isUnboxingStub;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__fatpointer_").Append(NodeFactory.NameMangler.GetMangledMethodName(Method));
+            string prefix = _isUnboxingStub ? "__fatunboxpointer_" : "__fatpointer_";
+            sb.Append(prefix).Append(nameMangler.GetMangledMethodName(Method));
         }
-        public int Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => 0;
+        int ISymbolNode.Offset => FatFunctionPointerConstants.Offset;
+
         public override bool IsShareable => true;
 
         public MethodDesc Method { get; }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Method.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList result = new DependencyList();
-            result.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method), "Method represented"));
+            result.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method, _isUnboxingStub), "Method represented"));
             return result;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // These need to be aligned the same as methods because they show up in same contexts
-            builder.RequireAlignment(factory.Target.MinimumFunctionAlignment);
+            builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
 
-            builder.DefinedSymbols.Add(this);
+            builder.AddSymbol(this);
 
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             // Pointer to the canonical body of the method
-            builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod));
+            builder.EmitPointerReloc(factory.MethodEntrypoint(canonMethod, _isUnboxingStub));
 
             // Find out what's the context to use
             ISymbolNode contextParameter;
@@ -75,7 +92,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // The next entry is a pointer to the pointer to the context to be used for the canonical method
-            // TODO: in multi-module, this points to the import cell, and is no longer this weird pointer
             builder.EmitPointerReloc(factory.Indirection(contextParameter));
             
             return builder.ToObjectData();

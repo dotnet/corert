@@ -201,9 +201,6 @@
   <data name="NotSupported_OpenType" xml:space="preserve">
     <value>Cannot create arrays of open type. </value>
   </data>
-  <data name="PlatformNotSupported_PointerArray" xml:space="preserve">
-    <value>Arrays of pointer types are not supported on this platform.</value>
-  </data>
   <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
     <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>
   </data>
@@ -230,5 +227,8 @@
   </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Acc_ReadOnly" xml:space="preserve">
+    <value>Cannot set a constant field.</value>
   </data>
 </root>

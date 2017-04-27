@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Reflection.Runtime.General;
 
 using Internal.TypeSystem;
 using Internal.Runtime.Augments;
@@ -369,7 +370,7 @@ namespace Internal.Runtime.TypeLoader
                             continue;
 
                         encoder.WriteUnsigned(i);
-                        encoder.WriteUnsigned((uint)f.Offset);
+                        encoder.WriteUnsigned((uint)f.Offset.AsInt);
                         i++;
                     }
                 }
@@ -412,7 +413,7 @@ namespace Internal.Runtime.TypeLoader
 
                         encoder.WriteUnsigned(i);
                         encoder.WriteUnsigned((uint)fieldStorage);
-                        encoder.WriteUnsigned((uint)f.Offset);
+                        encoder.WriteUnsigned((uint)f.Offset.AsInt);
                         i++;
                     }
                 }
@@ -447,11 +448,11 @@ namespace Internal.Runtime.TypeLoader
                 SerializedDataBlobKind.NativeFormatType,
                 nativeFormatTypeFlags);
 
-            IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(nativeFormatType.MetadataReader);
+            TypeManagerHandle moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(nativeFormatType.MetadataReader);
 
             encoder.WriteUnsignedLong(unchecked((ulong)typeBuilder.GetRuntimeTypeHandle(defType).ToIntPtr().ToInt64()));
             encoder.WriteUnsigned(nativeFormatType.Handle.ToHandle(nativeFormatType.MetadataReader).AsUInt());
-            encoder.WriteUnsignedLong(unchecked((ulong)moduleHandle.ToInt64()));
+            encoder.WriteUnsignedLong(unchecked((ulong)moduleHandle.GetIntPtrUNSAFE().ToInt64()));
 
             Instance.ThreadSafeWriteBytes(encoder.GetBytes());
 #else

@@ -108,6 +108,14 @@ namespace System.Reflection.Runtime.TypeInfos
             return _typeHandle.LastResortString();
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
             throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
@@ -150,7 +158,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             rootCauseForFailure = this;
             return null;

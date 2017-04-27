@@ -57,10 +57,10 @@ namespace System.Collections
 
 #if FEATURE_SERIALIZATION
                 if (!key.GetType().IsSerializable)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));
 
                 if ((value != null) && (!value.GetType().IsSerializable))
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));
 #endif
 
                 _version++;
@@ -166,10 +166,10 @@ namespace System.Collections
 
 #if FEATURE_SERIALIZATION
             if (!key.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));
 
             if ((value != null) && (!value.GetType().IsSerializable))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));
 #endif
 
             _version++;

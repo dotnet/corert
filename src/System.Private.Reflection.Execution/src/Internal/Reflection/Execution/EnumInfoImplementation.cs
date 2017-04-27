@@ -15,13 +15,11 @@ using global::Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
-    internal sealed class EnumInfoImplementation : EnumInfo
+    internal abstract class EnumInfoImplementation : EnumInfo
     {
-        public EnumInfoImplementation(Type enumType, MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
+        protected EnumInfoImplementation(Type enumType)
         {
             _enumType = enumType;
-            _reader = reader;
-            _typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
         }
 
         public sealed override Type UnderlyingType
@@ -120,6 +118,8 @@ namespace Internal.Reflection.Execution
             }
         }
 
+        protected abstract KeyValuePair<String, ulong>[] ReadNamesAndValues();
+
         //
         // This returns the underlying enum values as "ulong" regardless of the actual underlying type. We first do a value-preserving
         // cast to long, then sort it as a ulong.
@@ -130,21 +130,7 @@ namespace Internal.Reflection.Execution
             {
                 if (_lazyNamesAndValues == null)
                 {
-                    LowLevelList<KeyValuePair<String, ulong>> namesAndUnboxedValues = new LowLevelList<KeyValuePair<String, ulong>>();
-                    MetadataReader reader = _reader;
-                    foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
-                    {
-                        Field field = fieldHandle.GetField(reader);
-                        if (0 != (field.Flags & FieldAttributes.Static))
-                        {
-                            String name = field.Name.GetString(reader);
-                            Handle valueHandle = field.DefaultValue;
-                            ulong lValue = ReadUnboxedEnumValue(reader, valueHandle);
-                            namesAndUnboxedValues.Add(new KeyValuePair<String, ulong>(name, lValue));
-                        }
-                    }
-
-                    KeyValuePair<String, ulong>[] sortedNamesAndUnboxedValues = namesAndUnboxedValues.ToArray();
+                    KeyValuePair<String, ulong>[] sortedNamesAndUnboxedValues = ReadNamesAndValues();
                     Array.Sort<KeyValuePair<String, ulong>>(sortedNamesAndUnboxedValues, new NamesAndValueComparer());
                     _lazyNamesAndValues = sortedNamesAndUnboxedValues;
                 }
@@ -179,84 +165,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        //
-        // This returns the underlying enum values as "ulong" regardless of the actual underlying type. Signed integral types 
-        // get sign-extended into the 64-bit value, unsigned types get zero-extended.
-        //
-        private static ulong ReadUnboxedEnumValue(MetadataReader reader, Handle valueHandle)
-        {
-            HandleType handleType = valueHandle.HandleType;
-            switch (handleType)
-            {
-                case HandleType.ConstantBooleanValue:
-                    {
-                        bool v = valueHandle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
-                        return v ? 1UL : 0UL;
-                    }
-
-                case HandleType.ConstantCharValue:
-                    {
-                        char v = valueHandle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantByteValue:
-                    {
-                        byte v = valueHandle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantSByteValue:
-                    {
-                        sbyte v = valueHandle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantUInt16Value:
-                    {
-                        UInt16 v = valueHandle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantInt16Value:
-                    {
-                        Int16 v = valueHandle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantUInt32Value:
-                    {
-                        UInt32 v = valueHandle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantInt32Value:
-                    {
-                        Int32 v = valueHandle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantUInt64Value:
-                    {
-                        UInt64 v = valueHandle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                case HandleType.ConstantInt64Value:
-                    {
-                        Int64 v = valueHandle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
-                        return (ulong)(long)v;
-                    }
-
-                default:
-                    throw new BadImageFormatException();
-            }
-        }
-
         private Type _enumType;
-        private MetadataReader _reader;
-        private TypeDefinition _typeDefinition;
-
         private volatile Array _lazyValues;
         private volatile KeyValuePair<String, ulong>[] _lazyNamesAndValues;
 

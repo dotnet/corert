@@ -10,7 +10,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class GenericDefinitionEETypeNode : EETypeNode, ISymbolNode
+    internal sealed class GenericDefinitionEETypeNode : EETypeNode
     {
         public GenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
@@ -27,12 +27,16 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
+        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
+        {
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
-            dataBuilder.Alignment = dataBuilder.TargetPointerSize;
-            dataBuilder.DefinedSymbols.Add(this);
+            dataBuilder.RequireInitialPointerAlignment();
+            dataBuilder.AddSymbol(this);
             EETypeRareFlags rareFlags = 0;
 
             short flags = (short)EETypeKind.GenericTypeDefEEType;

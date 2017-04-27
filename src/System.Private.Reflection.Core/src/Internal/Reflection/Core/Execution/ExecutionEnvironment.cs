@@ -53,8 +53,8 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Reflection Mapping Tables
         //==============================================================================================
-        public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeDefinitionHandle typeDefHandle);
-        public abstract bool TryGetNamedTypeForMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, out RuntimeTypeHandle runtimeTypeHandle);
+        public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition);
+        public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle);
         public abstract bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle);
@@ -75,7 +75,7 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Invoke and field access support.
         //==============================================================================================
-        public abstract MethodInvoker TryGetMethodInvoker(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
+        public abstract MethodInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
         public abstract FieldAccessor TryGetFieldAccessor(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
 
         //==============================================================================================
@@ -92,8 +92,8 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // RuntimeMethodHandle and RuntimeFieldHandle support.
         //==============================================================================================
-        public abstract bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodHandle methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
-        public abstract bool TryGetMethodFromHandleAndType(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle, out MethodHandle methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
+        public abstract bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
+        public abstract bool TryGetMethodFromHandleAndType(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
         public abstract bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle);
         public abstract bool TryGetFieldFromHandleAndType(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle);
 
@@ -110,11 +110,12 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         public abstract MethodInvoker GetSyntheticMethodInvoker(RuntimeTypeHandle thisType, RuntimeTypeHandle[] parameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker);
         public abstract bool IsCOMObject(Type type);
+        public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
 
         //==============================================================================================
         // Non-public methods
         //==============================================================================================
-        internal MethodInvoker GetMethodInvoker(MetadataReader reader, RuntimeTypeInfo declaringType, MethodHandle methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
+        internal MethodInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
         {
             if (declaringType.ContainsGenericParameters)
                 return new OpenMethodInvoker();
@@ -131,7 +132,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericMethodTypeArgumentHandles[i] = genericMethodTypeArguments[i].TypeHandle;
             }
-            MethodInvoker methodInvoker = TryGetMethodInvoker(reader, typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodInvoker methodInvoker = TryGetMethodInvoker(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
                 throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;

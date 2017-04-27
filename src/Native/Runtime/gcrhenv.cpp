@@ -51,32 +51,35 @@
 
 #include "holder.h"
 
+#ifdef FEATURE_ETW
+    #ifndef _INC_WINDOWS
+        typedef void* LPVOID;
+        typedef uint32_t UINT;
+        typedef void* PVOID;
+        typedef uint64_t ULONGLONG;
+        typedef uint32_t ULONG;
+        typedef int64_t LONGLONG;
+        typedef uint8_t BYTE;
+        typedef uint16_t UINT16;
+    #endif // _INC_WINDOWS
+
+    #include "etwevents.h"
+    #include "eventtrace.h"
+#else // FEATURE_ETW
+    #include "etmdummy.h"
+    #define ETW_EVENT_ENABLED(e,f) false
+#endif // FEATURE_ETW
+
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
-#define USE_CLR_CACHE_SIZE_BEHAVIOR
-
-
-#ifndef DACCESS_COMPILE
-bool StartFinalizerThread();
-
-// Undo the definitions of any macros set up for GC code which conflict with our usage of PAL APIs below.
-#undef GetCurrentThreadId
-#undef DebugBreak
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Various global data cells the GC and/or HandleTable rely on. Some are just here to enable easy compilation:
-// their value doesn't matter since it won't be consumed at runtime. Others we may have to initialize to some
-// reasonable value. A few we might have to manage through the lifetime of the runtime. Each is considered on
-// a case by case basis.
-//
-
-#endif // !DACCESS_COMPILE
+#include "DebuggerHook.h"
 
 #ifndef DACCESS_COMPILE
 
-//
+bool RhInitializeFinalization();
+bool RhStartFinalizerThread();
+void RhEnableFinalization();
+
 // Simplified EEConfig -- It is just a static member, which statically initializes to the default values and
 // has no dynamic initialization.  Some settings may change at runtime, however.  (Example: gcstress is
 // enabled via a compiled-in call from a given managed module, not through snooping an environment setting.)
@@ -119,7 +122,7 @@ UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
                           GCHeapUtilities::IsServerHeap());
-        GCHeapUtilities::GetGCHeap()->TraceGCSegments();
+        GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -222,7 +225,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     if (FAILED(hr))
         return false;
 
-    if (!FinalizerThread::Initialize())
+    if (!RhInitializeFinalization())
         return false;
 
     // Initialize HandleTable.
@@ -246,7 +249,6 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
 
     pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
 
-    ASSERT(GCHeapUtilities::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
 #if BIT64
@@ -304,8 +306,6 @@ void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 // static 
 void RedhawkGCInterface::WaitForGCCompletion()
 {
-    ASSERT(GCHeapUtilities::IsGCHeapInitialized());
-
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
 
@@ -623,71 +623,13 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 // Support for scanning the GC heap, objects and roots.
 //
 
-// The value of the following globals determines whether a callback is made for every live object at the end
-// of a garbage collection. Only one callback/context pair can be active for any given collection, so setting
-// these has to be co-ordinated carefully, see RedhawkGCInterface::ScanHeap below.
-GcScanObjectFunction g_pfnHeapScan = NULL;  // Function to call for every live object at the end of a GC
-void * g_pvHeapScanContext = NULL;          // User context passed on each call to the function above
-
-//
-// Initiate a full garbage collection and call the speficied function with the given context for each object
-// that remians alive on the heap at the end of the collection (note that the function will be called while
-// the GC still has cooperative threads suspended).
-//
-// If a GC is in progress (or another caller is in the process of scheduling a similar scan) we'll wait our
-// turn and then initiate a further collection.
-//
-// static
-void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pContext)
-{
-#ifndef DACCESS_COMPILE
-    // Carefully attempt to set the global callback function (careful in that we won't overwrite another scan
-    // that's being scheduled or in-progress). If someone beat us to it back off and wait for the
-    // corresponding GC to complete.
-    while (Interlocked::CompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
-    {
-        // Wait in pre-emptive mode to avoid stalling another thread that's attempting a collection.
-        Thread * pCurThread = GetThread();
-        ASSERT(pCurThread->IsCurrentThreadInCooperativeMode());
-        pCurThread->EnablePreemptiveMode();
-
-        // Give the other thread some time to get the collection going.
-        if (PalSwitchToThread() == 0)
-            PalSleep(1);
-
-        // Wait for the collection to complete (if the other thread didn't manage to schedule it yet we'll
-        // just end up going round the loop again).
-        WaitForGCCompletion();
-
-        // Come back into co-operative mode.
-        pCurThread->DisablePreemptiveMode();
-    }
-
-    // We should never end up overwriting someone else's callback context when we won the race to set the
-    // callback function pointer.
-    ASSERT(g_pvHeapScanContext == NULL);
-    g_pvHeapScanContext = pContext;
-
-    // Initiate a full garbage collection
-    GCHeapUtilities::GetGCHeap()->GarbageCollect();
-    WaitForGCCompletion();
-
-    // Release our hold on the global scanning pointers.
-    g_pvHeapScanContext = NULL;
-    Interlocked::ExchangePointer(&g_pfnHeapScan, NULL);
-#else
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // DACCESS_COMPILE
-}
-
 // Enumerate every reference field in an object, calling back to the specified function with the given context
 // for each such reference found.
 // static
 void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
-    GCHeapUtilities::GetGCHeap()->WalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
+    GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
 #else
     UNREFERENCED_PARAMETER(pObject);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -759,7 +701,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
 // static
 void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
-#if !defined(DACCESS_COMPILE) && (defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE))
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     ScanRootsContext sContext;
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
@@ -771,36 +713,6 @@ void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback
 }
 
 #ifndef DACCESS_COMPILE
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-bool RedhawkGCInterface::IsScanInProgress()
-{
-    // Only allow callers that have no RH thread or are in cooperative mode; i.e., don't
-    // call this in preemptive mode, as the result would not be reliable in multi-threaded
-    // environments.
-    ASSERT(GetThread() == NULL || GetThread()->IsCurrentThreadInCooperativeMode());
-    return g_pfnHeapScan != NULL;
-}
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-GcScanObjectFunction RedhawkGCInterface::GetCurrentScanCallbackFunction()
-{
-    ASSERT(IsScanInProgress());
-    return g_pfnHeapScan;
-}
-
-// This may only be called from a point at which the runtime is suspended. Currently, this
-// is used by the VSD infrastructure on a SyncClean::CleanUp callback from the GC when
-// a collection is complete.
-void* RedhawkGCInterface::GetCurrentScanContext()
-{
-    ASSERT(IsScanInProgress());
-    return g_pvHeapScanContext;
-}
 
 UInt32 RedhawkGCInterface::GetGCDescSize(void * pType)
 {
@@ -829,6 +741,18 @@ COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobj
     {
         memcpy(pobjDest, pobjSrc, cbDest);
     }
+}
+
+COOP_PINVOKE_HELPER(Boolean, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
+{
+    ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
+    EEType * pEEType = pObj1->get_EEType();
+    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*));
+
+    UInt8 * pbFields1 = (UInt8*)pObj1 + sizeof(EEType*);
+    UInt8 * pbFields2 = (UInt8*)pObj2 + sizeof(EEType*);
+
+    return (memcmp(pbFields1, pbFields2, cbFields) == 0) ? Boolean_true : Boolean_false;
 }
 
 COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
@@ -987,7 +911,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
 #ifdef APP_LOCAL_RUNTIME
     // now is a good opportunity to retry starting the finalizer thread
-    StartFinalizerThread();
+    RhStartFinalizerThread();
 #endif
 }
 
@@ -1009,6 +933,8 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 {
+    DebuggerHook::OnBeforeGcCollection();
+    
     // Invoke any registered callouts for the start of the collection.
     RestrictedCallouts::InvokeGcCallouts(GCRC_StartCollection, condemned);
 }
@@ -1148,6 +1074,172 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
     return threadStubArgs.m_pThread;
 }
 
+void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
+{
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(isInduced);
+}
+
+void GCToEEInterface::DiagUpdateGenerationBounds()
+{
+}
+
+void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
+{
+    UNREFERENCED_PARAMETER(gcContext);
+}
+
+void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
+{
+    UNREFERENCED_PARAMETER(index);
+    UNREFERENCED_PARAMETER(gen);
+    UNREFERENCED_PARAMETER(reason);
+    UNREFERENCED_PARAMETER(fConcurrent);
+}
+
+// Note on last parameter: when calling this for bgc, only ETW
+// should be sending these events so that existing profapi profilers
+// don't get confused.
+void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
+                         ptrdiff_t reloc,
+                         size_t context, 
+                         BOOL fCompacting,
+                         BOOL fBGC)
+{
+    UNREFERENCED_PARAMETER(begin);
+    UNREFERENCED_PARAMETER(end);
+    UNREFERENCED_PARAMETER(reloc);
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(fCompacting);
+    UNREFERENCED_PARAMETER(fBGC);
+}
+
+//
+// Diagnostics code
+//
+
+#ifdef FEATURE_EVENT_TRACE
+inline BOOL ShouldTrackMovementForProfilerOrEtw()
+{
+    if (ETW::GCLog::ShouldTrackMovementForEtw())
+        return true;
+
+    return false;
+}
+#endif // FEATURE_EVENT_TRACE
+
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
+{
+#ifdef FEATURE_EVENT_TRACE
+    if (ShouldTrackMovementForProfilerOrEtw())
+    {
+        size_t context = 0;
+        ETW::GCLog::BeginMovedReferences(&context);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        ETW::GCLog::EndMovedReferences(context);
+    }
+#else
+    UNREFERENCED_PARAMETER(gcContext);
+#endif // FEATURE_EVENT_TRACE
+}
+
+void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
+{
+    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // still needs to record the changes in the GC heap.
+    assert(args != nullptr);
+    switch (args->operation)
+    {
+    case WriteBarrierOp::StompResize:
+        // StompResize requires a new card table, a new lowest address, and
+        // a new highest address
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        g_card_table = args->card_table;
+
+        // We need to make sure that other threads executing checked write barriers
+        // will see the g_card_table update before g_lowest/highest_address updates.
+        // Otherwise, the checked write barrier may AV accessing the old card table
+        // with address that it does not cover. Write barriers access card table
+        // without memory barriers for performance reasons, so we need to flush
+        // the store buffers here.
+        FlushProcessWriteBuffers();
+
+        g_lowest_address = args->lowest_address;
+        VolatileStore(&g_highest_address, args->highest_address);
+        return;
+    case WriteBarrierOp::StompEphemeral:
+        // StompEphemeral requires a new ephemeral low and a new ephemeral high
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::Initialize:
+        // This operation should only be invoked once, upon initialization.
+        assert(g_card_table == nullptr);
+        assert(g_lowest_address == nullptr);
+        assert(g_highest_address == nullptr);
+        assert(args->card_table != nullptr);
+        assert(args->lowest_address != nullptr);
+        assert(args->highest_address != nullptr);
+        assert(args->ephemeral_low != nullptr);
+        assert(args->ephemeral_high != nullptr);
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+
+        g_card_table = args->card_table;
+        g_lowest_address = args->lowest_address;
+        g_highest_address = args->highest_address;
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+        return;
+    case WriteBarrierOp::SwitchToWriteWatch:
+    case WriteBarrierOp::SwitchToNonWriteWatch:
+        assert(!"CoreRT does not have an implementation of non-OS WriteWatch");
+        return;
+    default:
+        assert(!"Unknokwn WriteBarrierOp enum");
+        return;
+    }
+}
+
+void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+{
+    if (foundFinalizers)
+        RhEnableFinalization();
+}
+
 #endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
@@ -1163,163 +1255,8 @@ bool IsGCSpecialThread()
     return false;
 }
 
-#ifdef FEATURE_PREMORTEM_FINALIZATION
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
-
-CLREventStatic g_FinalizerEvent;
-CLREventStatic g_FinalizerDoneEvent;
-
-#ifndef DACCESS_COMPILE
-// Finalizer method implemented by redhawkm.
-extern "C" void __cdecl ProcessFinalizers();
-
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
-// successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
-// for the first finalization request (by which time everything must be up and running) and kicks off the
-// managed portion of the thread at that point.
-UInt32 WINAPI FinalizerStart(void* pContext)
-{
-    HANDLE hFinalizerEvent = (HANDLE)pContext;
-
-    ThreadStore::AttachCurrentThread();
-    Thread * pThread = GetThread();
-
-    // Disallow gcstress on this thread to work around the current implementation's limitation that it will 
-    // get into an infinite loop if performed on the finalizer thread.
-    pThread->SetSuppressGcStress();
-
-    FinalizerThread::SetFinalizerThread(pThread);
-
-    // Wait for a finalization request.
-    UInt32 uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
-    ASSERT(uResult == WAIT_OBJECT_0);
-
-    // Since we just consumed the request (and the event is auto-reset) we must set the event again so the
-    // managed finalizer code will immediately start processing the queue when we run it.
-    UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
-    ASSERT(fResult);
-
-    // Run the managed portion of the finalizer. Until we implement (non-process) shutdown this call will
-    // never return.
-
-    ProcessFinalizers();
-
-    ASSERT(!"Finalizer thread should never return");
-    return 0;
-}
-
-bool StartFinalizerThread()
-{
-#ifdef APP_LOCAL_RUNTIME
-
-    //
-    // On app-local runtimes, if we're running with the fallback PAL code (meaning we don't have IManagedRuntimeServices)
-    // then we use the WinRT ThreadPool to create the finalizer thread.  This might fail at startup, if the current thread
-    // hasn't been CoInitialized.  So we need to retry this later.  We use fFinalizerThreadCreated to track whether we've
-    // successfully created the finalizer thread yet, and also as a sort of lock to make sure two threads don't try
-    // to create the finalizer thread at the same time.
-    //
-    static volatile Int32 fFinalizerThreadCreated;
-
-    if (Interlocked::Exchange(&fFinalizerThreadCreated, 1) != 1)
-    {
-        if (!PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
-        {
-            // Need to try again another time...
-            Interlocked::Exchange(&fFinalizerThreadCreated, 0);
-        }
-    }
-
-    // We always return true, so the GC can start even if we failed. 
-    return true;
-
-#else // APP_LOCAL_RUNTIME
-
-    //
-    // If this isn't an app-local runtime, then the PAL will just call CreateThread directly, which should succeed
-    // under normal circumstances.
-    //
-    if (PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
-        return true;
-    else
-        return false;
-
-#endif // APP_LOCAL_RUNTIME
-}
-
-bool FinalizerThread::Initialize()
-{
-    // Allocate the events the GC expects the finalizer thread to have. The g_FinalizerEvent event is signalled
-    // by the GC whenever it completes a collection where it found otherwise unreachable finalizable objects.
-    // The g_FinalizerDoneEvent is set by the finalizer thread every time it wakes up and drains the
-    // queue of finalizable objects. It's mainly used by GC.WaitForPendingFinalizers().
-    if (!g_FinalizerEvent.CreateAutoEventNoThrow(false))
-        return false;
-    if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
-        return false;
-
-    // Create the finalizer thread itself.
-    if (!StartFinalizerThread())
-        return false;
-
-    return true;
-}
-
-void FinalizerThread::SetFinalizerThread(Thread * pThread)
-{
-    g_pFinalizerThread = PTR_Thread(pThread);
-}
-
-void FinalizerThread::EnableFinalization()
-{
-    // Signal to finalizer thread that there are objects to finalize
-    g_FinalizerEvent.Set();
-}
-
-void FinalizerThread::SignalFinalizationDone(bool /*fFinalizer*/)
-{
-    g_FinalizerDoneEvent.Set();
-}
-
-bool FinalizerThread::HaveExtraWorkForFinalizer()
-{
-    return false; // Nothing to do
-}
-
-bool FinalizerThread::IsCurrentThreadFinalizer()
-{
-    return GetThread() == g_pFinalizerThread;
-}
-
-HANDLE FinalizerThread::GetFinalizerEvent()
-{
-    return g_FinalizerEvent.GetOSEvent();
-}
-
-void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
-{
-    // Can't call this from the finalizer thread itself.
-    if (!IsCurrentThreadFinalizer())
-    {
-        // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
-        // (if there's no work to do it'll set the done event immediately).
-        g_FinalizerDoneEvent.Reset();
-        EnableFinalization();
-
-#ifdef APP_LOCAL_RUNTIME
-        // We may have failed to create the finalizer thread at startup.  
-        // Try again now.
-        StartFinalizerThread();
-#endif
-
-        // Wait for the finalizer thread to get back to us.
-        g_FinalizerDoneEvent.Wait(timeout, false, allowReentrantWait);
-    }
-}
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_PREMORTEM_FINALIZATION
 
 #ifndef DACCESS_COMPILE
 
@@ -1337,15 +1274,6 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
-bool g_fFinalizerRunOnShutDown;
-
-void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
-{
-}
-
-void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
-{
-}
 
 bool IsGCThread()
 {
@@ -1425,3 +1353,17 @@ void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t 
 {
     ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
+    : ScanContext()
+{
+    pHeapId = NULL;
+    fProfilerPinned = fProfilerPinnedParam;
+    pvEtwContext = NULL;
+#ifdef FEATURE_CONSERVATIVE_GC
+    // To not confuse GCScan::GcScanRoots
+    promotion = g_pConfig->GetGCConservative();
+#endif
+}
+#endif // defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)

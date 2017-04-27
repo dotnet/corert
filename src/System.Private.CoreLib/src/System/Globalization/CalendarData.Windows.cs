@@ -143,7 +143,7 @@ namespace System.Globalization
             try
             {
                 // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarsCallback);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumCalendarInfoProcExEx>(EnumCalendarsCallback);
                 Interop.mincore.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
             }
             finally
@@ -333,7 +333,7 @@ namespace System.Globalization
             try
             {
                 // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarInfoCallback);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumCalendarInfoProcExEx>(EnumCalendarInfoCallback);
                 Interop.mincore.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
             }
             finally

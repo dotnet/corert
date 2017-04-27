@@ -18,6 +18,11 @@ namespace Internal.Runtime
     /// </summary>
     internal static class TypeLoaderExceptionHelper
     {
+        public static Exception CreateBadImageFormatException(ExceptionStringID id)
+        {
+            return new BadImageFormatException(GetFormatString(id));
+        }
+
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
         {
             return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
@@ -69,12 +74,16 @@ namespace Internal.Runtime
                     return SR.InvalidProgram_Specific;
                 case ExceptionStringID.InvalidProgramVararg:
                     return SR.InvalidProgram_Vararg;
+                case ExceptionStringID.InvalidProgramCallVirtFinalize:
+                    return SR.InvalidProgram_CallVirtFinalize;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:
                     return SR.EE_MissingMethod;
                 case ExceptionStringID.FileLoadErrorGeneric:
                     return SR.IO_FileNotFound_FileName;
+                case ExceptionStringID.BadImageFormatGeneric:
+                    return SR.Arg_BadImageFormatException;
                 default:
                     Debug.Assert(false);
                     throw new NotImplementedException();

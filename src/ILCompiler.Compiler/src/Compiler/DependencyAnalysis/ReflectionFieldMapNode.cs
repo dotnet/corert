@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and native field offsets.
     /// </summary>
-    internal sealed class ReflectionFieldMapNode : ObjectNode, ISymbolNode
+    internal sealed class ReflectionFieldMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -37,17 +37,17 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             var writer = new NativeWriter();
             var fieldMapHashTable = new VertexHashtable();
@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(fieldMapHashTable);
 
-            foreach (var fieldMapping in factory.MetadataManager.GetFieldMapping())
+            foreach (var fieldMapping in factory.MetadataManager.GetFieldMapping(factory))
             {
                 FieldDesc field = fieldMapping.Entity;
 
@@ -73,14 +73,17 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (field.HasGCStaticBase)
                         flags |= FieldTableFlags.IsGcSection;
+
+                    if (field.OwningType.HasInstantiation)
+                        flags |= FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
                 else
                 {
-                    flags = FieldTableFlags.Instance;
+                    flags = FieldTableFlags.Instance | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
 
-                // TODO: support emitting field info without a handle for generics in multifile
-                flags |= FieldTableFlags.HasMetadataHandle;
+                if (fieldMapping.MetadataHandle != 0)
+                    flags |= FieldTableFlags.HasMetadataHandle;
 
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                     flags |= FieldTableFlags.IsUniversalCanonicalEntry;
@@ -98,11 +101,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Only store the offset portion of the metadata handle to get better integer compression
                     vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataGeneration.MetadataOffsetMask)));
+                        writer.GetUnsignedConstant((uint)(fieldMapping.MetadataHandle & MetadataManager.MetadataOffsetMask)));
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    // No metadata handle means we need to store name
+                    vertex = writer.GetTuple(vertex,
+                        writer.GetStringConstant(field.Name));
                 }
 
                 if ((flags & FieldTableFlags.IsUniversalCanonicalEntry) != 0)
@@ -114,13 +119,42 @@ namespace ILCompiler.DependencyAnalysis
                     switch (flags & FieldTableFlags.StorageClass)
                     {
                         case FieldTableFlags.ThreadStatic:
-                        case FieldTableFlags.Static:
-                            // TODO: statics and thread statics
+                            // TODO: thread statics
                             continue;
 
+                        case FieldTableFlags.Static:
+                            {
+                                if (field.OwningType.HasInstantiation)
+                                {
+                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                }
+                                else
+                                {
+                                    MetadataType metadataType = (MetadataType)field.OwningType;
+
+                                    ISymbolNode staticsNode = field.HasGCStaticBase ?
+                                        factory.TypeGCStaticsSymbol(metadataType) :
+                                        factory.TypeNonGCStaticsSymbol(metadataType);
+
+                                    if (!field.HasGCStaticBase || factory.Target.Abi == TargetAbi.ProjectN)
+                                    {
+                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
+                                    }
+                                    else
+                                    {
+                                        Debug.Assert(field.HasGCStaticBase && factory.Target.Abi == TargetAbi.CoreRT);
+
+                                        uint index = _externalReferences.GetIndex(staticsNode);
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                    }
+                                }
+                            }
+                            break;
+
                         case FieldTableFlags.Instance:
-                            vertex = writer.GetTuple(vertex,
-                                writer.GetUnsignedConstant((uint)field.Offset));
+                            vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)field.Offset.AsInt));
                             break;
                     }
                 }
@@ -129,13 +163,11 @@ namespace ILCompiler.DependencyAnalysis
                 fieldMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
     }
 }

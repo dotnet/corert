@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchMapNode : ObjectNode, ISymbolDefinitionNode
     {
         const int IndexNotSet = int.MaxValue;
 
@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             _dispatchMapTableIndex = IndexNotSet;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (implMethod != null)
                     {
                         builder.EmitShort(checked((short)interfaceIndex));
-                        builder.EmitShort(checked((short)interfaceMethodSlot));
+                        builder.EmitShort(checked((short)(interfaceMethodSlot + (interfaceType.HasGenericDictionarySlot() ? 1 : 0))));
                         builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
                         entryCount++;
                     }
@@ -99,9 +99,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.Alignment = 16;
-            objData.DefinedSymbols.Add(this);
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.RequireInitialAlignment(16);
+            objData.AddSymbol(this);
 
             if (!relocsOnly)
             {

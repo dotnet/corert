@@ -9,7 +9,7 @@
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-    <TestTFM>netcoreapp1.0</TestTFM>
+    <TestTFM>netcoreapp1.1</TestTFM>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -38,6 +38,7 @@
   <ItemGroup>
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
+    <Compile Include="ConstraintsValidationTest.cs" />
     <Compile Include="GCPointerMapTests.cs" />
     <Compile Include="GenericTypeAndMethodTests.cs" />
     <Compile Include="CastingTests.cs" />
@@ -48,6 +49,7 @@
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="TypeNameParsingTests.cs" />
+    <Compile Include="UniversalGenericFieldLayoutTests.cs" />
     <Compile Include="ValueTypeShapeCharacteristicsTests.cs" />
     <Compile Include="VirtualFunctionOverrideTests.cs" />
     <Compile Include="InstanceFieldLayoutTests.cs" />

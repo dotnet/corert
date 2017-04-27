@@ -147,7 +147,17 @@ namespace ILCompiler.Metadata
         {
             Cts.TypeDesc elementType = type.ElementType;
 
-            switch (elementType.UnderlyingType.Category)
+            if (elementType.IsEnum)
+            {
+                Cts.TypeSystemContext context = type.Context;
+                return new ConstantEnumArray
+                {
+                    ElementType = HandleType(elementType),
+                    Value = HandleCustomAttributeConstantArray(context.GetArrayType(elementType.UnderlyingType), value),
+                };
+            }
+
+            switch (elementType.Category)
             {
                 case Cts.TypeFlags.Boolean:
                     return new ConstantBooleanArray { Value = GetCustomAttributeConstantArrayElements<bool>(value) };
@@ -177,7 +187,15 @@ namespace ILCompiler.Metadata
 
             if (elementType.IsString)
             {
-                return new ConstantStringArray { Value = GetCustomAttributeConstantArrayElements<string>(value) };
+                var record = new ConstantStringArray();
+                record.Value.Capacity = value.Length;
+                foreach (var element in value)
+                {
+                    MetadataRecord elementRecord = element.Value == null ?
+                        (MetadataRecord)new ConstantReferenceValue() : HandleString((string)element.Value);
+                    record.Value.Add(elementRecord);
+                }
+                return record;
             }
 
             var result = new ConstantHandleArray();

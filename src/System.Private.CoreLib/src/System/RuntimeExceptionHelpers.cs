@@ -13,11 +13,15 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemPreallocatedOutOfMemoryException)]
     internal class PreallocatedOutOfMemoryException
     {
-        public static readonly OutOfMemoryException Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
+        public static OutOfMemoryException Instance { get; private set; }
+
+        // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
+        internal static void Initialize()
+        {
+            Instance = new OutOfMemoryException(message: null);  // Cannot call the nullary constructor as that triggers non-trivial resource manager logic.
+        }
     }
 
     public class RuntimeExceptionHelpers
@@ -213,13 +217,13 @@ namespace System
 
             uint errorCode = 0x80004005; // E_FAIL
             // To help enable testing to bucket the failures we choose one of the following as errorCode:
-            // * RVA of EETypePtr if it is an unhandled managed exception
+            // * hashcode of EETypePtr if it is an unhandled managed exception
             // * HRESULT, if available
             // * RhFailFastReason, if it is one of the known reasons
             if (exception != null)
             {
                 if (reason == RhFailFastReason.PN_UnhandledException)
-                    errorCode = (uint)(exception.EETypePtr.RawValue.ToInt64() - RuntimeImports.RhGetModuleFromEEType(exception.EETypePtr.RawValue).ToInt64());
+                    errorCode = (uint)(exception.EETypePtr.GetHashCode());
                 else if (exception.HResult != 0)
                     errorCode = (uint)exception.HResult;
             }
@@ -328,7 +332,7 @@ namespace System
                 checked
                 {
                     byte[] serializedData = new byte[sizeof(ExceptionMetadataStruct) + SerializedExceptionData.Length];
-                    fixed (byte* pSerializedData = serializedData)
+                    fixed (byte* pSerializedData = &serializedData[0])
                     {
                         ExceptionMetadataStruct* pMetadata = (ExceptionMetadataStruct*)pSerializedData;
                         pMetadata->ExceptionId = ExceptionMetadata.ExceptionId;
@@ -398,7 +402,7 @@ namespace System
             LowLevelList<Exception> exceptions = new LowLevelList<Exception>(curThreadExceptions);
             LowLevelList<Exception> nonThrownInnerExceptions = new LowLevelList<Exception>();
 
-            uint currentThreadId = Interop.mincore.GetCurrentThreadId();
+            uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
 
             // Reset nesting levels for exceptions on this thread that might not be currently in flight
             foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
@@ -525,7 +529,7 @@ namespace System
         {
             checked
             {
-                int loadedModuleCount = RuntimeAugments.GetLoadedModules(null);
+                int loadedModuleCount = RuntimeAugments.GetLoadedOSModules(null);
                 int cbModuleHandles = sizeof(System.IntPtr) * loadedModuleCount;
                 int cbFinalBuffer = sizeof(ERROR_REPORT_BUFFER_HEADER) + sizeof(SERIALIZED_ERROR_REPORT_HEADER) + cbModuleHandles;
                 for (int i = 0; i < serializedExceptions.Count; i++)
@@ -534,7 +538,7 @@ namespace System
                 }
 
                 byte[] finalBuffer = new byte[cbFinalBuffer];
-                fixed (byte* pBuffer = finalBuffer)
+                fixed (byte* pBuffer = &finalBuffer[0])
                 {
                     byte* pCursor = pBuffer;
                     int cbRemaining = cbFinalBuffer;
@@ -559,8 +563,8 @@ namespace System
                     }
 
                     // copy the module-handle array to report buffer
-                    System.IntPtr[] loadedModuleHandles = new System.IntPtr[loadedModuleCount];
-                    RuntimeAugments.GetLoadedModules(loadedModuleHandles);
+                    IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
+                    RuntimeAugments.GetLoadedOSModules(loadedModuleHandles);
                     Array.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
                     cbRemaining -= cbModuleHandles;
                     pCursor += cbModuleHandles;
@@ -589,17 +593,19 @@ namespace System
 
         private static unsafe void UpdateErrorReportBuffer(byte[] finalBuffer)
         {
+            Debug.Assert(finalBuffer?.Length > 0);
+
             using (LockHolder.Hold(s_ExceptionInfoBufferLock))
             {
-                fixed (byte* pBuffer = finalBuffer)
+                fixed (byte* pBuffer = &finalBuffer[0])
                 {
                     byte* pPrevBuffer = (byte*)RuntimeImports.RhSetErrorInfoBuffer(pBuffer);
                     Debug.Assert(s_ExceptionInfoBufferPinningHandle.IsAllocated == (pPrevBuffer != null));
                     if (pPrevBuffer != null)
                     {
                         byte[] currentExceptionInfoBuffer = (byte[])s_ExceptionInfoBufferPinningHandle.Target;
-                        Debug.Assert(currentExceptionInfoBuffer != null);
-                        fixed (byte* pPrev = currentExceptionInfoBuffer)
+                        Debug.Assert(currentExceptionInfoBuffer?.Length > 0);
+                        fixed (byte* pPrev = &currentExceptionInfoBuffer[0])
                             Debug.Assert(pPrev == pPrevBuffer);
                     }
                     if (!s_ExceptionInfoBufferPinningHandle.IsAllocated)

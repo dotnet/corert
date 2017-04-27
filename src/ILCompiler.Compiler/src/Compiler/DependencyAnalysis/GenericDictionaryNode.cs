@@ -16,22 +16,26 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    internal abstract class GenericDictionaryNode : ObjectNode, ISymbolNode
+    public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode
     {
         protected const string MangledNamePrefix = "__GenericDict_";
 
         protected abstract TypeSystemContext Context { get; }
 
-        protected abstract Instantiation TypeInstantiation { get; }
+        public abstract Instantiation TypeInstantiation { get; }
 
-        protected abstract Instantiation MethodInstantiation { get; }
+        public abstract Instantiation MethodInstantiation { get; }
 
-        protected abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
+        public abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
 
         public sealed override ObjectNodeSection Section =>
             Context.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
         
         public sealed override bool StaticDependenciesAreComputed => true;
+
+        public sealed override bool IsShareable => true;
+
+        int ISymbolNode.Offset => 0;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -41,14 +45,19 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
+        public abstract bool IsExported(NodeFactory factory);
+
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
-        public abstract int Offset { get; }
+
+        protected abstract int HeaderSize { get; }
+
+        int ISymbolDefinitionNode.Offset => HeaderSize;
 
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
-            builder.RequirePointerAlignment();
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.AddSymbol(this);
+            builder.RequireInitialPointerAlignment();
 
             // Node representing the generic dictionary doesn't have any dependencies for
             // dependency analysis purposes. The dependencies are tracked as dependencies of the
@@ -65,45 +74,86 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             DictionaryLayoutNode layout = GetDictionaryLayout(factory);
-
-            Instantiation typeInst = this.TypeInstantiation;
-            Instantiation methodInst = this.MethodInstantiation;
-
-            foreach (var entry in layout.Entries)
-            {
-                ISymbolNode targetNode = entry.GetTarget(factory, typeInst, methodInst);
-                int targetDelta = entry.TargetDelta;
-                builder.EmitPointerReloc(targetNode, targetDelta);
-            }
+            layout.EmitDictionaryData(ref builder, factory, this);            
         }
 
-        protected sealed override string GetName()
+        protected sealed override string GetName(NodeFactory factory)
         {
-            return this.GetMangledName();
+            return this.GetMangledName(factory.NameMangler);
         }
     }
 
-    internal sealed class TypeGenericDictionaryNode : GenericDictionaryNode
+    public sealed class TypeGenericDictionaryNode : GenericDictionaryNode
     {
         private TypeDesc _owningType;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledTypeName(_owningType));
+            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledTypeName(_owningType));
         }
-        public override int Offset => 0;
-        public override bool IsShareable => false;
-
-        protected override Instantiation TypeInstantiation => _owningType.Instantiation;
-        protected override Instantiation MethodInstantiation => new Instantiation();
+        protected override int HeaderSize => 0;
+        public override Instantiation TypeInstantiation => _owningType.Instantiation;
+        public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
 
-        protected override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
+        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
+
+        public TypeDesc OwningType => _owningType;
+
+        public static string GetMangledName(NameMangler nameMangler, TypeDesc owningType)
+        {
+            return MangledNamePrefix + nameMangler.GetMangledTypeName(owningType);
+        }
+
+        public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
             return factory.GenericDictionaryLayout(_owningType.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         public override bool HasConditionalStaticDependencies => true;
+
+        private static bool ContributesToDictionaryLayout(MethodDesc method)
+        {
+            // Generic methods have their own generic dictionaries
+            if (method.HasInstantiation)
+                return false;
+
+            // Abstract methods don't have a body
+            if (method.IsAbstract)
+                return false;
+
+            // PInvoke methods, runtime imports, etc. are not permitted on generic types,
+            // but let's not crash the compilation because of that.
+            if (method.IsPInvoke || method.IsRuntimeImplemented)
+                return false;
+
+            return true;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList result = null;
+
+            if (factory.CompilationModuleGroup.ShouldPromoteToFullType(_owningType))
+            {
+                result = new DependencyList();
+
+                // If the compilation group wants this type to be fully promoted, it means the EEType is going to be
+                // COMDAT folded with other EETypes generated in a different object file. This means their generic
+                // dictionaries need to have identical contents. The only way to achieve that is by generating
+                // the entries for all methods that contribute to the dictionary, and sorting the dictionaries.
+                foreach (var method in _owningType.GetAllMethods())
+                {
+                    if (!ContributesToDictionaryLayout(method))
+                        continue;
+
+                    result.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                        "Cross-objectfile equivalent dictionary");
+                }
+            }
+
+            return result;
+        }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
@@ -112,12 +162,7 @@ namespace ILCompiler.DependencyAnalysis
             // that use the same dictionary layout.
             foreach (var method in _owningType.GetAllMethods())
             {
-                // Generic methods have their own generic dictionaries
-                if (method.HasInstantiation)
-                    continue;
-
-                // Abstract methods don't have a body
-                if (method.IsAbstract)
+                if (!ContributesToDictionaryLayout(method))
                     continue;
 
                 // If a canonical method body was compiled, we need to track the dictionary
@@ -134,27 +179,40 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(!owningType.IsRuntimeDeterminedSubtype);
             Debug.Assert(owningType.HasInstantiation);
+            Debug.Assert(owningType.ConvertToCanonForm(CanonicalFormKind.Specific) != owningType);
 
             _owningType = owningType;
         }
     }
 
-    internal sealed class MethodGenericDictionaryNode : GenericDictionaryNode
+    public sealed class MethodGenericDictionaryNode : GenericDictionaryNode
     {
         private MethodDesc _owningMethod;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(NodeFactory.NameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
-        public override int Offset => _owningMethod.Context.Target.PointerSize;
-        public override bool IsShareable => false;
-
-        protected override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
-        protected override Instantiation MethodInstantiation => _owningMethod.Instantiation;
+        protected override int HeaderSize => _owningMethod.Context.Target.PointerSize;
+        public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
+        public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
 
-        protected override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
+        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(OwningMethod);
+
+        public MethodDesc OwningMethod => _owningMethod;
+
+        public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
+        {
+            return MangledNamePrefix + nameMangler.GetMangledMethodName(owningMethod);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
+        }
+
+        public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
             return factory.GenericDictionaryLayout(_owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
@@ -164,11 +222,11 @@ namespace ILCompiler.DependencyAnalysis
             // Method generic dictionaries get prefixed by the hash code of the owning method
             // to allow quick lookups of additional details by the type loader.
 
+            builder.EmitInt(_owningMethod.GetHashCode());
             if (builder.TargetPointerSize == 8)
                 builder.EmitInt(0);
-            builder.EmitInt(_owningMethod.GetHashCode());
 
-            Debug.Assert(builder.CountBytes == Offset);
+            Debug.Assert(builder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
             base.EmitDataInternal(ref builder, factory);
         }
@@ -177,6 +235,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
+            Debug.Assert(owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != owningMethod);
 
             _owningMethod = owningMethod;
         }

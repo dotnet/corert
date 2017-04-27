@@ -16,8 +16,6 @@
 #define SIZEOF_RETURN_BLOCK         0x10    // for 16 bytes of conservatively reported space that the callee can
                                             // use to manage the return value that the call eventually generates
 
-#define SIZEOF_FP_REGS              0x80    // xmm0-7
-
 #define SIZEOF_ARGUMENT_REGISTERS   0x30    // Callee register spill
 
 //
@@ -126,7 +124,8 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         mov  rsi, r11
         lea  rdi, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
-ALTERNATE_ENTRY ReturnFrom\FunctionName
+
+LOCAL_LABEL(ReturnFrom\FunctionName):
 
         // restore fp argument registers
         movdqa          xmm0, [rsp + DISTANCE_FROM_CHILDSP_TO_FP_REGS + 0x00]
@@ -152,6 +151,15 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         jmp             rax
 
 NESTED_END Rhp\FunctionName, _TEXT
+
+        .text
+
+        .align          8
+
+C_FUNC(PointerToReturnFrom\FunctionName):
+        .quad           LOCAL_LABEL(ReturnFrom\FunctionName)
+
+        .global         C_FUNC(PointerToReturnFrom\FunctionName)
 
 .endm // UNIVERSAL_TRANSITION
 

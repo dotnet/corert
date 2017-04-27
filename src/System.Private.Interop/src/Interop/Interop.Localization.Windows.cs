@@ -14,6 +14,7 @@
 // always manually marshal the arguments
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -58,7 +59,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore 0649
         }
 
-        [DllImport(Libraries.CORE_LOCALIZATION, EntryPoint = "FormatMessageW")]
+        [DllImport(Libraries.CORE_LOCALIZATION, EntryPoint = "FormatMessageW", SetLastError = true)]
         [McgGeneratedNativeCallCodeAttribute]
         internal static extern unsafe int FormatMessage(
             int dwFlags,
@@ -90,10 +91,11 @@ namespace System.Runtime.InteropServices
         /// <returns>Return false IFF when buffer space isnt enough</returns>
         private static unsafe bool TryGetMessage(int errorCode, int bufferSize, out string errorMsg)
         {
+            Debug.Assert(bufferSize > 0);
             errorMsg = null;
             char[] buffer = new char[bufferSize];
             int result;
-            fixed (char* pinned_lpBuffer = buffer)
+            fixed (char* pinned_lpBuffer = &buffer[0])
             {
                 result = ExternalInterop.FormatMessage(
                     FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM |
@@ -113,7 +115,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                if (ExternalInterop.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER) return false;
+                if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER) return false;
                 return true;
             }
         }
@@ -123,7 +125,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="errorCode">HRESULT</param>
         /// <returns></returns>
-        internal static unsafe String GetMessage(int errorCode)
+        public static unsafe String GetMessage(int errorCode)
         {
             string errorMsg;
             int bufferSize = 1024;

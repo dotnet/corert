@@ -15,7 +15,7 @@ namespace ILCompiler
     {
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
-        private JitConfigProvider _jitConfig = new JitConfigProvider(Array.Empty<string>());
+        private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(new RyuJitNodeFactory(context, group))
@@ -24,13 +24,57 @@ namespace ILCompiler
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
         {
-            _jitConfig = new JitConfigProvider(options);
+            var builder = new ArrayBuilder<KeyValuePair<string, string>>();
+
+            foreach (string param in options)
+            {
+                int indexOfEquals = param.IndexOf('=');
+
+                // We're skipping bad parameters without reporting.
+                // This is not a mainstream feature that would need to be friendly.
+                // Besides, to really validate this, we would also need to check that the config name is known.
+                if (indexOfEquals < 1)
+                    continue;
+
+                string name = param.Substring(0, indexOfEquals);
+                string value = param.Substring(indexOfEquals + 1);
+
+                builder.Add(new KeyValuePair<string, string>(name, value));
+            }
+
+            _ryujitOptions = builder.ToArray();
+
             return this;
         }
 
         public override ICompilation ToCompilation()
         {
-            return new RyuJitCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, _jitConfig);
+            ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
+
+            switch (_optimizationMode)
+            {
+                case OptimizationMode.None:
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_CODE);
+                    break;
+
+                case OptimizationMode.PreferSize:
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
+                    break;
+
+                case OptimizationMode.PreferSpeed:
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
+                    break;
+
+                default:
+                    // Not setting a flag results in BLENDED_CODE.
+                    break;
+            }
+
+            if (_generateDebugInfo)
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
+
+            var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
+            return new RyuJitCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, jitConfig);
         }
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -17,7 +18,7 @@ namespace System.Threading
         {
             if (_nativeTimer == IntPtr.Zero)
             {
-                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Action<IntPtr, IntPtr, IntPtr>>(TimerCallback);
+                IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.TimerCallback>(TimerCallback);
 
                 _nativeTimer = Interop.mincore.CreateThreadpoolTimer(nativeCallback, IntPtr.Zero, IntPtr.Zero);
                 if (_nativeTimer == IntPtr.Zero)
@@ -36,6 +37,7 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void TimerCallback(IntPtr instance, IntPtr context, IntPtr timer)
         {
+            RuntimeThread.InitializeThreadPoolThread();
             Instance.FireNextTimers();
         }
     }

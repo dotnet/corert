@@ -36,7 +36,11 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.mincore.CloseHandle(handle);
+#if PLATFORM_UNIX
+            WaitSubsystem.DeleteHandle(handle);
+#else
+            Interop.Kernel32.CloseHandle(handle);
+#endif
             return true;
         }
     }

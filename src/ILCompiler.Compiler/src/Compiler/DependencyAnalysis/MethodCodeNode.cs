@@ -6,10 +6,11 @@ using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
+    public class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode
     {
         public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
         public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
@@ -39,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method =>  _method;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section
         {
@@ -51,9 +52,9 @@ namespace ILCompiler.DependencyAnalysis
         
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_method));
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
         public int Offset => 0;
         public override bool IsShareable => _method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_method.OwningType);
@@ -81,25 +82,52 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
-            // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
-            // we even start the compilation process (with the invocation stubs being compilation roots like any other).
-            // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
-            if (factory.MetadataManager.HasReflectionInvokeStub(_method)
-                && !_method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+
+            if (_method.IsPInvoke)
             {
                 if (dependencies == null)
                     dependencies = new DependencyList();
 
-                MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
-                MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (invokeStub != canonInvokeStub)
-                    dependencies.Add(new DependencyListEntry(factory.FatFunctionPointer(invokeStub), "Reflection invoke"));
-                else
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                MethodSignature methodSig = _method.Signature;
+                AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
+
+                for (int i = 0; i < methodSig.Length; i++)
+                {
+                    AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
+                }
             }
 
             return dependencies;
+        }
+
+        private void AddPInvokeParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
+        {
+            if (parameter.IsDelegate)
+            {
+                dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
+
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetOpenStaticDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetClosedDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetForwardDelegateCreationStub(parameter)), "Delegate Marshalling Stub");
+            }
+            else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
+            {
+                var stub = (Internal.IL.Stubs.StructMarshallingThunk)factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(parameter);
+                dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(parameter)), "Struct Marshalling Type");
+                dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(parameter)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(parameter)), "Struct Marshalling stub");
+
+                foreach (var inlineArrayCandidate in stub.GetInlineArrayCandidates())
+                {
+                    dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetInlineArrayType(inlineArrayCandidate)), "Struct Marshalling Type");
+                    foreach (var method in inlineArrayCandidate.ElementType.GetMethods())
+                    {
+                        dependencies.Add(factory.MethodEntrypoint(method), "inline array marshalling stub");
+                    }
+                }
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

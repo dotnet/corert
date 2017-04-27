@@ -232,7 +232,7 @@ namespace Internal.TypeSystem
         public BitEnumerator(int[] buffer, int startBit, int numBits)
         {
             Debug.Assert(startBit >= 0 && numBits >= 0);
-            Debug.Assert(startBit + numBits < buffer.Length << 5);
+            Debug.Assert(startBit + numBits <= buffer.Length << 5);
 
             _buffer = buffer;
             _currentBit = startBit - 1;

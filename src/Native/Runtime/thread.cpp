@@ -481,13 +481,16 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             frameIterator.CalculateCurrentMethodState();
         
             STRESS_LOG1(LF_GCROOTS, LL_INFO1000, "Scanning method %pK\n", (void*)frameIterator.GetRegisterSet()->IP);
-       
-            RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
-                                           frameIterator.GetMethodInfo(), 
-                                           frameIterator.GetEffectiveSafePointAddress(),
-                                           frameIterator.GetRegisterSet(),
-                                           pfnEnumCallback,
-                                           pvCallbackData);
+
+            if (!frameIterator.ShouldSkipRegularGcReporting())
+            {
+                RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
+                                               frameIterator.GetMethodInfo(), 
+                                               frameIterator.GetEffectiveSafePointAddress(),
+                                               frameIterator.GetRegisterSet(),
+                                               pfnEnumCallback,
+                                               pvCallbackData);
+            }
         
             // Each enumerated frame (including the first one) may have an associated stack range we need to
             // report conservatively (every pointer aligned value that looks like it might be a GC reference is
@@ -517,7 +520,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
     // ExInfos hold exception objects that are not reported by anyone else.  In fact, sometimes they are in
     // logically dead parts of the stack that the typical GC stackwalk skips.  (This happens in the case where 
-    // one exception dispatch supersceded a previous one.)  We keep them alive as long as they are in the 
+    // one exception dispatch superseded a previous one.)  We keep them alive as long as they are in the 
     // ExInfo chain to aid in post-mortem debugging.  SOS will access them through the DAC and the exported 
     // API, RhGetExceptionsForCurrentThread, will access them at runtime to gather additional information to
     // add to a dump file during FailFast.
@@ -880,38 +883,33 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 // Standard calling convention variant and actual implementation for RhpWaitForSuspend
 EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 {
-#ifdef _DEBUG
-    // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
-    // but we keep some debug-time checks around to guard against future changes to the code.  In general, the
-    // wait operations will call out to Win32 to do the waiting, but the API used will only modify the last
-    // error in an error condition, in which case we will fail fast.
-    UInt32 uLastErrorOnEntry = PalGetLastError();
-#endif // _DEBUG
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
 
     ThreadStore::GetCurrentThread()->WaitForSuspend();
-
-    ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
+    
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-#ifdef _DEBUG
-    // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
-    // but we keep some debug-time checks around to guard against future changes to the code.  In general, the
-    // wait operations will call out to Win32 to do the waiting, but the API used will only modify the last
-    // error in an error condition, in which case we will fail fast.
-    UInt32 uLastErrorOnEntry = PalGetLastError();
-#endif // _DEBUG
 
     Thread * pThread = pFrame->m_pThread;
 
     if (pThread->IsDoNotTriggerGcSet())
         return;
 
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
+
     pThread->WaitForGC(pFrame);
 
-    ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 void Thread::PushExInfo(ExInfo * pExInfo)
@@ -931,7 +929,7 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
 
     while (pExInfo && pExInfo < limitSP)
     {
-        ASSERT_MSG(pExInfo->m_kind & EK_SuperscededFlag, "popping a non-supersceded ExInfo");
+        ASSERT_MSG(pExInfo->m_kind & EK_SupersededFlag, "popping a non-superseded ExInfo");
         pExInfo = pExInfo->m_pPrevExInfo;
     }
 #else

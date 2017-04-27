@@ -11,6 +11,8 @@
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Hack to disable analyzers. Replace once https://github.com/dotnet/buildtools/issues/1349 is fixed. -->
+    <CodeAnalyzerDir>$(MSBuildThisFileDirectory)/Documentation</CodeAnalyzerDir>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
@@ -29,25 +31,15 @@
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
-    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -77,6 +69,7 @@
     <Compile Include="System\Void.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Eval.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
     <Compile Include="System\Runtime\CastableObjectSupport.cs" />
@@ -120,6 +113,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
       <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Common\RuntimeConstants.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>

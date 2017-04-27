@@ -31,10 +31,13 @@ namespace Internal.IL.Stubs
 
         private ArrayBuilder<LabelAndOffset> _offsetsNeedingPatching;
 
-        internal ILCodeStream()
+        private ILEmitter _emitter;
+
+        internal ILCodeStream(ILEmitter emitter)
         {
             _instructions = Array.Empty<byte>();
             _startOffsetForLinking = -1;
+            _emitter = emitter;
         }
 
         private void EmitByte(byte b)
@@ -98,6 +101,20 @@ namespace Internal.IL.Stubs
             else
             {
                 Emit(ILOpcode.ldarg);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitLdArga(int index)
+        {
+            if (index < 0x100)
+            {
+                Emit(ILOpcode.ldarga_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldarga);
                 EmitUInt16((ushort)index);
             }
         }
@@ -187,6 +204,205 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public void EmitLdInd(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.ldind_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.ldind_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.ldind_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.ldind_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.ldind_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.ldind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.ldind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.ldind_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.ldobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    break;
+            }
+        }
+        public void EmitStInd(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.stind_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.stind_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.stind_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.stind_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.stind_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.stind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.stind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.stind_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.stobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
+        public void EmitStElem(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.stelem_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.stelem_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.stelem_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.stelem_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.stelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.stelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.stelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.stelem_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.stelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
+        public void EmitLdElem(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.ldelem_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.ldelem_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.ldelem_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.ldelem_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.ldelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.ldelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.ldelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.ldelem_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.ldelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
         public void EmitLabel(ILCodeLabel label)
         {
             label.Place(this, _length);
@@ -229,7 +445,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     public enum ILLocalVariable { }
 
-    internal class ILStubMethodIL : MethodIL
+    public class ILStubMethodIL : MethodIL
     {
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
@@ -242,6 +458,14 @@ namespace Internal.IL.Stubs
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
+        }
+
+        public ILStubMethodIL(ILStubMethodIL methodIL)
+        {
+            _ilBytes = methodIL._ilBytes;
+            _locals = methodIL._locals;
+            _tokens = methodIL._tokens;
+            _method = methodIL._method;
         }
 
         public override MethodDesc OwningMethod
@@ -334,7 +558,7 @@ namespace Internal.IL.Stubs
 
         public ILCodeStream NewCodeStream()
         {
-            ILCodeStream stream = new ILCodeStream();
+            ILCodeStream stream = new ILCodeStream(this);
             _codeStreams.Add(stream);
             return stream;
         }
@@ -408,7 +632,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public abstract class ILStubMethod : MethodDesc
+    public abstract partial class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
 

@@ -94,8 +94,6 @@ namespace System.Reflection.Runtime.MethodInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 
@@ -104,8 +102,16 @@ namespace System.Reflection.Runtime.MethodInfos
             // Reflection.Core does not hardcode these special cases. It's up to the ExecutionEnvironment to steer 
             // us the right way by coordinating the implementation of NewObject and MethodInvoker.
             Object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
-            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters);
+            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
             return newObject != null ? newObject : ctorAllocatedObject;
+        }
+
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimePlainConstructorInfo<TRuntimeMethodCommon>.GetRuntimePlainConstructorInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod);
+            }
         }
 
         public sealed override MethodImplAttributes MethodImplementationFlags
@@ -129,6 +135,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
         public sealed override bool Equals(Object obj)
         {
             RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
@@ -146,6 +160,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
+
+        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {

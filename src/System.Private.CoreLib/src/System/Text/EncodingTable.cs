@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,8 +8,25 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
+    //
+    // Data table for encoding classes.  Used by System.Text.Encoding.
+    // This class contains two hashtables to allow System.Text.Encoding
+    // to retrieve the data item either by codepage value or by webName.
+    //
+
+    // Only statics, does not need to be marked with the serializable attribute
     internal static partial class EncodingTable
     {
+        /*=================================GetCodePageFromName==========================
+        **Action: Given a encoding name, return the correct code page number for this encoding.
+        **Returns: The code page for the encoding.
+        **Arguments:
+        **  name    the name of the encoding
+        **Exceptions:
+        **  ArgumentNullException if name is null.
+        **  internalGetCodePageFromName will throw ArgumentException if name is not a valid encoding name.
+        ============================================================================*/
+
         internal static int GetCodePageFromName(string name)
         {
             if (name == null)
@@ -19,6 +36,9 @@ namespace System.Text
             return (int)NameToCodePageCache.Instance.GetOrAdd(name);
         }
 
+        //
+        // This caches the mapping of an encoding name to a code page.
+        //
         private sealed class NameToCodePageCache : ConcurrentUnifier<string, object>
         {
             public static readonly NameToCodePageCache Instance = new NameToCodePageCache();
@@ -29,6 +49,7 @@ namespace System.Text
             }
         }
 
+        // Find the data item by binary searching the table.
         private static int InternalGetCodePageFromName(string name)
         {
             int left = 0;
@@ -80,6 +101,7 @@ namespace System.Text
             throw new ArgumentException(
                 SR.Format(SR.Argument_EncodingNotSupported, name),
                 nameof(name));
+
         }
 
         private static int CompareOrdinal(string s1, string s2, int index, int length)
@@ -98,57 +120,60 @@ namespace System.Text
             return s1.Length - length;
         }
 
-        internal static string GetWebNameFromCodePage(int codePage)
+        // Return a list of all EncodingInfo objects describing all of our encodings
+        // This is hard coded based on the 
+        internal static EncodingInfo[] GetEncodings()
         {
-            return CodePageToWebNameCache.Instance.GetOrAdd(codePage);
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[s_mappedCodePages.Length];
+
+            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            {
+                arrayEncodingInfo[i] = new EncodingInfo(
+                    s_mappedCodePages[i],
+                    s_webNames.Substring(s_webNameIndices[i], s_webNameIndices[i + 1] - s_webNameIndices[i]),
+                    s_englishNames.Substring(s_englishNameIndices[i], s_englishNameIndices[i + 1] - s_englishNameIndices[i])
+                    );
+            }
+
+            return arrayEncodingInfo;
         }
 
-        private sealed class CodePageToWebNameCache : ConcurrentUnifier<int, string>
+        internal static CodePageDataItem GetCodePageDataItem(int codePage)
         {
-            public static readonly CodePageToWebNameCache Instance = new CodePageToWebNameCache();
+            return (CodePageDataItem)CodePageDataItemCache.Instance.GetOrAdd(codePage);
+        }
 
-            protected sealed override string Factory(int codePage)
+        //
+        // This caches the mapping of a code page to its CodePageDataItem.
+        //
+        private sealed class CodePageDataItemCache : ConcurrentUnifier<int, object>
+        {
+            public static readonly CodePageDataItemCache Instance = new CodePageDataItemCache();
+
+            protected sealed override object Factory(int codePage)
             {
-                return GetNameFromCodePage(codePage, s_webNames, s_webNameIndices);
+                return InternalGetCodePageDataItem(codePage);
             }
         }
 
-        internal static string GetEnglishNameFromCodePage(int codePage)
+        private static CodePageDataItem InternalGetCodePageDataItem(int codePage)
         {
-            return CodePageToEnglishNameCache.Instance.GetOrAdd(codePage);
-        }
-
-        private sealed class CodePageToEnglishNameCache : ConcurrentUnifier<int, string>
-        {
-            public static readonly CodePageToEnglishNameCache Instance = new CodePageToEnglishNameCache();
-
-            protected sealed override string Factory(int codePage)
-            {
-                return GetNameFromCodePage(codePage, s_englishNames, s_englishNameIndices);
-            }
-        }
-
-        private static string GetNameFromCodePage(int codePage, string names, int[] indices)
-        {
-            string name;
-
-            Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
-            Debug.Assert(indices[indices.Length - 1] == names.Length);
-
-            //This is a linear search, but we probably won't be doing it very often.
             for (int i = 0; i < s_mappedCodePages.Length; i++)
             {
                 if (s_mappedCodePages[i] == codePage)
                 {
-                    Debug.Assert(i < indices.Length - 1);
+                    int uiFamilyCodePage = s_uiFamilyCodePages[i];
+                    string webName = s_webNames.Substring(s_webNameIndices[i], s_webNameIndices[i + 1] - s_webNameIndices[i]);
+                    // All supported code pages have identical web names, header names, and body names.
+                    string headerName = webName;
+                    string bodyName = webName;
+                    string englishName = s_englishNames.Substring(s_englishNameIndices[i], s_englishNameIndices[i + 1] - s_englishNameIndices[i]);
+                    uint flags = s_flags[i];
 
-                    name = names.Substring(indices[i], indices[i + 1] - indices[i]);
-
-                    return name;
+                    return new CodePageDataItem(codePage, uiFamilyCodePage, webName, headerName, bodyName, englishName, flags);
                 }
             }
 
-            //Nope, we didn't find it.
             return null;
         }
     }

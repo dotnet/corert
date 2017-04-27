@@ -9,7 +9,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FrozenStringNode : EmbeddedObjectNode, ISymbolNode
+    public class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private string _data;
         private int _syncBlockSize;
@@ -22,17 +22,39 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Str_").Append(NodeFactory.NameMangler.GetMangledStringName(_data));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__Str_").Append(nameMangler.GetMangledStringName(_data));
         }
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override int Offset
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
                 // The frozen string symbol points at the EEType portion of the object, skipping over the sync block
-                return base.Offset + _syncBlockSize;
+                return OffsetFromBeginningOfArray + _syncBlockSize;
+            }
+        }
+
+        private static IEETypeNode GetEETypeNode(NodeFactory factory)
+        {
+            DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
+
+            //
+            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
+            // binary, it must be cloned into this one.
+            //
+            IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
+
+            if (stringSymbol.RepresentsIndirectionCell)
+            {
+                return factory.ConstructedClonedTypeSymbol(systemStringType);
+            }
+            else
+            {
+                return stringSymbol;
             }
         }
 
@@ -40,20 +62,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             dataBuilder.EmitZeroPointer(); // Sync block
 
-            DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
-
-            //
-            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
-            // binary, it must be cloned into this one.
-            //
-            if (factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(systemStringType))
-            {
-                dataBuilder.EmitPointerReloc(factory.ConstructedClonedTypeSymbol(systemStringType));
-            }
-            else
-            {
-                dataBuilder.EmitPointerReloc(factory.ConstructedTypeSymbol(systemStringType));
-            }
+            dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
 
             dataBuilder.EmitInt(_data.Length);
 
@@ -67,11 +76,14 @@ namespace ILCompiler.DependencyAnalysis
 
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return null;
+            return new DependencyListEntry[]
+            {
+                new DependencyListEntry(GetEETypeNode(factory), "Frozen string literal EEType"),
+            };
         }
 
         protected override void OnMarked(NodeFactory factory)

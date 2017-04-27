@@ -76,6 +76,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return _declaringType.GetHashCode();
         }
 
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public sealed override bool IsGenericMethod
         {
             get
@@ -97,6 +105,14 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         public sealed override MethodImplAttributes MethodImplementationFlags
         {
             get
@@ -113,6 +129,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override Type ReflectedType
         {
             get
@@ -126,6 +150,14 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override String ToString()
         {
             return RuntimeMethodHelpers.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, RuntimeReturnParameter);
+        }
+
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         protected sealed override MethodInvoker UncachedMethodInvoker
@@ -178,6 +210,15 @@ namespace System.Reflection.Runtime.MethodInfos
             }
             returnParameter = RuntimeSyntheticParameterInfo.GetRuntimeSyntheticParameterInfo(this, -1, _returnType);
             return parameters;
+        }
+
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                Debug.Assert(ReflectedType.Equals(DeclaringType));
+                return this;
+            }
         }
 
         private readonly String _name;

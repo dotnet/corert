@@ -11,6 +11,7 @@ using System.Diagnostics.Contracts;
 using System.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -28,9 +29,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                                               T handler)
         {
             if (addMethod == null)
-                throw new ArgumentNullException("addMethod");
+                throw new ArgumentNullException(nameof(addMethod));
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Managed code allows adding a null event handler, the effect is a no-op.  To match this behavior
@@ -62,7 +63,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
         {
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Managed code allows removing a null event handler, the effect is a no-op.  To match this behavior
@@ -88,7 +89,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
         {
             if (removeMethod == null)
-                throw new ArgumentNullException("removeMethod");
+                throw new ArgumentNullException(nameof(removeMethod));
             Contract.EndContractBlock();
 
             // Delegate to managed event registration implementation or native event registration implementation
@@ -569,7 +570,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     // Avoid racing with Add/Remove event entries into the cache
                     // You don't want this removing the key in the middle of a Add/Remove
-                    s_eventCacheRWLock.AcquireWriterLock(Timeout.Infinite);
+                    s_eventCacheRWLock.EnterWriteLock();
                     try
                     {
                         int newCount = Interlocked.Decrement(ref _count);
@@ -581,7 +582,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     }
                     finally
                     {
-                        s_eventCacheRWLock.ReleaseWriterLock();
+                        s_eventCacheRWLock.ExitWriteLock();
                     }
                 }
 
@@ -651,7 +652,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             internal static Lock s_eventRegistrationsLock = new Lock();
 
             // Prevent add/remove handler code to run at the same with with cache cleanup code
-            private static MyReaderWriterLock s_eventCacheRWLock = new MyReaderWriterLock();
+            private static ReaderWriterLockSlim s_eventCacheRWLock = new ReaderWriterLockSlim();
 
             private static Object s_dummyStaticEventKey = new Object();
             // Get InstanceKey to use in the cache
@@ -696,7 +697,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     // The whole add/remove code has to be protected by a reader/writer lock
                     // Add/Remove cannot run at the same time with cache cleanup but Add/Remove can run at the same time
                     //
-                    s_eventCacheRWLock.AcquireReaderLock(Timeout.Infinite);
+                    s_eventCacheRWLock.EnterReadLock();
                     try
                     {
                         // Add the method, and make a note of the delegate -> token mapping.
@@ -740,7 +741,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     }
                     finally
                     {
-                        s_eventCacheRWLock.ReleaseReaderLock();
+                        s_eventCacheRWLock.ExitReadLock();
                     }
 #if false
                     BCLDebug.Log("INTEROP", "[WinRT_Eventing] Event subscribed for instance = " + instanceKey + ", handler = " + handler + "\n");
@@ -834,7 +835,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 // The whole add/remove code has to be protected by a reader/writer lock
                 // Add/Remove cannot run at the same time with cache cleanup but Add/Remove can run at the same time
                 //
-                s_eventCacheRWLock.AcquireReaderLock(Timeout.Infinite);
+                s_eventCacheRWLock.EnterReadLock();
                 try
                 {
                     EventCacheEntry registrationTokens = GetEventRegistrationTokenTableNoCreate(instanceKey, removeMethod);
@@ -902,7 +903,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
                 finally
                 {
-                    s_eventCacheRWLock.ReleaseReaderLock();
+                    s_eventCacheRWLock.ExitReadLock();
                 }
                 // Call removeMethod outside of RW lock
                 // At this point we don't need to worry about race conditions and we can avoid deadlocks
@@ -920,7 +921,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 // The whole add/remove code has to be protected by a reader/writer lock
                 // Add/Remove cannot run at the same time with cache cleanup but Add/Remove can run at the same time
                 //
-                s_eventCacheRWLock.AcquireReaderLock(Timeout.Infinite);
+                s_eventCacheRWLock.EnterReadLock();
                 try
                 {
                     EventCacheEntry registrationTokens = GetEventRegistrationTokenTableNoCreate(instanceKey, removeMethod);
@@ -956,7 +957,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
                 finally
                 {
-                    s_eventCacheRWLock.ReleaseReaderLock();
+                    s_eventCacheRWLock.ExitReadLock();
                 }
 
                 //
@@ -970,213 +971,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 BCLDebug.Log("INTEROP", "[WinRT_Eventing] Finished removing all events for instance = " + instanceKey + "\n");
 #endif
             }
-
-
-            internal class ReaderWriterLockTimedOutException : /*ApplicationException*/ Exception
-            {
-            }
-
-            /// I borrowed Vance's reader writer lock implementation from his blog as ReaderWriterLockSlim is
-            /// available in System.Core.dll!
-            ///
-            /// <summary>
-            /// A reader-writer lock implementation that is intended to be simple, yet very
-            /// efficient.  In particular only 1 interlocked operation is taken for any lock
-            /// operation (we use spin locks to achieve this).  The spin lock is never held
-            /// for more than a few instructions (in particular, we never call event APIs
-            /// or in fact any non-trivial API while holding the spin lock).
-            ///
-            /// Currently this ReaderWriterLock does not support recurision, however it is
-            /// not hard to add
-            /// </summary>
-            internal class MyReaderWriterLock
-            {
-                // Lock specifiation for myLock:  This lock protects exactly the local fields associted
-                // instance of MyReaderWriterLock.  It does NOT protect the memory associted with the
-                // the events that hang off this lock (eg writeEvent, readEvent upgradeEvent).
-                int myLock;
-
-                // Who owns the lock owners > 0 => readers
-                // owners = -1 means there is one writer.  Owners must be >= -1.
-                int owners;
-
-                // These variables allow use to avoid Setting events (which is expensive) if we don't have to.
-                uint numWriteWaiters;        // maximum number of threads that can be doing a WaitOne on the writeEvent
-                uint numReadWaiters;         // maximum number of threads that can be doing a WaitOne on the readEvent
-
-                // conditions we wait on.
-                EventWaitHandle writeEvent;    // threads waiting to aquire a write lock go here.
-                EventWaitHandle readEvent;     // threads waiting to aquire a read lock go here (will be released in bulk)
-
-                internal MyReaderWriterLock()
-                {
-                    // All state can start out zeroed.
-                }
-
-                internal void AcquireReaderLock(int millisecondsTimeout)
-                {
-                    EnterMyLock();
-                    for (; ;)
-                    {
-                        // We can enter a read lock if there are only read-locks have been given out
-                        // and a writer is not trying to get in.
-                        if (owners >= 0 && numWriteWaiters == 0)
-                        {
-                            // Good case, there is no contention, we are basically done
-                            owners++;       // Indicate we have another reader
-                            break;
-                        }
-
-                        // Drat, we need to wait.  Mark that we have waiters and wait.
-                        if (readEvent == null)      // Create the needed event
-                        {
-                            LazyCreateEvent(ref readEvent, false);
-                            continue;   // since we left the lock, start over.
-                        }
-
-                        WaitOnEvent(readEvent, ref numReadWaiters, millisecondsTimeout);
-                    }
-                    ExitMyLock();
-                }
-
-                internal void AcquireWriterLock(int millisecondsTimeout)
-                {
-                    EnterMyLock();
-                    for (; ;)
-                    {
-                        if (owners == 0)
-                        {
-                            // Good case, there is no contention, we are basically done
-                            owners = -1;    // indicate we have a writer.
-                            break;
-                        }
-
-                        // Drat, we need to wait.  Mark that we have waiters and wait.
-                        if (writeEvent == null)     // create the needed event.
-                        {
-                            LazyCreateEvent(ref writeEvent, true);
-                            continue;   // since we left the lock, start over.
-                        }
-
-                        WaitOnEvent(writeEvent, ref numWriteWaiters, millisecondsTimeout);
-                    }
-                    ExitMyLock();
-                }
-
-                internal void ReleaseReaderLock()
-                {
-                    EnterMyLock();
-                    Debug.Assert(owners > 0, "ReleasingReaderLock: releasing lock and no read lock taken");
-                    --owners;
-                    ExitAndWakeUpAppropriateWaiters();
-                }
-
-                internal void ReleaseWriterLock()
-                {
-                    EnterMyLock();
-                    Debug.Assert(owners == -1, "Calling ReleaseWriterLock when no write lock is held");
-                    owners++;
-                    ExitAndWakeUpAppropriateWaiters();
-                }
-
-                /// <summary>
-                /// A routine for lazily creating a event outside the lock (so if errors
-                /// happen they are outside the lock and that we don't do much work
-                /// while holding a spin lock).  If all goes well, reenter the lock and
-                /// set 'waitEvent'
-                /// </summary>
-                private void LazyCreateEvent(ref EventWaitHandle waitEvent, bool makeAutoResetEvent)
-                {
-                    Debug.Assert(myLock != 0, "Lock must be held");
-                    Debug.Assert(waitEvent == null, "Wait event must be null");
-
-                    ExitMyLock();
-                    EventWaitHandle newEvent;
-                    if (makeAutoResetEvent)
-                        newEvent = new AutoResetEvent(false);
-                    else
-                        newEvent = new ManualResetEvent(false);
-                    EnterMyLock();
-                    if (waitEvent == null)          // maybe someone snuck in.
-                        waitEvent = newEvent;
-                }
-
-                /// <summary>
-                /// Waits on 'waitEvent' with a timeout of 'millisceondsTimeout.
-                /// Before the wait 'numWaiters' is incremented and is restored before leaving this routine.
-                /// </summary>
-                private void WaitOnEvent(EventWaitHandle waitEvent, ref uint numWaiters, int millisecondsTimeout)
-                {
-                    Debug.Assert(myLock != 0, "Lock must be held");
-
-                    waitEvent.Reset();
-                    numWaiters++;
-
-                    bool waitSuccessful = false;
-                    ExitMyLock();      // Do the wait outside of any lock
-                    try
-                    {
-                        if (!waitEvent.WaitOne(millisecondsTimeout))
-                            throw new ReaderWriterLockTimedOutException();
-
-                        waitSuccessful = true;
-                    }
-                    finally
-                    {
-                        EnterMyLock();
-                        --numWaiters;
-                        if (!waitSuccessful)        // We are going to throw for some reason.  Exit myLock.
-                            ExitMyLock();
-                    }
-                }
-
-                /// <summary>
-                /// Determines the appropriate events to set, leaves the locks, and sets the events.
-                /// </summary>
-                private void ExitAndWakeUpAppropriateWaiters()
-                {
-                    Debug.Assert(myLock != 0, "Lock must be held");
-
-                    if (owners == 0 && numWriteWaiters > 0)
-                    {
-                        ExitMyLock();      // Exit before signaling to improve efficiency (wakee will need the lock)
-                        writeEvent.Set();   // release one writer.
-                    }
-                    else if (owners >= 0 && numReadWaiters != 0)
-                    {
-                        ExitMyLock();    // Exit before signaling to improve efficiency (wakee will need the lock)
-                        readEvent.Set();  // release all readers.
-                    }
-                    else
-                        ExitMyLock();
-                }
-
-                private void EnterMyLock()
-                {
-                    if (Interlocked.CompareExchange(ref myLock, 1, 0) != 0)
-                        EnterMyLockSpin();
-                }
-
-                private void EnterMyLockSpin()
-                {
-                    for (int i = 0; ; i++)
-                    {
-                        if (i < 3 && Environment.ProcessorCount > 1)
-                            System.Threading.SpinWait.Spin(20);    // Wait a few dozen instructions to let another processor release lock.
-
-                        else
-                            System.Threading.SpinWait.Yield();
-
-                        if (Interlocked.CompareExchange(ref myLock, 1, 0) == 0)
-                            return;
-                    }
-                }
-                private void ExitMyLock()
-                {
-                    Debug.Assert(myLock != 0, "Exiting spin lock that is not held");
-                    myLock = 0;
-                }
-            };
         }
 #endif
 
@@ -1233,7 +1027,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static IActivationFactory GetActivationFactory(Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             __ComObject factory = FactoryCache.Get().GetActivationFactory(
                 type.FullName,

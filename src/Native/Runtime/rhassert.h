@@ -26,6 +26,8 @@
 
 void Assert(const char * expr, const char * file, unsigned int line_num, const char * message);
 
+void NYI_Assert();
+
 #else
 
 #define ASSERT(expr)
@@ -52,10 +54,4 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
 
-#define RhFailFast()  RhFailFast2(NULL, NULL)
-
-#define RhFailFast2(pExRec, pExCtx) \
-{ \
-    ASSERT_UNCONDITIONALLY("FailFast"); \
-    PalRaiseFailFastException((pExRec), (pExCtx), (pExRec)==NULL ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0); \
-}
+#define RhFailFast() PalRaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)

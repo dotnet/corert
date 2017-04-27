@@ -8,12 +8,13 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         private static class MethodFlags
         {
@@ -314,6 +315,19 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                MethodAttributes attributes = Attributes;
+                return attributes.IsRuntimeSpecialName() 
+                    && attributes.IsPublic()
+                    && Signature.Length == 0
+                    && Name == ".ctor"
+                    && !_type.IsAbstract;
+            }
+        }
+
         public MethodAttributes Attributes
         {
             get
@@ -412,8 +426,47 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
             Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
+            Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
             return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
+        }
+
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            MetadataReader metadataReader = MetadataReader;
+            
+            // Spot check the enums match
+            Debug.Assert((int)ParameterAttributes.In == (int)ParameterMetadataAttributes.In);
+            Debug.Assert((int)ParameterAttributes.Out == (int)ParameterMetadataAttributes.Out);
+            Debug.Assert((int)ParameterAttributes.Optional == (int)ParameterMetadataAttributes.Optional);
+            Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterMetadataAttributes.HasDefault);
+            Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterMetadataAttributes.HasFieldMarshal);
+
+            ParameterHandleCollection parameterHandles = metadataReader.GetMethodDefinition(_handle).GetParameters();
+            ParameterMetadata[] parameterMetadataArray = new ParameterMetadata[parameterHandles.Count];
+            int index = 0;
+            foreach (ParameterHandle parameterHandle in parameterHandles)
+            {
+                Parameter parameter = metadataReader.GetParameter(parameterHandle);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(parameter);
+                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterMetadataAttributes)parameter.Attributes, marshalAsDescriptor);
+                parameterMetadataArray[index++] = data;
+            }
+            return parameterMetadataArray;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(Parameter parameter)
+        {
+            if ((parameter.Attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
+                MarshalAsDescriptor marshalAs = parser.ParseMarshalAsDescriptor();
+                Debug.Assert(marshalAs != null);
+                return marshalAs;
+            }
+            return null;
         }
     }
 }

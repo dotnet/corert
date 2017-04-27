@@ -40,6 +40,9 @@ namespace Internal.TypeSystem
             "RuntimeFieldHandle",
 
             "Exception",
+
+            "TypedReference",
+            "ByReference`1",
         };
 
         private MetadataType[] _wellKnownTypes;
@@ -53,7 +56,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        public void SetSystemModule(ModuleDesc systemModule)
+        public virtual void SetSystemModule(ModuleDesc systemModule)
         {
             InitializeSystemModule(systemModule);
 

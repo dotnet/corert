@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a single PInvoke ModuleFixupCell as defined in the core library.
     /// </summary>
-    public class PInvokeModuleFixupNode : ObjectNode, ISymbolNode
+    public class PInvokeModuleFixupNode : ObjectNode, ISymbolDefinitionNode
     {
         public string _moduleName;
 
@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
@@ -34,12 +34,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.AddSymbol(this);
 
-            ISymbolNode nameSymbol = factory.Target.IsWindows ?
-                factory.ConstantUtf16String(_moduleName) :
-                factory.ConstantUtf8String(_moduleName);
+            ISymbolNode nameSymbol = factory.ConstantUtf8String(_moduleName);
 
             //
             // Emit a ModuleFixupCell struct

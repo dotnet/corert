@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
         {
             LowLevelDictionary<string, Handle> dict = CaseInsensitiveTypeDictionary;
             Handle typeDefOrForwarderHandle;
-            if (!dict.TryGetValue(fullName.ToLower(), out typeDefOrForwarderHandle))
+            if (!dict.TryGetValue(fullName.ToLowerInvariant(), out typeDefOrForwarderHandle))
             {
                 return null;
             }
@@ -106,7 +106,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             /*
                     foreach (TypeForwarderHandle typeForwarderHandle in namespaceDefinition.TypeForwarders)
                     {
-                        string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLower();
+                        string fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLowerInvariant();
                         QHandle existingValue;
                         if (!dict.TryGetValue(fullName, out existingValue))
                         {

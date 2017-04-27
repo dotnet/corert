@@ -56,7 +56,7 @@ namespace System
 
             uint index = 0;
             TIME_DYNAMIC_ZONE_INFORMATION tdzi;
-            while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.Errors.ERROR_NO_MORE_ITEMS)
+            while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.Errors.ERROR_NO_MORE_ITEMS)
             {
                 TimeZoneInformation timeZoneInformation = new TimeZoneInformation(tdzi);
                 TimeZoneInfo value;
@@ -74,7 +74,7 @@ namespace System
             }
             if (id.Length == 0 || id.Length > 255 || id.Contains("\0"))
             {
-                throw new ArgumentException(String.Format(SR.Argument_TimeZoneNotFound, id));
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingRegistryData, id));
             }
 
             //
@@ -109,7 +109,7 @@ namespace System
                     }
                 }
             }
-            throw new ArgumentException(String.Format(SR.Argument_TimeZoneNotFound, id));
+            throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingRegistryData, id));
         }
 
         private static bool EqualStandardDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)

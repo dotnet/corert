@@ -20,6 +20,7 @@ typedef UInt64 CORDB_ADDRESS;
 #ifndef DACCESS_COMPILE
 
 struct DebugEventPayload;
+class Module;
 
 class DebugEventSource
 {
@@ -30,7 +31,7 @@ public:
     static void SendExceptionCatchHandlerFoundEvent(CORDB_ADDRESS handlerIP, CORDB_ADDRESS HandlerFrameSP);
     static void SendExceptionUnhandledEvent();
     static void SendExceptionFirstPassFrameEnteredEvent(CORDB_ADDRESS ipInFrame, CORDB_ADDRESS frameSP);
-
+    static void SendCustomEvent(void* payload, int length);
 private:
     static void SendRawEvent(DebugEventPayload* payload);
 };

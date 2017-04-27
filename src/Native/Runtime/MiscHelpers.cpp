@@ -62,6 +62,15 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
+EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
+{
+    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
+    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+        "You must p/invoke to RhFlushProcessWriteBuffers");
+
+    PalFlushProcessWriteBuffers();
+}
+
 // Return the DispatchMap pointer of a type
 COOP_PINVOKE_HELPER(DispatchMap*, RhGetDispatchMapForType, (EEType * pEEType))
 {
@@ -75,7 +84,7 @@ COOP_PINVOKE_HELPER(DispatchMap*, RhGetDispatchMapForType, (EEType * pEEType))
 // modules are available based on the return count. It is also possible to call this method without an array,
 // in which case just the module count is returned (note that it's still possible for the module count to
 // increase between calls to this method).
-COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
+COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
 {
     // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
 
@@ -99,11 +108,69 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
     }
     END_FOREACH_MODULE
 
+    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
+
+    RuntimeInstance::OsModuleList osModules = GetRuntimeInstance()->GetOsModuleList();
+    
+    for (RuntimeInstance::OsModuleList::Iterator iter = osModules.Begin(); iter != osModules.End(); iter++)
+    {
+        if (pResultArray && (cModules < cResultArrayElements))
+            pResultElements[cModules] = iter->m_osModule;
+        cModules++;
+    }
+
     return cModules;
 }
 
-COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
+// Get the list of currently loaded Redhawk modules (as OS HMODULE handles or TypeManager pointers as appropriate).
+//  The caller provides a reference
+// to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
+// that is less than, equal to or greater than the number of elements in the array). If there are more modules
+// loaded than the array will hold then the array is filled to capacity and the caller can tell further
+// modules are available based on the return count. It is also possible to call this method without an array,
+// in which case just the module count is returned (note that it's still possible for the module count to
+// increase between calls to this method).
+COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
 {
+    // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
+
+    // If a result array is passed then it should be an array type with pointer-sized components that are not
+    // GC-references.
+    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
+    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
+    ASSERT(!pResultArray || pResultArray->get_EEType()->get_ComponentSize() == sizeof(void*));
+
+    UInt32 cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
+    TypeManagerHandle * pResultElements = pResultArray ? (TypeManagerHandle*)(pResultArray + 1) : NULL;
+
+    UInt32 cModules = 0;
+
+    FOREACH_MODULE(pModule)
+    {
+        if (pResultArray && (cModules < cResultArrayElements))
+            pResultElements[cModules] = TypeManagerHandle::Create(pModule->GetOsModuleHandle());
+
+        cModules++;
+    }
+    END_FOREACH_MODULE
+
+    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
+
+    RuntimeInstance::TypeManagerList typeManagers = GetRuntimeInstance()->GetTypeManagerList();
+    
+    for (RuntimeInstance::TypeManagerList::Iterator iter = typeManagers.Begin(); iter != typeManagers.End(); iter++)
+    {
+        if (pResultArray && (cModules < cResultArrayElements))
+            pResultElements[cModules] = TypeManagerHandle::Create(iter->m_pTypeManager);
+        cModules++;
+    }
+
+    return cModules;
+}
+
+COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
+{
+    // TODO, this will always return nullptr in TypeManager based systems.
     Module * pModule = GetRuntimeInstance()->FindModuleByAddress(pPointerVal);
 
     if (pModule != NULL)
@@ -112,11 +179,16 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
+COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 {
 #if CORERT
-    return (HANDLE)(pEEType->GetTypeManager());
+    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
 #else
+#if EETYPE_TYPE_MANAGER
+    if (pEEType->HasTypeManager())
+        return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+#endif
+
     // For dynamically created types, return the module handle that contains the template type
     if (pEEType->IsDynamicType())
         pEEType = pEEType->get_DynamicTemplateType();
@@ -137,65 +209,107 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 #endif // !CORERT
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (EEType * pEEType))
 {
 #if CORERT
-    ReadyToRunSectionType section =
-        (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
-    ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
-
-    TypeManager* pModule = (TypeManager*)hOsModule;
-
-    int length;
-    void* pBlob;
-    pBlob = pModule->GetModuleSection(section, &length);
-
-    *ppbBlob = (UInt8*)pBlob;
-    *pcbBlob = (UInt32)length;
-
-    return pBlob != NULL;
+    return *pEEType->GetTypeManagerPtr();
 #else
-    // Search for the Redhawk module contained by the OS module.
+#if EETYPE_TYPE_MANAGER
+    if (pEEType->HasTypeManager())
+        return *pEEType->GetTypeManagerPtr();
+#endif
+
+    // For dynamically created types, return the module handle that contains the template type
+    if (pEEType->IsDynamicType())
+        pEEType = pEEType->get_DynamicTemplateType();
+
+    if (pEEType->get_DynamicModule() != nullptr)
+    {
+        // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
+        RhFailFast();
+        return TypeManagerHandle::Null();
+    }
+
     FOREACH_MODULE(pModule)
     {
-        if (pModule->GetOsModuleHandle() == hOsModule)
-        {
-            // Found a module match. Look through the blobs for one with a matching ID.
-            UInt32 cbBlobs;
-            BlobHeader * pBlob = pModule->GetReadOnlyBlobs(&cbBlobs);
-
-            while (cbBlobs)
-            {
-                UInt32 cbTotalBlob = sizeof(BlobHeader) + pBlob->m_size;
-                ASSERT(cbBlobs >= cbTotalBlob);
-
-                if (pBlob->m_id == blobId)
-                {
-                    // Found the matching blob, return it.
-                    *ppbBlob = (UInt8*)(pBlob + 1);
-                    *pcbBlob = pBlob->m_size;
-                    return TRUE;
-                }
-
-                cbBlobs -= cbTotalBlob;
-                pBlob = (BlobHeader*)((UInt8*)pBlob + cbTotalBlob);
-            }
-
-            // If we get here then we found a module match but didn't find a blob with a matching ID. That's a
-            // non-catastrophic error.
-            *ppbBlob = NULL;
-            *pcbBlob = 0;
-            return FALSE;
-        }
+        if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
+            return TypeManagerHandle::Create(pModule->GetOsModuleHandle());
     }
     END_FOREACH_MODULE
+
+    // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
+    RhFailFast();
+    return TypeManagerHandle::Null();
+#endif // !CORERT
+}
+
+COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
+{
+    TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
+
+    if (typeManagerHandle.IsTypeManager())
+    {
+        ReadyToRunSectionType section =
+            (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
+        ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
+
+        TypeManager* pModule = typeManagerHandle.AsTypeManager();
+
+        int length;
+        void* pBlob;
+        pBlob = pModule->GetModuleSection(section, &length);
+
+        *ppbBlob = (UInt8*)pBlob;
+        *pcbBlob = (UInt32)length;
+
+        return pBlob != NULL;
+    }
+#if !CORERT
+    else
+    {
+        HANDLE hOsModule = typeManagerHandle.AsOsModule();
+        // Search for the Redhawk module contained by the OS module.
+        FOREACH_MODULE(pModule)
+        {
+            if (pModule->GetOsModuleHandle() == hOsModule)
+            {
+                // Found a module match. Look through the blobs for one with a matching ID.
+                UInt32 cbBlobs;
+                BlobHeader * pBlob = pModule->GetReadOnlyBlobs(&cbBlobs);
+
+                while (cbBlobs)
+                {
+                    UInt32 cbTotalBlob = sizeof(BlobHeader) + pBlob->m_size;
+                    ASSERT(cbBlobs >= cbTotalBlob);
+
+                    if (pBlob->m_id == blobId)
+                    {
+                        // Found the matching blob, return it.
+                        *ppbBlob = (UInt8*)(pBlob + 1);
+                        *pcbBlob = pBlob->m_size;
+                        return TRUE;
+                    }
+
+                    cbBlobs -= cbTotalBlob;
+                    pBlob = (BlobHeader*)((UInt8*)pBlob + cbTotalBlob);
+                }
+
+                // If we get here then we found a module match but didn't find a blob with a matching ID. That's a
+                // non-catastrophic error.
+                *ppbBlob = NULL;
+                *pcbBlob = 0;
+                return FALSE;
+            }
+        }
+        END_FOREACH_MODULE
+    }
+#endif // !CORERT
 
     // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
     // (which could lead to the wrong blob being returned in some cases).
     RhFailFast();
 
     return FALSE;
-#endif // !CORERT
 }
 
 // This helper is not called directly but is used by the implementation of RhpCheckCctor to locate the
@@ -203,17 +317,13 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8
 // to code in the caller's module and can be used in the lookup.
 COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
 {
-    // Locate the calling module from the context structure address (which is in writeable memory in the
+    // Locate the calling module from the context structure address (which is in writable memory in the
     // module image).
-    Module * pModule = GetRuntimeInstance()->FindModuleByCodeAddress(pReturnAddress);
-    ASSERT(pModule);
-
-    // Locate the classlib module from the calling module.
-    Module * pClasslibModule = pModule->GetClasslibModule();
-    ASSERT(pClasslibModule);
+    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pReturnAddress);
+    ASSERT(pCodeManager);
 
     // Lookup the callback registered by the classlib.
-    void * pCallback = pClasslibModule->GetClasslibCheckStaticClassConstruction();
+    void * pCallback = pCodeManager->GetClasslibFunction(ClasslibFunctionId::CheckStaticClassConstruction);
 
     // We have no fallback path if we got here but the classlib doesn't implement the callback.
     if (pCallback == NULL)
@@ -550,7 +660,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
         else
             InlineBackwardGCSafeCopy(pDestinationData, pSourceData, size);
 
-        InlinedBulkWriteBarrier(pDestinationData, (UInt32)size);
+        InlinedBulkWriteBarrier(pDestinationData, size);
     }
     else
     {
@@ -639,19 +749,24 @@ COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UIn
     return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
 }
 
-#ifdef CORERT
-COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManager* pModule, Int32 headerId, Int32* length))
+COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, Int32 headerId, Int32* length))
 {
-    return pModule->GetModuleSection((ReadyToRunSectionType)headerId, length);
+    return pModule->AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
 }
-
-COOP_PINVOKE_HELPER(void*, RhpCreateTypeManager, (void* pModuleHeader))
-{
-    return TypeManager::Create(pModuleHeader);
-}
-#endif
 
 COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh))
 {
     ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
 }
+
+#ifdef PLATFORM_UNIX
+
+// Function to call when a thread is detached from the runtime
+ThreadExitCallback g_threadExitCallback;
+
+COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
+{
+    g_threadExitCallback = (ThreadExitCallback)pCallback;
+}
+
+#endif // PLATFORM_UNIX

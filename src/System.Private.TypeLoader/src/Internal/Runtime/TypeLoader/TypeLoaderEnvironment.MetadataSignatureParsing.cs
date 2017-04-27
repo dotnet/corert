@@ -5,12 +5,15 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 
-using global::Internal.Runtime.CompilerServices;
-using global::Internal.Metadata.NativeFormat;
-using global::Internal.NativeFormat;
-using global::Internal.Runtime.TypeLoader;
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
+using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
+using Internal.Runtime.TypeLoader;
+using Internal.Runtime.Augments;
+
+using System.Reflection.Runtime.General;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -18,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
 {
     internal static class SigParsing
     {
-        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, IntPtr moduleHandle, uint offset)
+        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, uint offset)
         {
             RuntimeTypeHandle typeHandle;
 
@@ -60,6 +63,33 @@ namespace Internal.Runtime.TypeLoader
         /// true = this is a generic method
         /// </summary>
         private readonly bool _isGeneric;
+
+        public MethodSignatureComparer(
+            QMethodDefinition methodHandle)
+        {
+            if (methodHandle.IsNativeFormatMetadataBased)
+            {
+                _metadataReader = methodHandle.NativeFormatReader;
+                _methodHandle = methodHandle.NativeFormatHandle;
+
+                _method = _methodHandle.GetMethod(_metadataReader);
+
+                _methodSignature = _method.Signature.GetMethodSignature(_metadataReader);
+                _isGeneric = (_methodSignature.GenericParameterCount != 0);
+
+                // Precalculate initial method attributes used in signature queries
+                _isStatic = (_method.Flags & MethodAttributes.Static) != 0;
+            }
+            else
+            {
+                _metadataReader = null;
+                _methodHandle = default(MethodHandle);
+                _method = default(Method);
+                _methodSignature = default(MethodSignature);
+                _isGeneric = false;
+                _isStatic = false;
+            }
+        }
 
         /// <summary>
         /// Construct a comparer between NativeFormat metadata methods and native layouts
@@ -106,7 +136,7 @@ namespace Internal.Runtime.TypeLoader
 
             uint parameterCount = parser.GetUnsigned();
 
-            if (!CompareTypeSigWithType(ref parser, signature.ModuleHandle, _methodSignature.ReturnType))
+            if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), _methodSignature.ReturnType))
             {
                 return false;
             }
@@ -119,7 +149,7 @@ namespace Internal.Runtime.TypeLoader
                     // The metadata-defined _method has more parameters than the native layout
                     return false;
                 }
-                if (!CompareTypeSigWithType(ref parser, signature.ModuleHandle, parameterSignature))
+                if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), parameterSignature))
                     return false;
                 parameterIndexToMatch++;
             }
@@ -136,12 +166,13 @@ namespace Internal.Runtime.TypeLoader
         internal static NativeParser GetNativeParserForSignature(RuntimeSignature signature)
         {
             Debug.Assert(signature.IsNativeLayoutSignature);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(signature.ModuleHandle));
 
-            NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(signature.ModuleHandle, ReflectionMapBlob.NativeLayoutInfo);
+            NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo);
             return new NativeParser(reader, signature.NativeLayoutOffset);
         }
 
-        private bool CompareTypeSigWithType(ref NativeParser parser, IntPtr moduleHandle, Handle typeHandle)
+        private bool CompareTypeSigWithType(ref NativeParser parser, TypeManagerHandle moduleHandle, Handle typeHandle)
         {
             while (typeHandle.HandleType == HandleType.TypeSpecification)
             {
@@ -323,7 +354,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             case HandleType.TypeDefinition:
                                 if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
-                                    _metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader), out type2))
+                                    new QTypeDefinition(_metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader)), out type2))
                                 {
                                     return false;
                                 }

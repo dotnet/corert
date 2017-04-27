@@ -18,7 +18,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterTypeHandle, TypeContext typeContext)
+        private RuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
         }
@@ -53,8 +53,8 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                // COMPAT: Desktop actually returns true here, but that behavior makes no sense.
-                return false;
+                // Compat: returning "true" makes no sense but this is how it's always been.
+                return true;
             }
         }
 
@@ -63,6 +63,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             get
             {
                 return null;
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x08000000; // nil ParamDef token
             }
         }
     }

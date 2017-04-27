@@ -35,14 +35,14 @@ namespace System.Reflection.Runtime.MethodInfos
         /// <summary>
         /// Return an array of the types of the return value and parameter types.
         /// </summary>
-        QTypeDefRefOrSpec[] QualifiedMethodSignature { get; }
+        QSignatureTypeHandle[] QualifiedMethodSignature { get; }
 
         /// <summary>
         /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
         /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParamterInfoArray. Do remember to use contextMethod
         /// instead of using the one internal to the RuntimeMethodCommon, as the runtime may pass in a subtly different context.
         /// </summary>
-        void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QTypeDefRefOrSpec[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
+        void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QSignatureTypeHandle[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);
 
         String Name { get; }
 
@@ -53,5 +53,13 @@ namespace System.Reflection.Runtime.MethodInfos
         TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
 
         RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);
+
+        int MetadataToken { get; }
+
+        /// <summary>
+        /// Retrieves the RuntimeMethodHandle for the given method. Non-null generic args should only be passed for instantiated
+        /// generic methods.
+        /// </summary>
+        RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs);
     }
 }

@@ -83,20 +83,6 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                for (int i = 0; i < _instantiation.Length; i++)
-                {
-                    if (_instantiation[i].ContainsGenericVariables)
-                    {
-                        flags |= TypeFlags.ContainsGenericVariables;
-                        break;
-                    }
-                }
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 flags |= _typeDef.Category;
@@ -154,6 +140,14 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
         }
 
+        public override MethodDesc GetDefaultConstructor()
+        {
+            MethodDesc typicalCtor = _typeDef.GetDefaultConstructor();
+            if (typicalCtor == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalCtor, this);
+        }
+
         public override MethodDesc GetFinalizer()
         {
             MethodDesc typicalFinalizer = _typeDef.GetFinalizer();
@@ -180,6 +174,14 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert(typeInHierarchy is InstantiatedType);
                 return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer.GetTypicalMethodDefinition(), (InstantiatedType)typeInHierarchy);
+            }
+        }
+
+        public override bool HasFinalizer
+        {
+            get
+            {
+                return _typeDef.HasFinalizer;
             }
         }
 
@@ -303,6 +305,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typeDef.IsSealed;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _typeDef.IsAbstract;
             }
         }
 

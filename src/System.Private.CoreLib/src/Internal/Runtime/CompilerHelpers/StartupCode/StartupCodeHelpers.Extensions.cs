@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 
 using Internal.Runtime.Augments;
 
@@ -11,7 +10,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    internal partial class StartupCodeHelpers
+    public partial class StartupCodeHelpers
     {
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
         {
@@ -23,14 +22,12 @@ namespace Internal.Runtime.CompilerHelpers
             EnvironmentAugments.SetCommandLineArgs(args);
         }
 
-        internal static unsafe void InitializeCommandLineArgs(int argc, byte** argv)
+        internal static unsafe void InitializeCommandLineArgs(int argc, sbyte** argv)
         {
             string[] args = new string[argc];
             for (int i = 0; i < argc; ++i)
             {
-                byte* argval = argv[i];
-                int len = CStrLen(argval);
-                args[i] = Encoding.UTF8.GetString(argval, len);
+                args[i] = new string(argv[i]);
             }
             EnvironmentAugments.SetCommandLineArgs(args);
         }

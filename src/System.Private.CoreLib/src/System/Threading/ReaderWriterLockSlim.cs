@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics; // for TraceInformation
-using System.Threading;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
+
+// TODO: Delete this and use the implementation from CoreFX
 
 namespace System.Threading
 {
@@ -354,7 +356,7 @@ namespace System.Threading
 
             int spincount = 0;
 
-            for (; ;)
+            for (;;)
             {
                 // We can enter a read lock if there are only read-locks have been given out
                 // and a writer is not trying to get in.  
@@ -482,7 +484,7 @@ namespace System.Threading
             int spincount = 0;
             bool retVal = true;
 
-            for (; ;)
+            for (;;)
             {
                 if (IsWriterAcquired())
                 {
@@ -673,7 +675,7 @@ namespace System.Threading
 
             int spincount = 0;
 
-            for (; ;)
+            for (;;)
             {
                 //Once an upgrade lock is taken, it's like having a reader lock held
                 //until upgrade or downgrade operations are performed.              
@@ -1056,15 +1058,15 @@ namespace System.Threading
             {
                 if (i < LockSpinCount && pc > 1)
                 {
-                    System.Threading.SpinWait.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
+                    RuntimeThread.SpinWait(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
                 }
                 else if (i < (LockSpinCount + LockSleep0Count))
                 {
-                    Interop.mincore.Sleep(0);   // Give up my quantum.  
+                    RuntimeThread.Sleep(0);   // Give up my quantum.  
                 }
                 else
                 {
-                    Interop.mincore.Sleep(1);   // Give up my quantum.  
+                    RuntimeThread.Sleep(1);   // Give up my quantum.  
                 }
 
                 if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
@@ -1087,15 +1089,15 @@ namespace System.Threading
             //Exponential backoff
             if ((SpinCount < 5) && (Environment.ProcessorCount > 1))
             {
-                System.Threading.SpinWait.Spin(LockSpinCycles * SpinCount);
+                RuntimeThread.SpinWait(LockSpinCycles * SpinCount);
             }
             else if (SpinCount < MaxSpinCount - 3)
             {
-                Interop.mincore.Sleep(0);
+                RuntimeThread.Sleep(0);
             }
             else
             {
-                Interop.mincore.Sleep(1);
+                RuntimeThread.Sleep(1);
             }
         }
 

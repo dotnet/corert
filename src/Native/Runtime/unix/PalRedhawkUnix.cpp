@@ -158,9 +158,6 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-// Key for the thread local storage of the attached thread pointer
-static pthread_key_t g_threadKey;
-
 extern bool PalQueryProcessorTopology();
 bool InitializeFlushProcessWriteBuffers();
 
@@ -413,14 +410,10 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
-// Destructor of the thread local object represented by the g_threadKey,
-// called when a thread is shut down
-void TlsObjectDestructor(void* data)
-{
-    ASSERT(data == pthread_getspecific(g_threadKey));
-
-    RuntimeThreadShutdown(data);
-}
+#if !HAVE_THREAD_LOCAL
+extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
+extern "C" void *__dso_handle;
+#endif
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
@@ -449,11 +442,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
         return false;
     }
 #endif // !USE_PORTABLE_HELPERS
-    int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
-    if (status != 0)
-    {
-        return false;
-    }
 
     return true;
 }
@@ -464,6 +452,35 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
 }
 
+#if HAVE_THREAD_LOCAL
+
+struct TlsDestructionMonitor
+{
+    void* m_thread = nullptr;
+
+    void SetThread(void* thread)
+    {
+        m_thread = thread;
+    }
+
+    ~TlsDestructionMonitor()
+    {
+        if (m_thread != nullptr)
+        {
+            RuntimeThreadShutdown(m_thread);
+        }
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+#endif // HAVE_THREAD_LOCAL
+
+// This thread local variable is used for delegate marshalling
+DECLSPEC_THREAD intptr_t tls_thunkData;
+
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered.
@@ -471,16 +488,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    ASSERT_MSG(attachedThread == NULL, "PalAttachThread called multiple times for the same thread");
-
-    int status = pthread_setspecific(g_threadKey, thread);
-    if (status != 0)
-    {
-        ASSERT_UNCONDITIONALLY("PalAttachThread failed to store thread pointer in thread local storage");
-        RhFailFast();
-    }
+#if HAVE_THREAD_LOCAL
+    tls_destructionMonitor.SetThread(thread);
+#else
+    __cxa_thread_atexit(RuntimeThreadShutdown, thread, &__dso_handle);
+#endif
 }
 
 // Detach thread from PAL.
@@ -491,26 +503,12 @@ extern "C" void PalAttachThread(void* thread)
 //  true if the thread was detached, false if there was no attached thread
 extern "C" bool PalDetachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    if (attachedThread == thread)
+    UNREFERENCED_PARAMETER(thread);
+    if (g_threadExitCallback != nullptr)
     {
-        int status = pthread_setspecific(g_threadKey, NULL);
-        if (status != 0)
-        {
-            ASSERT_UNCONDITIONALLY("PalDetachThread failed to clear thread pointer in thread local storage");
-            RhFailFast();
-        }
-        return true;
+        g_threadExitCallback();
     }
-
-    if (attachedThread != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("PalDetachThread called with different thread pointer than PalAttachThread");
-        RhFailFast();
-    }
-
-    return false;
+    return true;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
@@ -527,6 +525,21 @@ REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
+{
+    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+    void *virtualAddress, 
+    int thunkSize,
+    int thunksPerBlock,
+    int thunkBlockSize,
+    int thunkBlocksPerMapping)
+{
+    return UInt32_TRUE;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
@@ -704,73 +717,48 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return moduleHandle;
 }
 
+REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+{
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    write(STDERR_FILENO, message, sizeof(message));
+}
+
+#ifdef __linux__
+size_t
+GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheSize = 0;
+
+#ifdef _SC_LEVEL1_DCACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL2_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL3_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL4_CACHE_SIZE
+    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
+#endif
+    return cacheSize;
+}
+#endif
+
 bool QueryCacheSize()
 {
     bool success = true;
     g_cbLargestOnDieCache = 0;
 
 #ifdef __linux__
-    DIR* cpuDir = opendir("/sys/devices/system/cpu");
-    if (cpuDir == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");
-        return false;
-    }
 
-    dirent* cpuEntry;
-    // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
-    while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
-    {
-        if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
-        {
-            char cpuCachePath[64] = "/sys/devices/system/cpu/";
-            strcat(cpuCachePath, cpuEntry->d_name);
-            strcat(cpuCachePath, "/cache");
-            DIR* cacheDir = opendir(cpuCachePath);
-            if (cacheDir == nullptr)
-            {
-                success = false;
-                break;
-            }
-
-            strcat(cpuCachePath, "/");
-            int cpuCacheBasePathLength = strlen(cpuCachePath);
-
-            dirent* cacheEntry;
-            // For all entries in the directory
-            while ((cacheEntry = readdir(cacheDir)) != nullptr)
-            {
-                if (strncmp(cacheEntry->d_name, "index", 5) == 0)
-                {
-                    cpuCachePath[cpuCacheBasePathLength] = '\0';
-                    strcat(cpuCachePath, cacheEntry->d_name);
-                    strcat(cpuCachePath, "/size");
-
-                    int fd = open(cpuCachePath, O_RDONLY);
-                    if (fd < 0)
-                    {
-                        success = false;
-                        break;
-                    }
-
-                    char cacheSizeStr[16];
-                    int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
-                    cacheSizeStr[bytesRead] = '\0';
-
-                    // Parse the cache size that is formatted as a number followed by the K letter
-                    char* lastChar;
-                    int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
-                    ASSERT(*lastChar == 'K');
-                    g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
-
-                    close(fd);
-                }
-            }
-
-            closedir(cacheDir);
-        }
-    }
-    closedir(cpuDir);
+    g_cbLargestOnDieCache = GetLogicalProcessorCacheSizeFromOS();
+#ifndef _ARM_
+    // TODO Some systems on arm does not give the info about cache sizes by this method so we need to find another way
+    if (g_cbLargestOnDieCache == 0)
+        success = false;
+#endif
 
 #elif HAVE_SYSCTL
 
@@ -791,7 +779,7 @@ bool QueryCacheSize()
         }
     }
 #else
-#error Don't know how to get cache size on this platform
+#error Do not know how to get cache size on this platform
 #endif // __linux__
 
     // TODO: implement adjusted cache size
@@ -1457,13 +1445,12 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
 {
     ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
 
@@ -1474,7 +1461,7 @@ void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignme
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
 
-    void * pRetVal = mmap(address, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
     if (pRetVal != NULL)
     {

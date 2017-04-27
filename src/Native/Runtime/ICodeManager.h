@@ -75,6 +75,7 @@ enum class ClasslibFunctionId
     FailFast = 1,
     UnhandledExceptionHandler = 2,
     AppendExceptionStackFrame = 3,
+    CheckStaticClassConstruction = 4,
 };
 
 class ICodeManager

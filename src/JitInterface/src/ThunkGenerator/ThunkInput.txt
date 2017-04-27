@@ -81,6 +81,7 @@ unsigned*,ref uint
 DWORD*,ref uint,unsigned int*
 CORJIT_FLAGS*,ref CORJIT_FLAGS,void*
 CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP,void*
+CORINFO_LOOKUP*,ref CORINFO_LOOKUP,void*
 CORINFO_LOOKUP_KIND*,ref CORINFO_LOOKUP_KIND,void*
 CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
@@ -100,7 +101,7 @@ const CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC,const void*
 int*,ref int
 unsigned int*,ref uint
 
-CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_**,void**
+CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*,void**
 
 ICorJitInfo::ProfileBuffer**,ref ProfileBuffer*,void**
 
@@ -169,6 +170,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection        );
+    CORINFO_METHOD_HANDLE resolveVirtualMethod(            CORINFO_METHOD_HANDLE       virtualMethod,          CORINFO_CLASS_HANDLE        implementingClass,            CORINFO_CONTEXT_HANDLE      ownerType);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , bool * pMustExpand);
     bool isInSIMDModule(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
@@ -219,7 +221,7 @@ FUNCTIONS
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
-    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_CONST_LOOKUP *pLookup)
+    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)

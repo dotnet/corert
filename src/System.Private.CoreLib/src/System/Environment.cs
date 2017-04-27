@@ -33,10 +33,7 @@ namespace System
         Machine = 2,
     }
 
-    // Environment is marked as Eager to allow Lock to read the current
-    // thread ID, since Lock is used in ClassConstructorRunner.Cctor.GetCctor
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemEnvironment)]
-    public static partial class Environment
+    internal static partial class Environment
     {
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.
@@ -50,11 +47,6 @@ namespace System
             {
                 return (int)TickCount64;
             }
-        }
-
-        public static string[] GetCommandLineArgs()
-        {
-            return EnvironmentAugments.GetCommandLineArgs();
         }
 
         //// Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
@@ -85,11 +77,11 @@ namespace System
         // TODO: Consider flushing the executionIdCache on Wait operations or similar 
         // actions that are likely to result in changing the executing core
         [ThreadStatic]
-        static int t_executionIdCache;
+        private static int t_executionIdCache;
 
-        const int ExecutionIdCacheShift = 16;
-        const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
-        const int ExecutionIdRefreshRate = 5000;
+        private const int ExecutionIdCacheShift = 16;
+        private const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
+        private const int ExecutionIdRefreshRate = 5000;
 
         private static int RefreshExecutionId()
         {
@@ -154,19 +146,5 @@ namespace System
                 return EnvironmentAugments.StackTrace;
             }
         }
-
-        public static int ExitCode
-        {
-            get
-            {
-                return EnvironmentAugments.ExitCode;
-            }
-            set
-            {
-                EnvironmentAugments.ExitCode = value;
-            }
-        }
-
-        public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
     }
 }

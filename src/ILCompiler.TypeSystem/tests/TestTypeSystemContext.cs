@@ -30,7 +30,7 @@ namespace TypeSystemTests
         public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
         public TestTypeSystemContext(TargetArchitecture arch)
-            : base(new TargetDetails(arch, TargetOS.Unknown))
+            : base(new TargetDetails(arch, TargetOS.Unknown, TargetAbi.Unknown))
         {
         }
 
@@ -57,6 +57,9 @@ namespace TypeSystemTests
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
+            if (type == UniversalCanonType)
+                return UniversalCanonLayoutAlgorithm.Instance;
+
             return _metadataFieldLayout;
         }
 
@@ -114,5 +117,8 @@ namespace TypeSystemTests
                 return fieldType.IsGCPointer;
 
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }

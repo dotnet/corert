@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -41,13 +39,15 @@ namespace Internal.IL
             return null;
         }
 
+        /// <summary>
+        /// Provides method bodies for intrinsics recognized by the compiler.
+        /// It can return null if it's not an intrinsic recognized by the compiler,
+        /// but an intrinsic e.g. recognized by codegen.
+        /// </summary>
         private MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
         {
-            // Provides method bodies for intrinsics recognized by the compiler.
-            // It can return null if it's not an intrinsic recognized by the compiler,
-            // but an intrinsic e.g. recognized by codegen.
-
             Debug.Assert(method.IsIntrinsic);
+
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType == null)
                 return null;
@@ -70,6 +70,46 @@ namespace Internal.IL
                     {
                         if (owningType.Namespace == "System" && method.Name == "EETypePtrOf")
                             return EETypePtrOfIntrinsic.EmitIL(method);
+                    }
+                    break;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Provides method bodies for intrinsics recognized by the compiler that
+        /// are specialized per instantiation. It can return null if the intrinsic
+        /// is not recognized.
+        /// </summary>
+        private MethodIL TryGetPerInstantiationIntrinsicMethodIL(MethodDesc method)
+        {
+            Debug.Assert(method.IsIntrinsic);
+
+            MetadataType owningType = method.OwningType.GetTypeDefinition() as MetadataType;
+            if (owningType == null)
+                return null;
+
+            switch (owningType.Name)
+            {
+                case "RuntimeHelpers":
+                    {
+                        if (owningType.Namespace == "System.Runtime.CompilerServices" && method.Name == "IsReferenceOrContainsReferences")
+                        {
+                            TypeDesc elementType = method.Instantiation[0];
+
+                            // Fallback to non-intrinsic implementation for universal generics
+                            if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                                return null;
+
+                            bool result = elementType.IsGCPointer || 
+                                (elementType.IsDefType ? ((DefType)elementType).ContainsGCPointers : false);
+
+                            return new ILStubMethodIL(method, new byte[] {
+                                    result ? (byte)ILOpcode.ldc_i4_1 : (byte)ILOpcode.ldc_i4_0,
+                                    (byte)ILOpcode.ret }, 
+                                Array.Empty<LocalVariableDefinition>(), null);
+                        }
                     }
                     break;
             }
@@ -129,10 +169,12 @@ namespace Internal.IL
             else
             if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
-                if (method.IsIntrinsic && method.Name == "CreateInstanceIntrinsic")
+                // Intrinsics specialized per instantiation
+                if (method.IsIntrinsic)
                 {
-                    // CreateInstanceIntrinsic is specialized per instantiation
-                    return CreateInstanceIntrinsic.EmitIL(method);
+                    MethodIL methodIL = TryGetPerInstantiationIntrinsicMethodIL(method);
+                    if (methodIL != null)
+                        return methodIL;
                 }
 
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());

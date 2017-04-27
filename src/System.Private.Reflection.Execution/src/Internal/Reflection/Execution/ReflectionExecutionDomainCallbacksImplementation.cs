@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
 
@@ -15,6 +16,8 @@ using Internal.Runtime.TypeLoader;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.PayForPlayExperience;
 using Internal.Reflection.Extensions.NonPortable;
+
+using System.Reflection.Runtime.General;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -102,12 +105,21 @@ namespace Internal.Reflection.Execution
                 enumType = enumType.GetGenericTypeDefinition();
             }
 
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefinitionHandle;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(enumType.TypeHandle, out reader, out typeDefinitionHandle))
+            QTypeDefinition qTypeDefinition;
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(enumType.TypeHandle, out qTypeDefinition))
                 return null;
 
-            return new EnumInfoImplementation(enumType, reader, typeDefinitionHandle);
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+            {
+                return new NativeFormatEnumInfoImplementation(enumType, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
+            }
+#if ECMA_METADATA_SUPPORT
+            if (qTypeDefinition.IsEcmaFormatMetadataBased)
+            {
+                return new EcmaFormatEnumInfoImplementation(enumType, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
+            }
+#endif
+            return null;
         }
 
         // This is called from the ToString() helper of a RuntimeType that does not have full metadata.
@@ -120,7 +132,7 @@ namespace Internal.Reflection.Execution
         public sealed override String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
-            MethodHandle methodHandle;
+            QMethodDefinition methodHandle;
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
             if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
                 ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
@@ -374,6 +386,11 @@ namespace Internal.Reflection.Execution
         public sealed override MethodInfo GetDelegateMethod(Delegate del)
         {
             return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
+        }
+
+        public sealed override Exception GetExceptionForHR(int hr)
+        {
+            return Marshal.GetExceptionForHR(hr);
         }
 
         private ExecutionDomain _executionDomain;

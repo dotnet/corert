@@ -14,7 +14,19 @@ Module Name:
 #ifndef __GC_H
 #define __GC_H
 
+#ifdef Sleep
+// This is a funny workaround for the fact that "common.h" defines Sleep to be
+// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
+//
+// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
+// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
+// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
+// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
+#undef Sleep
+#endif // Sleep
+
 #include "gcinterface.h"
+#include "env/gcenv.os.h"
 #include "env/gcenv.ee.h"
 
 #ifdef FEATURE_STANDALONE_GC
@@ -124,6 +136,11 @@ class DacHeapWalker;
 #endif
 
 #define MP_LOCKS
+
+extern "C" uint32_t* g_gc_card_table;
+extern "C" uint8_t* g_gc_lowest_address;
+extern "C" uint8_t* g_gc_highest_address;
+extern "C" bool g_fFinalizerRunOnShutDown;
 
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
@@ -250,6 +267,11 @@ public:
         WRAPPER_NO_CONTRACT;
 
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
+    }
+
+    void SetFinalizeRunOnShutdown(bool value)
+    {
+        g_fFinalizerRunOnShutDown = value;
     }
 
 protected: 

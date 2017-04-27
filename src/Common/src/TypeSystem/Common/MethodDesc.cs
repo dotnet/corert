@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed class MethodSignature
+    public sealed partial class MethodSignature
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
@@ -313,26 +313,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether the method's <see cref="Instantiation"/>
-        /// contains any generic variables.
-        /// </summary>
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                // TODO: Cache?
-
-                Instantiation instantiation = this.Instantiation;
-                for (int i = 0; i < instantiation.Length; i++)
-                {
-                    if (instantiation[i].ContainsGenericVariables)
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this method is an instance constructor.
         /// </summary>
         public bool IsConstructor
@@ -342,6 +322,18 @@ namespace Internal.TypeSystem
                 // TODO: Precise check
                 // TODO: Cache?
                 return this.Name == ".ctor";
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a public parameterless instance constructor
+        /// on a non-abstract type.
+        /// </summary>
+        public virtual bool IsDefaultConstructor
+        {
+            get
+            {
+                return OwningType.GetDefaultConstructor() == this;
             }
         }
 
@@ -455,6 +447,14 @@ namespace Internal.TypeSystem
             get
             {
                 return GetTypicalMethodDefinition() == this;
+            }
+        }
+
+        public bool IsFinalizer
+        {
+            get
+            {
+                return OwningType.GetFinalizer() == this || OwningType.IsObject && Name == "Finalize";
             }
         }
 

@@ -22,7 +22,7 @@ namespace Internal.Runtime
         DefaultConstructorMap                       = 14,
         UnboxingAndInstantiatingStubMap             = 15,
         InvokeInstantiations                        = 16, // unused
-        PointerTypeMap                              = 17, // unused
+        DelegateMarshallingStubMap                  = 17,
         GenericVirtualMethodTable                   = 18,
         InterfaceGenericVirtualMethodTable          = 19,
 
@@ -30,14 +30,16 @@ namespace Internal.Runtime
         TypeTemplateMap                             = 21,
         GenericMethodsTemplateMap                   = 22,
         DynamicInvokeTemplateData                   = 23,
+        BlobIdResourceIndex                         = 24,
+        BlobIdResourceData                          = 25,
 
         //Native layout blobs:
-        NativeLayoutInfo                            = 30, // Created by MDIL binder
-        NativeReferences                            = 31, // Created by MDIL binder
-        GenericsHashtable                           = 32, // Created by MDIL binder
-        NativeStatics                               = 33, // Created by MDIL binder
-        StaticsInfoHashtable                        = 34, // Created by MDIL binder
-        GenericMethodsHashtable                     = 35, // Created by MDIL binder
-        ExactMethodInstantiationsHashtable          = 36, // Created by MDIL binder
+        NativeLayoutInfo                            = 30,
+        NativeReferences                            = 31,
+        GenericsHashtable                           = 32,
+        NativeStatics                               = 33,
+        StaticsInfoHashtable                        = 34,
+        GenericMethodsHashtable                     = 35,
+        ExactMethodInstantiationsHashtable          = 36,
     }
 }

@@ -112,5 +112,12 @@ namespace ILCompiler
         MonitorExit                 = 0xF9,
         MonitorEnterStatic          = 0xFA,
         MonitorExitStatic           = 0xFB,
+
+        // GVM lookup helper
+        GVMLookupForSlot            = 0x100,
+
+        // TypedReference
+        TypeHandleToRuntimeType     = 0x110,
+        GetRefAny                   = 0x111,
     }
 }

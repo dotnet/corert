@@ -171,6 +171,36 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     return pObject;
 }
 
+#ifdef _ARM_
+COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastMisalign, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numElements))
+{
+    Array * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+#endif
+
 //
 // PInvoke
 //
@@ -261,8 +291,9 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 
 // @TODO Implement CallDescrThunk
 EXTERN_C void * ReturnFromCallDescrThunk;
+#ifdef USE_PORTABLE_HELPERS
 void * ReturnFromCallDescrThunk;
-
+#endif
 // 
 // Return address hijacking
 //
@@ -378,17 +409,39 @@ COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddres
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThunkStubsBlockAddress))
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
-#endif
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+
+#ifdef CALLDESCR_FPARGREGSARERETURNREGS
+COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pReturnVoidStub, UIntNative* pReturnIntegerStub, UIntNative* pCommonStub))
+#else
+COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pReturnVoidStub, UIntNative* pReturnIntegerStub, UIntNative* pCommonStub, UIntNative* pReturnFloatingPointReturn4Thunk, UIntNative* pReturnFloatingPointReturn8Thunk))
+#endif
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+#endif
 
 COOP_PINVOKE_HELPER(void, RhpETWLogLiveCom, (Int32 eventType, void * ccwHandle, void * objectId, void * typeRawValue, void * iUnknown, void * vTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags))
 {

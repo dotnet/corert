@@ -25,6 +25,8 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "stressLog.h"
+#include "rhbinder.h"
+#include "eetype.h"
 
 // Find the code manager containing the given address, which might be a return address from a managed function. The
 // address may be to another managed function, or it may be to an unmanaged function. The address may also refer to 
@@ -38,7 +40,6 @@ static ICodeManager * FindCodeManagerForClasslibFunction(void * address)
     if (pCodeManager != NULL)
         return pCodeManager;
 
-    // @TODO: CORERT: Do we need to make this work for CoreRT?
     // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
     // necessary for EEType pointers and jump stubs.
     Module * pModule = pRI->FindModuleByAddress(address);
@@ -67,7 +68,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClaus
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
-COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFunctionId functionId))
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * address, ClasslibFunctionId functionId))
 {
     // Find the code manager for the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
@@ -81,6 +82,30 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFun
     }
 
     return pCodeManager->GetClasslibFunction(functionId);
+}
+
+// Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
+// implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
+// found via the provided address does not have the necessary exports.
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEtype, (EEType * pEEtype, ClasslibFunctionId functionId))
+{
+    if (pEEtype->HasTypeManager())
+    {
+        return pEEtype->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
+    }
+    else
+    {
+        RuntimeInstance * pRI = GetRuntimeInstance();
+        Module * pModule = pRI->FindModuleByAddress(pEEtype);
+        if (pModule != NULL)
+        {
+            return pModule->GetClasslibFunction(functionId);
+        }
+        else
+        {
+            return NULL;
+        }
+    }
 }
 
 COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack, ())
@@ -367,14 +392,11 @@ static UIntNative UnwindWriteBarrierToCaller(
 #endif
 #if defined(_AMD64_) || defined(_X86_)
     // simulate a ret instruction
-    UIntNative sp = pContext->GetSp();      // get the stack pointer
-    UIntNative adjustedFaultingIP = *(UIntNative *)sp - 5;   // call instruction will be 6 bytes - act as if start of call instruction + 1 were the faulting IP
+    UIntNative sp = pContext->GetSp();
+    UIntNative adjustedFaultingIP = *(UIntNative *)sp;
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
-#elif defined(_ARM_)
-    UIntNative adjustedFaultingIP = pContext->GetLr() - 2;   // bl instruction will be 4 bytes - act as if start of call instruction + 2 were the faulting IP
-#elif defined(_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-    UIntNative adjustedFaultingIP = -1;
+#elif defined(_ARM_) || defined(_ARM64_)
+    UIntNative adjustedFaultingIP = pContext->GetLr();
 #else
 #error "Unknown Architecture"
 #endif
@@ -390,11 +412,14 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
     ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
     if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
     {
+        // Make sure that the OS does not use our internal fault codes
+        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE);
+
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+                faultCode = pCodeManager ? STATUS_REDHAWK_NULL_REFERENCE : STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE;
             }
 
             if (pCodeManager == NULL)
@@ -405,7 +430,9 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
-            ASSERT_UNCONDITIONALLY("managed stack overflow");
+            // Do not use ASSERT_UNCONDITIONALLY here. It will crash because of it consumes too much stack.
+
+            PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
             RhFailFast();
         }
 
@@ -429,10 +456,16 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     UIntNative faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
     if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
     {
+        // Make sure that the OS does not use our internal fault codes
+        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE);
+
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+            {
+                faultCode = pCodeManager ? STATUS_REDHAWK_NULL_REFERENCE : STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE;
+            }
+
             if (pCodeManager == NULL)
             {
                 // we were AV-ing in a write barrier helper - unwind our way to our caller
@@ -441,8 +474,10 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
         {
-            ASSERT_UNCONDITIONALLY("managed stack overflow");
-            RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+            // Do not use ASSERT_UNCONDITIONALLY here. It will crash because of it consumes too much stack.
+
+            PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
 
         pExPtrs->ContextRecord->SetIp((UIntNative)&RhpThrowHwEx);
@@ -478,7 +513,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             // Generally any form of hardware exception within the runtime itself is considered a fatal error.
             // Note this includes the managed code within the runtime.
             ASSERT_UNCONDITIONALLY("Hardware exception raised inside the runtime.");
-            RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
     }
 

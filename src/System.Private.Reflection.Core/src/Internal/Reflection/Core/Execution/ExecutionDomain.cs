@@ -11,6 +11,10 @@ using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
+#if ECMA_METADATA_SUPPORT            
+using System.Reflection.Runtime.TypeInfos.EcmaFormat;
+using System.Reflection.Runtime.MethodInfos.EcmaFormat;
+#endif
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;
@@ -116,33 +120,58 @@ namespace Internal.Reflection.Core.Execution
         //
         // Retrieves the MethodBase for a given method handle. Helper to implement Delegate.GetMethodInfo()
         //
-        public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
-            MetadataReader reader = definingTypeInfo.Reader;
-            if (methodHandle.IsConstructor(reader))
+            RuntimeNamedMethodInfo runtimeNamedMethodInfo = null;
+
+            if (methodHandle.IsNativeFormatMetadataBased)
             {
-                return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo));
-            }
-            else
-            {
-                // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
-                RuntimeTypeInfo reflectedType = contextTypeInfo;
-                RuntimeNamedMethodInfo<NativeFormatMethodCommon> runtimeNamedMethodInfo = RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
-                if (!runtimeNamedMethodInfo.IsGenericMethod)
+                MethodHandle nativeFormatMethodHandle = methodHandle.NativeFormatHandle;
+                NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
+                MetadataReader reader = definingTypeInfo.Reader;
+                if (nativeFormatMethodHandle.IsConstructor(reader))
                 {
-                    return runtimeNamedMethodInfo;
+                    return RuntimePlainConstructorInfo<NativeFormatMethodCommon>.GetRuntimePlainConstructorInfo(new NativeFormatMethodCommon(nativeFormatMethodHandle, definingTypeInfo, contextTypeInfo));
                 }
                 else
                 {
-                    RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[genericMethodTypeArgumentHandles.Length];
-                    for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
-                    {
-                        genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
-                    }
-                    return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
+                    // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
+                    RuntimeTypeInfo reflectedType = contextTypeInfo;
+                    runtimeNamedMethodInfo = RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(nativeFormatMethodHandle, definingTypeInfo, contextTypeInfo), reflectedType);
                 }
+            }
+#if ECMA_METADATA_SUPPORT            
+            else
+            {
+                System.Reflection.Metadata.MethodDefinitionHandle ecmaFormatMethodHandle = methodHandle.EcmaFormatHandle;
+                EcmaFormatRuntimeNamedTypeInfo definingEcmaTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToEcmaFormatRuntimeNamedTypeInfo();
+                System.Reflection.Metadata.MetadataReader reader = definingEcmaTypeInfo.Reader;
+                if (ecmaFormatMethodHandle.IsConstructor(reader))
+                {
+                    return RuntimePlainConstructorInfo<EcmaFormatMethodCommon>.GetRuntimePlainConstructorInfo(new EcmaFormatMethodCommon(ecmaFormatMethodHandle, definingEcmaTypeInfo, contextTypeInfo));
+                }
+                else
+                {
+                    // RuntimeMethodHandles always yield methods whose ReflectedType is the DeclaringType.
+                    RuntimeTypeInfo reflectedType = contextTypeInfo;
+                    runtimeNamedMethodInfo = RuntimeNamedMethodInfo<EcmaFormatMethodCommon>.GetRuntimeNamedMethodInfo(new EcmaFormatMethodCommon(ecmaFormatMethodHandle, definingEcmaTypeInfo, contextTypeInfo), reflectedType);
+                }
+            }
+#endif
+
+            if (!runtimeNamedMethodInfo.IsGenericMethod || genericMethodTypeArgumentHandles == null)
+            {
+                return runtimeNamedMethodInfo;
+            }
+            else
+            {
+                RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[genericMethodTypeArgumentHandles.Length];
+                for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
+                {
+                    genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+                }
+                return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
             }
         }
 
@@ -163,11 +192,24 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         public Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefinitionHandle;
-            if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out reader, out typeDefinitionHandle))
+            QTypeDefinition qTypeDefinition;
+
+            if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out qTypeDefinition))
             {
-                return typeDefinitionHandle.GetNamedType(reader, typeHandle);
+#if ECMA_METADATA_SUPPORT
+                if (qTypeDefinition.IsNativeFormatMetadataBased)
+#endif
+                {
+                    return qTypeDefinition.NativeFormatHandle.GetNamedType(qTypeDefinition.NativeFormatReader, typeHandle);
+                }
+#if ECMA_METADATA_SUPPORT
+                else
+                {
+                    return System.Reflection.Runtime.TypeInfos.EcmaFormat.EcmaFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(qTypeDefinition.EcmaFormatReader, 
+                        qTypeDefinition.EcmaFormatHandle, 
+                        typeHandle);
+                }
+#endif
             }
             else
             {

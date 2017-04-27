@@ -14,11 +14,9 @@ using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ValueTypeFieldAccessorForUniversalThreadStaticFields : StaticFieldAccessor
+    internal sealed class ValueTypeFieldAccessorForUniversalThreadStaticFields : WritableStaticFieldAccessor
     {
         private int _fieldOffset;
         private RuntimeTypeHandle _declaringTypeHandle;
@@ -30,16 +28,15 @@ namespace Internal.Reflection.Execution.FieldAccessors
             _declaringTypeHandle = declaringTypeHandle;
         }
 
-        protected sealed override Object GetFieldBypassCctor(Object obj)
+        protected sealed override Object GetFieldBypassCctor()
         {
             IntPtr tlsFieldsStartAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, IntPtr.Zero);
             IntPtr fieldAddress = tlsFieldsStartAddress + _fieldOffset;
             return RuntimeAugments.LoadValueTypeField(fieldAddress, FieldTypeHandle);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value)
+        protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle);
             IntPtr tlsFieldsStartAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, IntPtr.Zero);
             IntPtr fieldAddress = tlsFieldsStartAddress + _fieldOffset;
             RuntimeAugments.StoreValueTypeField(fieldAddress, value, FieldTypeHandle);

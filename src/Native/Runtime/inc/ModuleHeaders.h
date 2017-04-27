@@ -46,6 +46,11 @@ enum class ReadyToRunSectionType
     InterfaceDispatchTable      = 203,
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
+    FrozenObjectRegion          = 206,
+    GCStaticDesc                = 207,
+    ThreadStaticOffsetRegion    = 208,
+    ThreadStaticGCDescRegion    = 209,
+    ThreadStaticIndex           = 210,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
     ReadonlyBlobRegionStart     = 300,

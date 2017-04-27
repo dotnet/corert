@@ -49,12 +49,13 @@ namespace ILCompiler.DependencyAnalysis
             if (IsStandardSection)
                 standardSectionPrefix = ".";
 
-            return new ObjectNodeSection(standardSectionPrefix + Name + "$" + key, Type, key);
+            return new ObjectNodeSection(standardSectionPrefix + Name, Type, key);
         }
 
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
+        public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
     }
 }

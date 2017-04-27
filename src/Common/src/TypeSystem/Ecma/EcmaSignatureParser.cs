@@ -109,7 +109,7 @@ namespace Internal.TypeSystem.Ecma
                         return _module.Context.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
                     }
                 case SignatureTypeCode.TypedReference:
-                    throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+                    return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
                     return _module.Context.GetFunctionPointerType(ParseMethodSignature());
                 default:
@@ -287,6 +287,74 @@ namespace Internal.TypeSystem.Ecma
                 arguments[i] = ParseType();
             }
             return arguments;
+        }
+
+        public MarshalAsDescriptor ParseMarshalAsDescriptor()
+        {
+            Debug.Assert(_reader.RemainingBytes != 0);
+
+            NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
+            NativeTypeKind arraySubType = NativeTypeKind.Invalid;
+            uint? paramNum = null, numElem = null;
+
+            switch (type)
+            {
+                case NativeTypeKind.Array:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            paramNum = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            int flag = _reader.ReadCompressedInteger();
+                            if (flag == 0)
+                            {
+                                paramNum = null; //paramNum is just a place holder so that numElem can be present
+                            }
+                        }
+
+                    }
+                    break;
+                case NativeTypeKind.ByValArray:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.ByValTStr:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            Debug.Assert(_reader.RemainingBytes == 0);
+
+            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);
         }
     }
 }

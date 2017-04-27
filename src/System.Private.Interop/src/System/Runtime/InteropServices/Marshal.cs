@@ -16,12 +16,10 @@ using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 using System.Threading;
-
-#if ENABLE_WINRT
 using System.Runtime.InteropServices.ComTypes;
-#endif //ENABLE_WINRT
 
 namespace System.Runtime.InteropServices
 {
@@ -58,23 +56,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // The max DBCS character size for the system.
         //====================================================================
-        public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
-
-        //====================================================================
-        // Helper method to retrieve the system's maximum DBCS character size.
-        //====================================================================
-        private static unsafe int GetSystemMaxDBCSCharSize()
-        {
-            ExternalInterop.CPINFO cpInfo;
-            if (ExternalInterop.GetCPInfo(ExternalInterop.Constants.CP_ACP, &cpInfo) != 0)
-            {
-                return cpInfo.MaxCharSize;
-            }
-            else
-            {
-                return 2;
-            }
-        }
+        public static readonly int SystemMaxDBCSCharSize = PInvokeMarshal.GetSystemMaxDBCSCharSize();
 
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
@@ -135,6 +117,18 @@ namespace System.Runtime.InteropServices
             {
                 return new String((char*)ptr);
             }
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr, int len)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr, len);
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr);
         }
 
         //====================================================================
@@ -643,29 +637,11 @@ namespace System.Runtime.InteropServices
             {
                 throw GetExceptionForHR(errorCode, errorInfo);
             }
-        }  
+        }
 
         //====================================================================
         // Memory allocation and deallocation.
         //====================================================================
-        public static IntPtr AllocHGlobal(IntPtr cb)
-        {
-            return ExternalInterop.MemAlloc(cb);
-        }
-
-        public static IntPtr AllocHGlobal(int cb)
-        {
-            return AllocHGlobal((IntPtr)cb);
-        }
-
-        public static void FreeHGlobal(IntPtr hglobal)
-        {
-            if (IsNotWin32Atom(hglobal))
-            {
-                ExternalInterop.MemFree(hglobal);
-            }
-        }
-
         public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             return ExternalInterop.MemReAlloc(pv, cb);
@@ -680,7 +656,7 @@ namespace System.Runtime.InteropServices
             fixed (char* pch = source)
             {
                 int convertedBytes =
-                    ExternalInterop.ConvertWideCharToMultiByte(pch, source.Length, pbNativeBuffer, cbNativeBuffer);
+                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer);
                 ((byte*)pbNativeBuffer)[convertedBytes] = 0;
             }
         }
@@ -697,7 +673,7 @@ namespace System.Runtime.InteropServices
                 return String.Empty;
             }
             // MB_PRECOMPOSED is the default.
-            int charsRequired = ExternalInterop.GetCharCount(sourceBuffer, cbSourceBuffer);
+            int charsRequired = PInvokeMarshal.GetCharCount((byte*)sourceBuffer, cbSourceBuffer);
 
             if (charsRequired == 0)
             {
@@ -705,11 +681,11 @@ namespace System.Runtime.InteropServices
             }
 
             char[] wideChars = new char[charsRequired + 1];
-            fixed (char* pWideChars = wideChars)
+            fixed (char* pWideChars = &wideChars[0])
             {
-                int converted = ExternalInterop.ConvertMultiByteToWideChar(sourceBuffer,
+                int converted = PInvokeMarshal.ConvertMultiByteToWideChar((byte*)sourceBuffer,
                                                                     cbSourceBuffer,
-                                                                    new IntPtr(pWideChars),
+                                                                    pWideChars,
                                                                     wideChars.Length);
                 if (converted == 0)
                 {
@@ -780,7 +756,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = ExternalInterop.MemAlloc(new IntPtr(nb));
+                IntPtr hglobal = PInvokeMarshal.MemAlloc(new IntPtr(nb));
                 ConvertToAnsi(s, hglobal, nb);
                 return hglobal;
             }
@@ -800,13 +776,19 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = ExternalInterop.MemAlloc(new UIntPtr((uint)nb));
+                IntPtr hglobal = PInvokeMarshal.MemAlloc(new IntPtr(nb));
                 fixed (char* firstChar = s)
                 {
                     InteropExtensions.Memcpy(hglobal, new IntPtr(firstChar), nb);
                 }
                 return hglobal;
             }
+        }
+
+        public static IntPtr StringToHGlobalAuto(String s)
+        {
+            // Ansi platforms are no longer supported
+            return StringToHGlobalUni(s);
         }
 
         //====================================================================
@@ -846,16 +828,6 @@ namespace System.Runtime.InteropServices
             return McgComHelpers.IsComObject(o);
         }
 
-        public static unsafe IntPtr AllocCoTaskMem(int cb)
-        {
-            IntPtr pNewMem = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(cb)));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
-        }
-
         public static unsafe IntPtr StringToCoTaskMemUni(String s)
         {
             if (s == null)
@@ -870,7 +842,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = new IntPtr( ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
+                IntPtr hglobal = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
                 if (hglobal == IntPtr.Zero)
                 {
@@ -901,7 +873,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
+                IntPtr hglobal = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
                 if (hglobal == IntPtr.Zero)
                 {
@@ -915,12 +887,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe void FreeCoTaskMem(IntPtr ptr)
+        public static IntPtr StringToCoTaskMemAuto(String s)
         {
-            if (IsNotWin32Atom(ptr))
-            {
-                ExternalInterop.CoTaskMemFree((void*)ptr);
-            }
+            // Ansi platforms are no longer supported
+            return StringToCoTaskMemUni(s);
         }
 
         //====================================================================
@@ -1037,7 +1007,7 @@ namespace System.Runtime.InteropServices
 
             fixed (char* pch = s)
             {
-                IntPtr bstr = new IntPtr( ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
+                IntPtr bstr = new IntPtr(ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
                 if (bstr == IntPtr.Zero)
                     throw new OutOfMemoryException();
 
@@ -1088,7 +1058,7 @@ namespace System.Runtime.InteropServices
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            return McgMarshal.GetStubForPInvokeDelegate(d);
+            return PInvokeMarshal.GetStubForPInvokeDelegate(d);
         }
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
@@ -1382,7 +1352,7 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             if (pDstNativeVariant == IntPtr.Zero)
-                throw new ArgumentNullException("pSrcNativeVariant");
+                throw new ArgumentNullException(nameof(pDstNativeVariant));
 
             if (obj != null && (obj.GetType().TypeHandle.IsGenericType() || obj.GetType().TypeHandle.IsGenericTypeDefinition()))
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));
@@ -1477,6 +1447,27 @@ namespace System.Runtime.InteropServices
         public static IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
             return UnsafeAddrOfPinnedArrayElement((Array)arr, index);
+        }
+
+        //====================================================================
+        // This method binds to the specified moniker.
+        //====================================================================
+        public static Object BindToMoniker(String monikerName)
+        {
+#if TARGET_CORE_API_SET // BindMoniker not available in core API set
+            throw new PlatformNotSupportedException();
+#else
+            Object obj = null;
+            IBindCtx bindctx = null;
+            ExternalInterop.CreateBindCtx(0, out bindctx);
+
+            UInt32 cbEaten;
+            IMoniker pmoniker = null;
+            ExternalInterop.MkParseDisplayName(bindctx, monikerName, out cbEaten, out pmoniker);
+
+            ExternalInterop.BindMoniker(pmoniker, 0, ref Interop.COM.IID_IUnknown, out obj);
+            return obj;
+#endif
         }
 
 #if ENABLE_WINRT
@@ -1600,6 +1591,48 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             throw new PlatformNotSupportedException("WriteInt64");
+        }
+
+        public static void ChangeWrapperHandleStrength(Object otp, bool fIsWeak)
+        {
+            throw new PlatformNotSupportedException("ChangeWrapperHandleStrength");
+        }
+
+        public static void CleanupUnusedObjectsInCurrentContext()
+        {
+            // RCW cleanup implemented in native code in CoreCLR, and uses a global list to indicate which objects need to be collected. In
+            // CoreRT, RCWs are implemented in managed code and their cleanup is normally accomplished using finalizers. Implementing
+            // this method in a more complicated way (without calling WaitForPendingFinalizers) is non-trivial because it possible for timing
+            // problems to occur when competing with finalizers.
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        public static void Prelink(MethodInfo m)
+        {
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+            Contract.EndContractBlock();
+
+            // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
+            // the P/Invoke, but everything is pre-generated in CoreRT.
+        }
+
+        public static void PrelinkAll(Type c)
+        {
+            if (c == null)
+                throw new ArgumentNullException(nameof(c));
+            Contract.EndContractBlock();
+
+            MethodInfo[] mi = c.GetMethods();
+            if (mi != null)
+            {
+                for (int i = 0; i < mi.Length; i++)
+                {
+                    Prelink(mi[i]);
+                }
+            }
         }
     }
 }

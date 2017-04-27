@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Reflection.Runtime.General;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -44,17 +45,19 @@ namespace Internal.Runtime.TypeLoader
             out IntPtr unboxingStubAddress,
             out MethodAddressType foundAddressType)
         {
+            methodAddress = IntPtr.Zero;
+            unboxingStubAddress = IntPtr.Zero;
+            foundAddressType = MethodAddressType.None;
+
 #if SUPPORTS_R2R_LOADING
-            // Try to find the method via a code table
-            if (TryGetCodeTableEntry(
-                method,
-                out methodAddress,
-                out unboxingStubAddress, 
-                out foundAddressType))
-            {
-                return true;
-            }
+            TryGetCodeTableEntry(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
 #endif
+#if SUPPORT_JIT
+            if (foundAddressType == MethodAddressType.None)
+                MethodEntrypointStubs.TryGetMethodEntrypoint(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
+#endif
+            if (foundAddressType != MethodAddressType.None)
+                return true;
 
             // Otherwise try to find it via an invoke map
             return TryGetMethodAddressFromTypeSystemMethodViaInvokeMap(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
@@ -130,12 +133,12 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Attempt a virtual dispatch on a given instanceType based on the method found via a metadata token
         /// </summary>
-        private static bool TryDispatchMethodOnTarget_Inner(IntPtr moduleHandle, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
+        private static bool TryDispatchMethodOnTarget_Inner(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
-            NativeFormatMetadataUnit metadataUnit = context.ResolveMetadataUnit(moduleHandle);
+            NativeFormatMetadataUnit metadataUnit = context.ResolveMetadataUnit(module);
             MethodDesc targetMethod = metadataUnit.GetMethod(metadataToken.AsHandle(), null);
             TypeDesc instanceType = context.ResolveRuntimeTypeHandle(targetInstanceType);
 
@@ -165,7 +168,7 @@ namespace Internal.Runtime.TypeLoader
         /// Attempt to convert the dispatch cell to a metadata token to a more efficient vtable dispatch or interface/slot dispatch.
         /// Failure to convert is not a correctness issue. We also support performing a dispatch based on metadata token alone.
         /// </summary>
-        private static DispatchCellInfo ConvertDispatchCellInfo_Inner(IntPtr module, DispatchCellInfo cellInfo)
+        private static DispatchCellInfo ConvertDispatchCellInfo_Inner(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
         {
             Debug.Assert(cellInfo.CellType == DispatchCellType.MetadataToken);
 

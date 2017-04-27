@@ -87,7 +87,7 @@ namespace System
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
 
-#if !CORERT
+#if PROJECTN
         [Bound]
 #endif
         // WARNING: We allow diagnostic tools to directly inspect these two members (_stringLength, _firstChar)
@@ -236,6 +236,114 @@ namespace System
             }
         }
 
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern unsafe String(sbyte* value);
+
+        [DependencyReductionRoot]
+        private static unsafe string Ctor(sbyte* value)
+        {
+            byte* pb = (byte*)value;
+            if (pb == null)
+                return string.Empty;  // Compatibility
+
+            int numBytes = Buffer.IndexOfByte(pb, 0, 0, int.MaxValue);
+            if (numBytes < 0) // This check covers the "-1 = not-found" case and "negative length" case (downstream code assumes length is non-negative).
+                throw new ArgumentException(SR.Arg_ExpectedNulTermination); // We'll likely have AV'd before we get to this point, but just in case...
+
+            return CreateStringForSByteConstructor(pb, numBytes);
+        }
+
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern unsafe String(sbyte* value, int startIndex, int length);
+
+        [DependencyReductionRoot]
+        private static unsafe string Ctor(sbyte* value, int startIndex, int length)
+        {
+            byte* pb = (byte*)value;
+
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
+
+            if (pb == null)
+                throw new ArgumentNullException(nameof(value));
+
+            byte* pStart = pb + startIndex;
+            if (pStart < pb)
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_PartialWCHAR);
+
+            return CreateStringForSByteConstructor(pStart, length);
+        }
+
+        // Encoder for String..ctor(sbyte*) and String..ctor(sbyte*, int, int). One of the last bastions of ANSI in the framework...
+        private static unsafe string CreateStringForSByteConstructor(byte *pb, int numBytes)
+        {
+            Debug.Assert(numBytes >= 0);
+            Debug.Assert(pb <= (pb + numBytes));
+
+            if (numBytes == 0)
+                return string.Empty;
+
+#if PLATFORM_UNIX
+            return Encoding.UTF8.GetString(pb, numBytes);
+#else
+            int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
+            if (numCharsRequired == 0)
+                throw new ArgumentException(SR.Arg_InvalidANSIString);
+
+            string newString = FastAllocateString(numCharsRequired);
+            fixed (char *pFirstChar = &newString._firstChar)
+            {
+                numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, pFirstChar, numCharsRequired);
+            }
+            if (numCharsRequired == 0)
+                throw new ArgumentException(SR.Arg_InvalidANSIString);
+            return newString;
+#endif
+        }
+
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
+
+        [DependencyReductionRoot]
+        private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding enc)
+        {
+            if (enc == null)
+                return new string(value, startIndex, length);
+
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+
+            byte* pStart = (byte*)(value + startIndex);
+            if (pStart < value)
+            {
+                // overflow check
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_PartialWCHAR);
+            }
+
+            byte[] copyOfValue = new byte[length];
+            fixed (byte* pCopyOfValue = copyOfValue)
+            {
+                try
+                {
+                    Buffer.Memcpy(dest: pCopyOfValue, src: pStart, len: length);
+                }
+                catch (Exception)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_PartialWCHAR);
+                }
+            }
+
+            return enc.GetString(copyOfValue);
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
@@ -288,6 +396,25 @@ namespace System
             return this;
         }
 
+        public static unsafe String Copy(String str)
+        {
+            if (str == null)
+            {
+                throw new ArgumentNullException(nameof(str));
+            }
+
+            int length = str.Length;
+
+            String result = FastAllocateString(length);
+
+            fixed (char* dest = &result._firstChar)
+            fixed (char* src = &str._firstChar)
+            {
+                wstrcpy(dest, src, length);
+            }
+            return result;
+        }
+
         public static readonly String Empty = "";
 
         // Gets the character at a specified position.
@@ -296,19 +423,18 @@ namespace System
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
         {
-            [NonVersionable]
-#if CORERT
+#if PROJECTN
+            [BoundsChecking]
+            get
+            {
+                return Unsafe.Add(ref _firstChar, index);
+            }
+#else
             [Intrinsic]
             get
             {
                 if ((uint)index >= _stringLength)
-                    throw new IndexOutOfRangeException();
-                return Unsafe.Add(ref _firstChar, index);
-            }
-#else
-            [BoundsChecking]
-            get
-            {
+                    ThrowHelper.ThrowIndexOutOfRangeException();
                 return Unsafe.Add(ref _firstChar, index);
             }
 #endif
@@ -336,8 +462,8 @@ namespace System
             if (count > 0)
             {
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = destination)
-                        wstrcpy(dest + destinationIndex, src + sourceIndex, count);
+                fixed (char* dest = destination)
+                    wstrcpy(dest + destinationIndex, src + sourceIndex, count);
             }
         }
 
@@ -350,7 +476,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = chars)
+                fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src, length);
                 }
@@ -373,7 +499,7 @@ namespace System
             {
                 char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
-                    fixed (char* dest = chars)
+                fixed (char* dest = &chars[0])
                 {
                     wstrcpy(dest, src + startIndex, length);
                 }
@@ -410,6 +536,11 @@ namespace System
         public int Length
         {
             get { return _stringLength; }
+        }
+
+        internal ref char GetRawStringData()
+        {
+            return ref _firstChar;
         }
 
         // Helper for encodings so they can talk to our buffer directly
@@ -480,9 +611,14 @@ namespace System
         }
 
         // Returns this string.
-        String IConvertible.ToString(IFormatProvider provider)
+        public String ToString(IFormatProvider provider)
         {
             return this;
+        }
+
+        public CharEnumerator GetEnumerator()
+        {
+            return new CharEnumerator(this);
         }
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator()
@@ -591,96 +727,81 @@ namespace System
         // IConvertible implementation
         // 
 
-        TypeCode IConvertible.GetTypeCode()
+        public TypeCode GetTypeCode()
         {
             return TypeCode.String;
         }
 
-        /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
             return Convert.ToBoolean(this, provider);
         }
 
-        /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
             return Convert.ToChar(this, provider);
         }
 
-        /// <internalonly/>
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
             return Convert.ToSByte(this, provider);
         }
 
-        /// <internalonly/>
         byte IConvertible.ToByte(IFormatProvider provider)
         {
             return Convert.ToByte(this, provider);
         }
 
-        /// <internalonly/>
         short IConvertible.ToInt16(IFormatProvider provider)
         {
             return Convert.ToInt16(this, provider);
         }
 
-        /// <internalonly/>
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
             return Convert.ToUInt16(this, provider);
         }
 
-        /// <internalonly/>
         int IConvertible.ToInt32(IFormatProvider provider)
         {
             return Convert.ToInt32(this, provider);
         }
 
-        /// <internalonly/>
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
             return Convert.ToUInt32(this, provider);
         }
 
-        /// <internalonly/>
         long IConvertible.ToInt64(IFormatProvider provider)
         {
             return Convert.ToInt64(this, provider);
         }
 
-        /// <internalonly/>
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
             return Convert.ToUInt64(this, provider);
         }
 
-        /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
             return Convert.ToSingle(this, provider);
         }
 
-        /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
             return Convert.ToDouble(this, provider);
         }
 
-        /// <internalonly/>
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(this, provider);
         }
 
-        /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
             return Convert.ToDateTime(this, provider);
         }
 
-        /// <internalonly/>
         Object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);

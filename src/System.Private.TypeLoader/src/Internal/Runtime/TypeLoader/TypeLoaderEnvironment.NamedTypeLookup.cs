@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 
@@ -26,8 +28,7 @@ namespace Internal.Runtime.TypeLoader
         {
             public int RuntimeTypeHandleHashcode;
             public RuntimeTypeHandle RuntimeTypeHandle;
-            public MetadataReader MetadataReader;
-            public TypeDefinitionHandle TypeDefinition;
+            public QTypeDefinition QualifiedTypeDefinition;
             public IntPtr GcStaticFields;
             public IntPtr NonGcStaticFields;
             public volatile int VersionNumber;
@@ -37,7 +38,7 @@ namespace Internal.Runtime.TypeLoader
 
         private NamedTypeRuntimeTypeHandleToMetadataHashtable _runtimeTypeHandleToMetadataHashtable = new NamedTypeRuntimeTypeHandleToMetadataHashtable();
 
-        public static readonly IntPtr NoStaticsData = (IntPtr)1;
+        public static IntPtr NoStaticsData { get; private set; }
 
         private class NamedTypeRuntimeTypeHandleToMetadataHashtable : LockFreeReaderHashtable<RuntimeTypeHandle, NamedTypeLookupResult>
         {
@@ -59,8 +60,8 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (value1.RuntimeTypeHandle.IsNull() || value2.RuntimeTypeHandle.IsNull())
                 {
-                    return value1.TypeDefinition.Equals(value2.TypeDefinition) &&
-                           value1.MetadataReader.Equals(value2.MetadataReader);
+                    return value1.QualifiedTypeDefinition.Token.Equals(value2.QualifiedTypeDefinition.Token) &&
+                           value1.QualifiedTypeDefinition.Reader.Equals(value2.QualifiedTypeDefinition.Reader);
                 }
                 return value1.RuntimeTypeHandle.Equals(value2.RuntimeTypeHandle);
             }
@@ -70,16 +71,16 @@ namespace Internal.Runtime.TypeLoader
                 int hashCode = GetKeyHashCode(key);
 
                 // Iterate over all modules, starting with the module that defines the EEType
-                foreach (IntPtr moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(key)))
+                foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(key)))
                 {
                     NativeReader typeMapReader;
-                    if (TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.TypeMap, out typeMapReader))
+                    if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                     {
                         NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
                         NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
                         ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                        externalReferences.InitializeCommonFixupsTable(moduleHandle);
+                        externalReferences.InitializeCommonFixupsTable(module);
 
                         var lookup = typeHashtable.Lookup(hashCode);
                         NativeParser entryParser;
@@ -91,11 +92,10 @@ namespace Internal.Runtime.TypeLoader
                                 Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
                                 if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
                                 {
-                                    MetadataReader metadataReader = ModuleList.Instance.GetMetadataReaderForModule(moduleHandle);
+                                    MetadataReader metadataReader = module.MetadataReader;
                                     return new NamedTypeLookupResult()
                                     {
-                                        MetadataReader = metadataReader,
-                                        TypeDefinition = entryMetadataHandle.ToTypeDefinitionHandle(metadataReader),
+                                        QualifiedTypeDefinition = new QTypeDefinition(metadataReader, entryMetadataHandle.ToTypeDefinitionHandle(metadataReader)),
                                         RuntimeTypeHandle = key,
                                         RuntimeTypeHandleHashcode = hashCode
                                     };
@@ -113,15 +113,9 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private struct NamedTypeMetadataDescription
-        {
-            public MetadataReader MetadataReader;
-            public TypeDefinitionHandle TypeDefinition;
-        }
+        private QTypeDefinitionToRuntimeTypeHandleHashtable _metadataToRuntimeTypeHandleHashtable = new QTypeDefinitionToRuntimeTypeHandleHashtable();
 
-        private NamedTypeMetadataToRuntimeTypeHandleHashtable _metadataToRuntimeTypeHandleHashtable = new NamedTypeMetadataToRuntimeTypeHandleHashtable();
-
-        private class NamedTypeMetadataToRuntimeTypeHandleHashtable : LockFreeReaderHashtable<NamedTypeMetadataDescription, NamedTypeLookupResult>
+        private class QTypeDefinitionToRuntimeTypeHandleHashtable : LockFreeReaderHashtable<QTypeDefinition, NamedTypeLookupResult>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int _rotl(int value, int shift)
@@ -129,60 +123,65 @@ namespace Internal.Runtime.TypeLoader
                 return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
             }
 
-            protected unsafe override int GetKeyHashCode(NamedTypeMetadataDescription key)
+            protected unsafe override int GetKeyHashCode(QTypeDefinition key)
             {
-                return key.TypeDefinition.GetHashCode() ^ _rotl(key.MetadataReader.GetHashCode(), 8);
+                return key.Token.GetHashCode() ^ _rotl(key.Reader.GetHashCode(), 8);
             }
-            protected override bool CompareKeyToValue(NamedTypeMetadataDescription key, NamedTypeLookupResult value)
+            protected override bool CompareKeyToValue(QTypeDefinition key, NamedTypeLookupResult value)
             {
-                return key.TypeDefinition.Equals(value.TypeDefinition) &&
-                       key.MetadataReader.Equals(value.MetadataReader);
+                return key.Token.Equals(value.QualifiedTypeDefinition.Token) &&
+                       key.Reader.Equals(value.QualifiedTypeDefinition.Reader);
             }
 
             protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
             {
-                return value.TypeDefinition.GetHashCode() ^ _rotl(value.MetadataReader.GetHashCode(), 8);
+                return value.QualifiedTypeDefinition.Token.GetHashCode() ^ _rotl(value.QualifiedTypeDefinition.Reader.GetHashCode(), 8);
             }
 
             protected override bool CompareValueToValue(NamedTypeLookupResult value1, NamedTypeLookupResult value2)
             {
-                return value1.TypeDefinition.Equals(value2.TypeDefinition) &&
-                       value1.MetadataReader.Equals(value2.MetadataReader);
+                return value1.QualifiedTypeDefinition.Token.Equals(value2.QualifiedTypeDefinition.Token) &&
+                        value1.QualifiedTypeDefinition.Reader.Equals(value2.QualifiedTypeDefinition.Reader);
             }
 
-            protected override NamedTypeLookupResult CreateValueFromKey(NamedTypeMetadataDescription key)
+            protected override NamedTypeLookupResult CreateValueFromKey(QTypeDefinition key)
             {
-                int hashCode = key.TypeDefinition.ComputeHashCode(key.MetadataReader);
-
-                IntPtr moduleHandle = ModuleList.Instance.GetModuleForMetadataReader(key.MetadataReader);
                 RuntimeTypeHandle foundRuntimeTypeHandle = default(RuntimeTypeHandle);
 
-                NativeReader typeMapReader;
-                if (TryGetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.TypeMap, out typeMapReader))
+                if (key.IsNativeFormatMetadataBased)
                 {
-                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+                    MetadataReader metadataReader = key.NativeFormatReader;
+                    TypeDefinitionHandle typeDefHandle = key.NativeFormatHandle;
+                    int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
 
-                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                    externalReferences.InitializeCommonFixupsTable(moduleHandle);
+                    NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
 
-                    var lookup = typeHashtable.Lookup(hashCode);
-                    NativeParser entryParser;
-                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    NativeReader typeMapReader;
+                    if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
                     {
-                        var foundTypeIndex = entryParser.GetUnsigned();
-                        if (entryParser.GetUnsigned().AsHandle().Equals(key.TypeDefinition))
+                        NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                        NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+
+                        ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                        externalReferences.InitializeCommonFixupsTable(module);
+
+                        var lookup = typeHashtable.Lookup(hashCode);
+                        NativeParser entryParser;
+                        while (!(entryParser = lookup.GetNext()).IsNull)
                         {
-                            foundRuntimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            break;
+                            var foundTypeIndex = entryParser.GetUnsigned();
+                            if (entryParser.GetUnsigned().AsHandle().Equals(typeDefHandle))
+                            {
+                                foundRuntimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
+                                break;
+                            }
                         }
                     }
                 }
 
                 return new NamedTypeLookupResult()
                 {
-                    TypeDefinition = key.TypeDefinition,
-                    MetadataReader = key.MetadataReader,
+                    QualifiedTypeDefinition = key,
                     RuntimeTypeHandle = foundRuntimeTypeHandle,
                     VersionNumber = TypeLoaderEnvironment.Instance._namedTypeLookupLiveVersion
                 };
@@ -199,12 +198,11 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
         /// <param name="metadataReader">Metadata reader located for the type</param>
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
-        public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeDefinitionHandle typeDefHandle)
+        public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             NamedTypeLookupResult result = _runtimeTypeHandleToMetadataHashtable.GetOrCreateValue(runtimeTypeHandle);
-            metadataReader = result.MetadataReader;
-            typeDefHandle = result.TypeDefinition;
-            return metadataReader != null;
+            qTypeDefinition = result.QualifiedTypeDefinition;
+            return qTypeDefinition.Reader != null;
         }
 
         /// <summary>
@@ -236,7 +234,7 @@ namespace Internal.Runtime.TypeLoader
             if (nonGcStaticsData == (IntPtr)1)
                 nonGcStaticsData = IntPtr.Zero;
 
-            return result.MetadataReader != null && !noResults;
+            return result.QualifiedTypeDefinition.Reader != null && !noResults;
         }
 
         /// <summary>
@@ -253,16 +251,10 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="metadataReader">Metadata reader for module containing the type</param>
         /// <param name="typeDefHandle">TypeDef handle for the type to look up</param>
         /// <param name="runtimeTypeHandle">Runtime type handle (EEType) for the given type</param>
-        public unsafe bool TryGetNamedTypeForMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, out RuntimeTypeHandle runtimeTypeHandle)
+        public unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            NamedTypeMetadataDescription description = new NamedTypeMetadataDescription()
-            {
-                MetadataReader = metadataReader,
-                TypeDefinition = typeDefHandle
-            };
-
             runtimeTypeHandle = default(RuntimeTypeHandle);
-            NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(description);
+            NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(qTypeDefinition);
 
             if (result.VersionNumber <= _namedTypeLookupLiveVersion)
                 runtimeTypeHandle = result.RuntimeTypeHandle;
@@ -270,16 +262,10 @@ namespace Internal.Runtime.TypeLoader
             return !runtimeTypeHandle.IsNull();
         }
 
-        public void RegisterNewNamedTypeRuntimeTypeHandle(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, RuntimeTypeHandle runtimeTypeHandle, IntPtr nonGcStaticFields, IntPtr gcStaticFields)
+        public void RegisterNewNamedTypeRuntimeTypeHandle(QTypeDefinition qTypeDefinition, RuntimeTypeHandle runtimeTypeHandle, IntPtr nonGcStaticFields, IntPtr gcStaticFields)
         {
-            NamedTypeMetadataDescription description = new NamedTypeMetadataDescription()
-            {
-                MetadataReader = metadataReader,
-                TypeDefinition = typeDefHandle
-            };
-
             TypeLoaderLogger.WriteLine("Register new type with eetype = " + runtimeTypeHandle.ToIntPtr().LowLevelToString() + " nonGcStaticFields " + nonGcStaticFields.LowLevelToString() + " gcStaticFields " + gcStaticFields.LowLevelToString());
-            NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(description);
+            NamedTypeLookupResult result = _metadataToRuntimeTypeHandleHashtable.GetOrCreateValue(qTypeDefinition);
 
             result.VersionNumber = _namedTypeLookupLiveVersion + 1;
             result.RuntimeTypeHandle = runtimeTypeHandle;
@@ -294,23 +280,16 @@ namespace Internal.Runtime.TypeLoader
 
             if (!Object.ReferenceEquals(rthToMetadataResult, result))
             {
-                rthToMetadataResult.TypeDefinition = typeDefHandle;
-                rthToMetadataResult.MetadataReader = metadataReader;
+                rthToMetadataResult.QualifiedTypeDefinition = qTypeDefinition;
                 rthToMetadataResult.GcStaticFields = gcStaticFields;
                 rthToMetadataResult.NonGcStaticFields = nonGcStaticFields;
             }
         }
 
-        public void UnregisterNewNamedTypeRuntimeTypeHandle(MetadataReader metadataReader, TypeDefinitionHandle typeDefHandle, RuntimeTypeHandle runtimeTypeHandle)
+        public void UnregisterNewNamedTypeRuntimeTypeHandle(QTypeDefinition qTypeDefinition, RuntimeTypeHandle runtimeTypeHandle)
         {
-            NamedTypeMetadataDescription description = new NamedTypeMetadataDescription()
-            {
-                MetadataReader = metadataReader,
-                TypeDefinition = typeDefHandle
-            };
-
             NamedTypeLookupResult metadataLookupResult;
-            if (_metadataToRuntimeTypeHandleHashtable.TryGetValue(description, out metadataLookupResult))
+            if (_metadataToRuntimeTypeHandleHashtable.TryGetValue(qTypeDefinition, out metadataLookupResult))
             {
                 metadataLookupResult.RuntimeTypeHandle = default(RuntimeTypeHandle);
                 metadataLookupResult.VersionNumber = -1;

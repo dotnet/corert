@@ -25,7 +25,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
@@ -35,11 +35,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 MethodInvokeInfo.DynamicInvokeGenericDictionary,
                 MethodInvokeInfo.MethodInfo,
                 arguments,
+                binderBundle,
                 invokeMethodHelperIsThisCall: false,
                 methodToCallIsThisCall: false);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
+
+        public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
     }
 }
 

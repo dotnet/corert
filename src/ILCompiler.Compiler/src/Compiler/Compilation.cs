@@ -15,50 +15,56 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
-using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
     public abstract class Compilation : ICompilation
     {
         protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
-        protected readonly NameMangler _nameMangler;
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
 
-        internal NameMangler NameMangler => _nameMangler;
-        internal NodeFactory NodeFactory => _nodeFactory;
-        internal CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
+        public NameMangler NameMangler => _nodeFactory.NameMangler;
+        public NodeFactory NodeFactory => _nodeFactory;
+        public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         internal Logger Logger => _logger;
         internal PInvokeILProvider PInvokeILProvider { get; }
 
+        protected abstract bool GenerateDebugInfo { get; }
+
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
+        private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
+        private readonly MethodBaseGetCurrentMethodThunkCache _methodBaseGetCurrentMethodThunks;
 
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> compilationRoots,
-            NameMangler nameMangler,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
-            _nameMangler = nameMangler;
             _logger = logger;
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            // TODO: hacky static field
-            NodeFactory.NameMangler = nameMangler;
-
             var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
-            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType());
+            MetadataType globalModuleGeneratedType = nodeFactory.CompilationModuleGroup.GeneratedAssembly.GetGlobalModuleType();
+            _typeGetTypeMethodThunks = new TypeGetTypeMethodThunkCache(globalModuleGeneratedType);
+            _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
+            _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
 
-            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(!nodeFactory.CompilationModuleGroup.IsSingleFileCompilation));
+            bool? forceLazyPInvokeResolution = null;
+            // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
+            // https://github.com/dotnet/corert/issues/2454
+            // https://github.com/dotnet/corert/issues/2149
+            if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
+            PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
+
             _methodILCache = new ILProvider(PInvokeILProvider);
         }
 
@@ -75,11 +81,11 @@ namespace ILCompiler
 
         protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
 
-        protected abstract void CompileInternal(string outputFile);
+        protected abstract void CompileInternal(string outputFile, ObjectDumper dumper);
 
-        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
-            return DelegateCreationInfo.Create(delegateType, target, NodeFactory);
+            return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);
         }
 
         /// <summary>
@@ -87,9 +93,9 @@ namespace ILCompiler
         /// </summary>
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
-            if (field.GetType() == typeof(Internal.IL.Stubs.PInvokeLazyFixupField))
+            if (field.GetType() == typeof(PInvokeLazyFixupField))
             {
-                var pInvokeFixup = (Internal.IL.Stubs.PInvokeLazyFixupField)field;
+                var pInvokeFixup = (PInvokeLazyFixupField)field;
                 PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
                 return NodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
             }
@@ -109,6 +115,9 @@ namespace ILCompiler
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
+            if (!GenerateDebugInfo)
+                return MethodDebugInformation.None;
+
             // This method looks odd right now, but it's an extensibility point that lets us generate
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
@@ -144,22 +153,51 @@ namespace ILCompiler
                     }
                 }
             }
+            else if (intrinsicOwningType.Name == "Assembly" && intrinsicOwningType.Namespace == "System.Reflection")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly")
+                {
+                    ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
+                    if (callsiteModule != null)
+                    {
+                        Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
+                        return _assemblyGetExecutingAssemblyMethodThunks.GetHelper((IAssemblyDesc)callsiteModule);
+                    }
+                }
+            }
+            else if (intrinsicOwningType.Name == "MethodBase" && intrinsicOwningType.Namespace == "System.Reflection")
+            {
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetCurrentMethod")
+                {
+                    return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
+                }
+            }
 
             return intrinsicMethod;
         }
 
-        void ICompilation.Compile(string outputFile)
+        void ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
+            if (dumper != null)
+            {
+                dumper.Begin();
+            }
+
             // In multi-module builds, set the compilation unit prefix to prevent ambiguous symbols in linked object files
-            _nameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : NodeFactory.NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(outputFile));
-            CompileInternal(outputFile);
+            NameMangler.CompilationUnitPrefix = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation ? "" : Path.GetFileNameWithoutExtension(outputFile);
+            CompileInternal(outputFile, dumper);
+
+            if (dumper != null)
+            {
+                dumper.End();
+            }
         }
 
         void ICompilation.WriteDependencyLog(string fileName)
         {
             using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
             {
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph, _nodeFactory);
                 dgmlOutput.Flush();
             }
         }
@@ -177,7 +215,17 @@ namespace ILCompiler
 
             public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
             {
-                var methodEntryPoint = _factory.MethodEntrypoint(method);
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                IMethodNode methodEntryPoint;
+
+                if (canonMethod != method)
+                {
+                    methodEntryPoint = _factory.ShadowConcreteMethod(method);
+                }
+                else
+                {
+                    methodEntryPoint = _factory.MethodEntrypoint(method);
+                }
 
                 _graph.AddRoot(methodEntryPoint, reason);
 
@@ -187,21 +235,44 @@ namespace ILCompiler
 
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
-                if (type.IsGenericDefinition)
+                if (!ConstructedEETypeNode.CreationAllowed(type))
                 {
                     _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
                 }
                 else
                 {
                     _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+                }
+            }
 
-                    // If the type has a thread static field then we should eagerly create a helper
-                    // to access such fields at runtime. This is required for multi-module compilation.
-                    if (type.IsDefType && (((DefType)type).ThreadStaticFieldSize > 0))
+            public void RootStaticBasesForType(TypeDesc type, string reason)
+            {
+                Debug.Assert(!type.IsGenericDefinition);
+
+                MetadataType metadataType = type as MetadataType;
+                if (metadataType != null)
+                {
+                    if (metadataType.ThreadStaticFieldSize.AsInt > 0)
                     {
-                        _graph.AddRoot(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetThreadStaticBase, (MetadataType)type), reason);
+                        _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
+                    }
+
+                    if (metadataType.GCStaticFieldSize.AsInt > 0)
+                    {
+                        _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
+                    }
+
+                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                    {
+                        _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
                     }
                 }
+            }
+
+            public void RootVirtualMethodUse(MethodDesc method, string reason)
+            {
+                if (!_factory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                    _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
             }
         }
     }
@@ -209,7 +280,7 @@ namespace ILCompiler
     // Interface under which Compilation is exposed externally.
     public interface ICompilation
     {
-        void Compile(string outputFileName);
+        void Compile(string outputFileName, ObjectDumper dumper);
         void WriteDependencyLog(string outputFileName);
     }
 }

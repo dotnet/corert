@@ -14,7 +14,7 @@ csc /noconfig /nostdlib Program.cs /r:<repo_root>\bin\Product\Windows_NT.x64.Deb
 
 2. Compile the IL with ILC
 
-Use ilc.exe that was built with the repo to compile the program.
+Use ilc.dll that was built with the repo to compile the program.
 
 ```
 ilc repro.exe -o:repro.obj -r:<repo_root>\bin\Product\Windows_NT.x64.Debug\Test.CoreLib\Test.CoreLib.dll --systemmodule Test.CoreLib

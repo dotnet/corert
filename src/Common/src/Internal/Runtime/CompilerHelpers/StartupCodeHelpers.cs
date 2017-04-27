@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
@@ -12,17 +11,23 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 namespace Internal.Runtime.CompilerHelpers
 {
     [McgIntrinsics]
-    internal static partial class StartupCodeHelpers
+    public static partial class StartupCodeHelpers
     {
-        public static IntPtr[] Modules
+        public static IntPtr[] OSModules
+        {
+            get; private set;
+        }
+
+        public static TypeManagerHandle[] Modules
         {
             get; private set;
         }
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
-        internal static void InitializeModules(IntPtr moduleHeaders, int count)
+        internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
-            IntPtr[] modules = CreateTypeManagers(moduleHeaders, count);
+            RuntimeImports.RhpRegisterOsModule(osModule);
+            TypeManagerHandle[] modules = CreateTypeManagers(osModule, pModuleHeaders, count, pClasslibFunctions, nClasslibFunctions);
 
             for (int i = 0; i < modules.Length; i++)
             {
@@ -32,6 +37,7 @@ namespace Internal.Runtime.CompilerHelpers
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
             Modules = modules;
+            OSModules = new IntPtr[] { osModule };
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -41,7 +47,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe IntPtr[] CreateTypeManagers(IntPtr moduleHeaders, int count)
+        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
             // At this stage of startup, complex collection classes will not work.
@@ -51,16 +57,16 @@ namespace Internal.Runtime.CompilerHelpers
                 // The null pointers are sentinel values and padding inserted as side-effect of
                 // the section merging. (The global static constructors section used by C++ has 
                 // them too.)
-                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
+                if (pModuleHeaders[i] != IntPtr.Zero)
                     moduleCount++;
             }
 
-            IntPtr[] modules = new IntPtr[moduleCount];
+            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
-                if (((IntPtr*)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = CreateTypeManager(((IntPtr*)moduleHeaders)[i]);
+                if (pModuleHeaders[i] != IntPtr.Zero)
+                    modules[moduleIndex++] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
             }
 
             return modules;
@@ -71,7 +77,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// statics, etc that need initializing. InitializeGlobalTables walks through the modules
         /// and offers each a chance to initialize its global tables.
         /// </summary>
-        private static unsafe void InitializeGlobalTablesForModule(IntPtr typeManager, int moduleIndex)
+        private static unsafe void InitializeGlobalTablesForModule(TypeManagerHandle typeManager, int moduleIndex)
         {
             // Configure the module indirection cell with the newly created TypeManager. This allows EETypes to find
             // their interface dispatch map tables.
@@ -80,6 +86,7 @@ namespace Internal.Runtime.CompilerHelpers
             section->TypeManager = typeManager;
             section->ModuleIndex = moduleIndex;
 
+#if CORERT
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -87,6 +94,7 @@ namespace Internal.Runtime.CompilerHelpers
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
+#endif
 
             // Initialize frozen object segment with GC present
             IntPtr frozenObjectSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
@@ -106,7 +114,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr typeManager)
+        private static unsafe void InitializeEagerClassConstructorsForModule(TypeManagerHandle typeManager)
         {
             int length;
 
@@ -150,24 +158,12 @@ namespace Internal.Runtime.CompilerHelpers
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int CStrLen(byte* str)
-        {
-            int len = 0;
-            for (; str[len] != 0; len++) { }
-            return len;
-        }
-
-        [RuntimeImport(".", "RhpCreateTypeManager")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr CreateTypeManager(IntPtr moduleHeader);
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TypeManagerSlot
     {
-        public IntPtr TypeManager;
+        public TypeManagerHandle TypeManager;
         public Int32 ModuleIndex;
     }
 }

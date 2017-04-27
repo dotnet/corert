@@ -251,6 +251,18 @@ bool CoffNativeCodeManager::IsFunclet(MethodInfo * pMethInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
+bool CoffNativeCodeManager::IsFilter(MethodInfo * pMethInfo)
+{
+    CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethInfo;
+
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    uint8_t unwindBlockFlags = *(dac_cast<DPTR(uint8_t)>(pUnwindDataBlob) + unwindDataBlobSize);
+
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER;
+}
+
 PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
                                          REGDISPLAY *   pRegisterSet)
 {
@@ -270,26 +282,48 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
     return NULL;
 }
 
-// void EnumGCRefs(PTR_VOID pGCInfo, UINT32 curOffs, REGDISPLAY * pRD, GCEnumContext * hCallback, bool executionAborted);
-
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo, 
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
                                        GCEnumContext * hCallback)
 {
-    // @TODO: CORERT: PInvoke transitions
-
-#if 0
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
-    SIZE_T nUnwindDataSize;
-    PTR_VOID pUnwindData = GetUnwindDataBlob(dac_cast<TADDR>(m_pvStartRange), &pNativeMethodInfo->mainRuntimeFunction, &nUnwindDataSize);
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
 
-    // GCInfo immediatelly follows unwind data
-    PTR_VOID pGCInfo = dac_cast<PTR_VOID>(dac_cast<TADDR>(pUnwindData) + nUnwindDataSize + 1);
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
-    ::EnumGCRefs(pGCInfo, codeOffset, pRegisterSet, hCallback, pNativeMethodInfo->executionAborted);
-#endif
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    TADDR methodStartAddress = m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress;
+    UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - methodStartAddress);
+
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset - 1 // TODO: Is this adjustment correct?
+        );
+
+    ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    if (pNativeMethodInfo->executionAborted)
+        flags = ICodeManagerFlags::ExecutionAborted;
+    if (IsFilter(pMethodInfo))
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
+
+    if (!decoder.EnumerateLiveSlots(
+        pRegisterSet,
+        false /* reportScratchSlots */, 
+        flags,
+        hCallback->pCallback,
+        hCallback
+        ))
+    {
+        assert(false);
+    }
 }
 
 UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
@@ -321,12 +355,20 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
             p += sizeof(int32_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
-        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
-        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
-
-        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
         return true;
     }
 

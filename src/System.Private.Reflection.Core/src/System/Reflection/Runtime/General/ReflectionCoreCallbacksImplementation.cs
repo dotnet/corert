@@ -11,10 +11,13 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.Modules;
 
+using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
@@ -34,6 +37,14 @@ namespace System.Reflection.Runtime.General
             return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
         }
 
+        public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
+        {
+            if (rawAssembly == null)
+                throw new ArgumentNullException(nameof(rawAssembly));
+
+            return RuntimeAssembly.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
+        }
+
         //
         // This overload of GetMethodForHandle only accepts handles for methods declared on non-generic types (the method, however,
         // can be an instance of a generic method.) To resolve handles for methods declared on generic types, you must pass
@@ -44,7 +55,7 @@ namespace System.Reflection.Runtime.General
         public sealed override MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle)
         {
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodHandle methodHandle;
+            QMethodDefinition methodHandle;
             RuntimeTypeHandle declaringTypeHandle;
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
             if (!executionEnvironment.TryGetMethodFromHandle(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
@@ -62,7 +73,7 @@ namespace System.Reflection.Runtime.General
         public sealed override MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
         {
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodHandle methodHandle;
+            QMethodDefinition methodHandle;
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
             if (!executionEnvironment.TryGetMethodFromHandleAndType(runtimeMethodHandle, declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
             {
@@ -138,11 +149,6 @@ namespace System.Reflection.Runtime.General
             return p.GetImplicitlyOverriddenBaseClassMember();
         }
 
-        public sealed override Binder CreateDefaultBinder()
-        {
-            return new DefaultBinder();
-        }
-
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
@@ -163,5 +169,219 @@ namespace System.Reflection.Runtime.General
         {
             return ActivatorImplementation.CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
         }
+
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        public sealed override Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure)
+        {
+            return CreateDelegateWorker(type, firstArgument, method, throwOnBindFailure, allowClosed: true);
+        }
+
+        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
+        public sealed override Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
+        {
+            // This API existed in v1/v1.1 and only expected to create open
+            // instance delegates, so we forbid closed delegates for backward compatibility. 
+            // But we'll allow relaxed signature checking and open static delegates because
+            // there's no ambiguity there (the caller would have to explicitly
+            // pass us a static method or a method with a non-exact signature
+            // and the only change in behavior from v1.1 there is that we won't
+            // fail the call).
+            return CreateDelegateWorker(type, null, method, throwOnBindFailure, allowClosed: false);
+        }
+
+        private static Delegate CreateDelegateWorker(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+
+            RuntimeMethodInfo runtimeMethodInfo = method as RuntimeMethodInfo;
+            if (runtimeMethodInfo == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
+
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
+
+            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, firstArgument, allowClosed);
+            if (result == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return result;
+        }
+
+        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        public sealed override Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate);
+
+            RuntimeTypeInfo runtimeContainingType = target.GetType().CastToRuntimeTypeInfo();
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
+            if (runtimeMethodInfo == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return runtimeMethodInfo.CreateDelegateWithoutSignatureValidation(type, target, isStatic: false, isOpen: false);
+        }
+
+        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        public sealed override Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (target.ContainsGenericParameters)
+                throw new ArgumentException(SR.Arg_UnboundGenParam);
+            if (method == null)
+                throw new ArgumentNullException(nameof(method));
+
+            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
+            if (runtimeDelegateType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
+
+            RuntimeTypeInfo runtimeContainingType = target as RuntimeTypeInfo;
+            if (runtimeContainingType == null)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
+
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate);
+
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: true, ignoreCase: ignoreCase);
+            if (runtimeMethodInfo == null)
+            {
+                if (throwOnBindFailure)
+                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
+            }
+            return runtimeMethodInfo.CreateDelegateWithoutSignatureValidation(type, target: null, isStatic: true, isOpen: true);
+        }
+
+        //
+        // Helper for the V1/V1.1 Delegate.CreateDelegate() api. These apis take method names rather than MethodInfo and only expect to create open static delegates 
+        // or closed instance delegates. For backward compatibility, they don't allow relaxed signature matching (which could make the choice of target method ambiguous.)
+        //
+        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
+        {
+            Debug.Assert(runtimeDelegateType.IsDelegate);
+
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding;
+            if (isStatic)
+            {
+                bindingFlags |= BindingFlags.Static | BindingFlags.FlattenHierarchy;
+            }
+            else
+            {
+                bindingFlags |= BindingFlags.Instance;
+            }
+            if (ignoreCase)
+            {
+                bindingFlags |= BindingFlags.IgnoreCase;
+            }
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
+            int numParameters = parameters.Length;
+            Type[] parameterTypes = new Type[numParameters];
+            for (int i = 0; i < numParameters; i++)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+            }
+            MethodInfo methodInfo = containingType.GetMethod(method, bindingFlags, null, parameterTypes, null);
+            if (methodInfo == null)
+                return null;
+
+            if (!methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
+                return null;
+
+            return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
+        }
+
+        public sealed override Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError)
+        {
+            // Note: "throwOnError" is a vacuous parameter. Any errors due to the CLSID not being registered or the server not being found will happen
+            // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
+            return RuntimeCLSIDTypeInfo.GetRuntimeCLSIDTypeInfo(clsid, server);
+        }
+
+        public sealed override IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
+        {
+            MethodBase method = GetMethodFromHandle(runtimeMethodHandle, declaringTypeHandle);
+
+            switch (method)
+            {
+                case RuntimeMethodInfo methodInfo:
+                    return methodInfo.LdFtnResult;
+                case RuntimeConstructorInfo constructorInfo:
+                    return constructorInfo.LdFtnResult;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+        }
+
+        public sealed override void RunModuleConstructor(Module module)
+        {
+            RuntimeAssembly assembly = (RuntimeAssembly)module.Assembly;
+            assembly.RunModuleConstructor();
+        }
+
+        public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (flds == null)
+                throw new ArgumentNullException(nameof(flds));
+            if (flds.Length == 0)
+                throw new ArgumentException(SR.Arg_ArrayZeroError);
+
+            offset = 0;
+            Type targetType = target.GetType();
+            for (int i = 0; i < flds.Length; i++)
+            {
+                RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo;
+                if (field == null)
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
+                if (field.IsInitOnly || field.IsStatic)
+                    throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);
+
+                // For proper handling of Nullable<T> don't change to something like 'IsAssignableFrom'
+                // Currently we can't make a TypedReference to fields of Nullable<T>, which is fine.
+                Type declaringType = field.DeclaringType;
+                if (targetType != declaringType && !targetType.IsSubclassOf(declaringType))
+                    throw new MissingMemberException(SR.MissingMemberTypeRef); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
+
+                Type fieldType = field.FieldType;
+                if (fieldType.IsPrimitive)
+                    throw new ArgumentException(SR.Arg_TypeRefPrimitve);  // This check exists for compatibility (why such an ad-hoc restriction?)
+                if (i < (flds.Length - 1) && !fieldType.IsValueType)
+                    throw new MissingMemberException(SR.MissingMemberNestErr); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
+
+                targetType = fieldType;
+                offset = checked(offset + field.Offset);
+            }
+
+            type = targetType;
+        }
+
+        public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssembly.GetLoadedAssemblies();
     }
 }

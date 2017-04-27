@@ -36,9 +36,12 @@ extern "C"
 
 extern "C"
 {
+    // TODO: Remove this when when we replace the references of
+    // Interop.mincore.GetLastError with Marsha.GetLastWin32Error
+    // CoreLib System.Text and System.Threading in CoreLib
     uint32_t GetLastError()
     {
-        return 1;
+       throw "GetLastError";
     }
 
     uint32_t WaitForMultipleObjectsEx(uint32_t, void*, uint32_t, uint32_t, uint32_t)
@@ -55,6 +58,21 @@ extern "C"
     {
         throw "CoGetApartmentType";
     }
+
+	void CoUnmarshalInterface()
+	{
+		throw "CoUnmarshalInterface";
+	}
+
+	void CoMarshalInterface()
+	{
+		throw "CoMarshalInterface";
+	}
+
+	void CoGetMarshalSizeMax()
+	{
+		throw "CoGetMarshalSizeMax";
+	}
 
     void CreateEventExW()
     {

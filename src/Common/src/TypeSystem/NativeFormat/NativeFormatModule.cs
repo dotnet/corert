@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Internal.Metadata.NativeFormat;
+using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
 using Internal.TypeSystem;
 
@@ -185,14 +186,21 @@ namespace Internal.TypeSystem.NativeFormat
                         return (MetadataType)namespaceDefinition.MetadataUnit.GetType((Handle)typeDefinitionHandle);
                     }
                 }
+            }
 
+            foreach (QualifiedNamespaceDefinition namespaceDefinition in namespaceDefinitions)
+            {
+                // At least the namespace was found.
+                MetadataReader metadataReader = namespaceDefinition.MetadataReader;
+                
                 // Now scan the type forwarders on this namespace
                 foreach (var typeForwarderHandle in namespaceDefinition.Definition.TypeForwarders)
                 {
                     var typeForwarder = metadataReader.GetTypeForwarder(typeForwarderHandle);
                     if (typeForwarder.Name.StringEquals(name, metadataReader))
                     {
-                        return (MetadataType)namespaceDefinition.MetadataUnit.GetType((Handle)typeForwarderHandle);
+                        ModuleDesc forwardTargetModule = namespaceDefinition.MetadataUnit.GetModule(typeForwarder.Scope);
+                        return forwardTargetModule.GetType(nameSpace, name, throwIfNotFound);
                     }
                 }
             }

@@ -467,6 +467,10 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_MemoryBarrier,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
+        CORINFO_INTRINSIC_ByReference_Ctor,
+        CORINFO_INTRINSIC_ByReference_Value,
+        CORINFO_INTRINSIC_Span_GetItem,
+        CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
 
         CORINFO_INTRINSIC_Count,
         CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
@@ -1388,6 +1392,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_NEWOBJ
         CORINFO_TOKENKIND_NewObj = 0x200 | CORINFO_TOKENKIND_Method,
+
+        // token comes from CEE_LDVIRTFTN
+        CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
@@ -1446,6 +1453,8 @@ namespace Internal.JitInterface
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_DESKTOP_QUIRKS = 38, // The JIT should generate desktop-quirk-compatible code
+        CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
+        CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
     }
 
     public struct CORJIT_FLAGS

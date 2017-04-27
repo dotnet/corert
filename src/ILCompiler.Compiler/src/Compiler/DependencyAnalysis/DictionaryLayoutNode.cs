@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
-    class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
+    public class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
     {
         class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
@@ -51,7 +51,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private void ComputeLayout()
         {
-            // TODO: deterministic ordering
             GenericLookupResult[] layout = new GenericLookupResult[_entries.Count];
             int index = 0;
             foreach (GenericLookupResult entry in EntryHashTable.Enumerator.Get(_entries))
@@ -59,11 +58,14 @@ namespace ILCompiler.DependencyAnalysis
                 layout[index++] = entry;
             }
 
+            var comparer = new GenericLookupResult.Comparer(new TypeSystemComparer());
+            Array.Sort(layout, comparer.Compare);
+
             // Only publish after the full layout is computed. Races are fine.
             _layout = layout;
         }
 
-        public int GetSlotForEntry(GenericLookupResult entry)
+        public virtual int GetSlotForEntry(GenericLookupResult entry)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -73,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public IEnumerable<GenericLookupResult> Entries
+        public virtual IEnumerable<GenericLookupResult> Entries
         {
             get
             {
@@ -82,6 +84,20 @@ namespace ILCompiler.DependencyAnalysis
 
                 return _layout;
             }
+        }
+
+        public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
+        {
+            if (_layout == null)
+                ComputeLayout();
+
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            for (int i = 0; i < _layout.Length; i++)
+            {
+                templateEntries.Add(_layout[i].TemplateDictionaryNode(factory));
+            }
+
+            return templateEntries.ToArray();
         }
 
         [Conditional("DEBUG")]
@@ -99,7 +115,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override string GetName() => $"Dictionary layout for {_owningMethodOrType.ToString()}";
+        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        {
+            foreach (GenericLookupResult lookupResult in Entries)
+            {
+#if DEBUG
+                int offsetBefore = builder.CountBytes;
+#endif
+
+                lookupResult.EmitDictionaryEntry(ref builder, factory, dictionary.TypeInstantiation, dictionary.MethodInstantiation, dictionary);
+
+#if DEBUG
+                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
+#endif
+            }
+        }
+
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;

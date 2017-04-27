@@ -76,8 +76,63 @@ build_native_corert()
     popd
 }
 
+initHostDistroRid()
+{
+    if [ "$__HostOS" == "Linux" ]; then
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            __HostDistroRid=""
+        else
+            source /etc/os-release
+            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
+        fi
+    fi
+}
+
+initTargetDistroRid()
+{
+    if [ $__CrossBuild == 1 ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
+                echo "WARNING: Can not determine runtime id for current distro."
+                export __DistroRid=""
+            else
+                source $ROOTFS_DIR/etc/os-release
+                export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            fi
+        fi
+    else
+        export __DistroRid="$__HostDistroRid"
+    fi
+}
+
+build_host_native_corert()
+{
+    __SavedBuildArch=$__BuildArch
+    __SavedIntermediatesDir=$__IntermediatesDir
+
+    export __IntermediatesDir=$__IntermediatesHostDir
+    export __BuildArch=$__HostArch
+    export __CMakeBinDir="$__ProductHostBinDir"
+    export CROSSCOMPILE=
+
+    build_native_corert
+
+    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}
+    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}/packaging/publish1
+
+    export __BuildArch=$__SavedBuildArch
+    export __IntermediatesDir=$__SavedIntermediatesDir
+    export CROSSCOMPILE=1
+}
 
 if $__buildnative; then
+
+    # init the host distro name
+    initHostDistroRid
+
+    # init the target distro name
+    initTargetDistroRid
 
     # Check prereqs.
 
@@ -90,6 +145,10 @@ if $__buildnative; then
     # Build the corert native components.
 
     build_native_corert
+
+    if [ $__CrossBuild = 1 ]; then
+        build_host_native_corert
+    fi
 
     # Build complete
 fi

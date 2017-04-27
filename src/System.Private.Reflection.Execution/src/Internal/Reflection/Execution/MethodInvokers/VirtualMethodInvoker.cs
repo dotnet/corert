@@ -13,8 +13,6 @@ using global::Internal.Runtime.CompilerServices;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
-using TargetException = System.ArgumentException;
-
 namespace Internal.Reflection.Execution.MethodInvokers
 {
     //
@@ -54,7 +52,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
         {
             MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
 
@@ -68,10 +66,28 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 MethodInvokeInfo.DynamicInvokeGenericDictionary,
                 MethodInvokeInfo.MethodInfo,
                 arguments,
+                binderBundle,
                 invokeMethodHelperIsThisCall: false,
                 methodToCallIsThisCall: true);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        // On CoreCLR/Desktop, we do not attempt to resolve the target virtual method based on the type of the 'this' pointer.
+        // For compatibility reasons, we'll do the same here.
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                if (RuntimeAugments.IsInterface(_declaringTypeHandle))
+                    throw new PlatformNotSupportedException();
+
+                // Must be an abstract method
+                if (MethodInvokeInfo.LdFtnResult == IntPtr.Zero && MethodInvokeInfo.VirtualResolveData != IntPtr.Zero)
+                    throw new PlatformNotSupportedException();
+
+                return MethodInvokeInfo.LdFtnResult;
+            }
         }
 
         private RuntimeTypeHandle _declaringTypeHandle;

@@ -628,7 +628,6 @@ namespace System.Collections.Generic
             return new Enumerator(this);
         }
 
-        /// <internalonly/>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return new Enumerator(this);
@@ -1090,7 +1089,10 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            Array.Sort<T>(_items, index, count, comparer);
+            if (count > 1)
+            {
+                Array.Sort<T>(_items, index, count, comparer);
+            }
             _version++;
         }
 
@@ -1102,10 +1104,11 @@ namespace System.Collections.Generic
             }
             Contract.EndContractBlock();
 
-            if (_size > 0)
+            if (_size > 1)
             {
                 ArraySortHelper<T>.Sort(_items, 0, _size, comparison);
             }
+            _version++;
         }
 
         // ToArray returns a new Object array containing the contents of the List.

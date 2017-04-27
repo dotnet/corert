@@ -8,7 +8,7 @@ typedef DPTR(ExInfo) PTR_ExInfo;
 enum ExKind : UInt8
 {
     EK_HardwareFault = 2,
-    EK_SuperscededFlag  = 8,
+    EK_SupersededFlag  = 8,
 };
 
 struct EHEnum
@@ -17,7 +17,7 @@ struct EHEnum
     EHEnumState m_state;
 };
 
-EXTERN_C Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx);
+EXTERN_C Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault);
 EXTERN_C Boolean FASTCALL RhpSfiNext(StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke);
 
 struct PInvokeTransitionFrame;
@@ -27,7 +27,7 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx);
+    friend Boolean FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, Boolean instructionFault);
     friend Boolean FASTCALL RhpSfiNext(StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke);
 
 public:
@@ -56,6 +56,10 @@ public:
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound);
 
+    // Debugger Hijacked frame looks very much like a usual managed frame except when the 
+    // frame must be reported conservatively, and when that happens, regular GC reporting should be skipped
+    bool ShouldSkipRegularGcReporting();
+
 private:
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
     // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
@@ -76,7 +80,7 @@ private:
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, UInt32 dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, UInt32 dwFlags);  // EH and hijack stackwalk, and collided unwind
-    void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx);             // EH stackwalk
+    void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
 
     PTR_VOID HandleExCollide(PTR_ExInfo pExInfo);
@@ -187,5 +191,6 @@ protected:
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
                                         // preferred because not all StackFrameIterators require this storage 
                                         // space.  However, the implementation simpler by doing it this way.
+    bool                m_ShouldSkipRegularGcReporting;
 };
 

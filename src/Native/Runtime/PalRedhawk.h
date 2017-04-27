@@ -498,9 +498,10 @@ typedef enum _EXCEPTION_DISPOSITION {
     ExceptionCollidedUnwind
 } EXCEPTION_DISPOSITION;
 
-#define STATUS_ACCESS_VIOLATION          ((UInt32   )0xC0000005L)    
-#define STATUS_STACK_OVERFLOW            ((UInt32   )0xC00000FDL)    
-#define STATUS_REDHAWK_NULL_REFERENCE    ((UInt32   )0x00000000L)    
+#define STATUS_ACCESS_VIOLATION                     ((UInt32   )0xC0000005L)
+#define STATUS_STACK_OVERFLOW                       ((UInt32   )0xC00000FDL)
+#define STATUS_REDHAWK_NULL_REFERENCE               ((UInt32   )0x00000000L)
+#define STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE ((UInt32   )0x00000042L)
 
 #ifdef PLATFORM_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -830,6 +831,14 @@ REDHAWK_PALIMPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL 
 REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
+
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+    void *virtualAddress, 
+    int thunkSize,
+    int thunksPerBlock,
+    int thunkBlockSize,
+    int thunkBlocksPerMapping);
 
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
@@ -837,6 +846,8 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
 REDHAWK_PALIMPORT UInt64 PalGetCurrentThreadIdForLogging();
+
+REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 #ifdef PLATFORM_UNIX
 REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string2);

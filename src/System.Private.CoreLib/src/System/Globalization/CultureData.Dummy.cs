@@ -58,7 +58,7 @@ namespace System.Globalization
 
         private static CultureData GetCultureDataFromRegionName(String regionName)
         {
-            return CultureInfo.InvariantCulture.m_cultureData;
+            return CultureInfo.InvariantCulture._cultureData;
         }
 
         private string GetTimeFormatString()

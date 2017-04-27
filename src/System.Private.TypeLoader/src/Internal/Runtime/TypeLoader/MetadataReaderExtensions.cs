@@ -13,9 +13,9 @@ using global::Internal.Metadata.NativeFormat;
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
-namespace Internal.Runtime.TypeLoader
+namespace System.Reflection.Runtime.General
 {
-    public static class MetadataReaderExtensions
+    public static partial class MetadataReaderExtensions
     {
         /// <summary>
         /// Convert raw token to a typed metadata handle.
@@ -94,6 +94,22 @@ namespace Internal.Runtime.TypeLoader
                 );
         }
 
+        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
+        {
+            ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
+            return CreateRuntimeAssemblyNameFromMetadata(
+                reader,
+                scopeReference.Name,
+                scopeReference.MajorVersion,
+                scopeReference.MinorVersion,
+                scopeReference.BuildNumber,
+                scopeReference.RevisionNumber,
+                scopeReference.Culture,
+                scopeReference.PublicKeyOrToken,
+                scopeReference.Flags
+                );
+        }
+
         private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
             MetadataReader reader,
             ConstantStringValueHandle name,
@@ -103,12 +119,12 @@ namespace Internal.Runtime.TypeLoader
             ushort revisionNumber,
             ConstantStringValueHandle culture,
             IEnumerable<byte> publicKeyOrToken,
-            AssemblyFlags assemblyFlags)
+            global::Internal.Metadata.NativeFormat.AssemblyFlags assemblyFlags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & AssemblyFlags.PublicKey))
+            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.PublicKey))
                 assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & AssemblyFlags.Retargetable))
+            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.Retargetable))
                 assemblyNameFlags |= AssemblyNameFlags.Retargetable;
             int contentType = ((int)assemblyFlags) & 0x00000E00;
             assemblyNameFlags |= (AssemblyNameFlags)contentType;

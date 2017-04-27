@@ -4,9 +4,7 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// TaskCompletionSource.cs
 //
-
 //
 // TaskCompletionSource<TResult> is the producer end of an unbound future.  Its
 // Task member may be distributed as the consumer end of the future.
@@ -19,7 +17,6 @@ using System.Runtime.ExceptionServices;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
-
 
 namespace System.Threading.Tasks
 {
@@ -201,22 +198,6 @@ namespace System.Threading.Tasks
             return rval;
         }
 
-        /// <summary>Attempts to transition the underlying task to the faulted state.</summary>
-        /// <param name="exceptions">The collection of exception dispatch infos to bind to this task.</param>
-        /// <returns>True if the operation was successful; otherwise, false.</returns>
-        /// <remarks>Unlike the public methods, this method doesn't currently validate that its arguments are correct.</remarks>
-        internal bool TrySetException(IEnumerable<ExceptionDispatchInfo> exceptions)
-        {
-            Debug.Assert(exceptions != null);
-#if DEBUG
-            foreach (var edi in exceptions) Debug.Assert(edi != null, "Contents must be non-null");
-#endif
-
-            bool rval = m_task.TrySetException(exceptions);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
-            return rval;
-        }
-
         /// <summary>
         /// Transitions the underlying
         /// <see cref="T:System.Threading.Tasks.Task{TResult}"/> into the 
@@ -291,7 +272,7 @@ namespace System.Threading.Tasks
         public bool TrySetResult(TResult result)
         {
             bool rval = m_task.TrySetResult(result);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
+            if (!rval) SpinUntilCompleted();
             return rval;
         }
 
@@ -338,9 +319,9 @@ namespace System.Threading.Tasks
         }
 
         // Enables a token to be stored into the canceled task
-        public bool TrySetCanceled(CancellationToken tokenToRecord)
+        public bool TrySetCanceled(CancellationToken cancellationToken)
         {
-            bool rval = m_task.TrySetCanceled(tokenToRecord);
+            bool rval = m_task.TrySetCanceled(cancellationToken);
             if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }

@@ -1,14 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'"/>
   <PropertyGroup>
     <ProjectGuid>{A965EA82-219D-48F7-AD51-BC030C16CC6F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>ILCompiler.MetadataTransform</AssemblyName>
-    <FileAlignment>512</FileAlignment>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <CLSCompliant>false</CLSCompliant>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -18,10 +16,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageDestination Include="Tools">
-      <TargetFramework>.NetCoreApp,Version=1.2</TargetFramework>
+      <InProject>false</InProject>
+      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
     </PackageDestination>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
       <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
       <Name>ILCompiler.MetadataWriter</Name>
@@ -53,5 +52,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'"/>
 </Project>

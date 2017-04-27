@@ -5,12 +5,13 @@
 using System.IO;
 using System.Collections.Generic;
 
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.Assemblies.EcmaFormat;
 using System.Reflection.Runtime.Dispensers;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.PropertyInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -44,9 +45,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal sealed partial class EcmaFormatRuntimeAssembly
     {
-        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader)
+        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader ecmaMetadataReader)
         {
-            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(bindResult.EcmaMetadataReader));
+            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(ecmaMetadataReader));
         }
 
         private static readonly Dispenser<EcmaRuntimeAssemblyKey, RuntimeAssembly> s_EcmaAssemblyDispenser =
@@ -67,9 +68,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 
             public override bool Equals(Object obj)
             {
-                if (!(obj is RuntimeAssemblyKey))
+                if (!(obj is EcmaRuntimeAssemblyKey))
                     return false;
-                return Equals((RuntimeAssemblyKey)obj);
+                return Equals((EcmaRuntimeAssemblyKey)obj);
             }
 
 
@@ -85,6 +86,84 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
 
             public MetadataReader Reader { get; }
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // FieldInfos
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class EcmaFormatRuntimeFieldInfo
+    {
+        internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldDefinitionHandle fieldHandle, EcmaFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        {
+            return new EcmaFormatRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // PropertyInfos
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class EcmaFormatRuntimePropertyInfo
+    {
+        internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyDefinitionHandle propertyHandle, EcmaFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        {
+            return new EcmaFormatRuntimePropertyInfo(propertyHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.EventInfos.EcmaFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // EventInfos
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class EcmaFormatRuntimeEventInfo
+    {
+        internal static RuntimeEventInfo GetRuntimeEventInfo(EventDefinitionHandle eventHandle, EcmaFormatRuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
+        {
+            return new EcmaFormatRuntimeEventInfo(eventHandle, definingTypeInfo, contextTypeInfo, reflectedType).WithDebugName();
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // ParameterInfos for MethodBase objects with Parameter metadata.
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class EcmaFormatMethodParameterInfo : RuntimeMethodParameterInfo
+    {
+        internal static EcmaFormatMethodParameterInfo GetEcmaFormatMethodParameterInfo(MethodBase member, MethodDefinitionHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
+        {
+            return new EcmaFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
+        }
+    }
+}
+
+namespace System.Reflection.Runtime.CustomAttributes
+{
+    using EcmaFormat;
+
+    //-----------------------------------------------------------------------------------------------------------
+    // CustomAttributeData objects returned by various CustomAttributes properties.
+    //-----------------------------------------------------------------------------------------------------------
+    internal abstract partial class RuntimeCustomAttributeData
+    {
+        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
+        {
+            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
+                yield return GetCustomAttributeData(reader, customAttributeHandle);
+        }
+
+        public static CustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+        {
+            return new EcmaFormatCustomAttributeData(reader, customAttributeHandle);
         }
     }
 }
