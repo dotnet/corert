@@ -811,8 +811,7 @@ namespace System
         // These just wrap calls to Normalization class
         public bool IsNormalized()
         {
-            // Default to Form IDNA
-            return IsNormalized((NormalizationForm)ExtendedNormalizationForms.FormIdna);
+            return IsNormalized(NormalizationForm.FormC);
         }
 
         public bool IsNormalized(NormalizationForm normalizationForm)
@@ -822,8 +821,7 @@ namespace System
 
         public String Normalize()
         {
-            // Default to Form IDNA
-            return Normalize((NormalizationForm)ExtendedNormalizationForms.FormIdna);
+            return Normalize(NormalizationForm.FormC);
         }
 
         public String Normalize(NormalizationForm normalizationForm)
