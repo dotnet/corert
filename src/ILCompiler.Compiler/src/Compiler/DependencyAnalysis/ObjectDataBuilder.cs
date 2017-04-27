@@ -257,8 +257,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     EmitLong(delta);
                     break;
-                case RelocType.IMAGE_REL_THUMB_BRANCH24:
-                case RelocType.IMAGE_REL_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.
                     break;                    
