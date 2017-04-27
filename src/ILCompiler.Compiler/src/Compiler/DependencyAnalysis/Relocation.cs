@@ -14,9 +14,9 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_THUMB_MOV32     = 0x07,     // Thumb2: based MOVW/MOVT
         IMAGE_REL_BASED_DIR64           = 0x0A,     // 64 bit address base
         IMAGE_REL_BASED_REL32           = 0x10,     // 32-bit relative address from byte following reloc
-        IMAGE_REL_THUMB_MOV32           = 0x11,     // Thumb2: MOVW/MOVT
-
         IMAGE_REL_BASED_THUMB_BRANCH24  = 0x13,     // Thumb2: based B, BL
+        // TODO: Clean up #3440
+        IMAGE_REL_THUMB_MOV32           = 0x11,     // Thumb2: MOVW/MOVT
         IMAGE_REL_THUMB_BRANCH24        = 0x14,     // Thumb2: B, BL
 
         IMAGE_REL_BASED_RELPTR32        = 0x7C,     // 32-bit relative address from byte starting reloc
