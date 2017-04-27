@@ -834,17 +834,34 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutTemplateTypeLayoutVertexNode : NativeLayoutSavedVertexNode
     {
-        private DefType _type;
+        private TypeDesc _type;
         private bool _isUniversalCanon;
 
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
-        public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, DefType type)
+        public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, TypeDesc type)
         {
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type, "Assert that the canonical type passed in is in standard canonical form");
             _isUniversalCanon = type.IsCanonicalSubtype(CanonicalFormKind.Universal);
-            _type = type.ConvertToSharedRuntimeDeterminedForm();
+
+            _type = GetActualTemplateTypeForType(factory, type);
+        }
+
+        private static TypeDesc GetActualTemplateTypeForType(NodeFactory factory, TypeDesc type)
+        {
+            DefType defType = type as DefType;
+            if (defType == null)
+            {
+                Debug.Assert(GenericTypesTemplateMap.IsArrayTypeEligibleForTemplate(type));
+                defType = type.GetClosestDefType().ConvertToSharedRuntimeDeterminedForm();
+                Debug.Assert(defType.Instantiation.Length == 1);
+                return factory.TypeSystemContext.GetArrayType(defType.Instantiation[0]);
+            }
+            else
+            {
+                return defType.ConvertToSharedRuntimeDeterminedForm();
+            }
         }
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
@@ -853,12 +870,12 @@ namespace ILCompiler.DependencyAnalysis
 
             if (context is UtcNodeFactory)
             {
-                symbol = ((UtcNodeFactory)context).TypeGCStaticDescSymbol((MetadataType)_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                symbol = ((UtcNodeFactory)context).TypeGCStaticDescSymbol((MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific));
                 staticsBagKind = BagElementKind.GcStaticDesc;
             }
             else
             {
-                symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type));
+                symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
                 staticsBagKind = BagElementKind.GcStaticEEType;
             }
 
@@ -871,12 +888,12 @@ namespace ILCompiler.DependencyAnalysis
 
             if (context is UtcNodeFactory)
             {
-                symbol = ((UtcNodeFactory)context).TypeThreadStaticGCDescNode((MetadataType)_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                symbol = ((UtcNodeFactory)context).TypeThreadStaticGCDescNode((MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific));
                 staticsBagKind = BagElementKind.ThreadStaticDesc;
             }
             else
             {
-                symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type));
+                symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
                 staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
             }
 
@@ -899,13 +916,13 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isUniversalCanon)
             {
-                if (_type.GCStaticFieldSize.AsInt > 0)
+                if (_type.GetClosestDefType().GCStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetStaticsNode(context, out ignored), "type gc static info");
                 }
 
-                if (_type.ThreadStaticFieldSize.AsInt > 0)
+                if (_type.GetClosestDefType().ThreadStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetThreadStaticsNode(context, out ignored), "type thread static info");
@@ -1031,7 +1048,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool HasInstantiationDeterminedSize()
         {
             Debug.Assert(_isUniversalCanon);
-            return _type.InstanceFieldSize.IsIndeterminate;
+            return _type.GetClosestDefType().InstanceFieldSize.IsIndeterminate;
         }
 
         public override Vertex WriteVertex(NodeFactory factory)
@@ -1088,23 +1105,24 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isUniversalCanon)
             {
-                if (_type.NonGCStaticFieldSize.AsInt != 0)
+                DefType closestDefType = _type.GetClosestDefType();
+                if (closestDefType.NonGCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)_type.NonGCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestDefType.NonGCStaticFieldSize.AsInt));
                 }
 
-                if (_type.GCStaticFieldSize.AsInt != 0)
+                if (closestDefType.GCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)_type.GCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestDefType.GCStaticFieldSize.AsInt));
                     BagElementKind staticDescBagType;
                     ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
                     uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
                     layoutInfo.AppendUnsigned(staticDescBagType, gcStaticsSymbolIndex);
                 }
 
-                if (_type.ThreadStaticFieldSize.AsInt != 0)
+                if (closestDefType.ThreadStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)_type.ThreadStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestDefType.ThreadStaticFieldSize.AsInt));
                     BagElementKind threadStaticDescBagType;
                     ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
                     uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);
@@ -1137,8 +1155,11 @@ namespace ILCompiler.DependencyAnalysis
             if (typeFlags != default(Internal.NativeFormat.TypeFlags))
                 layoutInfo.AppendUnsigned(BagElementKind.TypeFlags, (uint)typeFlags);
 
-            if (_type.GetTypeDefinition().HasVariance)
+            if (_type.GetTypeDefinition().HasVariance || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
             {
+                // Runtime casting logic relies on all interface types implemented on arrays
+                // to have the variant flag set (even if all the arguments are non-variant).
+                // This supports e.g. casting uint[] to ICollection<int>
                 List<uint> varianceFlags = new List<uint>();
                 foreach (GenericParameterDesc param in _type.GetTypeDefinition().Instantiation)
                 {
