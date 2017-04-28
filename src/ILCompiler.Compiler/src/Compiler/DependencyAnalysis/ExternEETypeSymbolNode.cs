@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _type;
 
         public ExternEETypeSymbolNode(NodeFactory factory, TypeDesc type)
-            : base("__EEType_" + factory.NameMangler.GetMangledTypeName(type))
+            : base(factory.NameMangler.NodeMangler.EEType(type))
         {
             _type = type;
 

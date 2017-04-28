@@ -26,6 +26,19 @@ class RuntimeInstance
     SList<Module>               m_ModuleList;
     ReaderWriterLock            m_ModuleListLock;
 
+public:
+    struct OsModuleEntry;
+    typedef DPTR(OsModuleEntry) PTR_OsModuleEntry;
+    struct OsModuleEntry
+    {
+        PTR_OsModuleEntry      m_pNext;
+        HANDLE                 m_osModule;
+    };
+
+    typedef SList<OsModuleEntry> OsModuleList;
+private:
+    OsModuleList                m_OsModuleList;
+
 #ifdef FEATURE_DYNAMIC_CODE
     struct CodeManagerEntry;
     typedef DPTR(CodeManagerEntry) PTR_CodeManagerEntry;
@@ -43,14 +56,6 @@ class RuntimeInstance
 #endif
 
 public:
-    struct OsModuleEntry
-    {
-        OsModuleEntry*         m_pNext;
-        HANDLE                 m_osModule;
-    };
-
-    typedef SList<OsModuleEntry> OsModuleList;
-
     struct TypeManagerEntry
     {
         TypeManagerEntry*         m_pNext;
@@ -61,7 +66,6 @@ public:
     
 private:
     TypeManagerList             m_TypeManagerList;
-    OsModuleList                m_OsModuleList;
 
     // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
     // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
@@ -171,7 +175,7 @@ public:
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
     TypeManagerList& GetTypeManagerList();
-    OsModuleList& GetOsModuleList();
+    OsModuleList* GetOsModuleList();
     ReaderWriterLock& GetTypeManagerLock();
 
     // This will hold the module list lock over each callback. Make sure

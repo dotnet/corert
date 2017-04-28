@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return nameMangler.CompilationUnitPrefix + "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.ThreadStatics(type);
         }
 
         int ISymbolNode.Offset => 0;

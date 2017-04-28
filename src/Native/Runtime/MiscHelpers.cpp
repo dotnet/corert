@@ -110,9 +110,9 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
 
     ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
 
-    RuntimeInstance::OsModuleList osModules = GetRuntimeInstance()->GetOsModuleList();
+    RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
     
-    for (RuntimeInstance::OsModuleList::Iterator iter = osModules.Begin(); iter != osModules.End(); iter++)
+    for (RuntimeInstance::OsModuleList::Iterator iter = osModules->Begin(); iter != osModules->End(); iter++)
     {
         if (pResultArray && (cModules < cResultArrayElements))
             pResultElements[cModules] = iter->m_osModule;

@@ -20,7 +20,7 @@ namespace ILCompiler
         private SHA256 _sha256;
         private readonly bool _mangleForCplusPlus;
 
-        public CoreRTNameMangler(bool mangleForCplusPlus)
+        public CoreRTNameMangler(NodeMangler nodeMangler, bool mangleForCplusPlus) : base(nodeMangler)
         {
             _mangleForCplusPlus = mangleForCplusPlus;
         }

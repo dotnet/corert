@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _type;
 
         public ImportedEETypeSymbolNode(NodeFactory factory, TypeDesc type)
-            : base("__imp___EEType_" + factory.NameMangler.GetMangledTypeName(type))
+            : base("__imp_" + factory.NameMangler.NodeMangler.EEType(type))
         {
             _type = type;
         }

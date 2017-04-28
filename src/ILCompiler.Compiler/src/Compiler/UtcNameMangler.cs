@@ -37,7 +37,7 @@ namespace ILCompiler
         private bool HasImport { get; set; }
         private bool HasExport { get; set; }
 
-        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals)
+        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals) : base(new WindowsNodeMangler())
         {
             // Do not support both imports and exports for one module
             Debug.Assert(!hasImport || !hasExport);
