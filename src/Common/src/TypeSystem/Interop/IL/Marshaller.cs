@@ -282,7 +282,7 @@ namespace Internal.TypeSystem.Interop
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
-            Marshaller marshaller = Marshaller.CreateMarshaller(marshallerKind);
+            Marshaller marshaller = CreateMarshaller(marshallerKind);
             marshaller.Context = context;
             marshaller.InteropStateManager = interopStateManager;
             marshaller.MarshallerKind = marshallerKind;
@@ -359,6 +359,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.UnicodeChar:
                     return new BlittableValueMarshaller();
+                case MarshallerKind.AnsiChar:
+                    return new AnsiCharMarshaller();
                 case MarshallerKind.Array:
                     return new ArrayMarshaller();
                 case MarshallerKind.BlittableArray:
@@ -389,6 +391,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.ByValAnsiCharArray:
                 case MarshallerKind.ByValArray:
                     return new ByValArrayMarshaller();
+                case MarshallerKind.AnsiCharArray:
+                    return new AnsiCharArrayMarshaller();
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled and an Exception method body 
@@ -1356,6 +1360,68 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
+    class AnsiCharArrayMarshaller : ArrayMarshaller
+    {
+        protected override void AllocManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AllocMemoryForAnsiCharArray");
+            LoadManagedValue(codeStream);
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            StoreNativeValue(codeStream);
+        }
+
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharArrayToAnsiCharArray");
+
+            LoadManagedValue(codeStream);
+            LoadNativeValue(codeStream);
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharArrayToWideCharArray");
+
+            LoadNativeValue(codeStream);
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+        }
+    }
+
+    class AnsiCharMarshaller : Marshaller
+    {
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharToAnsiChar");
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+            StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharToWideChar");
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+            StoreNativeValue(codeStream);
+        }
+    }
+
     class BooleanMarshaller : Marshaller
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
@@ -1681,9 +1747,17 @@ namespace Internal.TypeSystem.Interop
         }
         protected override void AllocNativeToManaged(ILCodeStream codeStream)
         {
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
+            var emitter = _ilCodeStreams.Emitter;
+            var lNull = emitter.NewCodeLabel();
+
+            // Check for null array
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNull);
+
+            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
                 InteropTypes.GetStringBuilder(Context).GetParameterlessConstructor()));
             StoreManagedValue(codeStream);
+            codeStream.EmitLabel(lNull);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)

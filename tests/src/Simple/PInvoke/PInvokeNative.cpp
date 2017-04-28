@@ -597,6 +597,20 @@ DLL_EXPORT bool __stdcall StructTest_Nested(NativeNestedStruct nns)
     return StructTest_Explicit(nns.nes);
 }
 
+DLL_EXPORT bool __stdcall VerifyAnsiCharArrayIn(char *a)
+{
+    return CompareAnsiString(a, "Hello World") == 1;
+}
+
+DLL_EXPORT bool __stdcall VerifyAnsiCharArrayOut(char *a)
+{
+    if (a == NULL) 
+        return false;
+    
+    CopyAnsiString(a, "Hello World!");
+    return true;
+}
+
 #if (_MSC_VER >= 1400)         // Check MSC version
 #pragma warning(pop)           // Renable previous depreciations
 #endif

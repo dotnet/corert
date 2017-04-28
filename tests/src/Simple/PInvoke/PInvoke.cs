@@ -60,6 +60,12 @@ namespace PInvokeTests
         [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern bool VerifyAnsiCharArrayIn(char []a);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        private static extern bool VerifyAnsiCharArrayOut([Out]char[] a);
+
         [DllImport("*", CharSet = CharSet.Ansi)]
         private static extern void ToUpper([In, Out, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
@@ -246,6 +252,13 @@ namespace PInvokeTests
             }
 
             ThrowIfNotEquals(0, CheckIncremental_Foo(arr_foo, ArraySize), "Array marshalling failed");
+
+            char[] a = "Hello World".ToCharArray();
+            ThrowIfNotEquals(true, VerifyAnsiCharArrayIn(a), "Ansi Char Array In failed");
+
+            char[] b = new char[12];
+            ThrowIfNotEquals(true, VerifyAnsiCharArrayOut(b), "Ansi Char Array Out failed");
+            ThrowIfNotEquals("Hello World!", new String(b), "Ansi Char Array Out failed2");
         }
 
         private static void TestByRef()
