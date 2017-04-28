@@ -1208,7 +1208,25 @@ namespace Internal.IL
 
         void ImportThrow()
         {
-            throw new NotImplementedException();
+            var value = Pop();
+
+            var obj = _typeSystemContext.GetWellKnownType(WellKnownType.Object);
+            var exception = _typeSystemContext.GetWellKnownType(WellKnownType.Exception);
+
+            var type = value.Type;
+            while (type != obj)
+            {
+                if (type != exception)
+                {
+                    type = type.BaseType;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            VerificationError(VerifierError.E_STACK_NOT_EQ);
         }
 
         void ImportLoadString(int token)
