@@ -55,36 +55,8 @@ namespace System.Resources
                                                               Version version,
                                                               bool throwOnFileNotFound)
         {
-            AssemblyName mainAssemblyAn = mainAssembly.GetName();
-            AssemblyName an = new AssemblyName();
-
-            an.CultureInfo = culture;
-            an.Name = name;
-            an.SetPublicKey(mainAssemblyAn.GetPublicKey());
-            an.Flags = mainAssemblyAn.Flags | AssemblyNameFlags.PublicKey;
-
-            if (version == null)
-                an.Version = mainAssemblyAn.Version;
-            else
-                an.Version = version;
-
-            Assembly retAssembly = null;
-            try
-            {
-                retAssembly = Assembly.Load(an);
-            }
-            catch (FileNotFoundException)
-            {
-                // Callbacks may throw FileNotFoundException when specified culture does not exist.
-                // We must catch the exception and continue to allow fallback cultures to be used.
-            }
-
-            if (retAssembly == mainAssembly || (retAssembly == null && throwOnFileNotFound))
-            {
-                throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, an.Name));
-            }
-
-            return retAssembly;
+            // TODO: Make this work (but we can't throw NotImplemented because that would break all resource lookups)
+            return null;
         }
     }
 
