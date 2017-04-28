@@ -37,6 +37,7 @@ namespace ILCompiler
         private bool _multiFile;
         private bool _useSharedGenerics;
         private string _mapFileName;
+        private string _metadataLogFileName;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -133,6 +134,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+                syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -340,6 +342,7 @@ namespace ILCompiler
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
                 .UseDebugInfo(_enableDebugInfo)
+                .UseMetadataLogFile(_metadataLogFileName)
                 .ToCompilation();
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;

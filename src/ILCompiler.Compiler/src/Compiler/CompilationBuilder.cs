@@ -12,7 +12,8 @@ namespace ILCompiler
 {
     public abstract class CompilationBuilder
     {
-        protected NodeFactory _nodeFactory;
+        protected readonly CompilerTypeSystemContext _context;
+        protected readonly CompilationModuleGroup _compilationGroup;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -21,10 +22,12 @@ namespace ILCompiler
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected bool _generateDebugInfo = false;
+        private string _metadataLogFile = null;
 
-        public CompilationBuilder(NodeFactory nodeFactory)
+        public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
         {
-            _nodeFactory = nodeFactory;
+            _context = context;
+            _compilationGroup = compilationGroup;
         }
 
         public CompilationBuilder UseLogger(Logger logger)
@@ -51,6 +54,12 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseMetadataLogFile(string fileName)
+        {
+            _metadataLogFile = fileName;
+            return this;
+        }
+
         public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
         {
             _generateDebugInfo = generateDebugInfo;
@@ -59,23 +68,28 @@ namespace ILCompiler
 
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
-        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph()
+        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory)
         {
             // Choose which dependency graph implementation to use based on the amount of logging requested.
             switch (_dependencyTrackingLevel)
             {
                 case DependencyTrackingLevel.None:
-                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, null);
 
                 case DependencyTrackingLevel.First:
-                    return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                    return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, null);
 
                 case DependencyTrackingLevel.All:
-                    return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                    return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(factory, null);
 
                 default:
                     throw new InvalidOperationException();
             }
+        }
+
+        protected MetadataManager CreateMetadataManager()
+        {
+            return new CompilerGeneratedMetadataManager(_compilationGroup, _context, _metadataLogFile);
         }
 
         public abstract ICompilation ToCompilation();
