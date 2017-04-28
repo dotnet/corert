@@ -257,6 +257,16 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     EnumThreadStaticGCRefDescs(pfnCallback, pvCallbackData);
 }
 
+RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
+{
+    return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));
+}
+
+ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
+{
+    return m_ModuleListLock;
+}
+
 #ifndef DACCESS_COMPILE
 
 Module * RuntimeInstance::FindModuleByOsHandle(HANDLE hOsHandle)
@@ -433,6 +443,11 @@ COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, v
 {
     TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
+
+    // This event must occur after the module is added to the enumeration
+    if (osModule != nullptr)
+        DebugEventSource::SendModuleLoadEvent(osModule);
+
     return TypeManagerHandle::Create(typeManager);
 }
 
@@ -453,7 +468,7 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
         RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
         ReaderWriterLock::WriteHolder write(&pRuntimeInstance->GetTypeManagerLock());
 
-        pRuntimeInstance->GetOsModuleList().PushHead(pEntry);
+        pRuntimeInstance->GetOsModuleList()->PushHead(pEntry);
     }
 
     return hOsModule; // Return non-null on success
@@ -462,16 +477,6 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
 RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList() 
 {
     return m_TypeManagerList;
-}
-
-RuntimeInstance::OsModuleList& RuntimeInstance::GetOsModuleList() 
-{
-    return m_OsModuleList;
-}
-
-ReaderWriterLock& RuntimeInstance::GetTypeManagerLock() 
-{
-    return m_ModuleListLock;
 }
 
 // static 

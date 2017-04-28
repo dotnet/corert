@@ -35,12 +35,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__NonGCStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.NonGCStatics(type);
         }
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__NonGCStaticBase_").Append(nameMangler.GetMangledTypeName(_type)); 
+            sb.Append(nameMangler.NodeMangler.NonGCStatics(_type));
         }
 
         int ISymbolNode.Offset => 0;

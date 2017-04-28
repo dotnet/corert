@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticBase_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.NodeMangler.GCStatics(_type));
         }
 
         public int Offset => 0;
@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-           return "__GCStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.GCStatics(type);
         }
 
         public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);

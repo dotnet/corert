@@ -266,6 +266,7 @@
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
@@ -278,7 +279,10 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
+    <Compile Include="Compiler\WindowsNodeMangler.cs" />
+    <Compile Include="Compiler\CppNodeMangler.cs" />
     <Compile Include="CppCodeGen\DependencyNodeIterator.cs" />
     <Compile Include="CppCodeGen\EvaluationStack.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
