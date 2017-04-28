@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>toolchain.ubuntu.14.04-arm.Microsoft.DotNet.ILCompiler.Development</id>
+    <version>1.0.2-prerelease-00001</version>
+    <title>Microsoft .NET Native Toolchain - Development Version</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
+    <projectUrl>https://github.com/dotnet/corert</projectUrl>
+    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Provides the toolchain to compile managed code to native.</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright &#169; Microsoft Corporation</copyright>
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+      <file src="../ilc.dll" target="ilc.dll" />
+      <file src="../ilc.exe" target="ilc.exe" />
+      <file src="../ILCompiler.Compiler.dll" target="ILCompiler.Compiler.dll" />
+      <file src="../ILCompiler.DependencyAnalysisFramework.dll" target="ILCompiler.DependencyAnalysisFramework.dll" />
+      <file src="../ILCompiler.TypeSystem.dll" target="ILCompiler.TypeSystem.dll" />
+      <file src="../lib/libRuntime.a" target="libRuntime.a" />
+      <file src="../lib/libPortableRuntime.a" target="libPortableRuntime.a" />
+      <file src="../lib/libbootstrapper.a" target="libbootstrapper.a" />
+      <file src="../lib/libbootstrappercpp.a" target="libbootstrappercpp.a" />
+      <file src="../lib/libSystem.Private.CoreLib.Native.a" target="libSystem.Private.CoreLib.Native.a" />
+      <file src="../System.Private.Corelib.dll" target="System.Private.Corelib.dll" />
+      <file src="../ToolRuntime/*.dll" />
+      <file src="../ToolRuntime/*.so" />
+      <file src="../ToolRuntime/corerun" target="corerun" />
+      <file src="../../../../packages/toolchain.ubuntu.14.04-arm.Microsoft.DotNet.RyuJit/1.0.1-prerelease-00002/runtimes/ubuntu.14.04-arm/native/libryujit.so" target="ryujit.so" />
+      <file src="../../../../packages/toolchain.ubuntu.14.04-arm.Microsoft.DotNet.ObjectWriter/1.0.3-prerelease-00001/runtimes/ubuntu.14.04-arm/native/libobjwriter.so" target="objwriter.so" />
+      <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
+  </files>
+</package>
