@@ -106,7 +106,7 @@ namespace ILCompiler
             // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
             var noThrowUtf8Encoding = new UTF8Encoding(false, false);
 
-            using (var logWriter = _metadataLogFile != null ? new StreamWriter(File.Open(_metadataLogFile, FileMode.Create, FileAccess.Write), noThrowUtf8Encoding) : null)
+            using (var logWriter = _metadataLogFile != null ? new StreamWriter(File.Open(_metadataLogFile, FileMode.Create, FileAccess.Write, FileShare.Read), noThrowUtf8Encoding) : null)
             {
                 writer.LogWriter = logWriter;
                 writer.Write(ms);
