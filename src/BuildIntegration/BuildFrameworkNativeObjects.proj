@@ -32,6 +32,9 @@
   </Target>
 
   <Target Name="BuildOneFrameworkLibrary">
+    <PropertyGroup>
+        <IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
+    </PropertyGroup>
     <ItemGroup>
         <ManagedBinary Include="$(LibraryToCompile)" />
         <IlcCompileInput Include="@(ManagedBinary)" />

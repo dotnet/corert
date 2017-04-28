@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -24,10 +25,13 @@ namespace ILCompiler
     public class CompilerGeneratedMetadataManager : MetadataManager
     {
         private GeneratedTypesAndCodeMetadataPolicy _metadataPolicy;
+        private string _metadataLogFile;
 
-        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext) : base(group, typeSystemContext)
+        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
+            : base(group, typeSystemContext)
         {
             _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
+            _metadataLogFile = logFile;
         }
 
         private HashSet<MetadataType> _typeDefinitionsToGenerate = new HashSet<MetadataType>();
@@ -66,8 +70,11 @@ namespace ILCompiler
                 var definition = type.GetTypeDefinition() as Internal.TypeSystem.Ecma.EcmaType;
                 if (definition == null)
                     continue;
-                _typeDefinitionsToGenerate.Add(definition);
-                _modulesSeen.Add(definition.Module);
+                if (factory.CompilationModuleGroup.ContainsType(definition))
+                {
+                    _typeDefinitionsToGenerate.Add(definition);
+                    _modulesSeen.Add(definition.Module);
+                }
             }
 
             foreach (var method in GetCompiledMethods())
@@ -76,9 +83,12 @@ namespace ILCompiler
                 if (typicalMethod != null)
                 {
                     var owningType = (MetadataType)typicalMethod.OwningType;
-                    _typeDefinitionsToGenerate.Add(owningType);
-                    _modulesSeen.Add(owningType.Module);
-                    _methodDefinitionsToGenerate.Add(typicalMethod);
+                    if (factory.CompilationModuleGroup.ContainsType(owningType))
+                    {
+                        _typeDefinitionsToGenerate.Add(owningType);
+                        _modulesSeen.Add(owningType.Module);
+                        _methodDefinitionsToGenerate.Add(typicalMethod);
+                    }
                 }
             }
 
@@ -92,7 +102,16 @@ namespace ILCompiler
             var writer = new MetadataWriter();
             writer.ScopeDefinitions.AddRange(transformed.Scopes);
             var ms = new MemoryStream();
-            writer.Write(ms);
+
+            // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
+            var noThrowUtf8Encoding = new UTF8Encoding(false, false);
+
+            using (var logWriter = _metadataLogFile != null ? new StreamWriter(File.Open(_metadataLogFile, FileMode.Create, FileAccess.Write, FileShare.Read), noThrowUtf8Encoding) : null)
+            {
+                writer.LogWriter = logWriter;
+                writer.Write(ms);
+            }
+
             metadataBlob = ms.ToArray();
 
             typeMappings = new List<MetadataMapping<MetadataType>>();
