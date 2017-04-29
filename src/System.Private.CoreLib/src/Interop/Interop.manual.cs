@@ -28,8 +28,6 @@ internal partial class Interop
         MaxPath = 0x104u,
         StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
-        MutexAllAccess = 0x1F0001u,
-        EventAllAccess = 0x1F0003u,
         EFail = 0x80004005u,
         CoENotInitialized = 0x800401F0u,
         WaitFailed = 0xFFFFFFFFu,
