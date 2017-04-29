@@ -133,12 +133,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__EEType_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.EEType(type);
         }
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.NodeMangler.EEType(_type));
         }
 
         int ISymbolNode.Offset => 0;

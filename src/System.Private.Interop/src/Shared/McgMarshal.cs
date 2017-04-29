@@ -774,7 +774,7 @@ namespace System.Runtime.InteropServices
             {
                 len = (uint)src.Length;
 
-                dst = (System.IntPtr*)ExternalInterop.CoTaskMemAlloc((System.IntPtr)(len * (sizeof(System.IntPtr))));
+                dst = (System.IntPtr*)PInvokeMarshal.CoTaskMemAlloc((System.UIntPtr)(len * (sizeof(System.IntPtr))));
 
                 for (uint i = 0; i < len; i++)
                 {
