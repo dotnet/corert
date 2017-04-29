@@ -611,6 +611,11 @@ DLL_EXPORT bool __stdcall VerifyAnsiCharArrayOut(char *a)
     return true;
 }
 
+DLL_EXPORT bool __stdcall IsNULL(void *a)
+{
+    return a == NULL;
+}
+
 #if (_MSC_VER >= 1400)         // Check MSC version
 #pragma warning(pop)           // Renable previous depreciations
 #endif

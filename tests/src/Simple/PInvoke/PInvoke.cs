@@ -61,7 +61,7 @@ namespace PInvokeTests
         private static extern int VerifyAnsiStringArray([In, MarshalAs(UnmanagedType.LPArray)]string[] str);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-        private static extern bool VerifyAnsiCharArrayIn(char []a);
+        private static extern bool VerifyAnsiCharArrayIn(char[] a);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         private static extern bool VerifyAnsiCharArrayOut([Out]char[] a);
@@ -142,6 +142,18 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Array(SequentialStruct []ns, int length);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        static extern bool IsNULL(char[] a);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        static extern bool IsNULL(String sb);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool IsNULL(Foo[] foo);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool IsNULL(SequentialStruct[] foo);
 
         [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
         public unsafe struct InlineArrayStruct
@@ -244,7 +256,10 @@ namespace PInvokeTests
 
             Console.WriteLine("Testing marshalling blittable struct arrays");
 
-            Foo[] arr_foo = new Foo[ArraySize];
+            Foo[] arr_foo = null;
+            ThrowIfNotEquals(true, IsNULL(arr_foo), "Blittable array null check failed");
+            
+            arr_foo = new Foo[ArraySize];
             for (int i = 0; i < ArraySize; i++)
             {
                 arr_foo[i].a = i;
@@ -259,6 +274,9 @@ namespace PInvokeTests
             char[] b = new char[12];
             ThrowIfNotEquals(true, VerifyAnsiCharArrayOut(b), "Ansi Char Array Out failed");
             ThrowIfNotEquals("Hello World!", new String(b), "Ansi Char Array Out failed2");
+
+            char[] c = null;
+            ThrowIfNotEquals(true, IsNULL(c), "AnsiChar Array null check failed");
         }
 
         private static void TestByRef()
@@ -302,6 +320,10 @@ namespace PInvokeTests
 
             VerifyUnicodeStringRef(ref s);
             ThrowIfNotEquals("Hello World!", s, "Ref Unicode String marshalling failed");
+
+            string ss = null;
+            ThrowIfNotEquals(true, IsNULL(ss), "Ansi String null check failed");
+        
         }
 
         private static void TestStringBuilder()
@@ -533,7 +555,10 @@ namespace PInvokeTests
             ns.f2 = es;
             ThrowIfNotEquals(true, StructTest_Nested(ns), "Struct marshalling scenario5 failed.");
 
-            SequentialStruct[] ssa = new SequentialStruct[3];
+            SequentialStruct[] ssa = null;
+            ThrowIfNotEquals(true, IsNULL(ssa), "Non-blittable array null check failed");
+
+            ssa = new SequentialStruct[3];
             for (int i = 0; i < 3; i++)
             {
                 ssa[i].f1 = 0;

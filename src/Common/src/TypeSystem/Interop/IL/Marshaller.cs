@@ -1608,7 +1608,7 @@ namespace Internal.TypeSystem.Interop
 
     }
 
-    class SafeHandleMarshaller : Marshaller
+    class SafeHandleMarshaller : ReferenceMarshaller
     {
         protected override void EmitMarshalArgumentManagedToNative()
         {
@@ -1681,22 +1681,34 @@ namespace Internal.TypeSystem.Interop
 
         }
 
-        protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
-
-            marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(ManagedType.GetParameterlessConstructor()));
-            StoreManagedValue(marshallingCodeStream);
-
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
             InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 
-    class StringBuilderMarshaller : Marshaller
+    class ReferenceMarshaller : Marshaller
+    {
+        protected override void AllocNativeToManaged(ILCodeStream codeStream)
+        {
+            var emitter = _ilCodeStreams.Emitter;
+            var lNull = emitter.NewCodeLabel();
+
+            // Check for null
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNull);
+
+            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
+                ManagedType.GetParameterlessConstructor()));
+            StoreManagedValue(codeStream);
+            codeStream.EmitLabel(lNull);
+        }
+    }
+
+    class StringBuilderMarshaller : ReferenceMarshaller
     {
         private bool _isAnsi;
         public StringBuilderMarshaller(bool isAnsi)
@@ -1744,20 +1756,6 @@ namespace Internal.TypeSystem.Interop
                 codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
-        }
-        protected override void AllocNativeToManaged(ILCodeStream codeStream)
-        {
-            var emitter = _ilCodeStreams.Emitter;
-            var lNull = emitter.NewCodeLabel();
-
-            // Check for null array
-            LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.brfalse, lNull);
-
-            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
-                InteropTypes.GetStringBuilder(Context).GetParameterlessConstructor()));
-            StoreManagedValue(codeStream);
-            codeStream.EmitLabel(lNull);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)

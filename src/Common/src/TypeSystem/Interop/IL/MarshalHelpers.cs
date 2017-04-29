@@ -301,11 +301,12 @@ namespace Internal.TypeSystem.Interop
                                                 MarshallerKind.Unknown,
                                                 interopStateManager,
                                                 null);
-            Debug.Assert(nativeType is MetadataType || nativeType is PointerType);
 
             var elementNativeType = nativeType as MetadataType;
             if (elementNativeType == null)
             {
+                Debug.Assert(nativeType is PointerType);
+
                 // If it is a pointer type we will create InlineArray for IntPtr
                 elementNativeType = (MetadataType)managedElementType.Context.GetWellKnownType(WellKnownType.IntPtr);
             }
