@@ -845,15 +845,10 @@ namespace System
             return referenceCulture.CompareInfo.IsSuffix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        internal bool EndsWith(char value)
+        public bool EndsWith(char value)
         {
-            int thisLen = this.Length;
-            if (thisLen != 0)
-            {
-                if (this[thisLen - 1] == value)
-                    return true;
-            }
-            return false;
+            int thisLen = Length;
+            return thisLen != 0 && this[thisLen - 1] == value;
         }
 
         // Determines whether two strings match.
@@ -1170,5 +1165,7 @@ namespace System
 
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
+
+        public bool StartsWith(char value) => Length != 0 && _firstChar == value;
     }
 }

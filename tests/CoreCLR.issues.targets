@@ -638,22 +638,9 @@
     
     <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect1\Collect1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\ReRegisterForFinalize\ReRegisterForFinalize.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\HandleCopy\HandleCopy.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Weak\Weak.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize\Finalize.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\Finalize2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearray\finalizearray.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizenested\finalizenested.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstruct\finalnstruct.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstructresur\finalnstructresur.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgen\leakgen.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime1\lifetime1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleak\dlbigleak.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructtun\nstructtun.*" />
 
     <!-- InteropExtensions.MightBeBlittable is only an approximation -->
     <!-- https://github.com/dotnet/corert/issues/2355 -->
@@ -1012,10 +999,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.*" />
 
     <!-- More failing GC tests -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizearraysleep\finalizearraysleep.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd\dlbigleakthd.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlbigleakthd_v2\dlbigleakthd_v2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakWheel\leakwheel\leakwheel.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
 
     <!-- Variant interface method resolution -->
@@ -1072,15 +1055,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_dbgsizeof\_il_dbgsizeof.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\sizeof\_il_relsizeof\_il_relsizeof.*" />
 
-    <!-- NetStandard2: String..ctor(SByte*) -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxblk\cpblk3_il_d\cpblk3_il_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxblk\cpblk3_il_r\cpblk3_il_r.*" />
-
     <!-- NetStandard2: System.Runtime.Loader.AssemblyLoadContext -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\modulector\runmoduleconstructor\runmoduleconstructor.*" />
-
-    <!-- NetStandard2: RuntimeHelpers.TryCode -->
-    <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\RuntimeHelpers\ExecuteCodeWithGuaranteedCleanup\ExecuteCodeWithGuaranteedCleanup.*" />
 
     <!-- NetStandard2: Marshal.StringToCoTaskMemUTF8 -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\String\StringMarshalingTest\StringMarshalingTest.*" />

@@ -148,15 +148,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        if (Target.Abi == TargetAbi.CoreRT)
-                        {
-                            return new CanonicalEETypeNode(this, type);
-                        }
-                        else
-                        {
-                            // Remove this once we stop using the STS dependency analysis.
-                            return new NecessaryCanonicalEETypeNode(this, type);
-                        }
+                        return new NecessaryCanonicalEETypeNode(this, type);
                     }
                     else
                     {
@@ -296,6 +288,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
+            });
+
+            _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
+            {
+                return new ReflectableMethodNode(method);
             });
 
             _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(methodKey =>
@@ -676,6 +673,12 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
+        internal ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        {
+            return _reflectableMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;

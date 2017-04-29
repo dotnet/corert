@@ -139,28 +139,47 @@ namespace ILCompiler.DependencyAnalysis
             if (_id == ReadyToRunHelperId.VirtualCall || _id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
                 var targetMethod = (MethodDesc)_target;
+
+                DependencyList dependencyList = new DependencyList();
+
 #if !SUPPORT_JIT
-                if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(targetMethod.OwningType))
-#endif
+                // TODO: https://github.com/dotnet/corert/issues/3224 
+                if (targetMethod.IsAbstract)
                 {
-                    DependencyList dependencyList = new DependencyList();
-                    dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
-                    return dependencyList;
+                    dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
                 }
+
+                if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(targetMethod.OwningType))
+
+                {
+                    dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                }
+#endif
+
+                return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
+                    MethodDesc targetMethod = info.TargetMethod;
+
+                    DependencyList dependencyList = new DependencyList();
 #if !SUPPORT_JIT
-                    if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(info.TargetMethod.OwningType))
-#endif
+                    // TODO: https://github.com/dotnet/corert/issues/3224 
+                    if (targetMethod.IsAbstract)
                     {
-                        DependencyList dependencyList = new DependencyList();
-                        dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
-                        return dependencyList;
+                        dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
                     }
+
+                    if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(info.TargetMethod.OwningType))
+                    {
+                        dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
+                    }
+#endif
+
+                    return dependencyList;
                 }
             }
 

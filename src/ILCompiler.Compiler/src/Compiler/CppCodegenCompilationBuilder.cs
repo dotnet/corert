@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
@@ -16,7 +17,7 @@ namespace ILCompiler
         CppCodegenConfigProvider _config = new CppCodegenConfigProvider(Array.Empty<string>());
 
         public CppCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
-            : base(new CppCodegenNodeFactory(context, group))
+            : base(context, group)
         {
         }
 
@@ -28,7 +29,11 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            return new CppCodegenCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, _config);
+            MetadataManager metadataManager = CreateMetadataManager();
+            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, metadataManager);
+            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
+
+            return new CppCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);
         }
     }
 

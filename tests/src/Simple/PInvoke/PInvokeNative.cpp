@@ -351,15 +351,70 @@ DLL_EXPORT bool __stdcall Callback(StringFuncPtr *fnPtr)
    return true;
 }
 
-DLL_EXPORT void __stdcall VerifyStringBuilder(unsigned short *val)
+// returns
+// -1 if val is null
+//  1 if val is "Hello World"
+//  0 otherwise
+DLL_EXPORT int __stdcall VerifyUnicodeStringBuilder(unsigned short *val)
 {
-    char str[] = "Hello World";
-    int i;
-    for (i = 0; str[i] != '\0'; i++)
-        val[i] = (unsigned short)str[i];
-    val[i] = 0;
+    if (val == NULL)
+        return -1;
+
+    if (!VerifyUnicodeString(val))
+        return 0;
+
+    for (int i = 0; val[i] != '\0'; i++)
+    {
+        if ((char)val[i] >= 'a' && (char)val[i] <= 'z')
+        {
+            val[i] += 'A' - 'a';
+        }
+    }
+    return 1;
 }
 
+DLL_EXPORT int __stdcall VerifyUnicodeStringBuilderOut(unsigned short *val)
+{
+    if (val == NULL)
+        return 0;
+
+    unsigned short src[] = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0 };
+    for (int i = 0; i < 12; i++)
+        val[i] = src[i];
+    
+    return 1;
+}
+
+DLL_EXPORT int __stdcall VerifyAnsiStringBuilderOut(char *val)
+{
+    if (val == NULL)
+        return 0;
+
+    CopyAnsiString(val, "Hello World!");
+    return 1;
+}
+
+// returns
+// -1 if val is null
+//  1 if val is "Hello World"
+//  0 otherwise
+DLL_EXPORT int __stdcall VerifyAnsiStringBuilder(char *val)
+{
+    if (val == NULL)
+        return -1;
+
+    if (!VerifyAnsiString(val))
+        return 0;
+
+    for (int i = 0; val[i] != '\0'; i++)
+    {
+        if (val[i] >= 'a' && val[i] <= 'z')
+        {
+             val[i] += 'A' - 'a';
+        }
+    }
+    return 1;
+}
 
 DLL_EXPORT int* __stdcall ReversePInvoke_Unused(void(__stdcall *fnPtr) (void))
 {

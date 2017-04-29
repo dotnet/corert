@@ -36,7 +36,6 @@ namespace ILCompiler
             public HashSet<MethodDesc> DynamicInvokeCompiledMethods = new HashSet<MethodDesc>();
         }
 
-        private readonly HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
         private readonly ModuleDesc _metadataDescribingModule;
         private readonly HashSet<ModuleDesc> _compilationModules;
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
@@ -50,20 +49,6 @@ namespace ILCompiler
             _loadedMetadata = new Lazy<MetadataLoadedInfo>(LoadMetadata);
             _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
-        }
-
-        protected override void AddGeneratedType(TypeDesc type)
-        {
-            if (type.IsDefType && type.IsTypeDefinition)
-            {
-                var mdType = type as MetadataType;
-                if (mdType != null)
-                {
-                    _typeDefinitionsGenerated.Add(mdType);
-                }
-            }
-
-            base.AddGeneratedType(type);
         }
 
         /// <summary>
@@ -190,8 +175,8 @@ namespace ILCompiler
                 if (!_dynamicInvokeStubs.Value.TryGetValue(reflectableMethod, out typicalDynamicInvokeStub))
                     continue;
 
-                MethodDesc instantiatiatedDynamicInvokeStub = InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, reflectableMethod);
-                result.DynamicInvokeCompiledMethods.Add(instantiatiatedDynamicInvokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                MethodDesc instantiatiatedDynamicInvokeStub = InstantiateCanonicalDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, reflectableMethod);
+                result.DynamicInvokeCompiledMethods.Add(instantiatiatedDynamicInvokeStub);
             }
 
             return result;
@@ -250,8 +235,12 @@ namespace ILCompiler
             }
 
             // Generate type definition mappings
-            foreach (var definition in _typeDefinitionsGenerated)
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
+                MetadataType definition = type.IsTypeDefinition ? type as MetadataType : null;
+                if (definition == null)
+                    continue;
+
                 int token;
                 if (loadedMetadata.AllTypeMappings.TryGetValue(definition, out token))
                 {
@@ -405,17 +394,19 @@ namespace ILCompiler
         /// </summary>
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
+            Debug.Assert(IsReflectionInvokable(method));
+
             if (method.IsCanonicalMethod(CanonicalFormKind.Any))
                 return false;
 
-            MethodDesc reflectionInvokeStub = GetReflectionInvokeStub(method);
+            MethodDesc reflectionInvokeStub = GetCanonicalReflectionInvokeStub(method);
 
             if (reflectionInvokeStub == null)
                 return false;
 
             // TODO: Generate DynamicInvokeTemplateMap dependencies correctly. For now, force all canonical stubs to go through the 
             // calling convention converter interpreter path.
-            if (reflectionInvokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific) != reflectionInvokeStub)
+            if (reflectionInvokeStub.IsSharedByGenericInstantiations)
                 return false;
 
             return true;
@@ -425,7 +416,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
             MethodDesc typicalInvokeTarget = method.GetTypicalMethodDefinition();
             MethodDesc typicalDynamicInvokeStub;
@@ -433,16 +424,12 @@ namespace ILCompiler
             if (!_dynamicInvokeStubs.Value.TryGetValue(typicalInvokeTarget, out typicalDynamicInvokeStub))
                 return null;
 
-            MethodDesc dynamicInvokeStubIfItExists = InstantiateDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, method);
+            MethodDesc dynamicInvokeStubCanonicalized = InstantiateCanonicalDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, method);
 
-            if (dynamicInvokeStubIfItExists == null)
+            if (dynamicInvokeStubCanonicalized == null || !_loadedMetadata.Value.DynamicInvokeCompiledMethods.Contains(dynamicInvokeStubCanonicalized))
                 return null;
 
-            MethodDesc dynamicInvokeStubCanonicalized = dynamicInvokeStubIfItExists.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (_loadedMetadata.Value.DynamicInvokeCompiledMethods.Contains(dynamicInvokeStubCanonicalized))
-                return dynamicInvokeStubIfItExists;
-            else
-                return null;
+            return dynamicInvokeStubCanonicalized;
         }
     }
 }

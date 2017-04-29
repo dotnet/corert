@@ -67,32 +67,24 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
             }
 
-            if (factory.Target.Abi == TargetAbi.CoreRT)
+            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
+            if (interfaceType.RepresentsIndirectionCell)
             {
-                // TODO: Enable Indirect Pointer for Interface Dispatch Cell. See https://github.com/dotnet/corert/issues/2542
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType),
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfacePointerOrMetadataToken);
+                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
             }
             else
             {
-                if (factory.CompilationModuleGroup.ContainsType(_targetMethod.OwningType))
-                {
-                    objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
-                }
-                else
-                {
-                    objData.EmitReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32,
-                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
-                }
+                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
+            }
 
-                if (objData.TargetPointerSize == 8)
-                {
-                    // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
-                    // width there since a pointer to the cache will be written into the cell. Emit additional
-                    // 32 bits on targets whose pointer size is 64 bit. 
-                    objData.EmitInt(0);
-                }
+            if (objData.TargetPointerSize == 8)
+            {
+                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
+                // width there since a pointer to the cache will be written into the cell. Emit additional
+                // 32 bits on targets whose pointer size is 64 bit. 
+                objData.EmitInt(0);
             }
 
             // End the run of dispatch cells
