@@ -1,9 +1,5 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <IlcArg Include="--usesharedgenerics" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
 
