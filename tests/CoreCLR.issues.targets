@@ -193,6 +193,21 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\format\format.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-RTM\b475589\b475589\b475589.*" />
 
+    <!-- catch(T) / catch(Exception&lt;T&gt; -->
+    <!-- https://github.com/dotnet/corert/issues/3460 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_class_instance01\specific_class_instance01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_class_static01\specific_class_static01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\clr-x64-JIT\v2.1\b601838\b601838\b601838.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b441487\b441487\b441487.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_struct_instance01\specific_struct_instance01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_struct_static01\specific_struct_static01.*" />
+
+    <!-- Unable to generate TypeLoadException throwing body in shared code -->
+    <!-- https://github.com/dotnet/corert/issues/3461 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b27077\b27077\b27077.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Negative002\Negative002.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param02\param02.*" />
+
     <!-- Vararg methods -->
     <!-- https://github.com/dotnet/corert/issues/395 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\1\arglist\arglist.*" />
@@ -568,6 +583,7 @@
     <!-- https://github.com/dotnet/corert/issues/190 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\InterfaceImplementation\HelloWorld\HelloWorld.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance2\Variance2.*" />
 
     <!-- Marshal.GetExceptionForHR not setting HResult -->
     <!-- https://github.com/dotnet/corert/issues/2256 -->
