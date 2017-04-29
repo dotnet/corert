@@ -30,7 +30,27 @@ namespace System.Runtime.InteropServices
         //TODO : implement in PAL
         internal static unsafe void OutputDebugString(string outputString)
         {
-            throw new PlatformNotSupportedException("OutputDebugString");
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static void VariantClear(IntPtr pObject)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }

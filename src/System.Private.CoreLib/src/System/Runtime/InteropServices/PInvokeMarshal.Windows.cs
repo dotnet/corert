@@ -56,6 +56,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.mincore.CoTaskMemAlloc(bytes);
@@ -67,6 +72,11 @@ namespace System.Runtime.InteropServices
             {
                 Interop.mincore.CoTaskMemFree(allocatedMemory);
             }
+        }
+
+        public static IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.mincore.CoTaskMemRealloc(pv, cb);
         }
 
         public static IntPtr SecureStringToBSTR(SecureString s)

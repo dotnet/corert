@@ -296,7 +296,7 @@ namespace System.Runtime.InteropServices
                     if (guidArraySize < 0)
                         return Interop.COM.E_OUTOFMEMORY;
 
-                    *iids = (Guid*)ExternalInterop.CoTaskMemAlloc(new IntPtr(guidArraySize));
+                    *iids = (Guid*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)guidArraySize));
 
                     if (*iids == null)
                     {
@@ -1801,12 +1801,12 @@ namespace System.Runtime.InteropServices
         internal static unsafe IntPtr CreateMemStm(ulong lSize)
         {
 #if ENABLE_WINRT
-            __com_IStream* pIStream = (__com_IStream*)ExternalInterop.CoTaskMemAlloc(new IntPtr(sizeof(__com_IStream)));
+            __com_IStream* pIStream = (__com_IStream*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)sizeof(__com_IStream)));
             pIStream->pVtable = (__vtable_IStream*)__vtable_IStream.GetVtable();
             pIStream->m_cbCurrent = 0;
             pIStream->m_cRef = 1;
             pIStream->m_cbSize = (int)lSize;
-            pIStream->m_pMem = (byte*)ExternalInterop.CoTaskMemAlloc(new IntPtr((int)lSize));
+            pIStream->m_pMem = (byte*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)lSize));
 
             return new IntPtr(pIStream);
 #else
@@ -1818,9 +1818,9 @@ namespace System.Runtime.InteropServices
         {
             // Release memory allocated by CreateMemStm
             if (pIStream->m_pMem != null)
-                ExternalInterop.CoTaskMemFree(pIStream->m_pMem);
+                PInvokeMarshal.CoTaskMemFree(new IntPtr(pIStream->m_pMem));
 
-            ExternalInterop.CoTaskMemFree(pIStream);
+            PInvokeMarshal.CoTaskMemFree(new IntPtr(pIStream));
         }
     }
 

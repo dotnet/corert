@@ -644,7 +644,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
-            return ExternalInterop.MemReAlloc(pv, cb);
+            return PInvokeMarshal.MemReAlloc(pv, cb);
         }
 
         private static unsafe void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
@@ -976,7 +976,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
         {
-            IntPtr pNewMem = ExternalInterop.CoTaskMemRealloc(pv, new IntPtr(cb));
+            IntPtr pNewMem = PInvokeMarshal.CoTaskMemReAlloc(pv, new IntPtr(cb));
             if (pNewMem == IntPtr.Zero && cb != 0)
             {
                 throw new OutOfMemoryException();
