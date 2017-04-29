@@ -37,8 +37,9 @@ COOP_PINVOKE_HELPER(Object *, RhHandleGet, (OBJECTHANDLE handle))
 
 COOP_PINVOKE_HELPER(Object *, RhHandleGetDependent, (OBJECTHANDLE handle, Object **ppSecondary))
 {
-    *ppSecondary = GetDependentHandleSecondary(handle);
-    return ObjectFromHandle(handle);
+    Object *pPrimary = ObjectFromHandle(handle);
+    *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
+    return pPrimary;
 }
 
 COOP_PINVOKE_HELPER(void, RhHandleSetDependentSecondary, (OBJECTHANDLE handle, Object *pSecondary))
