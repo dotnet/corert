@@ -274,44 +274,13 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\hugeexpr1\hugeexpr1.*" />
 
     <!-- Generic virtual methods -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_d\class2_il_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_r\class2_il_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics\generics.*" />
+    <!-- https://github.com/dotnet/corert/issues/3454 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b210352\csharptester\csharptester.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b611219\b611219\b611219.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\Dev11_243742\app\app.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001e\method001e.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001f\method001f.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001g\method001g.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001h\method001h.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001i\method001i.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001j\method001j.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method003\method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method004\method004.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method007\method007.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method008\method008.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method009\method009.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method010\method010.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method011\method011.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method012\method012.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method003\Method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_710121\dev10_710121\dev10_710121.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\395780\testExplicitOverride\testExplicitOverride.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslot\Class_ExplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslotFinal\Class_ExplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ImplicitOverrideVirtualNewslot\Class_ImplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ImplicitOverrideVirtualNewslotFinal\Class_ImplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ExplicitOverrideVirtualNewslot\Struct_ExplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ExplicitOverrideVirtualNewslotFinal\Struct_ExplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslot\Struct_ImplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslotFinal\Struct_ImplicitOverrideVirtualNewslotFinal.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\dev10_432038\dev10_432038\dev10_432038.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_398410\dev10_398410\dev10_398410.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method002\Method002.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method003\Method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method004\Method004.*" />
+
+    <!-- Reflection enabling a virtual method methodimpl'd by other virtual method -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
 
     <!-- DynamicInvoke stub for a method with 8192 parameters -->
@@ -651,6 +620,9 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param06\param06.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param07\param07.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param08\param08.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method002\Method002.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method004\Method004.*" />
     
     <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
