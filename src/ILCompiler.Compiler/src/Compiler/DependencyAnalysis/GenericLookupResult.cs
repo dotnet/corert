@@ -1121,9 +1121,9 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(instantiatedConstraintType.IsValueType);
             Debug.Assert(implMethod.OwningType == instantiatedConstraintType);
 
-            if (implMethod.HasInstantiation && implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != implMethod)
+            if (implMethod.HasInstantiation)
             {
-                return factory.FatFunctionPointer(implMethod);
+                return factory.ExactCallableAddress(implMethod);
             }
             else
             {

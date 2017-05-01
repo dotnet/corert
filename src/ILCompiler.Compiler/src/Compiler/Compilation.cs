@@ -215,18 +215,7 @@ namespace ILCompiler
 
             public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
             {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint;
-
-                if (canonMethod != method)
-                {
-                    methodEntryPoint = _factory.ShadowConcreteMethod(method);
-                }
-                else
-                {
-                    methodEntryPoint = _factory.MethodEntrypoint(method);
-                }
-
+                IMethodNode methodEntryPoint = _factory.CanonicalEntrypoint(method);
                 _graph.AddRoot(methodEntryPoint, reason);
 
                 if (exportName != null)
