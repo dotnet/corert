@@ -45,6 +45,10 @@
       <Project>{13bb3788-c3eb-4046-8105-a95f8ae49404}</Project>
       <Name>ILCompiler.Compiler</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.Compiler.Cpp\src\ILCompiler.Compiler.Cpp.csproj">
+      <Project>{971AE7E7-08C6-48B4-902A-63851E6DAC66}</Project>
+      <Name>ILCompiler.Compiler.Cpp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
       <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
       <Name>ILCompiler.TypeSystem</Name>
