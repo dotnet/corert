@@ -57,7 +57,7 @@ namespace System.Resources
                 if (tryParents)
                 {
                     // If we've hit top of the Culture tree, return.
-                    if (culture.HasInvariantCultureName())
+                    if (culture.HasInvariantCultureName)
                     {
                         // We really don't think this should happen - we always
                         // expect the neutral locale's resources to be present.

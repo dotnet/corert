@@ -10,7 +10,6 @@ namespace Microsoft.Win32
     sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeLibraryHandle() : base(true) { }
-        internal SafeLibraryHandle(IntPtr handle) : base(handle, true) { }
 
         override protected bool ReleaseHandle()
         {
