@@ -45,11 +45,6 @@ namespace System.Resources
 {
     internal static class ExtensionMethods
     {
-        public static bool HasInvariantCultureName(this CultureInfo cultureInfo)
-        {
-            return cultureInfo.Name == CultureInfo.InvariantCulture.Name;
-        }
-
         public static Assembly InternalGetSatelliteAssembly(this Assembly mainAssembly, String name,
                                                               CultureInfo culture,
                                                               Version version,
