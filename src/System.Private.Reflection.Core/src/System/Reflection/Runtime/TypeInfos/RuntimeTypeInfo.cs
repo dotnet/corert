@@ -42,6 +42,17 @@ namespace System.Reflection.Runtime.TypeInfos
         {
         }
 
+        public abstract override bool IsTypeDefinition { get; }
+        public abstract override bool IsGenericTypeDefinition { get; }
+        protected abstract override bool HasElementTypeImpl();
+        protected abstract override bool IsArrayImpl();
+        public abstract override bool IsSZArray { get; }
+        public abstract override bool IsVariableBoundArray { get; }
+        protected abstract override bool IsByRefImpl();
+        protected abstract override bool IsPointerImpl();
+        public abstract override bool IsGenericParameter { get; }
+        public abstract override bool IsConstructedGenericType { get; }
+
         public abstract override Assembly Assembly { get; }
 
         public sealed override string AssemblyQualifiedName
@@ -306,66 +317,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return Assignability.IsAssignableFrom(this, typeInfo);
         }
 
-        //
-        // Left unsealed as constructed generic types must override.
-        //
-        public override bool IsConstructedGenericType
-        {
-            get
-            {
-                return false;
-            }
-        }
-
         public sealed override bool IsEnum
         {
             get
             {
                 return 0 != (Classification & TypeClassification.IsEnum);
-            }
-        }
-
-        //
-        // Left unsealed as generic parameter types must override.
-        //
-        public override bool IsGenericParameter
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        //
-        // Left unsealed as generic type definitions must override.
-        //
-        public override bool IsGenericTypeDefinition
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        //
-        // Left unsealed as array types must override.
-        //
-        public override bool IsSZArray
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        //
-        // Left unsealed as array types must override.
-        //
-        public override bool IsVariableBoundArray
-        {
-            get
-            {
-                return false;
             }
         }
 
@@ -592,44 +548,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected abstract override TypeAttributes GetAttributeFlagsImpl();
 
-        //
-        // Left unsealed so that RuntimeHasElementTypeInfo can override.
-        //
-        protected override bool HasElementTypeImpl()
-        {
-            return false;
-        }
-
         protected sealed override TypeCode GetTypeCodeImpl()
         {
             return ReflectionAugments.GetRuntimeTypeCode(this);
         }
 
         protected abstract int InternalGetHashCode();
-
-        //
-        // Left unsealed since array types must override.
-        //
-        protected override bool IsArrayImpl()
-        {
-            return false;
-        }
-
-        //
-        // Left unsealed since byref types must override.
-        //
-        protected override bool IsByRefImpl()
-        {
-            return false;
-        }
-
-        //
-        // Left unsealed since pointer types must override.
-        //
-        protected override bool IsPointerImpl()
-        {
-            return false;
-        }
 
         protected sealed override bool IsCOMObjectImpl()
         {

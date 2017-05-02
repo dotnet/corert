@@ -33,21 +33,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        public sealed override bool IsSZArray
-        {
-            get
-            {
-                return !_multiDim;
-            }
-        }
-
-        public sealed override bool IsVariableBoundArray
-        {
-            get
-            {
-                return _multiDim;
-            }
-        }
+        protected sealed override bool IsArrayImpl() => true;
+        public sealed override bool IsSZArray => !_multiDim;
+        public sealed override bool IsVariableBoundArray => _multiDim;
+        protected sealed override bool IsByRefImpl() => false;
+        protected sealed override bool IsPointerImpl() => false;
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
@@ -288,11 +278,6 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 return new TypeContext(new RuntimeTypeInfo[] { this.InternalRuntimeElementType }, null);
             }
-        }
-
-        protected sealed override bool IsArrayImpl()
-        {
-            return true;
         }
 
         protected sealed override string Suffix

@@ -173,6 +173,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNoMetadataNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeDefinitionTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
