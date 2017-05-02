@@ -332,6 +332,69 @@ namespace Internal.IL
 #endif 
         }
 
+
+        bool IsBinaryComparable(StackValue src, StackValue dst, ILOpcode op)
+        {
+            if (src.Kind == dst.Kind && src.Type == dst.Type)
+                return true;
+
+            switch (src.Kind)
+            {
+                case StackValueKind.ObjRef:
+                    switch (dst.Kind)
+                    {
+                        case StackValueKind.ObjRef:
+                            return op == ILOpcode.beq || op == ILOpcode.beq_s ||
+                                   op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
+                                   op == ILOpcode.ceq;
+                        default:
+                            return false;
+                    }
+
+                case StackValueKind.ValueType:
+                    return false;
+
+                case StackValueKind.ByRef:
+                    switch (dst.Kind)
+                    {
+                        case StackValueKind.ByRef:
+                            return true;
+                        case StackValueKind.NativeInt:
+                            return op == ILOpcode.beq || op == ILOpcode.beq_s ||
+                                   op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
+                                   op == ILOpcode.ceq;
+                        default:
+                            return false;
+                    }
+
+                case StackValueKind.Int32:
+                    return (dst.Kind == StackValueKind.Int64 || dst.Kind == StackValueKind.NativeInt);
+
+                case StackValueKind.Int64:
+                    return (dst.Kind == StackValueKind.Int64);
+
+                case StackValueKind.NativeInt:
+                    switch (dst.Kind)
+                    {
+                        case StackValueKind.Int32:
+                        case StackValueKind.NativeInt:
+                            return true;
+                        case StackValueKind.ByRef:
+                            return op == ILOpcode.beq || op == ILOpcode.beq_s ||
+                                   op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
+                                   op == ILOpcode.ceq;
+                        default:
+                            return false;
+                    }
+
+                case StackValueKind.Float:
+                    return dst.Kind == StackValueKind.Float;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         bool IsByRefLike(StackValue value)
         {
             if (value.Kind == StackValueKind.ByRef)
