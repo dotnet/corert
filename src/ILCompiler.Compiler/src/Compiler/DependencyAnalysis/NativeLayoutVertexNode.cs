@@ -1057,7 +1057,7 @@ namespace ILCompiler.DependencyAnalysis
 
             VertexBag layoutInfo = new VertexBag();
 
-            DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType());
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
             
             NativeWriter writer = GetNativeWriter(factory);
