@@ -227,7 +227,8 @@ namespace Internal.Reflection.Execution
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
-                throw new NotSupportedException(SR.NotSupported_OpenType);
+                arrayTypeHandle = default(RuntimeTypeHandle);
+                return false;
             }
 
             // For non-dynamic arrays try to look up the array type in the ArrayMap blobs;
@@ -263,7 +264,8 @@ namespace Internal.Reflection.Execution
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
-                throw new NotSupportedException(SR.NotSupported_OpenType);
+                arrayTypeHandle = default(RuntimeTypeHandle);
+                return false;
             }
             
             if ((rank < MDArray.MinRank) || (rank > MDArray.MaxRank))
