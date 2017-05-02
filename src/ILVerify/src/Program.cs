@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Reflection;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -17,6 +18,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.IL;
 
 using Internal.CommandLine;
+using System.Text.RegularExpressions;
 
 namespace ILVerify
 {
@@ -26,6 +28,8 @@ namespace ILVerify
 
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+        private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
+        private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
 
         private SimpleTypeSystemContext _typeSystemContext;
 
@@ -43,10 +47,20 @@ namespace ILVerify
             Console.WriteLine("-reference   Reference metadata from the specified assembly (Short form: -r)");
         }
 
+        public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
+        {
+            List<Regex> patternList = new List<Regex>();
+            foreach (var pattern in patterns)
+                patternList.Add(new Regex(pattern));
+            return patternList;
+        }
+
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
+            IReadOnlyList<string> includePatterns = Array.Empty<string>();
+            IReadOnlyList<string> excludePatterns = Array.Empty<string>();
 
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
@@ -59,6 +73,8 @@ namespace ILVerify
 
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
+                syntax.DefineOptionList("i|include", ref includePatterns, "Include filter pattern");
+                syntax.DefineOptionList("e|exclude", ref excludePatterns, "Exclude filter pattern");
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
@@ -67,6 +83,9 @@ namespace ILVerify
 
             foreach (var reference in referenceFiles)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+
+            _includePatterns = StringPatternsToRegexList(includePatterns);
+            _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
             return argSyntax;
         }
@@ -150,7 +169,13 @@ namespace ILVerify
 
                 var methodIL = EcmaMethodIL.Create(method);
                 if (methodIL == null)
-                    return;
+                    continue;
+
+                var methodName = method.ToString();
+                if (_includePatterns.Count > 0 && !_includePatterns.Any(p => p.IsMatch(methodName)))
+                    continue;
+                if (_excludePatterns.Any(p => p.IsMatch(methodName)))
+                    continue;
 
                 VerifyMethod(method, methodIL);
             }
