@@ -8,6 +8,10 @@ namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes
     {
+        public static MetadataType GetGC(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System", "GC");
+        }
 
         public static MetadataType GetSafeHandleType(TypeSystemContext context)
         {

@@ -32,6 +32,14 @@ namespace Internal.IL.Stubs
             get;
         }
 
+        public override bool IsPInvoke
+        {
+            get
+            {
+                return Kind == DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper;
+            }
+        }
+
         public MarshalDirection Direction
         {
             get

@@ -1003,8 +1003,8 @@ namespace Internal.TypeSystem.Interop
             else
             {
 
-                uint? sizeParamIndex = MarshalAsDescriptor.SizeParamIndex;
-                uint? sizeConst = MarshalAsDescriptor.SizeConst;
+                uint? sizeParamIndex = MarshalAsDescriptor != null ? MarshalAsDescriptor.SizeParamIndex : null;
+                uint? sizeConst = MarshalAsDescriptor != null ? MarshalAsDescriptor.SizeConst : null;
 
                 if (sizeConst.HasValue)
                 {
@@ -1797,7 +1797,17 @@ namespace Internal.TypeSystem.Interop
                 Context.GetHelperEntryPoint("InteropHelpers", "GetPInvokeDelegateForStub")));
 
             StoreManagedValue(codeStream);
+        }
 
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            if (In
+                && MarshalDirection == MarshalDirection.Forward
+                && MarshallerType == MarshallerType.Argument)
+            {
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive", null)));
+            }
         }
     }
 
@@ -1854,7 +1864,7 @@ namespace Internal.TypeSystem.Interop
         protected override void EmitElementCount(ILCodeStream codeStream, MarshalDirection direction)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            if (!MarshalAsDescriptor.SizeConst.HasValue)
+            if (MarshalAsDescriptor == null || !MarshalAsDescriptor.SizeConst.HasValue)
             {
                 throw new InvalidProgramException("SizeConst is required for ByValArray.");
             }
