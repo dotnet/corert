@@ -372,6 +372,7 @@
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
+    <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
@@ -554,7 +555,6 @@
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
-    <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\Overlapped.cs" />
     <Compile Include="System\Threading\PinnableBufferCache.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
