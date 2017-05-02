@@ -670,6 +670,24 @@ namespace ILCompiler.DependencyAnalysis
             return _fatFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
+        public IMethodNode ExactCallableAddress(MethodDesc method, bool isUnboxingStub = false)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (method != canonMethod)
+                return FatFunctionPointer(method, isUnboxingStub);
+            else
+                return MethodEntrypoint(method, isUnboxingStub);
+        }
+
+        public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (method != canonMethod)
+                return ShadowConcreteMethod(method, isUnboxingStub);
+            else
+                return MethodEntrypoint(method, isUnboxingStub);
+        }
+
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
         internal GVMDependenciesNode GVMDependencies(MethodDesc method)
         {

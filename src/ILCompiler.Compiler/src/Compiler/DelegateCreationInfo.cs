@@ -111,21 +111,13 @@ namespace ILCompiler
         public ISymbolNode GetTargetNode(NodeFactory factory)
         {
             Debug.Assert(!NeedsRuntimeLookup);
-            MethodDesc canonTargetMethod = TargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
             switch (_targetKind)
             {
                 case TargetKind.CanonicalEntrypoint:
-                    if (TargetMethod != canonTargetMethod)
-                        return factory.ShadowConcreteMethod(TargetMethod, TargetMethodIsUnboxingThunk);
-                    else
-                        return factory.MethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.CanonicalEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.ExactCallableAddress:
-                    if (TargetMethod != canonTargetMethod)
-                        return factory.FatFunctionPointer(TargetMethod, TargetMethodIsUnboxingThunk);
-                    else
-                        return factory.MethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.ExactCallableAddress(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
                     return factory.InterfaceDispatchCell(TargetMethod);
