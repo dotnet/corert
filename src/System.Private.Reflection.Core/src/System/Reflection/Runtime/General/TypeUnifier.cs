@@ -117,7 +117,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
     {
         internal static RuntimeNoMetadataNamedTypeInfo GetRuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -155,7 +155,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
     // that can never be reflection-enabled due to the framework Reflection block.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo
     {
         internal static RuntimeBlockedTypeInfo GetRuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {

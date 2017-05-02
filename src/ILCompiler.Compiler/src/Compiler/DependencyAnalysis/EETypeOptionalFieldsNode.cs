@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_owner.Type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
+                    return ObjectNodeSection.FoldableReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
             }

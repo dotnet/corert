@@ -26,6 +26,17 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => true;
+        protected abstract override bool IsArrayImpl();
+        public abstract override bool IsSZArray { get; }
+        public abstract override bool IsVariableBoundArray { get; }
+        protected abstract override bool IsByRefImpl();
+        protected abstract override bool IsPointerImpl();
+        public sealed override bool IsConstructedGenericType => false;
+        public sealed override bool IsGenericParameter => false;
+
         //
         // Implements IKeyedItem.PrepareKey.
         // 
@@ -125,11 +136,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(IsByRef || IsPointer);
             return TypeAttributes.AnsiClass;
-        }
-
-        protected sealed override bool HasElementTypeImpl()
-        {
-            return true;
         }
 
         protected sealed override int InternalGetHashCode()

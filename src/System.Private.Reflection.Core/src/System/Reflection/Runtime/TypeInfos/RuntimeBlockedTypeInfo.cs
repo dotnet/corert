@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // Since these represent "internal framework types", the app cannot prove we are lying.
     // 
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeDefinitionTypeInfo
     {
         private RuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {

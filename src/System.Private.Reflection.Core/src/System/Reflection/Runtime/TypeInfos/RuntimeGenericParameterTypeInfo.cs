@@ -25,6 +25,17 @@ namespace System.Reflection.Runtime.TypeInfos
             _position = position;
         }
 
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => false;
+        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool IsSZArray => false;
+        public sealed override bool IsVariableBoundArray => false;
+        protected sealed override bool IsByRefImpl() => false;
+        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsConstructedGenericType => false;
+        public sealed override bool IsGenericParameter => true;
+
         public sealed override Assembly Assembly
         {
             get
@@ -67,14 +78,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return _position;
-            }
-        }
-
-        public sealed override bool IsGenericParameter
-        {
-            get
-            {
-                return true;
             }
         }
 
