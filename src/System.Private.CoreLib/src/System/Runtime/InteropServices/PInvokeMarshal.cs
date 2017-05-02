@@ -241,7 +241,12 @@ namespace System.Runtime.InteropServices
 
             if (s_thunkPoolHeap == null)
             {
-                s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
+                // TODO: Free s_thunkPoolHeap if the thread lose the race
+                Interlocked.CompareExchange(
+                    ref s_thunkPoolHeap,
+                    RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress()),
+                    null
+                );
                 Debug.Assert(s_thunkPoolHeap != null);
             }
 
