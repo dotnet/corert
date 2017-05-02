@@ -45,6 +45,8 @@ namespace ILVerify
             Console.WriteLine();
             Console.WriteLine("-help        Display this usage message (Short form: -?)");
             Console.WriteLine("-reference   Reference metadata from the specified assembly (Short form: -r)");
+            Console.WriteLine("-include     Use only methods/types/namespaces, which match the given regular expression(s)");
+            Console.WriteLine("-exclude     Skip methods/types/namespaces, which match the given regular expression(s)");
         }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
@@ -73,8 +75,8 @@ namespace ILVerify
 
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
-                syntax.DefineOptionList("i|include", ref includePatterns, "Include filter pattern");
-                syntax.DefineOptionList("e|exclude", ref excludePatterns, "Exclude filter pattern");
+                syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
+                syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
