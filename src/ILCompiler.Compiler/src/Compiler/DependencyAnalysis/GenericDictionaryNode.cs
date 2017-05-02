@@ -28,8 +28,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
 
-        public sealed override ObjectNodeSection Section =>
-            Context.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section =>
+            Context.Target.IsWindows ? ObjectNodeSection.FoldableReadOnlyDataSection : ObjectNodeSection.DataSection;
         
         public sealed override bool StaticDependenciesAreComputed => true;
 
@@ -99,6 +99,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
 
         public TypeDesc OwningType => _owningType;
+
+        public override ObjectNodeSection Section =>
+            Context.Target.IsWindows ? ObjectNodeSection.FoldableReadOnlyDataSection : base.Section;
 
         public static string GetMangledName(NameMangler nameMangler, TypeDesc owningType)
         {
