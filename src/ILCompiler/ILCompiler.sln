@@ -24,7 +24,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataWriter",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Compiler.Cpp", "..\ILCompiler.Compiler.Cpp\src\ILCompiler.Compiler.Cpp.csproj", "{971AE7E7-08C6-48B4-902A-63851E6DAC66}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.CppCodegen", "..\ILCompiler.CppCodegen\src\ILCompiler.CppCodegen.csproj", "{971AE7E7-08C6-48B4-902A-63851E6DAC66}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
