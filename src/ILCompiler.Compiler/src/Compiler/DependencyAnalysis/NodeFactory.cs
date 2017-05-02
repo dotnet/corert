@@ -86,6 +86,13 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        // Temporary workaround that is used to disable certain features from lighting up
+        // in CppCodegen because they're not fully implemented yet.
+        public virtual bool IsCppCodegenTemporaryWorkaround
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// Return true if the type is not permitted by the rules of the runtime to have an EEType.
         /// The implementation here is not intended to be complete, but represents many conditions
@@ -614,7 +621,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
 
-        internal VTableSliceNode VTable(TypeDesc type)
+        public VTableSliceNode VTable(TypeDesc type)
         {
             return _vTableNodes.GetOrAdd(type);
         }
@@ -638,7 +645,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, IMethodNode> _stringAllocators;
-        internal IMethodNode StringAllocator(MethodDesc stringConstructor)
+        public IMethodNode StringAllocator(MethodDesc stringConstructor)
         {
             return _stringAllocators.GetOrAdd(stringConstructor);
         }

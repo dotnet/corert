@@ -704,7 +704,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            if (!(context is CppCodegenNodeFactory))
+            if (!context.IsCppCodegenTemporaryWorkaround)
             { 
                 Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
             }
