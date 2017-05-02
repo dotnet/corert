@@ -1122,6 +1122,9 @@
   <data name="InvalidOperation_NullArray" xml:space="preserve">
     <value>The underlying array is null.</value>
   </data>
+  <data name="InvalidOperation_Overlapped_Pack" xml:space="preserve">
+    <value>Cannot pack a packed Overlapped again.</value>
+  </data>
   <data name="InvalidOperation_ReadOnly" xml:space="preserve">
     <value>Instance is read-only.</value>
   </data>
