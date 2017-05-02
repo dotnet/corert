@@ -1085,28 +1085,19 @@ namespace System.Threading
 
         // This is the method the debugger will actually call, if it ends up calling
         // into ThreadPool directly.  Tests can use this to simulate a debugger, as well.
-        internal static object[] GetQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetQueuedWorkItems());
-
-        internal static object[] GetGloballyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetGloballyQueuedWorkItems());
-
-        internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetLocallyQueuedWorkItems());
-
-        unsafe private static void NativeOverlappedCallback(object obj)
+        internal static object[] GetQueuedWorkItemsForDebugger()
         {
-            NativeOverlapped* overlapped = (NativeOverlapped*)(IntPtr)obj;
-            _IOCompletionCallback.PerformIOCompletionCallback(0, 0, overlapped);
+            return ToObjectArray(GetQueuedWorkItems());
         }
 
-        [CLSCompliant(false)]
-        unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
+        internal static object[] GetGloballyQueuedWorkItemsForDebugger()
         {
-            // OS doesn't signal handle, so do it here
-            overlapped->InternalLow = (IntPtr)0;
-            // A quick-and-dirty implementation that runs the callback on the normal thread pool
-            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
+            return ToObjectArray(GetGloballyQueuedWorkItems());
+        }
+
+        internal static object[] GetLocallyQueuedWorkItemsForDebugger()
+        {
+            return ToObjectArray(GetLocallyQueuedWorkItems());
         }
 
         internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.Current != null; } }

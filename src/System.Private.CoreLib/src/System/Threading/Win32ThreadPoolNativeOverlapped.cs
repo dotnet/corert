@@ -146,7 +146,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    if (data._pinnedData == null || data._pinnedData.Length < 1)
+                    if (data._pinnedData == null)
                         data._pinnedData = new GCHandle[1];
 
                     if (!data._pinnedData[0].IsAllocated)
