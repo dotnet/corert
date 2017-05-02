@@ -489,15 +489,25 @@ namespace System.Reflection.Runtime.TypeInfos
             // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
             // the Type object for an inconsistent generic type - no EEType will ever match it so any attempt to "invoke" it
             // will throw an exception.
+            RuntimeTypeInfo[] runtimeTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] == null)
-                    throw new ArgumentNullException();
+                RuntimeTypeInfo runtimeTypeArgument = typeArguments[i] as RuntimeTypeInfo;
+                if (runtimeTypeArgument == null)
+                {
+                    if (typeArguments[i] == null)
+                        throw new ArgumentNullException();
+                    else
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
+                }
 
-                if (!typeArguments[i].IsRuntimeImplemented())
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
+                // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
+                if (runtimeTypeArgument.IsGenericTypeDefinition)
+                    runtimeTypeArgument = runtimeTypeArgument.GetConstructedGenericType(runtimeTypeArgument.RuntimeGenericTypeParameters);
+
+                runtimeTypeArguments[i] = runtimeTypeArgument;
             }
-            return this.GetConstructedGenericType(typeArguments.ToRuntimeTypeInfoArray());
+            return this.GetConstructedGenericType(runtimeTypeArguments);
         }
 
         public sealed override Type MakePointerType()
