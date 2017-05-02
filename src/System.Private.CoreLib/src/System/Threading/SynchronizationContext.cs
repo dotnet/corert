@@ -31,11 +31,13 @@ namespace System.Threading
         {
         }
 
+#if PLATFORM_WINDOWS
         // protected so that only the derived sync context class can enable these flags
         protected void SetWaitNotificationRequired()
         {
             _props |= SynchronizationContextProperties.RequireWaitNotification;
         }
+#endif
 
         public bool IsWaitNotificationRequired()
         {
@@ -66,6 +68,7 @@ namespace System.Threading
         {
         }
 
+#if PLATFORM_WINDOWS
         // Method called when the CLR does a wait operation
         [CLSCompliant(false)]
         public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
@@ -85,6 +88,7 @@ namespace System.Threading
 
             return WaitHandle.WaitForMultipleObjectsIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
         }
+#endif
 
         // Set the SynchronizationContext on the current thread
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
