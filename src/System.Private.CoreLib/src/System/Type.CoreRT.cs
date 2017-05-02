@@ -14,6 +14,9 @@ namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
+        //@todo: Move to shared Type.cs once CoreCLR side is done.
+        public virtual bool IsTypeDefinition { get { throw NotImplemented.ByDesign; } }
+
         public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
 
         [Intrinsic]
