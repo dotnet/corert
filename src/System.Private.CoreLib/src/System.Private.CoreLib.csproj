@@ -165,6 +165,7 @@
     <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
     <Compile Include="System\Resources\ResourceManager.cs" />
     <Compile Include="System\Resources\ResourceReader.cs" />
+    <Compile Include="System\Resources\ResourceSet.cs" />
     <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
     <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
