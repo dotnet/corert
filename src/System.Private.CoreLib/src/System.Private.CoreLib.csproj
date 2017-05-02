@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -561,6 +561,8 @@
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
     <Compile Include="System\Threading\NativeOverlapped.cs" />
+    <Compile Include="System\Threading\Overlapped.cs" />
+    <Compile Include="System\Threading\PinnableBufferCache.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
