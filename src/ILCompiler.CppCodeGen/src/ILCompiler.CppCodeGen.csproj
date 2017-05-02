@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{971AE7E7-08C6-48B4-902A-63851E6DAC66}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>ILCompiler.Compiler.Cpp</RootNamespace>
-    <AssemblyName>ILCompiler.Compiler.Cpp</AssemblyName>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.CppCodeGen</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
