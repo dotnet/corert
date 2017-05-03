@@ -738,10 +738,10 @@
       "value": "$(DockerRepository):$(DockerTag)"
     },
     "DockerRepository": {
-      "value": "crummel/dotnetcore"
+      "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "DockerTag": {
-      "value": "latest"
+      "value": "debian-8.2-corert-395a49e-20170403100424"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
