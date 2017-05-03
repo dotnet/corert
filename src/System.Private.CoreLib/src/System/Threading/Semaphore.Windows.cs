@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
-        private const uint AccessRights = (uint)(Interop.Constants.Synchronize | Interop.Constants.SemaphoreModifyState);
+        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.SemaphoreModifyState);
 
         private Semaphore(SafeWaitHandle handle)
         {
@@ -83,7 +83,7 @@ namespace System.Threading
                     return OpenExistingResult.PathNotFound;
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
-                //this is for passed through NativeMethods Errors
+
                 throw ExceptionFromCreationError(errorCode, name);
             }
             result = new Semaphore(myHandle);
@@ -94,14 +94,12 @@ namespace System.Threading
         {
             Debug.Assert(releaseCount > 0);
 
-            //If ReleaseSempahore returns false when the specified value would cause
-            //   the semaphore's count to exceed the maximum count set when Semaphore was created
-            //Non-Zero return 
             int previousCount;
             if (!Interop.mincore.ReleaseSemaphore(handle, releaseCount, out previousCount))
             {
                 ThrowSignalOrUnsignalException();
             }
+
             return previousCount;
         }
     }
