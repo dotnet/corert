@@ -476,6 +476,16 @@ namespace Internal.IL
                     break;
                 }
             }
+
+            if (basicBlock?.EntryStack?.Length > 0)
+            {
+                Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
+                _stackTop = basicBlock.EntryStack.Length;
+            }
+            else
+            {
+                _stackTop = 0;
+            }
         }
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
