@@ -54,9 +54,7 @@ namespace System
 
         [Intrinsic]
         public static double Atan2(double y, double x)
-        {
-            if (Double.IsInfinity(x) && Double.IsInfinity(y))
-                return Double.NaN;
+        {          
             return RuntimeImports.atan2(y, x);
         }
 
