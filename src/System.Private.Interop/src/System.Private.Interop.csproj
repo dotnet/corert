@@ -26,6 +26,7 @@
   </ItemGroup>
   <!-- TODO  We should not include anything from CompilerServices directly -->
   <ItemGroup>
+    <Compile Include="TypeForwarders.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnmanagedValueTypeConstraintAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
     <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />
