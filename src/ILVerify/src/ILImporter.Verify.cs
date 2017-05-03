@@ -959,7 +959,8 @@ namespace Internal.IL
         {
             switch (opcode)
             {
-                case ILOpcode.br: break;
+                case ILOpcode.br:
+                    break;
                 case ILOpcode.brfalse:
                 case ILOpcode.brtrue:
                     {
@@ -978,12 +979,15 @@ namespace Internal.IL
                 case ILOpcode.ble_un:
                 case ILOpcode.blt_un:
                     {
-                        var value1 = Pop();
-                        var value2 = Pop();
+                        StackValue value1 = Pop();
+                        StackValue value2 = Pop();
 
                         CheckIsComparable(value1, value2, opcode);
-                        break;
                     }
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected branch opcode");
+                    break;
             }
 
             ImportFallthrough(target);
