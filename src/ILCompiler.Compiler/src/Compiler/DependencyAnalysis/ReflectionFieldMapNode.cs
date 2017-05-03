@@ -43,6 +43,37 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
+        /// <summary>
+        /// Helper method to compute the dependencies that would be needed for reflection field lookup.
+        /// </summary>
+        public static DependencyList GetReflectionFieldMapEntryDependencies(NodeFactory factory, TypeDesc type)
+        {
+            DependencyList dependencies = new DependencyList();
+
+            // TODO: https://github.com/dotnet/corert/issues/3224
+            // Reflection static field bases handling is here because in the current reflection model we reflection-enable
+            // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
+            // we even start the compilation process (with the static bases being compilation roots like any other).
+            if (type is MetadataType && !type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MetadataType metadataType = (MetadataType)type;
+
+                if (metadataType.GCStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics for ReflectionFieldMap entry");
+                }
+
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics for ReflectionFieldMap entry");
+                }
+
+                // TODO: TLS dependencies
+            }
+
+            return dependencies;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
