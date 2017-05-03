@@ -477,7 +477,7 @@ namespace Internal.IL
                 }
             }
 
-            if (basicBlock?.EntryStack?.Length > 0)
+            if (basicBlock.EntryStack?.Length > 0)
             {
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
                 _stackTop = basicBlock.EntryStack.Length;
@@ -1220,23 +1220,10 @@ namespace Internal.IL
         {
             var value = Pop();
 
-            var obj = _typeSystemContext.GetWellKnownType(WellKnownType.Object);
-            var exception = _typeSystemContext.GetWellKnownType(WellKnownType.Exception);
-
-            var type = value.Type;
-            while (type != obj)
+            if (value.Kind != StackValueKind.ObjRef)
             {
-                if (type != exception)
-                {
-                    type = type.BaseType;
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            VerificationError(VerifierError.StackNotEq);
+                VerificationError(VerifierError.StackNotEq);
+            }            
         }
 
         void ImportLoadString(int token)
