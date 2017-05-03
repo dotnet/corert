@@ -10,10 +10,12 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class CppCodegenNodeFactory : NodeFactory
     {
-        public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
-            : base(context, compilationModuleGroup, new CompilerGeneratedMetadataManager(compilationModuleGroup, context), new CoreRTNameMangler(true))
+        public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager)
+            : base(context, compilationModuleGroup, metadataManager, new CoreRTNameMangler(new CppNodeMangler(), true))
         {
         }
+
+        public override bool IsCppCodegenTemporaryWorkaround => true;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {

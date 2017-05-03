@@ -17,5 +17,9 @@ internal static partial class Interop
         [McgGeneratedNativeCallCodeAttribute]
         [DllImport("ole32.dll")]
         internal static extern void CoTaskMemFree(IntPtr allocatedMemory);
+
+        [McgGeneratedNativeCallCodeAttribute]
+        [DllImport("ole32.dll")]
+        internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, IntPtr cb);
     }
 }

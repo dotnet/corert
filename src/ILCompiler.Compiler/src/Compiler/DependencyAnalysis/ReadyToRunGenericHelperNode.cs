@@ -118,6 +118,12 @@ namespace ILCompiler.DependencyAnalysis
                                         factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
                                         "Dictionary dependency"));
                             }
+
+                            // TODO: https://github.com/dotnet/corert/issues/3224 
+                            if (instantiatedTargetMethod.IsAbstract)
+                            {
+                                result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTargetMethod), "Abstract reflectable method"));
+                            }
                         }
                     }
                     break;
@@ -131,6 +137,12 @@ namespace ILCompiler.DependencyAnalysis
                                 new DependencyListEntry(
                                     factory.VirtualMethodUse(instantiatedTarget),
                                     "Dictionary dependency"));
+                        }
+
+                        // TODO: https://github.com/dotnet/corert/issues/3224 
+                        if (instantiatedTarget.IsAbstract)
+                        {
+                            result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTarget), "Abstract reflectable method"));
                         }
                     }
                     break;
@@ -172,8 +184,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                DefType actualTemplateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, (TypeDesc)_dictionaryOwner);
-                dependencies.Add(factory.NativeLayout.TemplateTypeLayout(actualTemplateType), "Type loader template");
+                dependencies.Add(factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner), "Type loader template");
             }
 
             return dependencies;
@@ -193,8 +204,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                DefType actualTemplateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, (TypeDesc)_dictionaryOwner);
-                templateLayout = factory.NativeLayout.TemplateTypeLayout(actualTemplateType);
+                templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner);
                 conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));

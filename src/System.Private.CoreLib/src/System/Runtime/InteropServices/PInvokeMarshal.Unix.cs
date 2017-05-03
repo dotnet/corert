@@ -49,6 +49,11 @@ namespace System.Runtime.InteropServices
             Interop.MemFree(hglobal);
         }
 
+        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.MemAlloc(bytes);
@@ -59,12 +64,28 @@ namespace System.Runtime.InteropServices
             Interop.MemFree(allocatedMemory);
         }
 
+        public static unsafe IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr SecureStringToBSTR(SecureString s)
         {
             if (s == null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
+            throw new PlatformNotSupportedException();
+        }
+
+        // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.
+        internal static IntPtr AllocBSTR(int length)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
             throw new PlatformNotSupportedException();
         }
 

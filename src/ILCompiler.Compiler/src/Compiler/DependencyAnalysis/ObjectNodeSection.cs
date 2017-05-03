@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public SectionType Type { get; }
         public string ComdatName { get; }
 
-        private ObjectNodeSection(string name, SectionType type, string comdatName)
+        public ObjectNodeSection(string name, SectionType type, string comdatName)
         {
             Name = name;
             Type = type;
@@ -39,22 +39,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return this == DataSection || this == ReadOnlyDataSection || this == TextSection || this == XDataSection;
+                return this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection || this == XDataSection;
             }
         }
-
-        public ObjectNodeSection GetSharedSection(string key)
-        {
-            string standardSectionPrefix = "";
-            if (IsStandardSection)
-                standardSectionPrefix = ".";
-
-            return new ObjectNodeSection(standardSectionPrefix + Name, Type, key);
-        }
-
+               
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata$ICF", SectionType.ReadOnly);
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
         public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
     }

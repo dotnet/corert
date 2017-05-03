@@ -109,6 +109,17 @@ namespace Internal.IL.Stubs
 
                     ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
 
+                    ILCodeLabel typeCheckPassedLabel = _emitter.NewCodeLabel();
+
+                    // Codegen will pass a null hidden argument if this is a `constrained.` call to the Address method.
+                    // As per ECMA-335 III.2.3, the prefix suppresses the type check.
+                    // if (hiddenArg.IsNull)
+                    //     goto TypeCheckPassed;
+                    codeStream.EmitLdArga(1);
+                    codeStream.Emit(ILOpcode.call,
+                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_IsNull", null)));
+                    codeStream.Emit(ILOpcode.brtrue, typeCheckPassedLabel);
+
                     // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
                     codeStream.EmitLdArg(0);
                     codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
@@ -126,6 +137,8 @@ namespace Internal.IL.Stubs
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
                     codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
                     codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
+
+                    codeStream.EmitLabel(typeCheckPassedLabel);
                 }
             }
 

@@ -1278,6 +1278,14 @@ namespace System.Globalization
             }
         }
 
+        // For resource lookup, we consider a culture the invariant culture by name equality. 
+        // We perform this check frequently during resource lookup, so adding a property for
+        // improved readability.
+        internal bool HasInvariantCultureName
+        {
+            get { return Name == CultureInfo.InvariantCulture.Name; }
+        }
+
         // Helper function both both overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
         // If lcid is -1, use the altName and create one of those special SQL cultures.
         internal static CultureInfo GetCultureInfoHelper(int lcid, string name, string altName)

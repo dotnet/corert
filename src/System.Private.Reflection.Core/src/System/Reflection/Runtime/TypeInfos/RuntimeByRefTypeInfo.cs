@@ -20,10 +20,11 @@ namespace System.Reflection.Runtime.TypeInfos
         {
         }
 
-        protected sealed override bool IsByRefImpl()
-        {
-            return true;
-        }
+        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool IsSZArray => false;
+        public sealed override bool IsVariableBoundArray => false;
+        protected sealed override bool IsByRefImpl() => true;
+        protected sealed override bool IsPointerImpl() => false;
 
         protected sealed override string Suffix
         {

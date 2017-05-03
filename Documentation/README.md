@@ -11,7 +11,7 @@ This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of T
 
 - [Prerequisites for building](prerequisites-for-building.md)
 - [How to build and run from the Command Line](how-to-build-and-run-ilcompiler-in-console-shell-prompt.md)
-- [How to build and run from Visual Studio](how-to-build-and-run-ilcompiler-in-visual-studio-2015.md)
+- [How to build and run from Visual Studio](how-to-build-and-run-ilcompiler-in-visual-studio.md)
 - [How to build and run from VSCode](how-to-build-and-run-ilcompiler-in-vscode.md)
 - [How to run tests](how-to-run-tests.md)
 - [Cross Compilation for ARM on Linux](cross-building.md)

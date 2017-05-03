@@ -37,7 +37,7 @@ namespace ILCompiler
         private bool HasImport { get; set; }
         private bool HasExport { get; set; }
 
-        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals)
+        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals) : base(new WindowsNodeMangler())
         {
             // Do not support both imports and exports for one module
             Debug.Assert(!hasImport || !hasExport);
@@ -101,7 +101,7 @@ namespace ILCompiler
         //
         // Turn a name into a valid C/C++ identifier
         //
-        internal override string SanitizeName(string s, bool typeName = false)
+        public override string SanitizeName(string s, bool typeName = false)
         {
             StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)

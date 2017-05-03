@@ -6,7 +6,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolDefinitionNode
+    public class EETypeOptionalFieldsNode : ObjectNode, ISymbolDefinitionNode
     {
         private EETypeNode _owner;
 
@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_owner.Type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
+                    return ObjectNodeSection.FoldableReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
             }

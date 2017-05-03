@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public static class CodeBasedDependencyAlgorithm
     {
-        public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void AddDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // TODO: https://github.com/dotnet/corert/issues/3224
             // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
@@ -30,15 +30,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method) && !method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
                 {
-                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(method);
-                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (invokeStub != canonInvokeStub)
+                    MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
+                    if (canonInvokeStub.IsSharedByGenericInstantiations)
                     {
                         dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
                         factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
                     }
                     else
-                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
 
                 bool skipUnboxingStubDependency = false;
@@ -69,6 +68,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
             }
+        }
+
+        public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            AddDependenciesDueToReflectability(ref dependencies, factory, method);
 
             if (method.HasInstantiation)
             {

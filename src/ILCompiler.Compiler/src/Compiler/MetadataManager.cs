@@ -37,7 +37,6 @@ namespace ILCompiler
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
 
-        private HashSet<ArrayType> _arrayTypesGenerated = new HashSet<ArrayType>();
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
@@ -148,7 +147,6 @@ namespace ILCompiler
             if (eetypeNode != null)
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
-                AddGeneratedType(eetypeNode.Type);
 
                 if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
                 {
@@ -167,17 +165,14 @@ namespace ILCompiler
 
             if (methodNode != null)
             {
-                MethodDesc method = methodNode.Method;
-
-                AddGeneratedMethod(method);
+                _methodsGenerated.Add(methodNode.Method);
                 return;
             }
 
-            var runtimeMethodHandleNode = obj as RuntimeMethodHandleNode;
-            if (runtimeMethodHandleNode != null)
+            var reflectableMethodNode = obj as ReflectableMethodNode;
+            if (reflectableMethodNode != null)
             {
-                AddMetadataOnlyMethod(runtimeMethodHandleNode.Method);
-                return;
+                _methodsGenerated.Add(reflectableMethodNode.Method);
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
@@ -196,19 +191,6 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
-            }
-
-            var virtualMethodUseNode = obj as VirtualMethodUseNode;
-            if (virtualMethodUseNode != null && virtualMethodUseNode.Method.IsAbstract)
-            {
-                AddGeneratedMethod(virtualMethodUseNode.Method);
-                return;
-            }
-
-            var gvmDependenciesNode = obj as GVMDependenciesNode;
-            if(gvmDependenciesNode != null && gvmDependenciesNode.Method.IsAbstract)
-            {
-                AddGeneratedMethod(gvmDependenciesNode.Method);
             }
         }
 
@@ -304,19 +286,16 @@ namespace ILCompiler
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public abstract MethodDesc GetReflectionInvokeStub(MethodDesc method);
+        public abstract MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method);
 
         /// <summary>
-        /// Compute the particular instantiation of a dynamic invoke thunk needed to invoke a method
+        /// Compute the canonical instantiation of a dynamic invoke thunk needed to invoke a method
         /// This algorithm is shared with the runtime, so if a thunk requires generic instantiation
         /// to be used, it must match this algorithm, and cannot be different with different MetadataManagers
         /// NOTE: This function may return null in cases where an exact instantiation does not exist. (Universal Generics)
         /// </summary>
-        protected MethodDesc InstantiateDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
+        protected MethodDesc InstantiateCanonicalDynamicInvokeMethodForMethod(MethodDesc thunk, MethodDesc method)
         {
-            // Methods we see here shouldn't be canonicalized, or we'll end up creating unsupported instantiations
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Specific));
-
             if (thunk.Instantiation.Length == 0)
             {
                 // nothing to instantiate
@@ -400,31 +379,12 @@ namespace ILCompiler
                     return null;
             }
 
-            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, new Instantiation(instantiation));
+            // If the thunk ends up being shared code, return the canonical method body.
+            // The concrete dictionary for the thunk will be built at runtime and is not interesting for the compiler.
+            Instantiation canonInstantiation = context.ConvertInstantiationToCanonForm(new Instantiation(instantiation), CanonicalFormKind.Specific);
+
+            MethodDesc instantiatedDynamicInvokeMethod = thunk.Context.GetInstantiatedMethod(thunk, canonInstantiation);
             return instantiatedDynamicInvokeMethod;
-        }
-
-        protected virtual void AddGeneratedType(TypeDesc type)
-        {
-            Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
-
-            if (type.IsArray)
-            {
-                var arrayType = (ArrayType)type;
-                _arrayTypesGenerated.Add(arrayType);
-            }
-
-            // TODO: track generic types, etc.
-        }
-
-        protected virtual void AddGeneratedMethod(MethodDesc method)
-        {
-            Debug.Assert(_metadataBlob == null, "Created a new EEType after metadata generation finished");
-            _methodsGenerated.Add(method);
-        }
-
-        protected virtual void AddMetadataOnlyMethod(MethodDesc method)
-        {
         }
 
         private void EnsureMetadataGenerated(NodeFactory factory)
@@ -475,11 +435,6 @@ namespace ILCompiler
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
-        }
-
-        internal IEnumerable<ArrayType> GetArrayTypeMapping()
-        {
-            return _arrayTypesGenerated;
         }
 
         internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()

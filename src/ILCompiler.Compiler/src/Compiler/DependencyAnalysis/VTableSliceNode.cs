@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents the VTable for a type's slice. For example, System.String's VTableSliceNode includes virtual 
     /// slots added by System.String itself, System.Object's VTableSliceNode contains the virtuals it defines.
     /// </summary>
-    internal abstract class VTableSliceNode : DependencyNodeCore<NodeFactory>
+    public abstract class VTableSliceNode : DependencyNodeCore<NodeFactory>
     {
         protected TypeDesc _type;
 

@@ -126,6 +126,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NameMangler.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\DependencyNode.cs" />

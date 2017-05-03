@@ -32,7 +32,6 @@ namespace Internal.Runtime.CompilerHelpers
             PInvokeMarshal.StringToByValAnsiString(str, pNative, charCount, bestFit, throwOnUnmappableChar, truncate: false);
         }
 
-
         public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
         {
             return PInvokeMarshal.ByValAnsiStringToString(buffer, length);
@@ -114,6 +113,14 @@ namespace Internal.Runtime.CompilerHelpers
             return (char *)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((sb.Capacity + 2) * 2)));
         }
 
+        public static unsafe byte* AllocMemoryForAnsiCharArray(char[] chArray)
+        {
+            if (chArray == null)
+            {
+                return null;
+            }
+            return (byte*)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((chArray.Length + 2) * PInvokeMarshal.GetSystemMaxDBCSCharSize())));
+        }
 
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
@@ -146,6 +153,45 @@ namespace Internal.Runtime.CompilerHelpers
                 return;
 
             PInvokeMarshal.StringBuilderToUnicodeString(stringBuilder, destination);
+        }
+
+        public static unsafe void WideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, bool bestFit, bool throwOnUnmappableChar)
+        {
+            PInvokeMarshal.WideCharArrayToAnsiCharArray(managedArray, pNative, bestFit, throwOnUnmappableChar);
+        }
+
+        /// <summary>
+        /// Convert ANSI ByVal byte array to UNICODE wide char array, best fit
+        /// </summary>
+        /// <remarks>
+        /// * This version works with array instead to string, it means that the len must be provided and there will be NO NULL to
+        /// terminate the array.
+        /// * The buffer to the UNICODE wide char array must be allocated by the caller.
+        /// </remarks>
+        /// <param name="pNative">Pointer to the ANSI byte array. Could NOT be null.</param>
+        /// <param name="lenInBytes">Maximum buffer size.</param>
+        /// <param name="managedArray">Wide char array that has already been allocated.</param>
+        public static unsafe void AnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
+        {
+            PInvokeMarshal.AnsiCharArrayToWideCharArray(pNative, managedArray);
+        }
+
+        /// <summary>
+        /// Convert a single UNICODE wide char to a single ANSI byte.
+        /// </summary>
+        /// <param name="managedArray">single UNICODE wide char value</param>
+        public static unsafe byte WideCharToAnsiChar(char managedValue, bool bestFit, bool throwOnUnmappableChar)
+        {
+            return PInvokeMarshal.WideCharToAnsiChar(managedValue, bestFit, throwOnUnmappableChar);
+        }
+
+        /// <summary>
+        /// Convert a single ANSI byte value to a single UNICODE wide char value, best fit.
+        /// </summary>
+        /// <param name="nativeValue">Single ANSI byte value.</param>
+        public static unsafe char AnsiCharToWideChar(byte nativeValue)
+        {
+            return PInvokeMarshal.AnsiCharToWideChar(nativeValue);
         }
 
         internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)

@@ -14,9 +14,17 @@ namespace ILCompiler
     //
     public abstract class NameMangler
     {
+        public NameMangler(NodeMangler nodeMangler)
+        {
+            nodeMangler.NameMangler = this;
+            NodeMangler = nodeMangler;
+        }
+
+        public NodeMangler NodeMangler { get; private set; }
+
         public abstract string CompilationUnitPrefix { get; set; }
 
-        internal abstract string SanitizeName(string s, bool typeName = false);
+        public abstract string SanitizeName(string s, bool typeName = false);
 
         public abstract string GetMangledTypeName(TypeDesc type);
 

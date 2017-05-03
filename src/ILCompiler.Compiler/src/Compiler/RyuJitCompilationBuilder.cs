@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.JitInterface;
 
 namespace ILCompiler
@@ -18,7 +18,7 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
-            : base(new RyuJitNodeFactory(context, group))
+            : base(context, group)
         {
         }
 
@@ -73,8 +73,13 @@ namespace ILCompiler
             if (_generateDebugInfo)
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
+            MetadataManager metadataManager = CreateMetadataManager();
+
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, metadataManager);
+
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
-            return new RyuJitCompilation(CreateDependencyGraph(), _nodeFactory, _compilationRoots, _logger, jitConfig);
+            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
+            return new RyuJitCompilation(graph, factory, _compilationRoots, _logger, jitConfig);
         }
     }
 }

@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,6 +11,8 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
+        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.EventModifyState);
+
         private EventWaitHandle(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
@@ -36,12 +37,11 @@ namespace System.Threading
                 eventFlags |= (uint)Interop.Constants.CreateEventManualReset;
             }
 
-            IntPtr unsafeHandle = Interop.mincore.CreateEventEx(IntPtr.Zero, name, eventFlags, (uint)Interop.Constants.EventAllAccess);
-            SafeWaitHandle _handle = new SafeWaitHandle(unsafeHandle, true);
+            SafeWaitHandle _handle = Interop.mincore.CreateEventEx(IntPtr.Zero, name, eventFlags, AccessRights);
 
             if (_handle.IsInvalid)
             {
-                int errorCode = (int)Interop.mincore.GetLastError();
+                int errorCode = Marshal.GetLastWin32Error();
                 _handle.SetHandleAsInvalid();
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -49,7 +49,7 @@ namespace System.Threading
             }
             else if (name != null)
             {
-                int errorCode = (int)Interop.mincore.GetLastError();
+                int errorCode = Marshal.GetLastWin32Error();
                 createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             }
             else
@@ -81,20 +81,19 @@ namespace System.Threading
 
             result = null;
 
-            IntPtr unsafeHandle = Interop.mincore.OpenEvent((uint)(Interop.Constants.EventModifyState | Interop.Constants.Synchronize), false, name);
-
-            int errorCode = (int)Interop.mincore.GetLastError();
-            SafeWaitHandle myHandle = new SafeWaitHandle(unsafeHandle, true);
+            SafeWaitHandle myHandle = Interop.mincore.OpenEvent(AccessRights, false, name);
 
             if (myHandle.IsInvalid)
             {
+                int errorCode = Marshal.GetLastWin32Error();
+
                 if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
                 if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
-                //this is for passed through Win32Native Errors
+
                 throw ExceptionFromCreationError(errorCode, name);
             }
             result = new EventWaitHandle(myHandle);

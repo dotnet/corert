@@ -56,6 +56,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.mincore.CoTaskMemAlloc(bytes);
@@ -69,6 +74,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.mincore.CoTaskMemRealloc(pv, cb);
+        }
+
         public static IntPtr SecureStringToBSTR(SecureString s)
         {
             if (s == null)
@@ -76,6 +86,19 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(s));
             }
             return s.MarshalToBSTR();
+        }
+
+        internal static IntPtr AllocBSTR(int length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);
+            if (bstr == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return bstr;
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
+            Interop.OleAut32.SysFreeString(ptr);
         }
 
         #region String marshalling

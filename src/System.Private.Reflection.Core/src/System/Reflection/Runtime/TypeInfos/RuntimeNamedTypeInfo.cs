@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>, but not Foo<int> or arrays/pointers/byrefs.)
     // 
     //
-    internal abstract partial class RuntimeNamedTypeInfo : RuntimeTypeInfo, IEquatable<RuntimeNamedTypeInfo>
+    internal abstract partial class RuntimeNamedTypeInfo : RuntimeTypeDefinitionTypeInfo, IEquatable<RuntimeNamedTypeInfo>
     {
         protected RuntimeNamedTypeInfo(RuntimeTypeHandle typeHandle)
         {

@@ -136,7 +136,6 @@
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
@@ -164,11 +163,9 @@
     <Compile Include="System\Resources\IResourceGroveler.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
     <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
-    <Compile Include="System\Resources\ResourceFallbackManager.cs" />
     <Compile Include="System\Resources\ResourceManager.cs" />
     <Compile Include="System\Resources\ResourceReader.cs" />
     <Compile Include="System\Resources\ResourceSet.cs" />
-    <Compile Include="System\Resources\RuntimeResourceSet.cs" />
     <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
     <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
@@ -180,9 +177,7 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
     <Compile Include="System\ArgIterator.cs" />
-    <Compile Include="System\ArgumentOutOfRangeException.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\BadImageFormatException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
@@ -518,6 +513,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemReAlloc.cs">
+      <Link>Interop\Windows\mincore\Interop.MemReAlloc.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
@@ -681,6 +679,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>

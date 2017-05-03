@@ -40,6 +40,7 @@
             <!-- IL.Compiler target files -->
             <ILCompilerFiles Include="ilc.dll" />
             <ILCompilerFiles Include="ILCompiler.Compiler.dll" />
+            <ILCompilerFiles Include="ILCompiler.CppCodeGen.dll" />
             <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
             <ILCompilerFiles Include="ILCompiler.MetadataTransform.dll" />
             <ILCompilerFiles Include="ILCompiler.MetadataWriter.dll" />

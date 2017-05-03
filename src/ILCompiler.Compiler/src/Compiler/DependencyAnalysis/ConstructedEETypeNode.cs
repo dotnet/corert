@@ -135,13 +135,13 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(_type), "VTable");
 
-            if (closestDefType.HasGenericDictionarySlot())
+            if (closestDefType.HasInstantiation)
             {
-                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                DefType templateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, _type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                if (templateType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(templateType).RepresentsIndirectionCell)
-                    dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout");
+                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
+                if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonType).RepresentsIndirectionCell)
+                    dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(canonType), "Template Type Layout");
             }
 
             // Generated type contains generic virtual methods that will get added to the GVM tables

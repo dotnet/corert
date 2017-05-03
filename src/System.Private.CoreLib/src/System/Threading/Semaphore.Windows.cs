@@ -10,6 +10,8 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
+        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.SemaphoreModifyState);
+
         private Semaphore(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
@@ -30,18 +32,18 @@ namespace System.Threading
             Debug.Assert(initialCount <= maximumCount);
             Debug.Assert(name == null || name.Length <= MAX_PATH);
 
-            SafeWaitHandle myHandle = new SafeWaitHandle(Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, (uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize)), true);
+            SafeWaitHandle myHandle = Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = (int)Interop.mincore.GetLastError();
+                int errorCode = Marshal.GetLastWin32Error();
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 throw ExceptionFromCreationError(errorCode, name);
             }
             else if (name != null)
             {
-                int errorCode = (int)Interop.mincore.GetLastError();
+                int errorCode = Marshal.GetLastWin32Error();
                 createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             }
             else
@@ -69,12 +71,11 @@ namespace System.Threading
 
             result = null;
 
-            //Pass false to OpenSemaphore to prevent inheritedHandles
-            SafeWaitHandle myHandle = new SafeWaitHandle(Interop.mincore.OpenSemaphore((uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize), false, name), true);
+            SafeWaitHandle myHandle = Interop.mincore.OpenSemaphore(AccessRights, false, name);
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = (int)Interop.mincore.GetLastError();
+                int errorCode = Marshal.GetLastWin32Error();
 
                 if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
@@ -82,7 +83,7 @@ namespace System.Threading
                     return OpenExistingResult.PathNotFound;
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
-                //this is for passed through NativeMethods Errors
+
                 throw ExceptionFromCreationError(errorCode, name);
             }
             result = new Semaphore(myHandle);
@@ -93,14 +94,12 @@ namespace System.Threading
         {
             Debug.Assert(releaseCount > 0);
 
-            //If ReleaseSempahore returns false when the specified value would cause
-            //   the semaphore's count to exceed the maximum count set when Semaphore was created
-            //Non-Zero return 
             int previousCount;
             if (!Interop.mincore.ReleaseSemaphore(handle, releaseCount, out previousCount))
             {
                 ThrowSignalOrUnsignalException();
             }
+
             return previousCount;
         }
     }

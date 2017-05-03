@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,17 +13,18 @@
 ** 
 ===========================================================*/
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Resources
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
-
     // A RuntimeResourceSet stores all the resources defined in one 
     // particular CultureInfo, with some loading optimizations.
     //
@@ -160,7 +161,7 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     // 
-    public sealed class RuntimeResourceSet : ResourceSet, IEnumerable
+    internal sealed class RuntimeResourceSet : ResourceSet, IEnumerable
     {
         internal const int Version = 2;            // File format version number
 
@@ -188,14 +189,10 @@ namespace System.Resources
 
         internal RuntimeResourceSet(String fileName) : base(false)
         {
-            throw new NotImplementedException();
-            // todo remove the throw and ifdef when File and FileStream are in CoreLib
-#if FILE_TYPES_IN_CORELIB
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _defaultReader = new ResourceReader(stream, _resCache);
             Reader = _defaultReader;
-#endif // FILE_TYPES_IN_CORELIB
         }
 
         internal RuntimeResourceSet(Stream stream) : base(false)
@@ -280,7 +277,7 @@ namespace System.Resources
         private Object GetObject(String key, bool ignoreCase, bool isString)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (Reader == null || _resCache == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
             Contract.EndContractBlock();
@@ -310,7 +307,7 @@ namespace System.Resources
 
                     if (dataPos != -1 && value == null)
                     {
-                        Contract.Assert(dataPos >= 0, "data section offset cannot be negative!");
+                        Debug.Assert(dataPos >= 0, "data section offset cannot be negative!");
                         // Normally calling LoadString or LoadObject requires
                         // taking a lock.  Note that in this case, we took a
                         // lock on the entire RuntimeResourceSet, which is 
@@ -370,7 +367,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        Contract.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
+                        Debug.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
                         ResourceReader.ResourceEnumerator en = _defaultReader.GetEnumeratorInternal();
                         while (en.MoveNext())
                         {

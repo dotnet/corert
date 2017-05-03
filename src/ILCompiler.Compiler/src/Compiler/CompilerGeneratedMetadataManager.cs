@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -24,59 +25,23 @@ namespace ILCompiler
     public class CompilerGeneratedMetadataManager : MetadataManager
     {
         private GeneratedTypesAndCodeMetadataPolicy _metadataPolicy;
+        private string _metadataLogFile;
 
-        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext) : base(group, typeSystemContext)
+        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
+            : base(group, typeSystemContext)
         {
             _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
+            _metadataLogFile = logFile;
         }
 
-        private HashSet<MetadataType> _typeDefinitionsGenerated = new HashSet<MetadataType>();
-        private HashSet<MethodDesc> _methodDefinitionsGenerated = new HashSet<MethodDesc>();
+        private HashSet<MetadataType> _typeDefinitionsToGenerate = new HashSet<MetadataType>();
+        private HashSet<MethodDesc> _methodDefinitionsToGenerate = new HashSet<MethodDesc>();
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
-
-        protected override void AddGeneratedType(TypeDesc type)
-        {
-            if (type.IsDefType && type.IsTypeDefinition)
-            {
-                var mdType = type as MetadataType;
-                if (mdType != null)
-                {
-                    _modulesSeen.Add(mdType.Module);
-                    _typeDefinitionsGenerated.Add(mdType);
-                }
-            }
-
-            base.AddGeneratedType(type);
-        }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return _modulesSeen;
-        }
-
-        protected override void AddGeneratedMethod(MethodDesc method)
-        {
-            AddGeneratedType(method.OwningType);
-            _methodDefinitionsGenerated.Add(method.GetTypicalMethodDefinition());
-            base.AddGeneratedMethod(method);
-        }
-
-        private void AddMetadataOnlyType(TypeDesc type)
-        {
-            if (type is MetadataType)
-            {
-                var mdType = (MetadataType)type.GetTypeDefinition();
-                _modulesSeen.Add(mdType.Module);
-                _typeDefinitionsGenerated.Add(mdType);
-            }
-        }
-
-        protected override void AddMetadataOnlyMethod(MethodDesc method)
-        {
-            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-            AddMetadataOnlyType(typicalMethod.OwningType);
-            _methodDefinitionsGenerated.Add(typicalMethod);
         }
 
         public override bool IsReflectionBlocked(MetadataType type)
@@ -100,6 +65,33 @@ namespace ILCompiler
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
+            {
+                var definition = type.GetTypeDefinition() as Internal.TypeSystem.Ecma.EcmaType;
+                if (definition == null)
+                    continue;
+                if (factory.CompilationModuleGroup.ContainsType(definition))
+                {
+                    _typeDefinitionsToGenerate.Add(definition);
+                    _modulesSeen.Add(definition.Module);
+                }
+            }
+
+            foreach (var method in GetCompiledMethods())
+            {
+                var typicalMethod = method.GetTypicalMethodDefinition() as Internal.TypeSystem.Ecma.EcmaMethod;
+                if (typicalMethod != null)
+                {
+                    var owningType = (MetadataType)typicalMethod.OwningType;
+                    if (factory.CompilationModuleGroup.ContainsType(owningType))
+                    {
+                        _typeDefinitionsToGenerate.Add(owningType);
+                        _modulesSeen.Add(owningType.Module);
+                        _methodDefinitionsToGenerate.Add(typicalMethod);
+                    }
+                }
+            }
+
             var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(this), _modulesSeen);
 
             // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
@@ -110,7 +102,16 @@ namespace ILCompiler
             var writer = new MetadataWriter();
             writer.ScopeDefinitions.AddRange(transformed.Scopes);
             var ms = new MemoryStream();
-            writer.Write(ms);
+
+            // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
+            var noThrowUtf8Encoding = new UTF8Encoding(false, false);
+
+            using (var logWriter = _metadataLogFile != null ? new StreamWriter(File.Open(_metadataLogFile, FileMode.Create, FileAccess.Write, FileShare.Read), noThrowUtf8Encoding) : null)
+            {
+                writer.LogWriter = logWriter;
+                writer.Write(ms);
+            }
+
             metadataBlob = ms.ToArray();
 
             typeMappings = new List<MetadataMapping<MetadataType>>();
@@ -118,8 +119,12 @@ namespace ILCompiler
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
 
             // Generate type definition mappings
-            foreach (var definition in _typeDefinitionsGenerated)
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
+                MetadataType definition = type.IsTypeDefinition ? type as MetadataType : null;
+                if (definition == null)
+                    continue;
+
                 MetadataRecord record = transformed.GetTransformedTypeDefinition(definition);
 
                 // Reflection requires that we maintain type identity. Even if we only generated a TypeReference record,
@@ -173,13 +178,14 @@ namespace ILCompiler
         /// </summary>
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
+            Debug.Assert(IsReflectionInvokable(method));
             return true;
         }
 
         /// <summary>
         /// Gets a stub that can be used to reflection-invoke a method with a given signature.
         /// </summary>
-        public override MethodDesc GetReflectionInvokeStub(MethodDesc method)
+        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method)
         {
             TypeSystemContext context = method.Context;
             var sig = method.Signature;
@@ -193,7 +199,7 @@ namespace ILCompiler
                 _dynamicInvokeThunks.Add(lookupSig, thunk);
             }
 
-            return InstantiateDynamicInvokeMethodForMethod(thunk, method);
+            return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
         }
 
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy
@@ -214,12 +220,12 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return _parent._typeDefinitionsGenerated.Contains((MetadataType)fieldDef.OwningType);
+                return _parent._typeDefinitionsToGenerate.Contains((MetadataType)fieldDef.OwningType);
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
             {
-                return _parent._methodDefinitionsGenerated.Contains(methodDef);
+                return _parent._methodDefinitionsToGenerate.Contains(methodDef);
             }
 
             public bool GeneratesMetadata(MetadataType typeDef)
@@ -241,7 +247,7 @@ namespace ILCompiler
                         return true;
                 }
 
-                return _parent._typeDefinitionsGenerated.Contains(typeDef);
+                return _parent._typeDefinitionsToGenerate.Contains(typeDef);
             }
 
             public bool IsBlocked(MetadataType typeDef)

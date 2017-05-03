@@ -87,15 +87,14 @@ namespace ILCompiler.DependencyAnalysis
                 // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
                 if (factory.MetadataManager.HasReflectionInvokeStub(Method))
                 {
-                    MethodDesc invokeStub = factory.MetadataManager.GetReflectionInvokeStub(Method);
-                    MethodDesc canonInvokeStub = invokeStub.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (invokeStub != canonInvokeStub)
+                    MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(Method);
+                    if (canonInvokeStub.IsSharedByGenericInstantiations)
                     {
                         dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
                         factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
                     }
                     else
-                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(invokeStub), "Reflection invoke"));
+                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
             }
 

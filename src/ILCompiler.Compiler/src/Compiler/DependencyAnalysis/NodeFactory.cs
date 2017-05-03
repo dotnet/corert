@@ -86,6 +86,13 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        // Temporary workaround that is used to disable certain features from lighting up
+        // in CppCodegen because they're not fully implemented yet.
+        public virtual bool IsCppCodegenTemporaryWorkaround
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// Return true if the type is not permitted by the rules of the runtime to have an EEType.
         /// The implementation here is not intended to be complete, but represents many conditions
@@ -148,15 +155,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
-                        if (Target.Abi == TargetAbi.CoreRT)
-                        {
-                            return new CanonicalEETypeNode(this, type);
-                        }
-                        else
-                        {
-                            // Remove this once we stop using the STS dependency analysis.
-                            return new NecessaryCanonicalEETypeNode(this, type);
-                        }
+                        return new NecessaryCanonicalEETypeNode(this, type);
                     }
                     else
                     {
@@ -296,6 +295,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
+            });
+
+            _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
+            {
+                return new ReflectableMethodNode(method);
             });
 
             _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(methodKey =>
@@ -617,7 +621,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
 
-        internal VTableSliceNode VTable(TypeDesc type)
+        public VTableSliceNode VTable(TypeDesc type)
         {
             return _vTableNodes.GetOrAdd(type);
         }
@@ -641,7 +645,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, IMethodNode> _stringAllocators;
-        internal IMethodNode StringAllocator(MethodDesc stringConstructor)
+        public IMethodNode StringAllocator(MethodDesc stringConstructor)
         {
             return _stringAllocators.GetOrAdd(stringConstructor);
         }
@@ -666,6 +670,24 @@ namespace ILCompiler.DependencyAnalysis
             return _fatFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
+        public IMethodNode ExactCallableAddress(MethodDesc method, bool isUnboxingStub = false)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (method != canonMethod)
+                return FatFunctionPointer(method, isUnboxingStub);
+            else
+                return MethodEntrypoint(method, isUnboxingStub);
+        }
+
+        public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
+        {
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (method != canonMethod)
+                return ShadowConcreteMethod(method, isUnboxingStub);
+            else
+                return MethodEntrypoint(method, isUnboxingStub);
+        }
+
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
         internal GVMDependenciesNode GVMDependencies(MethodDesc method)
         {
@@ -676,6 +698,12 @@ namespace ILCompiler.DependencyAnalysis
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
+        internal ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        {
+            return _reflectableMethods.GetOrAdd(method);
         }
 
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
