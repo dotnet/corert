@@ -88,6 +88,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new ArrayAllocatorGenericLookupResult(type);
                 });
 
+                _isInstHelpers = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new IsInstGenericLookupResult(type);
+                });
+
+                _castClassHelpers = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new CastClassGenericLookupResult(type);
+                });
+
                 _tlsIndices = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new ThreadStaticIndexLookupResult(type);
@@ -229,6 +239,20 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult ArrayAlloctor(TypeDesc type)
             {
                 return _arrayAllocators.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _isInstHelpers;
+
+            public GenericLookupResult IsInstHelper(TypeDesc type)
+            {
+                return _isInstHelpers.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _castClassHelpers;
+
+            public GenericLookupResult CastClassHelper(TypeDesc type)
+            {
+                return _castClassHelpers.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _tlsIndices;
