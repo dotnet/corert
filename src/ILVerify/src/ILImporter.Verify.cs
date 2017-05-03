@@ -336,6 +336,14 @@ namespace Internal.IL
             }
         }
 
+        void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
+        {
+            if (!IsBinaryComparable(a, b, op))
+            {
+                VerificationError(VerifierError.StackUnexpected, a, b);
+            }
+        }
+
         void Unverifiable()
         {
             VerificationError(VerifierError.Unverifiable);
@@ -949,7 +957,38 @@ namespace Internal.IL
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
-            // TODO: Verification rules
+            switch (opcode)
+            {
+                case ILOpcode.br:
+                    break;
+                case ILOpcode.brfalse:
+                case ILOpcode.brtrue:
+                    {
+                        StackValue value = Pop();
+                        Check(value.Kind >= StackValueKind.Int32 && value.Kind <= StackValueKind.NativeInt || value.Kind == StackValueKind.ObjRef || value.Kind == StackValueKind.ByRef, VerifierError.StackUnexpected);
+                    }
+                    break;
+                case ILOpcode.beq:
+                case ILOpcode.bge:
+                case ILOpcode.bgt:
+                case ILOpcode.ble:
+                case ILOpcode.blt:
+                case ILOpcode.bne_un:
+                case ILOpcode.bge_un:
+                case ILOpcode.bgt_un:
+                case ILOpcode.ble_un:
+                case ILOpcode.blt_un:
+                    {
+                        StackValue value1 = Pop();
+                        StackValue value2 = Pop();
+
+                        CheckIsComparable(value1, value2, opcode);
+                    }
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected branch opcode");
+                    break;
+            }
 
             ImportFallthrough(target);
 
@@ -1013,7 +1052,12 @@ namespace Internal.IL
 
         void ImportCompareOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            var value1 = Pop();
+            var value2 = Pop();
+
+            CheckIsComparable(value1, value2, opcode);
+
+            Push(StackValue.CreatePrimitive(StackValueKind.Int32));
         }
 
         void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
