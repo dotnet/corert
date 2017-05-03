@@ -39,6 +39,41 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+        
+
+        /// <summary>
+        /// Helper method to compute the dependencies that would be needed by a hashtable entry for statics info lookup.
+        /// This helper is used by EETypeNode, which is used by the dependency analysis to compute the statics hashtable
+        /// entries for the compiled types.
+        /// </summary>
+        public static DependencyList GetStaticsInfoDependencies(NodeFactory factory, TypeDesc type)
+        {
+            DependencyList dependencies = new DependencyList();
+
+            if (type is MetadataType && type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MetadataType metadataType = (MetadataType)type;
+
+                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
+                // The StaticsInfoHashtable entries only exist for static fields on generic types.
+
+                if (metadataType.GCStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(factory.Indirection(factory.TypeGCStaticsSymbol(metadataType)), "GC statics indirection for StaticsInfoHashtable");
+                }
+
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                {
+                    // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
+                    // context offset.
+                    dependencies.Add(factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType)), "Non-GC statics indirection for StaticsInfoHashtable");
+                }
+
+                // TODO: TLS dependencies
+            }
+            
+            return dependencies;
+        }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -68,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode gcStaticIndirection = factory.Indirection(factory.TypeGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.GcStaticData, _nativeStaticsReferences.GetIndex(gcStaticIndirection));
                 }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.TypeSystemContext.HasLazyStaticConstructor(type))
                 {
                     ISymbolNode nonGCStaticIndirection = factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.NonGcStaticData, _nativeStaticsReferences.GetIndex(nonGCStaticIndirection));
