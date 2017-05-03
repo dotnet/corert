@@ -1236,7 +1236,7 @@ namespace Internal.IL
                 }
             }
 
-            VerificationError(VerifierError.E_STACK_NOT_EQ);
+            VerificationError(VerifierError.StackNotEq);
         }
 
         void ImportLoadString(int token)
