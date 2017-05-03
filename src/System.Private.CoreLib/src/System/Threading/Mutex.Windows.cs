@@ -11,7 +11,7 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
-        private const uint AccessRights = (uint)(Interop.Constants.Synchronize | Interop.Constants.MutexModifyState);
+        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.MutexModifyState);
 
         private static void VerifyNameForCreate(string name)
         {
@@ -75,7 +75,6 @@ namespace System.Threading
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
-                // this is for passed through Win32Native Errors
                 throw ExceptionFromCreationError(errorCode, name);
             }
 

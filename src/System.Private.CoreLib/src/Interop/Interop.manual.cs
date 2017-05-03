@@ -28,6 +28,7 @@ internal partial class Interop
         MaxPath = 0x104u,
         StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
+        MaximumAllowed = 0x02000000u,
         EFail = 0x80004005u,
         CoENotInitialized = 0x800401F0u,
         WaitFailed = 0xFFFFFFFFu,
@@ -57,7 +58,6 @@ internal partial class Interop
     }
 
 #pragma warning disable 649
-
     internal unsafe struct _EXCEPTION_RECORD
     {
         internal uint ExceptionCode;
@@ -71,8 +71,8 @@ internal partial class Interop
         internal fixed uint ExceptionInformation[15];
 #endif
     }
-
 #pragma warning restore 649
+
     internal partial class mincore
     {
         [DllImport("api-ms-win-core-com-l1-1-0.dll")]
@@ -100,9 +100,9 @@ internal partial class Interop
             // don't care about exceptionRecord.ExceptionInformation as we set exceptionRecord.NumberParameters to zero
 
             PInvoke_RaiseFailFastException(
-                                &exceptionRecord,
-                                IntPtr.Zero,
-                                (uint)Constants.FailFastGenerateExceptionAddress);
+                &exceptionRecord,
+                IntPtr.Zero,
+                (uint)Constants.FailFastGenerateExceptionAddress);
         }
 
         //
@@ -126,10 +126,11 @@ internal partial class Interop
 
         [DllImport("api-ms-win-core-kernel32-legacy-l1-1-0.dll", EntryPoint = "RaiseFailFastException")]
         private extern static unsafe void PInvoke_RaiseFailFastException(
-                    _EXCEPTION_RECORD* pExceptionRecord,
-                    IntPtr pContextRecord,
-                    uint dwFlags);
+            _EXCEPTION_RECORD* pExceptionRecord,
+            IntPtr pContextRecord,
+            uint dwFlags);
     }
+
     internal unsafe partial class WinRT
     {
         internal const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
@@ -202,8 +203,8 @@ namespace System.Runtime.InteropServices
         }
 
         public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
-        { 
-           InteropExtensions.CopyToManaged(source, destination, startIndex, length); 
+        {
+            InteropExtensions.CopyToManaged(source, destination, startIndex, length);
         }
 
 #if PLATFORM_UNIX

@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,7 +11,7 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
-        private const uint AccessRights = (uint)(Interop.Constants.Synchronize | Interop.Constants.EventModifyState);
+        private const uint AccessRights = (uint)(Interop.Constants.MaximumAllowed | Interop.Constants.Synchronize | Interop.Constants.EventModifyState);
 
         private EventWaitHandle(SafeWaitHandle handle)
         {
@@ -94,7 +93,7 @@ namespace System.Threading
                     return OpenExistingResult.PathNotFound;
                 if (null != name && 0 != name.Length && Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
-                //this is for passed through Win32Native Errors
+
                 throw ExceptionFromCreationError(errorCode, name);
             }
             result = new EventWaitHandle(myHandle);
