@@ -78,6 +78,17 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
+        // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.
+        internal static IntPtr AllocBSTR(int length)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         #region String marshalling
         private const uint WC_NO_BEST_FIT_CHARS = 0;
 
