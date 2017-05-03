@@ -28,13 +28,35 @@ fi
 # Remove the test executable from the arg list so it isn't passed to test execution
 shift
 
+testExtRepo=$( dirname ${CoreRT_TestRoot} )/tests_downloaded/CoreCLR/
+nativeArtifactRepo=${testExtRepo}native/
+dirSuffix=$(dirname ${PWD#$testExtRepo})/
+nativeDir=${nativeArtifactRepo}tests/src/${dirSuffix}
+
+# In OSX we copy the native component to the directory where the exectuable resides.
+# However, in Linux dlopen doesn't seem to look for current directory to resolve the dynamic library.
+# So instead we point LD_LIBRARY_PATH to the directory where the native component is.
+if [ -e ${nativeDir} ]; then
+    if [ "${CoreRT_BuildOS}" == "OSX" ]; then
+        echo "Copying native component from :"${nativeDir}
+        cp ${nativeDir}*.dylib  native/ 2>/dev/null
+        cp ${nativeDir}*.so  native/ 2>/dev/null
+    fi
+    if [ "${CoreRT_BuildOS}" == "Linux" ]; then
+        LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${nativeDir}
+        export LD_LIBRARY_PATH
+    fi
+fi
+
 if [[ ! -f native/${TestFileName} ]]; then
     echo "ERROR: Native binary not found. Unable to run test."
     exit -1
 fi
 
-native/${TestFileName} "$@"
+pushd native/
+./${TestFileName} "$@"
 testScriptExitCode=$?
+popd
 
 if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
     # Handle any core files generated when running the test.
