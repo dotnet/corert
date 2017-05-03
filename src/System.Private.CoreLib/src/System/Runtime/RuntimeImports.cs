@@ -858,6 +858,11 @@ namespace System.Runtime
             }
         }
 
+        internal unsafe static void RhZeroMemory(IntPtr p, UIntPtr byteLength)
+        {
+            memset((byte*)p, 0, (nuint)byteLength);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]
         internal static extern bool TryArrayCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length);
