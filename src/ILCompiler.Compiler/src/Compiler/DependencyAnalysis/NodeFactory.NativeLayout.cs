@@ -123,6 +123,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutAllocateObjectGenericDictionarySlotNode(_factory, type);
                 });
 
+                _castClass_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutCastClassGenericDictionarySlotNode>(type =>
+                {
+                    return new NativeLayoutCastClassGenericDictionarySlotNode(_factory, type);
+                });
+
+                _isInst_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutIsInstGenericDictionarySlotNode>(type =>
+                {
+                    return new NativeLayoutIsInstGenericDictionarySlotNode(_factory, type);
+                });
+
                 _tlsIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode>(type =>
                 {
                     return new NativeLayoutTlsIndexGenericDictionarySlotNode(_factory, type);
@@ -443,6 +453,18 @@ namespace ILCompiler.DependencyAnalysis
             public NativeLayoutAllocateObjectGenericDictionarySlotNode AllocateObjectDictionarySlot(TypeDesc type)
             {
                 return _allocateObject_GenericDictionarySlots.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, NativeLayoutCastClassGenericDictionarySlotNode> _castClass_GenericDictionarySlots;
+            public NativeLayoutCastClassGenericDictionarySlotNode CastClassDictionarySlot(TypeDesc type)
+            {
+                return _castClass_GenericDictionarySlots.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, NativeLayoutIsInstGenericDictionarySlotNode> _isInst_GenericDictionarySlots;
+            public NativeLayoutIsInstGenericDictionarySlotNode IsInstDictionarySlot(TypeDesc type)
+            {
+                return _isInst_GenericDictionarySlots.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode> _tlsIndex_GenericDictionarySlots;
