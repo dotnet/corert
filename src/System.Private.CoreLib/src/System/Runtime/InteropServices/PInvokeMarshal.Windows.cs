@@ -88,6 +88,19 @@ namespace System.Runtime.InteropServices
             return s.MarshalToBSTR();
         }
 
+        internal static IntPtr AllocBSTR(int length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);
+            if (bstr == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return bstr;
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
+            Interop.OleAut32.SysFreeString(ptr);
+        }
+
         #region String marshalling
         private const uint WC_NO_BEST_FIT_CHARS = Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
 
