@@ -76,13 +76,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (method.HasInstantiation)
             {
-                var exactMethodInstantiationDependencies = ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(factory, method);
-                if (exactMethodInstantiationDependencies != null)
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.AddRange(exactMethodInstantiationDependencies);
-                }
-
+                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
+                
                 if (method.IsVirtual)
                 {
                     // Generic virtual methods dependency tracking
@@ -90,12 +85,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.GVMDependencies(method), "GVM Dependencies Support"));
                 }
 
-                var templateMethodDependencies = GenericMethodsTemplateMap.GetTemplateMethodDependencies(factory, method);
-                if (templateMethodDependencies != null)
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.AddRange(templateMethodDependencies);
-                }
+                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
             }
             else
             {
@@ -105,12 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
                     owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
 
-                var templateTypeDepedencies = GenericTypesTemplateMap.GetTemplateTypeDependencies(factory, owningTemplateType);
-                if (templateTypeDepedencies != null)
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.AddRange(templateTypeDepedencies);
-                }
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
             }
         }
     }

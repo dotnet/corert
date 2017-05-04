@@ -46,10 +46,8 @@ namespace ILCompiler.DependencyAnalysis
         /// This helper is used by EETypeNode, which is used by the dependency analysis to compute the statics hashtable
         /// entries for the compiled types.
         /// </summary>
-        public static DependencyList GetStaticsInfoDependencies(NodeFactory factory, TypeDesc type)
+        public static void AddStaticsInfoDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            DependencyList dependencies = new DependencyList();
-
             if (type is MetadataType && type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 MetadataType metadataType = (MetadataType)type;
@@ -71,8 +69,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 // TODO: TLS dependencies
             }
-            
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

@@ -46,10 +46,8 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Helper method to compute the dependencies that would be needed for reflection field lookup.
         /// </summary>
-        public static DependencyList GetReflectionFieldMapEntryDependencies(NodeFactory factory, TypeDesc type)
+        public static void AddReflectionFieldMapEntryDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            DependencyList dependencies = new DependencyList();
-
             // TODO: https://github.com/dotnet/corert/issues/3224
             // Reflection static field bases handling is here because in the current reflection model we reflection-enable
             // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
@@ -70,8 +68,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 // TODO: TLS dependencies
             }
-
-            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

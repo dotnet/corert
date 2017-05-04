@@ -48,12 +48,10 @@ namespace ILCompiler.DependencyAnalysis
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
         /// </summary>
-        public static DependencyList GetGenericVirtualMethodImplementationDependencies(NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
+        public static void GetGenericVirtualMethodImplementationDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
-
-            DependencyList dependencyNodes = new DependencyList();
-
+            
             // Compute the open method signatures
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();
@@ -62,8 +60,8 @@ namespace ILCompiler.DependencyAnalysis
             var openCallingMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openCallingMethod);
             var openImplementationMethodNameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(openImplementationMethod);
 
-            dependencyNodes.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openCallingMethodNameAndSig), "interface gvm table calling method signature"));
-            dependencyNodes.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openImplementationMethodNameAndSig), "interface gvm table implementation method signature"));
+            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openCallingMethodNameAndSig), "interface gvm table calling method signature"));
+            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(openImplementationMethodNameAndSig), "interface gvm table implementation method signature"));
 
             if (!openImplementationType.IsInterface)
             {
@@ -73,12 +71,10 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         TypeDesc currentInterface = openImplementationType.RuntimeInterfaces[index];
                         var currentInterfaceSignature = factory.NativeLayout.TypeSignatureVertex(currentInterface);
-                        dependencyNodes.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(currentInterfaceSignature), "interface gvm table interface signature"));
+                        dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(currentInterfaceSignature), "interface gvm table interface signature"));
                     }
                 }
             }
-
-            return dependencyNodes;
         }
 
         private void AddGenericVirtualMethodImplementation(NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
