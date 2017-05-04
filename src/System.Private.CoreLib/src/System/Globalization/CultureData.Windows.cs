@@ -524,6 +524,20 @@ namespace System.Globalization
             }
         }
 
+        private static unsafe Interop.BOOL EnumAllSystemLocalesProc(IntPtr lpLocaleString, uint flags, IntPtr contextHandle)
+        {
+            EnumData context = (EnumData)((GCHandle)contextHandle).Target;
+            try
+            {
+                context.strings.Add(new string((char*)lpLocaleString));
+                return Interop.BOOL.TRUE;
+            }
+            catch (Exception)
+            {
+                return Interop.BOOL.FALSE;
+            }
+        }
+
         // Context for EnumTimeFormatsEx callback.
         private class EnumData
         {
@@ -654,7 +668,54 @@ namespace System.Globalization
 
         private static CultureInfo[] EnumCultures(CultureTypes types)
         {
-            throw new NotImplementedException();
+            uint flags = 0;
+
+#pragma warning disable 618
+            if ((types & (CultureTypes.FrameworkCultures | CultureTypes.InstalledWin32Cultures | CultureTypes.ReplacementCultures)) != 0)
+            {
+                flags |= Interop.Kernel32.LOCALE_NEUTRALDATA | Interop.Kernel32.LOCALE_SPECIFICDATA;
+            }
+#pragma warning restore 618
+
+            if ((types & CultureTypes.NeutralCultures) != 0)
+            {
+                flags |= Interop.Kernel32.LOCALE_NEUTRALDATA;
+            }
+
+            if ((types & CultureTypes.SpecificCultures) != 0)
+            {
+                flags |= Interop.Kernel32.LOCALE_SPECIFICDATA;
+            }
+
+            if ((types & CultureTypes.UserCustomCulture) != 0)
+            {
+                flags |= Interop.Kernel32.LOCALE_SUPPLEMENTAL;
+            }
+
+            if ((types & CultureTypes.ReplacementCultures) != 0)
+            {
+                flags |= Interop.Kernel32.LOCALE_SUPPLEMENTAL;
+            }
+
+            EnumData context = new EnumData();
+            context.strings = new LowLevelList<string>();
+            GCHandle contextHandle = GCHandle.Alloc(context);
+            try
+            {
+                Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, flags, (IntPtr)contextHandle, IntPtr.Zero);
+            }
+            finally
+            {
+                contextHandle.Free();
+            }
+
+            CultureInfo[] cultures = new CultureInfo[context.strings.Count];
+            for (int i = 0; i < cultures.Length; i++)
+            {
+                cultures[i] = new CultureInfo(context.strings[i]);
+            }
+
+            return cultures;
         }
 
         private string GetConsoleFallbackName(string cultureName)
@@ -664,17 +725,38 @@ namespace System.Globalization
 
         internal bool IsFramework
         {
-            get { throw new NotImplementedException(); }
+            get { return false; }
         }
 
         internal bool IsWin32Installed
         {
-            get { throw new NotImplementedException(); }
+            get { return true; }
         }
 
         internal bool IsReplacementCulture
         {
-            get { throw new NotImplementedException(); }
+            get
+            {
+                EnumData context = new EnumData();
+                context.strings = new LowLevelList<string>();
+                GCHandle contextHandle = GCHandle.Alloc(context);
+                try
+                {
+                    Interop.Kernel32.EnumSystemLocalesEx(EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, (IntPtr)contextHandle, IntPtr.Zero);
+                }
+                finally
+                {
+                    contextHandle.Free();
+                }
+
+                for (int i = 0; i < context.strings.Count; i++)
+                {
+                    if (String.Compare(context.strings[i], _sWindowsName, StringComparison.OrdinalIgnoreCase) == 0)
+                        return true;
+                }
+
+                return false;
+            }
         }
     }
 }
