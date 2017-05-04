@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
             }
         }
 #endif //!CORECLR
-        private static unsafe void TypeToTypeName(
+        internal static unsafe void TypeToTypeName(
             RuntimeTypeHandle typeHandle,
             out string typeName,
             out TypeKind typeKind)
@@ -1096,6 +1096,10 @@ namespace System.Runtime.InteropServices
             string ccwRuntimeClassName;
             if (McgModuleManager.TryGetCCWRuntimeClassName(ccwType, out ccwRuntimeClassName))
                 return ccwRuntimeClassName;
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+                return DynamicInteropCCWTemplateHelper.GetCCWRuntimeClassName(ccwType);
+#endif
             return default(string);
         }
 
