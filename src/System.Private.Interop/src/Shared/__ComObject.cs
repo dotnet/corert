@@ -2237,7 +2237,17 @@ namespace System
             // Search for exact matche of requestedType and targetType failed. Try to get dynamic
             // adapter for types using variance.
             //
-            return GetDynamicAdapterUsingVariance(requestedType, cacheContext);
+            dynamicAdapter = GetDynamicAdapterUsingVariance(requestedType, cacheContext);
+            if (dynamicAdapter != null)
+                return dynamicAdapter;
+
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            // Try dynamic rcw, The Caller will generate/throw exception if return null
+            Exception e;
+            dynamicAdapter = CastToInterface(requestedType, /*produceCastErrorException*/ false, out e);
+#endif
+
+            return dynamicAdapter;
         }
 
         private object FindDynamicAdapterForInterface(RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType)
