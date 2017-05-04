@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -78,7 +77,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-com-l1-1-0.dll")]
         internal extern static int CoGetApartmentType(out _APTTYPE pAptType, out _APTTYPEQUALIFIER pAptQualifier);
 
-
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
 
@@ -129,42 +127,6 @@ internal partial class Interop
             _EXCEPTION_RECORD* pExceptionRecord,
             IntPtr pContextRecord,
             uint dwFlags);
-    }
-
-    internal unsafe partial class WinRT
-    {
-        internal const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
-
-        internal enum RO_INIT_TYPE : uint
-        {
-            RO_INIT_MULTITHREADED = 1
-        }
-
-        internal static unsafe void RoInitialize(RO_INIT_TYPE initType)
-        {
-            int hr = RoInitialize((uint)initType);
-
-            // RPC_E_CHANGED_MODE can occur if someone else has already initialized the thread.  This is
-            // legal - we just need to make sure not to uninitialize the thread later in this case.
-            if (hr < 0 && hr != RPC_E_CHANGED_MODE)
-            {
-                throw new Exception();
-            }
-        }
-
-#if TARGET_CORE_API_SET
-        [DllImport(Interop.CORE_WINRT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static extern unsafe int RoInitialize(uint initType);
-#else
-        // Right now do what is necessary to ensure that the tools still work on pre-Win8 platforms
-        internal static unsafe int RoInitialize(uint initType)
-        {
-            // RoInitialize gets called on startup so it can't throw a not implemented exception
-            return 0;
-        }
-#endif
     }
 }
 
