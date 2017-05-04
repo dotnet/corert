@@ -1222,7 +1222,7 @@ namespace Internal.IL
 
             if (value.Kind != StackValueKind.ObjRef)
             {
-                VerificationError(VerifierError.StackNotEq);
+                VerificationError(VerifierError.StackObjRef);
             }            
         }
 
