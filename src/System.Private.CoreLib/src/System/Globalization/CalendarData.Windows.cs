@@ -318,7 +318,7 @@ namespace System.Globalization
                     string res = Interop.mincore.GetLocaleInfoEx(localeName, lcType);
 
                     // if it succeeded remember the override for the later callers
-                    if (res != "")
+                    if (res != null)
                     {
                         // Remember this was the override (so we can look for duplicates later in the enum function)
                         context.userOverride = res;

@@ -12,6 +12,7 @@
 ===========================================================*/
 
 using System.Globalization;
+using System.IO;
 using System.Runtime.Serialization;
 
 namespace System
@@ -57,14 +58,7 @@ namespace System
             : base(info, context)
         {
             _fileName = info.GetString("BadImageFormat_FileName");
-            try
-            {
-                _fusionLog = info.GetString("BadImageFormat_FusionLog");
-            }
-            catch
-            {
-                _fusionLog = null;
-            }
+            _fusionLog = info.GetString("BadImageFormat_FusionLog");
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -88,12 +82,12 @@ namespace System
         {
             if (_message == null)
             {
-                //if ((_fileName == null) &&
-                //    (HResult == __HResults.COR_E_EXCEPTION))
-                _message = SR.Format(SR.BadImageFormatException_CouldNotLoadFileOrAssembly, _fileName);
-                //else
-                //TODO: Implement support to contain the correctly formatted message when using a filename
-                //    _message = FileLoadException.FormatFileLoadExceptionMessage(_fileName, HResult);
+                if ((_fileName == null) &&
+                    (HResult == __HResults.COR_E_EXCEPTION))
+                    _message = SR.Arg_BadImageFormatException;
+
+                else
+                    _message = FileLoadException.FormatFileLoadExceptionMessage(_fileName, HResult);
             }
         }
 
@@ -114,6 +108,15 @@ namespace System
 
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;
+
+            if (_fusionLog != null)
+            {
+                if (s == null)
+                    s = " ";
+                s += Environment.NewLine;
+                s += Environment.NewLine;
+                s += _fusionLog;
+            }
 
             return s;
         }

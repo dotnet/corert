@@ -6,7 +6,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolDefinitionNode
+    public class EETypeOptionalFieldsNode : ObjectNode, ISymbolDefinitionNode
     {
         private EETypeNode _owner;
 

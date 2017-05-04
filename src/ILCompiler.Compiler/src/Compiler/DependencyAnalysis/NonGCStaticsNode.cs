@@ -123,11 +123,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Emit the actual StaticClassConstructionContext
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
-                MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (cctorMethod != canonCctorMethod)
-                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod));
-                else
-                    builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
+                builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
                 builder.EmitZeroPointer();
             }
             else

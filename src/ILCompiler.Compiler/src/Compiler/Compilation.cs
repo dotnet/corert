@@ -27,7 +27,7 @@ namespace ILCompiler
         public NameMangler NameMangler => _nodeFactory.NameMangler;
         public NodeFactory NodeFactory => _nodeFactory;
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
-        internal Logger Logger => _logger;
+        public Logger Logger => _logger;
         internal PInvokeILProvider PInvokeILProvider { get; }
 
         protected abstract bool GenerateDebugInfo { get; }
@@ -62,7 +62,7 @@ namespace ILCompiler
             // TODO: Workaround lazy PInvoke resolution not working with CppCodeGen yet
             // https://github.com/dotnet/corert/issues/2454
             // https://github.com/dotnet/corert/issues/2149
-            if (this is CppCodegenCompilation) forceLazyPInvokeResolution = false;
+            if (nodeFactory.IsCppCodegenTemporaryWorkaround) forceLazyPInvokeResolution = false;
             PInvokeILProvider = new PInvokeILProvider(new PInvokeILEmitterConfiguration(forceLazyPInvokeResolution), nodeFactory.InteropStubManager.InteropStateManager);
 
             _methodILCache = new ILProvider(PInvokeILProvider);
@@ -70,7 +70,7 @@ namespace ILCompiler
 
         private ILProvider _methodILCache;
         
-        internal MethodIL GetMethodIL(MethodDesc method)
+        public MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
@@ -215,18 +215,7 @@ namespace ILCompiler
 
             public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
             {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint;
-
-                if (canonMethod != method)
-                {
-                    methodEntryPoint = _factory.ShadowConcreteMethod(method);
-                }
-                else
-                {
-                    methodEntryPoint = _factory.MethodEntrypoint(method);
-                }
-
+                IMethodNode methodEntryPoint = _factory.CanonicalEntrypoint(method);
                 _graph.AddRoot(methodEntryPoint, reason);
 
                 if (exportName != null)

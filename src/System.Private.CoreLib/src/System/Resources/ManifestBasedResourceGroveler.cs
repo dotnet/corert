@@ -65,14 +65,14 @@ namespace System.Resources
             CultureInfo lookForCulture = UltimateFallbackFixup(culture);
 
             // 2. Look for satellite assembly or main assembly, as appropriate
-            if (lookForCulture.HasInvariantCultureName() && _mediator.FallbackLoc == UltimateResourceFallbackLocation.MainAssembly)
+            if (lookForCulture.HasInvariantCultureName && _mediator.FallbackLoc == UltimateResourceFallbackLocation.MainAssembly)
             {
                 // don't bother looking in satellites in this case
                 satellite = _mediator.MainAssembly;
             }
 #if RESOURCE_SATELLITE_CONFIG
             // If our config file says the satellite isn't here, don't ask for it.
-            else if (!lookForCulture.HasInvariantCultureName() && !_mediator.TryLookingForSatellite(lookForCulture))
+            else if (!lookForCulture.HasInvariantCultureName && !_mediator.TryLookingForSatellite(lookForCulture))
             {
                 satellite = null;
             }
@@ -83,7 +83,7 @@ namespace System.Resources
 
                 if (satellite == null)
                 {
-                    bool raiseException = (culture.HasInvariantCultureName() && (_mediator.FallbackLoc == UltimateResourceFallbackLocation.Satellite));
+                    bool raiseException = (culture.HasInvariantCultureName && (_mediator.FallbackLoc == UltimateResourceFallbackLocation.Satellite));
                     // didn't find satellite, give error if necessary
                     if (raiseException)
                     {
@@ -119,7 +119,7 @@ namespace System.Resources
             else if (stream == null && tryParents)
             {
                 // 4b. Didn't find stream; give error if necessary
-                bool raiseException = culture.HasInvariantCultureName();
+                bool raiseException = culture.HasInvariantCultureName;
                 if (raiseException)
                 {
                     HandleResourceStreamMissing(fileName);
@@ -140,7 +140,7 @@ namespace System.Resources
             {
                 returnCulture = CultureInfo.InvariantCulture;
             }
-            else if (lookForCulture.HasInvariantCultureName() && _mediator.FallbackLoc == UltimateResourceFallbackLocation.Satellite)
+            else if (lookForCulture.HasInvariantCultureName && _mediator.FallbackLoc == UltimateResourceFallbackLocation.Satellite)
             {
                 returnCulture = _mediator.NeutralResourcesCulture;
             }

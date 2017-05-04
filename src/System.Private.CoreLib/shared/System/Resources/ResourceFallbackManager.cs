@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,9 +69,9 @@ namespace System.Resources
                 }
                 yield return currentCulture;
                 currentCulture = currentCulture.Parent;
-            } while (m_useParents && !currentCulture.HasInvariantCultureName());
+            } while (m_useParents && !currentCulture.HasInvariantCultureName);
 
-            if (!m_useParents || m_startingCulture.HasInvariantCultureName())
+            if (!m_useParents || m_startingCulture.HasInvariantCultureName)
             {
                 yield break;
             }

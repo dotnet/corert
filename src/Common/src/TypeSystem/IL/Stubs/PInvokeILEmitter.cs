@@ -181,8 +181,15 @@ namespace Internal.IL.Stubs
                     nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
                 }
 
+                MethodSignatureFlags flags = MethodSignatureFlags.Static;
+                var delegateType = ((DelegateMarshallingMethodThunk)_targetMethod).DelegateType as EcmaType;
+                if (delegateType != null)
+                {
+                    flags |= delegateType.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
+                }
+
                 MethodSignature nativeSig = new MethodSignature(
-                MethodSignatureFlags.Static, 0, nativeReturnType, nativeParameterTypes);
+                    flags, 0, nativeReturnType, nativeParameterTypes);
 
                 callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
             }

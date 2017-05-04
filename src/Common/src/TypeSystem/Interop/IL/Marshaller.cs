@@ -282,7 +282,7 @@ namespace Internal.TypeSystem.Interop
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
-            Marshaller marshaller = Marshaller.CreateMarshaller(marshallerKind);
+            Marshaller marshaller = CreateMarshaller(marshallerKind);
             marshaller.Context = context;
             marshaller.InteropStateManager = interopStateManager;
             marshaller.MarshallerKind = marshallerKind;
@@ -359,6 +359,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.UnicodeChar:
                     return new BlittableValueMarshaller();
+                case MarshallerKind.AnsiChar:
+                    return new AnsiCharMarshaller();
                 case MarshallerKind.Array:
                     return new ArrayMarshaller();
                 case MarshallerKind.BlittableArray:
@@ -389,6 +391,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.ByValAnsiCharArray:
                 case MarshallerKind.ByValArray:
                     return new ByValArrayMarshaller();
+                case MarshallerKind.AnsiCharArray:
+                    return new AnsiCharArrayMarshaller();
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled and an Exception method body 
@@ -999,8 +1003,8 @@ namespace Internal.TypeSystem.Interop
             else
             {
 
-                uint? sizeParamIndex = MarshalAsDescriptor.SizeParamIndex;
-                uint? sizeConst = MarshalAsDescriptor.SizeConst;
+                uint? sizeParamIndex = MarshalAsDescriptor != null ? MarshalAsDescriptor.SizeParamIndex : null;
+                uint? sizeConst = MarshalAsDescriptor != null ? MarshalAsDescriptor.SizeConst : null;
 
                 if (sizeConst.HasValue)
                 {
@@ -1356,6 +1360,68 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
+    class AnsiCharArrayMarshaller : ArrayMarshaller
+    {
+        protected override void AllocManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AllocMemoryForAnsiCharArray");
+            LoadManagedValue(codeStream);
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            StoreNativeValue(codeStream);
+        }
+
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharArrayToAnsiCharArray");
+
+            LoadManagedValue(codeStream);
+            LoadNativeValue(codeStream);
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharArrayToWideCharArray");
+
+            LoadNativeValue(codeStream);
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+        }
+    }
+
+    class AnsiCharMarshaller : Marshaller
+    {
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "WideCharToAnsiChar");
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+            StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "AnsiCharToWideChar");
+
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+            StoreNativeValue(codeStream);
+        }
+    }
+
     class BooleanMarshaller : Marshaller
     {
         protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
@@ -1542,7 +1608,7 @@ namespace Internal.TypeSystem.Interop
 
     }
 
-    class SafeHandleMarshaller : Marshaller
+    class SafeHandleMarshaller : ReferenceMarshaller
     {
         protected override void EmitMarshalArgumentManagedToNative()
         {
@@ -1615,22 +1681,34 @@ namespace Internal.TypeSystem.Interop
 
         }
 
-        protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            ILEmitter emitter = _ilCodeStreams.Emitter;
-            ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
-
-            marshallingCodeStream.Emit(ILOpcode.newobj, emitter.NewToken(ManagedType.GetParameterlessConstructor()));
-            StoreManagedValue(marshallingCodeStream);
-
             LoadManagedValue(codeStream);
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
             InteropTypes.GetSafeHandleType(Context).GetKnownMethod("SetHandle", null)));
         }
     }
 
-    class StringBuilderMarshaller : Marshaller
+    class ReferenceMarshaller : Marshaller
+    {
+        protected override void AllocNativeToManaged(ILCodeStream codeStream)
+        {
+            var emitter = _ilCodeStreams.Emitter;
+            var lNull = emitter.NewCodeLabel();
+
+            // Check for null
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNull);
+
+            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
+                ManagedType.GetParameterlessConstructor()));
+            StoreManagedValue(codeStream);
+            codeStream.EmitLabel(lNull);
+        }
+    }
+
+    class StringBuilderMarshaller : ReferenceMarshaller
     {
         private bool _isAnsi;
         public StringBuilderMarshaller(bool isAnsi)
@@ -1679,12 +1757,6 @@ namespace Internal.TypeSystem.Interop
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
         }
-        protected override void AllocNativeToManaged(ILCodeStream codeStream)
-        {
-            codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(
-                InteropTypes.GetStringBuilder(Context).GetParameterlessConstructor()));
-            StoreManagedValue(codeStream);
-        }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
@@ -1725,7 +1797,17 @@ namespace Internal.TypeSystem.Interop
                 Context.GetHelperEntryPoint("InteropHelpers", "GetPInvokeDelegateForStub")));
 
             StoreManagedValue(codeStream);
+        }
 
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            if (In
+                && MarshalDirection == MarshalDirection.Forward
+                && MarshallerType == MarshallerType.Argument)
+            {
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.call, _ilCodeStreams.Emitter.NewToken(InteropTypes.GetGC(Context).GetKnownMethod("KeepAlive", null)));
+            }
         }
     }
 
@@ -1782,7 +1864,7 @@ namespace Internal.TypeSystem.Interop
         protected override void EmitElementCount(ILCodeStream codeStream, MarshalDirection direction)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            if (!MarshalAsDescriptor.SizeConst.HasValue)
+            if (MarshalAsDescriptor == null || !MarshalAsDescriptor.SizeConst.HasValue)
             {
                 throw new InvalidProgramException("SizeConst is required for ByValArray.");
             }

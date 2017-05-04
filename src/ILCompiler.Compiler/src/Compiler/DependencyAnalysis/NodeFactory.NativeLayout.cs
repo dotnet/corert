@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -88,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutTemplateMethodLayoutVertexNode(_factory, method);
                 });
 
-                _templateTypeLayouts = new NodeCache<DefType, NativeLayoutTemplateTypeLayoutVertexNode>(type =>
+                _templateTypeLayouts = new NodeCache<TypeDesc, NativeLayoutTemplateTypeLayoutVertexNode>(type =>
                 {
                     return new NativeLayoutTemplateTypeLayoutVertexNode(_factory, type);
                 });
@@ -413,10 +414,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _templateMethodLayouts.GetOrAdd(method);
             }
 
-            private NodeCache<DefType, NativeLayoutTemplateTypeLayoutVertexNode> _templateTypeLayouts;
-            public NativeLayoutTemplateTypeLayoutVertexNode TemplateTypeLayout(DefType type)
+            private NodeCache<TypeDesc, NativeLayoutTemplateTypeLayoutVertexNode> _templateTypeLayouts;
+            public NativeLayoutTemplateTypeLayoutVertexNode TemplateTypeLayout(TypeDesc type)
             {
-                return _templateTypeLayouts.GetOrAdd(type);
+                return _templateTypeLayouts.GetOrAdd(GenericTypesTemplateMap.ConvertArrayOfTToRegularArray(_factory, type));
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeHandleGenericDictionarySlotNode> _typeHandle_GenericDictionarySlots;

@@ -901,7 +901,7 @@ namespace System
         static unsafe private string TryGetLocalizedNameByNativeResource(string filePath, int resource)
         {
             using (SafeLibraryHandle handle =
-                       new SafeLibraryHandle(Interop.mincore.LoadLibraryEx(filePath, IntPtr.Zero, Interop.mincore.LOAD_LIBRARY_AS_DATAFILE)))
+                       Interop.mincore.LoadLibraryEx_SafeHandle(filePath, IntPtr.Zero, Interop.mincore.LOAD_LIBRARY_AS_DATAFILE))
             {
                 if (!handle.IsInvalid)
                 {

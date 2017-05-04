@@ -101,7 +101,7 @@ namespace ILCompiler
         //
         // Turn a name into a valid C/C++ identifier
         //
-        internal override string SanitizeName(string s, bool typeName = false)
+        public override string SanitizeName(string s, bool typeName = false)
         {
             StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)
