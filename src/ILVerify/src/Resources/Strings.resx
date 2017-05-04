@@ -171,6 +171,12 @@
   <data name="StackByRef" xml:space="preserve">
     <value>Expected ByRef on the stack.</value>
   </data>
+  <data name="StackNotEq" xml:space="preserve">
+    <value>Non-compatible types on the stack.</value>
+  </data>
+  <data name="StackObjRef" xml:space="preserve">
+    <value>Expected an ObjRef on the stack.</value>
+  </data>
   <data name="StackOverflow" xml:space="preserve">
     <value>Stack overflow.</value>
   </data>
