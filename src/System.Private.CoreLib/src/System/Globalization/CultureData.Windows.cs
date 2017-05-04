@@ -615,7 +615,7 @@ namespace System.Globalization
 
         private int LocaleNameToLCID(string cultureName)
         {
-            return GetLocaleInfo(LocaleNumberData.LanguageId);
+            return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
         }
 
         private static unsafe string LCIDToLocaleName(int culture)

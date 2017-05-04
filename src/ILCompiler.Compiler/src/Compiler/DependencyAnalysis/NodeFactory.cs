@@ -34,10 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler = nameMangler;
             InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
-
             MetadataManager = metadataManager;
-            ThreadStaticsRegion = new ThreadStaticsRegionNode(
-                "__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null, _target.Abi);
         }
 
         public void SetMarkingComplete()
@@ -243,10 +240,7 @@ namespace ILCompiler.DependencyAnalysis
                 return GCStaticsRegion.NewNode((GCStaticsNode)gcStaticsNode);
             });
 
-            _threadStatics = new NodeCache<MetadataType, ThreadStaticsNode>((MetadataType type) =>
-            {
-                return new ThreadStaticsNode(type, this);
-            });
+            _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
@@ -445,6 +439,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected abstract ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall);
 
+        protected virtual ISymbolDefinitionNode CreateThreadStaticsNode(MetadataType type)
+        {
+            return new ThreadStaticsNode(type, this);
+        }
+
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
@@ -517,9 +516,9 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStaticIndirectionNodes.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, ThreadStaticsNode> _threadStatics;
+        private NodeCache<MetadataType, ISymbolDefinitionNode> _threadStatics;
 
-        public ThreadStaticsNode TypeThreadStaticsSymbol(MetadataType type)
+        public ISymbolDefinitionNode TypeThreadStaticsSymbol(MetadataType type)
         {
             // This node is always used in the context of its index within the region.
             // We should never ask for this if the current compilation doesn't contain the
@@ -875,7 +874,10 @@ namespace ILCompiler.DependencyAnalysis
             "__GCStaticRegionEnd", 
             null);
 
-        public ThreadStaticsRegionNode ThreadStaticsRegion;
+        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
+            "__ThreadStaticRegionStart",
+            "__ThreadStaticRegionEnd",
+            null);
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",
