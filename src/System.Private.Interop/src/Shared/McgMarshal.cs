@@ -1144,7 +1144,7 @@ namespace System.Runtime.InteropServices
                 else if(McgModuleManager.UseDynamicInterop)
                 {
                     BoxingInterfaceKind boxingInterfaceKind;
-                    RuntimeTypeHandle genericTypeArgument;
+                    RuntimeTypeHandle[] genericTypeArgument;
                     if (DynamicInteropBoxingHelpers.TryGetBoxingArgumentTypeHandleFromString(className, out boxingInterfaceKind, out genericTypeArgument))
                     {
                         Debug.Assert(target is __ComObject);
