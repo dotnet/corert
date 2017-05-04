@@ -1523,7 +1523,26 @@ namespace Internal.IL
 
         void ImportRethrow()
         {
-            // TODO:
+            //search for a catch block which begins before rethrow and ends after it
+            bool isContainedInCatchBlock = false;
+
+            for (int i = 0; i < _exceptionRegions.Length; i++)
+            {
+                var r = _exceptionRegions[i].ILRegion;
+
+                if (r.Kind == ILExceptionRegionKind.Catch)
+                {
+                    if (_currentBasicBlock.StartOffset >= r.HandlerOffset && _currentBasicBlock.StartOffset <= r.HandlerOffset + r.HandlerLength)
+                    {
+                        isContainedInCatchBlock = true;
+                    }
+                }
+            }
+
+            if (!isContainedInCatchBlock)
+            {
+                VerificationError(VerifierError.Rethrow);
+            }
         }
 
         void ImportSizeOf(int token)
