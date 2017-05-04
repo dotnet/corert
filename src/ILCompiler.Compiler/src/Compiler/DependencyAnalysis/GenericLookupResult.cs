@@ -850,6 +850,96 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    /// <summary>
+    /// Generic lookup result that points to an cast helper.
+    /// </summary>
+    internal sealed class CastClassGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 1691016084;
+
+        public CastClassGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.Indirection(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, true)));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("CastClass_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"CastClass: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.CastClassDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            return GenericLookupResultReferenceType.Indirect;
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((CastClassGenericLookupResult)other)._type);
+        }
+    }
+    
+    /// <summary>
+    /// Generic lookup result that points to an isInst helper.
+    /// </summary>
+    internal sealed class IsInstGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 1724059349;
+
+        public IsInstGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
+        {
+            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            return factory.Indirection(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, false)));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("IsInst_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"IsInst: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.IsInstDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            return GenericLookupResultReferenceType.Indirect;
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((IsInstGenericLookupResult)other)._type);
+        }
+    }
+
     internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
     {
         private TypeDesc _type;

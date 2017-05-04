@@ -1452,6 +1452,28 @@ namespace ILCompiler.DependencyAnalysis
         protected override FixupSignatureKind SignatureKind => FixupSignatureKind.AllocateObject;
     }
 
+    public sealed class NativeLayoutCastClassGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
+    {
+        public NativeLayoutCastClassGenericDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)
+        {
+        }
+
+        protected override string NodeTypeName => "NativeLayoutAllocateCastClassDictionarySlotNode_";
+
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.CastClass;
+    }
+
+    public sealed class NativeLayoutIsInstGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
+    {
+        public NativeLayoutIsInstGenericDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)
+        {
+        }
+
+        protected override string NodeTypeName => "NativeLayoutIsInstGenericDictionarySlotNode_";
+
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.IsInst;
+    }
+
     public sealed class NativeLayoutTlsIndexGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
     {
         public NativeLayoutTlsIndexGenericDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)

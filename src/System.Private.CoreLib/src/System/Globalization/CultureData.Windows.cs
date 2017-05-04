@@ -604,9 +604,17 @@ namespace System.Globalization
             return GetLocaleInfo(LocaleNumberData.LanguageId);
         }
 
-        private static string LCIDToLocaleName(int culture)
+        private static unsafe string LCIDToLocaleName(int culture)
         {
-            throw new NotImplementedException();
+            char *pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
+            int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
+
+            if (length > 0)
+            {
+                return new String(pBuffer);
+            }
+
+            return null;
         }
 
         private int GetAnsiCodePage(string cultureName)
