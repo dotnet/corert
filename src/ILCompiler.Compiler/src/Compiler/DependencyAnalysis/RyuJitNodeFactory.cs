@@ -12,9 +12,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
     {
-        public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager)
-            : base(context, compilationModuleGroup, metadataManager, 
-                  new CoreRTNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false))
+        public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
+            : base(context, compilationModuleGroup, metadataManager, nameMangler)
         {
         }
 

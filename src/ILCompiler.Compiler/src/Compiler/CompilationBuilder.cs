@@ -14,6 +14,7 @@ namespace ILCompiler
     {
         protected readonly CompilerTypeSystemContext _context;
         protected readonly CompilationModuleGroup _compilationGroup;
+        protected readonly NameMangler _nameMangler;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -24,10 +25,11 @@ namespace ILCompiler
         protected bool _generateDebugInfo = false;
         private string _metadataLogFile = null;
 
-        public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
+        public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
             _context = context;
             _compilationGroup = compilationGroup;
+            _nameMangler = nameMangler;
         }
 
         public CompilationBuilder UseLogger(Logger logger)
@@ -90,6 +92,11 @@ namespace ILCompiler
         protected MetadataManager CreateMetadataManager()
         {
             return new CompilerGeneratedMetadataManager(_compilationGroup, _context, _metadataLogFile);
+        }
+
+        public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)
+        {
+            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler);
         }
 
         public abstract ICompilation ToCompilation();

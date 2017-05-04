@@ -14,6 +14,7 @@ namespace ILCompiler
     {
         private readonly CompilerTypeSystemContext _context;
         private readonly CompilationModuleGroup _compilationGroup;
+        private readonly NameMangler _nameMangler;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -21,10 +22,11 @@ namespace ILCompiler
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
 
-        public ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
+        internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler)
         {
             _context = context;
             _compilationGroup = compilationGroup;
+            _nameMangler = mangler;
         }
 
         public ILScannerBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
@@ -63,10 +65,7 @@ namespace ILCompiler
             // TODO: we will want different metadata managers depending on whether we're doing reflection analysis
             var metadataManager = new EmptyMetadataManager(_compilationGroup, _context);
 
-            // TODO: find a way to choose a name mangler that matches the one used for compilation
-            var nameMangler = new CoreRTNameMangler(_context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false);
-
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, nameMangler);
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(nodeFactory);
 
             return new ILScanner(graph, nodeFactory, _compilationRoots, _logger);
