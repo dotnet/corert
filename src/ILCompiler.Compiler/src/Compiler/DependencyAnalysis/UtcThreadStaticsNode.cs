@@ -1,0 +1,62 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Internal.Text;
+using Internal.TypeSystem;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    public class UtcThreadStaticsNode : ObjectNode, ISymbolDefinitionNode
+    {
+        private MetadataType _type;
+
+        public UtcThreadStaticsNode(MetadataType type)
+        {
+            _type = type;
+        }
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.NodeMangler.ThreadStatics(_type));
+        }
+
+        public int Offset => 0;
+        public MetadataType Type => _type;
+
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return nameMangler.NodeMangler.ThreadStatics(type);
+        }
+
+        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencyList = new DependencyList();
+
+            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
+            {
+                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+            }
+
+            return dependencyList;
+        }
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override ObjectNodeSection Section => ObjectNodeSection.TLSSection;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialPointerAlignment();
+            builder.EmitZeros(_type.ThreadStaticFieldSize.AsInt);
+            builder.AddSymbol(this);
+            return builder.ToObjectData();
+        }
+    }
+}

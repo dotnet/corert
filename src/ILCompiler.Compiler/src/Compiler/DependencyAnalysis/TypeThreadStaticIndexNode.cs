@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 var node = factory.TypeThreadStaticsSymbol(_type);
-                typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject(node);
+                typeTlsIndex = factory.ThreadStaticsRegion.IndexOfEmbeddedObject((ThreadStaticsNode)node);
             }
 
             objData.EmitPointerReloc(factory.TypeManagerIndirection);
