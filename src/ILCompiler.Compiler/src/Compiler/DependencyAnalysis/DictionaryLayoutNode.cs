@@ -107,6 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             if (type != null)
             {
                 Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                Debug.Assert(type.IsDefType);
             }
             else
             {
