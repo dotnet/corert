@@ -161,8 +161,8 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
-            dependencies.AddRange(StaticsInfoHashtableNode.GetStaticsInfoDependencies(factory, _type));
-            dependencies.AddRange(ReflectionFieldMapNode.GetReflectionFieldMapEntryDependencies(factory, _type));
+            StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
+            ReflectionFieldMapNode.AddReflectionFieldMapEntryDependencies(ref dependencies, factory, _type);
 
             return dependencies;
         }

@@ -212,7 +212,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            return GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(factory, _owningMethod);
+            DependencyList dependencies = new DependencyList();
+            GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
+            return dependencies;
         }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
