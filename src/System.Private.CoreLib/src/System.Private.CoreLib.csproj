@@ -135,6 +135,7 @@
     <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
+    <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
@@ -535,18 +536,14 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\ThreadPool.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\ThreadPool.Win32.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
       <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\Timer.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\Timer.Win32.cs" />
     <Compile Include="System\Threading\Timer.Windows.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
       <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
@@ -555,6 +552,7 @@
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
+    <Compile Include="System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />

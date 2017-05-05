@@ -18,10 +18,6 @@ namespace System.Threading
             throw new NotImplementedException();
         }
 
-        private void ReleaseTimer()
-        {
-        }
-
         private static int TickCount
         {
             get
