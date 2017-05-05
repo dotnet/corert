@@ -61,18 +61,15 @@ namespace ILCompiler
 
                 try
                 {
-                    var importer = new ILImporter(this, method, GetMethodIL(method));
-                    importer.Import();
-                    //TODO
+                    var importer = new ILImporter(this, GetMethodIL(method));
+                    methodCodeNodeNeedingCode.InitializeDependencies(importer.Import().ToArray());
                 }
                 catch (TypeSystemException ex)
                 {
                     // Try to compile the method again, but with a throwing method body this time.
                     MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, ex);
-                    var importer = new ILImporter(this, method, throwingIL);
-                    importer.Import();
-
-                    //TODO
+                    var importer = new ILImporter(this, throwingIL);
+                    methodCodeNodeNeedingCode.InitializeDependencies(importer.Import().ToArray());
                 }
             }
         }
