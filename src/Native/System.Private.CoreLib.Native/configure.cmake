@@ -62,18 +62,9 @@ int main(void)
 }" HAVE_SCHED_GETCPU)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  if(NOT HAVE_LIBUUID_H) 
-    unset(HAVE_LIBUUID_H CACHE)
-    message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform") 
-  endif()
-elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  # Put FreeBSD dependencies here
-else() # anything else is Linux
-  if(NOT HAVE_LIBUUID_H) 
-    unset(HAVE_LIBUUID_H CACHE)
-    message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform") 
-  endif()
+if(NOT HAVE_LIBUUID_H) 
+  unset(HAVE_LIBUUID_H CACHE)
+  message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform") 
 endif()
 
 configure_file(
