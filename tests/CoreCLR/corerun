@@ -40,7 +40,6 @@ if [ -e ${nativeDir} ]; then
     if [ "${CoreRT_BuildOS}" == "OSX" ]; then
         echo "Copying native component from :"${nativeDir}
         cp ${nativeDir}*.dylib  native/ 2>/dev/null
-        cp ${nativeDir}*.so  native/ 2>/dev/null
     fi
     if [ "${CoreRT_BuildOS}" == "Linux" ]; then
         LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${nativeDir}

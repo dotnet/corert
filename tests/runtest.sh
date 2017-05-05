@@ -81,6 +81,26 @@ run_test_dir()
     return $?
 }
 
+download_and_unzip_tests_artifacts()
+{
+    url=$1
+    location=$2
+    semaphore=$3
+    if [ ! -e ${semaphore} ]; then
+        if [ -d ${location} ]; then
+            rm -r ${location}
+        fi
+        mkdir -p ${location}
+    
+        local_zip=${location}/tests.zip
+        curl --retry 10 --retry-delay 5 -sSL -o ${local_zip} ${url}
+
+        unzip -q ${local_zip} -d ${location}
+
+        echo "CoreCLR tests artifacts restored from ${url}" >> ${semaphore}
+    fi
+}
+
 restore_coreclr_tests()
 {
     CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
@@ -90,40 +110,15 @@ restore_coreclr_tests()
         echo "Tests are already initialized."
         return 0
     fi
+    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL.txt)
+    NATIVE_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsNativeArtifacts_${CoreRT_BuildOS}.txt)
+    CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
 
-    if [ ! -e ${CoreRT_Test_Download_Semaphore} ]; then
-        if [ -d ${CoreRT_TestExtRepo} ]; then
-            rm -r ${CoreRT_TestExtRepo}
-        fi
-        mkdir -p ${CoreRT_TestExtRepo}
-    
-        echo "Restoring tests (this may take a few minutes).."
-        TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL.txt)
-        TESTS_LOCAL_ZIP=${CoreRT_TestExtRepo}/tests.zip
-        curl --retry 10 --retry-delay 5 -sSL -o ${TESTS_LOCAL_ZIP} ${TESTS_REMOTE_URL}
+    echo "Restoring tests (this may take a few minutes).."
+    download_and_unzip_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
 
-        unzip -q ${TESTS_LOCAL_ZIP} -d ${CoreRT_TestExtRepo}
-
-        echo "CoreCLR tests restored from ${TESTS_REMOTE_URL}" >> ${CoreRT_Test_Download_Semaphore}
-    fi
-
-    if [ ! -e ${CoreRT_NativeArtifact_Download_Semaphore} ]; then
-        CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
-        if [ -d ${CoreRT_NativeArtifactRepo} ]; then
-            rm -r ${CoreRT_NativeArtifactRepo}
-        fi
-        mkdir -p ${CoreRT_NativeArtifactRepo}
-    
-        echo "Restoring native artifacts for tests (this may take a few minutes).."
-        TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsNativeArtifacts_${CoreRT_BuildOS}.txt)
-        TESTS_LOCAL_ZIP=${CoreRT_NativeArtifactRepo}/native_artifact.zip
-        curl --retry 10 --retry-delay 5 -sSL -o ${TESTS_LOCAL_ZIP} ${TESTS_REMOTE_URL}
-
-        unzip -q ${TESTS_LOCAL_ZIP} -d ${CoreRT_NativeArtifactRepo}
-	
-
-        echo "CoreCLR tests native artifacts restored from ${TESTS_REMOTE_URL}" >> ${CoreRT_NativeArtifact_Download_Semaphore}
-    fi
+    echo "Restoring native test artifacts..."
+    download_and_unzip_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
 }
 
 run_coreclr_tests()
