@@ -581,9 +581,6 @@
     <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
       <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
     </Compile>

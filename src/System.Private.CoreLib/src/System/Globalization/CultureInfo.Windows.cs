@@ -35,10 +35,10 @@ namespace System.Globalization
             const string LOCALE_NAME_USER_DEFAULT = null;
             const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
-            string strDefault = Interop.mincore.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME);
+            string strDefault = CultureData.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME);
             if (strDefault == null)
             {
-                strDefault = Interop.mincore.GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SNAME);
+                strDefault = CultureData.GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SNAME);
 
                 if (strDefault == null)
                 {
