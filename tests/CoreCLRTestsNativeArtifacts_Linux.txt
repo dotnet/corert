@@ -1,0 +1,1 @@
+https://ci.dot.net/job/dotnet_coreclr/job/master/job/debug_ubuntu/1667/artifact/bin/obj/Linux.x64.Debug/tests/*zip*/tests.zip
