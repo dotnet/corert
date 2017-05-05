@@ -105,7 +105,18 @@ namespace Internal.Runtime.Augments
             if (t_currentThread == null)
             {
                 InitializeExistingThread().SetThreadStateBit(ThreadPoolThread);
+                RoInitialize();
             }
+        }
+
+        /// <summary>
+        /// Ensures the Windows Runtime is initialized on the current thread.
+        /// </summary>
+        internal static void RoInitialize()
+        {
+#if ENABLE_WINRT
+            Interop.WinRT.RoInitialize();
+#endif
         }
 
         /// <summary>
@@ -388,6 +399,7 @@ namespace Internal.Runtime.Augments
             {
                 t_currentThread = thread;
                 System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
+                RoInitialize();
             }
             catch (OutOfMemoryException)
             {
@@ -407,12 +419,6 @@ namespace Internal.Runtime.Augments
             {
                 // The Thread cannot be started more than once, so we may clean up the delegate
                 thread._threadStart = null;
-
-#if ENABLE_WINRT
-                // If this call fails, COM and WinRT calls on this thread will fail with CO_E_NOTINITIALIZED.
-                // We may continue and fail on the actual call.
-                Interop.WinRT.RoInitialize(Interop.WinRT.RO_INIT_TYPE.RO_INIT_MULTITHREADED);
-#endif
 
                 ParameterizedThreadStart paramThreadStart = threadStart as ParameterizedThreadStart;
                 if (paramThreadStart != null)

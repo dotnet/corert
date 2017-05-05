@@ -12,7 +12,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 
 namespace Internal.Runtime.Augments
 {
@@ -106,12 +105,6 @@ namespace Internal.Runtime.Augments
         public abstract string GetRegionDisplayName(string isoCountryCode);
         public abstract Object GetUserDefaultCulture();
         public abstract void SetGlobalDefaultCulture(Object culture);
-        public abstract void SetThreadpoolDispatchCallback(Action callback);
-        public abstract void SubmitThreadpoolDispatchCallback();
-        public abstract void SubmitLongRunningThreadpoolWork(Action callback);
-        public abstract Delegate CreateTimerDelegate(Action callback);
-        public abstract void ReleaseTimer(Object timer, bool cancelled);
-        public abstract Object CreateTimer(Delegate timerElapsedHandler, TimeSpan delay);
         public abstract Object GetCurrentCoreDispatcher();
         public abstract void PostToCoreDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract Object GetResourceMap(string subtreeName);
