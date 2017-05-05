@@ -244,13 +244,7 @@ namespace System
 
         [Intrinsic]
         public static double Exp(double d)
-        {
-            if (Double.IsInfinity(d))
-            {
-                if (d < 0)
-                    return +0.0;
-                return d;
-            }
+        {  
             return RuntimeImports.exp(d);
         }
 
