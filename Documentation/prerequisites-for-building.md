@@ -20,7 +20,7 @@ sudo apt-get update
 ```
 
 ```sh
-sudo apt-get install cmake clang-3.9 libicu52 libunwind8
+sudo apt-get install cmake clang-3.9 libicu52 libunwind8 uuid-dev
 ```
 
 # Mac OSX (10.11.5+)
@@ -44,5 +44,5 @@ sudo apt-get update
 ```
 
 ```sh
-sudo apt-get install cmake clang-3.9 libunwind8
+sudo apt-get install cmake clang-3.9 libunwind8 uuid-dev
 ```
