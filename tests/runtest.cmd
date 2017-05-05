@@ -275,7 +275,7 @@ goto :eof
     if exist "%CoreRT_TestExtRepo%" rmdir /S /Q "%CoreRT_TestExtRepo%"
     mkdir "%CoreRT_TestExtRepo%"
 
-    set /p TESTS_REMOTE_URL=< "%~dp0..\CoreCLRTestsURL.txt"
+    set /p TESTS_REMOTE_URL=< "%~dp0\CoreCLRTestsURL.txt"
     set TESTS_LOCAL_ZIP=%CoreRT_TestExtRepo%\tests.zip
     set INIT_TESTS_LOG=%~dp0..\init-tests.log
     echo Restoring tests (this may take a few minutes)..

@@ -316,16 +316,20 @@ int main(int argc, char* argv[])
 #endif // !CPPCODEGEN
 
     int retval;
+#ifdef CPPCODEGEN
     try
+#endif
     {
         retval = __managed__Main(argc, argv);
     }
+#ifdef CPPCODEGEN
     catch (const char* &e)
     {
         printf("Call to an unimplemented runtime method; execution cannot continue.\n");
         printf("Method: %s\n", e);
         retval = -1;
     }
+#endif
 
 #ifdef CPPCODEGEN
     __reverse_pinvoke_return(&frame);

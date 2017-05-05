@@ -16,7 +16,7 @@ namespace System.Globalization
             _sortName = culture.SortName;
 
             IntPtr handle;
-            int ret = Interop.mincore.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+            int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
             _sortHandle = ret > 0 ? handle : IntPtr.Zero;
         }
 
@@ -32,7 +32,7 @@ namespace System.Globalization
             fixed (char* pSource = stringSource)
             fixed (char* pValue = value)
             {
-                int ret = Interop.mincore.FindStringOrdinal(
+                int ret = Interop.Kernel32.FindStringOrdinal(
                             dwFindStringOrdinalFlags,
                             pSource + offset,
                             cchSource,
@@ -73,7 +73,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                   LCMAP_HASH | (uint)GetNativeCompareFlags(options),
                                                   pSource, source.Length,
                                                   &tmpHash, sizeof(int),
@@ -89,7 +89,7 @@ namespace System.Globalization
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
             // Use the OS to compare and then convert the result to expected value by subtracting 2 
-            return Interop.mincore.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
+            return Interop.Kernel32.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
         private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
@@ -104,7 +104,7 @@ namespace System.Globalization
             fixed (char* pString1 = string1)
             fixed (char* pString2 = string2)
             {
-                int result = Interop.mincore.CompareStringEx(
+                int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
                                     pString1 + offset1,
@@ -133,7 +133,7 @@ namespace System.Globalization
                     string lpStringValue,
                     int startValue,
                     int cchValue,
-                    int* matchLengthPtr)
+                    int* pcchFound)
         {
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
@@ -144,18 +144,17 @@ namespace System.Globalization
                 char* pS = pSource + startSource;
                 char* pV = pValue + startValue;
 
-                return Interop.mincore.FindNLSStringEx(
+                return Interop.Kernel32.FindNLSStringEx(
                                     pLocaleName,
                                     dwFindNLSStringFlags,
                                     pS,
                                     cchSource,
                                     pV,
                                     cchValue,
+                                    pcchFound,
                                     null,
                                     null,
-                                    null,
-                                    _sortHandle,
-                                    matchLengthPtr);
+                                    _sortHandle);
             }
         }
 

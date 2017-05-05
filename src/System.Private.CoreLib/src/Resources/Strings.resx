@@ -1909,6 +1909,9 @@
   <data name="Argument_OffsetAndCapacityOutOfBounds" xml:space="preserve">
     <value>Offset and capacity were greater than the size of the view.</value>
   </data>
+  <data name="ArgumentOutOfRange_UnmanagedMemStreamLength" xml:space="preserve">
+    <value>UnmanagedMemoryStream length must be non-negative and less than 2^63 - 1 - baseAddress.</value>
+  </data>
   <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
     <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
   </data>

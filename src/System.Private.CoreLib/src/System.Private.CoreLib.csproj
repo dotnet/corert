@@ -163,12 +163,9 @@
     <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
     <Compile Include="System\Resources\IResourceGroveler.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
-    <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
     <Compile Include="System\Resources\ResourceManager.cs" />
     <Compile Include="System\Resources\ResourceReader.cs" />
     <Compile Include="System\Resources\ResourceSet.cs" />
-    <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
-    <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
     <Compile Include="System\__Canon.cs" />
@@ -224,7 +221,6 @@
     <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
-    <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
@@ -255,6 +251,8 @@
     <Compile Include="System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.cs" />
+    <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Int16.cs" />
@@ -579,9 +577,6 @@
     <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
       <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
     </Compile>
@@ -670,6 +665,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetSystemTimeAsTicks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>

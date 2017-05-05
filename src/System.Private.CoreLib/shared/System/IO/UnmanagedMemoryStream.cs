@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,19 +48,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-
         private Task<Int32> _lastReadTask; // The last successful task returned from ReadAsync 
-
-        /// <summary>
-        /// This code is copied from system\buffer.cs in mscorlib
-        /// </summary>
-        /// <param name="src"></param>
-        /// <param name="len"></param>
-        private unsafe static void ZeroMemory(byte* src, long len)
-        {
-            while (len-- > 0)
-                *(src + len) = 0;
-        }
 
         /// <summary>
         /// Creates a closed stream.
@@ -82,7 +71,7 @@ namespace System.IO
         /// <param name="length"></param>
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length)
         {
-            Initialize(buffer, offset, length, FileAccess.Read, false);
+            Initialize(buffer, offset, length, FileAccess.Read);
         }
 
         /// <summary>
@@ -90,7 +79,7 @@ namespace System.IO
         /// </summary>
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
-            Initialize(buffer, offset, length, access, false);
+            Initialize(buffer, offset, length, access);
         }
 
         /// <summary>
@@ -101,11 +90,6 @@ namespace System.IO
         /// <param name="length"></param>
         /// <param name="access"></param>
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
-        {
-            Initialize(buffer, offset, length, access, false);
-        }
-
-        private void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
         {
             if (buffer == null)
             {
@@ -138,7 +122,7 @@ namespace System.IO
             unsafe
             {
                 byte* pointer = null;
-
+                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     buffer.AcquirePointer(ref pointer);
@@ -170,7 +154,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
-            Initialize(pointer, length, length, FileAccess.Read, false);
+            Initialize(pointer, length, length, FileAccess.Read);
         }
 
         /// <summary>
@@ -179,7 +163,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access)
         {
-            Initialize(pointer, length, capacity, access, false);
+            Initialize(pointer, length, capacity, access);
         }
 
         /// <summary>
@@ -188,18 +172,10 @@ namespace System.IO
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
-            Initialize(pointer, length, capacity, access, false);
-        }
-
-        /// <summary>
-        /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
-        /// </summary>
-        private unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
-        {
             if (pointer == null)
                 throw new ArgumentNullException(nameof(pointer));
             if (length < 0 || capacity < 0)
-                throw new ArgumentOutOfRangeException(length < 0 ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             Contract.EndContractBlock();
@@ -331,15 +307,6 @@ namespace System.IO
                 if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
 
-                if (IntPtr.Size == 4)
-                {
-                    unsafe
-                    {
-                        // On 32 bit process, ensure we don't wrap around.
-                        if (value > (long)Int32.MaxValue || _mem + value < _mem)
-                            throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
-                    }
-                }
                 Interlocked.Exchange(ref _position, value);
             }
         }
@@ -357,18 +324,23 @@ namespace System.IO
 
                 // Use a temp to avoid a race
                 long pos = Interlocked.Read(ref _position);
-                if (pos > _capacity) throw new IndexOutOfRangeException(SR.IndexOutOfRange_UMSPosition);
+                if (pos > _capacity)
+                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_UMSPosition);
                 byte* ptr = _mem + pos;
-
                 return ptr;
             }
             set
             {
                 if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
                 if (!_isOpen) throw Error.GetStreamIsClosed();
-                if (value < _mem) throw new IOException(SR.IO_SeekBeforeBegin);
 
-                Interlocked.Exchange(ref _position, value - _mem);
+                if (value < _mem)
+                    throw new IOException(SR.IO_SeekBeforeBegin);
+                long newPosition = (long)value - (long)_mem;
+                if (newPosition < 0)
+                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
+
+                Interlocked.Exchange(ref _position, newPosition);
             }
         }
 
@@ -417,10 +389,11 @@ namespace System.IO
                     {
                         byte* pointer = null;
 
+                        RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.Memmove(pBuffer + offset, pointer + pos + _offset, (uint)nInt);
+                            Buffer.Memcpy(pBuffer + offset, pointer + pos + _offset, nInt);
                         }
                         finally
                         {
@@ -432,7 +405,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.Memmove(pBuffer + offset, _mem + pos, (uint)nInt);
+                        Buffer.Memcpy(pBuffer + offset, _mem + pos, nInt);
                     }
                 }
             }
@@ -496,7 +469,7 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-
+                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -584,7 +557,7 @@ namespace System.IO
             {
                 unsafe
                 {
-                    ZeroMemory(_mem + len, value - len);
+                    Buffer.ZeroMemory(_mem + len, value - len);
                 }
             }
             Interlocked.Exchange(ref _length, value);
@@ -635,7 +608,7 @@ namespace System.IO
                 {
                     unsafe
                     {
-                        ZeroMemory(_mem + len, pos - len);
+                        Buffer.ZeroMemory(_mem + len, pos - len);
                     }
                 }
 
@@ -659,10 +632,11 @@ namespace System.IO
                         }
 
                         byte* pointer = null;
+                        RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.Memmove(pointer + pos + _offset, pBuffer + offset, (uint)count);
+                            Buffer.Memcpy(pointer + pos + _offset, pBuffer + offset, count);
                         }
                         finally
                         {
@@ -674,7 +648,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.Memmove(_mem + pos, pBuffer + offset, (uint)count);
+                        Buffer.Memcpy(_mem + pos, pBuffer + offset, count);
                     }
                 }
             }
@@ -747,7 +721,7 @@ namespace System.IO
                     {
                         unsafe
                         {
-                            ZeroMemory(_mem + len, pos - len);
+                            Buffer.ZeroMemory(_mem + len, pos - len);
                         }
                     }
 
@@ -761,7 +735,7 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-
+                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);

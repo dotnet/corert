@@ -2,6 +2,15 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
 
+    <!-- Tests that fail because they need update from CoreCLR -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_ro\intrinsic_cs_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_r\intrinsic_nonf_il_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_d\intrinsic_cs_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_d\intrinsic_nonf_il_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_do\intrinsic_cs_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\pow\pow1\pow1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_r\intrinsic_cs_r.*" />
+
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />

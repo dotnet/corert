@@ -149,8 +149,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathTooLongException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SeekOrigin.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamHelpers.CopyValidation.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStream.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStreamWrapper.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs"/>
@@ -473,7 +476,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempPathW.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Globalization.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Globalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.LockFile.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.OutputDebugString.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"/>
