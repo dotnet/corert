@@ -69,6 +69,15 @@ namespace Internal.TypeSystem
             get;
         }
 
+        /// <summary>
+        /// For static field that has preinitialized data
+        /// </summary>
+        
+        public abstract FieldDesc PreInitDataField
+        {
+            get;
+        }
+
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
         public virtual FieldDesc GetTypicalFieldDefinition()

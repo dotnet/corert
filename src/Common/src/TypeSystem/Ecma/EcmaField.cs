@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata;
+using System.Reflection.Metadata
+    /
+;
 using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
@@ -248,8 +250,15 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
-                attributeNamespace, attributeName).IsNil;
+            return !MetadataReader.GetCustomAttributeHandle(CustomAttributes, attributeNamespace, attributeName).IsNil;
+        }
+
+        public CustomAttributeHandleCollection CustomAttributes
+        {
+            get
+            {
+                return MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes();
+            }
         }
 
         public override string ToString()
@@ -277,6 +286,42 @@ namespace Internal.TypeSystem.Ecma
             memBlock.CopyTo(0, result, 0, result.Length);
 
             return result;
+        }
+
+        /// <summary>
+        /// Retrieves the corresponding static preinitialized data field by looking at various attributes
+        /// </summary>
+        public static FieldDesc GetPreInitDataField(this EcmaField field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            if (!field.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute"))
+                return null;
+
+            var attrHandle = MetadataReader.GetCustomAttributeHandle(field.CustomAttributes, "System.Runtime.CompilerServices", "InitDataBlobAttribute");
+            if (attrHandle.IsNull())
+                return null;
+
+            var customAttr = MetadataReader.GetCustomAttribute(attrHandle);
+
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeImportAttribute");
+                if (decoded == null)
+                    return null;
+
+                var decodedValue = decoded.Value;
+
+                if (decodedValue.FixedArguments.Length != 0)
+                    return (string)decodedValue.FixedArguments[decodedValue.FixedArguments.Length - 1].Value;
+
+                foreach (var argument in decodedValue.NamedArguments)
+                {
+                    if (argument.Name == "EntryPoint")
+                        return (string)argument.Value;
+                }
+
+                return null;
+
+            return null;
         }
     }
 }
