@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-
-namespace System.IO
+namespace System.Globalization
 {
-    internal static class EncodingCache
+    internal static class GlobalizationMode
     {
-        internal static readonly Encoding UTF8NoBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        internal static bool Invariant { get; } = false;
     }
 }

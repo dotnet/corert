@@ -205,17 +205,15 @@
     <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
+    <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\SortKey.cs" />
-    <Compile Include="System\Globalization\StringInfo.cs" />
     <Compile Include="System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\EncodingCache.cs" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
@@ -225,7 +223,6 @@
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
@@ -248,7 +245,6 @@
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\GregorianCalendar.cs" />
-    <Compile Include="System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
@@ -269,7 +265,6 @@
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
-    <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
@@ -566,10 +561,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
@@ -627,18 +618,10 @@
     <Compile Include="System\Text\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="System\Globalization\CultureData.Unix.cs" />
     <Compile Include="System\Globalization\TextInfo.Unix.cs" />
-    <Compile Include="System\Globalization\CalendarData.Unix.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
