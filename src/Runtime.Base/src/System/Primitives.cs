@@ -43,7 +43,7 @@ namespace System
 
     public struct Boolean
     {
-        // Disable compile warning about unused m_value field
+        // Disable compile warning about unused _value field
 #pragma warning disable 0169
         private bool _value;
 #pragma warning restore 0169

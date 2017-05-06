@@ -11,9 +11,6 @@ namespace System.IO
     // primitives to an arbitrary stream. A subclass can override methods to
     // give unique encodings.
     [Serializable]
-#if PROJECTN
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Runtime.Extensions")]
-#endif
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();
