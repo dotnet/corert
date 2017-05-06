@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
     public class ScannedMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         private readonly MethodDesc _method;
-        private DependencyListEntry[] _dependencies;
+        private DependencyList _dependencies;
 
         public ScannedMethodNode(MethodDesc method)
         {
@@ -38,9 +38,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => _dependencies != null;
 
-        public void InitializeDependencies(DependencyListEntry[] dependencies)
+        public void InitializeDependencies(NodeFactory factory, IEnumerable<DependencyListEntry> dependencies)
         {
-            _dependencies = dependencies;
+            _dependencies = new DependencyList(dependencies);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _dependencies, factory, _method);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

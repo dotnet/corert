@@ -49,8 +49,14 @@ namespace Internal.IL
         }
         private ExceptionRegion[] _exceptionRegions;
 
-        public ILImporter(ILScanner compilation, MethodIL methodIL)
+        public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL)
         {
+            // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+            if (methodIL == null)
+            {
+                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
+            }
+
             _compilation = compilation;
             _factory = (ILScanNodeFactory)compilation.NodeFactory;
             
@@ -58,7 +64,6 @@ namespace Internal.IL
 
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
-            MethodDesc method = methodIL.OwningMethod;
             if (method.IsSharedByGenericInstantiations)
             {
                 MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
@@ -95,7 +100,7 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(_canonMethod.RequiresInstArg());
+                Debug.Assert(_canonMethod.RequiresInstArg() || _canonMethod.AcquiresInstMethodTableFromThis());
                 return _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, _canonMethod.OwningType);
             }
         }
@@ -135,32 +140,59 @@ namespace Internal.IL
             if (type.IsNullable)
                 type = type.Instantiation[0];
 
-            ReadyToRunHelperId helperId;
-            if (opcode == ILOpcode.isinst)
-            {
-                helperId = ReadyToRunHelperId.IsInstanceOf;
-            }
-            else
-            {
-                Debug.Assert(opcode == ILOpcode.castclass);
-                helperId = ReadyToRunHelperId.CastClass;
-            }
-
             if (type.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(helperId, type), "IsInst/CastClass");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "IsInst/CastClass");
             }
             else
             {
+                ReadyToRunHelperId helperId;
+                if (opcode == ILOpcode.isinst)
+                {
+                    helperId = ReadyToRunHelperId.IsInstanceOf;
+                }
+                else
+                {
+                    Debug.Assert(opcode == ILOpcode.castclass);
+                    helperId = ReadyToRunHelperId.CastClass;
+                }
+
                 _dependencies.Add(_factory.ReadyToRunHelper(helperId, type), "IsInst/CastClass");
             }
         }
         
         private void ImportCall(ILOpcode opcode, int token)
         {
-            var method = (MethodDesc)_methodIL.GetObject(token);
+            // Strip runtime determined characteristics off of the method (because that's how RyuJIT operates)
+            var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc method = runtimeDeterminedMethod;
+            if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                method = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (opcode == ILOpcode.newobj)
+            if (method.IsRawPInvoke())
+            {
+                // Raw P/invokes don't have any dependencies.
+                return;
+            }
+
+            string reason = null;
+            switch (opcode)
+            {
+                case ILOpcode.newobj:
+                    reason = "newobj"; break;
+                case ILOpcode.call:
+                    reason = "call"; break;
+                case ILOpcode.callvirt:
+                    reason = "callvirt"; break;
+                case ILOpcode.ldftn:
+                    reason = "ldftn"; break;
+                case ILOpcode.ldvirtftn:
+                    reason = "ldvirtftn"; break;
+                default:
+                    Debug.Assert(false); break;
+            }
+
+            if (opcode == ILOpcode.newobj && !method.OwningType.IsString /* String .ctor handled below */)
             {
                 TypeDesc owningType = method.OwningType;
                 if (owningType.IsRuntimeDeterminedSubtype)
@@ -175,9 +207,20 @@ namespace Internal.IL
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), "newobj");
             }
 
-            /*if (_constrained != null)
+            TypeDesc exactType = method.OwningType;
+
+            bool resolvedConstraint = false;
+            bool forceUseRuntimeLookup = false;
+
+            MethodDesc methodAfterConstraintResolution = method;
+            if (_constrained != null)
             {
-                bool forceUseRuntimeLookup;
+                // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
+                // will not necessarily resolve the call exactly, since we might be compiling
+                // shared generic code - it may just resolve it to a candidate suitable for
+                // JIT compilation, and require a runtime lookup for the actual code pointer
+                // to call.
+
                 MethodDesc directMethod = _constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
                 if (directMethod == null && _constrained.IsEnum)
                 {
@@ -185,12 +228,178 @@ namespace Internal.IL
                     // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
                     directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(_constrained, method);
                 }
+                
+                if (directMethod != null)
+                {
+                    // Either
+                    //    1. no constraint resolution at compile time (!directMethod)
+                    // OR 2. no code sharing lookup in call
+                    // OR 3. we have have resolved to an instantiating stub
+
+                    methodAfterConstraintResolution = directMethod;
+
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    resolvedConstraint = true;
+
+                    exactType = _constrained;
+                }
+                else if (_constrained.IsValueType)
+                {
+                    AddBoxingDependencies(_constrained, reason);
+                }
+
                 _constrained = null;
-            }*/
+            }
+
+            MethodDesc targetMethod = methodAfterConstraintResolution;
+
+            //
+            // Determine whether to perform direct call
+            //
+
+            bool directCall = false;
+
+            if (targetMethod.Signature.IsStatic)
+            {
+                // Static methods are always direct calls
+                directCall = true;
+            }
+            else if (targetMethod.OwningType.IsInterface)
+            {
+                // Force all interface calls to be interpreted as if they are virtual.
+                directCall = false;
+            }
+            else if ((opcode != ILOpcode.callvirt && opcode != ILOpcode.ldvirtftn) || resolvedConstraint)
+            {
+                directCall = true;
+            }
+            else
+            {
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed())
+                {
+                    directCall = true;
+                }
+            }
+
+            bool allowInstParam = opcode != ILOpcode.ldvirtftn && opcode != ILOpcode.ldftn;
+
+            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            {
+                // Needs a single address to call this method but the method needs a hidden argument.
+                // We need a fat function pointer for this that captures both things.
+
+                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod), reason);
+                }
+                else
+                {
+                    _dependencies.Add(_factory.FatFunctionPointer(runtimeDeterminedMethod), reason);
+                }
+            }
+            else if (directCall)
+            {
+                if (targetMethod.IsIntrinsic)
+                {
+                    // If this is an intrinsic method with a callsite-specific expansion, this will replace
+                    // the method with a method the intrinsic expands into. If it's not the special intrinsic,
+                    // method stays unchanged.
+                    targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, _canonMethod);
+                }
+
+                MethodDesc concreteMethod = targetMethod;
+                targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
+                {
+                    _dependencies.Add(_factory.StringAllocator(targetMethod), reason);
+                }
+                else if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                {
+                    if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint)
+                    {
+                        _dependencies.Add(_factory.RuntimeDeterminedMethod(runtimeDeterminedMethod), reason);
+                    }
+                    else
+                    {
+                        Debug.Assert(!forceUseRuntimeLookup);
+                        _dependencies.Add(_factory.MethodEntrypoint(targetMethod), reason);
+                    }
+                }
+                else
+                {
+                    ISymbolNode instParam = null;
+
+                    if (targetMethod.RequiresInstMethodDescArg())
+                    {
+                        instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
+                    }
+                    else if (targetMethod.RequiresInstMethodTableArg())
+                    {
+                        // Ask for a constructed type symbol because we need the vtable to get to the dictionary
+                        instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
+                    }
+
+                    if (instParam != null)
+                    {
+                        _dependencies.Add(instParam, reason);
+                        _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
+                    }
+                    else if (targetMethod.AcquiresInstMethodTableFromThis())
+                    {
+                        _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(targetMethod), reason);
+                    }
+                }
+            }
+            else if (method.HasInstantiation)
+            {
+                // Generic virtual method call
+
+                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod), reason);
+                }
+                else
+                {
+                    _dependencies.Add(_factory.RuntimeMethodHandle(runtimeDeterminedMethod), reason);
+                }
+            }
+            else
+            {
+                ReadyToRunHelperId helper;
+                if (opcode == ILOpcode.ldvirtftn)
+                {
+                    helper = ReadyToRunHelperId.ResolveVirtualFunction;
+                }
+                else
+                {
+                    Debug.Assert(opcode == ILOpcode.callvirt);
+                    helper = ReadyToRunHelperId.VirtualCall;
+                }
+
+                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod && targetMethod.OwningType.IsInterface)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(helper, runtimeDeterminedMethod), reason);
+                }
+                else
+                {
+                    // Get the slot defining method to make sure our virtual method use tracking gets this right.
+                    // For normal C# code the targetMethod will always be newslot.
+                    MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
+                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
+
+                    _dependencies.Add(_factory.ReadyToRunHelper(helper, slotDefiningMethod), reason);
+                }
+            }
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
+            ImportCall(opCode, token);
         }
         
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -294,6 +503,28 @@ namespace Internal.IL
 
         private void ImportBox(int token)
         {
+            AddBoxingDependencies((TypeDesc)_methodIL.GetObject(token), "Box");
+        }
+
+        private void AddBoxingDependencies(TypeDesc type, string reason)
+        {
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
+            }
+            else
+            {
+                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+            }
+
+            if (type.IsNullable)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
+            }
+            else
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
+            }
         }
 
         private void ImportLeave(BasicBlock target)
