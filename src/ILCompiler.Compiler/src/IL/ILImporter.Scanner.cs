@@ -466,7 +466,47 @@ namespace Internal.IL
         {
             object obj = _methodIL.GetObject(token);
 
+            if (obj is TypeDesc)
+            {
+                var type = (TypeDesc)obj;
+                if (type.IsRuntimeDeterminedSubtype)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
+                }
+                else
+                {
+                    if (ConstructedEETypeNode.CreationAllowed(type))
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
+                    else
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
+                }
+            }
+            else if (obj is MethodDesc)
+            {
+                var method = (MethodDesc)obj;
+                if (method.IsRuntimeDeterminedExactMethod)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, method), "ldtoken");
+                }
+                else
+                {
+                    _dependencies.Add(_factory.RuntimeMethodHandle(method), "ldtoken");
+                }
+            }
+            else
+            {
+                Debug.Assert(obj is FieldDesc);
 
+                var field = (FieldDesc)obj;
+                if (field.OwningType.IsRuntimeDeterminedSubtype)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.FieldHandle, field), "ldtoken");
+                }
+                else
+                {
+                    _dependencies.Add(_factory.RuntimeFieldHandle(field), "ldtoken");
+                }
+            }
         }
 
         private void ImportRefAnyType()
@@ -534,6 +574,16 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
+            var type = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "newarr");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewArray), "newarr");
+            }
+            else
+            {
+                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type), "newarr");
+            }
         }
 
         private void ImportFallthrough(BasicBlock next)
