@@ -351,7 +351,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenArrayNodes = new NodeCache<FieldDesc, FrozenStaticFieldArrayNode>((FieldDesc data) =>
             {
-                return new FrozenStaticFieldArrayNode(data, data.GetPreTarget);
+                return new FrozenStaticFieldArrayNode(data, Target);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -867,9 +867,10 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<FieldDesc, FrozenStaticFieldArrayNode> _frozenArrayNodes;
 
-        public FrozenStringNode SerializedFrozenArray(FieldDesc arrayField, FieldDesc arrayDataField)
+        public FrozenStaticFieldArrayNode SerializedFrozenArray(FieldDesc arrayField)
         {
-            return _frozenStringNodes.GetOrAdd(data);
+            Debug.Assert(arrayField.PreInitDataField != null);
+            return _frozenArrayNodes.GetOrAdd(arrayField);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;

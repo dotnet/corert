@@ -18,13 +18,11 @@ namespace ILCompiler.DependencyAnalysis
     public class FrozenStaticFieldArrayNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private FieldDesc _arrayField;
-        private FieldDesc _arrayDataField;
         private int _pointerSize; 
 
-        public FrozenStaticFieldArrayNode(FieldDesc arrayField, FieldDesc arrayDataField, TargetDetails target)
+        public FrozenStaticFieldArrayNode(FieldDesc arrayField, TargetDetails target)
         {
             _arrayField = arrayField;
-            _arrayDataField = arrayDataField;
             _pointerSize = target.PointerSize;
         }
 
@@ -48,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private IEETypeNode GetEETypeNode(NodeFactory factory)
         {
-            return factory.GetLocalTypeSymbol(_arrayDataField.FieldType);
+            return factory.GetLocalTypeSymbol(_arrayField.PreInitDataField.FieldType);
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
@@ -59,18 +57,19 @@ namespace ILCompiler.DependencyAnalysis
             // EEType
             dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
           
-            ArrayType arrType = _arrayField.FieldType as ArrayType;
+            var arrType = _arrayField.FieldType as ArrayType;
             if (arrType == null || !arrType.IsSzArray)
             {
                 throw new NotImplementedException();
             }
 
-            if (!_arrayDataField.HasRva)
+            FieldDesc arrayDataField = _arrayField.PreInitDataField;
+            if (!arrayDataField.HasRva)
             {
                 throw new BadImageFormatException();
             }
 
-            EcmaField ecmaDataField = _arrayDataField as EcmaField;
+            var ecmaDataField = arrayDataField as EcmaField;
             if (ecmaDataField == null)
             {
                 throw new NotImplementedException();
@@ -92,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_pointerSize == 8)
             {
-                // padding in 64-bit
+                // padding numComponents in 64-bit
                 dataBuilder.EmitInt(0);
             }
 

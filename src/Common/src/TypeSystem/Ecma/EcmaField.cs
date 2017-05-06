@@ -229,7 +229,6 @@ namespace Internal.TypeSystem.Ecma
         /// <summary>
         /// For static field that has preinitialized data
         /// </summary>
-
         public override FieldDesc PreInitDataField
         {
             get
