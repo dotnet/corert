@@ -349,6 +349,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
+            _frozenArrayNodes = new NodeCache<FieldDesc, FrozenStaticFieldArrayNode>((FieldDesc data) =>
+            {
+                return new FrozenStaticFieldArrayNode(data, data.GetPreTarget);
+            });
+
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
             {
                 return new InterfaceDispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
@@ -486,6 +491,24 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _clonedTypeSymbols.GetOrAdd(type);
+        }
+
+        /// <summary>
+        /// Get a direct reference to this EEType (for example, as required by GC).
+        /// If this will be compiled into a separate binary, it must be cloned into this one
+        /// </summary>
+        public IEETypeNode GetLocalTypeSymbol(TypeDesc type)
+        {
+            IEETypeNode symbol = ConstructedTypeSymbol(type);
+
+            if (symbol.RepresentsIndirectionCell)
+            {
+                return ConstructedClonedTypeSymbol(type);
+            }
+            else
+            {
+                return symbol;
+            }
         }
 
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
@@ -842,6 +865,13 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
+        private NodeCache<FieldDesc, FrozenStaticFieldArrayNode> _frozenArrayNodes;
+
+        public FrozenStringNode SerializedFrozenArray(FieldDesc arrayField, FieldDesc arrayDataField)
+        {
+            return _frozenStringNodes.GetOrAdd(data);
+        }
+
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
 
         public EmbeddedObjectNode EagerCctorIndirection(MethodDesc cctorMethod)
@@ -892,7 +922,7 @@ namespace ILCompiler.DependencyAnalysis
             "__DispatchMapTableEnd",
             null);
 
-        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
+        public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
             null);

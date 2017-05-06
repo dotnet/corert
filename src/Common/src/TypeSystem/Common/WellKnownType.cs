@@ -48,5 +48,7 @@ namespace Internal.TypeSystem
 
         TypedReference,
         ByReferenceOfT,
+
+        Type
     }
 }

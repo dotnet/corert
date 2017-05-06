@@ -44,6 +44,8 @@ namespace Internal.TypeSystem
 
             "TypedReference",
             "ByReference`1",
+
+            "Type"
         };
 
         private MetadataType[] _wellKnownTypes;

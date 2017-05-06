@@ -5,9 +5,8 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata
-    /
-;
+using System.Reflection.Metadata;
+
 using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
@@ -36,11 +35,15 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc _fieldType;
         private string _name;
 
+        private FieldDesc _preInitDataField;
+
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
 
+            if (IsStatic)
+                _preInitDataField = this.GetPreInitDataField();
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
@@ -223,6 +226,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        /// <summary>
+        /// For static field that has preinitialized data
+        /// </summary>
+
+        public override FieldDesc PreInitDataField
+        {
+            get
+            {
+                return _preInitDataField;
+            }
+        }
+
         public FieldAttributes Attributes
         {
             get
@@ -295,33 +310,31 @@ namespace Internal.TypeSystem.Ecma
         {
             Debug.Assert(field.IsStatic);
 
+            // Early return if there is no custom attributes
+            if (field.CustomAttributes.Count == 0)
+                return null;
+
             if (!field.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute"))
                 return null;
 
-            var attrHandle = MetadataReader.GetCustomAttributeHandle(field.CustomAttributes, "System.Runtime.CompilerServices", "InitDataBlobAttribute");
-            if (attrHandle.IsNull())
+            var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
+            if (decoded == null)
                 return null;
 
-            var customAttr = MetadataReader.GetCustomAttribute(attrHandle);
-
-            var decoded = This.GetDecodedCustomAttribute("System.Runtime", "RuntimeImportAttribute");
-                if (decoded == null)
-                    return null;
-
-                var decodedValue = decoded.Value;
-
-                if (decodedValue.FixedArguments.Length != 0)
-                    return (string)decodedValue.FixedArguments[decodedValue.FixedArguments.Length - 1].Value;
-
-                foreach (var argument in decodedValue.NamedArguments)
-                {
-                    if (argument.Name == "EntryPoint")
-                        return (string)argument.Value;
-                }
-
+            var decodedValue = decoded.Value;
+            if (decodedValue.FixedArguments.Length != 2)
                 return null;
 
-            return null;
+            if (decodedValue.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Type))
+                return null;
+
+            var typeDesc = (TypeDesc)decodedValue.FixedArguments[0].Value;
+
+            if (decodedValue.FixedArguments[1].Type != field.Context.GetWellKnownType(WellKnownType.String))
+                return null;
+
+            var fieldName = (string)decodedValue.FixedArguments[1].Value;
+            return typeDesc.GetField(fieldName);
         }
     }
 }
