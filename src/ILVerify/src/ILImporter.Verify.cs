@@ -91,6 +91,9 @@ namespace Internal.IL
             public bool TryStart;
             public bool FilterStart;
             public bool HandlerStart;
+
+            public int? TryIndex;
+            public int? HandlerIndex;
         };
 
         void Push(StackValue value)
@@ -443,8 +446,7 @@ namespace Internal.IL
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
                 Debug.Assert(basicBlock.EntryStack == null);
-
-                // TODO: Remember the kind of handler the block is for instead
+                                
                 for (int i = 0; i < _exceptionRegions.Length; i++)
                 {
                     var r = _exceptionRegions[i];
@@ -1523,26 +1525,13 @@ namespace Internal.IL
 
         void ImportRethrow()
         {
-            //search for a catch block which begins before rethrow and ends after it
-            bool isContainedInCatchBlock = false;
-
-            for (int i = 0; i < _exceptionRegions.Length; i++)
+            if (_currentBasicBlock.HandlerIndex.HasValue &&
+             _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Catch)
             {
-                var r = _exceptionRegions[i].ILRegion;
-
-                if (r.Kind == ILExceptionRegionKind.Catch)
-                {
-                    if (_currentBasicBlock.StartOffset >= r.HandlerOffset && _currentBasicBlock.StartOffset <= r.HandlerOffset + r.HandlerLength)
-                    {
-                        isContainedInCatchBlock = true;
-                    }
-                }
+                return;
             }
 
-            if (!isContainedInCatchBlock)
-            {
-                VerificationError(VerifierError.Rethrow);
-            }
+            VerificationError(VerifierError.Rethrow);
         }
 
         void ImportSizeOf(int token)

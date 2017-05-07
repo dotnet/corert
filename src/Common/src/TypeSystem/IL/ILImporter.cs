@@ -116,6 +116,33 @@ namespace Internal.IL
                 basicBlock = new BasicBlock() { StartOffset = offset };
                 _basicBlocks[offset] = basicBlock;
             }
+
+            //find enclosing try
+            for (int i = 0; i < _exceptionRegions.Length; i++)
+            {
+                var r = _exceptionRegions[i].ILRegion;
+
+                if (r.TryOffset <= offset &&
+                    r.TryOffset + r.TryLength >= offset)
+                {
+                    basicBlock.TryIndex = i;
+                    break;
+                }
+            }
+
+            //find enclosing handler
+            for (int i = 0; i < _exceptionRegions.Length; i++)
+            {
+                var r = _exceptionRegions[i].ILRegion;
+
+                if (r.HandlerOffset <= offset &&
+                    r.HandlerOffset + r.HandlerLength >= offset)
+                {
+                    basicBlock.HandlerIndex = i;
+                    break;
+                }
+            }
+
             return basicBlock;
         }
 
