@@ -149,8 +149,46 @@ namespace Internal.IL
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
-
+            FindEnclosingExceptionRegions();
             ImportBasicBlocks();
+        }
+
+        private void FindEnclosingExceptionRegions()
+        {
+            for (int i = 0; i < _basicBlocks.Length; i++)
+            {
+                if (_basicBlocks[i] == null)
+                    continue;
+
+                var basicBlock = _basicBlocks[i];
+                var offset = basicBlock.StartOffset;
+
+                //find enclosing try
+                for (int j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    var r = _exceptionRegions[j].ILRegion;
+
+                    if (r.TryOffset <= offset &&
+                        r.TryOffset + r.TryLength >= offset)
+                    {
+                        basicBlock.TryIndex = j;
+                        break;
+                    }
+                }
+
+                //find enclosing handler
+                for (int j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    var r = _exceptionRegions[j].ILRegion;
+
+                    if (r.HandlerOffset <= offset &&
+                        r.HandlerOffset + r.HandlerLength >= offset)
+                    {
+                        basicBlock.HandlerIndex = j;
+                        break;
+                    }
+                }
+            }
         }
 
         void AbortBasicBlockVerification()
