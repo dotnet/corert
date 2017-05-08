@@ -209,8 +209,8 @@
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\TextElementEnumerator.cs" />
-    <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
-    <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
+    <Compile Include="System\Globalization\TimeSpanFormat.cs" />
+    <Compile Include="System\Globalization\TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />

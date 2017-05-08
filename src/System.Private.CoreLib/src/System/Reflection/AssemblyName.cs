@@ -21,6 +21,7 @@ namespace System.Reflection
         }
 
         public AssemblyName(string assemblyName)
+            : this()
         {
             if (assemblyName == null)
                 throw new ArgumentNullException(nameof(assemblyName));

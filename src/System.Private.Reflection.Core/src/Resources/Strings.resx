@@ -361,4 +361,10 @@
   <data name="Acc_CreateInterface" xml:space="preserve">
     <value>Cannot create an instance of an interface.</value>
   </data>
+  <data name="CannotCreateByRefOfByRef" xml:space="preserve">
+    <value>Cannot create a byref of a byref: {0}</value>
+  </data>
+  <data name="CannotCreatePointerOfByRef" xml:space="preserve">
+    <value>Cannot create a pointer to a byref: {0}</value>
+  </data>
 </root>
