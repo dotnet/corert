@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                         "UniversalCanon signature of method"));
                 }
 
-                dependencies.AddRange(ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(factory, method));
+                ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
             }
         }
 

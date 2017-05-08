@@ -86,26 +86,28 @@ namespace ILCompiler.DependencyAnalysis
             return declaringMethodForSlot;
         }
 
-        public static IEnumerable<DependencyListEntry> GetVirtualInvokeMapDependencies(NodeFactory factory, MethodDesc method)
+        public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if (NeedsVirtualInvokeInfo(method))
             {
+                dependencies = dependencies ?? new DependencyList();
+
                 if (factory.Target.Abi == TargetAbi.ProjectN)
                 {
-                    yield return new DependencyListEntry(
+                    dependencies.Add(
                         factory.NecessaryTypeSymbol(method.OwningType.GetTypeDefinition()),
                         "Reflection virtual invoke owning type");
                 }
                 else
                 {
-                    yield return new DependencyListEntry(
+                    dependencies.Add(
                         factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Reflection virtual invoke owning type");
                 }
 
                 NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
                 NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-                yield return new DependencyListEntry(placedNameAndSig, "Reflection virtual invoke method signature");
+                dependencies.Add(placedNameAndSig, "Reflection virtual invoke method signature");
             }
         }
 
