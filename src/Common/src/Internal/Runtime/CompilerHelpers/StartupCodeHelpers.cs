@@ -6,6 +6,8 @@ using System;
 using System.Runtime;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime.Augments;
+
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -88,11 +90,12 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if CORERT
             // Initialize statics if any are present
-            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
+            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsRegion, out length);
+            IntPtr staticsPreInitDataSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsPreInitDataRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
-                InitializeStatics(staticsSection, length);
+                InitializeStatics(staticsSection, length, staticsPreInitDataSection);
             }
 #endif
 
@@ -141,9 +144,12 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
+        private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length, IntPtr gcStaticsPreInitDataSection)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
+
+            byte * curGCStaticPreInitData = (byte *)gcStaticsPreInitDataSection.ToPointer();
+
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
@@ -154,6 +160,20 @@ namespace Internal.Runtime.CompilerHelpers
                 if (((*pBlock).ToInt64() & 0x1L) == 1)
                 {
                     object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+
+                    // Copy the static field value over to the EEType object (that represents all GC static fields)
+                    // The static field value information in GCStaticsPreInitDataSection are already initialized with
+                    // pointer reloc pointing to frozen data segment
+                    fixed (IntPtr* pEEType = &obj.m_pEEType)
+                    {                       
+                        RuntimeAugments.BulkMoveWithWriteBarrier(
+                            new IntPtr((byte*)pEEType + IntPtr.Size),
+                            new IntPtr(curGCStaticPreInitData),
+                            (int) obj.EETypePtr.BaseSize);
+                    }
+
+                    curGCStaticPreInitData += obj.EETypePtr.BaseSize;
+
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
                 }
             }

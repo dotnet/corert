@@ -80,7 +80,7 @@ namespace Internal.Runtime
 
             // Get a pointer to the beginning of the module's Thread Static section. Then get a pointer
             // to the EEType that represents a memory map for thread statics storage.
-            threadStaticRegion = (IntPtr*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticRegion, out length);
+            threadStaticRegion = (IntPtr*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticsRegion, out length);
             return RuntimeImports.RhNewObject(new EETypePtr(threadStaticRegion[typeTlsIndex]));
         }
     }

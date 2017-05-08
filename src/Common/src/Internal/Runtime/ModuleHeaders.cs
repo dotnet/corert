@@ -47,16 +47,21 @@ namespace Internal.Runtime
     public enum ReadyToRunSectionType
     {
         StringTable = 200, // Unused
-        GCStaticRegion = 201,
-        ThreadStaticRegion = 202,
+        GCStaticsRegion = 201,
+        ThreadStaticsRegion = 202,
         InterfaceDispatchTable = 203,
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticDesc = 207,
-        ThreadStaticOffsetRegion = 208,
-        ThreadStaticGCDescRegion = 209,
-        ThreadStaticIndex = 210,
+        GCStaticsDesc = 207,
+        ThreadStaticsOffsetRegion = 208,
+        ThreadStaticsGCDescRegion = 209,
+        ThreadStaticsIndex = 210,
+
+        /// <summary>
+        /// Contains pointer relocs to preinitialized data in FrozenObjectRegion
+        /// </summary>
+        GCStaticsPreInitDataRegion = 211,              
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,

@@ -235,6 +235,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
+            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
+            {
+                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
+                Debug.Assert(gcStaticsNode is GCStaticsNode);               
+                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
+            });
+
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -533,6 +540,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _GCStatics.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
+
+        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
+        {
+            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
@@ -908,6 +922,11 @@ namespace ILCompiler.DependencyAnalysis
             "__GCStaticRegionEnd", 
             null);
 
+        public ArrayOfEmbeddedPointersNode<GCStaticsPreInitDataNode> GCStaticsPreInitDataRegion = new ArrayOfEmbeddedPointersNode<GCStaticsPreInitDataNode>(
+            "__GCStaticPreInitDataRegionStart", 
+            "__GCStaticPreInitDataRegionEnd", 
+            null);
+
         public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
             "__ThreadStaticRegionStart",
             "__ThreadStaticRegionEnd",
@@ -942,14 +961,16 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
+            graph.AddRoot(GCStaticsPreInitDataRegion, "GC StaticsPreInitDataRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
 
-            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion.StartSymbol, GCStaticsPreInitDataRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticsRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
