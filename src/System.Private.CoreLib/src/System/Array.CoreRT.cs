@@ -602,11 +602,7 @@ namespace System
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
 
-            // Compat: Why this asymmetrical treatment of enums?
-            if (destinationElementEEType.IsEnum)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-
-            if (sourceElementEEType.IsEnum && sourceElementType != destElementType)
+            if ((sourceElementEEType.IsEnum || destinationElementEEType.IsEnum) && sourceElementType != destElementType)
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             if (reliable)

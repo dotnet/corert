@@ -286,7 +286,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.
-            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters)
+            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters && !(elementType is RuntimeCLSIDTypeInfo))
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, multiDim, rank);
         }
     }
@@ -321,6 +321,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeByRefTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreateByRefOfByRef, key.ElementType));
+
                 return new RuntimeByRefTypeInfo(key);
             }
 
@@ -358,6 +361,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimePointerTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreatePointerOfByRef, key.ElementType));
+
                 return new RuntimePointerTypeInfo(key);
             }
 
