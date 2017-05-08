@@ -11,6 +11,13 @@ namespace System
     {
         protected Attribute() { }
 
+        //
+        // Compat note: .NET Core changed the behavior of Equals() relative to the full framework:
+        //
+        //    (https://github.com/dotnet/coreclr/pull/6240)
+        //
+        // This implementation implements the .NET Core behavior.
+        //
         public override bool Equals(Object obj)
         {
             if (obj == null)
@@ -124,7 +131,7 @@ namespace System
         // This non-contract method is known to the IL transformer. See comments around _ILT_ReadFields() for more detail.
         //
         [CLSCompliant(false)]
-        protected virtual int _ILT_GetNumFields(bool inBaseClass)
+        protected virtual int _ILT_GetNumFields()
         {
             return 0;
         }
@@ -133,20 +140,15 @@ namespace System
         // This non-contract method is known to the IL transformer. The IL transformer generates an override of this for each specific Attribute class.
         // Together with _ILT_GetNumFields(), it fetches the same field values that the desktop would have for comparison.
         //
-        // The desktop uses "GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)" to determine the list of fields
-        // used for comparison. Unfortunately, this list can include fields that the "this" class has no right to access (e.g. "internal"
+        // .NET Core uses "GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)" to
+        // determine the list of fields used for comparison. Unfortunately, this list can include fields that the "this" class has no right to access (e.g. "internal"
         // fields in base classes defined in another assembly.) Thus, the IL Transformer cannot simply generate a method to walk the fields and
         // be done with it. Instead, _ILT_ReadFields() directly fetches only the directly declared fields and reinvokes itself non-virtually on its
         // base class to get any inherited fields. To simplify the IL generation, the generated method only writes the results into a specified
         // offset inside a caller-supplied array. Attribute.ReadFields() calls _ILT_GetNumFields() to figure out how large an array is needed.
         //
-        // The "inBaseClass" determines whether the "this" is the "this" that Equals/GetHashCode was actually called or one of its base types.
-        // That's because the list of fields includes directly declared private fields but not inherited private fields. (This can in turn
-        // cause weird effects like the derived type returning "true" for Equals() while it's base type's Equal() returns "false" - but that's
-        // backward compat for you.)
-        //
         [CLSCompliant(false)]
-        protected virtual void _ILT_ReadFields(Object[] destination, int offset, bool inBaseClass)
+        protected virtual void _ILT_ReadFields(Object[] destination, int offset)
         {
         }
 
@@ -156,9 +158,9 @@ namespace System
         //
         private Object[] ReadFields()
         {
-            int numFields = _ILT_GetNumFields(inBaseClass: false);
+            int numFields = _ILT_GetNumFields();
             Object[] fieldValues = new Object[numFields];
-            _ILT_ReadFields(fieldValues, 0, inBaseClass: false);
+            _ILT_ReadFields(fieldValues, 0);
             return fieldValues;
         }
     }
