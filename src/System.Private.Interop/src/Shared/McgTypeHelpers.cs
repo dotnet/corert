@@ -1103,7 +1103,7 @@ namespace System.Runtime.InteropServices
             return default(string);
         }
 
-        internal static bool IsSupportCCWTemplate(this RuntimeTypeHandle ccwType)
+        internal static bool IsCCWTemplateSupported(this RuntimeTypeHandle ccwType)
         {
             int moduleIndex, ccwTemplateIndex;
             return McgModuleManager.GetIndicesForCCWTemplate(ccwType, out moduleIndex, out ccwTemplateIndex);
@@ -1207,6 +1207,20 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+        private static void GetIIDsImpl_dynamic(RuntimeTypeHandle typeHandle, System.Collections.Generic.Internal.List<Guid> iids)
+        {
+            // Enumerate interfaces from itself and its baseclass
+            int numOfInterfaces = Internal.Runtime.Augments.RuntimeAugments.GetInterfaceCount(typeHandle);
+            for (int i = 0; i < numOfInterfaces; i++)
+            {
+                RuntimeTypeHandle implementedInterfaceTypeHandle = Internal.Runtime.Augments.RuntimeAugments.GetInterface(typeHandle, i);
+                Guid implementedInterfaceGuid = implementedInterfaceTypeHandle.GetInterfaceGuid();
+                if (!implementedInterfaceGuid.Equals(default(Guid)))
+                    iids.Add(implementedInterfaceGuid);
+            }
+        }
+#endif
         /// <summary>
         /// Return the list of IIDs
         /// Used by IInspectable.GetIIDs implementation for every CCW
@@ -1218,16 +1232,23 @@ namespace System.Runtime.InteropServices
             // Every CCW implements ICPP
             iids.Add(Interop.COM.IID_ICustomPropertyProvider);
 
-            // if there isn't any data about this type, just return empty list
-            if (!ccwType.IsSupportCCWTemplate())
+            if (ccwType.IsCCWTemplateSupported())
+            {
+                GetIIDsImpl(ccwType, iids);
                 return iids;
+            }
 
-            GetIIDsImpl(ccwType, iids);
+            // if there isn't any data about this type, just return empty list
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+                GetIIDsImpl_dynamic(ccwType, iids);
+#endif
+
             return iids;
         }
-        #endregion
+#endregion
 
-        #region "Struct Data"
+#region "Struct Data"
         internal static string StructWinRTName(this RuntimeTypeHandle structType)
         {
 #if ENABLE_MIN_WINRT
@@ -1237,7 +1258,7 @@ namespace System.Runtime.InteropServices
 #endif
             return null;
         }
-        #endregion
+#endregion
 
         internal static bool IsInvalid(this RuntimeTypeHandle typeHandle)
         {
