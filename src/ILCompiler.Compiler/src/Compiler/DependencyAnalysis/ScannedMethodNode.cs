@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            throw new NotSupportedException();
+            sb.Append(nameMangler.GetMangledMethodName(_method));
         }
         
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -55,10 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             return _dependencies;
         }
 
-        protected override string GetName(NodeFactory factory)
-        {
-            return _method.ToString();
-        }
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
