@@ -269,13 +269,13 @@
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
+    <DefineConstants>X86;BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>ARM;BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'armel'">
-    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>ARM;BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
