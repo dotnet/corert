@@ -227,7 +227,9 @@ namespace Internal.TypeSystem.Ecma
         }
 
         /// <summary>
-        /// For static field that has preinitialized data
+        /// Fields in AOT can be preinitialized with special RVA fields (indicated by InitDataBlobAttribute)
+        /// whose RVA points to the contents of the value (such as array).
+        /// Returns the corresponding field that contains preinitialized data.
         /// </summary>
         public override FieldDesc PreInitDataField
         {

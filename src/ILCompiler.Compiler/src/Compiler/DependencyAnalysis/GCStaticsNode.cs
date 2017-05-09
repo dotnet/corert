@@ -21,9 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
 
-            //
-            // Do we have any pre initialized data field?
-            //
+            // Go through and find all fields with preinitialized data
             foreach (var field in _type.GetFields())
             {
                 var preinitDataField = field.PreInitDataField;
@@ -35,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // We need to sort the fields so that we can later go through them
+            // in the right order when emitting data
             if (_preinitFields != null)
                 _preinitFields.Sort(FieldDescCompare);
         }
@@ -77,18 +77,14 @@ namespace ILCompiler.DependencyAnalysis
             DependencyList dependencyList = new DependencyList();
             
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
-            {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
-            }
-
+            
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
                 if (_preinitFields != null)
-                {
                     dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
-                }
             }
 
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
@@ -109,11 +105,11 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 int delta = 1;
-                if (_preinitFields != null)
-                {
-                    delta = 3;
-                }
 
+                // 2nd LSB indicates next pointer following EEType is the preinit data
+                if (_preinitFields != null)
+                    delta = 3;
+                
                 builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
                 if (_preinitFields != null)

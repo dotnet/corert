@@ -11,6 +11,12 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    /// <summary>
+    /// Contains all GC static fields for a particular EEType.
+    /// Fields that have preinitialized data are pointer reloc pointing to frozen objects.
+    /// Other fields are initialized with 0.
+    /// We simply memcpy these over the GC static EEType object.
+    /// </summary>
     public class GCStaticsPreInitDataNode : ObjectNode, IExportableSymbolNode
     {
         private MetadataType _type;
@@ -58,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return GetDataForPreInitDataField(
                 this, _type, _sortedPreInitFields, 
-                factory.Target.LayoutPointerSize.AsInt,     // CoreRT static size calculation counts in EEType - skip it
+                factory.Target.LayoutPointerSize.AsInt,     // CoreRT static size calculation includes EEType - skip it
                 factory, relocsOnly);
         }
 
@@ -68,7 +74,6 @@ namespace ILCompiler.DependencyAnalysis
             int startOffset,
             NodeFactory factory, bool relocsOnly = false)
         {
-
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
@@ -81,9 +86,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int writeTo = staticOffsetEnd;
                 if (idx < sortedPreInitFields.Count)
-                {
                     writeTo = sortedPreInitFields[idx].Offset.AsInt;
-                }
 
                 // Emit the zero before the next preinitField
                 builder.EmitZeros(writeTo - staticOffset);

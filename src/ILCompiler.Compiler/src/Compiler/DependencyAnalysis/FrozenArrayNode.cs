@@ -13,7 +13,7 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a statically initialized array with data coming from RVA static field
+    /// Represents a frozen array with contents preinitialized from another RVA static field
     /// </summary>
     public class FrozenStaticFieldArrayNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // The frozen string symbol points at the EEType portion of the object, skipping over the sync block
+                // The frozen array symbol points at the EEType portion of the object, skipping over the sync block
                 return OffsetFromBeginningOfArray + _pointerSize;
             }
         }
@@ -60,28 +60,23 @@ namespace ILCompiler.DependencyAnalysis
             var arrType = _arrayField.FieldType as ArrayType;
             if (arrType == null || !arrType.IsSzArray)
             {
-                throw new NotImplementedException();
+                // We only support single dimensional arrays
+                throw new NotSupportedException();
             }
 
             FieldDesc arrayDataField = _arrayField.PreInitDataField;
             if (!arrayDataField.HasRva)
-            {
                 throw new BadImageFormatException();
-            }
-
+            
             var ecmaDataField = arrayDataField as EcmaField;
             if (ecmaDataField == null)
-            {
                 throw new NotImplementedException();
-            }
-
+            
             var rvaData = ecmaDataField.GetFieldRvaData();
             int elementSize = arrType.ElementType.GetElementSize().AsInt;
             if (rvaData.Length % elementSize != 0)
-            {
                 throw new BadImageFormatException();
-            }
-
+            
             int length = rvaData.Length / elementSize;
 
             // numComponents
@@ -103,7 +98,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            // @TODO - Do we need to add the field / datafield here? I'd think they'll be implicitly included
             return new DependencyListEntry[]
             {
                 new DependencyListEntry(GetEETypeNode(factory), "Frozen preinitialized array"),

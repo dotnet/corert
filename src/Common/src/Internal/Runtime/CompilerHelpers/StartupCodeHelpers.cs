@@ -153,8 +153,8 @@ namespace Internal.Runtime.CompilerHelpers
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
-                // Note that this also properly skips the optional preinit data pointer since it is pointer aligned 
-                // once it is initialized
+                // Note that this also properly skips the optional preinit data pointer since it is pointer aligned, 
+                // when this entry is already initialized.
                 IntPtr* pBlock = (IntPtr*)*block;
                 long blockAddr = (*pBlock).ToInt64();
                 if ((blockAddr & 0x1L) == 1)
@@ -163,16 +163,19 @@ namespace Internal.Runtime.CompilerHelpers
 
                     if ((blockAddr & 0x2L) == 2)
                     {
-                        // This has preinitialized data
-                        // Copy the static field value over to the EEType object (that represents all GC static fields)
-                        // The static field value information in GCStaticsPreInitDataSection are already initialized with
-                        // pointer reloc pointing to frozen data segment
+                        // The next pointer is preinitialized data blob that contains preinitialized static GC fields,
+                        // which are pointer relocs to GC objects in frozen segment. 
+                        // It actually has all GC fields including non-preinitialized fields and we simply copy over the
+                        // entire blob to this object, overwriting everything. 
                         fixed (IntPtr* pEEType = &obj.m_pEEType)
                         {
+                            // Skip SyncBlock + EEType when calculating field size
+                            int fieldSize = (int)obj.EETypePtr.BaseSize - IntPtr.Size * 2;
+
                             RuntimeAugments.BulkMoveWithWriteBarrier(
                                 new IntPtr((byte*)pEEType + IntPtr.Size),
                                 *(IntPtr *)(pBlock+1),
-                                (int)obj.EETypePtr.BaseSize - IntPtr.Size * 2);
+                                fieldSize);
                         }
 
                         block++;
