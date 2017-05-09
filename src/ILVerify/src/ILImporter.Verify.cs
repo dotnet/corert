@@ -163,6 +163,7 @@ namespace Internal.IL
                 var basicBlock = _basicBlocks[i];
                 var offset = basicBlock.StartOffset;
 
+                //TODO: find faster algorithm doing this.
                 //find enclosing try
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
@@ -1563,13 +1564,24 @@ namespace Internal.IL
 
         void ImportRethrow()
         {
-            if (_currentBasicBlock.HandlerIndex.HasValue &&
-             _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Catch)
+            if (_currentBasicBlock.HandlerIndex.HasValue)
             {
-                return;
-            }
+                var eR = _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion;
 
-            VerificationError(VerifierError.Rethrow);
+                //in case a simple catch
+                if (eR.Kind == ILExceptionRegionKind.Catch)
+                {
+                    return;
+                }
+
+                //in case a filter make sure rethrow is within the handler
+                if (eR.Kind == ILExceptionRegionKind.Filter &&
+                    _currentOffset >= eR.HandlerOffset &&
+                    _currentOffset <= eR.HandlerOffset + eR.HandlerLength)
+                {
+                    return;
+                }
+            }
         }
 
         void ImportSizeOf(int token)
