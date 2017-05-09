@@ -820,7 +820,7 @@ namespace Internal.IL
 
         void ImportCalli(int token)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportCalli)} not implemented");
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
@@ -834,7 +834,7 @@ namespace Internal.IL
 
             // TODO
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
         }
 
         void ImportLoadInt(long value, StackValueKind kind)
@@ -962,7 +962,7 @@ namespace Internal.IL
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportSwitchJump)} not implemented");
         }
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1057,7 +1057,7 @@ namespace Internal.IL
 
         void ImportShiftOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportShiftOperation)} not implemented");
         }
 
         void ImportCompareOperation(ILOpcode opcode)
@@ -1213,7 +1213,7 @@ namespace Internal.IL
 
         void ImportStoreIndirect(TypeDesc type)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportStoreIndirect)} not implemented");
         }
 
         void ImportThrow()
@@ -1418,7 +1418,7 @@ namespace Internal.IL
 
         void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportUnaryOperation)} not implemented");
         }
 
         void ImportCpOpj(int token)
