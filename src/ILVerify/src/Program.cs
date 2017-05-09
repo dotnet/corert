@@ -47,9 +47,9 @@ namespace ILVerify
             Console.WriteLine("--help          Display this usage message (Short form: -?)");
             Console.WriteLine("--reference     Reference metadata from the specified assembly (Short form: -r)");
             Console.WriteLine("--include       Use only methods/types/namespaces, which match the given regular expression(s) (Short form: -i)");
-            Console.WriteLine("--include-file  Same as -include, but the regular expression(s) are declared line by line in the specified file.");
+            Console.WriteLine("--include-file  Same as --include, but the regular expression(s) are declared line by line in the specified file.");
             Console.WriteLine("--exclude       Skip methods/types/namespaces, which match the given regular expression(s) (Short form: -e)");
-            Console.WriteLine("--exclude-file  Same as -exclude, but the regular expression(s) are declared line by line in the specified file.");
+            Console.WriteLine("--exclude-file  Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
         }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
