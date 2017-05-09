@@ -1003,6 +1003,12 @@ namespace System
             if (TryParseAsInteger(enumEEType, value, firstNonWhitespaceIndex, out result))
                 return true;
 
+            if (StillLooksLikeInteger(value, firstNonWhitespaceIndex))
+            {
+                exception = new OverflowException();
+                return false;
+            }
+
             // Parse as string. Now (and only now) do we look for metadata information.
             EnumInfo enumInfo = RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(enumType);
             if (enumInfo == null)
@@ -1173,6 +1179,31 @@ namespace System
                         throw new NotSupportedException();
                 }
             }
+        }
+
+        private static bool StillLooksLikeInteger(String value, int index)
+        {
+            if (index != value.Length && (value[index] == '-' || value[index] == '+'))
+            {
+                index++;
+            }
+
+            if (index == value.Length || !char.IsDigit(value[index]))
+                return false;
+
+            index++;
+
+            while (index != value.Length && char.IsDigit(value[index]))
+            {
+                index++;
+            }
+
+            while (index != value.Length && char.IsWhiteSpace(value[index]))
+            {
+                index++;
+            }
+
+            return index == value.Length;
         }
 
         [Conditional("BIGENDIAN")]
