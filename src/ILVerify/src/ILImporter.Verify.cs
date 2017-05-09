@@ -1582,6 +1582,8 @@ namespace Internal.IL
                     return;
                 }
             }
+
+            VerificationError(VerifierError.Rethrow);
         }
 
         void ImportSizeOf(int token)
