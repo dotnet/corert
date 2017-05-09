@@ -216,13 +216,36 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal static unsafe IntPtr TryResolveModule(string moduleName)
+        internal static unsafe IntPtr TryResolveModule(string moduleName, 
+                                  DllImportSearchPath dllImportSearchPath)
         {
             IntPtr hModule = IntPtr.Zero;
 
             // Try original name first
             hModule = LoadLibrary(moduleName);
             if (hModule != IntPtr.Zero) return hModule;
+
+            bool searchAssemblyDirectory = true;
+            bool isRelativePath = !System.IO.Path.IsPathRooted(moduleName);
+
+            if (dllImportSearchPath != DllImportSearchPath.None)
+            {
+                searchAssemblyDirectory = (dllImportSearchPath & DllImportSearchPath.AssemblyDirectory) != 0;
+            }
+
+            string path = String.Empty;
+
+            if (searchAssemblyDirectory && isRelativePath)
+            {
+                path = AppContext.BaseDirectory;
+#if PLATFORM_UNIX
+                path += "/";
+#else
+                path += "\\";
+#endif
+                hModule = LoadLibrary(path + moduleName);
+                if (hModule != IntPtr.Zero) return hModule;
+            }
 
 #if PLATFORM_UNIX
             const string PAL_SHLIB_PREFIX = "lib";
@@ -232,17 +255,27 @@ namespace Internal.Runtime.CompilerHelpers
             const string PAL_SHLIB_SUFFIX = ".so";
 #endif
 
-             // Try prefix+name+suffix
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
+            string []combinations = new string [] {
+                    PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX,       // Try prefix+name+suffix
+                    moduleName + PAL_SHLIB_SUFFIX,                          // Try name+suffix
+                    PAL_SHLIB_PREFIX + moduleName                           // Try prefix+name
+            };
 
-            // Try name+suffix
-            hModule = LoadLibrary(moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
+            if (isRelativePath)
+            {
+                for(int i=0; i < combinations.Length; i++)
+                {
+                    if (searchAssemblyDirectory)
+                    {
+                        // look for the library in the assembly directory
+                        hModule = LoadLibrary(path + combinations[i]);
+                        if (hModule != IntPtr.Zero) return hModule;
+                    }
 
-            // Try prefix+name
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName);
-            if (hModule != IntPtr.Zero) return hModule;
+                    hModule = LoadLibrary(combinations[i]);
+                    if (hModule != IntPtr.Zero) return hModule;
+                }
+            }
 #endif
             return IntPtr.Zero;
         }
@@ -278,7 +311,7 @@ namespace Internal.Runtime.CompilerHelpers
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
             string moduleName = GetModuleName(pCell);
-            IntPtr hModule = TryResolveModule(moduleName);
+            IntPtr hModule = TryResolveModule(moduleName, pCell->DllImportSearchPath);
             if (hModule != IntPtr.Zero)
             {
                 var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
@@ -365,11 +398,24 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
 
+        public enum DllImportSearchPath : int
+        {
+            LegacyBehavior = 0x0,
+            None = 0x1,
+            AssemblyDirectory = 0x2,
+            UseDllDirectoryForDependencies = 0x100,
+            ApplicationDirectory = 0x200,
+            UserDirectories = 0x400,
+            System32 = 0x800,
+            SafeDirectories = 0x1000
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct ModuleFixupCell
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
+            public DllImportSearchPath DllImportSearchPath;
         }
 
         [StructLayout(LayoutKind.Sequential)]

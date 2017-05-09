@@ -5,6 +5,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,11 +16,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private string _moduleName;
         private string _entryPointName;
+        private DllImportSearchPath _dllImportSearchPath;
 
-        public PInvokeMethodFixupNode(string moduleName, string entryPointName)
+        public PInvokeMethodFixupNode(string moduleName, string entryPointName, DllImportSearchPath dllImportSearchPath)
         {
             _moduleName = moduleName;
             _entryPointName = entryPointName;
+            _dllImportSearchPath = dllImportSearchPath;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -69,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Module fixup cell
-            builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
+            builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName, _dllImportSearchPath));
 
             return builder.ToObjectData();
         }

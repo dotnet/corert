@@ -682,6 +682,9 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ErrNo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.ExePath.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.ExePath.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,10 +13,12 @@ namespace ILCompiler.DependencyAnalysis
     public class PInvokeModuleFixupNode : ObjectNode, ISymbolDefinitionNode
     {
         public string _moduleName;
+        public DllImportSearchPath _dllImportSearchPath;
 
-        public PInvokeModuleFixupNode(string moduleName)
+        public PInvokeModuleFixupNode(string moduleName, DllImportSearchPath dllImportSearchPath)
         {
             _moduleName = moduleName;
+            _dllImportSearchPath = dllImportSearchPath;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -45,6 +48,7 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.EmitZeroPointer();
             builder.EmitPointerReloc(nameSymbol);
+            builder.EmitInt((int)_dllImportSearchPath);
 
             return builder.ToObjectData();
         }

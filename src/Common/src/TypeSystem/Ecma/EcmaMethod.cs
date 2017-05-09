@@ -428,7 +428,15 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
             Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
-            return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
+            DllImportSearchPath dllImportSearchPath = this.GetDllImportSearchPath();
+
+            // if DefaultDllImportSearchPathAttribute is not assigned on the method
+            // check to see whether it is assigned on the containing assembly
+            if (dllImportSearchPath == DllImportSearchPath.None)
+            {
+                dllImportSearchPath = ((EcmaAssembly)Module).GetDllImportSearchPath();
+            }
+            return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes, dllImportSearchPath);
         }
 
         public override ParameterMetadata[] GetParameterMetadata()

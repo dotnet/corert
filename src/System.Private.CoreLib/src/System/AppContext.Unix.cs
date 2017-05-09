@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System
 {
@@ -17,7 +16,14 @@ namespace System
         {
             get
             {
-                throw new NotImplementedException();
+                string path;
+                bool found = Interop.Sys.GetEntrypointExecutableAbsolutePath(out path);
+                if (!found)
+                {
+                  // TODO: throw appropriate exception
+                   throw new TypeLoadException("GetEntrypointExecutableAbsolutePath failed");
+                }
+                return path.Substring(0, path.LastIndexOf('/'));
             }
         }
     }
