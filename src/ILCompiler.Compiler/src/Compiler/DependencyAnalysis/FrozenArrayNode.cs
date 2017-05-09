@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             var rvaData = ecmaDataField.GetFieldRvaData();
-            int elementSize = arrType.GetElementSize().AsInt;
+            int elementSize = arrType.ElementType.GetElementSize().AsInt;
             if (rvaData.Length % elementSize != 0)
             {
                 throw new BadImageFormatException();

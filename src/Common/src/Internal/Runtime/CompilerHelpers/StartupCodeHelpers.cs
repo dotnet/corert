@@ -91,7 +91,8 @@ namespace Internal.Runtime.CompilerHelpers
 #if CORERT
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsRegion, out length);
-            IntPtr staticsPreInitDataSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsPreInitDataRegion, out length);
+            int preInitLength;
+            IntPtr staticsPreInitDataSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsPreInitDataRegion, out preInitLength);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);

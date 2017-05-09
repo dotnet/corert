@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Emit a pointer reloc to the frozen data
                 if (idx < sortedPreInitFields.Count)
                 {
-                    builder.EmitPointerReloc(factory.SerializedFrozenArray(sortedPreInitFields[idx].PreInitDataField));
+                    builder.EmitPointerReloc(factory.SerializedFrozenArray(sortedPreInitFields[idx]));
                     staticOffset += factory.Target.PointerSize;
                 }
             }
