@@ -108,7 +108,16 @@ namespace ILCompiler.DependencyAnalysis
 
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
+                int delta = 1;
+                if (_preinitFields != null)
+                {
+                    delta = 3;
+                }
+
+                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
+
+                if (_preinitFields != null)
+                    builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
             }
             else
             {

@@ -91,12 +91,10 @@ namespace Internal.Runtime.CompilerHelpers
 #if CORERT
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsRegion, out length);
-            int preInitLength;
-            IntPtr staticsPreInitDataSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsPreInitDataRegion, out preInitLength);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
-                InitializeStatics(staticsSection, length, staticsPreInitDataSection);
+                InitializeStatics(staticsSection, length);
             }
 #endif
 
@@ -145,11 +143,9 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length, IntPtr gcStaticsPreInitDataSection)
+        private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
-
-            byte * curGCStaticPreInitData = (byte *)gcStaticsPreInitDataSection.ToPointer();
 
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
@@ -157,23 +153,30 @@ namespace Internal.Runtime.CompilerHelpers
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
+                // Note that this also properly skips the optional preinit data pointer since it is pointer aligned 
+                // once it is initialized
                 IntPtr* pBlock = (IntPtr*)*block;
-                if (((*pBlock).ToInt64() & 0x1L) == 1)
+                long blockAddr = (*pBlock).ToInt64();
+                if ((blockAddr & 0x1L) == 1)
                 {
-                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~0x3L)));
 
-                    // Copy the static field value over to the EEType object (that represents all GC static fields)
-                    // The static field value information in GCStaticsPreInitDataSection are already initialized with
-                    // pointer reloc pointing to frozen data segment
-                    fixed (IntPtr* pEEType = &obj.m_pEEType)
-                    {                       
-                        RuntimeAugments.BulkMoveWithWriteBarrier(
-                            new IntPtr((byte*)pEEType + IntPtr.Size),
-                            new IntPtr(curGCStaticPreInitData),
-                            (int) obj.EETypePtr.BaseSize);
+                    if ((blockAddr & 0x2L) == 2)
+                    {
+                        // This has preinitialized data
+                        // Copy the static field value over to the EEType object (that represents all GC static fields)
+                        // The static field value information in GCStaticsPreInitDataSection are already initialized with
+                        // pointer reloc pointing to frozen data segment
+                        fixed (IntPtr* pEEType = &obj.m_pEEType)
+                        {
+                            RuntimeAugments.BulkMoveWithWriteBarrier(
+                                new IntPtr((byte*)pEEType + IntPtr.Size),
+                                *(IntPtr *)(pBlock+1),
+                                (int)obj.EETypePtr.BaseSize - IntPtr.Size * 2);
+                        }
+
+                        block++;
                     }
-
-                    curGCStaticPreInitData += obj.EETypePtr.BaseSize;
 
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
                 }

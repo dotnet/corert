@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.NodeMangler.GCStatics(_type) + "__PreInitData");
+            sb.Append(GetMangledName(_type, nameMangler));
         }
 
         public int Offset => 0;
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return nameMangler.NodeMangler.GCStatics(type);
+            return nameMangler.NodeMangler.GCStatics(type) + "__PreInitData";
         }
 
         public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
@@ -56,19 +56,24 @@ namespace ILCompiler.DependencyAnalysis
             // We only need this for CoreRT (at least for now) as we emit static field value directly in GCStaticsNode for N
             Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT);
 
-            return GetDataForPreInitDataField(this, _type, _sortedPreInitFields, factory, relocsOnly);
+            return GetDataForPreInitDataField(
+                this, _type, _sortedPreInitFields, 
+                factory.Target.LayoutPointerSize.AsInt,     // CoreRT static size calculation counts in EEType - skip it
+                factory, relocsOnly);
         }
 
         public static ObjectData GetDataForPreInitDataField(
             ISymbolDefinitionNode node, 
             MetadataType _type, List<FieldDesc> sortedPreInitFields,
+            int startOffset,
             NodeFactory factory, bool relocsOnly = false)
         {
+
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
 
-            int staticOffset = 0;
+            int staticOffset = startOffset;
             int staticOffsetEnd = _type.GCStaticFieldSize.AsInt;
             int idx = 0;
 
