@@ -57,7 +57,6 @@ namespace Internal.TypeSystem
 
                 // Global types do not do the rest of instance field layout.
                 ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout();
-                result.PackValue = type.Context.Target.DefaultPackingSize;
                 result.Offsets = Array.Empty<FieldAndOffset>();
                 return result;
             }
@@ -111,7 +110,6 @@ namespace Internal.TypeSystem
                     ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
                     FieldAlignment = sizeAndAlignment.Alignment,
                     FieldSize = sizeAndAlignment.Size,
-                    PackValue = type.Context.Target.DefaultPackingSize
                 };
 
                 if (numInstanceFields > 0)

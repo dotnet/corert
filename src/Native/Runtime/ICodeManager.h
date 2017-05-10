@@ -76,6 +76,7 @@ enum class ClasslibFunctionId
     UnhandledExceptionHandler = 2,
     AppendExceptionStackFrame = 3,
     CheckStaticClassConstruction = 4,
+    GetSystemArrayEEType = 5,
 };
 
 class ICodeManager

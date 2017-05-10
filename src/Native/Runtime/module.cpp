@@ -802,7 +802,7 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
         return GetClasslibModule()->GetClasslibFunction(functionId);
 
     // Lookup the method and return it. If we don't find it, we just return NULL.
-    void * pMethod = NULL;
+    void * pMethod;
 
     switch (functionId)
     {
@@ -820,6 +820,9 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
         break;
     case ClasslibFunctionId::CheckStaticClassConstruction:
         pMethod = m_pModuleHeader->Get_CheckStaticClassConstruction();
+        break;
+    default:
+        pMethod = NULL;
         break;
     }
 
