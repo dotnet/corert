@@ -7,8 +7,9 @@
 //  methods for late bound support.
 //
 
-using System.Reflection;
+using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime;
 
@@ -25,6 +26,7 @@ namespace System
         // a default constructor. (Those result in running the ClassWithMissingConstructor's .ctor, which flips the magic
         // thread static to cause the CreateInstance<T> method to throw the right exception.)
         //
+        [DebuggerGuidedStepThrough]
         public static T CreateInstance<T>()
         {
             T t = default(T);
@@ -53,6 +55,7 @@ namespace System
                 try
                 {
                     t = CreateInstanceIntrinsic<T>();
+                    System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
                 catch (Exception e)
                 {
@@ -78,6 +81,7 @@ namespace System
         }
 
         [Intrinsic]
+        [DebuggerGuidedStepThrough]
         private static T CreateInstanceIntrinsic<T>()
         {
             // Fallback implementation for codegens that don't support this intrinsic.
@@ -93,6 +97,7 @@ namespace System
             {
                 object o = null;
                 TypeLoaderExports.ActivatorCreateInstanceAny(ref o, eetype.RawValue);
+                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return (T)o;
             }
 
@@ -113,12 +118,28 @@ namespace System
             }
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type) => CreateInstance(type, nonPublic: false);
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type, bool nonPublic) => ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, nonPublic);
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type, params object[] args) => CreateInstance(type, ConstructorDefault, null, args, null, null);
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type, object[] args, object[] activationAttributes) => CreateInstance(type, ConstructorDefault, null, args, null, activationAttributes);
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture) => CreateInstance(type, bindingAttr, binder, args, culture, null);
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             return ReflectionAugments.ReflectionCoreCallbacks.ActivatorCreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
