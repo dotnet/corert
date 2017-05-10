@@ -14,6 +14,7 @@ using System.Diagnostics.Contracts;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
+using EEType = Internal.Runtime.EEType;
 
 #if BIT64
 using nuint = System.UInt64;
@@ -62,6 +63,14 @@ namespace System
             {
                 return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
             }
+        }
+
+        // This is the classlib-provided "get array eetype" function that will be invoked whenever the runtime
+        // needs to know the base type of an array.
+        [RuntimeExport("GetSystemArrayEEType")]
+        private static unsafe EEType* GetSystemArrayEEType()
+        {
+            return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
 
         public static Array CreateInstance(Type elementType, int length)
