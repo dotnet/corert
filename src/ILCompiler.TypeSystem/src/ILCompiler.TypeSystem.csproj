@@ -512,6 +512,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedFieldLayoutAlgorithm.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedFieldLayoutAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs</Link>
     </Compile>

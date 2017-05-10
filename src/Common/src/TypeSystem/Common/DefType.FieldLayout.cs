@@ -273,7 +273,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
+        internal ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
         {
             get
             {
