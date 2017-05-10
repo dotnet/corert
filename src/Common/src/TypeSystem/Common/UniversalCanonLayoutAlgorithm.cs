@@ -36,7 +36,6 @@ namespace Internal.TypeSystem
         {
             return new ComputedInstanceFieldLayout()
             {
-                PackValue = type.Context.Target.DefaultPackingSize,
                 FieldSize = LayoutInt.Indeterminate,
                 FieldAlignment = LayoutInt.Indeterminate,
                 ByteCountUnaligned = LayoutInt.Indeterminate,

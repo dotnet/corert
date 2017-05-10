@@ -84,7 +84,6 @@ namespace Internal.Runtime.TypeLoader
                 Offsets = new FieldAndOffset[numInstanceFields],
                 ByteCountAlignment = byteCountAlignment,
                 ByteCountUnaligned = position[(int)NativeFormat.FieldStorage.Instance],
-                PackValue = 0 // TODO, as we add more metadata handling logic, find out if its necessary to use a meaningful value here
             };
 
             if (!type.IsValueType)
