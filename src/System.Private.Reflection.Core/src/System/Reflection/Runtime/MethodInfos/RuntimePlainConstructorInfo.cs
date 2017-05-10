@@ -88,6 +88,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -103,6 +104,7 @@ namespace System.Reflection.Runtime.MethodInfos
             // us the right way by coordinating the implementation of NewObject and MethodInvoker.
             Object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
             Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return newObject != null ? newObject : ctorAllocatedObject;
         }
 
