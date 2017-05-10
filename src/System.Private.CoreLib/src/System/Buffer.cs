@@ -21,32 +21,58 @@ using nuint = System.UInt32;
 
 namespace System
 {
+    [EagerStaticClassConstruction]
     public static class Buffer
     {
+        /// <summary>
+        /// This field is used to quickly check whether an array that is given to the BlockCopy
+        /// method is a byte array and the code can take optimized path.
+        /// </summary>
+        private static readonly EETypePtr s_byteArrayEEType = EETypePtr.EETypePtrOf<byte[]>();
+
         public static unsafe void BlockCopy(Array src, int srcOffset,
                                             Array dst, int dstOffset,
                                             int count)
         {
+            nuint uSrcLen;
+            nuint uDstLen;
+
             if (src == null)
                 throw new ArgumentNullException(nameof(src));
             if (dst == null)
                 throw new ArgumentNullException(nameof(dst));
 
-
-            RuntimeImports.RhCorElementTypeInfo srcCorElementTypeInfo = src.ElementEEType.CorElementTypeInfo;
-
-            nuint uSrcLen = ((nuint)src.Length) << srcCorElementTypeInfo.Log2OfSize;
-            nuint uDstLen = uSrcLen;
-
-            if (!srcCorElementTypeInfo.IsPrimitive)
-                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
+            // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
+            EETypePtr byteArrayEEType = s_byteArrayEEType;
+            if (src.EETypePtr.FastEquals(byteArrayEEType))
+            {
+                uSrcLen = (nuint)src.Length;
+            }
+            else
+            {
+                RuntimeImports.RhCorElementTypeInfo srcCorElementTypeInfo = src.ElementEEType.CorElementTypeInfo;
+                uSrcLen = ((nuint)src.Length) << srcCorElementTypeInfo.Log2OfSize;
+                if (!srcCorElementTypeInfo.IsPrimitive)
+                    throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(src));
+            }
 
             if (src != dst)
             {
-                RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
-                if (!dstCorElementTypeInfo.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
-                uDstLen = ((nuint)dst.Length) << dstCorElementTypeInfo.Log2OfSize;
+                if (dst.EETypePtr.FastEquals(byteArrayEEType))
+                {
+                    uDstLen = (nuint)dst.Length;
+                }
+                else
+                {
+                    RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
+                    if (!dstCorElementTypeInfo.IsPrimitive)
+                        throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(dst));
+                    uDstLen = ((nuint)dst.Length) << dstCorElementTypeInfo.Log2OfSize;
+                }
+            }
+            else
+            {
+                uDstLen = uSrcLen;
             }
 
             if (srcOffset < 0)
