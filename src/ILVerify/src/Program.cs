@@ -228,23 +228,14 @@ namespace ILVerify
             _typeSystemContext.InputFilePaths = _inputFilePaths;
             _typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            EcmaModule systemModule = _typeSystemContext.GetModuleForSimpleName(SystemModuleSimpleName);
-            _typeSystemContext.SetSystemModule(systemModule);
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(SystemModuleSimpleName));
 
             foreach (var inputPath in _inputFilePaths.Values)
             {
                 _numErrors = 0;
 
-                EcmaModule module;
-                // special case for verifying mscorlib, which was already loaded
-                string simpleName = Path.GetFileNameWithoutExtension(inputPath);
-                if (simpleName == SystemModuleSimpleName)
-                    module = systemModule;
-                else
-                    module = _typeSystemContext.GetModuleFromPath(inputPath);
+                VerifyModule(_typeSystemContext.GetModuleFromPath(inputPath));
 
-                VerifyModule(module);
-                
                 if (_numErrors > 0)
                     Console.WriteLine(_numErrors + " Error(s) Verifying " + inputPath);
                 else
