@@ -163,30 +163,45 @@ namespace Internal.IL
                 var basicBlock = _basicBlocks[i];
                 var offset = basicBlock.StartOffset;
 
-                //TODO: find faster algorithm doing this.
-                //find enclosing try
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
                     var r = _exceptionRegions[j].ILRegion;
 
-                    if (r.TryOffset <= offset &&
-                        r.TryOffset + r.TryLength >= offset)
+                    if (r.TryOffset <= offset && r.TryOffset + r.TryLength >= offset)
                     {
-                        basicBlock.TryIndex = j;
-                        break;
+                        if (!basicBlock.TryIndex.HasValue)
+                        {
+                            basicBlock.TryIndex = j;
+                        }
+                        else
+                        {
+                            var currentlySelected = _exceptionRegions[basicBlock.TryIndex.Value].ILRegion;
+                            var probeItem = _exceptionRegions[j].ILRegion;
+
+                            if (currentlySelected.TryOffset < probeItem.TryOffset &&
+                                currentlySelected.TryOffset + currentlySelected.TryLength > probeItem.TryOffset + probeItem.TryLength)
+                            {
+                                basicBlock.TryIndex = j;
+                            }
+                        }
                     }
-                }
-
-                //find enclosing handler
-                for (int j = 0; j < _exceptionRegions.Length; j++)
-                {
-                    var r = _exceptionRegions[j].ILRegion;
-
-                    if (r.HandlerOffset <= offset &&
-                        r.HandlerOffset + r.HandlerLength >= offset)
+                    if (r.HandlerOffset <= offset && r.HandlerOffset + r.HandlerLength >= offset)
                     {
-                        basicBlock.HandlerIndex = j;
-                        break;
+                        if (!basicBlock.HandlerIndex.HasValue)
+                        {
+                            basicBlock.HandlerIndex = j;
+                        }
+                        else
+                        {
+                            var currentlySelected = _exceptionRegions[basicBlock.HandlerIndex.Value].ILRegion;
+                            var probeItem = _exceptionRegions[j].ILRegion;
+
+                            if (currentlySelected.HandlerOffset < probeItem.HandlerOffset &&
+                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength > probeItem.HandlerOffset + probeItem.HandlerLength)
+                            {
+                                basicBlock.HandlerIndex = j;
+                            }
+                        }
                     }
                 }
             }
