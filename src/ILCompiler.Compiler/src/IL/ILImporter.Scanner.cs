@@ -480,6 +480,8 @@ namespace Internal.IL
                     else
                         _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
                 }
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
             }
             else if (obj is MethodDesc)
             {
@@ -492,6 +494,8 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.RuntimeMethodHandle(method), "ldtoken");
                 }
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeMethodHandle), "ldtoken");
             }
             else
             {
@@ -506,6 +510,8 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.RuntimeFieldHandle(field), "ldtoken");
                 }
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeFieldHandle), "ldtoken");
             }
         }
 
@@ -586,6 +592,31 @@ namespace Internal.IL
             }
         }
 
+        private void ImportLoadElement(int token)
+        {
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
+        }
+
+        private void ImportLoadElement(TypeDesc elementType)
+        {
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
+        }
+
+        private void ImportStoreElement(int token)
+        {
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
+        }
+
+        private void ImportStoreElement(TypeDesc elementType)
+        {
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
+        }
+
+        private void ImportAddressOfElement(int token)
+        {
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelema");
+        }
+
         private void ImportFallthrough(BasicBlock next)
         {
             MarkBasicBlock(next);
@@ -632,12 +663,7 @@ namespace Internal.IL
         private void ImportReadOnlyPrefix() { }
         private void ImportThrow() { }
         private void ImportInitObj(int token) { }
-        private void ImportLoadElement(int token) { }
-        private void ImportLoadElement(TypeDesc elementType) { }
-        private void ImportStoreElement(int token) { }
-        private void ImportStoreElement(TypeDesc elementType) { }
         private void ImportLoadLength() { }
-        private void ImportAddressOfElement(int token) { }
         private void ImportEndFinally() { }
     }
 }
