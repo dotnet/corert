@@ -25,7 +25,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct EnumTypeDescriptor
     {
-        public ulong ElementType;
+        public uint ElementType;
         public ulong ElementCount;
         public string Name;
         public string UniqueName;
@@ -44,14 +44,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
     public struct DataFieldDescriptor
     {
         public uint FieldTypeIndex;
-        public int Offset;
+        public ulong Offset;
         public string Name;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ClassFieldsTypeDescriptor
     {
-        public int Size;
+        public ulong Size;
         public int FieldsCount;
     }
 }

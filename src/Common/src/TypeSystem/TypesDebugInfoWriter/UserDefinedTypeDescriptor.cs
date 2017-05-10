@@ -144,12 +144,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
             classTypeDescriptor.Name = defType.Name;
             classTypeDescriptor.UniqueName = defType.GetFullName();
             classTypeDescriptor.BaseClassId = 0;
+
+            uint typeIndex = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
+            _knownTypes[type] = typeIndex;
+
             if (type.HasBaseType && !type.IsValueType)
             {
                 classTypeDescriptor.BaseClassId = GetVariableTypeIndex(defType.BaseType, false);
             }
-            uint typeIndex = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
-            _knownTypes[type] = typeIndex;
 
             List<DataFieldDescriptor> fieldsDescs = new List<DataFieldDescriptor>();
             foreach (var fieldDesc in defType.GetFields())
@@ -158,7 +160,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                     continue;
                 DataFieldDescriptor field = new DataFieldDescriptor();
                 field.FieldTypeIndex = GetVariableTypeIndex(fieldDesc.FieldType, false);
-                field.Offset = fieldDesc.Offset.AsInt;
+                field.Offset = (ulong)fieldDesc.Offset.AsInt;
                 field.Name = fieldDesc.Name;
                 fieldsDescs.Add(field);
             }
@@ -170,7 +172,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             }
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor();
             fieldsDescriptor.FieldsCount = fieldsDescs.Count;
-            fieldsDescriptor.Size = defType.GetElementSize().AsInt;
+            fieldsDescriptor.Size = (ulong)defType.GetElementSize().AsInt;
 
             uint completeTypeIndex = _objectWriter.GetCompleteClassTypeIndex(classTypeDescriptor, fieldsDescriptor, fields);
             _completeKnownTypes[type] = completeTypeIndex;
