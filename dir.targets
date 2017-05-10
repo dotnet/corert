@@ -28,6 +28,13 @@
   <!-- Override corefx multi targeting support -->
   <Target Name="ConvertCommonMetadataToAdditionalProperties" BeforeTargets="AssignProjectConfiguration" />
 
+  <!-- OverrideLicenseUrl is temporary till we update the buildtools to v2 -->  
+  <Target Name="OverrideLicenseUrl" BeforeTargets="GenerateNuSpec">
+    <PropertyGroup>
+      <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
