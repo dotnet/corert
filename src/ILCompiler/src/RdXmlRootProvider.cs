@@ -126,7 +126,7 @@ namespace ILCompiler
                         if (method.IsVirtual)
                         {
                             MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                            rootProvider.RootMethodForReflection(slotMethod, "RD.XML root");
+                            rootProvider.RootVirtualMethodForReflection(slotMethod, "RD.XML root");
                         }
                         
                         if (!method.IsAbstract)
