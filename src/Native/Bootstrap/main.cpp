@@ -254,6 +254,7 @@ extern "C" void* WINAPI PalGetModuleHandleFromPointer(void* pointer);
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
+extern "C" void GetSystemArrayEEType();
 
 typedef void(*pfn)();
 
@@ -262,6 +263,8 @@ static const pfn c_classlibFunctions[] = {
     &FailFast,
     nullptr, // &UnhandledExceptionHandler,
     &AppendExceptionStackFrame,
+    nullptr, // &CheckStaticClassConstruction,
+    &GetSystemArrayEEType,
 };
 
 #endif // !CPPCODEGEN
