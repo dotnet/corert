@@ -202,6 +202,24 @@ namespace ILCompiler
             return _compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType);
         }
 
+        protected override MetadataCategory GetMetadataCategory(FieldDesc field)
+        {
+            // Backwards compatible behavior. We might want to tweak this.
+            return MetadataCategory.RuntimeMapping;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(MethodDesc method)
+        {
+            // Backwards compatible behavior. We might want to tweak this.
+            return MetadataCategory.RuntimeMapping;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(TypeDesc type)
+        {
+            // Backwards compatible behavior. We might want to tweak this.
+            return MetadataCategory.RuntimeMapping;
+        }
+
         protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;

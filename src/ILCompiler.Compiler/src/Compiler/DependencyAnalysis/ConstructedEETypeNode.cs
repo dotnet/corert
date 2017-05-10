@@ -157,6 +157,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
 
+            // Ask the metadata manager if we have any dependencies due to reflectability.
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
+
             return dependencyList;
         }
 
