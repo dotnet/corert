@@ -257,11 +257,16 @@ namespace ILCompiler
                     }
                 }
             }
-
-            public void RootVirtualMethodUse(MethodDesc method, string reason)
+            
+            public void RootMethodForReflection(MethodDesc method, string reason)
             {
                 if (!_factory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
                     _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
+
+                if (method.IsAbstract)
+                {
+                    _graph.AddRoot(_factory.ReflectableMethod(method), reason);
+                }
             }
         }
     }

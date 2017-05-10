@@ -14,6 +14,6 @@ namespace ILCompiler
         void AddCompilationRoot(MethodDesc method, string reason, string exportName = null);
         void AddCompilationRoot(TypeDesc type, string reason);
         void RootStaticBasesForType(TypeDesc type, string reason);
-        void RootVirtualMethodUse(MethodDesc method, string reason);
+        void RootMethodForReflection(MethodDesc method, string reason);
     }
 }
