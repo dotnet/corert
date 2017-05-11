@@ -394,9 +394,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs">
       <Link>Internal\TypeSystem\WellKnownType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownTypeExtensions.cs">
-      <Link>Internal\TypeSystem\WellKnownTypeExtensions.cs</Link>
-    </Compile>
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionInfo.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\CallConverterThunk.CallConversionParameters.cs" />
@@ -457,6 +454,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
