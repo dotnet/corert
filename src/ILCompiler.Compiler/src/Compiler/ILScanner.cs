@@ -61,7 +61,7 @@ namespace ILCompiler
 
                 try
                 {
-                    var importer = new ILImporter(this, method, GetMethodIL(method));
+                    var importer = new ILImporter(this, method);
                     methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
                 }
                 catch (TypeSystemException ex)

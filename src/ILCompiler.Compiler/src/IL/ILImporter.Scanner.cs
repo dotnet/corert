@@ -22,6 +22,9 @@ namespace Internal.IL
         private readonly ILScanner _compilation;
         private readonly ILScanNodeFactory _factory;
 
+        // True if we're scanning a throwing method body because scanning the real body failed.
+        private readonly bool _isFallbackBodyCompilation;
+
         private readonly MethodDesc _canonMethod;
 
         private readonly DependencyList _dependencies = new DependencyList();
@@ -43,14 +46,26 @@ namespace Internal.IL
 
         private TypeDesc _constrained;
 
+        private int _currentInstructionOffset;
+        private int _previousInstructionOffset = -1;
+
         private class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
         }
         private ExceptionRegion[] _exceptionRegions;
 
-        public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL)
+        public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL = null)
         {
+            if (methodIL == null)
+            {
+                methodIL = compilation.GetMethodIL(method);
+            }
+            else
+            {
+                _isFallbackBodyCompilation = true;
+            }
+
             // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
             if (methodIL == null)
             {
@@ -122,10 +137,29 @@ namespace Internal.IL
         }
 
         private void MarkInstructionBoundary() { }
-        private void StartImportingBasicBlock(BasicBlock basicBlock) { }
         private void EndImportingBasicBlock(BasicBlock basicBlock) { }
-        private void StartImportingInstruction() { }
         private void EndImportingInstruction() { }
+
+        private void StartImportingBasicBlock(BasicBlock basicBlock)
+        {
+            // Import all associated EH regions
+            foreach (ExceptionRegion ehRegion in _exceptionRegions)
+            {
+                ILExceptionRegion region = ehRegion.ILRegion;
+                if (region.TryOffset == basicBlock.StartOffset)
+                {
+                    MarkBasicBlock(_basicBlocks[region.HandlerOffset]);
+                    if (region.Kind == ILExceptionRegionKind.Filter)
+                        MarkBasicBlock(_basicBlocks[region.FilterOffset]);
+                }
+            }
+        }
+
+        private void StartImportingInstruction()
+        {
+            _previousInstructionOffset = _currentInstructionOffset;
+            _currentInstructionOffset = _currentOffset;
+        }
 
         private void ImportJmp(int token)
         {
@@ -192,19 +226,80 @@ namespace Internal.IL
                     Debug.Assert(false); break;
             }
 
-            if (opcode == ILOpcode.newobj && !method.OwningType.IsString /* String .ctor handled below */)
+            if (!_isFallbackBodyCompilation)
             {
-                TypeDesc owningType = method.OwningType;
-                if (owningType.IsRuntimeDeterminedSubtype)
+                // Do we need to run the cctor?
+                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
+                if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), "newobj");
+                    if (!((MetadataType)owningType).IsBeforeFieldInit)
+                    {
+                        // Accessing the static base will trigger the cctor.
+                        if (owningType.IsRuntimeDeterminedSubtype)
+                        {
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
+                        }
+                        else
+                        {
+                            _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
+                        }
+                    }
+                }
+            }
+
+            if (opcode == ILOpcode.newobj)
+            {
+                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
+                if (owningType.IsString)
+                {
+                    // String .ctor handled specially below
                 }
                 else
                 {
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), "newobj");
+                    if (owningType.IsRuntimeDeterminedSubtype)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
+                    }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
                 }
 
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), "newobj");
+                if (owningType.IsDelegate)
+                {
+                    // If this is a verifiable delegate construction sequence, the previous instruction is a ldftn/ldvirtftn
+                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.prefix1)
+                    {
+                        // TODO: for ldvirtftn we need to also check for the `dup` instruction, otherwise this is a normal newobj.
+
+                        ILOpcode previousOpcode = (ILOpcode)(0x100 + _ilBytes[_previousInstructionOffset + 1]);
+                        if (previousOpcode == ILOpcode.ldvirtftn || previousOpcode == ILOpcode.ldftn)
+                        {
+                            int tokenOffset = _previousInstructionOffset + 2;
+                            int delTargetToken = (int)(_ilBytes[tokenOffset]
+                                + (_ilBytes[tokenOffset + 1] << 8)
+                                + (_ilBytes[tokenOffset + 2] << 16)
+                                + (_ilBytes[tokenOffset + 3] << 24));
+                            var delTargetMethod = (MethodDesc)_methodIL.GetObject(delTargetToken);
+                            TypeDesc canonDelegateType = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, delTargetMethod, previousOpcode == ILOpcode.ldvirtftn);
+                            
+                            if (info.NeedsRuntimeLookup)
+                            {
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                            }
+                            else
+                            {
+                                _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
+                            }
+
+                            return;
+                        }
+                    }
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -530,16 +625,52 @@ namespace Internal.IL
             _constrained = (TypeDesc)_methodIL.GetObject(token);
         }
 
+        private void ImportFieldAccess(int token, bool isStatic, string reason)
+        {
+            if (isStatic)
+            {
+                var field = (FieldDesc)_methodIL.GetObject(token);
+
+                ReadyToRunHelperId helperId;
+                if (field.IsThreadStatic)
+                {
+                    helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    helperId = ReadyToRunHelperId.GetGCStaticBase;
+                }
+                else
+                {
+                    Debug.Assert(field.IsStatic);
+                    helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                }
+
+                TypeDesc owningType = field.OwningType;
+                if (owningType.IsRuntimeDeterminedSubtype)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(helperId, owningType), reason);
+                }
+                else
+                {
+                    _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
+                }
+            }
+        }
+
         private void ImportLoadField(int token, bool isStatic)
         {
+            ImportFieldAccess(token, isStatic, isStatic ? "ldsfld" : "ldfld");
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
         {
+            ImportFieldAccess(token, isStatic, isStatic ? "ldsflda" : "ldflda");
         }
 
         private void ImportStoreField(int token, bool isStatic)
         {
+            ImportFieldAccess(token, isStatic, isStatic ? "stsfld" : "stfld");
         }
 
         private void ImportLoadString(int token)
