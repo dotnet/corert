@@ -100,5 +100,11 @@ namespace TypeSystemTests
             Assert.Equal(4, _context.GetWellKnownType(WellKnownType.Single).InstanceFieldSize.AsInt);
             Assert.Equal(8, _context.GetWellKnownType(WellKnownType.Double).InstanceFieldSize.AsInt);
         }
+
+        [Fact]
+        public void TestModuleType()
+        {
+            Assert.True(_testModule.GetGlobalModuleType().IsModuleType);
+        }
     }
 }
