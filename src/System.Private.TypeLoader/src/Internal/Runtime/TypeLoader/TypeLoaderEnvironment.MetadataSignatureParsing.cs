@@ -380,7 +380,7 @@ namespace Internal.Runtime.TypeLoader
                         }
                         else
                         {
-                            type1 = Internal.TypeSystem.WellKnownTypeExtensions.GetRuntimeTypeHandle((Internal.TypeSystem.WellKnownType)data);
+                            type1 = ((Internal.TypeSystem.WellKnownType)data).GetRuntimeTypeHandle();
                         }
 
                         return type1.Equals(type2);

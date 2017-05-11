@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 
-namespace Internal.TypeSystem
+using Internal.TypeSystem;
+
+namespace Internal.Runtime.TypeLoader
 {
     public static class WellKnownTypeExtensions
     {

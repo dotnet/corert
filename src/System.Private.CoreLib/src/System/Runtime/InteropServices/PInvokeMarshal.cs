@@ -519,6 +519,7 @@ namespace System.Runtime.InteropServices
             if (managedArray == null)
             {
                 Buffer.ZeroMemory((byte*)pNative, expectedCharCount);
+                return;
             }
 
             int lenUnicode = managedArray.Length;
