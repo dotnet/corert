@@ -47,20 +47,17 @@ namespace Internal.Runtime.TypeLoader
 
             // TODO: We should be able to handle arbitrary return type
             object returnValue = arguments.GetVar<int>(0);
+            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
 
             // Signal to the debugger the func eval completes
-            IntPtr funcEvalCompleteCommandPointer;
             unsafe
             {
-                FuncEvalCompleteCommand funcEvalCompleteCommand = new FuncEvalCompleteCommand
-                {
-                    commandCode = 0
-                };
-
-                funcEvalCompleteCommandPointer = new IntPtr(&funcEvalCompleteCommand);
+                FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
+                funcEvalCompleteCommand->commandCode = 0;
+                funcEvalCompleteCommand->returnAddress = (long)GCHandle.ToIntPtr(returnValueHandle);
+                IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
+                RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
             }
-
-            RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
 
             // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
         }
@@ -76,11 +73,15 @@ namespace Internal.Runtime.TypeLoader
             public long bufferAddress;
         }
 
-        [StructLayout(LayoutKind.Explicit, Size=4)]
+        [StructLayout(LayoutKind.Explicit, Size=16)]
         struct FuncEvalCompleteCommand
         {
             [FieldOffset(0)]
             public int commandCode;
+            [FieldOffset(4)]
+            public int unused;
+            [FieldOffset(8)]
+            public long returnAddress;
         }
 
         struct TypesAndValues
