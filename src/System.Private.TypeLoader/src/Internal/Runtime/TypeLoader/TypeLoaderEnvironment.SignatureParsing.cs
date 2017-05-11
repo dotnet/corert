@@ -275,18 +275,29 @@ namespace Internal.Runtime.TypeLoader
 
         internal bool GetCallingConverterDataFromMethodSignature_NativeLayout(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout)
         {
+            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, null);
+        }
+
+        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader)
+        {
+            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, nativeReader);
+        }
+
+        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Common(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader)
+        {
+            bool isNotDebuggerCall = nativeReader == null;
             hasThis = false;
             parameters = null;
 
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
 
-            nativeLayoutContext._module = (NativeFormatModuleInfo)methodSig.GetModuleInfo();
+            nativeLayoutContext._module = isNotDebuggerCall ? (NativeFormatModuleInfo)methodSig.GetModuleInfo() : null;
             nativeLayoutContext._typeSystemContext = context;
             nativeLayoutContext._typeArgumentHandles = typeInstantiation;
             nativeLayoutContext._methodArgumentHandles = methodInstantiation;
 
-            NativeReader reader = GetNativeLayoutInfoReader(methodSig);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle));
+            NativeReader reader = isNotDebuggerCall ? GetNativeLayoutInfoReader(methodSig) : nativeReader;
+            NativeFormatModuleInfo module = isNotDebuggerCall ? ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle)) : null;
             NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
 
             MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
@@ -430,6 +441,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 case TypeSignatureKind.External: return false;
                 case TypeSignatureKind.Variable: return true;
+                case TypeSignatureKind.BuiltIn: return false;
 
                 case TypeSignatureKind.Lookback:
                     {
@@ -524,6 +536,11 @@ namespace Internal.Runtime.TypeLoader
             else if (kind == TypeSignatureKind.External)
             {
                 typeHandle = GetExternalTypeHandle(moduleHandle, data);
+                return true;
+            }
+            else if (kind == TypeSignatureKind.BuiltIn)
+            {
+                typeHandle = ((WellKnownType)data).GetRuntimeTypeHandle();
                 return true;
             }
 
@@ -719,6 +736,14 @@ namespace Internal.Runtime.TypeLoader
                         }
                         break;
                     }
+
+                case TypeSignatureKind.BuiltIn:
+                    RuntimeTypeHandle typeHandle3 = ((WellKnownType)data1).GetRuntimeTypeHandle();
+                    RuntimeTypeHandle typeHandle4 = ((WellKnownType)data2).GetRuntimeTypeHandle();
+                    if (!typeHandle3.Equals(typeHandle4))
+                        return false;
+
+                    break;
 
                 case TypeSignatureKind.External:
                     {
