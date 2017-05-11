@@ -116,6 +116,7 @@ namespace Internal.IL
                 basicBlock = new BasicBlock() { StartOffset = offset };
                 _basicBlocks[offset] = basicBlock;
             }
+
             return basicBlock;
         }
 
