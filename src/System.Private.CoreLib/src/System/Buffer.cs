@@ -83,17 +83,20 @@ namespace System
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, nameof(count));
 
             nuint uCount = (nuint)count;
-            if (uSrcLen < ((nuint)srcOffset) + uCount)
+            nuint uSrcOffset = (nuint)srcOffset;
+            nuint uDstOffset = (nuint)dstOffset;
+
+            if (uSrcLen < uSrcOffset + uCount)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (uDstLen < ((nuint)dstOffset) + uCount)
+            if (uDstLen < uDstOffset + uCount)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (uCount == 0)
-                return;
-
-            fixed (byte* pSrc = &src.GetRawArrayData(), pDst = &dst.GetRawArrayData())
+            if (uCount != 0)
             {
-                Buffer.Memmove(pDst + dstOffset, pSrc + srcOffset, uCount);
+                fixed (byte* pSrc = &src.GetRawArrayData(), pDst = &dst.GetRawArrayData())
+                {
+                    Buffer.Memmove(pDst + uDstOffset, pSrc + uSrcOffset, uCount);
+                }
             }
         }
 
