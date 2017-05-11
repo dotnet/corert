@@ -658,6 +658,9 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
