@@ -26,7 +26,8 @@ namespace ILCompiler
         /// </summary>
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type) && _supportsLazyCctors;
+            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type) && _supportsLazyCctors &&
+                (!(type is MetadataType) || !((MetadataType)type).IsModuleType);
         }
 
         /// <summary>

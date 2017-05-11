@@ -1491,16 +1491,10 @@ namespace Internal.JitInterface
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
 
-            MetadataType typeToInit = (MetadataType)type;
-
-            if (typeToInit.IsModuleType)
-            {
-                // For both jitted and ngen code the global class is always considered initialized
-                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
-            }
-
             if (fd == null)
             {
+                MetadataType typeToInit = (MetadataType)type;
+
                 if (typeToInit.IsBeforeFieldInit)
                 {
                     // We can wait for field accesses to run .cctor

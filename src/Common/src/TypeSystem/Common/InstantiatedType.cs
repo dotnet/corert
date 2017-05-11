@@ -300,6 +300,15 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsModuleType
+        {
+            get
+            {
+                // The global module type cannot be generic.
+                return false;
+            }
+        }
+
         public override bool IsSealed
         {
             get
