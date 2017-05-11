@@ -347,6 +347,7 @@ namespace Internal.Runtime.TypeLoader
                         return genericArgIndex == data;
                     }
 
+                case TypeSignatureKind.BuiltIn:
                 case TypeSignatureKind.External:
                     {
                         RuntimeTypeHandle type2;
@@ -372,7 +373,16 @@ namespace Internal.Runtime.TypeLoader
                                 return false;
                         }
 
-                        RuntimeTypeHandle type1 = SigParsing.GetTypeFromNativeLayoutSignature(ref parser, moduleHandle, startOffset);
+                        RuntimeTypeHandle type1 = default(RuntimeTypeHandle);
+                        if (typeSignatureKind == TypeSignatureKind.External)
+                        {
+                            type1 = SigParsing.GetTypeFromNativeLayoutSignature(ref parser, moduleHandle, startOffset);
+                        }
+                        else
+                        {
+                            type1 = Internal.TypeSystem.WellKnownTypeExtensions.GetRuntimeTypeHandle((Internal.TypeSystem.WellKnownType)data);
+                        }
+
                         return type1.Equals(type2);
                     }
 
