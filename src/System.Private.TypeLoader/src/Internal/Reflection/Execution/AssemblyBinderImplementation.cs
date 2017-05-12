@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.Assemblies;
 
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;

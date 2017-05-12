@@ -5,7 +5,6 @@
 
 using global::System;
 using global::System.Reflection;
-using System.Reflection.Runtime.Assemblies;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
