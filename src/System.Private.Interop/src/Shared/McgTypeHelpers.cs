@@ -813,7 +813,7 @@ namespace System.Runtime.InteropServices
                 return !McgModuleManager.GetInterfaceDataByIndex(moduleIndex, interfaceIndex).DynamicAdapterClassType.IsNull(); ;
             }
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
             if (McgModuleManager.UseDynamicInterop && interfaceType.IsGenericType())
                 return false;
 #endif
@@ -1096,7 +1096,7 @@ namespace System.Runtime.InteropServices
             string ccwRuntimeClassName;
             if (McgModuleManager.TryGetCCWRuntimeClassName(ccwType, out ccwRuntimeClassName))
                 return ccwRuntimeClassName;
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
             if (McgModuleManager.UseDynamicInterop)
                 return DynamicInteropCCWTemplateHelper.GetCCWRuntimeClassName(ccwType);
 #endif
@@ -1207,7 +1207,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
         private static void GetIIDsImpl_dynamic(RuntimeTypeHandle typeHandle, System.Collections.Generic.Internal.List<Guid> iids)
         {
             // Enumerate interfaces from itself and its baseclass
@@ -1239,7 +1239,7 @@ namespace System.Runtime.InteropServices
             }
 
             // if there isn't any data about this type, just return empty list
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_MIN_WINRT
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
             if (McgModuleManager.UseDynamicInterop)
                 GetIIDsImpl_dynamic(ccwType, iids);
 #endif
