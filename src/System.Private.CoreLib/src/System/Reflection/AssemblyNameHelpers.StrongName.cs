@@ -5,7 +5,7 @@
 using System.Runtime;
 using System.Security;
 
-namespace System.Reflection.Runtime.Assemblies
+namespace System.Reflection
 {
     public static partial class AssemblyNameHelpers
     {
