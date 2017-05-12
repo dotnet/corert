@@ -94,10 +94,16 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType GetWellKnownType(TypeSystem.WellKnownType wellKnownType)
+        public override DefType GetWellKnownType(TypeSystem.WellKnownType wellKnownType, bool throwIfNotFound = true)
         {
             Debug.Assert(_wellKnownTypes != null, "Forgot to call SetSystemModule?");
-            return _wellKnownTypes[(int)wellKnownType - 1];
+
+            int typeIndex = (int)wellKnownType - 1;
+            DefType type = _wellKnownTypes[typeIndex];
+            if (type == null && throwIfNotFound) 
+                throw new TypeSystemException.TypeLoadException("System", s_wellKnownTypes[typeIndex].Name, SystemModule);
+
+            return type;
         }
 
         protected sealed internal override bool ComputeHasStaticConstructor(TypeDesc type)
