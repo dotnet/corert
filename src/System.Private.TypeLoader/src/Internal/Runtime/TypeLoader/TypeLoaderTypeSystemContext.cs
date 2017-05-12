@@ -5,7 +5,6 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
-using System.Reflection.Runtime.Assemblies;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;

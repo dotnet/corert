@@ -138,11 +138,11 @@
     <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
+    <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
+    <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
+    <Compile Include="System\Reflection\AssemblyNameLexer.cs" />
+    <Compile Include="System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="System\Reflection\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />

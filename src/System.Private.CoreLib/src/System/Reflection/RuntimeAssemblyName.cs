@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
 
-using Internal.Reflection.Augments;
-
-namespace System.Reflection.Runtime.Assemblies
+namespace System.Reflection
 {
     //
     // This is a private assembly name abstraction that's more suitable for use as keys in our caches.
@@ -166,7 +161,8 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
-                return AssemblyNameHelpers.ComputeDisplayName(this);
+                byte[] pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
+                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags.ExtractAssemblyNameFlags(), Flags.ExtractAssemblyContentType());
             }
         }
     }
