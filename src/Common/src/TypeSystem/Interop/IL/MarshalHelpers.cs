@@ -87,6 +87,12 @@ namespace Internal.TypeSystem.Interop
             return !IsBlittableType(type);
         }
 
+        // Set of functions that need to be resolved statically in order for 
+        // other P/Invokes to use lazy resolution.
+        // In particular, these functions are necessary to get the current application
+        // path, so having them use lazy resolution would end up causing StackOverflow
+        private static readonly string[] s_lazyPInvokeDependencies = { "GetModuleFileNameW", "CoTaskMemAlloc", "CoTaskMemFree",
+                            "CoreLibNative_GetEntrypointExecutableAbsolutePath", "CoreLibNative_MemAlloc", "CoreLibNative_MemFree" };
         /// <summary>
         /// Returns true if the PInvoke target should be resolved lazily.
         /// </summary>
@@ -95,6 +101,16 @@ namespace Internal.TypeSystem.Interop
             bool? forceLazyResolution = configuration.ForceLazyResolution;
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
+
+
+            PInvokeMetadata metadata = method.GetPInvokeMethodMetadata();
+            for (int i = 0; i < s_lazyPInvokeDependencies.Length; i++)
+            {
+                if (s_lazyPInvokeDependencies[i] == metadata.Module)
+                {
+                    return false;
+                }
+            }
 
             // In multi-module library mode, the WinRT p/invokes in System.Private.Interop cause linker failures
             // since we don't link against the OS libraries containing those APIs. Force them to be lazy.

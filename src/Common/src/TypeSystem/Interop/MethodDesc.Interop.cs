@@ -101,6 +101,18 @@ namespace Internal.TypeSystem
         ThrowOnUnmappableCharMask = 12288
     }
 
+    public enum DllImportSearchPath : int
+    {
+        LegacyBehavior = 0x0,
+        None = 0x1,
+        AssemblyDirectory = 0x2,
+        UseDllDirectoryForDependencies = 0x100,
+        ApplicationDirectory = 0x200,
+        UserDirectories = 0x400,
+        System32 = 0x800,
+        SafeDirectories = 0x1000
+    }
+
     public struct PInvokeFlags
     {
         private PInvokeAttributes _attributes;
@@ -293,18 +305,22 @@ namespace Internal.TypeSystem
 
         public readonly PInvokeFlags Flags;
 
-        public PInvokeMetadata(string module, string entrypoint, PInvokeAttributes attributes)
+        public readonly DllImportSearchPath DllImportSearchPath;
+
+        public PInvokeMetadata(string module, string entrypoint, PInvokeAttributes attributes, DllImportSearchPath dllImageSearchPath)
         {
             Name = entrypoint;
             Module = module;
             Flags = new PInvokeFlags(attributes);
+            DllImportSearchPath = dllImageSearchPath;
         }
 
-        public PInvokeMetadata(string module, string entrypoint, PInvokeFlags flags)
+        public PInvokeMetadata(string module, string entrypoint, PInvokeFlags flags, DllImportSearchPath dllImageSearchPath)
         {
             Name = entrypoint;
             Module = module;
             Flags = flags;
+            DllImportSearchPath = dllImageSearchPath;
         }
     }
 

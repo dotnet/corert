@@ -33,18 +33,11 @@ nativeArtifactRepo=${testExtRepo}native/
 dirSuffix=$(dirname ${PWD#$testExtRepo})/
 nativeDir=${nativeArtifactRepo}tests/src/${dirSuffix}
 
-# In OSX we copy the native component to the directory where the exectuable resides.
-# However, in Linux dlopen doesn't seem to look for current directory to resolve the dynamic library.
-# So instead we point LD_LIBRARY_PATH to the directory where the native component is.
+# We copy the native component to the directory where the exectuable resides.
 if [ -e ${nativeDir} ]; then
-    if [ "${CoreRT_BuildOS}" == "OSX" ]; then
-        echo "Copying native component from :"${nativeDir}
+	echo "Copying native component from :"${nativeDir}
         cp ${nativeDir}*.dylib  native/ 2>/dev/null
-    fi
-    if [ "${CoreRT_BuildOS}" == "Linux" ]; then
-        LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${nativeDir}
-        export LD_LIBRARY_PATH
-    fi
+        cp ${nativeDir}*.so native/ 2>/dev/null
 fi
 
 if [[ ! -f native/${TestFileName} ]]; then
@@ -52,10 +45,8 @@ if [[ ! -f native/${TestFileName} ]]; then
     exit -1
 fi
 
-pushd native/
-./${TestFileName} "$@"
+native/${TestFileName} "$@"
 testScriptExitCode=$?
-popd
 
 if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
     # Handle any core files generated when running the test.

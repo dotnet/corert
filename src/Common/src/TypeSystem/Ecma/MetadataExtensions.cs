@@ -53,6 +53,20 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaAssembly This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(metadataReader.GetAssemblyDefinition().GetCustomAttributes(), 
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This));
+        }
+
         public static CustomAttributeHandle GetCustomAttributeHandle(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
@@ -145,6 +159,45 @@ namespace Internal.TypeSystem.Ecma
                 // unsupported metadata
                 return false;
             }
+        }
+
+        public static DllImportSearchPath GetDllImportSearchPath(this EcmaMethod method)
+        {
+            DllImportSearchPath dllImportSearchPath = DllImportSearchPath.None;
+
+            if (!method.IsPInvoke)
+            {
+                return dllImportSearchPath;
+            }
+
+            var customAttributeValue = method.GetDecodedCustomAttribute(
+                               "System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
+
+            if (customAttributeValue != null &&
+                customAttributeValue.HasValue &&
+                customAttributeValue.Value.FixedArguments.Length == 1)
+            {
+                dllImportSearchPath = (DllImportSearchPath)customAttributeValue.Value.FixedArguments[0].Value;
+            }
+
+            return dllImportSearchPath;
+        }
+
+        public static DllImportSearchPath GetDllImportSearchPath(this EcmaAssembly assembly)
+        {
+            DllImportSearchPath dllImportSearchPath = DllImportSearchPath.None;
+
+            var customAttributeValue = assembly.GetDecodedCustomAttribute(
+                               "System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
+
+            if (customAttributeValue != null &&
+                customAttributeValue.HasValue &&
+                customAttributeValue.Value.FixedArguments.Length == 1)
+            {
+                dllImportSearchPath = (DllImportSearchPath)customAttributeValue.Value.FixedArguments[0].Value;
+            }
+
+            return dllImportSearchPath;
         }
 
         public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
