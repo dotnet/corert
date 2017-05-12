@@ -529,6 +529,9 @@ namespace System.Threading
 
         private volatile int numOutstandingThreadRequests = 0;
 
+        // The number of threads executing work items in the Dispatch method
+        internal volatile int numWorkingThreads;
+
         public ThreadPoolWorkQueue()
         {
             queueTail = queueHead = new QueueSegment();
@@ -690,6 +693,8 @@ namespace System.Threading
             //
             workQueue.MarkThreadRequestSatisfied();
 
+            Interlocked.Increment(ref workQueue.numWorkingThreads);
+
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
             // false later, but only if we're absolutely certain that the queue is empty.
@@ -750,6 +755,9 @@ namespace System.Threading
             }
             finally
             {
+                int numWorkers = Interlocked.Decrement(ref workQueue.numWorkingThreads);
+                Debug.Assert(numWorkers >= 0);
+
                 //
                 // If we are exiting for any reason other than that the queue is definitely empty, ask for another
                 // thread to pick up where we left off.
