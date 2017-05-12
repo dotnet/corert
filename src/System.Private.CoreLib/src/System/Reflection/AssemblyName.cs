@@ -5,7 +5,6 @@
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Configuration.Assemblies;
-using System.Reflection.Runtime.Assemblies;
 
 using Internal.Reflection.Augments;
 
@@ -121,7 +120,9 @@ namespace System.Reflection
             {
                 if (this.Name == null)
                     return string.Empty;
-                return AssemblyNameHelpers.ComputeDisplayName(this.ToRuntimeAssemblyName());
+                // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
+                byte[] pkt = _publicKeyToken ?? AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
+                return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType); 
             }
         }
 
