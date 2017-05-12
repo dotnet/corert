@@ -17,5 +17,27 @@ namespace System.Runtime.Loader
         public static event ResolveEventHandler TypeResolve;
         public static event ResolveEventHandler ResourceResolve;
         public static event ResolveEventHandler AssemblyResolve;
+
+        public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
+        public event Action<AssemblyLoadContext> Unloading;
+
+        private static AssemblyLoadContext s_defaultContext = new DefaultAssemblyLoadContext();
+        public static AssemblyLoadContext GetLoadContext(Assembly assembly)
+        {
+            return s_defaultContext;
+        }
+
+        public Assembly LoadFromAssemblyPath(string assemblyPath)
+        {
+            throw new PlatformNotSupportedException();
+        }
+    }
+
+    /// <summary>
+    /// AssemblyLoadContext is not supported in .NET Native. This is
+    /// just a dummy class to make applications compile.
+    /// </summary>
+    class DefaultAssemblyLoadContext : AssemblyLoadContext
+    {
     }
 }
