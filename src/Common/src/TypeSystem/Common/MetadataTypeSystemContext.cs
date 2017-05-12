@@ -26,7 +26,9 @@ namespace Internal.TypeSystem
         }
 
         private static readonly WellKnownTypeDef[] s_wellKnownTypes = new WellKnownTypeDef[] {
-            "Void",
+            // following required types are part of the CTS
+            WellKnownTypeDef.Optional("Void"),
+
             "Boolean",
             "Char",
             "SByte",
@@ -42,20 +44,20 @@ namespace Internal.TypeSystem
             "Single",
             "Double",
 
-            "ValueType",
-            "Enum",
-            "Nullable`1",
+            WellKnownTypeDef.Optional("ValueType"),
+            WellKnownTypeDef.Optional("Enum"),
+            WellKnownTypeDef.Optional("Nullable`1"),
 
             "Object",
             "String",
-            "Array",
-            "MulticastDelegate",
+            WellKnownTypeDef.Optional("Array"),
+            WellKnownTypeDef.Optional("MulticastDelegate"),
 
-            "RuntimeTypeHandle",
-            "RuntimeMethodHandle",
-            "RuntimeFieldHandle",
+            WellKnownTypeDef.Optional("RuntimeTypeHandle"),
+            WellKnownTypeDef.Optional("RuntimeMethodHandle"),
+            WellKnownTypeDef.Optional("RuntimeFieldHandle"),
 
-            "Exception",
+            WellKnownTypeDef.Optional("Exception"),
 
             "TypedReference",
             WellKnownTypeDef.Optional("ByReference`1"),
