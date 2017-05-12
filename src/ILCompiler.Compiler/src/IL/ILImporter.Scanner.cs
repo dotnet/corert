@@ -79,7 +79,7 @@ namespace Internal.IL
 
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
-            if (method.IsSharedByGenericInstantiations)
+            if (method.IsSharedByGenericInstantiations && !method.IsArrayAddressWithHiddenArgMethod())
             {
                 MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
                 _methodIL = new InstantiatedMethodIL(sharedMethod, methodIL.GetMethodILDefinition());
@@ -163,7 +163,7 @@ namespace Internal.IL
 
         private void ImportJmp(int token)
         {
-            throw new NotImplementedException();
+            // TODO
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -226,12 +226,15 @@ namespace Internal.IL
                     Debug.Assert(false); break;
             }
 
+            // If we're scanning the fallback body because scanning the real body failed, don't trigger cctor.
+            // Accessing the cctor could have been a reason why we failed.
             if (!_isFallbackBodyCompilation)
             {
                 // Do we need to run the cctor?
                 TypeDesc owningType = runtimeDeterminedMethod.OwningType;
                 if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
                 {
+                    // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
                     {
                         // Accessing the static base will trigger the cctor.
@@ -256,6 +259,10 @@ namespace Internal.IL
                 }
                 else
                 {
+                    // Nullable needs to be unwrapped.
+                    if (owningType.IsNullable)
+                        owningType = owningType.Instantiation[0];
+
                     if (owningType.IsRuntimeDeterminedSubtype)
                     {
                         _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
@@ -265,7 +272,15 @@ namespace Internal.IL
                         _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
                     }
 
-                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
+                    if (owningType.IsMdArray)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr_NonVarArg), reason);
+                        return;
+                    }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewObject), reason);
+                    }
                 }
 
                 if (owningType.IsDelegate)
@@ -278,11 +293,7 @@ namespace Internal.IL
                         ILOpcode previousOpcode = (ILOpcode)(0x100 + _ilBytes[_previousInstructionOffset + 1]);
                         if (previousOpcode == ILOpcode.ldvirtftn || previousOpcode == ILOpcode.ldftn)
                         {
-                            int tokenOffset = _previousInstructionOffset + 2;
-                            int delTargetToken = (int)(_ilBytes[tokenOffset]
-                                + (_ilBytes[tokenOffset + 1] << 8)
-                                + (_ilBytes[tokenOffset + 2] << 16)
-                                + (_ilBytes[tokenOffset + 3] << 24));
+                            int delTargetToken = ReadILTokenAt(_previousInstructionOffset + 2);
                             var delTargetMethod = (MethodDesc)_methodIL.GetObject(delTargetToken);
                             TypeDesc canonDelegateType = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                             DelegateCreationInfo info = _compilation.GetDelegateCtor(canonDelegateType, delTargetMethod, previousOpcode == ILOpcode.ldvirtftn);
@@ -300,6 +311,13 @@ namespace Internal.IL
                         }
                     }
                 }
+            }
+
+            if (method.OwningType.IsDelegate && method.Name == "Invoke")
+            {
+                // TODO: might not want to do this if scanning for reflection.
+                // This is expanded as an intrinsic, not a function call.
+                return;
             }
 
             TypeDesc exactType = method.OwningType;
@@ -340,6 +358,7 @@ namespace Internal.IL
                 }
                 else if (_constrained.IsValueType)
                 {
+                    // We'll need to box `this`.
                     AddBoxingDependencies(_constrained, reason);
                 }
 
@@ -394,12 +413,17 @@ namespace Internal.IL
             }
             else if (directCall)
             {
+                bool referencingArrayAddressMethod = false;
+
                 if (targetMethod.IsIntrinsic)
                 {
                     // If this is an intrinsic method with a callsite-specific expansion, this will replace
                     // the method with a method the intrinsic expands into. If it's not the special intrinsic,
                     // method stays unchanged.
                     targetMethod = _compilation.ExpandIntrinsicForCallsite(targetMethod, _canonMethod);
+
+                    // Array address method requires special dependency tracking.
+                    referencingArrayAddressMethod = targetMethod.IsArrayAddressMethod();
                 }
 
                 MethodDesc concreteMethod = targetMethod;
@@ -411,7 +435,7 @@ namespace Internal.IL
                 }
                 else if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
                 {
-                    if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint)
+                    if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
                         _dependencies.Add(_factory.RuntimeDeterminedMethod(runtimeDeterminedMethod), reason);
                     }
@@ -429,7 +453,7 @@ namespace Internal.IL
                     {
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
-                    else if (targetMethod.RequiresInstMethodTableArg())
+                    else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
@@ -438,7 +462,18 @@ namespace Internal.IL
                     if (instParam != null)
                     {
                         _dependencies.Add(instParam, reason);
-                        _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
+
+                        if (!referencingArrayAddressMethod)
+                        {
+                            _dependencies.Add(_compilation.NodeFactory.ShadowConcreteMethod(concreteMethod), reason);
+                        }
+                        else
+                        {
+                            // We don't want array Address method to be modeled in the generic dependency analysis.
+                            // The method doesn't actually have runtime determined dependencies (won't do
+                            // any generic lookups).
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(targetMethod), reason);
+                        }
                     }
                     else if (targetMethod.AcquiresInstMethodTableFromThis())
                     {
@@ -549,12 +584,12 @@ namespace Internal.IL
 
         private void ImportRefAnyVal(int token)
         {
-            throw new NotImplementedException();
+            // TODO
         }
 
         private void ImportMkRefAny(int token)
         {
-            throw new NotImplementedException();
+            // TODO
         }
 
         private void ImportLdToken(int token)
@@ -596,6 +631,22 @@ namespace Internal.IL
             {
                 Debug.Assert(obj is FieldDesc);
 
+                // First check if this is a ldtoken Field / InitializeArray sequence.
+                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
+                if (nextBasicBlock == null)
+                {
+                    if ((ILOpcode)_ilBytes[_currentOffset] == ILOpcode.call)
+                    {
+                        int methodToken = ReadILTokenAt(_currentOffset + 1);
+                        var method = (MethodDesc)_methodIL.GetObject(methodToken);
+                        if (IsRuntimeHelpersInitializeArray(method))
+                        {
+                            // Codegen expands this and doesn't do the normal ldtoken.
+                            return;
+                        }
+                    }
+                }
+
                 var field = (FieldDesc)obj;
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
@@ -612,17 +663,19 @@ namespace Internal.IL
 
         private void ImportRefAnyType()
         {
-            throw new NotImplementedException();
+            // TODO
         }
 
         private void ImportArgList()
         {
-            throw new NotImplementedException();
         }
 
         private void ImportConstrainedPrefix(int token)
         {
+            // We convert to canon, because that's what ryujit would see.
             _constrained = (TypeDesc)_methodIL.GetObject(token);
+            if (_constrained.IsRuntimeDeterminedSubtype)
+                _constrained = _constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
         }
 
         private void ImportFieldAccess(int token, bool isStatic, string reason)
@@ -751,6 +804,28 @@ namespace Internal.IL
         private void ImportFallthrough(BasicBlock next)
         {
             MarkBasicBlock(next);
+        }
+
+        private int ReadILTokenAt(int ilOffset)
+        {
+            return (int)(_ilBytes[ilOffset] 
+                + (_ilBytes[ilOffset + 1] << 8)
+                + (_ilBytes[ilOffset + 2] << 16)
+                + (_ilBytes[ilOffset + 3] << 24));
+        }
+
+        private bool IsRuntimeHelpersInitializeArray(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "InitializeArray")
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
+                }
+            }
+
+            return false;
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
