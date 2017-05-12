@@ -63,7 +63,7 @@ extern "C" int32_t CoreLibNative_GetExecutableAbsolutePath(char* buffer, int32_t
     }
     else
     {
-        // Erorr
+        // Error
         result = -1;
     }
 

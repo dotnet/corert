@@ -35,7 +35,7 @@ namespace System
                     continue;
                 }
 
-                // Return path to the executable image including the termiating slash
+                // Return path to the executable image including the terminating slash
                 string fileName = buffer.ToString();
                 return fileName.Substring(0, fileName.LastIndexOf('\\') + 1);
             }

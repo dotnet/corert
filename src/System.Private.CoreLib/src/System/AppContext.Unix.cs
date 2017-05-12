@@ -44,7 +44,7 @@ namespace System
                     string fileName = new string(buffer, 0, actualSize);
                     ArrayPool<char>.Shared.Return(buffer);
 
-                    // Return path to the executable image including the termiating slash
+                    // Return path to the executable image including the terminating slash
                     return fileName.Substring(0, fileName.LastIndexOf(Path.DirectorySeparatorChar) + 1);
                 }
 
