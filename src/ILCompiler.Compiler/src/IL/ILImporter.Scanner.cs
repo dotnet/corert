@@ -47,7 +47,7 @@ namespace Internal.IL
         private TypeDesc _constrained;
 
         private int _currentInstructionOffset;
-        private int _previousInstructionOffset = -1;
+        private int _previousInstructionOffset;
 
         private class ExceptionRegion
         {
@@ -153,6 +153,9 @@ namespace Internal.IL
                         MarkBasicBlock(_basicBlocks[region.FilterOffset]);
                 }
             }
+
+            _currentInstructionOffset = -1;
+            _previousInstructionOffset = -1;
         }
 
         private void StartImportingInstruction()
@@ -320,6 +323,21 @@ namespace Internal.IL
                 return;
             }
 
+            if (method.IsIntrinsic)
+            {
+                if (IsRuntimeHelpersInitializeArray(method))
+                {
+                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.ldtoken)
+                        return;
+                }
+
+                if (IsRuntimeTypeHandleGetValueInternal(method))
+                {
+                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.ldtoken)
+                        return;
+                }
+            }
+
             TypeDesc exactType = method.OwningType;
 
             bool resolvedConstraint = false;
@@ -367,6 +385,16 @@ namespace Internal.IL
 
             MethodDesc targetMethod = methodAfterConstraintResolution;
 
+            bool exactContextNeedsRuntimeLookup;
+            if (targetMethod.HasInstantiation)
+            {
+                exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
+
             //
             // Determine whether to perform direct call
             //
@@ -402,7 +430,7 @@ namespace Internal.IL
                 // Needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
 
-                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                if (exactContextNeedsRuntimeLookup)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod), reason);
                 }
@@ -433,7 +461,7 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.StringAllocator(targetMethod), reason);
                 }
-                else if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                else if (exactContextNeedsRuntimeLookup)
                 {
                     if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
@@ -489,7 +517,7 @@ namespace Internal.IL
             {
                 // Generic virtual method call
 
-                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                if (exactContextNeedsRuntimeLookup)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod), reason);
                 }
@@ -497,6 +525,8 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.RuntimeMethodHandle(runtimeDeterminedMethod), reason);
                 }
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GVMLookupForSlot), reason);
             }
             else
             {
@@ -511,7 +541,7 @@ namespace Internal.IL
                     helper = ReadyToRunHelperId.VirtualCall;
                 }
 
-                if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod && targetMethod.OwningType.IsInterface)
+                if (exactContextNeedsRuntimeLookup && targetMethod.OwningType.IsInterface)
                 {
                     _dependencies.Add(GetGenericLookupHelper(helper, runtimeDeterminedMethod), reason);
                 }
@@ -529,6 +559,15 @@ namespace Internal.IL
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
+            // Is this a verifiable delegate creation? If so, we will handle it when we reach the newobj
+            if (_ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
+            {
+                int delegateToken = ReadILTokenAt(_currentOffset + 1);
+                var delegateType = ((MethodDesc)_methodIL.GetObject(delegateToken)).OwningType;
+                if (delegateType.IsDelegate)
+                    return;
+            }
+
             ImportCall(opCode, token);
         }
         
@@ -822,6 +861,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsRuntimeTypeHandleGetValueInternal(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "GetValueInternal")
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "RuntimeTypeHandle" && owningType.Namespace == "System";
                 }
             }
 

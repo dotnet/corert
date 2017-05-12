@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
                 // TODO: come up with a scheme where this can be shared between codegen backends and the scanner
                 if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
                 {
-                    return new ScannedMethodNode(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
                 }
                 else if (method.IsArrayAddressMethod())
                 {
