@@ -98,12 +98,10 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
 
-        public static DependencyList GetGenericMethodsHashtableDependenciesForMethod(NodeFactory factory, MethodDesc method)
+        public static void GetGenericMethodsHashtableDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
-
-            DependencyList dependencies = new DependencyList();
-
+            
             // Method's containing type
             IEETypeNode containingTypeNode = factory.NecessaryTypeSymbol(method.OwningType);
             dependencies.Add(new DependencyListEntry(containingTypeNode, "GenericMethodsHashtable entry containing type"));
@@ -122,8 +120,6 @@ namespace ILCompiler.DependencyAnalysis
 
             ISymbolNode dictionaryNode = factory.MethodGenericDictionary(method);
             dependencies.Add(new DependencyListEntry(dictionaryNode, "GenericMethodsHashtable entry dictionary"));
-
-            return dependencies;
         }
     }
 }

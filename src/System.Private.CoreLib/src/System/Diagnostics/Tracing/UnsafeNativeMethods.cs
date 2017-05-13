@@ -176,7 +176,7 @@ namespace Microsoft.Win32
                 TraceStackTracingInfo,
                 MaxTraceSetInfoClass
             };
-
+#if PLATFORM_WINDOWS
             internal struct TRACE_GUID_INFO
             {
                 public int InstanceCount;
@@ -190,6 +190,7 @@ namespace Microsoft.Win32
                 public int Pid;
                 public int Flags;
             };
+#endif
 #pragma warning disable CS0649
             internal struct TRACE_ENABLE_INFO
             {

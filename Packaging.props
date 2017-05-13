@@ -21,6 +21,7 @@
     <!-- by default all packages will use the same version which revs with respect to product version -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">1.0.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <LicenseUrl>https://github.com/dotnet/corert/blob/master/LICENSE.TXT</LicenseUrl>
   </PropertyGroup>
 
   <Import Condition="Exists('$(PackageProjectDirectory)baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PackageProjectDirectory)baseline/baseline.props" />

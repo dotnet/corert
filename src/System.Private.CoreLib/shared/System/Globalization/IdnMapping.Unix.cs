@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Globalization
 {
     sealed partial class IdnMapping
     {
         private unsafe string GetAsciiCore(char* unicode, int count)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             uint flags = Flags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
 
@@ -48,6 +52,8 @@ namespace System.Globalization
 
         private unsafe string GetUnicodeCore(char* ascii, int count)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             uint flags = Flags;
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
 
@@ -69,6 +75,8 @@ namespace System.Globalization
 
         private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             int realLen = Interop.GlobalizationInterop.ToUnicode(flags, ascii, count, output, outputLength);
 
             if (realLen == 0)

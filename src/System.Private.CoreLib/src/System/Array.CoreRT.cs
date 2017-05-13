@@ -247,17 +247,20 @@ namespace System
             public byte Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawSzArrayData()
         {
             Debug.Assert(IsSzArray);
             return ref Unsafe.As<RawData>(this).Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawArrayData()
         {
             return ref Unsafe.Add(ref Unsafe.As<RawData>(this).Data, (int)(EETypePtr.BaseSize - SZARRAY_BASE_SIZE));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetRawMultiDimArrayBounds()
         {
             Debug.Assert(!IsSzArray);

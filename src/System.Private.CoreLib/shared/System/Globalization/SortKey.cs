@@ -26,16 +26,11 @@ namespace System.Globalization
         //                        Internal Information                        //
         //--------------------------------------------------------------------//
 
-        //
-        //  Variables.
-        //
-
         [OptionalField(VersionAdded = 3)]
         internal string _localeName;       // locale identifier
 
         [OptionalField(VersionAdded = 1)] // LCID field so serialization is Whidbey compatible though we don't officially support it
         internal int _win32LCID;
-        // Whidbey serialization 
 
         internal CompareOptions _options;  // options
         internal string _string;         // original string

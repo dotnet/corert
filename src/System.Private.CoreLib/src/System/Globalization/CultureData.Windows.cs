@@ -188,7 +188,7 @@ namespace System.Globalization
 
         internal static unsafe int GetLocaleInfoEx(string lpLocaleName, uint lcType, void* lpLCData, int cchData)
         {
-            // Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.Kernel32.GetLocaleInfoEx(lpLocaleName, lcType, lpLCData, cchData);
         }

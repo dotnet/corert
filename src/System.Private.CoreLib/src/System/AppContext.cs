@@ -23,6 +23,7 @@ namespace System
         }
         private static readonly Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
         private static Dictionary<String, Object> s_localStore = new Dictionary<String, Object>();
+        private static string s_defaultBaseDirectory;
 
         static AppContext()
         {
@@ -35,6 +36,17 @@ namespace System
             get
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        public static string BaseDirectory
+        {
+            get
+            {
+                // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type. 
+                // Otherwise the caller will get invalid cast exception
+                return (string)GetData("APP_CONTEXT_BASE_DIRECTORY") ?? 
+                    (s_defaultBaseDirectory ?? (s_defaultBaseDirectory = GetBaseDirectoryCore()));
             }
         }
 

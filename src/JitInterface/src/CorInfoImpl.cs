@@ -1491,16 +1491,10 @@ namespace Internal.JitInterface
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
 
-            MetadataType typeToInit = (MetadataType)type;
-
-            if (typeToInit.IsModuleType)
-            {
-                // For both jitted and ngen code the global class is always considered initialized
-                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
-            }
-
             if (fd == null)
             {
+                MetadataType typeToInit = (MetadataType)type;
+
                 if (typeToInit.IsBeforeFieldInit)
                 {
                     // We can wait for field accesses to run .cctor
@@ -2907,16 +2901,27 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
                 }
             }
-            else if((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            else
             {
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                ReadyToRunHelperId helperId;
+                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    helperId = ReadyToRunHelperId.ResolveVirtualFunction;
+                }
+                else
+                {
+                    // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
+                    // call that should not be inlined.
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                    helperId = ReadyToRunHelperId.VirtualCall;
+                }
 
-                // If this is a non-interface/non-GVM call, we actually don't need a runtime lookup to find the target.
+                // If this is a non-interface call, we actually don't need a runtime lookup to find the target.
                 // We don't even need to keep track of the runtime-determined method being called because the system ensures
                 // that if e.g. Foo<__Canon>.GetHashCode is needed and we're generating a dictionary for Foo<string>,
                 // Foo<string>.GetHashCode is needed too.
-                if (pResult.exactContextNeedsRuntimeLookup &&
-                    (targetMethod.HasInstantiation || targetMethod.OwningType.IsInterface))
+                if (pResult.exactContextNeedsRuntimeLookup && targetMethod.OwningType.IsInterface)
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
                     pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
@@ -2930,7 +2935,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.ResolveVirtualFunction;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
                 }
                 else
                 {
@@ -2943,51 +2948,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.constLookup = 
                         CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, slotDefiningMethod));
-                }
-
-                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
-                // TODO: Optimize this
-                pResult.nullInstanceCheck = true;
-            }
-            else
-            {
-                // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
-                // call that should not be inlined.
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-
-                // If this is a non-interface/non-GVM call, we actually don't need a runtime lookup to find the target.
-                // We don't even need to keep track of the runtime-determined method being called because the system ensures
-                // that if e.g. Foo<__Canon>.GetHashCode is needed and we're generating a dictionary for Foo<string>,
-                // Foo<string>.GetHashCode is needed too.
-                if (pResult.exactContextNeedsRuntimeLookup &&
-                    (targetMethod.HasInstantiation || targetMethod.OwningType.IsInterface))
-                {
-                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
-                    {
-                        return;
-                    }
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualCall;
-                }
-                else
-                {
-                    pResult.exactContextNeedsRuntimeLookup = false;
-
-                    // Get the slot defining method to make sure our virtual method use tracking gets this right.
-                    // For normal C# code the targetMethod will always be newslot.
-                    MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
-                        targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
-
-                    pResult.codePointerOrStubLookup.constLookup =
-                            CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, slotDefiningMethod));
+                            _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
                 }
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks

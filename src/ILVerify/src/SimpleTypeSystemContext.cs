@@ -85,6 +85,15 @@ namespace ILVerify
 
         public EcmaModule GetModuleFromPath(string filePath)
         {
+            // This is called once for every assembly that should be verified, so linear search is acceptable.
+            foreach (KeyValuePair<EcmaModule, ModuleData> entry in _moduleData)
+            {
+                EcmaModule curModule = entry.Key;
+                ModuleData curData = entry.Value;
+                if (curData.Path == filePath)
+                    return curModule;
+            }
+            
             PEReader peReader = new PEReader(File.OpenRead(filePath));
             EcmaModule module = EcmaModule.Create(this, peReader);
 

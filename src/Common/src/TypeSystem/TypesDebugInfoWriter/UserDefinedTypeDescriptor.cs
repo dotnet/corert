@@ -14,6 +14,21 @@ namespace Internal.TypeSystem.TypesDebugInfo
         {
             _objectWriter = objectWriter;
         }
+
+        public uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteIndex)
+        {
+            uint typeIndex = 0;
+            if (type.IsPrimitive)
+            {
+                typeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
+            }
+            else
+            {
+                typeIndex = GetTypeIndex(type, needsCompleteIndex);
+            }
+            return typeIndex;
+        }
+
         public uint GetTypeIndex(TypeDesc type, bool needsCompleteType)
         {
             uint variableTypeIndex = 0;
@@ -58,7 +73,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 }
             }
             enumTypeDescriptor.ElementCount = (ulong)fieldsDescriptors.Count;
-            enumTypeDescriptor.ElementType = _objectWriter.GetVariableTypeIndex(defType.UnderlyingType, true);
+            enumTypeDescriptor.ElementType = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(defType.UnderlyingType);
             enumTypeDescriptor.Name = defType.Name;
             enumTypeDescriptor.UniqueName = defType.GetFullName();
             EnumRecordTypeDescriptor[] typeRecords = new EnumRecordTypeDescriptor[enumTypeDescriptor.ElementCount];
@@ -131,7 +146,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             classTypeDescriptor.BaseClassId = 0;
             if (type.HasBaseType && !type.IsValueType)
             {
-                classTypeDescriptor.BaseClassId = _objectWriter.GetVariableTypeIndex(defType.BaseType, false);
+                classTypeDescriptor.BaseClassId = GetVariableTypeIndex(defType.BaseType, false);
             }
             uint typeIndex = _objectWriter.GetClassTypeIndex(classTypeDescriptor);
             _knownTypes[type] = typeIndex;
@@ -142,7 +157,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 if (fieldDesc.HasRva || fieldDesc.IsLiteral)
                     continue;
                 DataFieldDescriptor field = new DataFieldDescriptor();
-                field.FieldTypeIndex = _objectWriter.GetVariableTypeIndex(fieldDesc.FieldType, false);
+                field.FieldTypeIndex = GetVariableTypeIndex(fieldDesc.FieldType, false);
                 field.Offset = fieldDesc.Offset.AsInt;
                 field.Name = fieldDesc.Name;
                 fieldsDescs.Add(field);
@@ -153,7 +168,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             {
                 fields[i] = fieldsDescs[i];
             }
-            ClassFieldsTypeDescriptior fieldsDescriptor = new ClassFieldsTypeDescriptior();
+            ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor();
             fieldsDescriptor.FieldsCount = fieldsDescs.Count;
             fieldsDescriptor.Size = defType.GetElementSize().AsInt;
 

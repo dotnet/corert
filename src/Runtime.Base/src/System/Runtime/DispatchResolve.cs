@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -10,8 +11,7 @@ namespace System.Runtime
 {
     internal static unsafe class DispatchResolve
     {
-        // CS0649: Field '{blah}' is never assigned to, and will always have its default value
-#pragma warning disable 649
+        [StructLayout(LayoutKind.Sequential)]
         public struct DispatchMapEntry
         {
             public ushort _usInterfaceIndex;
@@ -19,12 +19,12 @@ namespace System.Runtime
             public ushort _usImplMethodSlot;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct DispatchMap
         {
             public uint _entryCount;
             public DispatchMapEntry _dispatchMap; // Actually a variable length array
         }
-#pragma warning restore
 
         public static IntPtr FindInterfaceMethodImplementationTarget(EEType* pTgtType,
                                                                  EEType* pItfType,
@@ -41,7 +41,6 @@ namespace System.Runtime
 
             // Start at the current type and work up the inheritance chain
             EEType* pCur = pTgtType;
-            UInt32 iCurInheritanceChainDelta = 0;
 
             if (pItfType->IsCloned)
                 pItfType = pItfType->CanonicalEEType;
@@ -70,7 +69,6 @@ namespace System.Runtime
                     pCur = pCur->GetArrayEEType();
                 else
                     pCur = pCur->NonArrayBaseType;
-                iCurInheritanceChainDelta++;
             }
             return IntPtr.Zero;
         }
@@ -223,12 +221,10 @@ namespace System.Runtime
 
                         // Grab instantiation details for the candidate interface.
                         EETypeRef* pCurEntryInstantiation = pCurEntryType->GenericArguments;
-                        int curEntryArity = (int)pCurEntryType->GenericArity;
-                        GenericVariance* pCurEntryVarianceInfo = pCurEntryType->GenericVariance;
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
-                        Debug.Assert(itfArity == curEntryArity, "arity mismatch betweeen generic instantiations");
+                        Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch betweeen generic instantiations");
 
                         if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance))
                         {

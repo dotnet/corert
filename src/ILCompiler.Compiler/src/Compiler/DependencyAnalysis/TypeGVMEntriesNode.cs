@@ -61,10 +61,10 @@ namespace ILCompiler.DependencyAnalysis
                 _staticDependencies = new DependencyList();
 
                 foreach(var entry in ScanForGenericVirtualMethodEntries())
-                    _staticDependencies.AddRange(GenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(context, entry.CallingMethod, entry.ImplementationMethod));
+                    GenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationMethod);
 
                 foreach (var entry in ScanForInterfaceGenericVirtualMethodEntries())
-                    _staticDependencies.AddRange(InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod));
+                    InterfaceGenericVirtualMethodTableNode.GetGenericVirtualMethodImplementationDependencies(ref _staticDependencies, context, entry.CallingMethod, entry.ImplementationType, entry.ImplementationMethod);
             }
 
             return _staticDependencies;

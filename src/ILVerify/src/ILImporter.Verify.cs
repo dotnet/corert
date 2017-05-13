@@ -91,6 +91,9 @@ namespace Internal.IL
             public bool TryStart;
             public bool FilterStart;
             public bool HandlerStart;
+
+            public int? TryIndex;
+            public int? HandlerIndex;
         };
 
         void Push(StackValue value)
@@ -146,8 +149,62 @@ namespace Internal.IL
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
-
+            FindEnclosingExceptionRegions();
             ImportBasicBlocks();
+        }
+
+        private void FindEnclosingExceptionRegions()
+        {
+            for (int i = 0; i < _basicBlocks.Length; i++)
+            {
+                if (_basicBlocks[i] == null)
+                    continue;
+
+                var basicBlock = _basicBlocks[i];
+                var offset = basicBlock.StartOffset;
+
+                for (int j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    var r = _exceptionRegions[j].ILRegion;
+
+                    if (r.TryOffset <= offset && r.TryOffset + r.TryLength >= offset)
+                    {
+                        if (!basicBlock.TryIndex.HasValue)
+                        {
+                            basicBlock.TryIndex = j;
+                        }
+                        else
+                        {
+                            var currentlySelected = _exceptionRegions[basicBlock.TryIndex.Value].ILRegion;
+                            var probeItem = _exceptionRegions[j].ILRegion;
+
+                            if (currentlySelected.TryOffset < probeItem.TryOffset &&
+                                currentlySelected.TryOffset + currentlySelected.TryLength > probeItem.TryOffset + probeItem.TryLength)
+                            {
+                                basicBlock.TryIndex = j;
+                            }
+                        }
+                    }
+                    if (r.HandlerOffset <= offset && r.HandlerOffset + r.HandlerLength >= offset)
+                    {
+                        if (!basicBlock.HandlerIndex.HasValue)
+                        {
+                            basicBlock.HandlerIndex = j;
+                        }
+                        else
+                        {
+                            var currentlySelected = _exceptionRegions[basicBlock.HandlerIndex.Value].ILRegion;
+                            var probeItem = _exceptionRegions[j].ILRegion;
+
+                            if (currentlySelected.HandlerOffset < probeItem.HandlerOffset &&
+                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength > probeItem.HandlerOffset + probeItem.HandlerLength)
+                            {
+                                basicBlock.HandlerIndex = j;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         void AbortBasicBlockVerification()
@@ -443,8 +500,7 @@ namespace Internal.IL
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
                 Debug.Assert(basicBlock.EntryStack == null);
-
-                // TODO: Remember the kind of handler the block is for instead
+                                
                 for (int i = 0; i < _exceptionRegions.Length; i++)
                 {
                     var r = _exceptionRegions[i];
@@ -820,7 +876,7 @@ namespace Internal.IL
 
         void ImportCalli(int token)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportCalli)} not implemented");
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
@@ -834,7 +890,7 @@ namespace Internal.IL
 
             // TODO
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
         }
 
         void ImportLoadInt(long value, StackValueKind kind)
@@ -962,7 +1018,7 @@ namespace Internal.IL
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportSwitchJump)} not implemented");
         }
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1057,7 +1113,7 @@ namespace Internal.IL
 
         void ImportShiftOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportShiftOperation)} not implemented");
         }
 
         void ImportCompareOperation(ILOpcode opcode)
@@ -1213,7 +1269,7 @@ namespace Internal.IL
 
         void ImportStoreIndirect(TypeDesc type)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportStoreIndirect)} not implemented");
         }
 
         void ImportThrow()
@@ -1418,7 +1474,7 @@ namespace Internal.IL
 
         void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportUnaryOperation)} not implemented");
         }
 
         void ImportCpOpj(int token)
@@ -1538,7 +1594,26 @@ namespace Internal.IL
 
         void ImportRethrow()
         {
-            // TODO:
+            if (_currentBasicBlock.HandlerIndex.HasValue)
+            {
+                var eR = _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion;
+
+                //in case a simple catch
+                if (eR.Kind == ILExceptionRegionKind.Catch)
+                {
+                    return;
+                }
+
+                //in case a filter make sure rethrow is within the handler
+                if (eR.Kind == ILExceptionRegionKind.Filter &&
+                    _currentOffset >= eR.HandlerOffset &&
+                    _currentOffset <= eR.HandlerOffset + eR.HandlerLength)
+                {
+                    return;
+                }
+            }
+
+            VerificationError(VerifierError.Rethrow);
         }
 
         void ImportSizeOf(int token)
