@@ -95,15 +95,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Returns true if '<paramref name="method"/>' is the "Address" method on multidimensional array types.
-        /// </summary>
-        public static bool IsArrayAddressWithHiddenArgMethod(this MethodDesc method)
-        {
-            var arrayMethod = method as ArrayMethod;
-            return arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.AddressWithHiddenArg;
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this type has any generic virtual methods.
         /// </summary>
         public static bool HasGenericVirtualMethod(this TypeDesc type)

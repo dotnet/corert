@@ -79,10 +79,11 @@ namespace Internal.IL
 
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
-            if (method.IsSharedByGenericInstantiations && !method.IsArrayAddressWithHiddenArgMethod())
+            MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
+            if (methodIL != uninstantiatiedMethodIL)
             {
                 MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
-                _methodIL = new InstantiatedMethodIL(sharedMethod, methodIL.GetMethodILDefinition());
+                _methodIL = new InstantiatedMethodIL(sharedMethod, uninstantiatiedMethodIL);
             }
             else
             {
