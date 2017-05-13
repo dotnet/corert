@@ -51,6 +51,10 @@ namespace Internal.TypeSystem.TypesDebugInfo
             {
                 return GetEnumTypeIndex(type);
             }
+            else if (type.IsArray)
+            {
+                return GetArrayTypeIndex(type);
+            }
             else if (type.IsDefType)
             {
                 return GetClassTypeIndex(type, needsCompleteType);
@@ -86,6 +90,29 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 typeRecords[i] = recordTypeDescriptor;
             }
             uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
+            _knownTypes[type] = typeIndex;
+            _completeKnownTypes[type] = typeIndex;
+            return typeIndex;
+        }
+
+        public uint GetArrayTypeIndex(TypeDesc type)
+        {
+            System.Diagnostics.Debug.Assert(type.IsArray, "GetArrayTypeIndex was called with wrong type");
+            ArrayType arrayType = (ArrayType)type;
+            ArrayTypeDescriptor arrayTypeDescriptor = new ArrayTypeDescriptor();
+            arrayTypeDescriptor.ElementType = GetVariableTypeIndex(arrayType.ElementType, false);
+            arrayTypeDescriptor.Size = (uint)arrayType.GetElementSize().AsInt;
+            arrayTypeDescriptor.Rank = (uint)arrayType.Rank;
+            arrayTypeDescriptor.IsMultiDimensional = arrayType.IsMdArray? 1:0;
+
+            ClassTypeDescriptor classDescriptor = new ClassTypeDescriptor();
+
+            classDescriptor.BaseClassId = GetVariableTypeIndex(arrayType.BaseType, false);
+            classDescriptor.IsStruct = 0;
+
+            classDescriptor.Name = _objectWriter.GetMangledName(type);
+
+            uint typeIndex = _objectWriter.GetArrayTypeIndex(classDescriptor, arrayTypeDescriptor);
             _knownTypes[type] = typeIndex;
             _completeKnownTypes[type] = typeIndex;
             return typeIndex;

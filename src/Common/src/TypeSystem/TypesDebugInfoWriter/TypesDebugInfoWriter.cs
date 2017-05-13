@@ -12,7 +12,11 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
-        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptor, DataFieldDescriptor[] fields);
+
+        uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriprtor);
+
+        string GetMangledName(TypeDesc type);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -53,5 +57,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public ulong Size;
         public int FieldsCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ArrayTypeDescriptor
+    {
+        public uint Rank;
+        public uint ElementType;
+        public uint Size;
+        public int IsMultiDimensional;
     }
 }
