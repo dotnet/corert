@@ -21,10 +21,11 @@ namespace System.Runtime.Loader
         public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
         public event Action<AssemblyLoadContext> Unloading;
 
-        private static AssemblyLoadContext s_defaultContext = new DefaultAssemblyLoadContext();
+        public static AssemblyLoadContext Default { get; } = new DefaultAssemblyLoadContext();
+
         public static AssemblyLoadContext GetLoadContext(Assembly assembly)
         {
-            return s_defaultContext;
+            return Default;
         }
 
         public Assembly LoadFromAssemblyPath(string assemblyPath)
@@ -37,7 +38,7 @@ namespace System.Runtime.Loader
     /// AssemblyLoadContext is not supported in .NET Native. This is
     /// just a dummy class to make applications compile.
     /// </summary>
-    class DefaultAssemblyLoadContext : AssemblyLoadContext
+    internal class DefaultAssemblyLoadContext : AssemblyLoadContext
     {
     }
 }
