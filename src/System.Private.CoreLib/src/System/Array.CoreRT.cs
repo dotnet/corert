@@ -990,6 +990,13 @@ namespace System
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(rank == eeType.ArrayRank);
 
+            // Code below assumes 0 lower bounds. MdArray of rank 1 with zero lower bounds should never be allocated.
+            // The runtime always allocates an SzArray for those:
+            // * newobj instance void int32[0...]::.ctor(int32)" actually gives you int[]
+            // * int[] is castable to int[*] to make it mostly transparent
+            // The callers need to check for this.
+            Debug.Assert(rank != 1);
+
             ulong totalLength = 1;
             bool maxArrayDimensionLengthOverflow = false;
 
@@ -1679,11 +1686,9 @@ namespace System
         }
     }
 
-#if CORERT
     public class MDArray
     {
         public const int MinRank = 1;
         public const int MaxRank = 32;
     }
-#endif
 }

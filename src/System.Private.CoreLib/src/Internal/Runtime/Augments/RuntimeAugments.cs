@@ -147,6 +147,14 @@ namespace Internal.Runtime.Augments
                 }
             }
 
+            if (lengths.Length == 1)
+            {
+                // We just checked above that all lower bounds are zero. In that case, we should actually allocate
+                // a new SzArray instead.
+                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
+                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), lengths[0]);
+            }
+
             // Create a local copy of the lenghts that cannot be motified by the caller
             int* pLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
