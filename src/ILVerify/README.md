@@ -17,7 +17,7 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - Fast spin up/tear down. 
 
 ## How to contribute
-All ILVerify issues are labeled with ILVerify.
+All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=).
 
 ILVerify basically runs through the IL commands in an assembly and does all the verification steps, which are specified in ECMA-335.
 
