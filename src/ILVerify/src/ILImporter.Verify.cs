@@ -92,8 +92,10 @@ namespace Internal.IL
             public bool FilterStart;
             public bool HandlerStart;
 
+            //these point to the direct enclosing items in _exceptionRegions
             public int? TryIndex;
             public int? HandlerIndex;
+            public int? FilterIndex;
         };
 
         void Push(StackValue value)
@@ -201,6 +203,13 @@ namespace Internal.IL
                             {
                                 basicBlock.HandlerIndex = j;
                             }
+                        }
+                    }
+                    if(r.FilterOffset != -1 && r.FilterOffset <= offset && r.HandlerOffset - 1 >= offset)
+                    {
+                        if(!basicBlock.FilterIndex.HasValue)
+                        {
+                            basicBlock.FilterIndex = j;
                         }
                     }
                 }
@@ -482,54 +491,48 @@ namespace Internal.IL
             {
                 Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
 
-                for (int i = 0; i < _exceptionRegions.Length; i++)
+                if (basicBlock.TryIndex.HasValue && basicBlock.StartOffset == _exceptionRegions[basicBlock.TryIndex.Value].ILRegion.TryOffset)
                 {
-                    var r = _exceptionRegions[i];
+                    var r = _exceptionRegions[basicBlock.TryIndex.Value].ILRegion;
 
-                    if (basicBlock.StartOffset != r.ILRegion.TryOffset)
-                        continue;
+                    if (r.Kind == ILExceptionRegionKind.Filter)
+                        MarkBasicBlock(_basicBlocks[r.FilterOffset]);
 
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                    if (r.Kind == ILExceptionRegionKind.Filter || r.Kind == ILExceptionRegionKind.Catch)
+                        MarkBasicBlock(_basicBlocks[r.HandlerOffset]);
                 }
             }
 
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
                 Debug.Assert(basicBlock.EntryStack == null);
-                                
-                for (int i = 0; i < _exceptionRegions.Length; i++)
+
+                ExceptionRegion r;
+                if (basicBlock.HandlerIndex.HasValue)
                 {
-                    var r = _exceptionRegions[i];
+                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
+                }
+                else if (basicBlock.FilterIndex.HasValue)
+                {
+                    r = _exceptionRegions[basicBlock.FilterIndex.Value];
+                }
+                else
+                {
+                    return;
+                }
 
-                    if (basicBlock.FilterStart)
-                    {
-                        if (basicBlock.StartOffset != r.ILRegion.FilterOffset)
-                            continue;
-                    }
-                    else
-                    {
-                        if (basicBlock.StartOffset != r.ILRegion.HandlerOffset)
-                            continue;
-                    }
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                    {
-                        basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
-                    }
-                    else
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
-                    }
-                    else
-                    {
-                        basicBlock.EntryStack = s_emptyStack;
-                    }
-                    break;
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
+                }
+                else
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                {
+                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
+                }
+                else
+                {
+                    basicBlock.EntryStack = s_emptyStack;
                 }
             }
 
