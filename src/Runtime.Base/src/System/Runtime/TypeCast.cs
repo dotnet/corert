@@ -219,8 +219,16 @@ namespace System.Runtime
 
             // compare the array types structurally
 
-            if (pObjType->ParameterizedTypeShape == pTargetType->ParameterizedTypeShape &&
-                CastCache.AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
+            if (pObjType->ParameterizedTypeShape != pTargetType->ParameterizedTypeShape)
+            {
+                // If the shapes are different, there's one more case to check for: Casting SzArray to MdArray rank 1.
+                if (!pObjType->IsSzArray || pTargetType->ArrayRank != 1)
+                {
+                    return null;
+                }
+            }
+
+            if (CastCache.AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
                 AssignmentVariation.AllowSizeEquivalence))
             {
                 return obj;

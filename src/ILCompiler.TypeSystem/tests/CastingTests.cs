@@ -73,6 +73,7 @@ namespace TypeSystemTests
             TypeDesc shortBasedEnumType = _testModule.GetType("Casting", "ShortBasedEnum");
 
             Assert.True(intType.MakeArrayType().CanCastTo(uintType.MakeArrayType()));
+            Assert.True(intType.MakeArrayType().CanCastTo(uintType.MakeArrayType(1)));
             Assert.False(intType.CanCastTo(uintType));
 
             Assert.True(byteType.MakeArrayType().CanCastTo(sbyteType.MakeArrayType()));
@@ -121,7 +122,9 @@ namespace TypeSystemTests
             TypeDesc stringSzArrayType = stringType.MakeArrayType();
             TypeDesc objectSzArrayType = objectType.MakeArrayType();
 
-            Assert.False(intSzArrayType.CanCastTo(intArray1Type));
+            Assert.True(intSzArrayType.CanCastTo(intArray1Type));
+            Assert.False(intArray1Type.CanCastTo(intSzArrayType));
+
             Assert.False(intArray1Type.CanCastTo(intArray2Type));
 
             Assert.True(intSzArrayType.CanCastTo(arrayType));
