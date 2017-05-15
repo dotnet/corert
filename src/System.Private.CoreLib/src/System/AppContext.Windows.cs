@@ -13,29 +13,31 @@ namespace System
 {
     public static partial class AppContext
     {
-        public static string BaseDirectory
+        /// <summary>
+        /// Return the directory of the executable image for the current process
+        /// as the default value for AppContext.BaseDirectory
+        /// </summary>
+        private static string GetBaseDirectoryCore()
         {
-            get
+            StringBuilder buffer = new StringBuilder(Interop.mincore.MAX_PATH);
+            while (true)
             {
-                StringBuilder buffer = new StringBuilder(Interop.mincore.MAX_PATH);
-                while (true)
+                int size = Interop.mincore.GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
+                if (size == 0)
                 {
-                    int size = Interop.mincore.GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
-                    if (size == 0)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
-                    }
-
-                    if (Marshal.GetLastWin32Error() == Interop.mincore.ERROR_INSUFFICIENT_BUFFER)
-                    {
-                        // Enlarge the buffer and try again.
-                        buffer.EnsureCapacity(buffer.Capacity * 2);
-                        continue;
-                    }
-
-                    string fileName = buffer.ToString();
-                    return fileName.Substring(0, fileName.LastIndexOf('\\'));
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
                 }
+
+                if (Marshal.GetLastWin32Error() == Interop.mincore.ERROR_INSUFFICIENT_BUFFER)
+                {
+                    // Enlarge the buffer and try again.
+                    buffer.EnsureCapacity(buffer.Capacity * 2);
+                    continue;
+                }
+
+                // Return path to the executable image including the terminating slash
+                string fileName = buffer.ToString();
+                return fileName.Substring(0, fileName.LastIndexOf('\\') + 1);
             }
         }
     }

@@ -16,8 +16,6 @@ using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
 
-using System.Reflection.Runtime.Assemblies;
-
 namespace Internal.Reflection.Execution
 {
     //=============================================================================================================================

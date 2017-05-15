@@ -49,6 +49,7 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="@(NativeLibrary)" />
     <LinkerArg Include="@(AdditionalNativeLibrary)" />
     <LinkerArg Include="-g" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
     <LinkerArg Include="-pthread" />
     <LinkerArg Include="-lstdc++" />
     <LinkerArg Include="-ldl" />

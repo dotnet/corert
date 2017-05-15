@@ -31,6 +31,11 @@ namespace System
             _value = (EEType*)value;
         }
 
+        internal EETypePtr(EEType* value)
+        {
+            _value = value;
+        }
+
         internal EEType* ToPointer()
         {
             return _value;
@@ -211,7 +216,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->GenericDefinition);
+                return new EETypePtr(_value->GenericDefinition);
             }
         }
 
@@ -278,7 +283,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->NullableType);
+                return new EETypePtr(_value->NullableType);
             }
         }
 
@@ -286,7 +291,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->RelatedParameterType);
+                return new EETypePtr(_value->RelatedParameterType);
             }
         }
 
@@ -316,7 +321,7 @@ namespace System
                 if (IsPointer || IsByRef)
                     return new EETypePtr(default(IntPtr));
 
-                EETypePtr baseEEType = new EETypePtr((IntPtr)_value->NonArrayBaseType);
+                EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
                 return baseEEType;
             }
         }
@@ -406,8 +411,7 @@ namespace System
                 {
                     Debug.Assert((uint)index < _value->NumInterfaces);
 
-                    EEType* interfaceType = _value->InterfaceMap[index].InterfaceType;
-                    return new EETypePtr((IntPtr)interfaceType);
+                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
                 }
             }
         }
@@ -436,7 +440,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr((IntPtr)_arguments[index].Value);
+                    return new EETypePtr(_arguments[index].Value);
                 }
             }
         }
