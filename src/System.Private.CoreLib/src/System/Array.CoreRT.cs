@@ -181,15 +181,7 @@ namespace System
 
             elementType = elementType.UnderlyingSystemType;
 
-            if (lengths.Length == 1 && lowerBounds[0] == 0)
-            {
-                int length = lengths[0];
-                return CreateSzArray(elementType, length);
-            }
-            else
-            {
-                return CreateMultiDimArray(elementType, lengths, lowerBounds);
-            }
+            return CreateMultiDimArray(elementType, lengths, lowerBounds);
         }
 
         private static Array CreateSzArray(Type elementType, int length)
