@@ -1217,7 +1217,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return factory.MethodEntrypoint(implMethod);
+                return factory.CanonicalEntrypoint(implMethod);
             }
         }
 
