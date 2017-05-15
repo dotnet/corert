@@ -4,8 +4,8 @@
     <PackageProjectDirectory>$(ProjectDir)pkg/</PackageProjectDirectory>
     <PackageSourceDirectory>$(ProjectDir)src/</PackageSourceDirectory>
     <PackageDescriptionFile>$(PackageProjectDirectory)descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(PackageProjectDirectory)dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(PackageProjectDirectory)ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <ReleaseNotes>TODO</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
     <!-- Add a condition for this when we are able to run on .NET Core -->
