@@ -10,9 +10,12 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public sealed class RyuJitNodeFactory : NodeFactory
+    /// <summary>
+    /// Node factory to be used during IL scanning.
+    /// </summary>
+    public sealed class ILScanNodeFactory : NodeFactory
     {
-        public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
+        public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
             : base(context, compilationModuleGroup, metadataManager, nameMangler)
         {
         }
@@ -21,13 +24,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (method.IsInternalCall)
             {
+                // TODO: come up with a scheme where this can be shared between codegen backends and the scanner
                 if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
                 {
                     return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
                 }
                 else if (method.IsArrayAddressMethod())
                 {
-                    return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
+                    return new ScannedMethodNode(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }
                 else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
@@ -41,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethod(method))
             {
-                return new MethodCodeNode(method);
+                return new ScannedMethodNode(method);
             }
             else
             {
@@ -59,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // We don't do this for generic instance methods though because they don't use the EEType
                 // for the generic context anyway.
-                return new MethodCodeNode(TypeSystemContext.GetSpecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
+                return new ScannedMethodNode(TypeSystemContext.GetSpecialUnboxingThunk(method, CompilationModuleGroup.GeneratedAssembly));
             }
             else
             {
