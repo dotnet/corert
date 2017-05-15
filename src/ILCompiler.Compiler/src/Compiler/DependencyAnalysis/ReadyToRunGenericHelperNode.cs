@@ -53,6 +53,11 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
+                case ReadyToRunHelperId.ConstrainedMethodEntry:
+                    return factory.GenericLookup.ConstrainedMethodUse(
+                        ((ConstrainedMethodCallTarget)target).Method,
+                        ((ConstrainedMethodCallTarget)target).ConstraintType,
+                        directCall: true);
                 case ReadyToRunHelperId.DelegateCtor:
                     return ((DelegateCreationInfo)target).GetLookupKind(factory);
                 default:
