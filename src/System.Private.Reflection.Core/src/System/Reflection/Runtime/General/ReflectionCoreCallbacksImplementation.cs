@@ -160,11 +160,15 @@ namespace System.Reflection.Runtime.General
             return NativeFormatRuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo, reflectedType);
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public sealed override object ActivatorCreateInstance(Type type, bool nonPublic)
         {
             return ActivatorImplementation.CreateInstance(type, nonPublic);
         }
 
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public sealed override object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             return ActivatorImplementation.CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);

@@ -532,6 +532,16 @@ namespace Internal.IL
                     break;
                 }
             }
+
+            if (basicBlock.EntryStack?.Length > 0)
+            {
+                Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
+                _stackTop = basicBlock.EntryStack.Length;
+            }
+            else
+            {
+                _stackTop = 0;
+            }
         }
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
@@ -866,7 +876,7 @@ namespace Internal.IL
 
         void ImportCalli(int token)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportCalli)} not implemented");
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
@@ -880,7 +890,7 @@ namespace Internal.IL
 
             // TODO
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
         }
 
         void ImportLoadInt(long value, StackValueKind kind)
@@ -1008,7 +1018,7 @@ namespace Internal.IL
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportSwitchJump)} not implemented");
         }
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -1103,7 +1113,7 @@ namespace Internal.IL
 
         void ImportShiftOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportShiftOperation)} not implemented");
         }
 
         void ImportCompareOperation(ILOpcode opcode)
@@ -1259,12 +1269,17 @@ namespace Internal.IL
 
         void ImportStoreIndirect(TypeDesc type)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportStoreIndirect)} not implemented");
         }
 
         void ImportThrow()
         {
-            throw new NotImplementedException();
+            var value = Pop();
+
+            if (value.Kind != StackValueKind.ObjRef)
+            {
+                VerificationError(VerifierError.StackObjRef);
+            }            
         }
 
         void ImportLoadString(int token)
@@ -1459,7 +1474,7 @@ namespace Internal.IL
 
         void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{nameof(ImportUnaryOperation)} not implemented");
         }
 
         void ImportCpOpj(int token)

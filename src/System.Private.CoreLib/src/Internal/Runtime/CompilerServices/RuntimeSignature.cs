@@ -57,6 +57,19 @@ namespace Internal.Runtime.CompilerServices
             };
         }
 
+        [CLSCompliant(false)]
+        public static RuntimeSignature CreateFromNativeLayoutSignatureForDebugger(uint nativeLayoutOffset)
+        {
+            // This is a RuntimeSignature object used by the debugger only, 
+            // the fact that the _moduleHandle is NULL signify that information.
+            return new RuntimeSignature
+            {
+                _moduleHandle = IntPtr.Zero,
+                _tokenOrOffset = (int)nativeLayoutOffset,
+                _isNativeLayoutSignature = true,
+            };
+        }
+
         public bool IsNativeLayoutSignature
         {
             get

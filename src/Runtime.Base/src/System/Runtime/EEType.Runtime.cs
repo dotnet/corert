@@ -23,8 +23,15 @@ namespace Internal.Runtime
 
         internal EEType* GetArrayEEType()
         {
-#if INPLACE_RUNTIME
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            fixed (EEType* pThis = &this)
+            {
+                IntPtr pGetArrayEEType = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype(new IntPtr(pThis), EH.ClassLibFunctionId.GetSystemArrayEEType);
+                if (pGetArrayEEType != IntPtr.Zero)
+                    return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
+            }
+#if CORERT
+            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+            return null;
 #else
             fixed (EEType* pThis = &this)
                 return InternalCalls.RhpGetArrayBaseType(pThis);

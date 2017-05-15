@@ -66,6 +66,8 @@ namespace System.Globalization
         // Call native side to figure out which calendars are allowed
         internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             // NOTE: there are no 'user overrides' on Linux
             int count = Interop.GlobalizationInterop.GetCalendars(localeName, calendars, calendars.Length);
 
@@ -88,6 +90,8 @@ namespace System.Globalization
 
         private static bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string calendarString)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.CallStringMethod(
                 (locale, calId, type, stringBuilder) =>
                     Interop.GlobalizationInterop.GetCalendarInfo(
@@ -302,21 +306,30 @@ namespace System.Globalization
 
         private static void EnumCalendarInfoCallback(string calendarString, IntPtr context)
         {
-            CallbackContext callbackContext = (CallbackContext)((GCHandle)context).Target;
-
-            if (callbackContext.DisallowDuplicates)
+            try
             {
-                foreach (string existingResult in callbackContext.Results)
+                CallbackContext callbackContext = (CallbackContext)((GCHandle)context).Target;
+
+                if (callbackContext.DisallowDuplicates)
                 {
-                    if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
+                    foreach (string existingResult in callbackContext.Results)
                     {
-                        // the value is already in the results, so don't add it again
-                        return;
+                        if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
+                        {
+                            // the value is already in the results, so don't add it again
+                            return;
+                        }
                     }
                 }
-            }
 
-            callbackContext.Results.Add(calendarString);
+                callbackContext.Results.Add(calendarString);
+            }
+            catch (Exception e)
+            {
+                Debug.Assert(false, e.ToString());
+                // we ignore the managed exceptions here because EnumCalendarInfoCallback will get called from the native code.
+                // If we don't ignore the exception here that can cause the runtime to fail fast.
+            }
         }
 
         private class CallbackContext

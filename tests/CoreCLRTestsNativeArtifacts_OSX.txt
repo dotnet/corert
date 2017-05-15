@@ -1,0 +1,1 @@
+https://ci.dot.net/job/dotnet_coreclr/job/master/job/debug_osx10.12/653/artifact/bin/obj/OSX.x64.Debug/tests/*zip*/tests.zip

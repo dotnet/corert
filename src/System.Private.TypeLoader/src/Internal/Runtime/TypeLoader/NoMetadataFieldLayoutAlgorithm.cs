@@ -53,8 +53,6 @@ namespace Internal.Runtime.TypeLoader
                 ByteCountUnaligned = new LayoutInt(eeType->IsInterface ? IntPtr.Size : checked((int)eeType->FieldByteCountNonGCAligned)),
                 FieldAlignment = new LayoutInt(eeType->FieldAlignmentRequirement),
                 Offsets = (layoutKind == InstanceLayoutKind.TypeOnly) ? null : Array.Empty<FieldAndOffset>(), // No fields in EETypes
-                PackValue = 0, // This isn't explicitly encoded, though FieldSize should take it into account
-                // TODO, as we add more metadata handling logic, find out if its necessary.
             };
 
             if (eeType->IsValueType)

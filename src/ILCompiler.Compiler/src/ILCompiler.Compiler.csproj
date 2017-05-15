@@ -229,6 +229,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsOffsetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\UtcThreadStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UtcDictionaryLayoutNode.cs" />

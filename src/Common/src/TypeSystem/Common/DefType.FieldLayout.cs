@@ -273,6 +273,18 @@ namespace Internal.TypeSystem
             }
         }
 
+        internal ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
+                {
+                    ComputeValueTypeShapeCharacteristics();
+                }
+                return _valueTypeShapeCharacteristics;
+            }
+        }
+
         /// <summary>
         /// Get the Homogeneous Float Aggregate element type if this is a HFA type (<see cref="IsHfa"/> is true).
         /// </summary>

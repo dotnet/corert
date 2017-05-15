@@ -166,7 +166,7 @@ internal static extern bool System.Runtime.RuntimeImports.TryArrayCopy(System.Ar
 internal static System.Runtime.RuntimeImports.RhCorElementTypeInfo System.Runtime.RuntimeImports.GetRhCorElementTypeInfo(System.Runtime.RuntimeImports.RhCorElementType elementType)
 internal static int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, System.IntPtr* handles)
 internal static void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(bool allowReentrantWait)
-public static extern void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
+public static void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
 
 # System.Runtime.CompilerSerivces
 public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Create()

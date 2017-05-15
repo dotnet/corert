@@ -535,6 +535,11 @@ namespace ILCompiler.CppCodeGen
 
             if (explicitLayout)
             {
+                if (classLayoutMetadata.Size > 0)
+                {
+                    sb.AppendLine();
+                    sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
+                }
                 sb.Exdent();
                 sb.AppendLine();
                 sb.Append("};");

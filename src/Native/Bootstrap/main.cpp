@@ -254,6 +254,7 @@ extern "C" void* WINAPI PalGetModuleHandleFromPointer(void* pointer);
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
+extern "C" void GetSystemArrayEEType();
 
 typedef void(*pfn)();
 
@@ -262,6 +263,8 @@ static const pfn c_classlibFunctions[] = {
     &FailFast,
     nullptr, // &UnhandledExceptionHandler,
     &AppendExceptionStackFrame,
+    nullptr, // &CheckStaticClassConstruction,
+    &GetSystemArrayEEType,
 };
 
 #endif // !CPPCODEGEN
@@ -316,16 +319,20 @@ int main(int argc, char* argv[])
 #endif // !CPPCODEGEN
 
     int retval;
+#ifdef CPPCODEGEN
     try
+#endif
     {
         retval = __managed__Main(argc, argv);
     }
+#ifdef CPPCODEGEN
     catch (const char* &e)
     {
         printf("Call to an unimplemented runtime method; execution cannot continue.\n");
         printf("Method: %s\n", e);
         retval = -1;
     }
+#endif
 
 #ifdef CPPCODEGEN
     __reverse_pinvoke_return(&frame);

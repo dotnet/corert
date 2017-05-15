@@ -285,6 +285,11 @@ namespace System.Reflection.Runtime.TypeInfos
             if (c == null)
                 return false;
 
+            if (object.ReferenceEquals(c, this))
+                return true;
+
+            c = c.UnderlyingSystemType;
+
             Type typeInfo = c;
             RuntimeTypeInfo toTypeInfo = this;
 

@@ -16,7 +16,7 @@ namespace System.Globalization
             _sortName = culture.SortName;
 
             IntPtr handle;
-            int ret = Interop.mincore.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+            int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
             _sortHandle = ret > 0 ? handle : IntPtr.Zero;
         }
 
@@ -32,7 +32,7 @@ namespace System.Globalization
             fixed (char* pSource = stringSource)
             fixed (char* pValue = value)
             {
-                int ret = Interop.mincore.FindStringOrdinal(
+                int ret = Interop.Kernel32.FindStringOrdinal(
                             dwFindStringOrdinalFlags,
                             pSource + offset,
                             cchSource,
@@ -73,7 +73,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                   LCMAP_HASH | (uint)GetNativeCompareFlags(options),
                                                   pSource, source.Length,
                                                   &tmpHash, sizeof(int),
@@ -89,7 +89,7 @@ namespace System.Globalization
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
             // Use the OS to compare and then convert the result to expected value by subtracting 2 
-            return Interop.mincore.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
+            return Interop.Kernel32.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
         private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
@@ -104,7 +104,7 @@ namespace System.Globalization
             fixed (char* pString1 = string1)
             fixed (char* pString2 = string2)
             {
-                int result = Interop.mincore.CompareStringEx(
+                int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
                                     pString1 + offset1,
@@ -133,7 +133,7 @@ namespace System.Globalization
                     string lpStringValue,
                     int startValue,
                     int cchValue,
-                    int* matchLengthPtr)
+                    int* pcchFound)
         {
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
@@ -144,18 +144,17 @@ namespace System.Globalization
                 char* pS = pSource + startSource;
                 char* pV = pValue + startValue;
 
-                return Interop.mincore.FindNLSStringEx(
+                return Interop.Kernel32.FindNLSStringEx(
                                     pLocaleName,
                                     dwFindNLSStringFlags,
                                     pS,
                                     cchSource,
                                     pV,
                                     cchValue,
+                                    pcchFound,
                                     null,
                                     null,
-                                    null,
-                                    _sortHandle,
-                                    matchLengthPtr);
+                                    _sortHandle);
             }
         }
 
@@ -274,6 +273,7 @@ namespace System.Globalization
         [NonSerialized]
         private IntPtr _sortHandle;
 
+        private const uint LCMAP_SORTKEY = 0x00000400;
         private const uint LCMAP_HASH = 0x00040000;
 
         private const int FIND_STARTSWITH = 0x00100000;
@@ -366,14 +366,44 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
-            throw new NotImplementedException();
+            byte [] keyData = null;
+            if (source.Length == 0)
+            { 
+                keyData = Array.Empty<byte>();
+            }
+            else
+            {
+                fixed (char *pSource = source)
+                {
+                    int result = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                LCMAP_SORTKEY | (uint) GetNativeCompareFlags(options),
+                                                pSource, source.Length,
+                                                null, 0,
+                                                null, null, _sortHandle);
+                    if (result == 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidFlag, "source");
+                    }
+
+                    keyData = new byte[result];
+
+                    fixed (byte* pBytes =  keyData)
+                    {
+                        result = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                LCMAP_SORTKEY | (uint) GetNativeCompareFlags(options),
+                                                pSource, source.Length,
+                                                pBytes, keyData.Length,
+                                                null, null, _sortHandle);
+                    }
+                }
+            }
+
+            return new SortKey(Name, source, options, keyData);
         }
 
         private static unsafe bool IsSortable(char* text, int length)
         {
-            // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
-            // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));
-            throw new NotImplementedException();
+            return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
         }
 
         private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal
@@ -414,9 +444,14 @@ namespace System.Globalization
             return nativeCompareFlags;
         }
 
-        private SortVersion GetSortVersion()
+        private unsafe SortVersion GetSortVersion()
         {
-            throw new NotImplementedException();
+            Interop.Kernel32.NlsVersionInfoEx nlsVersion = new Interop.Kernel32.NlsVersionInfoEx();
+            Interop.Kernel32.GetNLSVersionEx(Interop.Kernel32.COMPARE_STRING, _sortName, &nlsVersion);
+            return new SortVersion(
+                        nlsVersion.dwNLSVersion,
+                        nlsVersion.dwEffectiveId == 0 ? LCID : nlsVersion.dwEffectiveId,
+                        nlsVersion.guidCustomVersion);
         }
     }
 }

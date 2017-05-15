@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.Assemblies;
 using System.Runtime.InteropServices;
 
 namespace Internal.Reflection.Core

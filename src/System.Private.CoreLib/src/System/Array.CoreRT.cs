@@ -14,6 +14,7 @@ using System.Diagnostics.Contracts;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
+using EEType = Internal.Runtime.EEType;
 
 #if BIT64
 using nuint = System.UInt64;
@@ -62,6 +63,14 @@ namespace System
             {
                 return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
             }
+        }
+
+        // This is the classlib-provided "get array eetype" function that will be invoked whenever the runtime
+        // needs to know the base type of an array.
+        [RuntimeExport("GetSystemArrayEEType")]
+        private static unsafe EEType* GetSystemArrayEEType()
+        {
+            return EETypePtr.EETypePtrOf<Array>().ToPointer();
         }
 
         public static Array CreateInstance(Type elementType, int length)
@@ -238,17 +247,20 @@ namespace System
             public byte Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawSzArrayData()
         {
             Debug.Assert(IsSzArray);
             return ref Unsafe.As<RawData>(this).Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawArrayData()
         {
             return ref Unsafe.Add(ref Unsafe.As<RawData>(this).Data, (int)(EETypePtr.BaseSize - SZARRAY_BASE_SIZE));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetRawMultiDimArrayBounds()
         {
             Debug.Assert(!IsSzArray);
@@ -602,11 +614,7 @@ namespace System
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
 
-            // Compat: Why this asymmetrical treatment of enums?
-            if (destinationElementEEType.IsEnum)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-
-            if (sourceElementEEType.IsEnum && sourceElementType != destElementType)
+            if ((sourceElementEEType.IsEnum || destinationElementEEType.IsEnum) && sourceElementType != destElementType)
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             if (reliable)

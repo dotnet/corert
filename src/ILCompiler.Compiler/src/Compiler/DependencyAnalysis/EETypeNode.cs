@@ -161,52 +161,8 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
-            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
-            if (_type is MetadataType && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                MetadataType metadataType = (MetadataType)_type;
-
-                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
-                // The StaticsInfoHashtable entries only exist for static fields on generic types.
-
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        dependencies.Add(factory.Indirection(gcStatics), "GC statics indirection for StaticsInfoHashtable");
-                    }
-                    else
-                    {
-                        // TODO: https://github.com/dotnet/corert/issues/3224
-                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
-                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
-                        // we even start the compilation process (with the static bases being compilation roots like any other).
-                        dependencies.Add(gcStatics, "GC statics for ReflectionFieldMap entry");
-                    }
-                }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
-                        // context offset.
-                        nonGCStatic = factory.Indirection(nonGCStatic);
-                        dependencies.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
-                    }
-                    else
-                    {
-                        // TODO: https://github.com/dotnet/corert/issues/3224
-                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
-                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
-                        // we even start the compilation process (with the static bases being compilation roots like any other).
-                        dependencies.Add(nonGCStatic, "Non-GC statics for ReflectionFieldMap entry");
-                    }
-                }
-
-                // TODO: TLS dependencies
-            }
+            StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
+            ReflectionFieldMapNode.AddReflectionFieldMapEntryDependencies(ref dependencies, factory, _type);
 
             return dependencies;
         }

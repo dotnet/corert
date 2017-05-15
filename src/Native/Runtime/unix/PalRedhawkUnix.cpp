@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <cstdarg>
+#include <signal.h>
 
 #if HAVE_PTHREAD_GETTHREADID_NP
 #include <pthread_np.h>
@@ -415,6 +416,19 @@ extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
 extern "C" void *__dso_handle;
 #endif
 
+// This functions configures behavior of the signals that are not
+// related to hardware exception handling.
+void ConfigureSignals()
+{
+    // The default action for SIGPIPE is process termination.
+    // Since SIGPIPE can be signaled when trying to write on a socket for which
+    // the connection has been dropped, we need to tell the system we want
+    // to ignore this signal.
+    // Instead of terminating the process, the system call which would had
+    // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
+    signal(SIGPIPE, SIG_IGN);
+}
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -442,6 +456,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
         return false;
     }
 #endif // !USE_PORTABLE_HELPERS
+
+    ConfigureSignals();
 
     return true;
 }

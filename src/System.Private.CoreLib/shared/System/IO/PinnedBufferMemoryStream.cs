@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,6 +16,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -25,11 +26,9 @@ namespace System.IO
         private byte[] _array;
         private GCHandle _pinningHandle;
 
-        private PinnedBufferMemoryStream() : base() { }
-
         internal PinnedBufferMemoryStream(byte[] array)
         {
-            Contract.Assert(array != null, "Array can't be null");
+            Debug.Assert(array != null, "Array can't be null");
 
             int len = array.Length;
             // Handle 0 length byte arrays specially.
@@ -43,7 +42,7 @@ namespace System.IO
             _pinningHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             // Now the byte[] is pinned for the lifetime of this instance.
             // But I also need to get a pointer to that block of memory...
-            fixed (byte* ptr = _array)
+            fixed (byte* ptr = &_array[0])
                 Initialize(ptr, len, len, FileAccess.Read);
         }
 

@@ -194,7 +194,7 @@ namespace Internal.IL
             }
 
             if (dst.IsInterface || dst.IsArray)
-                throw new NotImplementedException();
+                throw new NotImplementedException($"{nameof(IsAssignable)} is only partially implemented.");
 
             // TODO: Other cases - variance, etc.
 

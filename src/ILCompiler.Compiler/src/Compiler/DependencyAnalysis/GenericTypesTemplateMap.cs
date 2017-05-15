@@ -89,27 +89,24 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
         
-        public static DependencyList GetTemplateTypeDependencies(NodeFactory factory, TypeDesc type)
+        public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
             if (!IsEligibleToHaveATemplate(templateType))
-                return null;
+                return;
 
             if (factory.Target.Abi == TargetAbi.ProjectN)
             {
                 // If the type does not have fully constructed type, don't track its dependencies.
                 // TODO: Remove the workaround once we stop using the STS dependency analysis.
                 if (!factory.ConstructedTypeSymbol(templateType).Marked)
-                    return null;
+                    return;
             }
 
-            DependencyList dependencies = new DependencyList();
-
+            dependencies = dependencies ?? new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(templateType), "Template type"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout"));
-
-            return dependencies;
         }
 
         /// <summary>

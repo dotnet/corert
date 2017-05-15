@@ -12,9 +12,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
-        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
-
-        uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteType);
+        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -51,7 +49,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct ClassFieldsTypeDescriptior
+    public struct ClassFieldsTypeDescriptor
     {
         public int Size;
         public int FieldsCount;

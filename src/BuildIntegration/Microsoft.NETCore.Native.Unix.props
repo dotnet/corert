@@ -49,10 +49,12 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="@(NativeLibrary)" />
     <LinkerArg Include="@(AdditionalNativeLibrary)" />
     <LinkerArg Include="-g" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
     <LinkerArg Include="-pthread" />
     <LinkerArg Include="-lstdc++" />
     <LinkerArg Include="-ldl" />
     <LinkerArg Include="-lm" />
+    <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
   </ItemGroup>

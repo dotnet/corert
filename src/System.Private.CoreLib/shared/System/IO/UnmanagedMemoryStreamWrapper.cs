@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Resources;
 
 namespace System.IO
 {
@@ -66,11 +65,10 @@ namespace System.IO
             _unmanagedStream.Flush();
         }
 
-        /* Needed for NS2.0
         public override byte[] GetBuffer()
         {
             throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
-        }*/
+        }
 
         public override bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
