@@ -6,30 +6,13 @@
 #include "CommonTypes.h"
 #include "DebuggerHook.h"
 #include "DebugEventSource.h"
+#include "Debug.h"
 
 GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 #ifndef DACCESS_COMPILE
 
 /* static */ DebuggerProtectedBufferList* DebuggerHook::s_debuggerProtectedBuffers = nullptr;
-
-// TODO: Tab to space, overall, just to make sure I will actually do it :)
-// TODO: This structure needs to match with DBI
-struct FuncEvalParameterCommand
-{
-    // TODO: Consider giving these command code a good enumeration to define what they really are
-    UInt32 commandCode;
-    UInt32 unused; /* To make the data structure 64 bit aligned */
-    UInt64 bufferAddress;
-};
-
-// TODO: This structure needs to match with DBI
-struct GcProtectionRequest
-{
-    UInt16 type;
-    UInt16 size;
-    UInt64 address;
-};
 
 /* static */ void DebuggerHook::OnBeforeGcCollection()
 {
@@ -42,8 +25,8 @@ struct GcProtectionRequest
         // TODO: We need to figure out how to communicate this broken promise to the debugger
 
         // Notifying the debugger the buffer is ready to use
-        FuncEvalParameterCommand command;
-        command.commandCode = 2;
+        GcProtectionMessage command;
+        command.commandCode = DebuggerGcProtectionMessage::RequestBufferReady;
         command.bufferAddress = (uint64_t)requests;
         DebugEventSource::SendCustomEvent((void*)&command, sizeof(command));
 
@@ -52,7 +35,7 @@ struct GcProtectionRequest
         // The debugger has filled the requests array
         for (uint32_t i = 0; i < g_numGcProtectionRequests; i++)
         {
-            if (requests[i].type == 1)
+            if (requests[i].type == DebuggerGcProtectionRequestKind::ConservativeReporting)
             {
                 // If the request requires extra memory, allocate for it
                 requests[i].address = (uint64_t)new (nothrow) uint8_t[requests[i].size];
@@ -61,14 +44,14 @@ struct GcProtectionRequest
             }
         }
 
-        command.commandCode = 3;
+        command.commandCode = DebuggerGcProtectionMessage::ConservativeReportingBufferReady;
         DebugEventSource::SendCustomEvent((void*)&command, sizeof(command));
 
         // ... debugger magic happen here again ...
 
         for (uint32_t i = 0; i < g_numGcProtectionRequests; i++)
         {
-            if (requests[i].type == 1)
+            if (requests[i].type == DebuggerGcProtectionRequestKind::ConservativeReporting)
             {
                 // TODO: Release them when there should be gone
                 DebuggerProtectedBufferList* tail = DebuggerHook::s_debuggerProtectedBuffers;
