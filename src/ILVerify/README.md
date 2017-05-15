@@ -11,7 +11,7 @@ The main users of this tool are people working on software that emits MSIL code.
 Historically on Full Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the Full Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.
 
 ## Main properties of ILVerify:
-- No coupling with CoreLib: PEVerify can point to any assembly and verify it. This also includes the full framework base assemblies (especially mscorlib).
+- No coupling with CoreLib: ILVerify can point to any assembly and verify it. This also includes the full framework base assemblies (especially mscorlib).
 - Cross-platform, Open-Source
 - It should be easy to add new verification rules
 - Fast spin up/tear down. 
