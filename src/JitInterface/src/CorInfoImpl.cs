@@ -1418,7 +1418,7 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg;
-                        if (helperId != ReadyToRunHelperId.DelegateCtor)
+                        if (pGenericLookupKind.runtimeLookupArgs == null)
                             helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
                         else
                             helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
@@ -2469,6 +2469,7 @@ namespace Internal.JitInterface
                         pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
                     else
                         throw new NotImplementedException();
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
@@ -2490,6 +2491,7 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
                     pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else
@@ -2515,6 +2517,7 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
 
@@ -2740,16 +2743,16 @@ namespace Internal.JitInterface
 
             bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
-            if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+            if (directCall && (!allowInstParam || resolvedConstraint) && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
                 // JIT needs a single address to call this method but the method needs a hidden argument.
                 // We need a fat function pointer for this that captures both things.
                 targetIsFatFunctionPointer = true;
 
-                // JIT won't expect fat function pointers unless this is e.g. delegate creation
-                Debug.Assert((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0);
-
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+
+                ReadyToRunHelperId helperId = resolvedConstraint
+                    ? ReadyToRunHelperId.ConstrainedMethodEntry : ReadyToRunHelperId.MethodEntry;
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2766,7 +2769,18 @@ namespace Internal.JitInterface
                     }
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                    if (helperId == ReadyToRunHelperId.ConstrainedMethodEntry)
+                    {
+                        var runtimeDeterminedMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        var runtimeDeterminedConstraint = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs =
+                            (void*)ObjectToHandle(new ConstrainedMethodCallTarget(runtimeDeterminedMethod, runtimeDeterminedConstraint));
+                    }
+                    else
+                    {
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
+                    }
                 }
                 else
                 {
@@ -2899,6 +2913,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else
@@ -2936,6 +2951,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
                 else
                 {
