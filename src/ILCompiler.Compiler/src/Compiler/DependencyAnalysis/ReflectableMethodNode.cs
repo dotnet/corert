@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToReflectability(ref dependencies, factory, _method);
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _method);
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)
