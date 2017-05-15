@@ -14,7 +14,7 @@ namespace Internal.TypeSystem
             internal string Name { get; }
             internal bool IsOptional { get; }
 
-            internal WellKnownTypeDef(string name, bool optional = false)
+            internal WellKnownTypeDef(string name, bool optional = true)
             {
                 Name = name;
                 IsOptional = optional;
@@ -22,12 +22,11 @@ namespace Internal.TypeSystem
 
             public override string ToString() => $"{Name}, {IsOptional}";
             public static implicit operator WellKnownTypeDef(string name) =>  new WellKnownTypeDef(name);
-            public static WellKnownTypeDef Optional(string name) => new WellKnownTypeDef(name, true);
+            public static WellKnownTypeDef Required(string name) => new WellKnownTypeDef(name, false);
         }
 
         private static readonly WellKnownTypeDef[] s_wellKnownTypes = new WellKnownTypeDef[] {
-            // following required types are part of the CTS
-            WellKnownTypeDef.Optional("Void"),
+            "Void",
 
             "Boolean",
             "Char",
@@ -44,23 +43,23 @@ namespace Internal.TypeSystem
             "Single",
             "Double",
 
-            WellKnownTypeDef.Optional("ValueType"),
-            WellKnownTypeDef.Optional("Enum"),
-            WellKnownTypeDef.Optional("Nullable`1"),
+            "ValueType",
+            "Enum",
+            "Nullable`1",
 
-            "Object",
+            WellKnownTypeDef.Required("Object"),
             "String",
-            WellKnownTypeDef.Optional("Array"),
-            WellKnownTypeDef.Optional("MulticastDelegate"),
+            "Array",
+            "MulticastDelegate",
 
-            WellKnownTypeDef.Optional("RuntimeTypeHandle"),
-            WellKnownTypeDef.Optional("RuntimeMethodHandle"),
-            WellKnownTypeDef.Optional("RuntimeFieldHandle"),
+            "RuntimeTypeHandle",
+            "RuntimeMethodHandle",
+            "RuntimeFieldHandle",
 
-            WellKnownTypeDef.Optional("Exception"),
+            "Exception",
 
             "TypedReference",
-            WellKnownTypeDef.Optional("ByReference`1"),
+            "ByReference`1",
         };
 
         private MetadataType[] _wellKnownTypes;
