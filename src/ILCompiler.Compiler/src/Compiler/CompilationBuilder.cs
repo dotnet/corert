@@ -72,21 +72,8 @@ namespace ILCompiler
 
         protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory)
         {
-            // Choose which dependency graph implementation to use based on the amount of logging requested.
-            switch (_dependencyTrackingLevel)
-            {
-                case DependencyTrackingLevel.None:
-                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                case DependencyTrackingLevel.First:
-                    return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                case DependencyTrackingLevel.All:
-                    return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                default:
-                    throw new InvalidOperationException();
-            }
+            // TODO: add graph sorter when we go multi-threaded
+            return _dependencyTrackingLevel.CreateDependencyGraph(factory);
         }
 
         protected MetadataManager CreateMetadataManager()
@@ -100,27 +87,6 @@ namespace ILCompiler
         }
 
         public abstract ICompilation ToCompilation();
-    }
-
-    /// <summary>
-    /// Represents the level of dependency tracking within the dependency analysis system.
-    /// </summary>
-    public enum DependencyTrackingLevel
-    {
-        /// <summary>
-        /// Tracking disabled. This is the most performant and memory efficient option.
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// The graph keeps track of the first dependency.
-        /// </summary>
-        First,
-
-        /// <summary>
-        /// The graph keeps track of all dependencies.
-        /// </summary>
-        All
     }
 
     /// <summary>

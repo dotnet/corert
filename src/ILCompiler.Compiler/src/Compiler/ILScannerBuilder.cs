@@ -41,32 +41,13 @@ namespace ILCompiler
             return this;
         }
 
-        private DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory)
-        {
-            // Choose which dependency graph implementation to use based on the amount of logging requested.
-            switch (_dependencyTrackingLevel)
-            {
-                case DependencyTrackingLevel.None:
-                    return new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                case DependencyTrackingLevel.First:
-                    return new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                case DependencyTrackingLevel.All:
-                    return new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(factory, null);
-
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
         public IILScanner ToILScanner()
         {
             // TODO: we will want different metadata managers depending on whether we're doing reflection analysis
             var metadataManager = new CompilerGeneratedMetadataManager(_compilationGroup, _context, null);
 
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
-            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(nodeFactory);
+            DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
             return new ILScanner(graph, nodeFactory, _compilationRoots, _logger);
         }

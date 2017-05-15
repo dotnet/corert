@@ -118,6 +118,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ScannedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteUnboxingThunkNode.cs" />
+    <Compile Include="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
     <Compile Include="Compiler\ILScanner.cs" />
     <Compile Include="Compiler\ILScannerBuilder.cs" />
