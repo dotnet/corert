@@ -107,7 +107,7 @@ namespace Internal.Runtime.TypeLoader
             return s_nativeLayoutInterfacesAlgorithm;
         }
 
-        public override DefType GetWellKnownType(WellKnownType wellKnownType)
+        public override DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true)
         {
             switch (wellKnownType)
             {
@@ -190,7 +190,10 @@ namespace Internal.Runtime.TypeLoader
                     return (DefType)ResolveRuntimeTypeHandle(typeof(Exception).TypeHandle);
 
                 default:
-                    throw new NotImplementedException();
+                    if (throwIfNotFound)
+                        throw new NotImplementedException();
+                    else
+                        return null;
             }
         }
 
