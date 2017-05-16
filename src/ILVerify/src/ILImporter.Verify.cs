@@ -1583,7 +1583,12 @@ namespace Internal.IL
 
         void ImportEndFilter()
         {
-            // TODO:
+            Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
+            Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
+
+            var result = Pop();
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()
