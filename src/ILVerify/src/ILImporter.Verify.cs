@@ -491,15 +491,18 @@ namespace Internal.IL
             {
                 Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
 
-                if (basicBlock.TryIndex.HasValue && basicBlock.StartOffset == _exceptionRegions[basicBlock.TryIndex.Value].ILRegion.TryOffset)
+                for (int i = 0; i < _exceptionRegions.Length; i++)
                 {
-                    var r = _exceptionRegions[basicBlock.TryIndex.Value].ILRegion;
+                    var r = _exceptionRegions[i];
 
-                    if (r.Kind == ILExceptionRegionKind.Filter)
-                        MarkBasicBlock(_basicBlocks[r.FilterOffset]);
+                    if (basicBlock.StartOffset != r.ILRegion.TryOffset)
+                        continue;
 
-                    if (r.Kind == ILExceptionRegionKind.Filter || r.Kind == ILExceptionRegionKind.Catch)
-                        MarkBasicBlock(_basicBlocks[r.HandlerOffset]);
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                        MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
+
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
                 }
             }
 
