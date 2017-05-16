@@ -9,23 +9,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class MetadataTypeSystemContext : TypeSystemContext
     {
-        private struct WellKnownTypeDef
-        {
-            internal string Name { get; }
-            internal bool IsOptional { get; }
-
-            internal WellKnownTypeDef(string name, bool optional = true)
-            {
-                Name = name;
-                IsOptional = optional;
-            }
-
-            public override string ToString() => $"{Name}, {IsOptional}";
-            public static implicit operator WellKnownTypeDef(string name) =>  new WellKnownTypeDef(name);
-            public static WellKnownTypeDef Required(string name) => new WellKnownTypeDef(name, false);
-        }
-
-        private static readonly WellKnownTypeDef[] s_wellKnownTypes = new WellKnownTypeDef[] {
+        private static readonly string[] s_wellKnownTypeNames = new string[] {
             "Void",
 
             "Boolean",
@@ -47,7 +31,7 @@ namespace Internal.TypeSystem
             "Enum",
             "Nullable`1",
 
-            WellKnownTypeDef.Required("Object"),
+            "Object",
             "String",
             "Array",
             "MulticastDelegate",
@@ -78,15 +62,16 @@ namespace Internal.TypeSystem
             InitializeSystemModule(systemModule);
 
             // Sanity check the name table
-            Debug.Assert(s_wellKnownTypes[(int)WellKnownType.MulticastDelegate - 1].Name == "MulticastDelegate");
+            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
 
-            _wellKnownTypes = new MetadataType[s_wellKnownTypes.Length];
+            _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
 
             // Initialize all well known types - it will save us from checking the name for each loaded type
             for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
             {
-                WellKnownTypeDef wellKnownType = s_wellKnownTypes[typeIndex];
-                MetadataType type = systemModule.GetType("System", wellKnownType.Name, !wellKnownType.IsOptional);
+                // Require System.Object to be present as a minimal sanity check. 
+                // The set of required well-known types is not strictly defined since different .NET profiles implement different subsets.
+                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex], typeIndex == (int)WellKnownType.Object);
                 if (type != null)
                 {
                     type.SetWellKnownType((WellKnownType)(typeIndex + 1));
@@ -95,14 +80,14 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType GetWellKnownType(TypeSystem.WellKnownType wellKnownType, bool throwIfNotFound = true)
+        public override DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true)
         {
             Debug.Assert(_wellKnownTypes != null, "Forgot to call SetSystemModule?");
 
             int typeIndex = (int)wellKnownType - 1;
             DefType type = _wellKnownTypes[typeIndex];
             if (type == null && throwIfNotFound) 
-                throw new TypeSystemException.TypeLoadException("System", s_wellKnownTypes[typeIndex].Name, SystemModule);
+                throw new TypeSystemException.TypeLoadException("System", s_wellKnownTypeNames[typeIndex], SystemModule);
 
             return type;
         }
