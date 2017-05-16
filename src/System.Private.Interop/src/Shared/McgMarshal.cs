@@ -169,6 +169,15 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
+        internal static Type TypeNameToType(string nativeTypeName, int nativeTypeKind)
+        {
+#if ENABLE_WINRT
+            return McgTypeHelpers.TypeNameToType(nativeTypeName, nativeTypeKind, checkTypeKind: false);
+#else
+            throw new NotSupportedException("TypeNameToType");
+#endif
+        }
+
         public static unsafe void TypeToTypeName(
             Type type,
             out HSTRING nativeTypeName,
@@ -178,6 +187,24 @@ namespace System.Runtime.InteropServices
             McgTypeHelpers.TypeToTypeName(type, out nativeTypeName, out nativeTypeKind);
 #else
             throw new NotSupportedException("TypeToTypeName");
+#endif
+        }
+
+        /// <summary>
+        /// Fetch type name
+        /// </summary>
+        /// <param name="typeHandle">type</param>
+        /// <returns>type name</returns>
+        internal static string TypeToTypeName(RuntimeTypeHandle typeHandle, out int nativeTypeKind)
+        {
+#if ENABLE_WINRT
+            TypeKind typekind;
+            string typeName;
+            McgTypeHelpers.TypeToTypeName(typeHandle, out typeName, out typekind);
+            nativeTypeKind = (int)typekind;
+            return typeName;
+#else
+           throw new NotSupportedException("TypeToTypeName");
 #endif
         }
 
@@ -367,9 +394,9 @@ namespace System.Runtime.InteropServices
         }
 #endif //ENABLE_WINRT
 
-        #endregion
+#endregion
 
-        #region COM marshalling
+#region COM marshalling
 
         /// <summary>
         /// Explicit AddRef for RCWs
@@ -868,9 +895,9 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        #endregion
+#endregion
 
-        #region Testing
+#region Testing
 
         /// <summary>
         /// Internal-only method to allow testing of apartment teardown code
@@ -909,7 +936,7 @@ namespace System.Runtime.InteropServices
             return list;
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// This method returns HR for the exception being thrown.
@@ -974,7 +1001,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        #region Shared templates
+#region Shared templates
 #if ENABLE_MIN_WINRT
         public static void CleanupNative<T>(IntPtr pObject)
         {
@@ -988,7 +1015,7 @@ namespace System.Runtime.InteropServices
             }
         }
 #endif
-        #endregion
+#endregion
 
 #if ENABLE_MIN_WINRT
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1047,7 +1074,7 @@ namespace System.Runtime.InteropServices
             return obj.GetDynamicAdapter(requestedType, default(RuntimeTypeHandle));
         }
 
-        #region "PInvoke Delegate"
+#region "PInvoke Delegate"
 
         public static IntPtr GetStubForPInvokeDelegate(RuntimeTypeHandle delegateType, Delegate dele)
         {
