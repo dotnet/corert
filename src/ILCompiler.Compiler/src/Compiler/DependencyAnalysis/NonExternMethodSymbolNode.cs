@@ -71,7 +71,10 @@ namespace ILCompiler.DependencyAnalysis
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             if (_compilationDiscoveredDependencies != null)
+            {
+                dependencies = dependencies ?? new DependencyList();
                 dependencies.AddRange(_compilationDiscoveredDependencies);
+            }
 
             return dependencies;
         }
