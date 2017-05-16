@@ -1474,7 +1474,22 @@ namespace Internal.IL
 
         void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException($"{nameof(ImportUnaryOperation)} not implemented");
+            var operand = Pop();
+
+            switch (opCode)
+            {
+                case ILOpcode.neg:
+                    CheckIsNumeric(operand);
+                    break;
+                case ILOpcode.not:
+                    CheckIsInteger(operand);
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected branch opcode");
+                    break;
+            }
+
+            Push(StackValue.CreatePrimitive(operand.Kind));
         }
 
         void ImportCpOpj(int token)
