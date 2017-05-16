@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -20,13 +21,21 @@ namespace ILCompiler.DependencyAnalysis
     public class GCStaticsPreInitDataNode : ObjectNode, IExportableSymbolNode
     {
         private MetadataType _type;
-        private List<FieldDesc> _sortedPreInitFields;
+        private List<PreInitFieldInfo> _sortedPreInitFields;
 
-        public GCStaticsPreInitDataNode(MetadataType type, List<FieldDesc> sortedPreInitFields)
+        public GCStaticsPreInitDataNode(MetadataType type, List<PreInitFieldInfo> preInitFields)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
-            _sortedPreInitFields = sortedPreInitFields;
+
+            // sort the PreInitFieldInfo to appear in increasing offset order for easier emitting
+            _sortedPreInitFields = new List<PreInitFieldInfo>(preInitFields);
+            _sortedPreInitFields.Sort(FieldDescCompare);
+        }
+
+        static int FieldDescCompare(PreInitFieldInfo fieldInfo1, PreInitFieldInfo fieldInfo2)
+        {
+            return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -46,12 +55,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            // relocs has all the dependencies we need
-            return null;
-        }
-
         public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
@@ -64,13 +67,13 @@ namespace ILCompiler.DependencyAnalysis
 
             return GetDataForPreInitDataField(
                 this, _type, _sortedPreInitFields, 
-                factory.Target.LayoutPointerSize.AsInt,     // CoreRT static size calculation includes EEType - skip it
+                factory.Target.PointerSize,     // CoreRT static size calculation includes EEType - skip it
                 factory, relocsOnly);
         }
 
         public static ObjectData GetDataForPreInitDataField(
             ISymbolDefinitionNode node, 
-            MetadataType _type, List<FieldDesc> sortedPreInitFields,
+            MetadataType _type, List<PreInitFieldInfo> sortedPreInitFields,
             int startOffset,
             NodeFactory factory, bool relocsOnly = false)
         {
@@ -86,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int writeTo = staticOffsetEnd;
                 if (idx < sortedPreInitFields.Count)
-                    writeTo = sortedPreInitFields[idx].Offset.AsInt;
+                    writeTo = sortedPreInitFields[idx].Field.Offset.AsInt;
 
                 // Emit the zero before the next preinitField
                 builder.EmitZeros(writeTo - staticOffset);
@@ -96,6 +99,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (idx < sortedPreInitFields.Count)
                 {
                     builder.EmitPointerReloc(factory.SerializedFrozenArray(sortedPreInitFields[idx]));
+                    idx++;
                     staticOffset += factory.Target.PointerSize;
                 }
             }

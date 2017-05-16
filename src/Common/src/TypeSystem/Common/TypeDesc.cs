@@ -109,7 +109,6 @@ namespace Internal.TypeSystem
                 case WellKnownType.Array:
                 case WellKnownType.MulticastDelegate:
                 case WellKnownType.Exception:
-                case WellKnownType.Type:
                     flags = TypeFlags.Class;
                     break;
 

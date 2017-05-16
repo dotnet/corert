@@ -13,22 +13,21 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a frozen array with contents preinitialized from another RVA static field
+    /// Represents a frozen array
     /// </summary>
-    public class FrozenStaticFieldArrayNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public class FrozenArrayNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
-        private FieldDesc _arrayField;
-        private int _pointerSize; 
-
-        public FrozenStaticFieldArrayNode(FieldDesc arrayField, TargetDetails target)
+        private PreInitFieldInfo _preInitFieldInfo;
+        
+        public FrozenArrayNode(PreInitFieldInfo preInitFieldInfo)
         {
-            _arrayField = arrayField;
-            _pointerSize = target.PointerSize;
+            _preInitFieldInfo = preInitFieldInfo;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenArr_").Append(nameMangler.GetMangledFieldName(_arrayField));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenArr_")
+                .Append(nameMangler.GetMangledFieldName(_preInitFieldInfo.Field));
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -40,13 +39,15 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 // The frozen array symbol points at the EEType portion of the object, skipping over the sync block
-                return OffsetFromBeginningOfArray + _pointerSize;
+                return OffsetFromBeginningOfArray + _preInitFieldInfo.Field.Context.Target.PointerSize;
             }
         }
 
         private IEETypeNode GetEETypeNode(NodeFactory factory)
         {
-            return factory.GetLocalTypeSymbol(_arrayField.PreInitDataField.FieldType);
+            var fieldType = _preInitFieldInfo.Field.FieldType;
+            Debug.Assert(factory.IsLocalTypeSymbol(fieldType));
+            return factory.ConstructedTypeSymbol(fieldType);
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
@@ -56,42 +57,21 @@ namespace ILCompiler.DependencyAnalysis
 
             // EEType
             dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
-          
-            var arrType = _arrayField.FieldType as ArrayType;
-            if (arrType == null || !arrType.IsSzArray)
-            {
-                // We only support single dimensional arrays
-                throw new NotSupportedException();
-            }
-
-            FieldDesc arrayDataField = _arrayField.PreInitDataField;
-            if (!arrayDataField.HasRva)
-                throw new BadImageFormatException();
-            
-            var ecmaDataField = arrayDataField as EcmaField;
-            if (ecmaDataField == null)
-                throw new NotImplementedException();
-            
-            var rvaData = ecmaDataField.GetFieldRvaData();
-            int elementSize = arrType.ElementType.GetElementSize().AsInt;
-            if (rvaData.Length % elementSize != 0)
-                throw new BadImageFormatException();
-            
-            int length = rvaData.Length / elementSize;
 
             // numComponents
-            dataBuilder.EmitInt(length);
+            dataBuilder.EmitInt(_preInitFieldInfo.Size);
 
-            Debug.Assert(_pointerSize == 8 || _pointerSize == 4);
+            int pointerSize = _preInitFieldInfo.Field.Context.Target.PointerSize;
+            Debug.Assert(pointerSize == 8 || pointerSize == 4);
 
-            if (_pointerSize == 8)
+            if (pointerSize == 8)
             {
                 // padding numComponents in 64-bit
                 dataBuilder.EmitInt(0);
             }
 
             // byte contents
-            dataBuilder.EmitBytes(rvaData);
+            dataBuilder.EmitBytes(_preInitFieldInfo.Data);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

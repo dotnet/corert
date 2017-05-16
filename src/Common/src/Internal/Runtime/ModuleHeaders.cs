@@ -47,16 +47,16 @@ namespace Internal.Runtime
     public enum ReadyToRunSectionType
     {
         StringTable = 200, // Unused
-        GCStaticsRegion = 201,
-        ThreadStaticsRegion = 202,
+        GCStaticRegion = 201,
+        ThreadStaticRegion = 202,
         InterfaceDispatchTable = 203,
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticsDesc = 207,
-        ThreadStaticsOffsetRegion = 208,
-        ThreadStaticsGCDescRegion = 209,
-        ThreadStaticsIndex = 210,
+        GCStaticDesc = 207,
+        ThreadStaticOffsetRegion = 208,
+        ThreadStaticGCDescRegion = 209,
+        ThreadStaticIndex = 210,
 
         /// <summary>
         /// Contains pointer relocs to preinitialized data in FrozenObjectRegion

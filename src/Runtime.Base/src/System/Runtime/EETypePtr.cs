@@ -49,6 +49,14 @@ namespace System
             throw new NotImplementedException();
         }
 #endif
+
+        internal unsafe uint RawDataSize
+        {
+            get
+            {
+                return ToPointer()->RawDataSize;
+            }
+        }
     }
 }
 

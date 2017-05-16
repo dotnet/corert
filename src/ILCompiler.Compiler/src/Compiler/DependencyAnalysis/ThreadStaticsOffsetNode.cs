@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory factory)
         {
-            (factory as UtcNodeFactory).ThreadStaticsOffsetRegion.AddEmbeddedObject(this);
+            (factory as UtcNodeFactory).ThreadStaticOffsetRegion.AddEmbeddedObject(this);
         }
         
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             UtcNodeFactory hostedFactory = factory as UtcNodeFactory;
             Debug.Assert(hostedFactory != null);
             DependencyListEntry[] result = new DependencyListEntry[2];
-            result[0] = new DependencyListEntry(hostedFactory.ThreadStaticsOffsetRegion, "ThreadStatics Offset Region");
+            result[0] = new DependencyListEntry(hostedFactory.ThreadStaticOffsetRegion, "ThreadStatics Offset Region");
             result[1] = new DependencyListEntry(factory.TypeThreadStaticsSymbol(_type), "ThreadStatics Base");
             return result;
         }

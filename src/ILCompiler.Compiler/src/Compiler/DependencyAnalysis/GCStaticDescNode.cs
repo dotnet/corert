@@ -63,11 +63,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_isThreadStatic)
                 {
-                    return utcNodeFactory.ThreadStaticsGCDescRegion;
+                    return utcNodeFactory.ThreadStaticGCDescRegion;
                 }
                 else
                 {
-                    return utcNodeFactory.GCStaticsDescRegion;
+                    return utcNodeFactory.GCStaticDescRegion;
                 }
             }
         }

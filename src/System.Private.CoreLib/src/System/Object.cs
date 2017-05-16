@@ -152,6 +152,11 @@ namespace System
         {
             return ref Unsafe.As<RawData>(this).Data;
         }
+
+        internal uint GetRawDataSize()
+        {
+            return EETypePtr.RawDataSize;
+        }
     }
 }
 

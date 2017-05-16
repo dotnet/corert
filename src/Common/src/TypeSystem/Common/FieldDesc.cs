@@ -69,13 +69,6 @@ namespace Internal.TypeSystem
             get;
         }
 
-        /// <summary>
-        /// Fields in AOT can be preinitialized with special RVA fields (indicated by InitDataBlobAttribute)
-        /// whose RVA points to the contents of the value (such as array).
-        /// Returns the corresponding field that contains preinitialized data.
-        /// </summary>
-        public virtual FieldDesc PreInitDataField => null;
-
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
         public virtual FieldDesc GetTypicalFieldDefinition()

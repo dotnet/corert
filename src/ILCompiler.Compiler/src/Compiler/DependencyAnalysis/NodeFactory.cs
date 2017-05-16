@@ -356,9 +356,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
-            _frozenArrayNodes = new NodeCache<FieldDesc, FrozenStaticFieldArrayNode>((FieldDesc data) =>
+            _frozenArrayNodes = new NodeCache<PreInitFieldInfo, FrozenArrayNode>((PreInitFieldInfo fieldInfo) =>
             {
-                return new FrozenStaticFieldArrayNode(data, Target);
+                return new FrozenArrayNode(fieldInfo);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -518,6 +518,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public bool IsLocalTypeSymbol(TypeDesc type)
+        {
+            IEETypeNode symbol = ConstructedTypeSymbol(type);
+
+            return !symbol.RepresentsIndirectionCell;
+        }
+        
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
@@ -879,12 +886,11 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<FieldDesc, FrozenStaticFieldArrayNode> _frozenArrayNodes;
+        private NodeCache<PreInitFieldInfo, FrozenArrayNode> _frozenArrayNodes;
 
-        public FrozenStaticFieldArrayNode SerializedFrozenArray(FieldDesc arrayField)
+        public FrozenArrayNode SerializedFrozenArray(PreInitFieldInfo preInitFieldInfo)
         {
-            Debug.Assert(arrayField.PreInitDataField != null);
-            return _frozenArrayNodes.GetOrAdd(arrayField);
+            return _frozenArrayNodes.GetOrAdd(preInitFieldInfo);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -968,9 +974,9 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
 
-            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion.StartSymbol, GCStaticsPreInitDataRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticsRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);

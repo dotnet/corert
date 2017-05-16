@@ -14,34 +14,13 @@ namespace ILCompiler.DependencyAnalysis
     public class GCStaticsNode : ObjectNode, IExportableSymbolNode
     {
         private MetadataType _type;
-        private List<FieldDesc> _preinitFields;
+        private List<PreInitFieldInfo> _preInitFieldInfos;
 
         public GCStaticsNode(MetadataType type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
-
-            // Go through and find all fields with preinitialized data
-            foreach (var field in _type.GetFields())
-            {
-                var preinitDataField = field.PreInitDataField;
-                if (preinitDataField != null)
-                {
-                    if (_preinitFields == null)
-                        _preinitFields = new List<FieldDesc>();
-                    _preinitFields.Add(field);
-                }
-            }
-
-            // We need to sort the fields so that we can later go through them
-            // in the right order when emitting data
-            if (_preinitFields != null)
-                _preinitFields.Sort(FieldDescCompare);
-        }
-
-        static int FieldDescCompare(FieldDesc fd1, FieldDesc fd2)
-        {
-            return fd1.Offset.AsInt - fd2.Offset.AsInt;
+            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -69,7 +48,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public GCStaticsPreInitDataNode NewPreInitDataNode()
         {
-            return new GCStaticsPreInitDataNode(_type, _preinitFields);
+            Debug.Assert(_preInitFieldInfos != null);
+            return new GCStaticsPreInitDataNode(_type, _preInitFieldInfos);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -83,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
-                if (_preinitFields != null)
+                if (_preInitFieldInfos != null)
                     dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
             }
 
@@ -107,12 +87,12 @@ namespace ILCompiler.DependencyAnalysis
                 int delta = 1;
 
                 // 2nd LSB indicates next pointer following EEType is the preinit data
-                if (_preinitFields != null)
+                if (_preInitFieldInfos != null)
                     delta = 3;
                 
                 builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
-                if (_preinitFields != null)
+                if (_preInitFieldInfos != null)
                     builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
             }
             else

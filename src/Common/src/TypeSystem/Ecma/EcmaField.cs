@@ -6,7 +6,6 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
-
 using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
@@ -35,15 +34,10 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc _fieldType;
         private string _name;
 
-        private FieldDesc _preInitDataField;
-
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-            if (IsStatic)
-                _preInitDataField = this.GetPreInitDataField();
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
@@ -226,19 +220,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        /// <summary>
-        /// Fields in AOT can be preinitialized with special RVA fields (indicated by InitDataBlobAttribute)
-        /// whose RVA points to the contents of the value (such as array).
-        /// Returns the corresponding field that contains preinitialized data.
-        /// </summary>
-        public override FieldDesc PreInitDataField
-        {
-            get
-            {
-                return _preInitDataField;
-            }
-        }
-
         public FieldAttributes Attributes
         {
             get
@@ -302,40 +283,6 @@ namespace Internal.TypeSystem.Ecma
             memBlock.CopyTo(0, result, 0, result.Length);
 
             return result;
-        }
-
-        /// <summary>
-        /// Retrieves the corresponding static preinitialized data field by looking at various attributes
-        /// </summary>
-        public static FieldDesc GetPreInitDataField(this EcmaField field)
-        {
-            Debug.Assert(field.IsStatic);
-
-            // Early return if there is no custom attributes
-            if (field.CustomAttributes.Count == 0)
-                return null;
-
-            if (!field.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute"))
-                return null;
-
-            var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
-            if (decoded == null)
-                return null;
-
-            var decodedValue = decoded.Value;
-            if (decodedValue.FixedArguments.Length != 2)
-                return null;
-
-            if (decodedValue.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Type))
-                return null;
-
-            var typeDesc = (TypeDesc)decodedValue.FixedArguments[0].Value;
-
-            if (decodedValue.FixedArguments[1].Type != field.Context.GetWellKnownType(WellKnownType.String))
-                return null;
-
-            var fieldName = (string)decodedValue.FixedArguments[1].Value;
-            return typeDesc.GetField(fieldName);
         }
     }
 }

@@ -79,6 +79,14 @@ namespace System
             }
         }
 
+        internal EETypePtr EETypePtr
+        {
+            get
+            {
+                return new EETypePtr(new IntPtr(m_pEEType));
+            }
+        }        
+
         [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
@@ -89,5 +97,10 @@ namespace System
         {
             return ref Unsafe.As<RawData>(this).Data;
         }
+
+        internal uint GetRawDataSize()
+        {
+            return EETypePtr.RawDataSize;
+        }        
     }
 }

@@ -96,5 +96,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal extern static void MemoryBarrier();
+
+        // Moves memory from smem to dmem. Size must be a positive value.
+        // This copy uses an intrinsic to be safe for copying arbitrary bits of
+        // heap memory
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size);
     }
 }

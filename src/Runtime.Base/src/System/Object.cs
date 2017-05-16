@@ -69,15 +69,32 @@ namespace System
             }
         }
 
+        internal EETypePtr EETypePtr
+        {
+            get
+            {
+                return new EETypePtr(new IntPtr(m_pEEType));
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
             public byte Data;
         }
 
+        /// <summary>
+        /// Return beginning of all data (excluding ObjHeader and EEType*) within this object.
+        /// Note that for strings/arrays this would include the Length as well. 
+        /// </summary>
         internal ref byte GetRawData()
         {
             return ref Unsafe.As<RawData>(this).Data;
         }
+
+        internal uint GetRawDataSize()
+        {
+            return EEType->RawDataSize;
+        }        
     }
 }

@@ -6,8 +6,6 @@ using System;
 using System.Runtime;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime.Augments;
-
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -90,7 +88,7 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if CORERT
             // Initialize statics if any are present
-            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticsRegion, out length);
+            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
@@ -157,22 +155,22 @@ namespace Internal.Runtime.CompilerHelpers
                 // when this entry is already initialized.
                 IntPtr* pBlock = (IntPtr*)*block;
                 long blockAddr = (*pBlock).ToInt64();
-                if ((blockAddr & 0x1L) == 1)
+                if ((blockAddr & GCStaticRegionConstants.Initialized) == GCStaticRegionConstants.Initialized)
                 {
-                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~0x3L)));
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~GCStaticRegionConstants.All)));
 
-                    if ((blockAddr & 0x2L) == 2)
+                    if ((blockAddr & GCStaticRegionConstants.HasPreInitializedData) == GCStaticRegionConstants.HasPreInitializedData)
                     {
                         // The next pointer is preinitialized data blob that contains preinitialized static GC fields,
                         // which are pointer relocs to GC objects in frozen segment. 
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything. 
-                        fixed (IntPtr* pEEType = &obj.m_pEEType)
+                        fixed (void* pEEType = &obj.m_pEEType)
                         {
                             // Skip SyncBlock + EEType when calculating field size
-                            int fieldSize = (int)obj.EETypePtr.BaseSize - IntPtr.Size * 2;
+                            int fieldSize = (int)obj.GetRawDataSize();
 
-                            RuntimeAugments.BulkMoveWithWriteBarrier(
+                            RuntimeImports.RhBulkMoveWithWriteBarrier(
                                 new IntPtr((byte*)pEEType + IntPtr.Size),
                                 *(IntPtr *)(pBlock+1),
                                 fieldSize);
