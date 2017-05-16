@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using Internal.Runtime.Augments;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
@@ -103,6 +104,12 @@ namespace System.Runtime.InteropServices
         {
             EETypePtr eeType = handle.ToEETypePtr();
             return eeType.IsGenericTypeDefinition;
+        }
+
+        public static unsafe int GetGenericArgumentCount(this RuntimeTypeHandle genericTypeDefinitionHandle)
+        {
+            Debug.Assert(IsGenericTypeDefinition(genericTypeDefinitionHandle));
+            return genericTypeDefinitionHandle.ToEETypePtr().ToPointer()->GenericArgumentCount;
         }
 
         public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
