@@ -98,6 +98,8 @@ namespace Internal.IL
             public int? FilterIndex;
         };
 
+        void EmptyTheStack() => _stackTop = 0;
+
         void Push(StackValue value)
         {
             FatalCheck(_stackTop < _maxStack, VerifierError.StackOverflow);
@@ -1345,31 +1347,26 @@ namespace Internal.IL
 
         void ImportLeave(BasicBlock target)
         {
-            // Empty the stack
-            _stackTop = 0;
+            EmptyTheStack();
 
-#if false
-            for (int i = 0; i < _exceptionRegions.Length; i++)
+            if (_currentBasicBlock.TryIndex.HasValue &&
+                (_exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
+                 _exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault))
             {
-                var r = _exceptionRegions[i];
-
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Finally &&
-                    IsOffsetContained(_currentOffset - 1, r.ILRegion.TryOffset, r.ILRegion.TryLength) &&
-                    !IsOffsetContained(target.StartOffset, r.ILRegion.TryOffset, r.ILRegion.TryLength))
-                {
-                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
-                }
+                MarkBasicBlock(_basicBlocks[_exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.HandlerOffset]);
             }
-#endif
 
             MarkBasicBlock(target);
-
             // TODO
         }
 
         void ImportEndFinally()
         {
-            // TODO
+            Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally);
+            Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
+                _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+
+            EmptyTheStack();
         }
 
         void ImportNewArray(int token)

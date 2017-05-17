@@ -60,7 +60,7 @@ namespace ILVerify
         //E_FALLTHRU_INTO_FIL  "fallthru into an exception filter."
         //E_LEAVE              "Leave from outside a try or catch block."
         Rethrow,                        //"Rethrow from outside a catch handler."
-        //E_ENDFINALLY         "Endfinally from outside a finally handler."
+        Endfinally,                     //"Endfinally from outside a finally handler."
         Endfilter,                      //"Endfilter from outside an exception filter block."
         //E_ENDFILTER_MISSING  "Missing Endfilter."
         //E_BR_INTO_TRY        "Branch into try block."
