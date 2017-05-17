@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportedTypeGenericDictionaryNode(NodeFactory factory, TypeDesc owningType)
             : base("__imp_" + TypeGenericDictionaryNode.GetMangledName(factory.NameMangler, owningType))
         {
+            Debug.Assert(!factory.LazyGenericsPolicy.UsesLazyGenerics(owningType));
             _owningType = owningType;
         }
 

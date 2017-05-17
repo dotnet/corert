@@ -70,7 +70,7 @@ namespace Internal.TypeSystem
         {
             if (type.IsValueType)
             {
-                return ((MetadataType)type).InstanceFieldSize;
+                return ((DefType)type).InstanceFieldSize;
             }
             else
             {

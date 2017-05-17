@@ -139,7 +139,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & FieldTableFlags.IsUniversalCanonicalEntry) != 0)
                 {
-                    throw new NotImplementedException();
+                    // TODO: USG
+                    continue;
                 }
                 else
                 {

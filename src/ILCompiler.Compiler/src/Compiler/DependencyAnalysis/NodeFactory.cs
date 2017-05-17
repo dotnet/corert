@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool _markingComplete;
 
         public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager, NameMangler nameMangler)
+            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy)
         {
             _target = context.Target;
             _context = context;
@@ -35,6 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
             MetadataManager = metadataManager;
+            LazyGenericsPolicy = lazyGenericsPolicy;
         }
 
         public void SetMarkingComplete()
@@ -52,6 +53,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public LazyGenericsPolicy LazyGenericsPolicy { get; }
         public CompilationModuleGroup CompilationModuleGroup
         {
             get
@@ -412,6 +414,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (CompilationModuleGroup.ContainsType(type))
                 {
+                    Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
                     return new TypeGenericDictionaryNode(type);
                 }
                 else
