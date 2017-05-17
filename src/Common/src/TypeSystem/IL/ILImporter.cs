@@ -777,7 +777,7 @@ namespace Internal.IL
                     case ILOpcode.sub_ovf_un:
                         ImportBinaryOperation(opCode);
                         break;
-                    case ILOpcode.endfinally: //both EndFault and EndFinally
+                    case ILOpcode.endfinally: //both endfinally and endfault
                         ImportEndFinally();
                         return;
                     case ILOpcode.leave:
