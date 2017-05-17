@@ -502,12 +502,8 @@ namespace Internal.IL
 
                     if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                         MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Fault || r.ILRegion.Kind == ILExceptionRegionKind.Finally)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                    
+                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
                 }
             }
 
