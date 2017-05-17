@@ -41,6 +41,13 @@ namespace Internal.Runtime.CompilerHelpers
 
                 return ret;
             }
+            else if (nDimensions == 1)
+            {
+                // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                // as an SzArray. SzArray is castable to MdArray rank 1.
+                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(eeType.ArrayElementType);
+                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), pDimensions[0]);
+            }
             else
             {
                 // Multidimensional arrays have two ctors, one with and one without lower bounds

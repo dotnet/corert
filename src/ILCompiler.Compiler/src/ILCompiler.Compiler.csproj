@@ -65,6 +65,9 @@
     <Compile Include="..\..\Common\src\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
+      <Link>IL\ILImporter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.cs">
       <Link>IL\Stubs\AssemblyGetExecutingAssemblyMethodThunk.cs</Link>
     </Compile>
@@ -109,11 +112,16 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedGenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ScannedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteUnboxingThunkNode.cs" />
+    <Compile Include="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="Compiler\EmptyMetadataManager.cs" />
+    <Compile Include="Compiler\ILScanner.cs" />
+    <Compile Include="Compiler\ILScannerBuilder.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\INonEmittableType.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
@@ -280,6 +288,7 @@
     <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
+    <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />

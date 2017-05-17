@@ -17,6 +17,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Debug = System.Diagnostics.Debug;
 using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler
 {
@@ -197,7 +198,13 @@ namespace ILCompiler
         /// <summary>
         /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
         /// </summary>
-        public bool IsReflectionInvokable (MethodDesc method)
+        public virtual bool IsReflectionInvokable(MethodDesc method)
+        {
+            return IsMethodSignatureSupportedInReflectionInvoke(method)
+                && IsMethodSupportedInReflectionInvoke(method);
+        }
+
+        protected bool IsMethodSignatureSupportedInReflectionInvoke(MethodDesc method)
         {
             var signature = method.Signature;
 
@@ -244,6 +251,15 @@ namespace ILCompiler
                     return false;
             }
 
+            return true;
+        }
+
+        protected bool IsMethodSupportedInReflectionInvoke(MethodDesc method)
+        {
+            // TODO: also filter out: .cctor, Finalize, string constructors,
+            //       RuntimeHelpers.InitializeArray, methods on Nullable,
+            //       IntPtr/UIntPtr constructors. Maybe more.
+
             // ----------------------------------------------------------------
             // Delegate construction is only allowed through specific IL sequences
             // ----------------------------------------------------------------
@@ -264,6 +280,63 @@ namespace ILCompiler
                 return false;
 
             return HasReflectionInvokeStubForInvokableMethod(method);
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to compiled method bodies.
+        /// </summary>
+        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            MetadataCategory category = GetMetadataCategory(method);
+
+            if ((category & MetadataCategory.Description) != 0)
+            {
+                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, method);
+            }
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                if (IsReflectionInvokable(method))
+                {
+                    // We're going to generate a mapping table entry for this. Collect dependencies.
+                    CodeBasedDependencyAlgorithm.AddDependenciesDueToReflectability(ref dependencies, factory, method);
+                }
+            }
+        }
+
+        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
+            // (E.g. dependencies caused by the method having custom attributes applied to it: making sure we compile the attribute constructor
+            // and property setters)
+        }
+
+        /// <summary>
+        /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
+        /// </summary>
+        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            MetadataCategory category = GetMetadataCategory(type);
+
+            if ((category & MetadataCategory.Description) != 0)
+            {
+                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
+            }
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                // We're going to generate a mapping table entry for this. Collect dependencies.
+
+                // Nothing for now - the mapping table only refers to the EEType and we already generated one because
+                // we got the callback.
+            }
+        }
+
+        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
+            // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
+            // and property setters)
         }
 
         /// <summary>
@@ -468,6 +541,10 @@ namespace ILCompiler
         }
 
         public abstract bool IsReflectionBlocked(MetadataType type);
+
+        protected abstract MetadataCategory GetMetadataCategory(MethodDesc method);
+        protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
+        protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
     }
 
     public struct MetadataMapping<TEntity>
@@ -480,5 +557,12 @@ namespace ILCompiler
             Entity = entity;
             MetadataHandle = metadataHandle;
         }
+    }
+
+    public enum MetadataCategory
+    {
+        None = 0x00,
+        Description = 0x01,
+        RuntimeMapping = 0x02,
     }
 }

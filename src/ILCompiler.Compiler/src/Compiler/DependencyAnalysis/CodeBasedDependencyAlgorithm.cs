@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void AddDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            AddDependenciesDueToReflectability(ref dependencies, factory, method);
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, method);
 
             if (method.HasInstantiation)
             {

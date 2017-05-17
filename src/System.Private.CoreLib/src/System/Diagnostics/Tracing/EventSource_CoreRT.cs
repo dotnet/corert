@@ -186,6 +186,7 @@ namespace System.Diagnostics.Tracing
                 this.ActivityOptions = EventActivityOptions.None;
                 this.ParameterTypes = parameterTypes;
                 this.HasRelatedActivityID = false;
+                this.EventHandle = IntPtr.Zero;
             }
         }
         

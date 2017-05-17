@@ -142,6 +142,44 @@ namespace Internal.IL.Stubs
                 }
             }
 
+            // Methods on Rank 1 MdArray need to be able to handle `this` that is an SzArray
+            // because SzArray is castable to Rank 1 MdArray (but not the other way around).
+
+            ILCodeLabel rangeCheckDoneLabel = null;
+            if (_rank == 1)
+            {
+                TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+                TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+                ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
+                codeStream.EmitStLoc(thisEEType);
+                codeStream.EmitLdLoca(thisEEType);
+                codeStream.Emit(ILOpcode.call,
+                    _emitter.NewToken(eetypePtrType.GetKnownMethod("get_IsSzArray", null)));
+
+                ILCodeLabel notSzArrayLabel = _emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.brfalse, notSzArrayLabel);
+
+                // We have an SzArray - do the bounds check differently
+                EmitLoadInteriorAddress(codeStream, pointerSize);
+                codeStream.Emit(ILOpcode.dup);
+                codeStream.Emit(ILOpcode.ldind_i4);
+                codeStream.EmitLdArg(argStartOffset);
+                codeStream.EmitStLoc(totalLocalNum);
+                codeStream.EmitLdLoc(totalLocalNum);
+                codeStream.Emit(ILOpcode.ble_un, rangeExceptionLabel);
+
+                codeStream.EmitLdc(pointerSize);
+                codeStream.Emit(ILOpcode.add);
+
+                rangeCheckDoneLabel = _emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.br, rangeCheckDoneLabel);
+
+                codeStream.EmitLabel(notSzArrayLabel);
+            }
+
             for (int i = 0; i < _rank; i++)
             {
                 // The first two fields are EEType pointer and total length. Lengths for each dimension follows.
@@ -173,6 +211,9 @@ namespace Internal.IL.Stubs
             // TODO: This leaves unused space for lower bounds to match CoreCLR...
             int firstElementOffset = (2 * pointerSize + 2 * _rank * sizeof(int));
             EmitLoadInteriorAddress(codeStream, firstElementOffset);
+
+            if (rangeCheckDoneLabel != null)
+                codeStream.EmitLabel(rangeCheckDoneLabel);
 
             codeStream.EmitLdLoc(totalLocalNum);
 

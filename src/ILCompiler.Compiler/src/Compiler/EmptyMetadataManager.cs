@@ -28,6 +28,21 @@ namespace ILCompiler
             return true;
         }
 
+        protected override MetadataCategory GetMetadataCategory(FieldDesc field)
+        {
+            return MetadataCategory.None;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(MethodDesc method)
+        {
+            return MetadataCategory.None;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(TypeDesc type)
+        {
+            return MetadataCategory.None;
+        }
+
         protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
             metadataBlob = Array.Empty<byte>();
