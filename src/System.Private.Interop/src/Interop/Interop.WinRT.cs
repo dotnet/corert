@@ -70,7 +70,6 @@ namespace System.Runtime.InteropServices
         internal static extern int RoReportUnhandledError(IntPtr pRestrictedErrorInfo);
 
         [DllImport(Libraries.CORE_WINRT_TYPERESOLUTION, PreserveSig = true)]
-        [McgGeneratedNativeCallCodeAttribute]
         internal static unsafe extern int RoParseTypeName(
             HSTRING typename,
             uint * typenamePartsLength,
