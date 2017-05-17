@@ -268,11 +268,6 @@ namespace Internal.Reflection.Execution
                 return false;
             }
             
-            if (rank == 1)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NoMultiDims_Rank1);
-            }
-
             if ((rank < MDArray.MinRank) || (rank > MDArray.MaxRank))
             {
                 throw new TypeLoadException(SR.Format(SR.MultiDim_Of_This_Rank_Not_Supported, rank));
