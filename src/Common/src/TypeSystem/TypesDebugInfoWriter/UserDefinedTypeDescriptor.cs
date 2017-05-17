@@ -78,7 +78,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             }
             enumTypeDescriptor.ElementCount = (ulong)fieldsDescriptors.Count;
             enumTypeDescriptor.ElementType = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(defType.UnderlyingType);
-            enumTypeDescriptor.Name = defType.Name;
+            enumTypeDescriptor.Name = _objectWriter.GetMangledName(type);
             enumTypeDescriptor.UniqueName = defType.GetFullName();
             EnumRecordTypeDescriptor[] typeRecords = new EnumRecordTypeDescriptor[enumTypeDescriptor.ElementCount];
             for (int i = 0; i < fieldsDescriptors.Count; ++i)
@@ -168,7 +168,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
             System.Diagnostics.Debug.Assert(defType != null, "GetClassTypeIndex was called with non def type");
             ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor();
             classTypeDescriptor.IsStruct = type.IsValueType ? 1 : 0;
-            classTypeDescriptor.Name = defType.Name;
+            classTypeDescriptor.Name = _objectWriter.GetMangledName(type);
             classTypeDescriptor.UniqueName = defType.GetFullName();
             classTypeDescriptor.BaseClassId = 0;
 
