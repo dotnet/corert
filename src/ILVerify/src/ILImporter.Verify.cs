@@ -505,6 +505,9 @@ namespace Internal.IL
 
                     if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                         MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Fault || r.ILRegion.Kind == ILExceptionRegionKind.Finally)
+                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
                 }
             }
 
@@ -1348,13 +1351,6 @@ namespace Internal.IL
         void ImportLeave(BasicBlock target)
         {
             EmptyTheStack();
-
-            if (_currentBasicBlock.TryIndex.HasValue &&
-                (_exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
-                 _exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault))
-            {
-                MarkBasicBlock(_basicBlocks[_exceptionRegions[_currentBasicBlock.TryIndex.Value].ILRegion.HandlerOffset]);
-            }
 
             MarkBasicBlock(target);
             // TODO
