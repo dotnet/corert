@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             _hasCompiledBody = true;
         }
 
-        public void AddCompilationDiscoveredDependency(DependencyNodeCore<NodeFactory> node, string reason)
+        public void AddCompilationDiscoveredDependency(IDependencyNode<NodeFactory> node, string reason)
         {
             Debug.Assert(!_dependenciesQueried);
             if (_compilationDiscoveredDependencies == null)
