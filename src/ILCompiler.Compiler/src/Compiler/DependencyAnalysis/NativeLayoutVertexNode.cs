@@ -689,18 +689,20 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NativeLayoutDictionarySignatureNode : NativeLayoutSavedVertexNode
     {
         private TypeSystemEntity _owningMethodOrType;
-        public NativeLayoutDictionarySignatureNode(TypeSystemEntity owningMethodOrType)
+        public NativeLayoutDictionarySignatureNode(NodeFactory nodeFactory, TypeSystemEntity owningMethodOrType)
         {
             if (owningMethodOrType is MethodDesc)
             {
                 MethodDesc owningMethod = (MethodDesc)owningMethodOrType;
-                Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Universal));
+                Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Universal) || nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningMethod));
+                Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 Debug.Assert(owningMethod.HasInstantiation);
             }
             else
             {
                 TypeDesc owningType = (TypeDesc)owningMethodOrType;
-                Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Universal));
+                Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Universal) || nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningType));
+                Debug.Assert(owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
             }
 
             _owningMethodOrType = owningMethodOrType;
@@ -812,7 +814,7 @@ namespace ILCompiler.DependencyAnalysis
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_method);
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
             
-            if (!_method.IsCanonicalMethod(CanonicalFormKind.Universal) && (templateLayout.Count > 0))
+            if (!(_method.IsCanonicalMethod(CanonicalFormKind.Universal) || (factory.LazyGenericsPolicy.UsesLazyGenerics(_method))) && (templateLayout.Count > 0))
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 
@@ -1076,7 +1078,7 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.ImplementedInterfaces, implementedInterfaces.WriteVertex(factory));
             }
 
-            if (!_isUniversalCanon && (templateLayout.Count > 0))
+            if (!(_isUniversalCanon || (factory.LazyGenericsPolicy.UsesLazyGenerics(_type)) )&& (templateLayout.Count > 0))
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
 

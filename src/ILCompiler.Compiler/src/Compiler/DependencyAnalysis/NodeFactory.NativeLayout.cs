@@ -191,7 +191,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 _dictionarySignatures = new NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode>(owningMethodOrType =>
                 {
-                    return new NativeLayoutDictionarySignatureNode(owningMethodOrType);
+                    return new NativeLayoutDictionarySignatureNode(_factory, owningMethodOrType);
                 });
 
                 _integerSlots = new NodeCache<int, NativeLayoutIntegerDictionarySlotNode>(value =>

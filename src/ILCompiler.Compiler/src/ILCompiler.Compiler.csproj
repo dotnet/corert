@@ -263,6 +263,7 @@
     <Compile Include="Compiler\ExportedMethodsRootProvider.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
+    <Compile Include="Compiler\LazyGenericsPolicy.cs" />
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />

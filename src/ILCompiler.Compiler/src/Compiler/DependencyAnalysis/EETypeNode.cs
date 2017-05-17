@@ -246,9 +246,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.IsArray)
             {
-                int elementSize = ((ArrayType)_type).ElementType.GetElementSize().AsInt;
-                // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                objData.EmitShort((short)checked((ushort)elementSize));
+                TypeDesc elementType = ((ArrayType)_type).ElementType;
+                if (elementType == elementType.Context.UniversalCanonType)
+                {
+                    objData.EmitShort(0);
+                }
+                else
+                {
+                    int elementSize = elementType.GetElementSize().AsInt;
+                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                    objData.EmitShort((short)checked((ushort)elementSize));
+                }
             }
             else if (_type.IsString)
             {
@@ -303,8 +311,20 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsDefType)
             {
-                objectSize = pointerSize +
-                    ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
+
+                if (instanceByteCount.IsIndeterminate)
+                {
+                    // Some value must be put in, but the specific value doesn't matter as it
+                    // isn't used for specific instantiations, and the universal canon eetype
+                    // is never associated with an allocated object.
+                    objectSize = pointerSize; 
+                }
+                else
+                {
+                    objectSize = pointerSize +
+                        ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                }
 
                 if (_type.IsValueType)
                     objectSize += pointerSize; // + EETypePtr field inherited from System.Object
@@ -417,7 +437,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
                 // TODO: emit the correction dictionary slot for interfaces (needed when we start supporting static methods on interfaces)
-                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any) || factory.LazyGenericsPolicy.UsesLazyGenerics(declType))
                     objData.EmitZeroPointer();
                 else
                     objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
@@ -649,8 +669,17 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type as DefType;
             Debug.Assert(defType != null);
 
-            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
-            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+            uint valueTypeFieldPaddingEncoded;
+
+            if (defType.InstanceByteCount.IsIndeterminate)
+            {
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1);
+            }
+            else
+            {
+                uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+            }
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
@@ -757,8 +786,8 @@ namespace ILCompiler.DependencyAnalysis
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    int elementSize = parameterType.GetElementSize().AsInt;
-                    if (elementSize >= ushort.MaxValue)
+                    LayoutInt elementSize = parameterType.GetElementSize();
+                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);

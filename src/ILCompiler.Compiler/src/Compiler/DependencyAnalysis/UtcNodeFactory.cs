@@ -70,7 +70,7 @@ namespace ILCompiler
         }
 
         public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler)
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler, new AttributeDrivenLazyGenericsPolicy())
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;

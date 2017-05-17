@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             _hasCompiledBody = true;
         }
 
-        public void AddCompilationDiscoveredDependency(DependencyNodeCore<NodeFactory> node, string reason)
+        public void AddCompilationDiscoveredDependency(IDependencyNode<NodeFactory> node, string reason)
         {
             Debug.Assert(!_dependenciesQueried);
             if (_compilationDiscoveredDependencies == null)
@@ -71,7 +71,10 @@ namespace ILCompiler.DependencyAnalysis
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             if (_compilationDiscoveredDependencies != null)
+            {
+                dependencies = dependencies ?? new DependencyList();
                 dependencies.AddRange(_compilationDiscoveredDependencies);
+            }
 
             return dependencies;
         }
