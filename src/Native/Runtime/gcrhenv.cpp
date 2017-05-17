@@ -170,6 +170,8 @@ CrstStatic g_SuspendEELock;
 #endif // _MSC_VER
 EEType g_FreeObjectEEType;
 
+extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
+
 // static 
 bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
