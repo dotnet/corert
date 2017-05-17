@@ -181,15 +181,7 @@ namespace System
 
             elementType = elementType.UnderlyingSystemType;
 
-            if (lengths.Length == 1 && lowerBounds[0] == 0)
-            {
-                int length = lengths[0];
-                return CreateSzArray(elementType, length);
-            }
-            else
-            {
-                return CreateMultiDimArray(elementType, lengths, lowerBounds);
-            }
+            return CreateMultiDimArray(elementType, lengths, lowerBounds);
         }
 
         private static Array CreateSzArray(Type elementType, int length)
@@ -247,17 +239,20 @@ namespace System
             public byte Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawSzArrayData()
         {
             Debug.Assert(IsSzArray);
             return ref Unsafe.As<RawData>(this).Data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte GetRawArrayData()
         {
             return ref Unsafe.Add(ref Unsafe.As<RawData>(this).Data, (int)(EETypePtr.BaseSize - SZARRAY_BASE_SIZE));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetRawMultiDimArrayBounds()
         {
             Debug.Assert(!IsSzArray);
@@ -987,6 +982,13 @@ namespace System
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(rank == eeType.ArrayRank);
 
+            // Code below assumes 0 lower bounds. MdArray of rank 1 with zero lower bounds should never be allocated.
+            // The runtime always allocates an SzArray for those:
+            // * newobj instance void int32[0...]::.ctor(int32)" actually gives you int[]
+            // * int[] is castable to int[*] to make it mostly transparent
+            // The callers need to check for this.
+            Debug.Assert(rank != 1);
+
             ulong totalLength = 1;
             bool maxArrayDimensionLengthOverflow = false;
 
@@ -1676,11 +1678,9 @@ namespace System
         }
     }
 
-#if CORERT
     public class MDArray
     {
         public const int MinRank = 1;
         public const int MaxRank = 32;
     }
-#endif
 }

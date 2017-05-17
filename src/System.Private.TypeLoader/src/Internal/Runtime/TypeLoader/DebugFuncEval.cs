@@ -7,7 +7,10 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.NativeFormat;
 using Internal.Runtime.CallInterceptor;
+using Internal.Runtime.CompilerServices;
+using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -20,18 +23,21 @@ namespace Internal.Runtime.TypeLoader
 
     internal class DebugFuncEval
     {
-        private static void HighLevelDebugFuncEvalHelperWithVariables(ref int param, ref LocalVariableSet arguments)
+        private static void HighLevelDebugFuncEvalHelperWithVariables(ref TypesAndValues param, ref LocalVariableSet arguments)
         {
-            // Hard coding the argument integer here!
-            arguments.SetVar<int>(1, param);
+            for (int i = 0; i < param.parameterValues.Length; i++)
+            {
+                arguments.SetVar<int>(i + 1, param.parameterValues[i]);
+            }
 
             // Obtain the target method address from the runtime
             IntPtr targetAddress = RuntimeImports.RhpGetFuncEvalTargetAddress();
 
-            // Hard coding a single void return here
-            LocalVariableType[] returnAndArgumentTypes = new LocalVariableType[2];
-            returnAndArgumentTypes[0] = new LocalVariableType(typeof(void).TypeHandle, false, false);
-            returnAndArgumentTypes[1] = new LocalVariableType(typeof(int).TypeHandle, false, false);
+            LocalVariableType[] returnAndArgumentTypes = new LocalVariableType[param.types.Length];
+            for (int i = 0; i < returnAndArgumentTypes.Length; i++)
+            {
+                returnAndArgumentTypes[i] = new LocalVariableType(param.types[i], false, false);
+            }
 
             // Hard coding static here
             DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(Internal.Runtime.CallConverter.CallingConvention.ManagedStatic, returnAndArgumentTypes, returnAndArgumentTypes.Length);
@@ -39,19 +45,19 @@ namespace Internal.Runtime.TypeLoader
             // Invoke the target method
             Internal.Runtime.CallInterceptor.CallInterceptor.MakeDynamicCall(targetAddress, dynamicCallSignature, arguments);
 
+            // TODO: We should be able to handle arbitrary return type
+            object returnValue = arguments.GetVar<int>(0);
+            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+
             // Signal to the debugger the func eval completes
-            IntPtr funcEvalCompleteCommandPointer;
             unsafe
             {
-                FuncEvalCompleteCommand funcEvalCompleteCommand = new FuncEvalCompleteCommand
-                {
-                    commandCode = 0
-                };
-
-                funcEvalCompleteCommandPointer = new IntPtr(&funcEvalCompleteCommand);
+                FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
+                funcEvalCompleteCommand->commandCode = 0;
+                funcEvalCompleteCommand->returnAddress = (long)GCHandle.ToIntPtr(returnValueHandle);
+                IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
+                RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
             }
-
-            RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
 
             // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
         }
@@ -67,16 +73,26 @@ namespace Internal.Runtime.TypeLoader
             public long bufferAddress;
         }
 
-        [StructLayout(LayoutKind.Explicit, Size=4)]
+        [StructLayout(LayoutKind.Explicit, Size=16)]
         struct FuncEvalCompleteCommand
         {
             [FieldOffset(0)]
             public int commandCode;
+            [FieldOffset(4)]
+            public int unused;
+            [FieldOffset(8)]
+            public long returnAddress;
+        }
+
+        struct TypesAndValues
+        {
+            public RuntimeTypeHandle[] types;
+            // TODO: We should support arguments of *any* type
+            public int[] parameterValues;            
         }
 
         private static void HighLevelDebugFuncEvalHelper()
         {
-            int integerParameterValue = 0;
             uint parameterBufferSize = RuntimeImports.RhpGetFuncEvalParameterBufferSize();
 
             IntPtr writeParameterCommandPointer;
@@ -93,22 +109,89 @@ namespace Internal.Runtime.TypeLoader
                 };
 
                 writeParameterCommandPointer = new IntPtr(&writeParameterCommand);
+
+                RuntimeImports.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
+
+                // .. debugger magic ... the debuggerBuffer will be filled with parameter data
+
+                TypesAndValues typesAndValues = new TypesAndValues();
+
+                uint trash;
+                uint parameterCount;
+                uint parameterValue;
+                uint eeTypeCount;
+                ulong eeType;
+                uint offset = 0;
+
+                NativeReader reader = new NativeReader(debuggerBufferRawPointer, parameterBufferSize);
+                offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
+                offset = reader.DecodeUnsigned(offset, out parameterCount);
+
+                typesAndValues.parameterValues = new int[parameterCount];
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    offset = reader.DecodeUnsigned(offset, out parameterValue);
+                    typesAndValues.parameterValues[i] = (int)parameterValue;
+                }
+                offset = reader.DecodeUnsigned(offset, out eeTypeCount); 
+                for (int i = 0; i < eeTypeCount; i++)
+                {
+                    // TODO: Stuff these eeType values into the external reference table
+                    offset = reader.DecodeUnsignedLong(offset, out eeType);
+                }
+
+                TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
+                bool hasThis;
+                TypeDesc[] parameters;
+                bool[] parametersWithGenericDependentLayout;
+                bool result = TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(typeSystemContext, RuntimeSignature.CreateFromNativeLayoutSignatureForDebugger(offset), Instantiation.Empty, Instantiation.Empty, out hasThis, out parameters, out parametersWithGenericDependentLayout, reader);
+
+                typesAndValues.types = new RuntimeTypeHandle[parameters.Length];
+
+                bool needToDynamicallyLoadTypes = false;
+                for (int i = 0; i < typesAndValues.types.Length; i++)
+                {
+                    if (!parameters[i].RetrieveRuntimeTypeHandleIfPossible())
+                    {
+                        needToDynamicallyLoadTypes = true;
+                        break;
+                    }
+
+                    typesAndValues.types[i] = parameters[i].GetRuntimeTypeHandle();
+                }
+
+                if (needToDynamicallyLoadTypes)
+                {
+                    TypeLoaderEnvironment.Instance.RunUnderTypeLoaderLock(() =>
+                    {
+                        typeSystemContext.FlushTypeBuilderStates();
+
+                        GenericDictionaryCell[] cells = new GenericDictionaryCell[parameters.Length];
+                        for (int i = 0; i < cells.Length; i++)
+                        {
+                            cells[i] = GenericDictionaryCell.CreateTypeHandleCell(parameters[i]);
+                        }
+                        IntPtr[] eetypePointers;
+                        TypeBuilder.ResolveMultipleCells(cells, out eetypePointers);
+
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            typesAndValues.types[i] = ((EEType*)eetypePointers[i])->ToRuntimeTypeHandle();
+                        }
+                    });
+                }
+
+                TypeSystemContextFactory.Recycle(typeSystemContext);
+
+                LocalVariableType[] argumentTypes = new LocalVariableType[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    // TODO: What these false really means? Need to make sure our format contains those information
+                    argumentTypes[i] = new LocalVariableType(typesAndValues.types[i], false, false);
+                }
+
+                LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
             }
-
-            RuntimeImports.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
-
-            // .. debugger magic ... the debuggerBuffer will be filled with parameter data
-
-            unsafe
-            {
-                integerParameterValue = Unsafe.Read<int>(debuggerBufferPointer.ToPointer());
-            }
-
-            // Hard coding a single argument of type int here
-            LocalVariableType[] argumentTypes = new LocalVariableType[2];
-            argumentTypes[0] = new LocalVariableType(typeof(void).TypeHandle, false, false);
-            argumentTypes[1] = new LocalVariableType(typeof(int).TypeHandle, false, false);
-            LocalVariableSet.SetupArbitraryLocalVariableSet<int>(HighLevelDebugFuncEvalHelperWithVariables, ref integerParameterValue, argumentTypes);
         }
 
         public static void Initialize()

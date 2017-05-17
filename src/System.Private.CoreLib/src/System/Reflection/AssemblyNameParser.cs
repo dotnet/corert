@@ -10,7 +10,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Runtime.Assemblies
+namespace System.Reflection
 {
     //
     // Parses an assembly name.

@@ -65,34 +65,12 @@ namespace System.Reflection.Runtime.TypeInfos
                         InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
                         delegate (Object _this, Object[] args)
                         {
-                            if (rank == 1)
+                            int[] lengths = new int[rank];
+                            for (int i = 0; i < rank; i++)
                             {
-                                // Legacy: This seems really wrong in the rank1-multidim case (as it's a case of a synthetic constructor that's declared on T[*] returning an instance of T[])
-                                // This is how the desktop behaves, however.
-
-                                int count = (int)(args[0]);
-
-                                RuntimeTypeInfo vectorType;
-                                if (multiDim)
-                                {
-                                    vectorType = arrayType.InternalRuntimeElementType.GetArrayType();
-                                }
-                                else
-                                {
-                                    vectorType = arrayType;
-                                }
-
-                                return ReflectionCoreExecution.ExecutionEnvironment.NewArray(vectorType.TypeHandle, count);
+                                lengths[i] = (int)(args[i]);
                             }
-                            else
-                            {
-                                int[] lengths = new int[rank];
-                                for (int i = 0; i < rank; i++)
-                                {
-                                    lengths[i] = (int)(args[i]);
-                                }
-                                return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
-                            }
+                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
                         }
                     );
                 }

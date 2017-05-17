@@ -92,8 +92,10 @@ namespace Internal.IL
             public bool FilterStart;
             public bool HandlerStart;
 
+            //these point to the direct enclosing items in _exceptionRegions
             public int? TryIndex;
             public int? HandlerIndex;
+            public int? FilterIndex;
         };
 
         void Push(StackValue value)
@@ -201,6 +203,13 @@ namespace Internal.IL
                             {
                                 basicBlock.HandlerIndex = j;
                             }
+                        }
+                    }
+                    if(r.FilterOffset != -1 && r.FilterOffset <= offset && r.HandlerOffset - 1 >= offset)
+                    {
+                        if(!basicBlock.FilterIndex.HasValue)
+                        {
+                            basicBlock.FilterIndex = j;
                         }
                     }
                 }
@@ -500,36 +509,33 @@ namespace Internal.IL
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
                 Debug.Assert(basicBlock.EntryStack == null);
-                                
-                for (int i = 0; i < _exceptionRegions.Length; i++)
+
+                ExceptionRegion r;
+                if (basicBlock.HandlerIndex.HasValue)
                 {
-                    var r = _exceptionRegions[i];
+                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
+                }
+                else if (basicBlock.FilterIndex.HasValue)
+                {
+                    r = _exceptionRegions[basicBlock.FilterIndex.Value];
+                }
+                else
+                {
+                    return;
+                }
 
-                    if (basicBlock.FilterStart)
-                    {
-                        if (basicBlock.StartOffset != r.ILRegion.FilterOffset)
-                            continue;
-                    }
-                    else
-                    {
-                        if (basicBlock.StartOffset != r.ILRegion.HandlerOffset)
-                            continue;
-                    }
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                    {
-                        basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
-                    }
-                    else
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
-                    }
-                    else
-                    {
-                        basicBlock.EntryStack = s_emptyStack;
-                    }
-                    break;
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(GetWellKnownType(WellKnownType.Object)) };
+                }
+                else
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                {
+                    basicBlock.EntryStack = new StackValue[] { StackValue.CreateObjRef(ResolveTypeToken(r.ILRegion.ClassToken)) };
+                }
+                else
+                {
+                    basicBlock.EntryStack = s_emptyStack;
                 }
             }
 
@@ -1474,7 +1480,22 @@ namespace Internal.IL
 
         void ImportUnaryOperation(ILOpcode opCode)
         {
-            throw new NotImplementedException($"{nameof(ImportUnaryOperation)} not implemented");
+            var operand = Pop();
+
+            switch (opCode)
+            {
+                case ILOpcode.neg:
+                    CheckIsNumeric(operand);
+                    break;
+                case ILOpcode.not:
+                    CheckIsInteger(operand);
+                    break;
+                default:
+                    Debug.Assert(false, "Unexpected branch opcode");
+                    break;
+            }
+
+            Push(StackValue.CreatePrimitive(operand.Kind));
         }
 
         void ImportCpOpj(int token)
@@ -1562,7 +1583,12 @@ namespace Internal.IL
 
         void ImportEndFilter()
         {
-            // TODO:
+            Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
+            Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
+
+            var result = Pop();
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()

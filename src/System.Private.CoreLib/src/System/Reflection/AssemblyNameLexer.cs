@@ -9,7 +9,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Runtime.Assemblies
+namespace System.Reflection
 {
     //
     // A simple lexer for assembly display names.
@@ -87,7 +87,7 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     c = _chars[_index++];
                     bool matched = false;
-                    foreach (KeyValuePair<char, String> kv in EscapeSequences)
+                    foreach (KeyValuePair<char, String> kv in AssemblyNameFormatter.EscapeSequences)
                     {
                         if (c == kv.Key)
                         {
@@ -112,17 +112,6 @@ namespace System.Reflection.Runtime.Assemblies
                 tokenString = tokenString.Trim(); // Unless quoted, whitespace at beginning or end doesn't count.
             return Token.String;
         }
-
-        internal static KeyValuePair<char, String>[] EscapeSequences =
-        {
-            new KeyValuePair<char, String>('\\', "\\"),
-            new KeyValuePair<char, String>(',', ","),
-            new KeyValuePair<char, String>('=', "="),
-            new KeyValuePair<char, String>('\'', "'"),
-            new KeyValuePair<char, String>('\"', "\""),
-            new KeyValuePair<char, String>('n', Environment.NewLine),
-            new KeyValuePair<char, String>('t', "\t"),
-        };
 
         // Token categories for display name lexer.
         internal enum Token

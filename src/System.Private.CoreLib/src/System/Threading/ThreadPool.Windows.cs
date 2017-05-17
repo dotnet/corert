@@ -9,11 +9,55 @@ using System.Runtime.InteropServices;
 namespace System.Threading
 {
     //
-    // Win32-specific implementation of ThreadPool
+    // Windows-specific implementation of ThreadPool
     //
     public static partial class ThreadPool
     {
+        /// <summary>
+        /// The maximum number of threads in the default thread pool on Windows 10 as computed by
+        /// TppComputeDefaultMaxThreads(TppMaxGlobalPool).
+        /// </summary>
+        /// <remarks>
+        /// Note that Windows 8 and 8.1 used a different value: Math.Max(4 * ThreadPoolGlobals.processorCount, 512).
+        /// </remarks>
+        private static readonly int MaxThreadCount = Math.Max(8 * ThreadPoolGlobals.processorCount, 768);
+
         private static IntPtr s_work;
+
+        public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
+        {
+            // Not supported at present
+            return false;
+        }
+
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
+        {
+            // Note that worker threads and completion port threads share the same thread pool.
+            // The total number of threads cannot exceed MaxThreadCount.
+            workerThreads = MaxThreadCount;
+            completionPortThreads = MaxThreadCount;
+        }
+
+        public static bool SetMinThreads(int workerThreads, int completionPortThreads)
+        {
+            // Not supported at present
+            return false;
+        }
+
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
+        {
+            workerThreads = 0;
+            completionPortThreads = 0;
+        }
+
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
+        {
+            // Make sure we return a non-negative value if thread pool defaults are changed
+            int availableThreads = Math.Max(MaxThreadCount - ThreadPoolGlobals.workQueue.numWorkingThreads, 0);
+
+            workerThreads = availableThreads;
+            completionPortThreads = availableThreads;
+        }
 
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)

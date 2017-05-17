@@ -17,7 +17,7 @@ namespace ILCompiler
         CppCodegenConfigProvider _config = new CppCodegenConfigProvider(Array.Empty<string>());
 
         public CppCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
-            : base(context, group)
+            : base(context, group, new CoreRTNameMangler(new CppNodeMangler(), true))
         {
         }
 
@@ -30,7 +30,7 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             MetadataManager metadataManager = CreateMetadataManager();
-            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, metadataManager);
+            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             return new CppCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);

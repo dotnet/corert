@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
     {
         public static bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
         {
-            return type == type.Context.GetWellKnownType(wellKnownType);
+            return type == type.Context.GetWellKnownType(wellKnownType, false);
         }
 
         public static InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)

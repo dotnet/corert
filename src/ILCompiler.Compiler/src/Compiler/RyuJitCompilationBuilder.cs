@@ -18,7 +18,8 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
-            : base(context, group)
+            : base(context, group,
+                  new CoreRTNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false))
         {
         }
 
@@ -75,7 +76,7 @@ namespace ILCompiler
 
             MetadataManager metadataManager = CreateMetadataManager();
 
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, metadataManager);
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);

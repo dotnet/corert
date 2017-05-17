@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Reflection.Runtime.Assemblies;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;

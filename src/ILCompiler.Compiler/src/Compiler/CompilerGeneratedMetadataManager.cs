@@ -59,6 +59,21 @@ namespace ILCompiler
             return _compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType);
         }
 
+        protected override MetadataCategory GetMetadataCategory(FieldDesc field)
+        {
+            return MetadataCategory.RuntimeMapping;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(MethodDesc method)
+        {
+            return MetadataCategory.RuntimeMapping;
+        }
+
+        protected override MetadataCategory GetMetadataCategory(TypeDesc type)
+        {
+            return MetadataCategory.RuntimeMapping;
+        }
+
         protected override void ComputeMetadata(NodeFactory factory,
                                                 out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
