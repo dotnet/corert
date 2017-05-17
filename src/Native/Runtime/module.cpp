@@ -1145,6 +1145,10 @@ BlobHeader * Module::GetReadOnlyBlobs(UInt32 * pcbBlobs)
 /*static*/
 void Module::DoCustomImports(ModuleHeader * pModuleHeader)
 {
+// Address issue 432987: rather than AV on invalid ordinals, it's better to fail fast, so turn the
+// asserts below into conditional failfast calls
+#define ASSERT_FAILFAST(cond)  if (!(cond)) RhFailFast()
+
     CustomImportDescriptor *customImportTable = (CustomImportDescriptor *)pModuleHeader->GetCustomImportDescriptors();
     UInt32 countCustomImports = pModuleHeader->CountCustomImportDescriptors;
 
@@ -1175,10 +1179,10 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
             UInt32 *pFlag = (UInt32 *)ptrIAT;
 
             // the ptr to the EAT indirection cell also points to the flag
-            ASSERT((UInt32 *)ptrPtrEAT == pFlag);
+            ASSERT_FAILFAST((UInt32 *)ptrPtrEAT == pFlag);
             
             // the number of IAT entries should be zero
-            ASSERT(countIAT == 0);
+            ASSERT_FAILFAST(countIAT == 0);
 
             // if the flag is set, it means we have fixed up this module already
             // this is our check against infinite recursion
@@ -1186,7 +1190,7 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
                 return;
 
             // if the flag is not set, it must be clear
-            ASSERT(*pFlag == FALSE);
+            ASSERT_FAILFAST(*pFlag == FALSE);
 
             // set the flag
             *pFlag = TRUE;
@@ -1200,15 +1204,15 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
                 UIntTarget ordinal = ptrIAT[j];
 
                 // the ordinals should have the high bit set
-                ASSERT((ordinal & TARGET_IMAGE_ORDINAL_FLAG) != 0);
+                ASSERT_FAILFAST((ordinal & TARGET_IMAGE_ORDINAL_FLAG) != 0);
 
                 // the ordinals should be in increasing order, for perf reasons
-                ASSERT(j+1 == countIAT || ordinal < ptrIAT[j+1]);
+                ASSERT_FAILFAST(j+1 == countIAT || ordinal < ptrIAT[j+1]);
 
                 ordinal &= ~TARGET_IMAGE_ORDINAL_FLAG;
 
                 // sanity check: limit ordinals to < 1 Million
-                ASSERT(ordinal < 1024 * 1024);
+                ASSERT_FAILFAST(ordinal < 1024 * 1024);
 
                 // obtain the target RVA
                 UInt32 targetRVA = ptrEAT[ordinal];
@@ -1230,7 +1234,9 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
             DoCustomImports(pTargetModuleHeader);
         }
     }
+#undef ASSERT_FAILFAST
 }
+
 #endif // FEATURE_CUSTOM_IMPORTS
 
 #endif // DACCESS_COMPILE
