@@ -23,13 +23,13 @@ namespace ILCompiler
         /// <summary>
         /// Number of elements, if this is a frozen array.
         /// </summary>
-        public int Size { private set; get; }
+        public int Length { private set; get; }
 
-        public PreInitFieldInfo(FieldDesc field, byte[] data, int size)
+        public PreInitFieldInfo(FieldDesc field, byte[] data, int length)
         {
             Field = field;
             Data = data;
-            Size = size;
+            Length = length;
         }
 
         public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)

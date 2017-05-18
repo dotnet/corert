@@ -8,6 +8,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using GCStaticRegionConstants = Internal.Runtime.GCStaticRegionConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -84,11 +85,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                int delta = 1;
+                int delta = GCStaticRegionConstants.Uninitialized;
 
-                // 2nd LSB indicates next pointer following EEType is the preinit data
+                // Set the flag that indicates next pointer following EEType is the preinit data
                 if (_preInitFieldInfos != null)
-                    delta = 3;
+                    delta |= GCStaticRegionConstants.HasPreInitializedData;
                 
                 builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 

@@ -46,8 +46,9 @@ namespace ILCompiler.DependencyAnalysis
         private IEETypeNode GetEETypeNode(NodeFactory factory)
         {
             var fieldType = _preInitFieldInfo.Field.FieldType;
-            Debug.Assert(factory.IsLocalTypeSymbol(fieldType));
-            return factory.ConstructedTypeSymbol(fieldType);
+            var node = factory.ConstructedTypeSymbol(fieldType);
+            Debug.Assert(!node.RepresentsIndirectionCell);  // Array are always local
+            return node;
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
@@ -59,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
 
             // numComponents
-            dataBuilder.EmitInt(_preInitFieldInfo.Size);
+            dataBuilder.EmitInt(_preInitFieldInfo.Length);
 
             int pointerSize = _preInitFieldInfo.Field.Context.Target.PointerSize;
             Debug.Assert(pointerSize == 8 || pointerSize == 4);

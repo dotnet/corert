@@ -38,6 +38,7 @@ namespace Internal.TypeSystem.Ecma
         {
             _type = type;
             _handle = handle;
+
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
             this.ToString();

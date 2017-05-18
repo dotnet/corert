@@ -53,11 +53,11 @@ namespace ILCompiler.DependencyAnalysis
             return nameMangler.NodeMangler.GCStatics(type) + "__PreInitData";
         }
 
-        public virtual bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(Type);
+        public virtual bool IsExported(NodeFactory factory) => false; 
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

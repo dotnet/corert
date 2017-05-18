@@ -252,18 +252,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        /// <summary>
-        /// Return size of all data (excluding ObjHeader and EEType*).
-        /// Note that for strings/arrays this would include the Length as well. 
-        /// </summary>
-        internal UInt32 RawDataSize
-        {
-            get
-            {
-                return BaseSize - (UInt32) sizeof(ObjHeader) - (UInt32) sizeof(EEType*);
-            }
-        }
-
         internal UInt16 NumVtableSlots
         {
             get

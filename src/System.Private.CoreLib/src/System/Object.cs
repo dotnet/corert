@@ -22,6 +22,7 @@ using Internal.Reflection.Core.NonPortable;
 
 #if INPLACE_RUNTIME
 using EEType = Internal.Runtime.EEType;
+using ObjHeader = Internal.Runtime.ObjHeader;
 #endif
 
 namespace System
@@ -153,9 +154,13 @@ namespace System
             return ref Unsafe.As<RawData>(this).Data;
         }
 
+        /// <summary>
+        /// Return size of all data (excluding ObjHeader and EEType*).
+        /// Note that for strings/arrays this would include the Length as well. 
+        /// </summary>
         internal uint GetRawDataSize()
         {
-            return EETypePtr.RawDataSize;
+            return EETypePtr.BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(EEType*);
         }
     }
 }

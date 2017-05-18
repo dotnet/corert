@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 
 // TODO: remove when m_pEEType becomes EETypePtr
 using EEType = Internal.Runtime.EEType;
+using ObjHeader = Internal.Runtime.ObjHeader;
 
 namespace System
 {
@@ -79,14 +80,6 @@ namespace System
             }
         }
 
-        internal EETypePtr EETypePtr
-        {
-            get
-            {
-                return new EETypePtr(new IntPtr(m_pEEType));
-            }
-        }        
-
         [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
@@ -98,9 +91,13 @@ namespace System
             return ref Unsafe.As<RawData>(this).Data;
         }
 
-        internal uint GetRawDataSize()
+        /// <summary>
+        /// Return size of all data (excluding ObjHeader and EEType*).
+        /// Note that for strings/arrays this would include the Length as well.
+        /// </summary>
+        internal unsafe uint GetRawDataSize()
         {
-            return EETypePtr.RawDataSize;
-        }        
+            return EEType->BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(EEType*);
+        }
     }
 }

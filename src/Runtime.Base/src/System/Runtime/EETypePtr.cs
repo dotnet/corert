@@ -50,11 +50,11 @@ namespace System
         }
 #endif
 
-        internal unsafe uint RawDataSize
+        internal unsafe uint BaseSize
         {
             get
             {
-                return ToPointer()->RawDataSize;
+                return ToPointer()->BaseSize;
             }
         }
     }

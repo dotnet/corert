@@ -518,13 +518,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public bool IsLocalTypeSymbol(TypeDesc type)
-        {
-            IEETypeNode symbol = ConstructedTypeSymbol(type);
-
-            return !symbol.RepresentsIndirectionCell;
-        }
-        
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)

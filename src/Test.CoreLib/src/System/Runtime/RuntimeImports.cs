@@ -8,6 +8,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime
 {
     // CONTRACT with Runtime
@@ -102,6 +108,6 @@ namespace System.Runtime
         // heap memory
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
-        internal static extern unsafe void RhBulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size);
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
     }
 }

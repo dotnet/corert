@@ -342,14 +342,6 @@ namespace System
             }
         }
 
-        internal uint RawDataSize
-        {
-            get
-            {
-                return _value->RawDataSize;
-            }
-        }
-
         // Has internal gc pointers. 
         internal bool HasPointers
         {

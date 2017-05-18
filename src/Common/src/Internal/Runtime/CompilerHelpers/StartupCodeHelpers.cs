@@ -151,13 +151,11 @@ namespace Internal.Runtime.CompilerHelpers
                 // is initialized once, the static region pointer is stored with lowest bit set in the image.
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
-                // Note that this also properly skips the optional preinit data pointer since it is pointer aligned, 
-                // when this entry is already initialized.
                 IntPtr* pBlock = (IntPtr*)*block;
                 long blockAddr = (*pBlock).ToInt64();
-                if ((blockAddr & GCStaticRegionConstants.Initialized) == GCStaticRegionConstants.Initialized)
+                if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
-                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~GCStaticRegionConstants.All)));
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask)));
 
                     if ((blockAddr & GCStaticRegionConstants.HasPreInitializedData) == GCStaticRegionConstants.HasPreInitializedData)
                     {
@@ -165,18 +163,8 @@ namespace Internal.Runtime.CompilerHelpers
                         // which are pointer relocs to GC objects in frozen segment. 
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything. 
-                        fixed (void* pEEType = &obj.m_pEEType)
-                        {
-                            // Skip SyncBlock + EEType when calculating field size
-                            int fieldSize = (int)obj.GetRawDataSize();
-
-                            RuntimeImports.RhBulkMoveWithWriteBarrier(
-                                new IntPtr((byte*)pEEType + IntPtr.Size),
-                                *(IntPtr *)(pBlock+1),
-                                fieldSize);
-                        }
-
-                        block++;
+                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawDataSize());
                     }
 
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
