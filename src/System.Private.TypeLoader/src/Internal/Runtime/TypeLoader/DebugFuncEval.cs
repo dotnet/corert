@@ -45,13 +45,14 @@ namespace Internal.Runtime.TypeLoader
             // Invoke the target method
             Internal.Runtime.CallInterceptor.CallInterceptor.MakeDynamicCall(targetAddress, dynamicCallSignature, arguments);
 
-            // TODO: We should be able to handle arbitrary return type
-            object returnValue = arguments.GetVar<int>(0);
-            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
-
-            // Signal to the debugger the func eval completes
             unsafe
             {
+                // Box the return
+                IntPtr input = arguments.GetAddressOfVarData(0);
+                object returnValue = RuntimeImports.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
+                GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+
+                // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
                 funcEvalCompleteCommand->commandCode = 0;
                 funcEvalCompleteCommand->returnAddress = (long)GCHandle.ToIntPtr(returnValueHandle);
