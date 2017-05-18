@@ -297,6 +297,10 @@ namespace System.Runtime
         // calls to runtime for allocation
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
+        public static extern unsafe object RhBoxAny(IntPtr pData, IntPtr pEEType);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         internal static extern object RhNewObject(EETypePtr pEEType);
 
