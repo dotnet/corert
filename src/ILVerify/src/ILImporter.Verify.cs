@@ -98,6 +98,8 @@ namespace Internal.IL
             public int? FilterIndex;
         };
 
+        void EmptyTheStack() => _stackTop = 0;
+
         void Push(StackValue value)
         {
             FatalCheck(_stackTop < _maxStack, VerifierError.StackOverflow);
@@ -500,9 +502,8 @@ namespace Internal.IL
 
                     if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                         MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
-
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                    
+                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
                 }
             }
 
@@ -1345,31 +1346,19 @@ namespace Internal.IL
 
         void ImportLeave(BasicBlock target)
         {
-            // Empty the stack
-            _stackTop = 0;
-
-#if false
-            for (int i = 0; i < _exceptionRegions.Length; i++)
-            {
-                var r = _exceptionRegions[i];
-
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Finally &&
-                    IsOffsetContained(_currentOffset - 1, r.ILRegion.TryOffset, r.ILRegion.TryLength) &&
-                    !IsOffsetContained(target.StartOffset, r.ILRegion.TryOffset, r.ILRegion.TryLength))
-                {
-                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
-                }
-            }
-#endif
+            EmptyTheStack();
 
             MarkBasicBlock(target);
-
             // TODO
         }
 
         void ImportEndFinally()
         {
-            // TODO
+            Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally);
+            Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
+                _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+
+            EmptyTheStack();
         }
 
         void ImportNewArray(int token)
@@ -1583,7 +1572,12 @@ namespace Internal.IL
 
         void ImportEndFilter()
         {
-            // TODO:
+            Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
+            Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
+
+            var result = Pop();
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
         void ImportCpBlk()

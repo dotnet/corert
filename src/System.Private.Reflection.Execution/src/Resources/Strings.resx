@@ -174,9 +174,6 @@
   <data name="MissingConstructor_Name" xml:space="preserve">
     <value>Constructor on type '{0}' not found.</value>
   </data>
-  <data name="PlatformNotSupported_NoMultiDims_Rank1" xml:space="preserve">
-    <value>Multidimensional arrays of rank 1 are not supported on this runtime.</value>
-  </data>
   <data name="MultiDim_Of_This_Rank_Not_Supported" xml:space="preserve">
     <value>Multidimensional arrays of rank {0} are not supported.</value>
   </data>

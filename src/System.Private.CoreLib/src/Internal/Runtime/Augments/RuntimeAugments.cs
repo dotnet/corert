@@ -152,7 +152,10 @@ namespace Internal.Runtime.Augments
                 // We just checked above that all lower bounds are zero. In that case, we should actually allocate
                 // a new SzArray instead.
                 RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
-                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), lengths[0]);
+                int length = lengths[0];
+                if (length < 0)
+                    throw new OverflowException(); // For compat: we need to throw OverflowException(): Array.CreateInstance throws ArgumentOutOfRangeException()
+                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
             }
 
             // Create a local copy of the lenghts that cannot be motified by the caller

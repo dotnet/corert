@@ -50,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(_type), "VTable");
 
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");
+
             return dependencyList;
         }
 
