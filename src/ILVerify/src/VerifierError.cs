@@ -225,7 +225,7 @@ namespace ILVerify
         ConstrainedCallWithNonByRefThis,    // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
         //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
-        //E_READONLY_ILLEGAL_WRITE            "Illegal write to readonly ByRef."
+        ReadOnlyIllegalWrite,               // "Illegal write to readonly ByRef."
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT      "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
         //E_TAILCALL_INSIDE_EH       "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
@@ -249,5 +249,7 @@ namespace ILVerify
         //IDS_E_ILERROR        "[IL]: Error: "
         //IDS_E_GLOBAL         "<GlobalFunction>"
         //IDS_E_MDTOKEN        "[mdToken=0x%x]"
+        UnalignNotAllowed,     // "Unaligned prefix not allowed for ldsfld and stsfld"
+        UnalignedOrVolatileUnexpected,      // "Unexpected prefix unalign or volatile prefix"
     }
 }

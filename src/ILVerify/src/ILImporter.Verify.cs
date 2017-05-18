@@ -104,6 +104,9 @@ namespace Internal.IL
         {
             FatalCheck(_stackTop < _maxStack, VerifierError.StackOverflow);
 
+            if ((_pendingPrefix & Prefix.ReadOnly) != 0)
+                value.SetIsReadOnly();
+
             if (_stackTop >= _stack.Length)
                 Array.Resize(ref _stack, 2 * _stackTop + 3);
             _stack[_stackTop++] = value;
@@ -1144,6 +1147,9 @@ namespace Internal.IL
 
         void ImportLoadField(int token, bool isStatic)
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             var field = ResolveFieldToken(token);
 
             if (isStatic)
@@ -1200,6 +1206,9 @@ namespace Internal.IL
 
         void ImportStoreField(int token, bool isStatic)
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             var value = Pop();
 
             var field = ResolveFieldToken(token);
@@ -1235,8 +1244,17 @@ namespace Internal.IL
 
         void ImportLoadIndirect(TypeDesc type)
         {
-            var value = Pop();
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
 
+            var value = Pop();
+            type = CheckLoadIndirect(value, type);
+            Push(StackValue.CreateFromType(type));
+            ClearPendingPrefix(Prefix.Volatile);
+        }
+
+        private TypeDesc CheckLoadIndirect(StackValue value, TypeDesc type)
+        {
             CheckIsByRef(value);
 
             if (type != null)
@@ -1265,8 +1283,7 @@ namespace Internal.IL
                 }
             }
 #endif
-
-            Push(StackValue.CreateFromType(type));
+            return type;
         }
 
         void ImportStoreIndirect(int token)
@@ -1276,7 +1293,16 @@ namespace Internal.IL
 
         void ImportStoreIndirect(TypeDesc type)
         {
-            throw new NotImplementedException($"{nameof(ImportStoreIndirect)} not implemented");
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
+            var value = Pop();
+            var address = Pop();
+
+            Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
+            CheckLoadIndirect(address, type);
+
+            CheckIsAssignable(value, address.DereferenceByRef());
         }
 
         void ImportThrow()
@@ -1582,6 +1608,9 @@ namespace Internal.IL
 
         void ImportCpBlk()
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             Unverifiable();
 
             var size = Pop();
@@ -1595,6 +1624,9 @@ namespace Internal.IL
 
         void ImportInitBlk()
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             Unverifiable();
 
             var size = Pop();
@@ -1692,6 +1724,66 @@ namespace Internal.IL
             Check((mask & Prefix.Volatile) == 0, VerifierError.Volatile);
             Check((mask & Prefix.ReadOnly) == 0, VerifierError.ReadOnly);
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
+        }
+
+        void ClearPendingPrefix(Prefix prefix)
+        {
+            _pendingPrefix &= ~prefix;
+        }
+
+        void VerifyPendingPrefix(ILOpcode opCode)
+        {
+            if ((_pendingPrefix & Prefix.Volatile) != 0 || (_pendingPrefix & Prefix.Unaligned) != 0)
+            {
+                switch (opCode)
+                {
+                    case ILOpcode.ldind_i:
+                    case ILOpcode.ldind_i1:
+                    case ILOpcode.ldind_i2:
+                    case ILOpcode.ldind_i4:
+                    case ILOpcode.ldind_i8:
+                    case ILOpcode.ldind_u1:
+                    case ILOpcode.ldind_u2:
+                    case ILOpcode.ldind_u4:
+
+                    case ILOpcode.ldind_r4:
+                    case ILOpcode.ldind_r8:
+                    case ILOpcode.ldind_ref:
+                        break;
+
+                    case ILOpcode.stind_i:
+                    case ILOpcode.stind_i1:
+                    case ILOpcode.stind_i2:
+                    case ILOpcode.stind_i4:
+                    case ILOpcode.stind_i8:
+
+                    case ILOpcode.stind_r4:
+                    case ILOpcode.stind_r8:
+                    case ILOpcode.stind_ref:
+                        break;
+
+                    case ILOpcode.ldfld:
+                    case ILOpcode.stfld:
+                        break;
+
+                    case ILOpcode.ldobj:
+                    case ILOpcode.stobj:
+                        break;
+
+                    case ILOpcode.initblk:
+                    case ILOpcode.cpblk:
+                        break;
+
+                    case ILOpcode.ldsfld:
+                    case ILOpcode.stsfld:
+                        Check((_pendingPrefix & Prefix.Unaligned) != 0, VerifierError.UnalignNotAllowed);
+                        break; // only allowed for volatile!
+
+                    default:
+                        VerificationError(VerifierError.UnalignedOrVolatileUnexpected);
+                        break;
+                }
+            }
         }
 
         //
