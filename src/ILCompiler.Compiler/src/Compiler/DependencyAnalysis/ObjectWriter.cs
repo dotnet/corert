@@ -276,6 +276,19 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetArrayTypeIndex(IntPtr objWriter, ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor);
+
+        public uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor)
+        {
+            return GetArrayTypeIndex(_nativeObjectWriter, classDescriptor, arrayTypeDescriptor);
+        }
+
+        public string GetMangledName(TypeDesc type)
+        {
+            return _nodeFactory.NameMangler.GetMangledTypeName(type);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitDebugVar(IntPtr objWriter, string name, UInt32 typeIndex, bool isParam, Int32 rangeCount, NativeVarInfo[] range);
 
         public void EmitDebugVar(DebugVarInfo debugVar)
