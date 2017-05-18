@@ -230,9 +230,13 @@ namespace ILCompiler.DependencyAnalysisFramework
                 if (_newDynamicDependenciesMayHaveAppeared)
                 {
                     _newDynamicDependenciesMayHaveAppeared = false;
-                    foreach (DynamicDependencyNode dynamicNode in _markedNodesWithDynamicDependencies)
+                    for (int i = 0; i < _markedNodesWithDynamicDependencies.Count; i++)
                     {
+                        DynamicDependencyNode dynamicNode = _markedNodesWithDynamicDependencies[i];
                         dynamicNode.MarkNewDynamicDependencies(this);
+
+                        // Update the copy in the list
+                        _markedNodesWithDynamicDependencies[i] = dynamicNode;
                     }
                 }
             } while (_markStack.Count != 0);
