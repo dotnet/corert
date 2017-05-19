@@ -131,6 +131,14 @@ namespace ILCompiler.DependencyAnalysis
                 // Array EEType depends on System.Array's virtuals. Array EETypes don't point to
                 // their base type (i.e. there's no reloc based dependency making this "just work").
                 dependencyList.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
+
+                ArrayType arrayType = (ArrayType)_type;
+                if (arrayType.IsMdArray && arrayType.Rank == 1)
+                {
+                    // Allocating an MDArray of Rank 1 with zero lower bounds results in allocating
+                    // an SzArray instead. Make sure the type loader can find the SzArray type.
+                    dependencyList.Add(factory.ConstructedTypeSymbol(arrayType.ElementType.MakeArrayType()), "Rank 1 array");
+                }
             }
 
             dependencyList.Add(factory.VTable(_type), "VTable");
