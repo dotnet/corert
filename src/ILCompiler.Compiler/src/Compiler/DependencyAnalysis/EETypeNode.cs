@@ -435,9 +435,14 @@ namespace ILCompiler.DependencyAnalysis
             // The generic dictionary pointer occupies the first slot of each type vtable slice
             if (declType.HasGenericDictionarySlot())
             {
+                // All generic interface types have a dictionary slot, but only some of them have an actual dictionary.
+                bool isInterfaceWithAnEmptySlot = declType.IsInterface &&
+                    declType.ConvertToCanonForm(CanonicalFormKind.Specific) == declType;
+
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
-                // TODO: emit the correction dictionary slot for interfaces (needed when we start supporting static methods on interfaces)
-                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any) || factory.LazyGenericsPolicy.UsesLazyGenerics(declType))
+                if (declType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
+                    || isInterfaceWithAnEmptySlot)
                     objData.EmitZeroPointer();
                 else
                     objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
