@@ -52,11 +52,13 @@ namespace Internal.Runtime.TypeLoader
                 IntPtr input = arguments.GetAddressOfVarData(0);
                 object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
                 GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                uint identifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
 
                 // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
                 funcEvalCompleteCommand->commandCode = 0;
-                funcEvalCompleteCommand->returnAddress = (long)GCHandle.ToIntPtr(returnValueHandle);
+                funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
                 IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
                 RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
             }

@@ -43,6 +43,9 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        internal static extern unsafe uint RhpRecordDebuggeeInitiatedHandle(void* objectHandle);
+
         //
         // calls to GC
         // These methods are needed to implement System.GC like functionality (optional)

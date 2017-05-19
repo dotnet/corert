@@ -1076,6 +1076,12 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhpGetFuncEvalParameterBufferSize();
         }
 
+        [CLSCompliant(false)]
+        public static unsafe uint RhpRecordDebuggeeInitiatedHandle(IntPtr objectHandle)
+        {
+            return RuntimeImports.RhpRecordDebuggeeInitiatedHandle((void*)objectHandle);
+        }
+
         public static unsafe object RhBoxAny(IntPtr pData, IntPtr pEEType)
         {
             return RuntimeImports.RhBoxAny((void*)pData, new EETypePtr(pEEType));
