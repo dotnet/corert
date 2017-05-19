@@ -126,9 +126,10 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1");
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem, "get_Item", "System", "Span`1"); // not handled
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ReadOnlySpan_GetItem, "get_Item", "System", "ReadOnlySpan`1"); // not handled
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 49);
+            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 50);
 
             return table;
         }

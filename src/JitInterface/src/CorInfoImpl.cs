@@ -2431,6 +2431,41 @@ namespace Internal.JitInterface
         private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedFieldHandle"); }
 
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        {
+            CORINFO_RESOLVED_TOKEN resolvedToken = pResolvedToken;
+
+            // We need to resolve the token because the hMethod that RyuJIT has is canonicalized even if we
+            // know the exact type.
+            resolveToken(ref resolvedToken);
+
+            MethodDesc method = HandleToObject(resolvedToken.hMethod);
+
+            Debug.Assert(method.Name == "EETypePtrOf");
+
+            if (method.IsSharedByGenericInstantiations)
+            {
+                pResult.lookup.lookupKind.needsRuntimeLookup = true;
+                pResult.lookup.runtimeLookup.signature = null;
+                pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+
+                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+
+                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                // to abort the inlining attempt anyway.
+                if (contextMethod != MethodBeingCompiled)
+                    return;
+
+                pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+            }
+            else
+            {
+                pResult.lookup.lookupKind.needsRuntimeLookup = false;
+                pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(method.Instantiation[0]));
+            }
+        }
+
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
 #if DEBUG
@@ -2439,6 +2474,15 @@ namespace Internal.JitInterface
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
+            if (pResolvedToken.hClass == null)
+            {
+                Debug.Assert(
+                    pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method
+                    && fEmbedParent == false);
+                expandRawHandleIntrinsic(ref pResolvedToken, ref pResult);
+                return;
+            }
+
             bool runtimeLookup;
 
             if (!fEmbedParent && pResolvedToken.hMethod != null)
