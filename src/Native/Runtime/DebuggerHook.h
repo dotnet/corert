@@ -21,6 +21,7 @@ struct DebuggerProtectedBufferList
 {
     UInt64 address;
     UInt16 size;
+    UInt32 identifier;
     struct DebuggerProtectedBufferList* next;
 };
 
