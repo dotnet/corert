@@ -450,6 +450,17 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is an uninstantiated generic method.
+        /// </summary>
+        public bool IsGenericMethodDefinition
+        {
+            get
+            {
+                return HasInstantiation && IsMethodDefinition;
+            }
+        }
+
         public bool IsFinalizer
         {
             get
