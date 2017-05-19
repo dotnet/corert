@@ -21,6 +21,45 @@ namespace ILCompiler.DependencyAnalysis
         ConditionalIndirect, // The slot may be a direct pointer or an indirection cell, depending on the last digit
     }
 
+    // Represents a generic lookup within a canonical method body.
+    // TODO: unify with NativeFormat.FixupSignatureKind
+    public enum LookupResultType
+    {
+        Invalid,
+        EEType,             // a type
+        UnwrapNullable,     // a type (The type T described by a type spec that is generic over Nullable<T>)
+        NonGcStatic,        // the non-gc statics of a type
+        GcStatic,           // the gc statics of a type
+        Method,             // a method
+        InterfaceDispatchCell,  // the dispatch cell for calling an interface method
+        MethodDictionary,   // a dictionary for calling a generic method
+        UnboxingStub,       // the unboxing stub for a method
+        ArrayType,          // an array of type
+        DefaultCtor,        // default ctor of a type
+        TlsIndex,           // tls index of a type
+        TlsOffset,          // tls offset of a type
+        AllocObject,        // the allocator of a type
+        GvmVtableOffset,    // vtable offset of a generic virtual method
+        ProfileCounter,     // profiling counter cell
+        MethodLdToken,      // a ldtoken result for a method
+        FieldLdToken,       // a ldtoken result for a field
+        Field,              // a field descriptor
+        IsInst,             // isinst helper
+        CastClass,          // castclass helper
+        AllocArray,         // the array allocator of a type
+        CheckArrayElementType, // check the array element type
+        TypeSize,           // size of the type
+        FieldOffset,        // field offset
+        CallingConvention,  // CallingConventionConverterThunk
+        VtableOffset,       // Offset of a virtual method into the type's vtable
+        Constrained,        // ConstrainedCallDesc
+    }
+
+    public interface IGenericLookupResultTocWriter
+    {
+        void WriteData(GenericLookupResultReferenceType referenceType, LookupResultType slotType, TypeSystemEntity context);
+    }
+
     /// <summary>
     /// Represents the result of a generic lookup within a canonical method body.
     /// The concrete artifact the generic lookup will result in can only be determined after substituting
@@ -55,6 +94,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
+
+        public abstract void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer);
 
         // Call this api to get non-reloc dependencies that arise from use of a dictionary lookup
         public virtual IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
@@ -147,6 +188,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.EEType, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeHandleGenericLookupResult)other)._type);
@@ -206,6 +252,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.UnwrapNullable, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((UnwrapNullableTypeHandleGenericLookupResult)other)._type);
@@ -252,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.FieldOffsetDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldOffset, _field);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -314,6 +370,11 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.VtableOffset, _method);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((VTableOffsetGenericLookupResult)other)._method);
@@ -354,6 +415,11 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.MethodLdTokenDictionarySlot(_method);
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodLdToken, _method);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((MethodHandleGenericLookupResult)other)._method);
@@ -392,6 +458,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.FieldLdTokenDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldLdToken, _field);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -446,6 +517,11 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.MethodDictionaryDictionarySlot(_method);
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodDictionary, _method);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((MethodDictionaryGenericLookupResult)other)._method);
@@ -491,6 +567,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             return factory.NativeLayout.MethodEntrypointDictionarySlot
                         (_method, unboxing: true, functionPointerTarget: factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.Method, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -558,6 +639,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+            else
+            {
+                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
+            }
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((VirtualDispatchGenericLookupResult)other)._method);
@@ -620,6 +714,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+            else
+            {
+                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
+            }
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((VirtualResolveGenericLookupResult)other)._method);
@@ -666,6 +773,11 @@ namespace ILCompiler.DependencyAnalysis
             return GenericLookupResultReferenceType.Indirect;
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.NonGcStatic, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeNonGCStaticBaseGenericLookupResult)other)._type);
@@ -705,6 +817,12 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.NotSupportedDictionarySlot;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -753,6 +871,11 @@ namespace ILCompiler.DependencyAnalysis
             return GenericLookupResultReferenceType.Indirect;
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.GcStatic, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeGCStaticBaseGenericLookupResult)other)._type);
@@ -796,6 +919,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocObject, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -844,6 +972,11 @@ namespace ILCompiler.DependencyAnalysis
             return GenericLookupResultReferenceType.Indirect;
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocArray, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((ArrayAllocatorGenericLookupResult)other)._type);
@@ -887,6 +1020,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.CastClass, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -934,6 +1072,11 @@ namespace ILCompiler.DependencyAnalysis
             return GenericLookupResultReferenceType.Indirect;
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.IsInst, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((IsInstGenericLookupResult)other)._type);
@@ -976,6 +1119,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsIndex, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1021,6 +1169,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsOffset, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1075,6 +1228,11 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.DefaultCtor, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((DefaultConstructorLookupResult)other)._type);
@@ -1116,6 +1274,12 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.CallingConventionConverter(_callingConventionConverter);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1174,6 +1338,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.TypeSizeDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TypeSize, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1235,6 +1404,12 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
