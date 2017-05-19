@@ -11,3 +11,4 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.DllNotFoundException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.EntryPointNotFoundException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.MarshalDirectiveException))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.InteropServices.BestFitMappingAttribute))]

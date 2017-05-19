@@ -87,7 +87,6 @@
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
-    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\BStrWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceType.cs" />
