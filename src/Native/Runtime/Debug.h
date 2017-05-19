@@ -12,7 +12,8 @@ enum DebuggerGcProtectionMessage : uint32_t
 
 enum DebuggerGcProtectionRequestKind : uint16_t
 {
-	ConservativeReporting = 1,
+    EnsureConservativeReporting = 1,
+    RemoveConservativeReporting = 2,
 };
 
 struct GcProtectionMessage
@@ -24,7 +25,8 @@ struct GcProtectionMessage
 
 struct GcProtectionRequest
 {
-    DebuggerGcProtectionRequestKind type;
+    DebuggerGcProtectionRequestKind kind;
     uint16_t size;
+    uint32_t identifier;
     uint64_t address;
 };
