@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
@@ -31,7 +32,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Obtain the target method address from the runtime
-            IntPtr targetAddress = RuntimeImports.RhpGetFuncEvalTargetAddress();
+            IntPtr targetAddress = RuntimeAugments.RhpGetFuncEvalTargetAddress();
 
             LocalVariableType[] returnAndArgumentTypes = new LocalVariableType[param.types.Length];
             for (int i = 0; i < returnAndArgumentTypes.Length; i++)
@@ -49,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 // Box the return
                 IntPtr input = arguments.GetAddressOfVarData(0);
-                object returnValue = RuntimeImports.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
+                object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
                 GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
 
                 // Signal to the debugger the func eval completes
@@ -57,7 +58,7 @@ namespace Internal.Runtime.TypeLoader
                 funcEvalCompleteCommand->commandCode = 0;
                 funcEvalCompleteCommand->returnAddress = (long)GCHandle.ToIntPtr(returnValueHandle);
                 IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
-                RuntimeImports.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+                RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
             }
 
             // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
@@ -94,7 +95,7 @@ namespace Internal.Runtime.TypeLoader
 
         private static void HighLevelDebugFuncEvalHelper()
         {
-            uint parameterBufferSize = RuntimeImports.RhpGetFuncEvalParameterBufferSize();
+            uint parameterBufferSize = RuntimeAugments.RhpGetFuncEvalParameterBufferSize();
 
             IntPtr writeParameterCommandPointer;
             IntPtr debuggerBufferPointer;
@@ -111,7 +112,7 @@ namespace Internal.Runtime.TypeLoader
 
                 writeParameterCommandPointer = new IntPtr(&writeParameterCommand);
 
-                RuntimeImports.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
+                RuntimeAugments.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
 
                 // .. debugger magic ... the debuggerBuffer will be filled with parameter data
 
@@ -198,7 +199,7 @@ namespace Internal.Runtime.TypeLoader
         public static void Initialize()
         {
             // We needed this function only because the McgIntrinsics attribute cannot be applied on the static constructor
-            RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(AddrofIntrinsics.AddrOf<Action>(HighLevelDebugFuncEvalHelper));
+            RuntimeAugments.RhpSetHighLevelDebugFuncEvalHelper(AddrofIntrinsics.AddrOf<Action>(HighLevelDebugFuncEvalHelper));
         }
     }
 }

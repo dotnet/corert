@@ -1054,6 +1054,47 @@ namespace Internal.Runtime.Augments
         {
             return typeHandle.LastResortToString;
         }
+
+        public static void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper)
+        {
+            RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(highLevelDebugFuncEvalHelper);
+        }
+
+        public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
+        {
+            RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
+        }
+
+        public static IntPtr RhpGetFuncEvalTargetAddress()
+        {
+            return RuntimeImports.RhpGetFuncEvalTargetAddress();
+        }
+
+        [CLSCompliant(false)]
+        public static uint RhpGetFuncEvalParameterBufferSize()
+        {
+            return RuntimeImports.RhpGetFuncEvalParameterBufferSize();
+        }
+
+        public static unsafe object RhBoxAny(IntPtr pData, IntPtr pEEType)
+        {
+            return RuntimeImports.RhBoxAny((void*)pData, new EETypePtr(pEEType));
+        }
+
+        public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        {
+            return RuntimeImports.RhHandleAlloc(value, type);
+        }
+
+        public static void RhHandleFree(IntPtr handle)
+        {
+            RuntimeImports.RhHandleFree(handle);
+        }
+
+        public static IntPtr RhGetOSModuleForMrt()
+        {
+            return RuntimeImports.RhGetOSModuleForMrt();
+        }
     }
 }
 
