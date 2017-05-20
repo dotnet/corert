@@ -357,7 +357,14 @@ namespace Internal.TypeSystem
                     if (curType == otherType)
                         return true;
 
-                    curType = curType.BaseType;
+                    if (curType.IsInterface)
+                    {
+                        curType = curType.Context.GetWellKnownType(WellKnownType.Object);
+                    }
+                    else
+                    {
+                        curType = curType.BaseType;
+                    }
                 } while (curType != null);
             }
 

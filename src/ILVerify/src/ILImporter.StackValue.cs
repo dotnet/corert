@@ -191,14 +191,7 @@ namespace Internal.IL
                 if (t == dst)
                     return true;
 
-                if (t.IsInterface)
-                {
-                    t = GetWellKnownType(WellKnownType.Object);
-                }
-                else
-                {
-                    t = t.BaseType;
-                }
+                t = t.BaseType;
             }
 
             if (dst.IsInterface || dst.IsArray)
@@ -224,9 +217,9 @@ namespace Internal.IL
                 if (src.Type == null)
                     return true;
 
-                return IsAssignable(src.Type, dst.Type);
+                return CastingHelper.CanCastTo(src.Type, dst.Type);
 
-            case StackValueKind.ValueType:
+                case StackValueKind.ValueType:
 
                 // TODO: Other cases - variance, etc.
 
