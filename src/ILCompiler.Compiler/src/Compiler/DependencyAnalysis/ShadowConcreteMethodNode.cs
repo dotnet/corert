@@ -78,26 +78,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                // TODO: https://github.com/dotnet/corert/issues/3224
-                // Reflection invoke stub handling is here because in the current reflection model we reflection-enable
-                // all methods that are compiled. Ideally the list of reflection enabled methods should be known before
-                // we even start the compilation process (with the invocation stubs being compilation roots like any other).
-                // The existing model has it's problems: e.g. the invocability of the method depends on inliner decisions.
-                if (factory.MetadataManager.HasReflectionInvokeStub(Method))
-                {
-                    MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(Method);
-                    if (canonInvokeStub.IsSharedByGenericInstantiations)
-                    {
-                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
-                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
-                    }
-                    else
-                        dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
-                }
-            }
-
             if (Method.HasInstantiation)
             {
                 if (Method.IsVirtual)
