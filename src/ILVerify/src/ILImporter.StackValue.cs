@@ -219,7 +219,7 @@ namespace Internal.IL
 
                 return CastingHelper.CanCastTo(src.Type, dst.Type);
 
-                case StackValueKind.ValueType:
+            case StackValueKind.ValueType:
 
                 // TODO: Other cases - variance, etc.
 
