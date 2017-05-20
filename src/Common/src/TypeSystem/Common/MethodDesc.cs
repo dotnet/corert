@@ -465,7 +465,9 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return OwningType.GetFinalizer() == this || OwningType.IsObject && Name == "Finalize";
+                TypeDesc owningType = OwningType;
+                return owningType.HasFinalizer && 
+                    (owningType.GetFinalizer() == this || owningType.IsObject && Name == "Finalize");
             }
         }
 

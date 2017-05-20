@@ -53,5 +53,8 @@ namespace Internal.TypeSystem
 
         HasStaticConstructor         = 0x400,
         HasStaticConstructorComputed = 0x800,
+
+        HasFinalizerComputed = 0x1000,
+        HasFinalizer         = 0x2000,
     }
 }
