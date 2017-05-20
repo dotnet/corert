@@ -190,7 +190,6 @@ namespace Internal.IL
             {
                 if (t == dst)
                     return true;
-
                 t = t.BaseType;
             }
 
