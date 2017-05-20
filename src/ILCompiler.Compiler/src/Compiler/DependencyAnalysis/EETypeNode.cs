@@ -484,10 +484,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputFinalizerMethod(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            MethodDesc finalizerMethod = _type.GetFinalizer();
-
-            if (finalizerMethod != null)
+            if (_type.HasFinalizer)
             {
+                MethodDesc finalizerMethod = _type.GetFinalizer();
                 MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }

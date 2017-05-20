@@ -12,14 +12,6 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public override bool HasFinalizer
-        {
-            get
-            {
-                return GetFinalizer() != null;
-            }
-        }
-
         public abstract override string Name { get; }
 
         public abstract override string Namespace { get; }

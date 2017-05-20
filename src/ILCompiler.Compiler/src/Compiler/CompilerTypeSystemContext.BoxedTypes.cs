@@ -267,6 +267,8 @@ namespace ILCompiler
                     flags |= TypeFlags.Class;
                 }
 
+                flags |= TypeFlags.HasFinalizerComputed;
+
                 return flags;
             }
 
