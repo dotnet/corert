@@ -42,7 +42,8 @@ namespace ILCompiler
         private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         private readonly byte[] _metadataBlob;
 
-        public PrecomputedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob) : base(group, typeSystemContext)
+        public PrecomputedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob)
+            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy())
         {
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
@@ -185,11 +186,6 @@ namespace ILCompiler
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return _loadedMetadata.Value.LocalMetadataModules;
-        }
-
-        public override bool IsReflectionBlocked(MetadataType type)
-        {
-            return type.HasCustomAttribute("System.Runtime.CompilerServices", "ReflectionBlockedAttribute");
         }
 
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
@@ -448,6 +444,29 @@ namespace ILCompiler
                 return null;
 
             return dynamicInvokeStubCanonicalized;
+        }
+
+        private sealed class AttributeSpecifiedBlockingPolicy : MetadataBlockingPolicy
+        {
+            public override bool IsBlocked(MetadataType type)
+            {
+                Debug.Assert(type.IsTypeDefinition);
+                return type.HasCustomAttribute("System.Runtime.CompilerServices", "ReflectionBlockedAttribute");
+            }
+
+            public override bool IsBlocked(MethodDesc method)
+            {
+                Debug.Assert(method.IsTypicalMethodDefinition);
+                // TODO: we might need to do something here if we keep this policy.
+                return false;
+            }
+
+            public override bool IsBlocked(FieldDesc field)
+            {
+                Debug.Assert(field.IsTypicalFieldDefinition);
+                // TODO: we might need to do something here if we keep this policy.
+                return false;
+            }
         }
     }
 }
