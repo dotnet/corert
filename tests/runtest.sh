@@ -325,15 +325,15 @@ echo > ${__CoreRTTestBinDir}/testResults.tmp
 
 __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 __TestSearchPath=src/Simple/${CoreRT_TestName}
-for csproj in $(find ${__TestSearchPath} -name "*.csproj")
+for projfile in $(find ${__TestSearchPath} -name "*.csproj" -o -name -"*.ilproj")
 do
-    if [ ! -e `dirname ${csproj}`/no_unix ]; then
+    if [ ! -e `dirname ${projfile}`/no_unix ]; then
         if [ "${CoreRT_TestCompileMode}" != "cpp" ]; then
-            run_test_dir ${csproj} "Jit"
+            run_test_dir ${projfile} "Jit"
         fi
-        if [ ! -e `dirname ${csproj}`/no_cpp ]; then
+        if [ ! -e `dirname ${projfile}`/no_cpp ]; then
             if [ "${CoreRT_TestCompileMode}" != "ryujit" ]; then
-                run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+                run_test_dir ${projfile} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
             fi
         fi
     fi
