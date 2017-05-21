@@ -184,21 +184,7 @@ namespace Internal.IL
                 return false;
             }
 
-            var t = src;
-
-            while (t != null)
-            {
-                if (t == dst)
-                    return true;
-                t = t.BaseType;
-            }
-
-            if (dst.IsInterface || dst.IsArray)
-                throw new NotImplementedException($"{nameof(IsAssignable)} is only partially implemented.");
-
-            // TODO: Other cases - variance, etc.
-
-            return false;
+            return CastingHelper.CanCastTo(src, dst);
         }
 
         bool IsAssignable(StackValue src, StackValue dst)
