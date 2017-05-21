@@ -362,7 +362,7 @@ namespace Internal.TypeSystem
                     if (curType == otherType)
                         return true;
 
-                    curType = curType.BaseType;                    
+                    curType = curType.BaseType;
                 } while (curType != null);
             }
 
