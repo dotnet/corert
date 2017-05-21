@@ -190,7 +190,15 @@ namespace Internal.IL
             {
                 if (t == dst)
                     return true;
-                t = t.BaseType;
+
+                if (t.IsInterface)
+                {
+                    t = GetWellKnownType(WellKnownType.Object);
+                }
+                else
+                {
+                    t = t.BaseType;
+                }
             }
 
             if (dst.IsInterface || dst.IsArray)
