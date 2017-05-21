@@ -12,6 +12,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler", "src\ILCompile
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repro", "repro\repro.csproj", "{FBA029C3-B184-4457-AEEC-38D0C2523067}"
 EndProject
+Project("{136993D1-B753-4487-9E24-E834774B942A}") = "ilrepro", "ilrepro\ilrepro.ilproj", "{136993D1-B753-4487-9E24-E834774B942A}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem", "..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.DependencyAnalysisFramework", "..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj", "{DAC23E9F-F826-4577-AE7A-0849FF83280C}"
