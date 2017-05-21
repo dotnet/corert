@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -18,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Other fields are initialized with 0.
     /// We simply memcpy these over the GC static EEType object.
     /// </summary>
-    public class GCStaticsPreInitDataNode : ObjectNode, IExportableSymbolNode
+    public class GCStaticsPreInitDataNode : ObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
         private List<PreInitFieldInfo> _sortedPreInitFields;
@@ -38,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
 
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+        protected override string GetName(NodeFactory factory) => GetMangledName(_type, factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -52,8 +51,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             return nameMangler.NodeMangler.GCStatics(type) + "__PreInitData";
         }
-
-        public virtual bool IsExported(NodeFactory factory) => false; 
 
         public override bool StaticDependenciesAreComputed => true;
 

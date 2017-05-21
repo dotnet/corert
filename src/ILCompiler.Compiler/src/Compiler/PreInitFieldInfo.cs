@@ -13,17 +13,17 @@ namespace ILCompiler
 {
     public class PreInitFieldInfo
     {
-        public FieldDesc Field { private set; get; }
+        public FieldDesc Field { get; }
 
         /// <summary>
         /// Points to the underlying contents of the data.
         /// </summary>
-        public byte[] Data { private set; get; }
+        public byte[] Data { get; }
 
         /// <summary>
         /// Number of elements, if this is a frozen array.
         /// </summary>
-        public int Length { private set; get; }
+        public int Length { get; }
 
         public PreInitFieldInfo(FieldDesc field, byte[] data, int length)
         {

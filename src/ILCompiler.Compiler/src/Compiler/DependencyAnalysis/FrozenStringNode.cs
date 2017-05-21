@@ -40,7 +40,22 @@ namespace ILCompiler.DependencyAnalysis
 
         private static IEETypeNode GetEETypeNode(NodeFactory factory)
         {
-            return factory.GetLocalTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String));
+            DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
+
+            //
+            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
+            // binary, it must be cloned into this one.
+            //
+            IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
+
+            if (stringSymbol.RepresentsIndirectionCell)
+            {
+                return factory.ConstructedClonedTypeSymbol(systemStringType);
+            }
+            else
+            {
+                return stringSymbol;
+            }
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)

@@ -58,11 +58,6 @@ namespace Internal.Runtime
         ThreadStaticGCDescRegion = 209,
         ThreadStaticIndex = 210,
 
-        /// <summary>
-        /// Contains pointer relocs to preinitialized data in FrozenObjectRegion
-        /// </summary>
-        GCStaticsPreInitDataRegion = 211,              
-
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,
         ReadonlyBlobRegionEnd = 399,

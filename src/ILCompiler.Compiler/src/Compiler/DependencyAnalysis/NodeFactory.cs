@@ -500,24 +500,6 @@ namespace ILCompiler.DependencyAnalysis
             return _clonedTypeSymbols.GetOrAdd(type);
         }
 
-        /// <summary>
-        /// Get a direct reference to this EEType (for example, as required by GC).
-        /// If this will be compiled into a separate binary, it must be cloned into this one
-        /// </summary>
-        public IEETypeNode GetLocalTypeSymbol(TypeDesc type)
-        {
-            IEETypeNode symbol = ConstructedTypeSymbol(type);
-
-            if (symbol.RepresentsIndirectionCell)
-            {
-                return ConstructedClonedTypeSymbol(type);
-            }
-            else
-            {
-                return symbol;
-            }
-        }
-
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
 
         private IEETypeNode ImportedEETypeSymbol(TypeDesc type)
@@ -921,11 +903,6 @@ namespace ILCompiler.DependencyAnalysis
             "__GCStaticRegionEnd", 
             null);
 
-        public ArrayOfEmbeddedPointersNode<GCStaticsPreInitDataNode> GCStaticsPreInitDataRegion = new ArrayOfEmbeddedPointersNode<GCStaticsPreInitDataNode>(
-            "__GCStaticPreInitDataRegionStart", 
-            "__GCStaticPreInitDataRegionEnd", 
-            null);
-
         public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
             "__ThreadStaticRegionStart",
             "__ThreadStaticRegionEnd",
@@ -960,7 +937,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
-            graph.AddRoot(GCStaticsPreInitDataRegion, "GC StaticsPreInitDataRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
@@ -968,7 +944,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion.StartSymbol, GCStaticsPreInitDataRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);

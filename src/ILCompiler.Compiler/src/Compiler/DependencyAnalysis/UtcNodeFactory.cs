@@ -143,8 +143,7 @@ namespace ILCompiler
             graph.AddRoot(TypeManagerIndirection, "ModuleManagerIndirection is always generated");
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
-            graph.AddRoot(GCStaticsPreInitDataRegion, "GC StaticsPreInitDataRegion is always generated");
-            graph.AddRoot(ThreadStaticOffsetRegion, "Thread Statics Offset Region is always generated");
+            graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
             graph.AddRoot(ThreadStaticsIndex, "Thread statics index is always generated");
             graph.AddRoot(TLSDirectory, "TLS Directory is always generated");
@@ -155,8 +154,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticDesc, GCStaticDescRegion, GCStaticDescRegion.StartSymbol, GCStaticDescRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion, GCStaticsPreInitDataRegion.StartSymbol, GCStaticsPreInitDataRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticOffsetRegion, ThreadStaticOffsetRegion.StartSymbol, ThreadStaticOffsetRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
 
@@ -213,7 +211,7 @@ namespace ILCompiler
             CompilationUnitPrefix + "__ThreadStaticGCDescStart", 
             CompilationUnitPrefix + "__ThreadStaticGCDescEnd");
 
-        public ArrayOfEmbeddedDataNode ThreadStaticOffsetRegion = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedDataNode ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode(
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionStart",
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionEnd",
             null);

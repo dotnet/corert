@@ -56,10 +56,12 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyList();
-            
+
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
+            {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
-            
+            }
+
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
