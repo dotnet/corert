@@ -1,8 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.    
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.6.1055.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
 
 // Metadata version: v4.0.30319
 .assembly extern mscorlib
@@ -55,17 +56,6 @@
     IL_0006:  nop
     IL_0007:  ret
   } // end of method Details::.ctor
-
-  .method private hidebysig specialname rtspecialname static 
-          void  .cctor() cil managed
-  {
-    // Code size       11 (0xb)
-    .maxstack  8
-    IL_0000:  ldsfld     native int [mscorlib]System.IntPtr::Zero
-    IL_0005:  stsfld     native int Details::PreInitializedField_DataBlob
-    IL_000a:  ret
-  } // end of method Details::.cctor
-
 } // end of class Details
 
 .class public auto ansi beforefieldinit PreInitDataTest
