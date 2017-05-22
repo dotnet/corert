@@ -83,6 +83,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
+
         public sealed override string Namespace
         {
             get

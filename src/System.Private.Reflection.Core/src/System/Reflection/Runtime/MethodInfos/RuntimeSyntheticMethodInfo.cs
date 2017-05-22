@@ -17,10 +17,12 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // These methods implement the Get/Set methods on array types.
     //
-    internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
+    internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo, IRuntimeMemberInfoWithNoMetadataDefinition
     {
         private RuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] parameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
+            Debug.Assert(declaringType.IsArray);
+
             _syntheticMethodId = syntheticMethodId;
             _name = name;
             _declaringType = declaringType;
@@ -52,6 +54,15 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return Empty<CustomAttributeData>.Enumerable;
             }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is MethodInfo && other is IRuntimeMemberInfoWithNoMetadataDefinition;
         }
 
         public sealed override bool Equals(Object obj)

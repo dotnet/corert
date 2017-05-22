@@ -163,6 +163,8 @@ namespace System.Reflection.Runtime.PropertyInfos
             return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public sealed override Module Module
         {
             get
