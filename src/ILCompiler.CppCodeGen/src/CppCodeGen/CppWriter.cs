@@ -107,7 +107,7 @@ namespace ILCompiler.CppCodeGen
             return null;
         }
 
-        public void AppendCppMethodDeclaration(CppGenerationBuffer sb, MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
+        public void AppendCppMethodDeclaration(CppGenerationBuffer sb, MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null, string cppMethodName = null)
         {
             if (methodSignature == null)
                 methodSignature = method.Signature;
@@ -133,11 +133,11 @@ namespace ILCompiler.CppCodeGen
             {
                 if (implementation)
                 {
-                    sb.Append(GetCppMethodDeclarationName(method.OwningType, GetCppMethodName(method)));
+                    sb.Append(GetCppMethodDeclarationName(method.OwningType, cppMethodName ?? GetCppMethodName(method)));
                 }
                 else
                 {
-                    sb.Append(GetCppMethodName(method));
+                    sb.Append(cppMethodName ?? GetCppMethodName(method));
                 }
             }
             sb.Append("(");
@@ -206,7 +206,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append(";");
         }
 
-        public void AppendCppMethodCallParamList(CppGenerationBuffer sb, MethodDesc method)
+        public void AppendCppMethodCallParamList(CppGenerationBuffer sb, MethodDesc method, bool unbox = false)
         {
             var methodSignature = method.Signature;
 
@@ -232,6 +232,18 @@ namespace ILCompiler.CppCodeGen
 
             for (int i = 0; i < argCount; i++)
             {
+                if(i == 0 && unbox)
+                {
+                    // Unboxing stubs only valid for non-static methods on value types
+                    System.Diagnostics.Debug.Assert(hasThis);
+                    System.Diagnostics.Debug.Assert(method.OwningType.IsValueType);
+
+                    var thisType = method.OwningType.MakeByRefType();
+
+                    sb.Append("(");
+                    sb.Append(GetCppSignatureTypeName(thisType));
+                    sb.Append(")((uint8_t*)(");
+                }
                 if (parameterNames != null)
                 {
                     sb.Append(SanitizeCppVarName(parameterNames[i]));
@@ -240,6 +252,10 @@ namespace ILCompiler.CppCodeGen
                 {
                     sb.Append("_a");
                     sb.Append(i.ToStringInvariant());
+                }
+                if (i == 0 && hasThis && unbox)
+                {
+                    sb.Append(")+sizeof(void*))");
                 }
                 if (i != argCount - 1)
                     sb.Append(", ");
@@ -835,6 +851,13 @@ namespace ILCompiler.CppCodeGen
             {
                 relocCode.Append("dispatchMapModule");
             }
+            else if(reloc.Target is UnboxingStubNode)
+            {
+                var method = reloc.Target as UnboxingStubNode;
+
+                relocCode.Append("(void*)&");
+                relocCode.Append(GetCppMethodDeclarationName(method.Method.OwningType, UnboxingStubNode.GetMangledName(factory.NameMangler, method.Method), false));
+            }
             else
             {
                 relocCode.Append("NULL");
@@ -1125,6 +1148,8 @@ namespace ILCompiler.CppCodeGen
                 {
                     typeDefinitions.AppendLine();
                     AppendCppMethodDeclaration(typeDefinitions, m, false);
+                    typeDefinitions.AppendLine();
+                    AppendCppMethodDeclaration(typeDefinitions, m, false, null, null, UnboxingStubNode.GetMangledName(factory.NameMangler, m));
                 }
             }
 
@@ -1217,6 +1242,37 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
         }
 
+        /// <summary>
+        /// Output C++ code for a given unboxingStubNode
+        /// </summary>
+        /// <param name="unboxingStubNode">The unboxing stub node to be output</param>
+        /// <param name="methodImplementations">The buffer in which to write out the C++ code</param>
+        private void OutputUnboxingStubNode(UnboxingStubNode unboxingStubNode)
+        {
+            Out.WriteLine();
+
+            CppGenerationBuffer sb = new CppGenerationBuffer();
+            sb.AppendLine();
+            AppendCppMethodDeclaration(sb, unboxingStubNode.Method, true, null, null, UnboxingStubNode.GetMangledName(_compilation.NameMangler, unboxingStubNode.Method));
+            sb.AppendLine();
+            sb.Append("{");
+            sb.Indent();
+            sb.AppendLine();
+            if (!unboxingStubNode.Method.Signature.ReturnType.IsVoid)
+            {
+                sb.Append("return ");
+            }
+            sb.Append(GetCppMethodDeclarationName(unboxingStubNode.Method.OwningType, GetCppMethodName(unboxingStubNode.Method)));
+            sb.Append("(");
+            AppendCppMethodCallParamList(sb, unboxingStubNode.Method, true);
+            sb.Append(");");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("}");
+
+            Out.Write(sb.ToString());
+        }
+
         public void OutputCode(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             BuildMethodLists(nodes);
@@ -1254,6 +1310,8 @@ namespace ILCompiler.CppCodeGen
             {
                 if (node is CppMethodCodeNode)
                     OutputMethodNode(node as CppMethodCodeNode);
+                else if (node is UnboxingStubNode)
+                    OutputUnboxingStubNode(node as UnboxingStubNode);
             }
 
             Out.Dispose();
