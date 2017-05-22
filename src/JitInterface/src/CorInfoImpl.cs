@@ -1133,7 +1133,10 @@ namespace Internal.JitInterface
         }
 
         private uint getClassAlignmentRequirement(CORINFO_CLASS_STRUCT_* cls, bool fDoubleAlignHint)
-        { throw new NotImplementedException("getClassAlignmentRequirement"); }
+        {
+            DefType type = (DefType)HandleToObject(cls);
+            return (uint)type.InstanceByteAlignment.AsInt;
+        }
 
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
