@@ -32,12 +32,17 @@ namespace ILCompiler
         {
             _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
             _metadataLogFile = logFile;
+
+            if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
+            {
+                _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
+            }
         }
 
         private HashSet<MetadataType> _typeDefinitionsToGenerate = new HashSet<MetadataType>();
         private HashSet<MethodDesc> _methodDefinitionsToGenerate = new HashSet<MethodDesc>();
         private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
+        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
@@ -194,7 +199,7 @@ namespace ILCompiler
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
             Debug.Assert(IsReflectionInvokable(method));
-            return true;
+            return _dynamicInvokeThunks != null;
         }
 
         /// <summary>

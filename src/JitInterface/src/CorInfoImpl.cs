@@ -1672,7 +1672,8 @@ namespace Internal.JitInterface
             TypeDesc fieldType = fieldDesc.FieldType;
             CorInfoType type = asCorInfoType(fieldType, out structType);
 
-            Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT).GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
+            Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT, false) == null ||
+                _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT).GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
             if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
             {
                 Debug.Assert(structType == null);
