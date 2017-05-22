@@ -2966,6 +2966,20 @@ namespace Internal.JitInterface
 
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
             Get_CORINFO_SIG_INFO(targetMethod, out pResult.sig, targetIsFatFunctionPointer);
+            if (targetMethod.IsIntrinsic)
+            {
+                // We only populate sigInst for intrinsic methods because most of the time,
+                // JIT doesn't care what the instantiation is and this is expensive.
+                Instantiation owningTypeInst = targetMethod.OwningType.Instantiation;
+                pResult.sig.sigInst.classInstCount = (uint)owningTypeInst.Length;
+                if (owningTypeInst.Length > 0)
+                {
+                    var classInst = new IntPtr[owningTypeInst.Length];
+                    for (int i = 0; i < owningTypeInst.Length; i++)
+                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
+                    pResult.sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
+                }
+            }
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {
