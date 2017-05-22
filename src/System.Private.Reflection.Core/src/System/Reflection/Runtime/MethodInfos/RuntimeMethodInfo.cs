@@ -185,6 +185,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeParameters;
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {

@@ -79,6 +79,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeParameters;
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
         [DebuggerGuidedStepThrough]

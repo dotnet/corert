@@ -147,6 +147,11 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            return GenericTypeDefinitionTypeInfo.HasSameMetadataDefinitionAs(other);
+        }
+
         public sealed override string Namespace
         {
             get

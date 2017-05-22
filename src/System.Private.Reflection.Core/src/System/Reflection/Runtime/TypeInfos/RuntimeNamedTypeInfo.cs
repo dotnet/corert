@@ -108,6 +108,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
+
         protected abstract void GetPackSizeAndSize(out int packSize, out int size);
 
         public sealed override StructLayoutAttribute StructLayoutAttribute

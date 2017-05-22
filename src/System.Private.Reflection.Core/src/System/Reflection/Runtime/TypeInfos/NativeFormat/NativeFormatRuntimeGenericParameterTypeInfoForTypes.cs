@@ -20,6 +20,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private NativeFormatRuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
            : base(reader, genericParameterHandle, genericParameterHandle.GetGenericParameter(reader))
         {
+            Debug.Assert(declaringRuntimeNamedTypeInfo.IsTypeDefinition);
             _declaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
         }
 
