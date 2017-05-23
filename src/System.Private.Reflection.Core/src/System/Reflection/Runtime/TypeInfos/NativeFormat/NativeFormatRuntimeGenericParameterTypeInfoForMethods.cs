@@ -23,6 +23,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private NativeFormatRuntimeGenericParameterTypeInfoForMethods(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedMethodInfo declaringRuntimeNamedMethodInfo)
            : base(reader, genericParameterHandle, genericParameterHandle.GetGenericParameter(reader))
         {
+            Debug.Assert(declaringRuntimeNamedMethodInfo.DeclaringType.IsTypeDefinition);
             _declaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
         }
 

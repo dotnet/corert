@@ -20,10 +20,8 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo, IRuntimeMemberInfoWithNoMetadataDefinition
     {
-        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
-            Debug.Assert(declaringType.IsArray);
-
             _syntheticMethodId = syntheticMethodId;
             _declaringType = declaringType;
             _options = options;
@@ -185,7 +183,7 @@ namespace System.Reflection.Runtime.MethodInfos
         private volatile RuntimeParameterInfo[] _lazyParameters;
 
         private readonly SyntheticMethodId _syntheticMethodId;
-        private readonly RuntimeTypeInfo _declaringType;
+        private readonly RuntimeArrayTypeInfo _declaringType;
         private readonly RuntimeTypeInfo[] _runtimeParameterTypes;
         private readonly InvokerOptions _options;
         private readonly Func<Object, Object[], Object> _invoker;
