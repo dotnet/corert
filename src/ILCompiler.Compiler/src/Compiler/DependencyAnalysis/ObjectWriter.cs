@@ -836,8 +836,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public SortedSet<int> ByteInterruptionOffsets => _byteInterruptionOffsets;
-
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)
         {
             ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
@@ -941,7 +939,7 @@ namespace ILCompiler.DependencyAnalysis
                     int i = 0;
 
                     listOfOffsets.Clear();
-                    listOfOffsets.AddRange(objectWriter.ByteInterruptionOffsets);
+                    listOfOffsets.AddRange(objectWriter._byteInterruptionOffsets);
 
                     int offsetIndex = 0;
                     while (i < nodeContents.Data.Length)
@@ -996,9 +994,9 @@ namespace ILCompiler.DependencyAnalysis
                             unsafe
                             {
                                 // Todo: Use Span<T> instead once it's available to us in this repo
-                                fixed (byte* pContents = nodeContents.Data)
+                                fixed (byte* pContents = &nodeContents.Data[i])
                                 {
-                                    objectWriter.EmitBytes((IntPtr)(pContents + i), nextOffset - i);
+                                    objectWriter.EmitBytes((IntPtr)(pContents), nextOffset - i);
                                     i += nextOffset - i;
                                 }
                             }
