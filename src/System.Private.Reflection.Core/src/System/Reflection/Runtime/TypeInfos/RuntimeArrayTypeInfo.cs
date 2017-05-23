@@ -51,7 +51,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 bool multiDim = this.IsVariableBoundArray;
                 int rank = this.GetArrayRank();
 
-                RuntimeTypeInfo arrayType = this;
+                RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo countType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
 
                 {
@@ -170,7 +170,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 int rank = this.GetArrayRank();
 
                 RuntimeTypeInfo indexType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
-                RuntimeTypeInfo arrayType = this;
+                RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
                 RuntimeTypeInfo voidType = CommonRuntimeTypes.Void.CastToRuntimeTypeInfo();
 
