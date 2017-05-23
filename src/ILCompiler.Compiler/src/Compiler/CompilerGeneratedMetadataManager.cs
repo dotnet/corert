@@ -152,6 +152,9 @@ namespace ILCompiler
                     continue;
                 }
 
+                if (IsReflectionBlocked(method.Instantiation) || IsReflectionBlocked(method.OwningType.Instantiation))
+                    continue;
+
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
 
                 if (record != null)
@@ -174,6 +177,9 @@ namespace ILCompiler
 
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                 {
+                    if (IsReflectionBlocked(field.OwningType.Instantiation))
+                        continue;
+
                     Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
                     if (record != null)
                         fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
@@ -246,7 +252,8 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return _factory.TypeMetadata((MetadataType)fieldDef.OwningType).Marked;
+                return _factory.TypeMetadata((MetadataType)fieldDef.OwningType).Marked &&
+                    !_parent._blockingPolicy.IsBlocked(fieldDef);
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
@@ -262,6 +269,11 @@ namespace ILCompiler
             public bool IsBlocked(MetadataType typeDef)
             {
                 return _parent._blockingPolicy.IsBlocked(typeDef);
+            }
+
+            public bool IsBlocked(MethodDesc methodDef)
+            {
+                return _parent._blockingPolicy.IsBlocked(methodDef);
             }
 
             public ModuleDesc GetModuleOfType(MetadataType typeDef)

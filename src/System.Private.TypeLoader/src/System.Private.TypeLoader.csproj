@@ -472,6 +472,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\MetadataExtensions.cs">
       <Link>NativeFormat\MetadataExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(METADATA_TYPE_LOADER)' != ''">
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.cs">

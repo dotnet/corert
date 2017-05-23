@@ -52,6 +52,11 @@ namespace MetadataTransformTests
             return false;
         }
 
+        public bool IsBlocked(MethodDesc method)
+        {
+            return IsBlocked((MetadataType)method.OwningType);
+        }
+
         public ModuleDesc GetModuleOfType(MetadataType typeDef)
         {
             return _explicitScopePolicyMixin.GetModuleOfType(typeDef);

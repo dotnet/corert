@@ -250,6 +250,9 @@
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Private.Reflection.Core.rd.xml" />

@@ -4,8 +4,6 @@
 
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
     /// <summary>
@@ -28,35 +26,5 @@ namespace ILCompiler
         /// Returns true if field definition '<paramref name="field"/>' is reflection blocked.
         /// </summary>
         public abstract bool IsBlocked(FieldDesc field);
-    }
-
-    /// <summary>
-    /// Represents a metadata policy that blocks implementations details.
-    /// </summary>
-    public sealed class BlockedInternalsBlockingPolicy : MetadataBlockingPolicy
-    {
-        public override bool IsBlocked(MetadataType type)
-        {
-            Debug.Assert(type.IsTypeDefinition);
-
-            // TODO: Make this also respect System.Runtime.CompilerServices.DisablePrivateReflectionAttribute
-            return !(type is Internal.TypeSystem.Ecma.EcmaType);
-        }
-
-        public override bool IsBlocked(MethodDesc method)
-        {
-            Debug.Assert(method.IsTypicalMethodDefinition);
-
-            // TODO: Make this also respect System.Runtime.CompilerServices.DisablePrivateReflectionAttribute
-            return !(method is Internal.TypeSystem.Ecma.EcmaMethod);
-        }
-
-        public override bool IsBlocked(FieldDesc field)
-        {
-            Debug.Assert(field.IsTypicalFieldDefinition);
-
-            // TODO: Make this also respect System.Runtime.CompilerServices.DisablePrivateReflectionAttribute
-            return !(field is Internal.TypeSystem.Ecma.EcmaField);
-        }
     }
 }
