@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    return ConvertToUnicode(ptr, nb);
+                    return new string((sbyte*)ptr);
                 }
             }
         }
@@ -656,7 +656,7 @@ namespace System.Runtime.InteropServices
             fixed (char* pch = source)
             {
                 int convertedBytes =
-                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer);
+                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, IntPtr.Zero);
                 ((byte*)pbNativeBuffer)[convertedBytes] = 0;
             }
         }
