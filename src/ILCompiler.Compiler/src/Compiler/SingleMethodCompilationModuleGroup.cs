@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -28,9 +30,15 @@ namespace ILCompiler
             }
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public override bool ContainsMethodBody(MethodDesc method)
         {
             return method == _method;
+        }
+
+        public sealed override bool ContainsMethodDictionary(MethodDesc method)
+        {
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+            return ContainsMethodBody(method);
         }
 
         public override bool ContainsType(TypeDesc type)
@@ -44,6 +52,11 @@ namespace ILCompiler
         }
 
         public override bool ExportsMethod(MethodDesc method)
+        {
+            return false;
+        }
+
+        public override bool ExportsMethodDictionary(MethodDesc method)
         {
             return false;
         }

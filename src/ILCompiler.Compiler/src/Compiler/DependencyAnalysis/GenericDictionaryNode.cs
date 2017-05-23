@@ -18,8 +18,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode
     {
-        protected const string MangledNamePrefix = "__GenericDict_";
-
         protected abstract TypeSystemContext Context { get; }
 
         public abstract Instantiation TypeInstantiation { get; }
@@ -89,8 +87,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledTypeName(_owningType));
+            sb.Append(nameMangler.NodeMangler.TypeGenericDictionary(_owningType));
         }
+
         protected override int HeaderSize => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
         public override Instantiation MethodInstantiation => new Instantiation();
@@ -102,11 +101,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection Section =>
             Context.Target.IsWindows ? ObjectNodeSection.FoldableReadOnlyDataSection : base.Section;
-
-        public static string GetMangledName(NameMangler nameMangler, TypeDesc owningType)
-        {
-            return MangledNamePrefix + nameMangler.GetMangledTypeName(owningType);
-        }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
@@ -194,21 +188,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(MangledNamePrefix).Append(nameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append(nameMangler.NodeMangler.MethodGenericDictionary(_owningMethod));
         }
         protected override int HeaderSize => _owningMethod.Context.Target.PointerSize;
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
 
-        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(OwningMethod);
+        public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethodDictionary(OwningMethod);
 
         public MethodDesc OwningMethod => _owningMethod;
-
-        public static string GetMangledName(NameMangler nameMangler, MethodDesc owningMethod)
-        {
-            return MangledNamePrefix + nameMangler.GetMangledMethodName(owningMethod);
-        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
