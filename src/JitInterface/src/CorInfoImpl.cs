@@ -799,9 +799,31 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
+        private ModuleDesc[] _simdModulesCached;
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
         {
-            // TODO: SIMD
+            TypeDesc type = HandleToObject(classHnd);
+            if (type.IsDefType)
+            {
+                if (_simdModulesCached == null)
+                {
+                    ModuleDesc[] simdModules = new ModuleDesc[]
+                    {
+                        // GetModuleForSimpleName doesn't exist in Jit configuration, so excluding for now
+#if !SUPPORT_JIT
+                        _compilation.TypeSystemContext.GetModuleForSimpleName("System.Numerics", false),
+                        _compilation.TypeSystemContext.GetModuleForSimpleName("System.Numerics.Vectors", false),
+#endif
+                    };
+                    _simdModulesCached = simdModules;
+                }
+
+                ModuleDesc typeModule = ((MetadataType)type).Module;
+                foreach (ModuleDesc simdModule in _simdModulesCached)
+                    if (typeModule == simdModule)
+                        return true;
+            }
+
             return false;
         }
 
@@ -1018,7 +1040,31 @@ namespace Internal.JitInterface
         }
 
         private int appendClassName(short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
-        { throw new NotImplementedException("appendClassName"); }
+        {
+            // We support enough of this to make SIMD work, but not much else.
+
+            // TODO: figure out why the marshalling for fFullInst and fAssembly is wrong.
+            Debug.Assert(fNamespace /*&& !fFullInst && !fAssembly */);
+
+            var type = HandleToObject(cls);
+            string name = TypeString.Instance.FormatName(type);
+
+            int length = name.Length;
+            if (pnBufLen > 0)
+            {
+                short* buffer = *ppBuf;
+                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                    buffer[i] = (short)name[i];
+                if (name.Length < pnBufLen)
+                    buffer[name.Length] = 0;
+                else
+                    buffer[pnBufLen - 1] = 0;
+                pnBufLen -= length;
+                *ppBuf = buffer + length;
+            }
+
+            return length;
+        }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {

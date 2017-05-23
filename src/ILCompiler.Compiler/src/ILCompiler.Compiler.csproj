@@ -107,6 +107,9 @@
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
