@@ -400,7 +400,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>
             {
-                if (CompilationModuleGroup.ContainsMethod(method))
+                if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
                     return new MethodGenericDictionaryNode(method);
                 }
