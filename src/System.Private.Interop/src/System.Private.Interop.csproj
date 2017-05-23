@@ -234,6 +234,12 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
+    <Compile Include="..\..\System.Private.CoreLib\shared\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\shared\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
