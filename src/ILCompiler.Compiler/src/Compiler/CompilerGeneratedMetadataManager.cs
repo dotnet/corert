@@ -15,6 +15,7 @@ using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler
 {
@@ -22,15 +23,14 @@ namespace ILCompiler
     /// This class is responsible for managing native metadata to be emitted into the compiled
     /// module. It applies a policy that every type/method emitted shall be reflectable.
     /// </summary>
-    public class CompilerGeneratedMetadataManager : MetadataManager
+    public sealed class CompilerGeneratedMetadataManager : MetadataManager
     {
-        private GeneratedTypesAndCodeMetadataPolicy _metadataPolicy;
-        private string _metadataLogFile;
+        private readonly string _metadataLogFile;
+        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
 
         public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
-            : base(group, typeSystemContext)
+            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy())
         {
-            _metadataPolicy = new GeneratedTypesAndCodeMetadataPolicy(this);
             _metadataLogFile = logFile;
 
             if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
@@ -39,44 +39,59 @@ namespace ILCompiler
             }
         }
 
-        private HashSet<MetadataType> _typeDefinitionsToGenerate = new HashSet<MetadataType>();
-        private HashSet<MethodDesc> _methodDefinitionsToGenerate = new HashSet<MethodDesc>();
-        private HashSet<ModuleDesc> _modulesSeen = new HashSet<ModuleDesc>();
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
-
-        public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
-        {
-            return _modulesSeen;
-        }
-
-        public override bool IsReflectionBlocked(MetadataType type)
-        {
-            return _metadataPolicy.IsBlocked(type);
-        }
-
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
         {
-            return _compilationModuleGroup.ContainsType(method.GetTypicalMethodDefinition().OwningType);
+            return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
         }
 
         public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
         {
-            return _compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType);
+            return (GetMetadataCategory(field) & MetadataCategory.Description) != 0;
         }
 
         protected override MetadataCategory GetMetadataCategory(FieldDesc field)
         {
-            return MetadataCategory.RuntimeMapping;
+            MetadataCategory category = 0;
+
+            if (!IsReflectionBlocked(field))
+            {
+                category = MetadataCategory.RuntimeMapping;
+
+                if (_compilationModuleGroup.ContainsType(field.GetTypicalFieldDefinition().OwningType))
+                    category |= MetadataCategory.Description;
+            }
+
+            return category;
         }
 
         protected override MetadataCategory GetMetadataCategory(MethodDesc method)
         {
-            return MetadataCategory.RuntimeMapping;
+            MetadataCategory category = 0;
+
+            if (!IsReflectionBlocked(method))
+            {
+                category = MetadataCategory.RuntimeMapping;
+
+                if (_compilationModuleGroup.ContainsType(method.GetTypicalMethodDefinition().OwningType))
+                    category |= MetadataCategory.Description;
+            }
+
+            return category;
         }
 
         protected override MetadataCategory GetMetadataCategory(TypeDesc type)
         {
-            return MetadataCategory.RuntimeMapping;
+            MetadataCategory category = 0;
+
+            if (!IsReflectionBlocked(type))
+            {
+                category = MetadataCategory.RuntimeMapping;
+
+                if (_compilationModuleGroup.ContainsType(type.GetTypeDefinition()))
+                    category |= MetadataCategory.Description;
+            }
+
+            return category;
         }
 
         protected override void ComputeMetadata(NodeFactory factory,
@@ -85,34 +100,7 @@ namespace ILCompiler
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
-            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
-            {
-                var definition = type.GetTypeDefinition() as Internal.TypeSystem.Ecma.EcmaType;
-                if (definition == null)
-                    continue;
-                if (factory.CompilationModuleGroup.ContainsType(definition))
-                {
-                    _typeDefinitionsToGenerate.Add(definition);
-                    _modulesSeen.Add(definition.Module);
-                }
-            }
-
-            foreach (var method in GetCompiledMethods())
-            {
-                var typicalMethod = method.GetTypicalMethodDefinition() as Internal.TypeSystem.Ecma.EcmaMethod;
-                if (typicalMethod != null)
-                {
-                    var owningType = (MetadataType)typicalMethod.OwningType;
-                    if (factory.CompilationModuleGroup.ContainsType(owningType))
-                    {
-                        _typeDefinitionsToGenerate.Add(owningType);
-                        _modulesSeen.Add(owningType.Module);
-                        _methodDefinitionsToGenerate.Add(typicalMethod);
-                    }
-                }
-            }
-
-            var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(this), _modulesSeen);
+            var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(this, factory), GetCompilationModulesWithMetadata());
 
             // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
             //       TypeReference records for _typeDefinitionsGenerated that don't have metadata.
@@ -199,7 +187,17 @@ namespace ILCompiler
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
             Debug.Assert(IsReflectionInvokable(method));
-            return _dynamicInvokeThunks != null;
+
+            if (_dynamicInvokeThunks == null)
+                return false;
+
+            // Place an upper limit on how many parameters a method can have to still get a static stub.
+            // From the past experience, methods taking 8000+ parameters get a stub that can hit various limitations
+            // in the codegen. On Project N, we were limited to 256 parameters because of MDIL limitations.
+            // We don't have such limitations here, but it's a nice round number.
+            // Reflection invoke will still work, but will go through the calling convention converter.
+
+            return method.Signature.Length <= 256;
         }
 
         /// <summary>
@@ -222,79 +220,48 @@ namespace ILCompiler
             return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
         }
 
+        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            dependencies = dependencies ?? new DependencyList();
+            dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
+        }
+
+        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
+        }
+
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy
         {
-            private CompilerGeneratedMetadataManager _parent;
-            private ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
-            private Dictionary<MetadataType, bool> _isAttributeCache;
+            private readonly CompilerGeneratedMetadataManager _parent;
+            private readonly NodeFactory _factory;
+            private readonly ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
 
-            public GeneratedTypesAndCodeMetadataPolicy(CompilerGeneratedMetadataManager parent)
+            public GeneratedTypesAndCodeMetadataPolicy(CompilerGeneratedMetadataManager parent, NodeFactory factory)
             {
                 _parent = parent;
+                _factory = factory;
                 _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
-
-                MetadataType systemAttributeType = parent._typeSystemContext.SystemModule.GetType("System", "Attribute", false);
-                _isAttributeCache = new Dictionary<MetadataType, bool>();
-                _isAttributeCache.Add(systemAttributeType, true);
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return _parent._typeDefinitionsToGenerate.Contains((MetadataType)fieldDef.OwningType);
+                return _factory.TypeMetadata((MetadataType)fieldDef.OwningType).Marked;
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
             {
-                return _parent._methodDefinitionsToGenerate.Contains(methodDef);
+                return _factory.MethodMetadata(methodDef).Marked;
             }
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
-                // Global module type always generates metadata. This is e.g. used in various places
-                // where we need a metadata enabled type from an assembly but we don't have a convenient way
-                // to find one.
-                // We don't need to worry about metadata consistency (accidentally generating metadata
-                // that can't be used with any reflection API at runtime because it's incomplete) because
-                // global module types don't derive from anything and have an empty interface list.
-                if (typeDef.IsModuleType)
-                    return true;
-
-                // Metadata consistency: if a nested type generates metadata, the containing type is
-                // required to generate metadata, or metadata generation will fail.
-                foreach (var nested in typeDef.GetNestedTypes())
-                {
-                    if (GeneratesMetadata(nested))
-                        return true;
-                }
-
-                return _parent._typeDefinitionsToGenerate.Contains(typeDef);
+                return _factory.TypeMetadata(typeDef).Marked;
             }
 
             public bool IsBlocked(MetadataType typeDef)
             {
-                // If an attribute type would generate metadata in this blob (had we compiled it), consider it blocked.
-                // Otherwise we end up with an attribute that is an unresolvable TypeRef and we would get a TypeLoadException
-                // when enumerating attributes on anything that has it.
-                if (!GeneratesMetadata(typeDef)
-                    && _parent._compilationModuleGroup.ContainsType(typeDef)
-                    && IsAttributeType(typeDef))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-
-            private bool IsAttributeType(MetadataType type)
-            {
-                bool result;
-                if (!_isAttributeCache.TryGetValue(type, out result))
-                {
-                    MetadataType baseType = type.MetadataBaseType;
-                    result = baseType != null && IsAttributeType(baseType);
-                    _isAttributeCache.Add(type, result);
-                }
-                return result;
+                return _parent._blockingPolicy.IsBlocked(typeDef);
             }
 
             public ModuleDesc GetModuleOfType(MetadataType typeDef)

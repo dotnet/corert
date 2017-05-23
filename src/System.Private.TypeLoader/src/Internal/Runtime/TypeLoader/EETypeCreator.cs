@@ -626,7 +626,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             // CoreRT Abi uses managed heap-allocated GC statics
                             object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
                             // CoreRT references statics through an extra level of indirection (a table in the image).
                             gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
@@ -708,7 +708,7 @@ namespace Internal.Runtime.TypeLoader
                     if (state.AllocatedThreadStaticGCDesc)
                         MemoryHelpers.FreeMemory(state.ThreadStaticDesc);
                     if (gcStaticData != IntPtr.Zero)
-                        RuntimeImports.RhHandleFree(gcStaticData);
+                        RuntimeAugments.RhHandleFree(gcStaticData);
                     if (gcStaticsIndirection != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(gcStaticsIndirection);
                 }

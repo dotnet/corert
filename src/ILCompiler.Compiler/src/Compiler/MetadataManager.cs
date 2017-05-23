@@ -37,21 +37,24 @@ namespace ILCompiler
 
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
+        protected readonly MetadataBlockingPolicy _blockingPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
+        private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
+        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
         {
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
+            _blockingPolicy = blockingPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -193,6 +196,13 @@ namespace ILCompiler
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
             }
+
+            // TODO: temporary until we have an IL scanning Metadata Manager. We shouldn't have to keep track of these.
+            var moduleMetadataNode = obj as ModuleMetadataNode;
+            if (moduleMetadataNode != null)
+            {
+                _modulesWithMetadata.Add(moduleMetadataNode.Module);
+            }
         }
 
         /// <summary>
@@ -256,18 +266,36 @@ namespace ILCompiler
 
         protected bool IsMethodSupportedInReflectionInvoke(MethodDesc method)
         {
-            // TODO: also filter out: .cctor, Finalize, string constructors,
-            //       RuntimeHelpers.InitializeArray, methods on Nullable,
-            //       IntPtr/UIntPtr constructors. Maybe more.
+            TypeDesc owningType = method.OwningType;
 
-            // ----------------------------------------------------------------
-            // Delegate construction is only allowed through specific IL sequences
-            // ----------------------------------------------------------------
-
-            if (method.OwningType.IsDelegate && method.IsConstructor)
+            // Methods on nullable are special cased in the runtime reflection
+            if (owningType.IsNullable)
                 return false;
 
-            // Everything else should get a stub.
+            // Finalizers are not reflection invokable
+            if (method.IsFinalizer)
+                return false;
+
+            // Static constructors are not reflection invokable
+            if (method.IsStaticConstructor)
+                return false;
+
+            if (method.IsConstructor)
+            {
+                // Delegate construction is only allowed through specific IL sequences
+                if (owningType.IsDelegate)
+                    return false;
+
+                // String constructors are intrinsic and special cased in runtime reflection
+                if (owningType.IsString)
+                    return false;
+
+                // IntPtr/UIntPtr constructors are intrinsic and special cased in runtime reflection
+                if (owningType.IsWellKnownType(WellKnownType.IntPtr) || owningType.IsWellKnownType(WellKnownType.UIntPtr))
+                    return false;
+            }
+
+            // Everything else can go in the mapping table.
             return true;
         }
 
@@ -479,7 +507,11 @@ namespace ILCompiler
         /// <summary>
         /// Returns a set of modules that will get some metadata emitted into the output module
         /// </summary>
-        public abstract IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata();
+        public virtual IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
+        {
+            // TODO: this is temporary until we have a metadata manager for IL scanner. This method should be abstract.
+            return _modulesWithMetadata;
+        }
 
         public byte[] GetMetadataBlob(NodeFactory factory)
         {
@@ -540,9 +572,109 @@ namespace ILCompiler
             return _typesWithConstructedEETypesGenerated;
         }
 
-        public abstract bool IsReflectionBlocked(MetadataType type);
+        public bool IsReflectionBlocked(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.SzArray:
+                case TypeFlags.Array:
+                case TypeFlags.Pointer:
+                case TypeFlags.ByRef:
+                    return IsReflectionBlocked(((ParameterizedType)type).ParameterType);
 
+                case TypeFlags.FunctionPointer:
+                    throw new NotImplementedException();
+
+                default:
+                    Debug.Assert(type.IsDefType);
+
+                    TypeDesc typeDefinition = type.GetTypeDefinition();
+                    if (type != typeDefinition)
+                    {
+                        if (_blockingPolicy.IsBlocked((MetadataType)typeDefinition))
+                            return true;
+
+                        foreach (var arg in type.Instantiation)
+                            if (IsReflectionBlocked(arg))
+                                return true;
+
+                        return false;
+                    }
+
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
+                    return _blockingPolicy.IsBlocked((MetadataType)type);
+            }
+        }
+
+        public bool IsReflectionBlocked(FieldDesc field)
+        {
+            FieldDesc typicalFieldDefinition = field.GetTypicalFieldDefinition();
+            if (typicalFieldDefinition != field)
+            {
+                foreach (TypeDesc type in field.OwningType.Instantiation)
+                {
+                    if (IsReflectionBlocked(type))
+                        return true;
+                }
+            }
+
+            return _blockingPolicy.IsBlocked(typicalFieldDefinition);
+        }
+
+        public bool IsReflectionBlocked(MethodDesc method)
+        {
+            MethodDesc methodDefinition = method.GetMethodDefinition();
+            if (method != methodDefinition)
+            {
+                foreach (TypeDesc type in method.Instantiation)
+                {
+                    if (IsReflectionBlocked(type))
+                        return true;
+                }
+            }
+
+            MethodDesc typicalMethodDefinition = methodDefinition.GetTypicalMethodDefinition();
+            if (typicalMethodDefinition != methodDefinition)
+            {
+                foreach (TypeDesc type in method.OwningType.Instantiation)
+                {
+                    if (IsReflectionBlocked(type))
+                        return true;
+                }
+            }
+
+            return _blockingPolicy.IsBlocked(typicalMethodDefinition);
+        }
+
+        public bool CanGenerateMetadata(MetadataType type)
+        {
+            return (GetMetadataCategory(type) & MetadataCategory.Description) != 0;
+        }
+
+        public bool CanGenerateMetadata(MethodDesc method)
+        {
+            Debug.Assert(method.IsTypicalMethodDefinition);
+            return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
+        }
+
+        /// <summary>
+        /// Gets the metadata category for a compiled method body in the current compilation.
+        /// The method will only get called with '<paramref name="method"/>' that has a compiled method body
+        /// in this compilation.
+        /// Note that if this method doesn't return <see cref="MetadataCategory.Description"/>, it doesn't mean
+        /// that the method never has metadata. The metadata might just be generated in a different compilation.
+        /// </summary>
         protected abstract MetadataCategory GetMetadataCategory(MethodDesc method);
+
+        /// <summary>
+        /// Gets the metadata category for a generated type in the current compilation.
+        /// The method can assume it will only get called with '<paramref name="type"/>' that has an EEType generated
+        /// in the current compilation.
+        /// Note that if this method doesn't return <see cref="MetadataCategory.Description"/>, it doesn't mean
+        /// that the method never has metadata. The metadata might just be generated in a different compilation.
+        /// </summary>
         protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
         protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
     }
@@ -559,6 +691,7 @@ namespace ILCompiler
         }
     }
 
+    [Flags]
     public enum MetadataCategory
     {
         None = 0x00,
