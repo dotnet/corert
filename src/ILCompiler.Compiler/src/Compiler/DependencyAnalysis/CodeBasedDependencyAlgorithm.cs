@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies = new DependencyList();
 
                 if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method)
-                    && (factory.Target.Abi != TargetAbi.ProjectN) || !method.IsCanonicalMethod(CanonicalFormKind.Any))
+                    && ((factory.Target.Abi != TargetAbi.ProjectN) || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
                 {
                     MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
                     if (canonInvokeStub.IsSharedByGenericInstantiations)

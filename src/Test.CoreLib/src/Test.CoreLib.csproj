@@ -142,6 +142,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Debug.cs">
       <Link>System\Diagnostics\Debug.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Eval.cs">
+      <Link>System\Diagnostics\Eval.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Exception.cs">
       <Link>System\Exception.cs</Link>
     </Compile>
@@ -245,6 +248,7 @@
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">

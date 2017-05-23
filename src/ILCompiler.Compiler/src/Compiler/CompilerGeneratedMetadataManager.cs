@@ -26,12 +26,17 @@ namespace ILCompiler
     public sealed class CompilerGeneratedMetadataManager : MetadataManager
     {
         private readonly string _metadataLogFile;
-        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
+        private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
 
         public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
             : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy())
         {
             _metadataLogFile = logFile;
+
+            if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
+            {
+                _dynamicInvokeThunks = new Dictionary<DynamicInvokeMethodSignature, MethodDesc>();
+            }
         }
 
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)
@@ -182,6 +187,9 @@ namespace ILCompiler
         public override bool HasReflectionInvokeStubForInvokableMethod(MethodDesc method)
         {
             Debug.Assert(IsReflectionInvokable(method));
+
+            if (_dynamicInvokeThunks == null)
+                return false;
 
             // Place an upper limit on how many parameters a method can have to still get a static stub.
             // From the past experience, methods taking 8000+ parameters get a stub that can hit various limitations
