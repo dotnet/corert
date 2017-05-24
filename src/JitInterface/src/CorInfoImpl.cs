@@ -526,11 +526,6 @@ namespace Internal.JitInterface
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
-
-            if (method.HasInstantiation)
-            {
-                sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_GENERIC;
-            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
