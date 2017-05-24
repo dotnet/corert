@@ -64,6 +64,9 @@ namespace System
             RuntimeExceptionHelpers.FailFast(message, exception);
         }
 
+        // Still needed by shared\System\Diagnostics\Debug.Unix.cs
+        public static string GetEnvironmentVariable(string variable) => EnvironmentAugments.GetEnvironmentVariable(variable);
+
         public static int CurrentManagedThreadId
         {
             get
