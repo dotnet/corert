@@ -144,6 +144,7 @@ namespace Internal.Runtime.CompilerHelpers
         private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
+
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
@@ -151,9 +152,21 @@ namespace Internal.Runtime.CompilerHelpers
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
                 IntPtr* pBlock = (IntPtr*)*block;
-                if (((*pBlock).ToInt64() & 0x1L) == 1)
+                long blockAddr = (*pBlock).ToInt64();
+                if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
-                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask)));
+
+                    if ((blockAddr & GCStaticRegionConstants.HasPreInitializedData) == GCStaticRegionConstants.HasPreInitializedData)
+                    {
+                        // The next pointer is preinitialized data blob that contains preinitialized static GC fields,
+                        // which are pointer relocs to GC objects in frozen segment. 
+                        // It actually has all GC fields including non-preinitialized fields and we simply copy over the
+                        // entire blob to this object, overwriting everything. 
+                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawDataSize());
+                    }
+
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
                 }
             }

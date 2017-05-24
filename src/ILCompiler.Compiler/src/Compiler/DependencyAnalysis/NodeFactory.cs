@@ -235,6 +235,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
+            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
+            {
+                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
+                Debug.Assert(gcStaticsNode is GCStaticsNode);               
+                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
+            });
+
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -349,6 +356,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
+            _frozenArrayNodes = new NodeCache<PreInitFieldInfo, FrozenArrayNode>((PreInitFieldInfo fieldInfo) =>
+            {
+                return new FrozenArrayNode(fieldInfo);
+            });
+
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
             {
                 return new InterfaceDispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
@@ -421,6 +433,21 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ImportedTypeGenericDictionaryNode(this, type);
                 }
+            });
+
+            _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
+            {
+                return new TypeMetadataNode(type);
+            });
+
+            _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
+            {
+                return new MethodMetadataNode(method);
+            });
+
+            _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
+            {
+                return new ModuleMetadataNode(module);
             });
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
@@ -510,6 +537,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _GCStatics.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
+
+        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
+        {
+            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
@@ -835,11 +869,39 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadata;
+
+        internal TypeMetadataNode TypeMetadata(MetadataType type)
+        {
+            return _typesWithMetadata.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;
+
+        internal MethodMetadataNode MethodMetadata(MethodDesc method)
+        {
+            return _methodsWithMetadata.GetOrAdd(method);
+        }
+
+        private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;
+
+        internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
+        {
+            return _modulesWithMetadata.GetOrAdd(module);
+        }
+
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;
 
         public FrozenStringNode SerializedStringObject(string data)
         {
             return _frozenStringNodes.GetOrAdd(data);
+        }
+
+        private NodeCache<PreInitFieldInfo, FrozenArrayNode> _frozenArrayNodes;
+
+        public FrozenArrayNode SerializedFrozenArray(PreInitFieldInfo preInitFieldInfo)
+        {
+            return _frozenArrayNodes.GetOrAdd(preInitFieldInfo);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -892,7 +954,7 @@ namespace ILCompiler.DependencyAnalysis
             "__DispatchMapTableEnd",
             null);
 
-        public ArrayOfEmbeddedDataNode<FrozenStringNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<FrozenStringNode>(
+        public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
             null);

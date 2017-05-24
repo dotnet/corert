@@ -25,11 +25,21 @@ struct DebuggerProtectedBufferList
     struct DebuggerProtectedBufferList* next;
 };
 
+struct DebuggerOwnedHandleList
+{
+	void* handle;
+	UInt32 identifier;
+	struct DebuggerOwnedHandleList* next;
+};
+
 class DebuggerHook
 {
 public:
     static void OnBeforeGcCollection();
+    static UInt32 RecordDebuggeeInitiatedHandle(void* handle);
     static DebuggerProtectedBufferList* s_debuggerProtectedBuffers;
+    static DebuggerOwnedHandleList* s_debuggerOwnedHandleList;
+    static UInt32 s_debuggeeInitiatedHandleIdentifier;
 };
 
 #endif //!DACCESS_COMPILE

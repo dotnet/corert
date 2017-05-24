@@ -135,16 +135,23 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
+    set __SourceFileProj=
     if exist "!__SourceFolder!\!__SourceFileName!.csproj" (
+        set __SourceFileProj=!__SourceFolder!\!__SourceFileName!.csproj
+    )
+    if exist "!__SourceFolder!\!__SourceFileName!.ilproj" (
+        set __SourceFileProj=!__SourceFolder!\!__SourceFileName!.ilproj
+    )
+    if NOT "!__SourceFileProj!" == "" (
         if /i not "%CoreRT_TestCompileMode%" == "cpp" (
             set __Mode=Jit
-            call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
+            call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
             set /a __JitTotalTests=!__JitTotalTests!+1
         )
         if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
             if not exist "!__SourceFolder!\no_cpp" (
                 set __Mode=Cpp
-                call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
+                call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
                 set /a __CppTotalTests=!__CppTotalTests!+1
             )
         )
@@ -201,7 +208,8 @@ goto :eof
     echo.
     set __SourceFolder=%~1
     set __SourceFileName=%~2
-    set __CompileLogPath=%~3
+    set __SourceFileProj=%~3
+    set __CompileLogPath=%~4
 
     echo Compiling directory !__SourceFolder! !__Mode!
     echo.
@@ -225,9 +233,9 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFile!.csproj
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%

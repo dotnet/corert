@@ -96,6 +96,14 @@ namespace Internal.TypeSystem
                     flags |= TypeFlags.HasGenericVariance;
             }
 
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (_typeDef.HasFinalizer)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
             return flags;
         }
 
@@ -174,14 +182,6 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert(typeInHierarchy is InstantiatedType);
                 return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer.GetTypicalMethodDefinition(), (InstantiatedType)typeInHierarchy);
-            }
-        }
-
-        public override bool HasFinalizer
-        {
-            get
-            {
-                return _typeDef.HasFinalizer;
             }
         }
 
