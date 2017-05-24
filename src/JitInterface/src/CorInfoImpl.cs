@@ -1421,7 +1421,7 @@ namespace Internal.JitInterface
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
                         object helperArg;
-                        if (helperId != ReadyToRunHelperId.DelegateCtor)
+                        if (pGenericLookupKind.runtimeLookupArgs == null)
                             helperArg = GetTargetForFixup(GetRuntimeDeterminedObjectForToken(ref pResolvedToken), helperId);
                         else
                             helperArg = HandleToObject((IntPtr)pGenericLookupKind.runtimeLookupArgs);
@@ -2437,22 +2437,25 @@ namespace Internal.JitInterface
 
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
-            CORINFO_RESOLVED_TOKEN resolvedToken = pResolvedToken;
-
             // We need to resolve the token because the hMethod that RyuJIT has is canonicalized even if we
             // know the exact type.
-            resolveToken(ref resolvedToken);
-
-            MethodDesc method = HandleToObject(resolvedToken.hMethod);
+            MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            if (method == null)
+            {
+                CORINFO_RESOLVED_TOKEN resolvedToken = pResolvedToken;
+                resolveToken(ref resolvedToken);
+                method = HandleToObject(resolvedToken.hMethod);
+            }
 
             Debug.Assert(method.Name == "EETypePtrOf");
 
-            if (method.IsSharedByGenericInstantiations)
+            if (method.IsRuntimeDeterminedExactMethod)
             {
                 pResult.lookup.lookupKind.needsRuntimeLookup = true;
                 pResult.lookup.runtimeLookup.signature = null;
                 pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
                 pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
 
                 MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
 
@@ -2517,6 +2520,8 @@ namespace Internal.JitInterface
                         pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
                     else
                         throw new NotImplementedException();
+
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
@@ -2538,6 +2543,7 @@ namespace Internal.JitInterface
                 {
                     Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
                     pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else
@@ -2563,6 +2569,7 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
 
@@ -2815,6 +2822,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
                 else
                 {
@@ -2947,6 +2955,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
             }
             else
@@ -2984,6 +2993,7 @@ namespace Internal.JitInterface
 
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
                 else
                 {
