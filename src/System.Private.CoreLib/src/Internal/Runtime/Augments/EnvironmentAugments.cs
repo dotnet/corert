@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 namespace Internal.Runtime.Augments
 {
     /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
-    public static class EnvironmentAugments
+    public static partial class EnvironmentAugments
     {
         public static int CurrentManagedThreadId => System.Threading.ManagedThreadId.Current;
         public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
@@ -91,12 +91,5 @@ namespace Internal.Runtime.Augments
         }
 
         public static int TickCount => Environment.TickCount;
-
-        public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
-        public static IDictionary GetEnvironmentVariables() => Environment.GetEnvironmentVariables();
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) { throw new NotImplementedException(); }
-        public static void SetEnvironmentVariable(string variable, string value) { throw new NotImplementedException(); }
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
     }
 }
