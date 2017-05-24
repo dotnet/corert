@@ -83,34 +83,5 @@ namespace System.Threading
 
             Interop.mincore.SubmitThreadpoolWork(s_work);
         }
-
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static void LongRunningWorkCallback(IntPtr instance, IntPtr context)
-        {
-            RuntimeThread.InitializeThreadPoolThread();
-
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Action callback = (Action)gcHandle.Target;
-            gcHandle.Free();
-
-            callback();
-        }
-
-        internal static unsafe void QueueLongRunningWork(Action callback)
-        {
-            var environ = default(Interop.mincore.TP_CALLBACK_ENVIRON);
-
-            environ.Initialize();
-            environ.SetLongFunction();
-
-            IntPtr nativeCallback = AddrofIntrinsics.AddrOf<Interop.mincore.SimpleCallback>(LongRunningWorkCallback);
-
-            GCHandle gcHandle = GCHandle.Alloc(callback);
-            if (!Interop.mincore.TrySubmitThreadpoolCallback(nativeCallback, GCHandle.ToIntPtr(gcHandle), &environ))
-            {
-                gcHandle.Free();
-                throw new OutOfMemoryException();
-            }
-        }
     }
 }
