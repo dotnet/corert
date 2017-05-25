@@ -74,9 +74,7 @@ namespace ILCompiler
             if (_generateDebugInfo)
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
-            MetadataManager metadataManager = CreateMetadataManager();
-
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _nameMangler);
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);

@@ -20,9 +20,7 @@ using System.Runtime.Versioning;
 
 using Internal.Reflection.Core.NonPortable;
 
-#if INPLACE_RUNTIME
-using EEType = Internal.Runtime.EEType;
-#endif
+using Internal.Runtime;
 
 namespace System
 {
@@ -151,6 +149,15 @@ namespace System
         internal ref byte GetRawData()
         {
             return ref Unsafe.As<RawData>(this).Data;
+        }
+
+        /// <summary>
+        /// Return size of all data (excluding ObjHeader and EEType*).
+        /// Note that for strings/arrays this would include the Length as well. 
+        /// </summary>
+        internal uint GetRawDataSize()
+        {
+            return EETypePtr.BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(EEType*);
         }
     }
 }

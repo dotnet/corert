@@ -49,6 +49,14 @@ namespace System
             throw new NotImplementedException();
         }
 #endif
+
+        internal unsafe uint BaseSize
+        {
+            get
+            {
+                return ToPointer()->BaseSize;
+            }
+        }
     }
 }
 

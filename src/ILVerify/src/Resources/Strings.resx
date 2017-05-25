@@ -141,6 +141,9 @@
   <data name="EndfilterStack" xml:space="preserve">
     <value>Stack not empty when leaving an exception filter.</value>
   </data>
+  <data name="Endfinally" xml:space="preserve">
+    <value>Endfinally from outside a finally handler.</value>
+  </data>
   <data name="ExpectedArray" xml:space="preserve">
     <value>Expected single-dimension zero-based array.</value>
   </data>

@@ -11,7 +11,7 @@ namespace System
     // The Array type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type int
 
-    public class Array
+    public partial class Array
     {
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
