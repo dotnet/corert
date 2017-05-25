@@ -104,6 +104,21 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
     }
 }
 
+namespace System.Reflection.Runtime.Modules.EcmaFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
+    //          mapping between Assemblies and Modules.)
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class EcmaFormatRuntimeModule
+    {
+        internal static RuntimeModule GetRuntimeModule(EcmaFormatRuntimeAssembly assembly)
+        {
+            return new EcmaFormatRuntimeModule(assembly);
+        }
+    }
+}
+
 namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
 {
     //-----------------------------------------------------------------------------------------------------------

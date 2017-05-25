@@ -45,6 +45,7 @@
     <Compile Include="System\Reflection\Runtime\EventInfos\EcmaFormat\EcmaFormatRuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\EcmaFormat\EcmaFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\EcmaFormat\EcmaFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\EcmaFormat\EcmaFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\EcmaFormat\EcmaFormatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\EcmaFormat\EcmaFormatRuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfo.cs" />
@@ -144,6 +145,7 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\VirtualRuntimeParameterInfoArray.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
