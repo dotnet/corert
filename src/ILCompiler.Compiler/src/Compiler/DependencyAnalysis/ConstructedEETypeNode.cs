@@ -131,17 +131,25 @@ namespace ILCompiler.DependencyAnalysis
                 // Array EEType depends on System.Array's virtuals. Array EETypes don't point to
                 // their base type (i.e. there's no reloc based dependency making this "just work").
                 dependencyList.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
+
+                ArrayType arrayType = (ArrayType)_type;
+                if (arrayType.IsMdArray && arrayType.Rank == 1)
+                {
+                    // Allocating an MDArray of Rank 1 with zero lower bounds results in allocating
+                    // an SzArray instead. Make sure the type loader can find the SzArray type.
+                    dependencyList.Add(factory.ConstructedTypeSymbol(arrayType.ElementType.MakeArrayType()), "Rank 1 array");
+                }
             }
 
             dependencyList.Add(factory.VTable(_type), "VTable");
 
-            if (closestDefType.HasGenericDictionarySlot())
+            if (closestDefType.HasInstantiation)
             {
-                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                DefType templateType = GenericTypesTemplateMap.GetActualTemplateTypeForType(factory, _type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                if (templateType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(templateType).RepresentsIndirectionCell)
-                    dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout");
+                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
+                if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonType).RepresentsIndirectionCell)
+                    dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(canonType), "Template Type Layout");
             }
 
             // Generated type contains generic virtual methods that will get added to the GVM tables
@@ -156,6 +164,9 @@ namespace ILCompiler.DependencyAnalysis
                 // We need to make sure this is possible.
                 dependencyList.Add(new DependencyListEntry(factory.TypeNonGCStaticsSymbol((MetadataType)_type), "Class constructor"));
             }
+
+            // Ask the metadata manager if we have any dependencies due to reflectability.
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 
             return dependencyList;
         }

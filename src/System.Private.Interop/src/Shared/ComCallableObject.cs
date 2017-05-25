@@ -1200,7 +1200,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore 618
 
             // whether CCWTempalte Data exists for this type
-            m_hasCCWTemplateData = m_type.IsSupportCCWTemplate();
+            m_hasCCWTemplateData = m_type.IsCCWTemplateSupported();
             if (locked)
                 CCWLookupMap.RegisterLocked(m_pNativeCCW);
             else

@@ -21,7 +21,14 @@ namespace System.Runtime.CompilerServices
     public static class RuntimeHelpers
     {
         [Intrinsic]
-        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+        public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
+        {
+            // We only support this intrinsic when it occurs within a well-defined IL sequence.
+            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
+            // For any other purpose, the API is currently unsupported.
+            // https://github.com/dotnet/corert/issues/364
+            throw new PlatformNotSupportedException();
+        }
 
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {

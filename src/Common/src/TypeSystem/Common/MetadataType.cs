@@ -12,14 +12,6 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public override bool HasFinalizer
-        {
-            get
-            {
-                return GetFinalizer() != null;
-            }
-        }
-
         public abstract override string Name { get; }
 
         public abstract override string Namespace { get; }
@@ -51,7 +43,7 @@ namespace Internal.TypeSystem
         /// If true, this is the special &lt;Module&gt; type that contains the definitions
         /// of global fields and methods in the module.
         /// </summary>
-        public bool IsModuleType
+        public virtual bool IsModuleType
         {
             get
             {

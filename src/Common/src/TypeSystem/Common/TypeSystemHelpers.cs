@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
     {
         public static bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
         {
-            return type == type.Context.GetWellKnownType(wellKnownType);
+            return type == type.Context.GetWellKnownType(wellKnownType, false);
         }
 
         public static InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)
@@ -70,7 +70,7 @@ namespace Internal.TypeSystem
         {
             if (type.IsValueType)
             {
-                return ((MetadataType)type).InstanceFieldSize;
+                return ((DefType)type).InstanceFieldSize;
             }
             else
             {

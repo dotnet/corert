@@ -14,6 +14,7 @@ namespace System
 {
     internal static class ActivatorImplementation
     {
+        [DebuggerGuidedStepThrough]
         public static object CreateInstance(Type type, bool nonPublic)
         {
             if (type == null)
@@ -34,9 +35,11 @@ namespace System
             if (constructor == null)
                 throw new MissingMethodException(SR.Arg_NoDefCTor);
             object result = constructor.Invoke(Array.Empty<object>());
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             if (type == null)
@@ -104,6 +107,7 @@ namespace System
             }
 
             object result = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             if (state != null)
                 binder.ReorderArgumentArray(ref args, state);
             return result;

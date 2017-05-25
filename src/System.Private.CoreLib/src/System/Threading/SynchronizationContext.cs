@@ -12,13 +12,36 @@
 ===========================================================*/
 
 using Internal.Runtime.Augments;
+using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
+    [Flags]
+    internal enum SynchronizationContextProperties
+    {
+        None = 0,
+        RequireWaitNotification = 0x1
+    };
+
     public partial class SynchronizationContext
     {
+        private SynchronizationContextProperties _props = SynchronizationContextProperties.None;
+
         public SynchronizationContext()
         {
+        }
+
+#if PLATFORM_WINDOWS
+        // protected so that only the derived sync context class can enable these flags
+        protected void SetWaitNotificationRequired()
+        {
+            _props |= SynchronizationContextProperties.RequireWaitNotification;
+        }
+#endif
+
+        public bool IsWaitNotificationRequired()
+        {
+            return ((_props & SynchronizationContextProperties.RequireWaitNotification) != 0);
         }
 
         public virtual void Send(SendOrPostCallback d, Object state)
@@ -44,6 +67,28 @@ namespace System.Threading
         public virtual void OperationCompleted()
         {
         }
+
+#if PLATFORM_WINDOWS
+        // Method called when the CLR does a wait operation
+        [CLSCompliant(false)]
+        public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        {
+            return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
+        }
+
+        // Method that can be called by Wait overrides
+        [CLSCompliant(false)]
+        protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        {
+            if (waitHandles == null)
+            {
+                throw new ArgumentNullException(nameof(waitHandles));
+            }
+            Contract.EndContractBlock();
+
+            return WaitHandle.WaitForMultipleObjectsIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
+        }
+#endif
 
         // Set the SynchronizationContext on the current thread
         public static void SetSynchronizationContext(SynchronizationContext syncContext)

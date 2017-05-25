@@ -134,13 +134,15 @@ namespace System.Runtime.InteropServices
                 //
                 // Marshalling a managed delegate created from managed code into a native function pointer
                 //
-                return GetOrAllocateThunk(del);
+                return GetPInvokeDelegates().GetValue(del, s_AllocateThunk ?? (s_AllocateThunk = AllocateThunk)).Thunk;
             }
         }
+
         /// <summary>
         /// Used to lookup whether a delegate already has thunk allocated for it
         /// </summary>
         private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk> s_pInvokeDelegates;
+        private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk>.CreateValueCallback s_AllocateThunk;
 
         private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk> GetPInvokeDelegates()
         {
@@ -151,7 +153,6 @@ namespace System.Runtime.InteropServices
             //
             if (s_pInvokeDelegates == null)
             {
-
                 Interlocked.CompareExchange(
                     ref s_pInvokeDelegates,
                     new ConditionalWeakTable<Delegate, PInvokeDelegateThunk>(),
@@ -227,27 +228,20 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static IntPtr GetOrAllocateThunk(Delegate del)
+        private static PInvokeDelegateThunk AllocateThunk(Delegate del)
         {
-            ConditionalWeakTable<Delegate, PInvokeDelegateThunk> pinvokeDelegates = GetPInvokeDelegates();
-
-            PInvokeDelegateThunk delegateThunk;
-
-            // if the delegate already exists in the table return the allocated thunk for it
-            if (pinvokeDelegates.TryGetValue(del, out delegateThunk))
-            {
-                return delegateThunk.Thunk;
-            }
-
             if (s_thunkPoolHeap == null)
             {
-                s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress());
+                // TODO: Free s_thunkPoolHeap if the thread lose the race
+                Interlocked.CompareExchange(
+                    ref s_thunkPoolHeap,
+                    RuntimeAugments.CreateThunksHeap(RuntimeImports.GetInteropCommonStubAddress()),
+                    null
+                );
                 Debug.Assert(s_thunkPoolHeap != null);
             }
 
-
-            delegateThunk = new PInvokeDelegateThunk(del);
-
+            var delegateThunk = new PInvokeDelegateThunk(del);
 
             McgPInvokeDelegateData pinvokeDelegateData;
             if (!RuntimeAugments.InteropCallbacks.TryGetMarshallerDataForDelegate(del.GetTypeHandle(), out pinvokeDelegateData))
@@ -260,13 +254,9 @@ namespace System.Runtime.InteropServices
             //
             IntPtr pTarget = del.GetRawFunctionPointerForOpenStaticDelegate() == IntPtr.Zero ? pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
 
-
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
 
-            // Add the delegate to the dictionary if it doesn't already exists
-            delegateThunk = pinvokeDelegates.GetOrAdd(del, delegateThunk);
-
-            return delegateThunk.Thunk;
+            return delegateThunk;
         }
 
         /// <summary>
@@ -529,6 +519,7 @@ namespace System.Runtime.InteropServices
             if (managedArray == null)
             {
                 Buffer.ZeroMemory((byte*)pNative, expectedCharCount);
+                return;
             }
 
             int lenUnicode = managedArray.Length;
@@ -764,19 +755,12 @@ namespace System.Runtime.InteropServices
             }
             else // Let OS convert
             {
-                uint flags = (bestFit ? 0 : WC_NO_BEST_FIT_CHARS);
-                int defaultCharUsed = 0;
                 ConvertWideCharToMultiByte(pManaged,
                                            lenUnicode,
                                            pNative,
                                            length,
-                                           flags,
-                                           throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
-                                           );
-                if (defaultCharUsed != 0)
-                {
-                    throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
-                }
+                                           bestFit,
+                                           throwOnUnmappableChar);
             }
 
             // Zero terminate

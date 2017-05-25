@@ -115,6 +115,8 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
@@ -135,14 +137,14 @@
     <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
+    <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastableObject.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
-    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
+    <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
+    <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
+    <Compile Include="System\Reflection\AssemblyNameLexer.cs" />
+    <Compile Include="System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="System\Reflection\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
     <Compile Include="System\Reflection\AssemblyName.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
@@ -163,14 +165,9 @@
     <Compile Include="System\Resources\FileBasedResourceGroveler.cs" />
     <Compile Include="System\Resources\IResourceGroveler.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.cs" />
-    <Compile Include="System\Resources\PinnedBufferMemoryStream.cs" />
-    <Compile Include="System\Resources\ResourceFallbackManager.cs" />
     <Compile Include="System\Resources\ResourceManager.cs" />
     <Compile Include="System\Resources\ResourceReader.cs" />
     <Compile Include="System\Resources\ResourceSet.cs" />
-    <Compile Include="System\Resources\RuntimeResourceSet.cs" />
-    <Compile Include="System\Resources\UnmanagedMemoryStreamWrapper.cs" />
-    <Compile Include="System\Resources\StreamExtensions.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
     <Compile Include="System\__Canon.cs" />
@@ -180,9 +177,7 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
     <Compile Include="System\ArgIterator.cs" />
-    <Compile Include="System\ArgumentOutOfRangeException.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\BadImageFormatException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
@@ -212,28 +207,27 @@
     <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
+    <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\SortKey.cs" />
-    <Compile Include="System\Globalization\StringInfo.cs" />
     <Compile Include="System\Globalization\TextElementEnumerator.cs" />
-    <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
-    <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
+    <Compile Include="System\Globalization\TimeSpanFormat.cs" />
+    <Compile Include="System\Globalization\TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\EncodingCache.cs" />
+    <Compile Include="System\IO\File.cs" />
+    <Compile Include="System\IO\File.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\IO\File.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
-    <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
-    <Compile Include="System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
@@ -246,7 +240,6 @@
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
-    <Compile Include="System\Environment.EnvironmentVariables.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
     <Compile Include="System\Globalization\CalendarData.cs" />
@@ -256,9 +249,10 @@
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\GregorianCalendar.cs" />
-    <Compile Include="System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.cs" />
+    <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Int16.cs" />
@@ -275,7 +269,6 @@
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
-    <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
@@ -309,6 +302,7 @@
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
+    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
@@ -373,12 +367,16 @@
     <Compile Include="System\Threading\EventWaitHandle.cs" />
     <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
+    <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
+    <Compile Include="System\Threading\Overlapped.cs" />
+    <Compile Include="System\Threading\PinnableBufferCache.cs" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
@@ -486,6 +484,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
@@ -518,6 +517,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemReAlloc.cs">
+      <Link>Interop\Windows\mincore\Interop.MemReAlloc.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs">
       <Link>Interop\Windows\ole32\Interop.CoTaskMemAllocFree.cs</Link>
     </Compile>
@@ -532,33 +534,26 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs</Link>
     </Compile>
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.Uap.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\ThreadPool.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\ThreadPool.Win32.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
       <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.ThreadPool.cs">
       <Link>Interop\Windows\mincore\Interop.ThreadPool.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Threading\Timer.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Threading\Timer.Win32.cs" />
     <Compile Include="System\Threading\Timer.Windows.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Timer.cs">
       <Link>Interop\Windows\mincore\Interop.Timer.cs</Link>
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
-    <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
-    <Compile Include="System\Threading\NativeOverlapped.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
+    <Compile Include="System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
@@ -570,10 +565,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\HijriCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\HijriCalendar.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\Globalization\JapaneseCalendar.Win32.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\Globalization\JapaneseCalendar.WinRT.cs" />
     <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="System\Globalization\CultureData.Windows.cs" />
@@ -581,9 +572,6 @@
     <Compile Include="System\Globalization\CalendarData.Windows.cs" />
     <Compile Include="System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="System\Text\Normalization.Windows.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
-      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Idna.cs">
       <Link>Interop\Windows\mincore\Interop.Idna.cs</Link>
     </Compile>
@@ -634,18 +622,10 @@
     <Compile Include="System\Text\Normalization.Dummy.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
-    <Compile Include="System\Globalization\HijriCalendar.Unix.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="System\Globalization\CultureData.Unix.cs" />
     <Compile Include="System\Globalization\TextInfo.Unix.cs" />
-    <Compile Include="System\Globalization\CalendarData.Unix.cs" />
-    <Compile Include="System\Globalization\IdnMapping.Unix.cs" />
     <Compile Include="System\Text\Normalization.Unix.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Globalization.Native\Interop.Collation.cs">
-      <Link>Interop\Unix\System.Globalization.Native\Interop.Collation.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
@@ -673,14 +653,23 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetSystemTimeAsTicks.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.CreateGuid.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
@@ -740,6 +729,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Numerics\Hashing\HashHelpers.cs">
       <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>

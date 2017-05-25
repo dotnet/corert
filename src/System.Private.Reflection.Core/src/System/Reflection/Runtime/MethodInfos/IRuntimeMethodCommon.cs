@@ -50,6 +50,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         bool IsGenericMethodDefinition { get; }
 
+        bool HasSameMetadataDefinitionAs(TRuntimeMethodCommon other);
+
         TRuntimeMethodCommon RuntimeMethodCommonOfUninstantiatedMethod { get; }
 
         RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<TRuntimeMethodCommon> owningMethod);

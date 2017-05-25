@@ -174,8 +174,8 @@
   <data name="MissingConstructor_Name" xml:space="preserve">
     <value>Constructor on type '{0}' not found.</value>
   </data>
-  <data name="PlatformNotSupported_NoMultiDims" xml:space="preserve">
-    <value>Multidimensional arrays of rank {0} are not supported on this runtime.</value>
+  <data name="MultiDim_Of_This_Rank_Not_Supported" xml:space="preserve">
+    <value>Multidimensional arrays of rank {0} are not supported.</value>
   </data>
   <data name="Object_NotInvokable" xml:space="preserve">
     <value>This object cannot be invoked because it was metadata-enabled for browsing only: '{0}' For more information, please visit  http://go.microsoft.com/fwlink/?LinkID=616867</value>
@@ -197,9 +197,6 @@
   </data>
   <data name="Argument_ConstraintFailed" xml:space="preserve">
     <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
-  </data>
-  <data name="NotSupported_OpenType" xml:space="preserve">
-    <value>Cannot create arrays of open type. </value>
   </data>
   <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
     <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>

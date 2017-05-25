@@ -24,12 +24,6 @@ namespace System
     // The desktop CLR supports arrays of up to 32 dimensions so that provides
     // an upper limit on how much this needs to be built out.
 
-    public class MDArray
-    {
-        public const int MinRank = 2;
-        public const int MaxRank = 32;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public class MDArrayRank2<T>
     {

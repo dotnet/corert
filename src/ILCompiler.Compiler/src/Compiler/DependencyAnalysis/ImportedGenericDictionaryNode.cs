@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -11,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _owningMethod;
 
         public ImportedMethodGenericDictionaryNode(NodeFactory factory, MethodDesc owningMethod)
-            : base("__imp_" + MethodGenericDictionaryNode.GetMangledName(factory.NameMangler, owningMethod))
+            : base("__imp_" + factory.NameMangler.NodeMangler.MethodGenericDictionary(owningMethod))
         {
             _owningMethod = owningMethod;
         }
@@ -24,8 +25,9 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _owningType;
 
         public ImportedTypeGenericDictionaryNode(NodeFactory factory, TypeDesc owningType)
-            : base("__imp_" + TypeGenericDictionaryNode.GetMangledName(factory.NameMangler, owningType))
+            : base("__imp_" + factory.NameMangler.NodeMangler.TypeGenericDictionary(owningType))
         {
+            Debug.Assert(!factory.LazyGenericsPolicy.UsesLazyGenerics(owningType));
             _owningType = owningType;
         }
 

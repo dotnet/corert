@@ -111,6 +111,23 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            NativeFormatRuntimeEventInfo otherEvent = other as NativeFormatRuntimeEventInfo;
+            if (otherEvent == null)
+                return false;
+            if (!(_reader == otherEvent._reader))
+                return false;
+            if (!(_eventHandle.Equals(otherEvent._eventHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(otherEvent._definingTypeInfo)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
             NativeFormatRuntimeEventInfo other = obj as NativeFormatRuntimeEventInfo;

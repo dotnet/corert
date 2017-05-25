@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // Since these represent "internal framework types", the app cannot prove we are lying.
     // 
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeDefinitionTypeInfo
     {
         private RuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -85,6 +85,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
+
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
 
         public sealed override bool IsGenericTypeDefinition
         {

@@ -6,7 +6,9 @@ set(NATIVE_SOURCES
     pal_dynamicload.cpp
     pal_environment.cpp
     pal_errno.cpp
+    pal_guid.cpp
     pal_memory.cpp
+    pal_exepath.cpp
     pal_threading.cpp
     pal_time.cpp
 )

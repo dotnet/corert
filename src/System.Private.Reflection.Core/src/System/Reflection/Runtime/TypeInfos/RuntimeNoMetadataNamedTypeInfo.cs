@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>, but not Foo<int> or arrays/pointers/byrefs.)
     // that not opted into pay-for-play metadata.
     // 
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeDefinitionTypeInfo
     {
         private RuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -82,6 +82,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 return _isGenericTypeDefinition;
             }
         }
+
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
 
         public sealed override string Namespace
         {

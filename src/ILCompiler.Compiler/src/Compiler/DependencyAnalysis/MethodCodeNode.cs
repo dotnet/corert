@@ -84,50 +84,7 @@ namespace ILCompiler.DependencyAnalysis
 
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
-            if (_method.IsPInvoke)
-            {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
-
-                MethodSignature methodSig = _method.Signature;
-                AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
-
-                for (int i = 0; i < methodSig.Length; i++)
-                {
-                    AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
-                }
-            }
-
             return dependencies;
-        }
-
-        private void AddPInvokeParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
-        {
-            if (parameter.IsDelegate)
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(parameter), "Delegate Marshalling Stub");
-
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetOpenStaticDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetClosedDelegateMarshallingStub(parameter)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetForwardDelegateCreationStub(parameter)), "Delegate Marshalling Stub");
-            }
-            else if (MarshalHelpers.IsStructMarshallingRequired(parameter))
-            {
-                var stub = (Internal.IL.Stubs.StructMarshallingThunk)factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(parameter);
-                dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(parameter)), "Struct Marshalling Type");
-                dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(parameter)), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(parameter)), "Struct Marshalling stub");
-
-                foreach (var inlineArrayCandidate in stub.GetInlineArrayCandidates())
-                {
-                    dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetInlineArrayType(inlineArrayCandidate)), "Struct Marshalling Type");
-                    foreach (var method in inlineArrayCandidate.ElementType.GetMethods())
-                    {
-                        dependencies.Add(factory.MethodEntrypoint(method), "inline array marshalling stub");
-                    }
-                }
-            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

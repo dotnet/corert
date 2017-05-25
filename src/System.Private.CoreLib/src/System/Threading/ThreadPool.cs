@@ -529,6 +529,9 @@ namespace System.Threading
 
         private volatile int numOutstandingThreadRequests = 0;
 
+        // The number of threads executing work items in the Dispatch method
+        internal volatile int numWorkingThreads;
+
         public ThreadPoolWorkQueue()
         {
             queueTail = queueHead = new QueueSegment();
@@ -690,6 +693,8 @@ namespace System.Threading
             //
             workQueue.MarkThreadRequestSatisfied();
 
+            Interlocked.Increment(ref workQueue.numWorkingThreads);
+
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
             // false later, but only if we're absolutely certain that the queue is empty.
@@ -750,6 +755,9 @@ namespace System.Threading
             }
             finally
             {
+                int numWorkers = Interlocked.Decrement(ref workQueue.numWorkingThreads);
+                Debug.Assert(numWorkers >= 0);
+
                 //
                 // If we are exiting for any reason other than that the queue is definitely empty, ask for another
                 // thread to pick up where we left off.
@@ -1085,19 +1093,28 @@ namespace System.Threading
 
         // This is the method the debugger will actually call, if it ends up calling
         // into ThreadPool directly.  Tests can use this to simulate a debugger, as well.
-        internal static object[] GetQueuedWorkItemsForDebugger()
+        internal static object[] GetQueuedWorkItemsForDebugger() =>
+            ToObjectArray(GetQueuedWorkItems());
+
+        internal static object[] GetGloballyQueuedWorkItemsForDebugger() =>
+            ToObjectArray(GetGloballyQueuedWorkItems());
+
+        internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
+            ToObjectArray(GetLocallyQueuedWorkItems());
+
+        unsafe private static void NativeOverlappedCallback(object obj)
         {
-            return ToObjectArray(GetQueuedWorkItems());
+            NativeOverlapped* overlapped = (NativeOverlapped*)(IntPtr)obj;
+            _IOCompletionCallback.PerformIOCompletionCallback(0, 0, overlapped);
         }
 
-        internal static object[] GetGloballyQueuedWorkItemsForDebugger()
+        [CLSCompliant(false)]
+        unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
         {
-            return ToObjectArray(GetGloballyQueuedWorkItems());
-        }
-
-        internal static object[] GetLocallyQueuedWorkItemsForDebugger()
-        {
-            return ToObjectArray(GetLocallyQueuedWorkItems());
+            // OS doesn't signal handle, so do it here
+            overlapped->InternalLow = (IntPtr)0;
+            // A quick-and-dirty implementation that runs the callback on the normal thread pool
+            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
         }
 
         internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.Current != null; } }

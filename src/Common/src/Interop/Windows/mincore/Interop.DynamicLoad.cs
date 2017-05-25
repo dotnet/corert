@@ -17,6 +17,9 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, int dwFlags);
 
+        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode)]
+        internal static extern SafeLibraryHandle LoadLibraryEx_SafeHandle(string lpFileName, IntPtr hFile, int dwFlags);
+
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll")]
         internal static extern bool FreeLibrary(IntPtr hModule);
 

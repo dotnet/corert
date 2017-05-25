@@ -21,7 +21,9 @@ namespace System.Runtime.CompilerServices
     {
         private Object _wrappedException;
 
-        private RuntimeWrappedException(Object thrownObject)
+        // Not an api but has to be public as System.Linq.Expression invokes this through Reflection when an expression
+        // throws an object that doesn't derive from Exception.
+        public RuntimeWrappedException(Object thrownObject)
             : base(SR.RuntimeWrappedException)
         {
             HResult = __HResults.COR_E_RUNTIMEWRAPPED;

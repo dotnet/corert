@@ -37,6 +37,7 @@ namespace ILCompiler
         private bool _multiFile;
         private bool _useSharedGenerics;
         private string _mapFileName;
+        private string _metadataLogFileName;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -133,6 +134,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+                syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -208,7 +210,7 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || !_isCppCodegen ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT), genericsMode);
@@ -333,8 +335,11 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
+            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
+
             ICompilation compilation = builder
                 .UseBackendOptions(_codegenOptions)
+                .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

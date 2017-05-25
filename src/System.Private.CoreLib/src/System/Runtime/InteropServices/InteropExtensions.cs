@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using Internal.Runtime.Augments;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
@@ -103,6 +104,12 @@ namespace System.Runtime.InteropServices
         {
             EETypePtr eeType = handle.ToEETypePtr();
             return eeType.IsGenericTypeDefinition;
+        }
+
+        public static unsafe int GetGenericArgumentCount(this RuntimeTypeHandle genericTypeDefinitionHandle)
+        {
+            Debug.Assert(IsGenericTypeDefinition(genericTypeDefinitionHandle));
+            return genericTypeDefinitionHandle.ToEETypePtr().ToPointer()->GenericArgumentCount;
         }
 
         public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
@@ -214,7 +221,7 @@ namespace System.Runtime.InteropServices
 
         public static bool IsClass(this RuntimeTypeHandle handle)
         {
-            return handle.ToEETypePtr().IsDefType && !handle.ToEETypePtr().IsInterface && !handle.ToEETypePtr().IsValueType;
+            return handle.ToEETypePtr().IsDefType && !handle.ToEETypePtr().IsInterface && !handle.ToEETypePtr().IsValueType && !handle.IsDelegate();
         }
 
         public static bool IsEnum(this RuntimeTypeHandle handle)
@@ -322,6 +329,16 @@ namespace System.Runtime.InteropServices
         public static RuntimeTypeHandle GetArrayElementType(RuntimeTypeHandle arrayType)
         {
             return new RuntimeTypeHandle(arrayType.ToEETypePtr().ArrayElementType);
+        }
+
+        /// <summary>
+        /// Whether the type is a single dimension zero lower bound array
+        /// </summary>
+        /// <param name="type">specified type</param>
+        /// <returns>true iff it is a single dimension zeo lower bound array</returns>
+        public static bool IsSzArray(RuntimeTypeHandle type)
+        {
+            return type.ToEETypePtr().IsSzArray;
         }
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)

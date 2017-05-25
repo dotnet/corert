@@ -12,8 +12,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
     {
-        public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
-            : base(context, compilationModuleGroup, new CompilerGeneratedMetadataManager(compilationModuleGroup, context), new CoreRTNameMangler(false))
+        public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
+            : base(context, compilationModuleGroup, metadataManager, nameMangler, new LazyGenericsDisabledPolicy())
         {
         }
 
@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
-            if (CompilationModuleGroup.ContainsMethod(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method))
             {
                 return new MethodCodeNode(method);
             }

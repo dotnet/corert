@@ -57,7 +57,6 @@ namespace Internal.TypeSystem
 
                 // Global types do not do the rest of instance field layout.
                 ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout();
-                result.PackValue = type.Context.Target.DefaultPackingSize;
                 result.Offsets = Array.Empty<FieldAndOffset>();
                 return result;
             }
@@ -111,7 +110,6 @@ namespace Internal.TypeSystem
                     ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
                     FieldAlignment = sizeAndAlignment.Alignment,
                     FieldSize = sizeAndAlignment.Size,
-                    PackValue = type.Context.Target.DefaultPackingSize
                 };
 
                 if (numInstanceFields > 0)
@@ -174,7 +172,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
+        public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             MetadataType type = (MetadataType)defType;
             int numStaticFields = 0;
@@ -216,18 +214,14 @@ namespace Internal.TypeSystem
                     throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
-                StaticsBlock* block =
-                    field.IsThreadStatic ? &result.ThreadStatics :
-                    field.HasGCStaticBase ? &result.GcStatics :
-                    &result.NonGcStatics;
-
+                ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
                 SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, type.Context.Target.DefaultPackingSize);
 
-                block->Size = LayoutInt.AlignUp(block->Size, sizeAndAlignment.Alignment);
-                result.Offsets[index] = new FieldAndOffset(field, block->Size);
-                block->Size = block->Size + sizeAndAlignment.Size;
+                block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment);
+                result.Offsets[index] = new FieldAndOffset(field, block.Size);
+                block.Size = block.Size + sizeAndAlignment.Size;
 
-                block->LargestAlignment = LayoutInt.Max(block->LargestAlignment, sizeAndAlignment.Alignment);
+                block.LargestAlignment = LayoutInt.Max(block.LargestAlignment, sizeAndAlignment.Alignment);
 
                 index++;
             }
@@ -235,6 +229,16 @@ namespace Internal.TypeSystem
             FinalizeRuntimeSpecificStaticFieldLayout(type.Context, ref result);
 
             return result;
+        }
+
+        private ref StaticsBlock GetStaticsBlockForField(ref ComputedStaticFieldLayout layout, FieldDesc field)
+        {
+            if (field.IsThreadStatic)
+                return ref layout.ThreadStatics;
+            else if (field.HasGCStaticBase)
+                return ref layout.GcStatics;
+            else
+                return ref layout.NonGcStatics;
         }
 
         public override bool ComputeContainsGCPointers(DefType type)

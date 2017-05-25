@@ -129,7 +129,7 @@ namespace System.Globalization
             if (useUserOverride)
             {
                 // They want user overrides, see if the user calendar matches the input calendar
-                int userCalendar = Interop.mincore.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
+                int userCalendar = CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
 
                 // If we got a default, then use it as the first calendar
                 if (userCalendar != 0)
@@ -139,16 +139,9 @@ namespace System.Globalization
                 }
             }
 
-            GCHandle contextHandle = GCHandle.Alloc(data);
-            try
+            unsafe
             {
-                // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumCalendarInfoProcExEx>(EnumCalendarsCallback);
-                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
-            }
-            finally
-            {
-                contextHandle.Free();
+                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, Unsafe.AsPointer(ref data));
             }
 
             // Copy to the output array
@@ -244,7 +237,7 @@ namespace System.Globalization
 
         private static bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out int data)
         {
-            return (Interop.mincore.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0);
+            return (Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0);
         }
 
         private static unsafe bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out string data)
@@ -254,7 +247,7 @@ namespace System.Globalization
             // The maximum size for values returned from GetCalendarInfoEx is 80 characters.
             char* buffer = stackalloc char[BUFFER_LENGTH];
 
-            int ret = Interop.mincore.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType, (IntPtr)buffer, BUFFER_LENGTH, IntPtr.Zero);
+            int ret = Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType, (IntPtr)buffer, BUFFER_LENGTH, IntPtr.Zero);
             if (ret > 0)
             {
                 if (buffer[ret - 1] == '\0')
@@ -276,13 +269,13 @@ namespace System.Globalization
         }
 
         // EnumCalendarInfoExEx callback itself.
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static unsafe Interop.BOOL EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, IntPtr lParam)
+        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
-            EnumData context = (EnumData)((GCHandle)lParam).Target;
+            ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
             try
             {
-                string calendarInfo = new string((char*)lpCalendarInfoString);
+                string calendarInfo = new string(lpCalendarInfoString);
 
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendarInfo)
@@ -309,16 +302,16 @@ namespace System.Globalization
                 GetUserDefaultLocaleName() == localeName)
             {
                 // They want user overrides, see if the user calendar matches the input calendar
-                CalendarId userCalendar = (CalendarId)Interop.mincore.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
+                CalendarId userCalendar = (CalendarId)CultureData.GetLocaleInfoExInt(localeName, LOCALE_ICALENDARTYPE);
 
                 // If the calendars were the same, see if the locales were the same
                 if (userCalendar == calendar)
                 {
                     // They matched, get the user override since locale & calendar match
-                    string res = Interop.mincore.GetLocaleInfoEx(localeName, lcType);
+                    string res = CultureData.GetLocaleInfoEx(localeName, lcType);
 
                     // if it succeeded remember the override for the later callers
-                    if (res != "")
+                    if (res != null)
                     {
                         // Remember this was the override (so we can look for duplicates later in the enum function)
                         context.userOverride = res;
@@ -329,16 +322,10 @@ namespace System.Globalization
                 }
             }
 
-            GCHandle contextHandle = GCHandle.Alloc(context);
-            try
+            unsafe
             {
                 // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Interop.mincore.EnumCalendarInfoProcExEx>(EnumCalendarInfoCallback);
-                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
-            }
-            finally
-            {
-                contextHandle.Free();
+                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
             }
 
             // Now we have a list of data, fail if we didn't find anything.
@@ -435,10 +422,10 @@ namespace System.Globalization
             public LowLevelList<int> calendars;      // list of calendars found so far
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-        private static Interop.BOOL EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, IntPtr lParam)
+        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
-            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)lParam).Target;
+            ref EnumCalendarsData context = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)lParam);
             try
             {
                 // If we had a user override, check to make sure this differs
@@ -461,7 +448,7 @@ namespace System.Globalization
 
             int result;
             char* localeName = stackalloc char[LOCALE_NAME_MAX_LENGTH];
-            result = Interop.mincore.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, localeName, LOCALE_NAME_MAX_LENGTH);
+            result = CultureData.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, localeName, LOCALE_NAME_MAX_LENGTH);
 
             return result <= 0 ? "" : new String(localeName, 0, result - 1); // exclude the null termination
         }

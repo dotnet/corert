@@ -31,18 +31,20 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpSetHighLevelDebugFuncEvalHelper")]
-        public static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
+        internal static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
-        public static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
+        internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        public static extern IntPtr RhpGetFuncEvalTargetAddress();
+        internal static extern IntPtr RhpGetFuncEvalTargetAddress();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        [CLSCompliant(false)]
-        public static extern uint RhpGetFuncEvalParameterBufferSize();
+        internal static extern uint RhpGetFuncEvalParameterBufferSize();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        internal static extern unsafe uint RhpRecordDebuggeeInitiatedHandle(void* objectHandle);
 
         //
         // calls to GC
@@ -187,7 +189,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
         private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
 
-        public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
         {
             IntPtr h = RhpHandleAlloc(value, type);
             if (h == IntPtr.Zero)
@@ -224,7 +226,7 @@ namespace System.Runtime
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
-        public static extern void RhHandleFree(IntPtr handle);
+        internal static extern void RhHandleFree(IntPtr handle);
 
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -296,6 +298,10 @@ namespace System.Runtime
         //
         // calls to runtime for allocation
         //
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
+        internal static extern unsafe object RhBoxAny(void* pData, EETypePtr pEEType);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         internal static extern object RhNewObject(EETypePtr pEEType);
@@ -536,7 +542,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetOSModuleForMrt")]
-        public static extern IntPtr RhGetOSModuleForMrt();
+        internal static extern IntPtr RhGetOSModuleForMrt();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
@@ -856,6 +862,11 @@ namespace System.Runtime
             {
                 memset(bytePointer, 0, byteLength);
             }
+        }
+
+        internal unsafe static void RhZeroMemory(IntPtr p, UIntPtr byteLength)
+        {
+            memset((byte*)p, 0, (nuint)byteLength);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

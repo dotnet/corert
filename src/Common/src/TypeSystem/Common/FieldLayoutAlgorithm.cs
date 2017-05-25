@@ -84,7 +84,6 @@ namespace Internal.TypeSystem
 
     public struct ComputedInstanceFieldLayout
     {
-        public int PackValue;
         public LayoutInt FieldSize;
         public LayoutInt FieldAlignment;
         public LayoutInt ByteCountUnaligned;

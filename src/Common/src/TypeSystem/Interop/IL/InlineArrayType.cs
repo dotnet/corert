@@ -218,6 +218,8 @@ namespace Internal.TypeSystem.Interop
                 flags |= TypeFlags.ValueType;
             }
 
+            flags |= TypeFlags.HasFinalizerComputed;
+
             return flags;
         }
 

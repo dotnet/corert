@@ -30,6 +30,9 @@ namespace ILCompiler.DependencyAnalysis
         // This is a global table across nodes.
         private Dictionary<string, int> _debugFileToId = new Dictionary<string, int>();
 
+        // Track offsets in node data that prevent writing all bytes in one single blob. This includes
+        // relocs, symbol definitions, debug data that must be streamed out using the existing LLVM API
+        private SortedSet<int> _byteInterruptionOffsets = new SortedSet<int>();
         // This is used to look up DebugLocInfo for the given native offset.
         // This is for individual node and should be flushed once node is emitted.
         private Dictionary<int, DebugLocInfo> _offsetToDebugLoc = new Dictionary<int, DebugLocInfo>();
@@ -170,6 +173,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitBlob(IntPtr objWriter, int blobSize, IntPtr blob);
+        public void EmitBytes(IntPtr pArray, int length)
+        {
+            EmitBlob(_nativeObjectWriter, length, pArray);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName);
         public void EmitSymbolDef(byte[] symbolName)
         {
@@ -263,30 +273,29 @@ namespace ILCompiler.DependencyAnalysis
         private static extern uint GetClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor);
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern uint GetCompleteClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+        private static extern uint GetCompleteClassTypeIndex(IntPtr objWriter, ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
 
         public uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor)
         {
             return GetClassTypeIndex(_nativeObjectWriter, classTypeDescriptor);
         }
 
-        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
+        public uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptior, DataFieldDescriptor[] fields)
         {
             return GetCompleteClassTypeIndex(_nativeObjectWriter, classTypeDescriptor, classFieldsTypeDescriptior, fields);
         }
 
-        public uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteIndex)
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetArrayTypeIndex(IntPtr objWriter, ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor);
+
+        public uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriptor)
         {
-            uint typeIndex = 0;
-            if (type.IsPrimitive)
-            {
-                typeIndex = PrimitiveTypeDescriptor.GetPrimitiveTypeIndex(type);
-            }
-            else
-            {
-                typeIndex = _userDefinedTypeDescriptor.GetTypeIndex(type, needsCompleteIndex);
-            }
-            return typeIndex;
+            return GetArrayTypeIndex(_nativeObjectWriter, classDescriptor, arrayTypeDescriptor);
+        }
+
+        public string GetMangledName(TypeDesc type)
+        {
+            return _nodeFactory.NameMangler.GetMangledTypeName(type);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -295,7 +304,7 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            uint typeIndex = GetVariableTypeIndex(debugVar.Type, true);
+            uint typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type, true);
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
@@ -395,6 +404,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         Debug.Assert(!_offsetToDebugLoc.ContainsKey(loc.NativeOffset));
                         _offsetToDebugLoc[loc.NativeOffset] = loc;
+                        _byteInterruptionOffsets.Add(loc.NativeOffset);
                     }
                 }
             }
@@ -510,7 +520,7 @@ namespace ILCompiler.DependencyAnalysis
                 ObjectNodeSection lsdaSection = LsdaSection;
                 if (ShouldShareSymbol(node))
                 {
-                    lsdaSection = lsdaSection.GetSharedSection(((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
+                    lsdaSection = GetSharedSection(lsdaSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
                 }
                 SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
@@ -560,6 +570,8 @@ namespace ILCompiler.DependencyAnalysis
                 // Record start/end of frames which shouldn't be overlapped.
                 _offsetToCfiStart.Add(start);
                 _offsetToCfiEnd.Add(end);
+                _byteInterruptionOffsets.Add(start);
+                _byteInterruptionOffsets.Add(end);
                 _offsetToCfiLsdaBlobName.Add(start, blobSymbolName);
                 for (int j = 0; j < len; j += CfiCodeSize)
                 {
@@ -571,6 +583,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         cfis = new List<byte[]>();
                         _offsetToCfis.Add(codeOffset, cfis);
+                        _byteInterruptionOffsets.Add(codeOffset);
                     }
                     byte[] cfi = new byte[CfiCodeSize];
                     Array.Copy(blob, j, cfi, 0, CfiCodeSize);
@@ -640,6 +653,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 _offsetToDefName[n.Offset].Add(n);
+                _byteInterruptionOffsets.Add(n.Offset);
             }
 
             var symbolNode = node as ISymbolDefinitionNode;
@@ -803,6 +817,25 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
+        private ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
+        {
+            string standardSectionPrefix = "";
+            if (section.IsStandardSection)
+                standardSectionPrefix = ".";
+
+            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
+        }
+
+        public void ResetByteRunInterruptionOffsets(Relocation[] relocs)
+        {
+            _byteInterruptionOffsets.Clear();
+
+            for (int i = 0; i < relocs.Length; ++i)
+            {
+                _byteInterruptionOffsets.Add(relocs[i].Offset);
+            }
+        }
+
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)
         {
             ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory);
@@ -818,13 +851,13 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
                                                             MethodCodeNode.StartSection :
-                                                            MethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
+                                                            objectWriter.GetSharedSection(MethodCodeNode.StartSection, "__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"));
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
                                                             MethodCodeNode.EndSection :
-                                                            MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
+                                                            objectWriter.GetSharedSection(MethodCodeNode.EndSection, "__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
                     objectWriter.EmitIntValue(1, 1);
@@ -841,6 +874,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);
 
+                var listOfOffsets = new List<int>();
                 foreach (DependencyNode depNode in nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
@@ -875,12 +909,14 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectNodeSection section = node.Section;
                     if (objectWriter.ShouldShareSymbol(node))
                     {
-                        section = section.GetSharedSection(((ISymbolNode)node).GetMangledName(factory.NameMangler));
+                        section = objectWriter.GetSharedSection(section, ((ISymbolNode)node).GetMangledName(factory.NameMangler));
                     }
 
                     // Ensure section and alignment for the node.
                     objectWriter.SetSection(section);
                     objectWriter.EmitAlignment(nodeContents.Alignment);
+
+                    objectWriter.ResetByteRunInterruptionOffsets(nodeContents.Relocs);
 
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
@@ -901,6 +937,11 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     int i = 0;
+
+                    listOfOffsets.Clear();
+                    listOfOffsets.AddRange(objectWriter._byteInterruptionOffsets);
+
+                    int offsetIndex = 0;
                     while (i < nodeContents.Data.Length)
                     {
                         // Emit symbol definitions if necessary
@@ -943,11 +984,27 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            objectWriter.EmitIntValue(nodeContents.Data[i], 1);
-                            i++;
+                            while (offsetIndex < listOfOffsets.Count && listOfOffsets[offsetIndex] <= i)
+                            {
+                                offsetIndex++;
+                            }
+                            
+                            int nextOffset = offsetIndex == listOfOffsets.Count ? nodeContents.Data.Length : listOfOffsets[offsetIndex];
+                            
+                            unsafe
+                            {
+                                // Todo: Use Span<T> instead once it's available to us in this repo
+                                fixed (byte* pContents = &nodeContents.Data[i])
+                                {
+                                    objectWriter.EmitBytes((IntPtr)(pContents), nextOffset - i);
+                                    i += nextOffset - i;
+                                }
+                            }
+                            
                         }
                     }
-
+                    Debug.Assert(i == nodeContents.Data.Length);
+                    
                     // It is possible to have a symbol just after all of the data.
                     objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
 

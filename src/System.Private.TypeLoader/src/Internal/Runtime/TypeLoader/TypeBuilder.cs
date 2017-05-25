@@ -1664,7 +1664,7 @@ namespace Internal.Runtime.TypeLoader
                 // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
                 IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
                 typeManager = new TypeManagerHandle(lazySignature[0][0]);
-                offset = checked((uint)lazySignature[0][1].ToInt32());
+                offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
                 reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
             }
 #if !CORERT

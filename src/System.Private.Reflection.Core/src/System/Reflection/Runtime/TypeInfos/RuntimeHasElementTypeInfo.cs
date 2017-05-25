@@ -18,13 +18,24 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // The runtime's implementation of TypeInfo's for the "HasElement" subclass of types. 
     //
-    internal abstract partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeHasElementTypeInfo.UnificationKey>
+    internal abstract partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeHasElementTypeInfo.UnificationKey>, IRuntimeMemberInfoWithNoMetadataDefinition
     {
         protected RuntimeHasElementTypeInfo(UnificationKey key)
             : base()
         {
             _key = key;
         }
+
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => true;
+        protected abstract override bool IsArrayImpl();
+        public abstract override bool IsSZArray { get; }
+        public abstract override bool IsVariableBoundArray { get; }
+        protected abstract override bool IsByRefImpl();
+        protected abstract override bool IsPointerImpl();
+        public sealed override bool IsConstructedGenericType => false;
+        public sealed override bool IsGenericParameter => false;
 
         //
         // Implements IKeyedItem.PrepareKey.
@@ -85,6 +96,15 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;
+        }
+
         public sealed override string Namespace
         {
             get
@@ -125,11 +145,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(IsByRef || IsPointer);
             return TypeAttributes.AnsiClass;
-        }
-
-        protected sealed override bool HasElementTypeImpl()
-        {
-            return true;
         }
 
         protected sealed override int InternalGetHashCode()

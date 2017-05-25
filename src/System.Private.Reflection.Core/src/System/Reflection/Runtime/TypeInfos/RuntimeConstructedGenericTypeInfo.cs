@@ -29,6 +29,17 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => false;
+        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool IsSZArray => false;
+        public sealed override bool IsVariableBoundArray => false;
+        protected sealed override bool IsByRefImpl() => false;
+        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsConstructedGenericType => true;
+        public sealed override bool IsGenericParameter => false;
+
         //
         // Implements IKeyedItem.PrepareKey.
         // 
@@ -136,12 +147,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsConstructedGenericType
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            get
-            {
-                return true;
-            }
+            return GenericTypeDefinitionTypeInfo.HasSameMetadataDefinitionAs(other);
         }
 
         public sealed override string Namespace

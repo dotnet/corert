@@ -147,6 +147,17 @@ namespace Internal.Runtime.Augments
                 }
             }
 
+            if (lengths.Length == 1)
+            {
+                // We just checked above that all lower bounds are zero. In that case, we should actually allocate
+                // a new SzArray instead.
+                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
+                int length = lengths[0];
+                if (length < 0)
+                    throw new OverflowException(); // For compat: we need to throw OverflowException(): Array.CreateInstance throws ArgumentOutOfRangeException()
+                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
+            }
+
             // Create a local copy of the lenghts that cannot be motified by the caller
             int* pLengths = stackalloc int[lengths.Length];
             for (int i = 0; i < lengths.Length; i++)
@@ -1042,6 +1053,53 @@ namespace Internal.Runtime.Augments
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.LastResortToString;
+        }
+
+        public static void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper)
+        {
+            RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(highLevelDebugFuncEvalHelper);
+        }
+
+        public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
+        {
+            RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
+        }
+
+        public static IntPtr RhpGetFuncEvalTargetAddress()
+        {
+            return RuntimeImports.RhpGetFuncEvalTargetAddress();
+        }
+
+        [CLSCompliant(false)]
+        public static uint RhpGetFuncEvalParameterBufferSize()
+        {
+            return RuntimeImports.RhpGetFuncEvalParameterBufferSize();
+        }
+
+        [CLSCompliant(false)]
+        public static unsafe uint RhpRecordDebuggeeInitiatedHandle(IntPtr objectHandle)
+        {
+            return RuntimeImports.RhpRecordDebuggeeInitiatedHandle((void*)objectHandle);
+        }
+
+        public static unsafe object RhBoxAny(IntPtr pData, IntPtr pEEType)
+        {
+            return RuntimeImports.RhBoxAny((void*)pData, new EETypePtr(pEEType));
+        }
+
+        public static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        {
+            return RuntimeImports.RhHandleAlloc(value, type);
+        }
+
+        public static void RhHandleFree(IntPtr handle)
+        {
+            RuntimeImports.RhHandleFree(handle);
+        }
+
+        public static IntPtr RhGetOSModuleForMrt()
+        {
+            return RuntimeImports.RhGetOSModuleForMrt();
         }
     }
 }

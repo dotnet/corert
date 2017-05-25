@@ -120,11 +120,11 @@ internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetRuntimeH
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells)
 internal static extern byte* System.Runtime.RuntimeImports.RhGetThreadStaticFieldAddress(System.EETypePtr pEEType, System.IntPtr fieldCookie)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetUniversalTransitionThunk()
-public static System.IntPtr System.Runtime.RuntimeImports.RhHandleAlloc(object value, System.Runtime.InteropServices.GCHandleType type)
+internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAlloc(object value, System.Runtime.InteropServices.GCHandleType type)
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocDependent(object primary, object secondary)
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocVariable(object value, uint type)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleCompareExchangeVariableType(System.IntPtr handle, uint oldType, uint newType)
-public static extern void System.Runtime.RuntimeImports.RhHandleFree(System.IntPtr handle)
+internal static extern void System.Runtime.RuntimeImports.RhHandleFree(System.IntPtr handle)
 internal static extern object System.Runtime.RuntimeImports.RhHandleGet(System.IntPtr handle)
 internal static extern object System.Runtime.RuntimeImports.RhHandleGetDependent(System.IntPtr handle, out object secondary)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleGetVariableType(System.IntPtr handle)
@@ -166,7 +166,7 @@ internal static extern bool System.Runtime.RuntimeImports.TryArrayCopy(System.Ar
 internal static System.Runtime.RuntimeImports.RhCorElementTypeInfo System.Runtime.RuntimeImports.GetRhCorElementTypeInfo(System.Runtime.RuntimeImports.RhCorElementType elementType)
 internal static int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, System.IntPtr* handles)
 internal static void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(bool allowReentrantWait)
-public static extern void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
+public static void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
 
 # System.Runtime.CompilerSerivces
 public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Create()

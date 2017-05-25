@@ -43,6 +43,16 @@ void DebugEventSource::SendModuleLoadEvent(Module* pModule)
     SendRawEvent(&payload);
 }
 
+void DebugEventSource::SendModuleLoadEvent(void* pAddressInModule)
+{
+    if(!EventEnabled(DEBUG_EVENT_TYPE_LOAD_MODULE))
+        return;
+    DebugEventPayload payload;
+    payload.type = DEBUG_EVENT_TYPE_LOAD_MODULE;
+    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pAddressInModule;
+    SendRawEvent(&payload);
+}
+
 void DebugEventSource::SendModuleUnloadEvent(Module* pModule)
 {
     if(!EventEnabled(DEBUG_EVENT_TYPE_UNLOAD_MODULE))

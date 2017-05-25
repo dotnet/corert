@@ -312,6 +312,15 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             }
         }
 
+        public bool HasSameMetadataDefinitionAs(EcmaFormatMethodCommon other)
+        {
+            if (!(_reader == other._reader))
+                return false;
+            if (!(_methodHandle.Equals(other._methodHandle)))
+                return false;
+            return true;
+        }
+
         public override bool Equals(Object obj)
         {
             if (!(obj is EcmaFormatMethodCommon))

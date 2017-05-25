@@ -2,6 +2,15 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
 
+    <!-- Tests that fail because they need update from CoreCLR -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_ro\intrinsic_cs_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_r\intrinsic_nonf_il_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_d\intrinsic_cs_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_nonf_il_d\intrinsic_nonf_il_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_do\intrinsic_cs_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\pow\pow1\pow1.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_r\intrinsic_cs_r.*" />
+
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />
@@ -43,6 +52,8 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_do\vt4_cs_do.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_r\vt4_cs_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_ro\vt4_cs_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\341477\Test\Test.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" />
 
     <!-- System.Reflection.Emit.Lightweight -->
     <!-- https://github.com/dotnet/corert/issues/370 -->
@@ -181,17 +192,36 @@
     <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\managed\Compilation\Compilation\Compilation.*" />
 
-    <!-- System.Text.RegularExpressions -->
-    <!-- https://github.com/dotnet/corert/issues/370 -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\largeexceptiontest\largeexceptiontest.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\gettotalmemory\gettotalmemory.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\keepalive\keepalive.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\suppressfinalize\suppressfinalize.*" />
-
     <!-- These depend on things outside of the .NET Core profile. Need test fixes. -->
     <ExcludeList Include="$(XunitTestBinBase)\Interop\NativeCallable\NativeCallableTest\NativeCallableTest.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\format\format.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-RTM\b475589\b475589\b475589.*" />
+
+    <!-- catch(T) / catch(Exception&lt;T&gt; -->
+    <!-- https://github.com/dotnet/corert/issues/3460 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_class_instance01\specific_class_instance01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_class_static01\specific_class_static01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\clr-x64-JIT\v2.1\b601838\b601838\b601838.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b441487\b441487\b441487.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_struct_instance01\specific_struct_instance01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Exceptions\specific_struct_static01\specific_struct_static01.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_d\throwincatch_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_do\throwincatch_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_r\throwincatch_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_ro\throwincatch_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_d\trycatchnestedtype_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_do\trycatchnestedtype_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_r\trycatchnestedtype_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_ro\trycatchnestedtype_ro.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_d\trycatchsimpletype_d.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_do\trycatchsimpletype_do.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_r\trycatchsimpletype_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_ro\trycatchsimpletype_ro.*" />
+
+    <!-- Unable to generate TypeLoadException throwing body in shared code -->
+    <!-- https://github.com/dotnet/corert/issues/3461 -->
+    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V1.2-M02\b27077\b27077\b27077.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\Specific\Negative002\Negative002.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param02\param02.*" />
 
     <!-- Vararg methods -->
     <!-- https://github.com/dotnet/corert/issues/395 -->
@@ -259,44 +289,13 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\hugeexpr1\hugeexpr1.*" />
 
     <!-- Generic virtual methods -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_d\class2_il_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_il_r\class2_il_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\nonvirtualcall\generics\generics.*" />
+    <!-- https://github.com/dotnet/corert/issues/3454 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b210352\csharptester\csharptester.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b611219\b611219\b611219.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\Dev11_243742\app\app.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001e\method001e.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001f\method001f.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001g\method001g.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001h\method001h.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001i\method001i.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method001j\method001j.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method003\method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method004\method004.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method007\method007.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method008\method008.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method009\method009.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method010\method010.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method011\method011.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\GenericMethods\method012\method012.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\CoreCLR\Method003\Method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_710121\dev10_710121\dev10_710121.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\395780\testExplicitOverride\testExplicitOverride.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslot\Class_ExplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ExplicitOverrideVirtualNewslotFinal\Class_ExplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ImplicitOverrideVirtualNewslot\Class_ImplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Class_ImplicitOverrideVirtualNewslotFinal\Class_ImplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ExplicitOverrideVirtualNewslot\Struct_ExplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ExplicitOverrideVirtualNewslotFinal\Struct_ExplicitOverrideVirtualNewslotFinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslot\Struct_ImplicitOverrideVirtualNewslot.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\VSD\Struct_ImplicitOverrideVirtualNewslotFinal\Struct_ImplicitOverrideVirtualNewslotFinal.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\dev10_432038\dev10_432038\dev10_432038.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_398410\dev10_398410\dev10_398410.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method002\Method002.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method003\Method003.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method004\Method004.*" />
+
+    <!-- Reflection enabling a virtual method methodimpl'd by other virtual method -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
 
     <!-- DynamicInvoke stub for a method with 8192 parameters -->
@@ -568,6 +567,7 @@
     <!-- https://github.com/dotnet/corert/issues/190 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\InterfaceImplementation\HelloWorld\HelloWorld.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance2\Variance2.*" />
 
     <!-- Marshal.GetExceptionForHR not setting HResult -->
     <!-- https://github.com/dotnet/corert/issues/2256 -->
@@ -635,6 +635,9 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param06\param06.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param07\param07.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Negative\param08\param08.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\109968\test\test.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method002\Method002.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Methods\Method004\Method004.*" />
     
     <!-- Precise GC -->
     <!-- https://github.com/dotnet/corert/issues/2354 -->
@@ -690,276 +693,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Coverage\chaos65204782cs_o\chaos65204782cs_o.*" />
 
     <!-- Metadata generation failure due to garbage fields due to bad base class libraries -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\basics\throwisfirstinstruction\throwisfirstinstruction.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset1\nestedTryRegionsWithSameOffset1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset1_o\nestedTryRegionsWithSameOffset1_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset2\nestedTryRegionsWithSameOffset2.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset2_o\nestedTryRegionsWithSameOffset2_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset3\nestedTryRegionsWithSameOffset3.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nestedTryRegionsWithSameOffset3_o\nestedTryRegionsWithSameOffset3_o.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\FinallyExec\nonlocalgotoinatryblockinahandler\nonlocalgotoinatryblockinahandler.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\eh\Leaves\nonlocalexitfromnestedcatch\nonlocalexitfromnestedcatch.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\emptyfinally_d\emptyfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\emptyfinally_r\emptyfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\multihandler_d\multihandler_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\multihandler_do\multihandler_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\multihandler_r\multihandler_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\multihandler_ro\multihandler_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwincatch_d\throwincatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwincatch_do\throwincatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwincatch_r\throwincatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwincatch_ro\throwincatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinclassconstructor_d\throwinclassconstructor_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinclassconstructor_do\throwinclassconstructor_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinclassconstructor_r\throwinclassconstructor_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinclassconstructor_ro\throwinclassconstructor_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpathfn_d\throwinfinallyerrpathfn_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpathfn_do\throwinfinallyerrpathfn_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpathfn_r\throwinfinallyerrpathfn_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpathfn_ro\throwinfinallyerrpathfn_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpath_d\throwinfinallyerrpath_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpath_do\throwinfinallyerrpath_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpath_r\throwinfinallyerrpath_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinallyerrpath_ro\throwinfinallyerrpath_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinally_d\throwinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinally_do\throwinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinally_r\throwinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwinfinally_ro\throwinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwisfirstinstruction_d\throwisfirstinstruction_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwisfirstinstruction_r\throwisfirstinstruction_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwoutside_d\throwoutside_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwoutside_do\throwoutside_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwoutside_r\throwoutside_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\throwoutside_ro\throwoutside_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatchtrycatch_d\trycatchtrycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatchtrycatch_do\trycatchtrycatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatchtrycatch_r\trycatchtrycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatchtrycatch_ro\trycatchtrycatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatch_d\trycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatch_do\trycatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatch_r\trycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trycatch_ro\trycatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytrycatch_d\tryfinallytrycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytrycatch_do\tryfinallytrycatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytrycatch_r\tryfinallytrycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytrycatch_ro\tryfinallytrycatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytryfinally_d\tryfinallytryfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytryfinally_do\tryfinallytryfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytryfinally_r\tryfinallytryfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallytryfinally_ro\tryfinallytryfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallywith2endfinally_d\tryfinallywith2endfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallywith2endfinally_r\tryfinallywith2endfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallywith2reachableendfinally_d\tryfinallywith2reachableendfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinallywith2reachableendfinally_r\tryfinallywith2reachableendfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinally_d\tryfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinally_do\tryfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinally_r\tryfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\tryfinally_ro\tryfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatchfinally_d\trythrowcatchfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatchfinally_do\trythrowcatchfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatchfinally_r\trythrowcatchfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatchfinally_ro\trythrowcatchfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatch_d\trythrowcatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatch_do\trythrowcatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatch_r\trythrowcatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\basics\trythrowcatch_ro\trythrowcatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\cs\unsafe_d\unsafe_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\cs\unsafe_do\unsafe_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\cs\unsafe_r\unsafe_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\cs\unsafe_ro\unsafe_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\branchoverendfinally_d\branchoverendfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\branchoverendfinally_r\branchoverendfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadcodeincatch_d\deadcodeincatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadcodeincatch_r\deadcodeincatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadEHregionacrossBB_d\deadEHregionacrossBB_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadEHregionacrossBB_r\deadEHregionacrossBB_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadoponerrorinfunclet_d\deadoponerrorinfunclet_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\deadoponerrorinfunclet_r\deadoponerrorinfunclet_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\loopstrswitchgoto_d\loopstrswitchgoto_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\loopstrswitchgoto_do\loopstrswitchgoto_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\loopstrswitchgoto_r\loopstrswitchgoto_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\loopstrswitchgoto_ro\loopstrswitchgoto_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_d\catchrettoinnertry_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_do\catchrettoinnertry_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_r\catchrettoinnertry_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_ro\catchrettoinnertry_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_d\catchrettoinnertry_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\catchrettoinnertry_r\catchrettoinnertry_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\localgotoinahandler_d\localgotoinahandler_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\localgotoinahandler_do\localgotoinahandler_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\localgotoinahandler_r\localgotoinahandler_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\localgotoinahandler_ro\localgotoinahandler_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\loopinfinally_d\loopinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\loopinfinally_do\loopinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\loopinfinally_r\loopinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\loopinfinally_ro\loopinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nestedfinallycall_d\nestedfinallycall_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nestedfinallycall_r\nestedfinallycall_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_d\nonlocalexittobeginningoftry_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_do\nonlocalexittobeginningoftry_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_r\nonlocalexittobeginningoftry_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_ro\nonlocalexittobeginningoftry_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittonestedsibling_d\nonlocalexittonestedsibling_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalexittonestedsibling_r\nonlocalexittonestedsibling_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalgotoinatryblockinahandler_d\nonlocalgotoinatryblockinahandler_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalgotoinatryblockinahandler_do\nonlocalgotoinatryblockinahandler_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalgotoinatryblockinahandler_r\nonlocalgotoinatryblockinahandler_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\nonlocalgotoinatryblockinahandler_ro\nonlocalgotoinatryblockinahandler_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexitnestedintrycatch_d\simplenonlocalexitnestedintrycatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexitnestedintrycatch_do\simplenonlocalexitnestedintrycatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexitnestedintrycatch_r\simplenonlocalexitnestedintrycatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexitnestedintrycatch_ro\simplenonlocalexitnestedintrycatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexit_d\simplenonlocalexit_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexit_do\simplenonlocalexit_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexit_r\simplenonlocalexit_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\simplenonlocalexit_ro\simplenonlocalexit_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\switchincatch_d\switchincatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\switchincatch_do\switchincatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\switchincatch_r\switchincatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\switchincatch_ro\switchincatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit1_d\tryCatchFinallyThrow_nonlocalexit1_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit1_do\tryCatchFinallyThrow_nonlocalexit1_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit1_r\tryCatchFinallyThrow_nonlocalexit1_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit1_ro\tryCatchFinallyThrow_nonlocalexit1_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit2_d\tryCatchFinallyThrow_nonlocalexit2_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit2_do\tryCatchFinallyThrow_nonlocalexit2_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit2_r\tryCatchFinallyThrow_nonlocalexit2_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit2_ro\tryCatchFinallyThrow_nonlocalexit2_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit3_d\tryCatchFinallyThrow_nonlocalexit3_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit3_do\tryCatchFinallyThrow_nonlocalexit3_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit3_r\tryCatchFinallyThrow_nonlocalexit3_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit3_ro\tryCatchFinallyThrow_nonlocalexit3_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_d\tryCatchFinallyThrow_nonlocalexit4_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_do\tryCatchFinallyThrow_nonlocalexit4_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_r\tryCatchFinallyThrow_nonlocalexit4_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_ro\tryCatchFinallyThrow_nonlocalexit4_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryfinallythrow_nonlocalexit_d\tryfinallythrow_nonlocalexit_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryfinallythrow_nonlocalexit_do\tryfinallythrow_nonlocalexit_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryfinallythrow_nonlocalexit_r\tryfinallythrow_nonlocalexit_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\finallyexec\tryfinallythrow_nonlocalexit_ro\tryfinallythrow_nonlocalexit_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_d\throwincatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_do\throwincatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_r\throwincatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\throwincatch_ro\throwincatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_d\trycatchnestedtype_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_do\trycatchnestedtype_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_r\trycatchnestedtype_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchnestedtype_ro\trycatchnestedtype_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_d\trycatchsimpletype_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_do\trycatchsimpletype_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_r\trycatchsimpletype_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\generics\trycatchsimpletype_ro\trycatchsimpletype_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\gcincatch_d\gcincatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\gcincatch_do\gcincatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\gcincatch_r\gcincatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\gcincatch_ro\gcincatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\rangecheckinfinally_d\rangecheckinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\rangecheckinfinally_do\rangecheckinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\rangecheckinfinally_r\rangecheckinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\rangecheckinfinally_ro\rangecheckinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\strswitchfinal_d\strswitchfinal_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\strswitchfinal_do\strswitchfinal_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\strswitchfinal_r\strswitchfinal_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\strswitchfinal_ro\strswitchfinal_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\switchinfinally_d\switchinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\switchinfinally_do\switchinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\switchinfinally_r\switchinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\interactions\switchinfinally_ro\switchinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\catchretnonlocalexitinfunclet_d\catchretnonlocalexitinfunclet_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\catchretnonlocalexitinfunclet_do\catchretnonlocalexitinfunclet_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\catchretnonlocalexitinfunclet_r\catchretnonlocalexitinfunclet_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\catchretnonlocalexitinfunclet_ro\catchretnonlocalexitinfunclet_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\nonlocalexitfromnestedcatch_d\nonlocalexitfromnestedcatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\nonlocalexitfromnestedcatch_do\nonlocalexitfromnestedcatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\nonlocalexitfromnestedcatch_r\nonlocalexitfromnestedcatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\nonlocalexitfromnestedcatch_ro\nonlocalexitfromnestedcatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\oponerror_d\oponerror_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\oponerror_do\oponerror_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\oponerror_r\oponerror_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\oponerror_ro\oponerror_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\tryfinallyloop_d\tryfinallyloop_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\tryfinallyloop_do\tryfinallyloop_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\tryfinallyloop_r\tryfinallyloop_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\leaves\tryfinallyloop_ro\tryfinallyloop_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\cascadedcatch_d\cascadedcatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\cascadedcatch_do\cascadedcatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\cascadedcatch_r\cascadedcatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\cascadedcatch_ro\cascadedcatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\methodthrowsinfinally_d\methodthrowsinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\methodthrowsinfinally_do\methodthrowsinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\methodthrowsinfinally_r\methodthrowsinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\methodthrowsinfinally_ro\methodthrowsinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\rethrowincatchnestedinfinally_d\rethrowincatchnestedinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\rethrowincatchnestedinfinally_do\rethrowincatchnestedinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\rethrowincatchnestedinfinally_r\rethrowincatchnestedinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\rethrowincatchnestedinfinally_ro\rethrowincatchnestedinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinallynestedintry_d\throwinfinallynestedintry_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinallynestedintry_do\throwinfinallynestedintry_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinallynestedintry_r\throwinfinallynestedintry_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinallynestedintry_ro\throwinfinallynestedintry_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinally_d\throwinfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinally_do\throwinfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinally_r\throwinfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinfinally_ro\throwinfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedcatch_d\throwinnestedcatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedcatch_r\throwinnestedcatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedfinally_d\throwinnestedfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedfinally_do\throwinnestedfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedfinally_r\throwinnestedfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\throwinnestedfinally_ro\throwinnestedfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\trycatchintryfinally_d\trycatchintryfinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\trycatchintryfinally_do\trycatchintryfinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\trycatchintryfinally_r\trycatchintryfinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\general\trycatchintryfinally_ro\trycatchintryfinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallynestedintry_30_d\throwinfinallynestedintry_30_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallynestedintry_30_do\throwinfinallynestedintry_30_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallynestedintry_30_r\throwinfinallynestedintry_30_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallynestedintry_30_ro\throwinfinallynestedintry_30_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallyrecursive_20_d\throwinfinallyrecursive_20_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallyrecursive_20_do\throwinfinallyrecursive_20_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallyrecursive_20_r\throwinfinallyrecursive_20_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinallyrecursive_20_ro\throwinfinallyrecursive_20_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinally_50_d\throwinfinally_50_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinally_50_do\throwinfinally_50_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinally_50_r\throwinfinally_50_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\nested\nonlocalexit\throwinfinally_50_ro\throwinfinally_50_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\122239\outermostFinally\outermostFinally.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\140713\innerFinally_d\innerFinally_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\140713\innerFinally_do\innerFinally_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\140713\innerFinally_r\innerFinally_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\140713\innerFinally_ro\innerFinally_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\141358\uncaughtException_d\uncaughtException_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\141358\uncaughtException_do\uncaughtException_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\141358\uncaughtException_r\uncaughtException_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\asurt\141358\uncaughtException_ro\uncaughtException_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\vswhidbey\148190\baduwinfo\baduwinfo.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\regress\vswhidbey\148190\baduwinfo1\baduwinfo1.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_d\rethrowinfinallyaftercatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_do\rethrowinfinallyaftercatch_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_r\rethrowinfinallyaftercatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_ro\rethrowinfinallyaftercatch_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyinsidecatch_d\rethrowinfinallyinsidecatch_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowinfinallyinsidecatch_r\rethrowinfinallyinsidecatch_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowwithhandlerscatchingbase_d\rethrowwithhandlerscatchingbase_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowwithhandlerscatchingbase_do\rethrowwithhandlerscatchingbase_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowwithhandlerscatchingbase_r\rethrowwithhandlerscatchingbase_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\rethrowwithhandlerscatchingbase_ro\rethrowwithhandlerscatchingbase_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samerethrowtwice_d\samerethrowtwice_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samerethrowtwice_do\samerethrowtwice_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samerethrowtwice_r\samerethrowtwice_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samerethrowtwice_ro\samerethrowtwice_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samethrowtwice_d\samethrowtwice_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samethrowtwice_do\samethrowtwice_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samethrowtwice_r\samethrowtwice_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\samethrowtwice_ro\samethrowtwice_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\simplerethrow_d\simplerethrow_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\simplerethrow_do\simplerethrow_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\simplerethrow_r\simplerethrow_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\simplerethrow_ro\simplerethrow_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\throwwithhandlerscatchingbase_d\throwwithhandlerscatchingbase_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\throwwithhandlerscatchingbase_do\throwwithhandlerscatchingbase_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\throwwithhandlerscatchingbase_r\throwwithhandlerscatchingbase_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\rethrow\throwwithhandlerscatchingbase_ro\throwwithhandlerscatchingbase_ro.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32879\b32879\b32879.*" />
     
     <!-- Reflection: type forwarders -->
@@ -1006,16 +739,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\dev10_bug719093\variancesmall\variancesmall.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance1\Variance1.*" />
 
-    <!-- Intrinsic Activator.CreateInstance<T> implementation -->
-    <!-- https://github.com/dotnet/corert/issues/368 -->
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\341477\Test\Test.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" />
-
     <!-- Needs template type loader (MakeArrayType) -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\array\array.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b309539\b309539\b309539.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509\b539509.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\vsw\539509\test1\test1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\array1\array1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgarray1\_il_dbgarray1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relarray1\_il_relarray1.*" />
@@ -1067,14 +791,6 @@
     <!-- NetStandard2: System.TypedReference in the System.Runtime facade -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgstress2\_il_dbgstress2.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relstress2\_il_relstress2.*" />
-
-    <!-- NetStandard2: PlatformID enum -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgformat\_il_dbgformat.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbglongsig\_il_dbglongsig.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_dbgshortsig\_il_dbgshortsig.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relformat\_il_relformat.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_rellongsig\_il_rellongsig.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\refany\_il_relshortsig\_il_relshortsig.*" />
 
     <!-- NetStandard2: System.Runtime.CompilerServices.FixedAddressValueTypeAttribute. -->
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\compilerservices\FixedAddressValueType\FixedAddressValueType\FixedAddressValueType.*" />

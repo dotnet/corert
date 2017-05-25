@@ -30,6 +30,15 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => Empty<CustomAttributeData>.Enumerable;
         public sealed override Type DeclaringType => _declaringType;
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is RuntimeCLSIDNullaryConstructorInfo;
+        }
+
         public sealed override bool Equals(object obj)
         {
             RuntimeCLSIDNullaryConstructorInfo other = obj as RuntimeCLSIDNullaryConstructorInfo;

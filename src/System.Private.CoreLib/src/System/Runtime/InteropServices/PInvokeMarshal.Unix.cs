@@ -49,6 +49,11 @@ namespace System.Runtime.InteropServices
             Interop.MemFree(hglobal);
         }
 
+        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.MemAlloc(bytes);
@@ -57,6 +62,11 @@ namespace System.Runtime.InteropServices
         public static void CoTaskMemFree(IntPtr allocatedMemory)
         {
             Interop.MemFree(allocatedMemory);
+        }
+
+        public static unsafe IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
         }
 
         public static IntPtr SecureStringToBSTR(SecureString s)
@@ -68,8 +78,18 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
+        // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.
+        internal static IntPtr AllocBSTR(int length)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         #region String marshalling
-        private const uint WC_NO_BEST_FIT_CHARS = 0;
 
         public static unsafe int ConvertMultiByteToWideChar(byte* multiByteStr,
                                                             int multiByteLen,
@@ -83,8 +103,8 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            uint flags,
-                                                            IntPtr usedDefaultChar)
+                                                            bool bestFit,
+                                                            bool throwOnUnmappableChar)
         {
             return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
         }

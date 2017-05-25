@@ -79,8 +79,11 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeParameters;
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -114,7 +117,9 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw;
             }
 
-            return methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
+            object result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public abstract override MethodBase MetadataDefinitionMethod { get; }

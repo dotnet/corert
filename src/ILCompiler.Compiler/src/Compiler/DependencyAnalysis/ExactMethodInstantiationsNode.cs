@@ -105,12 +105,12 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
 
-        public static DependencyList GetExactMethodInstantiationDependenciesForMethod(NodeFactory factory, MethodDesc method)
+        public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsMethodEligibleForTracking(method))
-                return null;
+                return;
 
-            DependencyList dependencies = new DependencyList();
+            dependencies = dependencies ?? new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
@@ -127,8 +127,6 @@ namespace ILCompiler.DependencyAnalysis
             // Get native layout dependencies for the method signature.
             NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
-
-            return dependencies;
         }
 
         private static bool IsMethodEligibleForTracking(MethodDesc method)

@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
+                    return ObjectNodeSection.FoldableReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
             }

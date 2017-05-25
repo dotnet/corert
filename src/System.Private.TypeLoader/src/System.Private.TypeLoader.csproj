@@ -454,6 +454,7 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
@@ -470,6 +471,9 @@
     <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\MetadataExtensions.cs">
       <Link>NativeFormat\MetadataExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(METADATA_TYPE_LOADER)' != ''">

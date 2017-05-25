@@ -124,10 +124,6 @@ namespace System.Globalization
         {
             return FormatProvider.Number.FormatSingle(value, format, provider);
         }
-        public static String FormatTimeSpan(TimeSpan value, String format, IFormatProvider provider)
-        {
-            return FormatProvider.TimeSpanFormat.Format(value, format, provider);
-        }
         public static String FormatUInt32(uint value, String format, IFormatProvider provider)
         {
             return FormatProvider.Number.FormatUInt32(value, format, provider);
@@ -159,18 +155,6 @@ namespace System.Globalization
         {
             return FormatProvider.Number.ParseSingle(value, options, provider);
         }
-        public static TimeSpan ParseTimeSpan(String value, IFormatProvider provider)
-        {
-            return FormatProvider.TimeSpanParse.Parse(value, provider);
-        }
-        public static TimeSpan ParseTimeSpanExact(String value, String format, IFormatProvider provider, TimeSpanStyles styles)
-        {
-            return FormatProvider.TimeSpanParse.ParseExact(value, format, provider, styles);
-        }
-        public static TimeSpan ParseTimeSpanExactMultiple(String value, String[] formats, IFormatProvider provider, TimeSpanStyles styles)
-        {
-            return FormatProvider.TimeSpanParse.ParseExactMultiple(value, formats, provider, styles);
-        }
         public static UInt32 ParseUInt32(String value, NumberStyles options, IFormatProvider provider)
         {
             return FormatProvider.Number.ParseUInt32(value, options, provider);
@@ -198,18 +182,6 @@ namespace System.Globalization
         public static Boolean TryParseSingle(String value, NumberStyles options, IFormatProvider provider, out Single result)
         {
             return FormatProvider.Number.TryParseSingle(value, options, provider, out result);
-        }
-        public static Boolean TryParseTimeSpan(String value, IFormatProvider provider, out TimeSpan result)
-        {
-            return FormatProvider.TimeSpanParse.TryParse(value, provider, out result);
-        }
-        public static Boolean TryParseTimeSpanExact(String value, String format, IFormatProvider provider, TimeSpanStyles styles, out TimeSpan result)
-        {
-            return FormatProvider.TimeSpanParse.TryParseExact(value, format, provider, styles, out result);
-        }
-        public static Boolean TryParseTimeSpanExactMultiple(String value, String[] formats, IFormatProvider provider, TimeSpanStyles styles, out TimeSpan result)
-        {
-            return FormatProvider.TimeSpanParse.TryParseExactMultiple(value, formats, provider, styles, out result);
         }
         public static Boolean TryParseUInt32(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
         {

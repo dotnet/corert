@@ -9,6 +9,9 @@ using System.Runtime.Serialization;
 using System.Reflection.Runtime.Assemblies;
 using System.Collections.Generic;
 
+using Internal.Metadata.NativeFormat;
+using System.Reflection.Runtime.Assemblies.NativeFormat;
+
 namespace System.Reflection.Runtime.Modules
 {
     //
@@ -54,6 +57,13 @@ namespace System.Reflection.Runtime.Modules
         {
             get
             {
+                NativeFormatRuntimeAssembly nativeAssembly = Assembly as NativeFormatRuntimeAssembly;
+                if (nativeAssembly != null)
+                {
+                    string name = nativeAssembly.Scope.ScopeDefinition.ModuleName.GetConstantStringValue(nativeAssembly.Scope.Reader).Value;
+                    if (name != null)
+                        return name;
+                }
                 return this.Assembly.GetName().Name;
             }
         }

@@ -56,6 +56,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static unsafe IntPtr MemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
+        }
+
         public static IntPtr CoTaskMemAlloc(UIntPtr bytes)
         {
             return Interop.mincore.CoTaskMemAlloc(bytes);
@@ -69,6 +74,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        public static IntPtr CoTaskMemReAlloc(IntPtr pv, IntPtr cb)
+        {
+            return Interop.mincore.CoTaskMemRealloc(pv, cb);
+        }
+
         public static IntPtr SecureStringToBSTR(SecureString s)
         {
             if (s == null)
@@ -78,8 +88,20 @@ namespace System.Runtime.InteropServices
             return s.MarshalToBSTR();
         }
 
+        internal static IntPtr AllocBSTR(int length)
+        {
+            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);
+            if (bstr == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return bstr;
+        }
+
+        internal static void FreeBSTR(IntPtr ptr)
+        {
+            Interop.OleAut32.SysFreeString(ptr);
+        }
+
         #region String marshalling
-        private const uint WC_NO_BEST_FIT_CHARS = Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
 
         public static unsafe int ConvertMultiByteToWideChar(byte* buffer, int ansiLength, char* pWChar, int uniLength)
         {
@@ -105,18 +127,26 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            uint flags,
-                                                            IntPtr usedDefaultChar)
+                                                            bool bestFit,
+                                                            bool throwOnUnmappableChar)
         {
-            return Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
+            uint flags = (bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS);
+            int defaultCharUsed = 0;
+            int ret = Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
                                                         flags,
                                                         wideCharStr,
                                                         wideCharLen,
                                                         multiByteStr,
                                                         multiByteLen,
                                                         default(IntPtr),
-                                                        usedDefaultChar
+                                                        throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
                                                         );
+            if (defaultCharUsed != 0)
+            {
+                throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
+            }
+
+            return ret;
         }
 
         // Return size in bytes required to convert a UTF16 string to byte array.

@@ -12,9 +12,11 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetClassTypeIndex(ClassTypeDescriptor classTypeDescriptor);
 
-        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptior classFieldsTypeDescriptior, DataFieldDescriptor[] fields);
+        uint GetCompleteClassTypeIndex(ClassTypeDescriptor classTypeDescriptor, ClassFieldsTypeDescriptor classFieldsTypeDescriptor, DataFieldDescriptor[] fields);
 
-        uint GetVariableTypeIndex(TypeDesc type, bool needsCompleteType);
+        uint GetArrayTypeIndex(ClassTypeDescriptor classDescriptor, ArrayTypeDescriptor arrayTypeDescriprtor);
+
+        string GetMangledName(TypeDesc type);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -27,7 +29,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct EnumTypeDescriptor
     {
-        public ulong ElementType;
+        public uint ElementType;
         public ulong ElementCount;
         public string Name;
         public string UniqueName;
@@ -46,14 +48,23 @@ namespace Internal.TypeSystem.TypesDebugInfo
     public struct DataFieldDescriptor
     {
         public uint FieldTypeIndex;
-        public int Offset;
+        public ulong Offset;
         public string Name;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public struct ClassFieldsTypeDescriptior
+    public struct ClassFieldsTypeDescriptor
     {
-        public int Size;
+        public ulong Size;
         public int FieldsCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct ArrayTypeDescriptor
+    {
+        public uint Rank;
+        public uint ElementType;
+        public uint Size;
+        public int IsMultiDimensional;
     }
 }

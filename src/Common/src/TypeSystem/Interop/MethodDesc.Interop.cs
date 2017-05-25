@@ -162,6 +162,8 @@ namespace Internal.TypeSystem
                         return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
                     case PInvokeAttributes.CallingConventionThisCall:
                         return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                    case PInvokeAttributes.None:
+                        return MethodSignatureFlags.None;
                     default:
                         throw new BadImageFormatException();
                 }
@@ -182,7 +184,8 @@ namespace Internal.TypeSystem
                         _attributes |= PInvokeAttributes.CallingConventionThisCall;
                         break;
                     default:
-                        throw new BadImageFormatException();
+                        System.Diagnostics.Debug.Assert(false, "Unexpected Unmanaged Calling Convention.");
+                        break;
                 }
             }
         }

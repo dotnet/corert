@@ -80,17 +80,14 @@ namespace ILCompiler.DependencyAnalysis
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
 
-        public static DependencyList GetTemplateMethodDependencies(NodeFactory factory, MethodDesc method)
+        public static void GetTemplateMethodDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsEligibleToBeATemplate(method))
-                return null;
+                return;
 
-            DependencyList dependencies = new DependencyList();
-
+            dependencies = dependencies ?? new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodEntry(method), "Template Method Entry"));
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout(method), "Template Method Layout"));
-
-            return dependencies;
         }
 
         private static bool IsEligibleToBeATemplate(MethodDesc method)

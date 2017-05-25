@@ -316,67 +316,67 @@ namespace System
         public static TimeSpan Parse(String s)
         {
             /* Constructs a TimeSpan from a string.  Leading and trailing white space characters are allowed. */
-            return FormatProvider.ParseTimeSpan(s, null);
+            return TimeSpanParse.Parse(s, null);
         }
         public static TimeSpan Parse(String input, IFormatProvider formatProvider)
         {
-            return FormatProvider.ParseTimeSpan(input, formatProvider);
+            return TimeSpanParse.Parse(input, formatProvider);
         }
         public static TimeSpan ParseExact(String input, String format, IFormatProvider formatProvider)
         {
-            return FormatProvider.ParseTimeSpanExact(input, format, formatProvider, TimeSpanStyles.None);
+            return TimeSpanParse.ParseExact(input, format, formatProvider, TimeSpanStyles.None);
         }
         public static TimeSpan ParseExact(String input, String[] formats, IFormatProvider formatProvider)
         {
-            return FormatProvider.ParseTimeSpanExactMultiple(input, formats, formatProvider, TimeSpanStyles.None);
+            return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None);
         }
         public static TimeSpan ParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
             ValidateStyles(styles, nameof(styles));
-            return FormatProvider.ParseTimeSpanExact(input, format, formatProvider, styles);
+            return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
         }
         public static TimeSpan ParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
             ValidateStyles(styles, nameof(styles));
-            return FormatProvider.ParseTimeSpanExactMultiple(input, formats, formatProvider, styles);
+            return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
         public static Boolean TryParse(String s, out TimeSpan result)
         {
-            return FormatProvider.TryParseTimeSpan(s, null, out result);
+            return TimeSpanParse.TryParse(s, null, out result);
         }
         public static Boolean TryParse(String input, IFormatProvider formatProvider, out TimeSpan result)
         {
-            return FormatProvider.TryParseTimeSpan(input, formatProvider, out result);
+            return TimeSpanParse.TryParse(input, formatProvider, out result);
         }
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, out TimeSpan result)
         {
-            return FormatProvider.TryParseTimeSpanExact(input, format, formatProvider, TimeSpanStyles.None, out result);
+            return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
         }
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, out TimeSpan result)
         {
-            return FormatProvider.TryParseTimeSpanExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
+            return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
-            return FormatProvider.TryParseTimeSpanExact(input, format, formatProvider, styles, out result);
+            return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
         }
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
-            return FormatProvider.TryParseTimeSpanExactMultiple(input, formats, formatProvider, styles, out result);
+            return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
         }
         public override String ToString()
         {
-            return FormatProvider.FormatTimeSpan(this, null, null);
+            return TimeSpanFormat.Format(this, null, null);
         }
         public String ToString(String format)
         {
-            return FormatProvider.FormatTimeSpan(this, format, null);
+            return TimeSpanFormat.Format(this, format, null);
         }
         public String ToString(String format, IFormatProvider formatProvider)
         {
-            return FormatProvider.FormatTimeSpan(this, format, formatProvider);
+            return TimeSpanFormat.Format(this, format, formatProvider);
         }
         #endregion
 

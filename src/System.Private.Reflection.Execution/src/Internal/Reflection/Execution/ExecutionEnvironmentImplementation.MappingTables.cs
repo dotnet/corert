@@ -124,8 +124,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
         {
-            // CORERT-TODO: reflection blocking
-#if !CORERT
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
 
@@ -151,7 +149,6 @@ namespace Internal.Reflection.Execution
                 return true;
             }
             // Entry not found, must not be blocked
-#endif
             return false;
         }
 
@@ -227,7 +224,8 @@ namespace Internal.Reflection.Execution
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
-                throw new NotSupportedException(SR.NotSupported_OpenType);
+                arrayTypeHandle = default(RuntimeTypeHandle);
+                return false;
             }
 
             // For non-dynamic arrays try to look up the array type in the ArrayMap blobs;
@@ -263,12 +261,13 @@ namespace Internal.Reflection.Execution
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
-                throw new NotSupportedException(SR.NotSupported_OpenType);
+                arrayTypeHandle = default(RuntimeTypeHandle);
+                return false;
             }
             
             if ((rank < MDArray.MinRank) || (rank > MDArray.MaxRank))
             {
-                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_NoMultiDims, rank));
+                throw new TypeLoadException(SR.Format(SR.MultiDim_Of_This_Rank_Not_Supported, rank));
             }
 
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, true, rank, out arrayTypeHandle);
@@ -343,7 +342,16 @@ namespace Internal.Reflection.Execution
 
             TypeInfo[] typeArguments = new TypeInfo[genericTypeArgumentHandles.Length];
             for (int i = 0; i < genericTypeArgumentHandles.Length; i++)
+            {
+                // Early out if one of the arguments is a generic definition.
+                // The reflection stack will use this to construct a Type that doesn't have a type handle.
+                // Note: this is different from the validation we do in EnsureSatisfiesClassConstraints because this
+                // should not throw.
+                if (RuntimeAugments.IsGenericTypeDefinition(genericTypeArgumentHandles[i]))
+                    return false;
+
                 typeArguments[i] = Type.GetTypeFromHandle(genericTypeArgumentHandles[i]).GetTypeInfo();
+            }
 
             ConstraintValidator.EnsureSatisfiesClassConstraints(typeDefinition, typeArguments);
 

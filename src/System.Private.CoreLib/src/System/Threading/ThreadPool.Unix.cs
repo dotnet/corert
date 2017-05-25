@@ -16,8 +16,8 @@ namespace System.Threading
         // used on Unix. All of this code must be replaced with proper implementation.
 
         /// <summary>
-        /// Max allowed number of thread in the thread pool. This is just arbitrary number
-        /// that is used to prevent unbound creation of threads.
+        /// Max allowed number of threads in the thread pool. This is just arbitrary number
+        /// that is used to prevent unbounded creation of threads.
         /// It should by high enough to provide sufficient number of thread pool workers
         /// in case if some threads get blocked while running user code.
         /// </summary>
@@ -32,6 +32,42 @@ namespace System.Threading
         /// Number of worker threads created by the thread pool.
         /// </summary>
         private static volatile int s_workerCount = 0;
+
+        public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
+        {
+            // Not supported at present
+            return false;
+        }
+
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
+        {
+            // Note that worker threads and completion port threads share the same thread pool.
+            // The total number of threads cannot exceed MaxThreadCount.
+            workerThreads = MaxThreadCount;
+            completionPortThreads = MaxThreadCount;
+        }
+
+        public static bool SetMinThreads(int workerThreads, int completionPortThreads)
+        {
+            // Not supported at present
+            return false;
+        }
+
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
+        {
+            // All threads are pre-created at present
+            workerThreads = MaxThreadCount;
+            completionPortThreads = MaxThreadCount;
+        }
+
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
+        {
+            // Make sure we return a non-negative value if thread pool defaults are changed
+            int availableThreads = Math.Max(MaxThreadCount - ThreadPoolGlobals.workQueue.numWorkingThreads, 0);
+
+            workerThreads = availableThreads;
+            completionPortThreads = availableThreads;
+        }
 
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
@@ -56,18 +92,6 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
 
-        internal static void QueueLongRunningWork(Action callback)
-        {
-            GCHandle gcHandle = GCHandle.Alloc(callback);
-
-            if (!Interop.Sys.RuntimeThread_CreateThread(IntPtr.Zero /*use default stack size*/,
-                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(LongRunningWorkCallback), GCHandle.ToIntPtr(gcHandle)))
-            {
-                gcHandle.Free();
-                throw new OutOfMemoryException();
-            }
-        }
-
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.
         /// </summary>
@@ -86,19 +110,5 @@ namespace System.Threading
 
             } while (true);
         }
-
-        [NativeCallable]
-        private static IntPtr LongRunningWorkCallback(IntPtr context)
-        {
-            RuntimeThread.InitializeThreadPoolThread();
-
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Action callback = (Action)gcHandle.Target;
-            gcHandle.Free();
-
-            callback();
-            return IntPtr.Zero;
-        }
-
     }
 }

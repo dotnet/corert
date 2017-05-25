@@ -117,7 +117,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
     {
         internal static RuntimeNoMetadataNamedTypeInfo GetRuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -155,7 +155,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
     // that can never be reflection-enabled due to the framework Reflection block.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo
     {
         internal static RuntimeBlockedTypeInfo GetRuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -286,7 +286,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.
-            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters)
+            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters && !(elementType is RuntimeCLSIDTypeInfo))
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, multiDim, rank);
         }
     }
@@ -321,6 +321,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeByRefTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreateByRefOfByRef, key.ElementType));
+
                 return new RuntimeByRefTypeInfo(key);
             }
 
@@ -358,6 +361,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimePointerTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreatePointerOfByRef, key.ElementType));
+
                 return new RuntimePointerTypeInfo(key);
             }
 

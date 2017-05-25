@@ -87,7 +87,6 @@
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
-    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\BStrWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceType.cs" />
@@ -147,6 +146,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
@@ -204,11 +206,9 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\vardesc.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />
+    <Compile Include="System\__HResults.cs" />
   </ItemGroup>
-  <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-  -->
-  <ItemGroup>
     <Compile Include="Interop\Interop.String.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
     <Compile Include="Interop\Interop.WinRT.Basic.cs" />
@@ -216,7 +216,6 @@
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.COM.Windows.cs" />
     <Compile Include="Interop\Interop.Common.Windows.cs" />
-    <Compile Include="System\__HResults.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
@@ -248,11 +247,10 @@
       <Link>Interop\Windows\mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="Interop\Interop.String.Unix.cs" />
     <Compile Include="Interop\Interop.Common.Unix.cs" />
-  -->
+  </ItemGroup>    
   <ItemGroup Condition="'$(TargetsUnix)'=='true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>

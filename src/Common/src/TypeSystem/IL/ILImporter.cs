@@ -116,6 +116,7 @@ namespace Internal.IL
                 basicBlock = new BasicBlock() { StartOffset = offset };
                 _basicBlocks[offset] = basicBlock;
             }
+
             return basicBlock;
         }
 
@@ -776,7 +777,7 @@ namespace Internal.IL
                     case ILOpcode.sub_ovf_un:
                         ImportBinaryOperation(opCode);
                         break;
-                    case ILOpcode.endfinally:
+                    case ILOpcode.endfinally: //both endfinally and endfault
                         ImportEndFinally();
                         return;
                     case ILOpcode.leave:

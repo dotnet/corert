@@ -17,7 +17,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos returned by the Type.GetTypeFromCLSID() api. These "types" are little more than mules that hold a CLSID
     // and optional remote server name. The only useful thing to do with them is to pass them to Activator.CreateInstance().
     // 
-    internal sealed partial class RuntimeCLSIDTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeCLSIDTypeInfo.UnificationKey>
+    internal sealed partial class RuntimeCLSIDTypeInfo : RuntimeTypeDefinitionTypeInfo, IKeyedItem<RuntimeCLSIDTypeInfo.UnificationKey>
     {
         private RuntimeCLSIDTypeInfo(Guid clsid, string server)
         {
@@ -30,10 +30,20 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string FullName => BaseType.FullName;
         public sealed override Guid GUID => _key.ClsId;
         public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure) => BaseType.InternalGetNameIfAvailable(ref rootCauseForFailure);
+        public sealed override bool IsGenericTypeDefinition => false;
         public sealed override int MetadataToken => BaseType.MetadataToken;
         public sealed override string Namespace => BaseType.Namespace;
         public sealed override StructLayoutAttribute StructLayoutAttribute => BaseType.StructLayoutAttribute;
         public sealed override string ToString() => BaseType.ToString();
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is RuntimeCLSIDTypeInfo;
+        }
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
         protected sealed override int InternalGetHashCode() => _key.GetHashCode();

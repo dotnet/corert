@@ -133,12 +133,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__EEType_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.EEType(type);
         }
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__EEType_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.NodeMangler.EEType(_type));
         }
 
         int ISymbolNode.Offset => 0;
@@ -161,52 +161,8 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
-            // Dependencies of the StaticsInfoHashTable and the ReflectionFieldAccessMap
-            if (_type is MetadataType && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                MetadataType metadataType = (MetadataType)_type;
-
-                // NOTE: The StaticsInfoHashtable entries need to reference the gc and non-gc static nodes through an indirection cell.
-                // The StaticsInfoHashtable entries only exist for static fields on generic types.
-
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode gcStatics = factory.TypeGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        dependencies.Add(factory.Indirection(gcStatics), "GC statics indirection for StaticsInfoHashtable");
-                    }
-                    else
-                    {
-                        // TODO: https://github.com/dotnet/corert/issues/3224
-                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
-                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
-                        // we even start the compilation process (with the static bases being compilation roots like any other).
-                        dependencies.Add(gcStatics, "GC statics for ReflectionFieldMap entry");
-                    }
-                }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
-                {
-                    ISymbolNode nonGCStatic = factory.TypeNonGCStaticsSymbol(metadataType);
-                    if (_type.HasInstantiation)
-                    {
-                        // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
-                        // context offset.
-                        nonGCStatic = factory.Indirection(nonGCStatic);
-                        dependencies.Add(nonGCStatic, "Non-GC statics indirection for StaticsInfoHashtable");
-                    }
-                    else
-                    {
-                        // TODO: https://github.com/dotnet/corert/issues/3224
-                        // Reflection static field bases handling is here because in the current reflection model we reflection-enable
-                        // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
-                        // we even start the compilation process (with the static bases being compilation roots like any other).
-                        dependencies.Add(nonGCStatic, "Non-GC statics for ReflectionFieldMap entry");
-                    }
-                }
-
-                // TODO: TLS dependencies
-            }
+            StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
+            ReflectionFieldMapNode.AddReflectionFieldMapEntryDependencies(ref dependencies, factory, _type);
 
             return dependencies;
         }
@@ -290,9 +246,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.IsArray)
             {
-                int elementSize = ((ArrayType)_type).ElementType.GetElementSize().AsInt;
-                // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                objData.EmitShort((short)checked((ushort)elementSize));
+                TypeDesc elementType = ((ArrayType)_type).ElementType;
+                if (elementType == elementType.Context.UniversalCanonType)
+                {
+                    objData.EmitShort(0);
+                }
+                else
+                {
+                    int elementSize = elementType.GetElementSize().AsInt;
+                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                    objData.EmitShort((short)checked((ushort)elementSize));
+                }
             }
             else if (_type.IsString)
             {
@@ -347,8 +311,20 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsDefType)
             {
-                objectSize = pointerSize +
-                    ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
+
+                if (instanceByteCount.IsIndeterminate)
+                {
+                    // Some value must be put in, but the specific value doesn't matter as it
+                    // isn't used for specific instantiations, and the universal canon eetype
+                    // is never associated with an allocated object.
+                    objectSize = pointerSize; 
+                }
+                else
+                {
+                    objectSize = pointerSize +
+                        ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                }
 
                 if (_type.IsValueType)
                     objectSize += pointerSize; // + EETypePtr field inherited from System.Object
@@ -459,9 +435,14 @@ namespace ILCompiler.DependencyAnalysis
             // The generic dictionary pointer occupies the first slot of each type vtable slice
             if (declType.HasGenericDictionarySlot())
             {
+                // All generic interface types have a dictionary slot, but only some of them have an actual dictionary.
+                bool isInterfaceWithAnEmptySlot = declType.IsInterface &&
+                    declType.ConvertToCanonForm(CanonicalFormKind.Specific) == declType;
+
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
-                // TODO: emit the correction dictionary slot for interfaces (needed when we start supporting static methods on interfaces)
-                if (declType.IsInterface || declType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                if (declType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
+                    || isInterfaceWithAnEmptySlot)
                     objData.EmitZeroPointer();
                 else
                     objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
@@ -508,10 +489,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputFinalizerMethod(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            MethodDesc finalizerMethod = _type.GetFinalizer();
-
-            if (finalizerMethod != null)
+            if (_type.HasFinalizer)
             {
+                MethodDesc finalizerMethod = _type.GetFinalizer();
                 MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }
@@ -693,8 +673,17 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type as DefType;
             Debug.Assert(defType != null);
 
-            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
-            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+            uint valueTypeFieldPaddingEncoded;
+
+            if (defType.InstanceByteCount.IsIndeterminate)
+            {
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1);
+            }
+            else
+            {
+                uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+            }
 
             if (valueTypeFieldPaddingEncoded != 0)
             {
@@ -704,7 +693,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+            if (!context.IsCppCodegenTemporaryWorkaround)
+            { 
+                Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+            }
         }
 
         /// <summary>
@@ -798,8 +790,8 @@ namespace ILCompiler.DependencyAnalysis
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    int elementSize = parameterType.GetElementSize().AsInt;
-                    if (elementSize >= ushort.MaxValue)
+                    LayoutInt elementSize = parameterType.GetElementSize();
+                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc
                         throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);

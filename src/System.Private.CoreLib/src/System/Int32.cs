@@ -24,10 +24,10 @@ namespace System
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     public struct Int32 : IComparable, IFormattable, IComparable<Int32>, IEquatable<Int32>, IConvertible
     {
-        // m_value is never assigned to by any of the methods.
+        // _value is never assigned to by any of the methods.
         // Disabling the warning as this type is a built-in primitive that the compilers know about
 #pragma warning disable 0649
-        private int m_value;
+        private int _value;
 #pragma warning restore 0649
 
         public const int MaxValue = 0x7fffffff;
@@ -37,8 +37,8 @@ namespace System
         // indicates the relationship. 
         // Returns :
         // 0 if the values are equal
-        // Negative number if m_value is less than value
-        // Positive number if m_value is more than value
+        // Negative number if _value is less than value
+        // Positive number if _value is more than value
         // null is considered to be less than any instance, hence returns positive number
         // If object is not of type Int32, this method throws an ArgumentException.
         // 
@@ -50,11 +50,11 @@ namespace System
             }
             if (value is Int32)
             {
-                // NOTE: Cannot use return (m_value - value) as this causes a wrap
-                // around in cases where m_value - value > MaxValue.
+                // NOTE: Cannot use return (_value - value) as this causes a wrap
+                // around in cases where _value - value > MaxValue.
                 int i = (int)value;
-                if (m_value < i) return -1;
-                if (m_value > i) return 1;
+                if (_value < i) return -1;
+                if (_value > i) return 1;
                 return 0;
             }
             throw new ArgumentException(SR.Arg_MustBeInt32);
@@ -62,10 +62,10 @@ namespace System
 
         public int CompareTo(int value)
         {
-            // NOTE: Cannot use return (m_value - value) as this causes a wrap
-            // around in cases where m_value - value > MaxValue.
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
+            // NOTE: Cannot use return (_value - value) as this causes a wrap
+            // around in cases where _value - value > MaxValue.
+            if (_value < value) return -1;
+            if (_value > value) return 1;
             return 0;
         }
 
@@ -75,47 +75,47 @@ namespace System
             {
                 return false;
             }
-            return m_value == ((Int32)obj).m_value;
+            return _value == ((Int32)obj)._value;
         }
 
         [NonVersionable]
         public bool Equals(Int32 obj)
         {
-            return m_value == obj;
+            return _value == obj;
         }
 
         // The absolute value of the int contained.
         public override int GetHashCode()
         {
-            return m_value;
+            return _value;
         }
 
         [Pure]
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, null, null);
+            return FormatProvider.FormatInt32(_value, null, null);
         }
 
         [Pure]
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, format, null);
+            return FormatProvider.FormatInt32(_value, format, null);
         }
 
         [Pure]
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, null, provider);
+            return FormatProvider.FormatInt32(_value, null, provider);
         }
 
         [Pure]
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, format, provider);
+            return FormatProvider.FormatInt32(_value, format, provider);
         }
 
         // Parses an integer from a String in the given style.  If
@@ -186,67 +186,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            return Convert.ToBoolean(m_value);
+            return Convert.ToBoolean(_value);
         }
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            return Convert.ToChar(m_value);
+            return Convert.ToChar(_value);
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            return Convert.ToSByte(m_value);
+            return Convert.ToSByte(_value);
         }
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(m_value);
+            return Convert.ToByte(_value);
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            return Convert.ToInt16(m_value);
+            return Convert.ToInt16(_value);
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return Convert.ToUInt16(m_value);
+            return Convert.ToUInt16(_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            return m_value;
+            return _value;
         }
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return Convert.ToUInt32(m_value);
+            return Convert.ToUInt32(_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(m_value);
+            return Convert.ToInt64(_value);
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            return Convert.ToUInt64(m_value);
+            return Convert.ToUInt64(_value);
         }
 
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            return Convert.ToSingle(m_value);
+            return Convert.ToSingle(_value);
         }
 
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            return Convert.ToDouble(m_value);
+            return Convert.ToDouble(_value);
         }
 
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            return Convert.ToDecimal(m_value);
+            return Convert.ToDecimal(_value);
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -19,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT);
             _type = type;
         }
 
@@ -31,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return nameMangler.CompilationUnitPrefix + "__ThreadStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.ThreadStatics(type);
         }
 
         int ISymbolNode.Offset => 0;
@@ -53,12 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             List<DependencyListEntry> result = new List<DependencyListEntry>();
 
-            result.Add(new DependencyListEntry(factory.ThreadStaticsRegion, "ThreadStatics Region"));
-
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
-            }
+            result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
 
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
@@ -72,37 +69,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
-                // will be written in this location.
-                builder.RequireInitialPointerAlignment();
-                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
-            }
-            else
-            {
-                builder.RequireInitialAlignment(_type.ThreadStaticFieldAlignment.AsInt);
-                builder.EmitZeros(_type.ThreadStaticFieldSize.AsInt);
-            }
-        }
-    }
-
-    public class ThreadStaticsRegionNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
-    {
-        private TargetAbi _targetAbi;
-
-        public ThreadStaticsRegionNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter, TargetAbi targetAbi)
-            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
-        {
-            _targetAbi = targetAbi;
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return _targetAbi == TargetAbi.ProjectN ? ObjectNodeSection.TLSSection : ObjectNodeSection.DataSection;
-            }
+            // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
+            // will be written in this location.
+            builder.RequireInitialPointerAlignment();
+            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
         }
     }
 }

@@ -88,6 +88,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -103,6 +104,7 @@ namespace System.Reflection.Runtime.MethodInfos
             // us the right way by coordinating the implementation of NewObject and MethodInvoker.
             Object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
             Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return newObject != null ? newObject : ctorAllocatedObject;
         }
 
@@ -141,6 +143,17 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 return _common.MetadataToken;
             }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor = other as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
+            if (otherConstructor == null)
+                return false;
+            return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
         }
 
         public sealed override bool Equals(Object obj)

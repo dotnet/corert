@@ -322,7 +322,13 @@ namespace ILCompiler.Metadata
                     Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
 
                     Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    if (_policy.IsBlocked(methodBody))
+                        continue;
+
                     Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    if (_policy.IsBlocked(methodDecl.GetTypicalMethodDefinition()))
+                        continue;
+
                     MethodImpl methodImplRecord = new MethodImpl
                     {
                         MethodBody = HandleQualifiedMethod(methodBody),

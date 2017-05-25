@@ -17,24 +17,32 @@ namespace Internal.Runtime.TypeLoader
         private IntPtr _elements;
         private uint _elementsCount;
         private TypeManagerHandle _moduleHandle;
+        private bool isDebuggerPrepared;
 
-        public bool IsInitialized() { return !_moduleHandle.IsNull; }
+        public bool IsInitialized() { return isDebuggerPrepared || !_moduleHandle.IsNull; }
 
         private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
-            _moduleHandle = module.Handle;
-
-            byte* pBlob;
-            uint cbBlob;
-            if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
+            if (module == null)
             {
-                _elements = IntPtr.Zero;
-                _elementsCount = 0;
-                return false;
+                isDebuggerPrepared = true;
             }
+            else
+            {
+                _moduleHandle = module.Handle;
 
-            _elements = (IntPtr)pBlob;
-            _elementsCount = (uint)(cbBlob / sizeof(TableElement));
+                byte* pBlob;
+                uint cbBlob;
+                if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
+                {
+                    _elements = IntPtr.Zero;
+                    _elementsCount = 0;
+                    return false;
+                }
+
+                _elements = (IntPtr)pBlob;
+                _elementsCount = (uint)(cbBlob / sizeof(TableElement));
+            }
             return true;
         }
 
@@ -132,6 +140,11 @@ namespace Internal.Runtime.TypeLoader
 
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)
         {
+            if (isDebuggerPrepared)
+            {
+                return typeof(int).TypeHandle;
+            }
+
             return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
         }
 

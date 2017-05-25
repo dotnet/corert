@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -28,8 +27,7 @@ internal partial class Interop
         MaxPath = 0x104u,
         StackSizeParamIsAReservation = 0x10000u,
         Synchronize = 0x100000u,
-        MutexAllAccess = 0x1F0001u,
-        EventAllAccess = 0x1F0003u,
+        MaximumAllowed = 0x02000000u,
         EFail = 0x80004005u,
         CoENotInitialized = 0x800401F0u,
         WaitFailed = 0xFFFFFFFFu,
@@ -59,7 +57,6 @@ internal partial class Interop
     }
 
 #pragma warning disable 649
-
     internal unsafe struct _EXCEPTION_RECORD
     {
         internal uint ExceptionCode;
@@ -73,13 +70,12 @@ internal partial class Interop
         internal fixed uint ExceptionInformation[15];
 #endif
     }
-
 #pragma warning restore 649
+
     internal partial class mincore
     {
         [DllImport("api-ms-win-core-com-l1-1-0.dll")]
         internal extern static int CoGetApartmentType(out _APTTYPE pAptType, out _APTTYPEQUALIFIER pAptQualifier);
-
 
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
@@ -102,9 +98,9 @@ internal partial class Interop
             // don't care about exceptionRecord.ExceptionInformation as we set exceptionRecord.NumberParameters to zero
 
             PInvoke_RaiseFailFastException(
-                                &exceptionRecord,
-                                IntPtr.Zero,
-                                (uint)Constants.FailFastGenerateExceptionAddress);
+                &exceptionRecord,
+                IntPtr.Zero,
+                (uint)Constants.FailFastGenerateExceptionAddress);
         }
 
         //
@@ -128,44 +124,9 @@ internal partial class Interop
 
         [DllImport("api-ms-win-core-kernel32-legacy-l1-1-0.dll", EntryPoint = "RaiseFailFastException")]
         private extern static unsafe void PInvoke_RaiseFailFastException(
-                    _EXCEPTION_RECORD* pExceptionRecord,
-                    IntPtr pContextRecord,
-                    uint dwFlags);
-    }
-    internal unsafe partial class WinRT
-    {
-        internal const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
-
-        internal enum RO_INIT_TYPE : uint
-        {
-            RO_INIT_MULTITHREADED = 1
-        }
-
-        internal static unsafe void RoInitialize(RO_INIT_TYPE initType)
-        {
-            int hr = RoInitialize((uint)initType);
-
-            // RPC_E_CHANGED_MODE can occur if someone else has already initialized the thread.  This is
-            // legal - we just need to make sure not to uninitialize the thread later in this case.
-            if (hr < 0 && hr != RPC_E_CHANGED_MODE)
-            {
-                throw new Exception();
-            }
-        }
-
-#if TARGET_CORE_API_SET
-        [DllImport(Interop.CORE_WINRT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static extern unsafe int RoInitialize(uint initType);
-#else
-        // Right now do what is necessary to ensure that the tools still work on pre-Win8 platforms
-        internal static unsafe int RoInitialize(uint initType)
-        {
-            // RoInitialize gets called on startup so it can't throw a not implemented exception
-            return 0;
-        }
-#endif
+            _EXCEPTION_RECORD* pExceptionRecord,
+            IntPtr pContextRecord,
+            uint dwFlags);
     }
 }
 
@@ -204,8 +165,8 @@ namespace System.Runtime.InteropServices
         }
 
         public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
-        { 
-           InteropExtensions.CopyToManaged(source, destination, startIndex, length); 
+        {
+            InteropExtensions.CopyToManaged(source, destination, startIndex, length);
         }
 
 #if PLATFORM_UNIX

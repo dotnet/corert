@@ -147,6 +147,9 @@ namespace Internal.Runtime.TypeLoader
                         return _typeSystemContext.GetArrayType(elementType, rank);
                     }
 
+                case TypeSignatureKind.BuiltIn:
+                    return _typeSystemContext.GetWellKnownType((WellKnownType)data);
+
                 case TypeSignatureKind.FunctionPointer:
                     Debug.Assert(false, "NYI!");
                     parser.ThrowBadImageFormatException();

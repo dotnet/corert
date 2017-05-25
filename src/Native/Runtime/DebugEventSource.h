@@ -25,6 +25,7 @@ class Module;
 class DebugEventSource
 {
 public:
+    static void SendModuleLoadEvent(void* addressInModule);
     static void SendModuleLoadEvent(Module* pModule);
     static void SendModuleUnloadEvent(Module* pModule);
     static void SendExceptionThrownEvent(CORDB_ADDRESS faultingIP, CORDB_ADDRESS faultingFrameSP);

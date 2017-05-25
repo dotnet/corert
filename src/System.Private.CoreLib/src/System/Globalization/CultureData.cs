@@ -2411,7 +2411,7 @@ namespace System.Globalization
             /// <summary>language id (coresponds to LOCALE_ILANGUAGE)</summary>
             LanguageId = 0x00000001,
             /// <summary>geographical location id, (coresponds to LOCALE_IGEOID)</summary>
-            GeoId = 0x00000008,
+            GeoId = 0x0000005B,
             /// <summary>0 = context, 1 = none, 2 = national (coresponds to LOCALE_IDIGITSUBSTITUTION)</summary>
             DigitSubstitution = 0x00001014,
             /// <summary>0 = metric, 1 = US (coresponds to LOCALE_IMEASURE)</summary>

@@ -110,7 +110,6 @@ namespace System.Threading
                 //
                 // since we got here, that means our previous timer has fired.
                 //
-                ReleaseTimer();
                 _currentNativeTimerDuration = UInt32.MaxValue;
 
                 bool haveTimerToSchedule = false;

@@ -123,6 +123,8 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasGenericVarianceComputed;
             }
 
+            flags |= TypeFlags.HasFinalizerComputed;
+
             return flags;
         }
 
@@ -210,6 +212,8 @@ namespace Internal.TypeSystem
                 // It's the closest logical thing and avoids special casing around it.
                 flags |= TypeFlags.ValueType;
             }
+
+            flags |= TypeFlags.HasFinalizerComputed;
 
             return flags;
         }

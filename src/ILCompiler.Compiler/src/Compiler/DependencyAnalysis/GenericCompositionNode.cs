@@ -16,11 +16,11 @@ namespace ILCompiler.DependencyAnalysis
     /// Describes how a generic type instance is composed - the number of generic arguments, their types,
     /// and variance information.
     /// </summary>
-    internal class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
+    public class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
     {
         private GenericCompositionDetails _details;
 
-        public GenericCompositionNode(GenericCompositionDetails details)
+        internal GenericCompositionNode(GenericCompositionDetails details)
         {
             _details = details;
         }
@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_details.Instantiation[0].Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
+                    return ObjectNodeSection.FoldableReadOnlyDataSection;
                 else
                     return ObjectNodeSection.DataSection;
             }

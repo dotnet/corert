@@ -58,6 +58,21 @@ namespace Internal.Runtime.CompilerHelpers
                     }
                 }
 
+                if (rank == 1)
+                {
+                    // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                    // as an SzArray. SzArray is castable to MdArray rank 1.
+                    int length = pDimensions[0];
+                    if (length < 0)
+                    {
+                        // Compat: we need to throw OverflowException. Array.CreateInstance would throw ArgumentOutOfRange
+                        throw new OverflowException();
+                    }
+
+                    RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(eeType.ArrayElementType);
+                    return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
+                }
+
                 return Array.NewMultiDimArray(eeType, pDimensions, rank);
             }
         }

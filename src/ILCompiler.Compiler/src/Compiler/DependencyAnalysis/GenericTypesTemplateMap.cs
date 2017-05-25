@@ -65,8 +65,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 // Type's native layout info
-                DefType defType = GetActualTemplateTypeForType(factory, type);
-                NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(defType);
+                NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(type);
 
                 // If this template isn't considered necessary, don't emit it.
                 if (!templateNode.Marked)
@@ -89,39 +88,40 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
-
-        public static DefType GetActualTemplateTypeForType(NodeFactory factory, TypeDesc type)
+        
+        public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            DefType defType = type as DefType;
-            if (defType == null)
-            {
-                Debug.Assert(IsArrayTypeEligibleForTemplate(type));
-                ArrayType arrayType = (ArrayType)type;
-                defType = factory.ArrayOfTClass.MakeInstantiatedType(arrayType.ElementType);
-            }
+            TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
-            return defType;
-        }
-
-        public static DependencyList GetTemplateTypeDependencies(NodeFactory factory, TypeDesc type)
-        {
-            if (!IsEligibleToHaveATemplate(type))
-                return null;
+            if (!IsEligibleToHaveATemplate(templateType))
+                return;
 
             if (factory.Target.Abi == TargetAbi.ProjectN)
             {
                 // If the type does not have fully constructed type, don't track its dependencies.
                 // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                if (!factory.ConstructedTypeSymbol(type).Marked)
-                    return null;
+                if (!factory.ConstructedTypeSymbol(templateType).Marked)
+                    return;
             }
 
-            DependencyList dependencies = new DependencyList();
+            dependencies = dependencies ?? new DependencyList();
+            dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(templateType), "Template type"));
+            dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout(templateType), "Template Type Layout"));
+        }
 
-            dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(type), "Template type"));
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout(GetActualTemplateTypeForType(factory, type)), "Template Type Layout"));
+        /// <summary>
+        /// Array&lt;T&gt; should not get an EEType in our system. All templates should replace
+        /// references to Array&lt;T&gt; types with regular arrays.
+        /// </summary>
+        public static TypeDesc ConvertArrayOfTToRegularArray(NodeFactory factory, TypeDesc type)
+        {
+            if (type.HasSameTypeDefinition(factory.ArrayOfTClass))
+            {
+                Debug.Assert(type.Instantiation.Length == 1);
+                return factory.TypeSystemContext.GetArrayType(type.Instantiation[0]);
+            }
 
-            return dependencies;
+            return type;
         }
 
         public static bool IsArrayTypeEligibleForTemplate(TypeDesc type)

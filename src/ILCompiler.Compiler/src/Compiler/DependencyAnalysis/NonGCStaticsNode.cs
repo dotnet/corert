@@ -35,12 +35,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            return "__NonGCStaticBase_" + nameMangler.GetMangledTypeName(type);
+            return nameMangler.NodeMangler.NonGCStatics(type);
         }
  
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__NonGCStaticBase_").Append(nameMangler.GetMangledTypeName(_type)); 
+            sb.Append(nameMangler.NodeMangler.NonGCStatics(_type));
         }
 
         int ISymbolNode.Offset => 0;
@@ -123,11 +123,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Emit the actual StaticClassConstructionContext
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
-                MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (cctorMethod != canonCctorMethod)
-                    builder.EmitPointerReloc(factory.FatFunctionPointer(cctorMethod));
-                else
-                    builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
+                builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
                 builder.EmitZeroPointer();
             }
             else

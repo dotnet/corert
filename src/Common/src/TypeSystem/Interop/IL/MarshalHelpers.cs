@@ -295,14 +295,22 @@ namespace Internal.TypeSystem.Interop
 
         internal static InlineArrayCandidate GetInlineArrayCandidate(TypeDesc managedElementType, MarshallerKind elementMarshallerKind, InteropStateManager interopStateManager, MarshalAsDescriptor marshalAs)
         {
-            var elementNativeType = (MetadataType)GetNativeTypeFromMarshallerKind(
+            TypeDesc nativeType = GetNativeTypeFromMarshallerKind(
                                                 managedElementType,
                                                 elementMarshallerKind,
                                                 MarshallerKind.Unknown,
                                                 interopStateManager,
                                                 null);
 
-            Debug.Assert(marshalAs.SizeConst.HasValue);
+            var elementNativeType = nativeType as MetadataType;
+            if (elementNativeType == null)
+            {
+                Debug.Assert(nativeType is PointerType);
+
+                // If it is a pointer type we will create InlineArray for IntPtr
+                elementNativeType = (MetadataType)managedElementType.Context.GetWellKnownType(WellKnownType.IntPtr);
+            }
+            Debug.Assert(marshalAs != null && marshalAs.SizeConst.HasValue);
 
             // if SizeConst is not specified, we will default to 1. 
             // the marshaller will throw appropriate exception

@@ -265,17 +265,26 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
             ILCodeStream codeStream = pInvokeILCodeStreams.MarshallingCodeStream;
             IEnumerator<FieldDesc> nativeEnumerator = NativeType.GetFields().GetEnumerator();
-            for (int i = 0; i < _marshallers.Length; i++)
+            int index = 0;
+            foreach (var managedField in ManagedType.GetFields())
             {
-                bool valid = nativeEnumerator.MoveNext();
-
-                Debug.Assert(valid);
-
-                if (_marshallers[i].CleanupRequired)
+                if (managedField.IsStatic)
                 {
-                    LoadFieldValueFromArg(0, nativeEnumerator.Current, pInvokeILCodeStreams);
-                    _marshallers[i].EmitElementCleanup(codeStream, emitter);
+                    continue;
                 }
+
+                bool notEmpty = nativeEnumerator.MoveNext();
+                Debug.Assert(notEmpty == true);
+
+                var nativeField = nativeEnumerator.Current;
+                Debug.Assert(nativeField != null);
+
+                if (_marshallers[index].CleanupRequired)
+                {
+                    LoadFieldValueFromArg(0, nativeField, pInvokeILCodeStreams);
+                    _marshallers[index].EmitElementCleanup(codeStream, emitter);
+                }
+                index++;
             }
 
             pInvokeILCodeStreams.UnmarshallingCodestream.Emit(ILOpcode.ret);
