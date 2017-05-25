@@ -229,6 +229,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+ 
         public sealed override IEnumerable<Type> ImplementedInterfaces
         {
             get

@@ -23,6 +23,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
         private EcmaFormatRuntimeGenericParameterTypeInfoForMethods(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedMethodInfo declaringRuntimeNamedMethodInfo)
            : base(reader, genericParameterHandle, reader.GetGenericParameter(genericParameterHandle))
         {
+            Debug.Assert(declaringRuntimeNamedMethodInfo.DeclaringType.IsTypeDefinition);
             _declaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
         }
 

@@ -131,6 +131,21 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            EcmaFormatRuntimeFieldInfo otherField = other as EcmaFormatRuntimeFieldInfo;
+            if (otherField == null)
+                return false;
+            if (!(_reader == otherField._reader))
+                return false;
+            if (!(_fieldHandle.Equals(otherField._fieldHandle)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
             EcmaFormatRuntimeFieldInfo other = obj as EcmaFormatRuntimeFieldInfo;

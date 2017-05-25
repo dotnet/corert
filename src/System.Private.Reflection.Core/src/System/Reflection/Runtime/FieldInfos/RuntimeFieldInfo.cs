@@ -104,6 +104,8 @@ namespace System.Reflection.Runtime.FieldInfos
             return fieldAccessor.GetFieldDirect(obj);
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public sealed override Module Module
         {
             get

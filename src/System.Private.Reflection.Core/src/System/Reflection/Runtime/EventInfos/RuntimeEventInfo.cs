@@ -78,6 +78,8 @@ namespace System.Reflection.Runtime.EventInfos
             throw new PlatformNotSupportedException();
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public sealed override Module Module
         {
             get

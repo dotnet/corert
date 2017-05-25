@@ -33,13 +33,5 @@ namespace System
 
             return executionId;
         }
-
-        public static unsafe String GetEnvironmentVariable(String variable)
-        {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
-            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
-        }
     }
 }

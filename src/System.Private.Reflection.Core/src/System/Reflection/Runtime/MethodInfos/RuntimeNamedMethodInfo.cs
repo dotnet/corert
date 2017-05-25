@@ -189,6 +189,23 @@ namespace System.Reflection.Runtime.MethodInfos
             return ComputeToString(this);
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // Do not rewrite as a call to IsConstructedGenericMethod - we haven't yet established that "other" is a runtime-implemented member yet!
+            RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod = other as RuntimeConstructedGenericMethodInfo;
+            if (otherConstructedGenericMethod != null)
+                other = otherConstructedGenericMethod.GetGenericMethodDefinition();
+
+            RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod = other as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
+            if (otherMethod == null)
+                return false;
+
+            return _common.HasSameMetadataDefinitionAs(otherMethod._common);
+        }
+
         public sealed override bool Equals(Object obj)
         {
             RuntimeNamedMethodInfo<TRuntimeMethodCommon> other = obj as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
