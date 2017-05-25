@@ -292,9 +292,10 @@
     <Compile Include="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
-    <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
+    <Compile Include="Compiler\UtcNameMangler.cs" />
+    <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />

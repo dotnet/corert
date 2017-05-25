@@ -494,6 +494,9 @@ class SchemaDef
                 new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
                 new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("ModuleName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
+                new MemberDef("Mvid", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
+                new MemberDef("ModuleCustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
         new RecordDef(

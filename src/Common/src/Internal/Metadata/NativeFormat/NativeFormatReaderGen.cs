@@ -6897,6 +6897,36 @@ namespace Internal.Metadata.NativeFormat
         } // CustomAttributes
 
         internal CustomAttributeHandleCollection _customAttributes;
+
+        public ConstantStringValueHandle ModuleName
+        {
+            get
+            {
+                return _moduleName;
+            }
+        } // ModuleName
+
+        internal ConstantStringValueHandle _moduleName;
+
+        public ByteCollection Mvid
+        {
+            get
+            {
+                return _mvid;
+            }
+        } // Mvid
+
+        internal ByteCollection _mvid;
+
+        public CustomAttributeHandleCollection ModuleCustomAttributes
+        {
+            get
+            {
+                return _moduleCustomAttributes;
+            }
+        } // ModuleCustomAttributes
+
+        internal CustomAttributeHandleCollection _moduleCustomAttributes;
     } // ScopeDefinition
 
     public partial struct ScopeDefinitionHandle
@@ -11427,6 +11457,9 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._entryPoint);
             offset = _streamReader.Read(offset, out record._globalModuleType);
             offset = _streamReader.Read(offset, out record._customAttributes);
+            offset = _streamReader.Read(offset, out record._moduleName);
+            offset = _streamReader.Read(offset, out record._mvid);
+            offset = _streamReader.Read(offset, out record._moduleCustomAttributes);
             return record;
         } // GetScopeDefinition
 
