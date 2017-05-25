@@ -20,10 +20,7 @@ using System.Runtime.Versioning;
 
 using Internal.Reflection.Core.NonPortable;
 
-#if INPLACE_RUNTIME
-using EEType = Internal.Runtime.EEType;
-using ObjHeader = Internal.Runtime.ObjHeader;
-#endif
+using Internal.Runtime;
 
 namespace System
 {
