@@ -90,7 +90,6 @@ namespace System.Runtime.InteropServices
         }
 
         #region String marshalling
-        private const uint WC_NO_BEST_FIT_CHARS = 0;
 
         public static unsafe int ConvertMultiByteToWideChar(byte* multiByteStr,
                                                             int multiByteLen,
@@ -104,8 +103,8 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            uint flags,
-                                                            IntPtr usedDefaultChar)
+                                                            bool bestFit,
+                                                            bool throwOnUnmappableChar)
         {
             return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
         }

@@ -755,19 +755,12 @@ namespace System.Runtime.InteropServices
             }
             else // Let OS convert
             {
-                uint flags = (bestFit ? 0 : WC_NO_BEST_FIT_CHARS);
-                int defaultCharUsed = 0;
                 ConvertWideCharToMultiByte(pManaged,
                                            lenUnicode,
                                            pNative,
                                            length,
-                                           flags,
-                                           throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
-                                           );
-                if (defaultCharUsed != 0)
-                {
-                    throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
-                }
+                                           bestFit,
+                                           throwOnUnmappableChar);
             }
 
             // Zero terminate
