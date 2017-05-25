@@ -59,13 +59,7 @@ namespace System.Reflection.Runtime.Assemblies
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.AssemblyUnity, FullName, this);
         }
 
-        public sealed override Module ManifestModule
-        {
-            get
-            {
-                return RuntimeModule.GetRuntimeModule(this);
-            }
-        }
+        public abstract override Module ManifestModule { get; }
 
         public sealed override IEnumerable<Module> Modules
         {
