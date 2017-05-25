@@ -50,9 +50,19 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             if (isOpen)
             {
+                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.MethodInfo;
+
+                short resolveType = OpenMethodResolver.OpenNonVirtualResolve;
+
+                if (methodInfo.DeclaringType.IsValueType && !methodInfo.IsStatic)
+                {
+                    // Open instance method for valuetype
+                    resolveType = OpenMethodResolver.OpenNonVirtualResolveLookthruUnboxing;
+                }
+
                 return RuntimeAugments.CreateDelegate(
                     delegateType,
-                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, default(GCHandle), 0).ToIntPtr(),
+                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, default(GCHandle), 0, resolveType).ToIntPtr(),
                     target,
                     isStatic: isStatic,
                     isOpen: isOpen);
