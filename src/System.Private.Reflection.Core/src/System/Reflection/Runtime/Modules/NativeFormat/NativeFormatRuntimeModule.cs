@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
             get
             {
                 QScopeDefinition scope = _assembly.Scope;
-                return RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes);
+                return RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.ModuleCustomAttributes);
             }
         }
 
