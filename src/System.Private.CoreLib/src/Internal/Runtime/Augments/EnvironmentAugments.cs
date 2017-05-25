@@ -61,8 +61,7 @@ namespace Internal.Runtime.Augments
         // another dictionary.
         public static IDictionary GetEnvironmentVariables()
         {
-            IDictionary dictionary = new Dictionary<object, object>();
-            PopulateEnvironmentVariables(dictionary);
+            IDictionary dictionary = new Dictionary<string, string>(EnumerateEnvironmentVariables());
             return dictionary;
         }
 

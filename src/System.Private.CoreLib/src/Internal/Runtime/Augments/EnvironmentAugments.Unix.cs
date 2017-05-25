@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -24,12 +25,12 @@ namespace Internal.Runtime.Augments
             throw new NotImplementedException();
         }
 
-        public static void PopulateEnvironmentVariables(IDictionary dictionary)
+        public static IEnumerable<KeyValuePair<string,string>> EnumerateEnvironmentVariables()
         {
             if ("".Length != 0)
                 throw new NotImplementedException(); // Need to return something better than an empty environment block.
 
-            return;
+            return Array.Empty<KeyValuePair<string,string>>();
         }
     }
 }

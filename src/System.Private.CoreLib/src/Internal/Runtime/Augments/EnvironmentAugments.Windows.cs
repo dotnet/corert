@@ -5,6 +5,7 @@
 using System;
 using System.Buffers;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -65,7 +66,7 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public static void PopulateEnvironmentVariables(IDictionary dictionary)
+        public static IEnumerable<KeyValuePair<string,string>> EnumerateEnvironmentVariables()
         {
             unsafe
             {
@@ -93,7 +94,7 @@ namespace Internal.Runtime.Augments
                     {
                         block[i] = unsafeBlock[i];
                     }
-                    PopulateEnvironmentVariablesDictionary(dictionary, block);
+                    return EnumerateEnvironmentVariables(block);
                 }
                 finally
                 {
@@ -109,13 +110,13 @@ namespace Internal.Runtime.Augments
         // CreateProcess page (null-terminated array of null-terminated strings).
         // Note the =HiddenVar's aren't always at the beginning.
 
-        // Copy strings out, parsing into pairs and inserting into the table.
+        // Copy strings out, parsing into pairs.
         // The first few environment variable entries start with an '='.
         // The current working directory of every drive (except for those drives
         // you haven't cd'ed into in your DOS window) are stored in the 
         // environment block (as =C:=pwd) and the program's exit code is 
         // as well (=ExitCode=00000000).
-        private static void PopulateEnvironmentVariablesDictionary(IDictionary dictionary, char[] block)
+        private static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(char[] block)
         {
             // To maintain complete compatibility with prior versions we need to return a Hashtable.
             // We did ship a prior version of Core with LowLevelDictionary, which does iterate the
@@ -150,7 +151,7 @@ namespace Internal.Runtime.Augments
                     i++; // Read to end of this entry 
                 string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
 
-                dictionary[key] = value;
+                yield return new KeyValuePair<string, string>(key, value);
             }
         }
     }
