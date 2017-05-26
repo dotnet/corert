@@ -16,5 +16,11 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            Debug.Assert(false);
+            return this;
+        }
     }
 }

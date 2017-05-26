@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             yield return new DependencyListEntry(
-                factory.ShadowConcreteMethod(Method.InstantiateSignature(typeInstantiation, methodInstantiation)), "concrete method");
+                factory.ShadowConcreteMethod(Method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation)), "concrete method");
         }
 
         public override bool HasConditionalStaticDependencies => false;
