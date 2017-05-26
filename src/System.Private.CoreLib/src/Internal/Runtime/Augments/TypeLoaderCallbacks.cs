@@ -25,5 +25,10 @@ namespace Internal.Runtime.Augments
         /// </summary>
         /// <param name="thunkAddress">Address of thunk to register</param>
         public abstract void RegisterThunk(IntPtr thunkAddress);
+
+        /// <summary>
+        /// Convert an unboxing function pointer to a non-unboxing function pointer
+        /// </summary>
+        public abstract IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType);
     }
 }
