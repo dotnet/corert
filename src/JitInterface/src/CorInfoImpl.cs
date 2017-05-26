@@ -2897,6 +2897,11 @@ namespace Internal.JitInterface
                         pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
                     }
                 }
+
+                // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
+                // We don't need an instantiation parameter, so let's just not report it. Might be nice to
+                // move that assert to some place later though.
+                targetIsFatFunctionPointer = true;
             }
             else
             {

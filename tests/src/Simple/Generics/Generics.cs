@@ -1358,6 +1358,45 @@ class Program
             }
         }
 
+        class Base
+        {
+            public virtual string Frob<T>(string s)
+            {
+                return typeof(T).Name + ": Base: " + s;
+            }
+        }
+
+        class Derived : Base
+        {
+            public override string Frob<T>(string s)
+            {
+                return typeof(T).Name + ": Derived: " + s;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void ValidateShared<T>(string s)
+            {
+                Func<string, string> f = Frob<T>;
+                if (f(s) != typeof(T).Name + ": Derived: " + s)
+                    throw new Exception();
+
+                f = base.Frob<T>;
+                if (f(s) != typeof(T).Name + ": Base: " + s)
+                    throw new Exception();
+            }
+
+            public void Validate(string s)
+            {
+                Func<string, string> f = Frob<string>;
+                if (f(s) != typeof(string).Name + ": Derived: " + s)
+                    throw new Exception();
+
+                f = base.Frob<string>;
+                if (f(s) != typeof(string).Name + ": Base: " + s)
+                    throw new Exception();
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void RunShared<T>(IFoo foo)
         {
@@ -1373,8 +1412,10 @@ class Program
             if (a(123) != "Atom123")
                 throw new Exception();
 
-            // https://github.com/dotnet/corert/issues/2796
-            // RunShared<Atom>(new FooShared());
+            RunShared<Atom>(new FooShared());
+
+            new Derived().Validate("hello");
+            new Derived().ValidateShared<object>("ola");
         }
     }
 
