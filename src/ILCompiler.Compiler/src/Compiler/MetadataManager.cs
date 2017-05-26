@@ -657,6 +657,12 @@ namespace ILCompiler
             return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
         }
 
+        public bool CanGenerateMetadata(FieldDesc field)
+        {
+            Debug.Assert(field.IsTypicalFieldDefinition);
+            return (GetMetadataCategory(field) & MetadataCategory.Description) != 0;
+        }
+
         /// <summary>
         /// Gets the metadata category for a compiled method body in the current compilation.
         /// The method will only get called with '<paramref name="method"/>' that has a compiled method body

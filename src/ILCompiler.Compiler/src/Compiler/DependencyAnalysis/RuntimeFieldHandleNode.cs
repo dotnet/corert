@@ -35,6 +35,22 @@ namespace ILCompiler.DependencyAnalysis
 
         private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RFHSignature_");
 
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            // TODO: https://github.com/dotnet/corert/issues/3224
+            // We should figure out reflectable fields when scanning for reflection
+            FieldDesc fieldDefinition = _targetField.GetTypicalFieldDefinition();
+            if (!factory.MetadataManager.CanGenerateMetadata(fieldDefinition))
+            {
+                return new DependencyList
+                {
+                    new DependencyListEntry(factory.FieldMetadata(fieldDefinition), "LDTOKEN")
+                };
+            }
+
+            return null;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
