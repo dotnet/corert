@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-//using System.CommandLine;
+using System.CommandLine;
 using System.Reflection;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -19,6 +19,7 @@ using Internal.IL;
 
 using Internal.CommandLine;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace ILVerify
 {
@@ -60,58 +61,58 @@ namespace ILVerify
             return patternList;
         }
 
-        //private ArgumentSyntax ParseCommandLine(string[] args)
-        //{
-        //    IReadOnlyList<string> inputFiles = Array.Empty<string>();
-        //    IReadOnlyList<string> referenceFiles = Array.Empty<string>();
-        //    IReadOnlyList<string> includePatterns = Array.Empty<string>();
-        //    IReadOnlyList<string> excludePatterns = Array.Empty<string>();
-        //    string includeFile = string.Empty;
-        //    string excludeFile = string.Empty;
+        private ArgumentSyntax ParseCommandLine(string[] args)
+        {
+            IReadOnlyList<string> inputFiles = Array.Empty<string>();
+            IReadOnlyList<string> referenceFiles = Array.Empty<string>();
+            IReadOnlyList<string> includePatterns = Array.Empty<string>();
+            IReadOnlyList<string> excludePatterns = Array.Empty<string>();
+            string includeFile = string.Empty;
+            string excludeFile = string.Empty;
 
-        //    AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
-        //    ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
-        //    {
-        //        syntax.ApplicationName = name.Name.ToString();
+            AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
+            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
+            {
+                syntax.ApplicationName = name.Name.ToString();
 
-        //        // HandleHelp writes to error, fails fast with crash dialog and lacks custom formatting.
-        //        syntax.HandleHelp = false;
-        //        syntax.HandleErrors = true;
+                // HandleHelp writes to error, fails fast with crash dialog and lacks custom formatting.
+                syntax.HandleHelp = false;
+                syntax.HandleErrors = true;
 
-        //        syntax.DefineOption("h|help", ref _help, "Help message for ILC");
-        //        syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
-        //        syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
-        //        syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
-        //        syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
-        //        syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
+                syntax.DefineOption("h|help", ref _help, "Help message for ILC");
+                syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
+                syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
+                syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
+                syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
+                syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
 
-        //        syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
-        //    });
+                syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
+            });
 
-        //    foreach (var input in inputFiles)
-        //        Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
+            foreach (var input in inputFiles)
+                Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
-        //    foreach (var reference in referenceFiles)
-        //        Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+            foreach (var reference in referenceFiles)
+                Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
 
-        //    if (!string.IsNullOrEmpty(includeFile))
-        //    {
-        //        if (includePatterns.Count > 0)
-        //            Console.WriteLine("[Warning] --include-file takes precedence over --include");
-        //        includePatterns = File.ReadAllLines(includeFile);
-        //    }
-        //    _includePatterns = StringPatternsToRegexList(includePatterns);
+            if (!string.IsNullOrEmpty(includeFile))
+            {
+                if (includePatterns.Count > 0)
+                    Console.WriteLine("[Warning] --include-file takes precedence over --include");
+                includePatterns = File.ReadAllLines(includeFile);
+            }
+            _includePatterns = StringPatternsToRegexList(includePatterns);
 
-        //    if (!string.IsNullOrEmpty(excludeFile))
-        //    {
-        //        if (excludePatterns.Count > 0)
-        //            Console.WriteLine("[Warning] --exclude-file takes precedence over --exclude");
-        //        excludePatterns = File.ReadAllLines(excludeFile);
-        //    }
-        //    _excludePatterns = StringPatternsToRegexList(excludePatterns);
+            if (!string.IsNullOrEmpty(excludeFile))
+            {
+                if (excludePatterns.Count > 0)
+                    Console.WriteLine("[Warning] --exclude-file takes precedence over --exclude");
+                excludePatterns = File.ReadAllLines(excludeFile);
+            }
+            _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
-        //    return argSyntax;
-        //}
+            return argSyntax;
+        }
 
         private void VerifyMethod(MethodDesc method, MethodIL methodIL)
         {
@@ -161,14 +162,22 @@ namespace ILVerify
                     }
 
                     message.Append(" ");
-
-                   // message.Append(SR.GetResourceString(args.Code.ToString(), null) ?? args.Code.ToString());
-
+                                       
+                    try
+                    {
+                        var sr = new System.Resources.ResourceManager("ILVerify.Resources.Strings", Assembly.GetExecutingAssembly());
+                        var str = sr.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);                                              
+                        message.Append(string.IsNullOrEmpty(str) ? args.Code.ToString() : str);                      
+                    }
+                    catch
+                    {
+                        message.Append(args.Code.ToString());
+                    }
+                   
                     Console.WriteLine(message);
-
                     _numErrors++;
                 };
-
+                
                 importer.Verify();
             }
             catch (NotImplementedException e)
@@ -214,12 +223,12 @@ namespace ILVerify
 
         private int Run(string[] args)
         {
-          //  ArgumentSyntax syntax = ParseCommandLine(args);
-            //if (_help)
-            //{
-            //    Help(syntax.GetHelpText());
-            //    return 1;
-            //}
+            ArgumentSyntax syntax = ParseCommandLine(args);
+            if (_help)
+            {
+                Help(syntax.GetHelpText());
+                return 1;
+            }
 
             if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");

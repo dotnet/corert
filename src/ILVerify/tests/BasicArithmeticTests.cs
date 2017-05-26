@@ -8,48 +8,42 @@ using Xunit;
 
 namespace ILVerify.Tests
 {
-    
+    /// <summary>
+    /// Tests for BasicArithmeticTests.il
+    /// </summary>
     public class BasicArithmeticTests
     {
+        public static EcmaModule s_testModule = TestDataLoader.GetModuleForTestAssembly("BasicArithmeticTests.dll");
+
         [Fact]
         public void SimpleAddTest()
         {
-            var module = GetModuleForTestAssembly("BasicArithmeticTests.dll");
-            var type = module.GetType(String.Empty , "BasicArithmeticTestsType");
-
-            var int32Type = module.Context.GetWellKnownType(WellKnownType.Int32);
-
-            var methodSignature = new Internal.TypeSystem.MethodSignature(Internal.TypeSystem.MethodSignatureFlags.None, 0, int32Type, new TypeDesc[] { int32Type , int32Type });
-            var mm = type.GetMethod("SimpleAdd", methodSignature);
-
-
-            foreach (var methodHandle in module.MetadataReader.MethodDefinitions)
+            ILImporter importer = TestDataLoader.GetMethodDesc(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.ValidSimpleAdd");
+            
+            var verifierErrors = new List<VerifierError>();
+            importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
             {
-                var method = (EcmaMethod)module.GetMethod(methodHandle);
+                verifierErrors.Add(err.Code);
+            });
 
-                var methodIL = EcmaMethodIL.Create(method);
-                if (methodIL == null)
-                    continue;
-
-                var importer = new ILImporter(method, methodIL);
-                importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
-                {
-                    
-                });
-
-                importer.Verify();
-            }
+            importer.Verify();
+            Assert.Equal(0, verifierErrors.Count);
         }
-
-
-        public EcmaModule GetModuleForTestAssembly(string AssemblyName)
+        
+        [Fact]    
+        public void InvalidSimpleAddTest()
         {
-            var _typeSystemContext = new SimpleTypeSystemContext();
-            _typeSystemContext.InputFilePaths = new Dictionary<String, String> { { "CoreTestAssembly",
-                @"..\..\..\..\..\..\bin\Product\Windows_NT.x64.Debug\CoreTestAssembly\\CoreTestAssembly.dll" } };
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName("CoreTestAssembly"));
+            ILImporter importer = TestDataLoader.GetMethodDesc(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.InvalidSimpleAdd");
 
-            return _typeSystemContext.GetModuleFromPath(@"..\..\..\ILTests\" + AssemblyName); 
+            var verifierErrors = new List<VerifierError>();
+            importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
+            {
+                verifierErrors.Add(err.Code);
+            });
+
+            Assert.Throws<LocalVerificationException>(() => importer.Verify());            
+            Assert.Equal(1, verifierErrors.Count);
+            Assert.Equal(VerifierError.ExpectedNumericType, verifierErrors[0]);            
         }
     }
 }

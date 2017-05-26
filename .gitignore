@@ -287,3 +287,4 @@ src/ILCompiler/reproNative/repro.cpp
 src/ILCompiler/reproNative/repro.s
 src/ILCompiler/reproNative/reproNative.sln
 src/ILCompiler/reproNative/reproNativeCpp.sln
+/src/ILVerify/src/Properties/launchSettings.json
