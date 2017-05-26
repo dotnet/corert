@@ -477,13 +477,18 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         
+        protected virtual IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
+        {
+            return factory.NecessaryTypeSymbol(interfaceType);
+        }
+
         protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             Debug.Assert(EmitVirtualSlotsAndInterfaces);
 
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(itf));
+                objData.EmitPointerRelocOrIndirectionReference(GetInterfaceTypeNode(factory, itf));
             }
         }
 
