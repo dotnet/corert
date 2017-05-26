@@ -82,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
                         {
+                            dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
                         }
 
@@ -94,6 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)type))
                         {
+                            dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
                         }
                     }
