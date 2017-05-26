@@ -1821,20 +1821,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyNodeCore<NodeFactory> constrainedMethodDescriptorNode;
+            yield return new DependencyListEntry(factory.NativeLayout.TypeSignatureVertex(_constraintType), "ConstraintType");
+
             if (_constrainedMethod.HasInstantiation)
             {
-                constrainedMethodDescriptorNode = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod);
+                yield return new DependencyListEntry(factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod), "ConstrainedMethodType");
             }
             else
             {
-                constrainedMethodDescriptorNode = factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType);
-            }
+                yield return new DependencyListEntry(factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType), "ConstrainedMethodType");
 
-            return new DependencyListEntry[] {
-                new DependencyListEntry(factory.NativeLayout.TypeSignatureVertex(_constraintType), "ConstraintType"),
-                new DependencyListEntry(constrainedMethodDescriptorNode, "ConstrainedMethodType"),
-            };
+                if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(_constrainedMethod.OwningType))
+                {
+                    yield return new DependencyListEntry(factory.VirtualMethodUse(_constrainedMethod), "ConstrainedMethod");
+                }
+            }
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)

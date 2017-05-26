@@ -30,7 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         MethodHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry
+        MethodEntry,
+        ConstrainedMethodEntry,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -186,4 +187,31 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
     }
+
+    public class ConstrainedMethodCallTarget
+    {
+        public MethodDesc Method { get; }
+        public TypeDesc ConstraintType { get; }
+
+        public ConstrainedMethodCallTarget(MethodDesc method, TypeDesc contraintType)
+        {
+            Method = method;
+            ConstraintType = contraintType;
+        }
+
+        public override bool Equals(object obj)
+        {
+            ConstrainedMethodCallTarget other = obj as ConstrainedMethodCallTarget;
+            if (obj == null)
+                return false;
+
+            return Method == other.Method && ConstraintType == other.ConstraintType;
+        }
+
+        public override int GetHashCode()
+        {
+            return Method.GetHashCode() ^ ConstraintType.GetHashCode();
+        }
+    }
+
 }
