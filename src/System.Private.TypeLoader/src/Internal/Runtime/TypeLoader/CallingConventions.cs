@@ -63,12 +63,34 @@ namespace Internal.Runtime.CallConverter
         /*FastCall, CDecl */
     }
 
+    public static class CallingConventionInfo
+    {
+        public static bool TypeUsesReturnBuffer(RuntimeTypeHandle returnType)
+        {
+            TypeHandle thReturnType = new TypeHandle(false, returnType);
+            CorElementType typeReturnType = thReturnType.GetCorElementType();
+
+            bool usesReturnBuffer;
+            uint fpReturnSizeIgnored;
+            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, out usesReturnBuffer, out fpReturnSizeIgnored);
+            
+            return usesReturnBuffer;
+        }
+    }
+
     internal unsafe struct TypeHandle
     {
         public TypeHandle(bool isByRef, RuntimeTypeHandle eeType)
         {
             _eeType = eeType.ToEETypePtr();
             _isByRef = isByRef;
+
+            if (_eeType->IsByRefType)
+            {
+                Debug.Assert(_isByRef == false); // ByRef to ByRef isn't valid
+                _isByRef = true;
+                _eeType = _eeType->RelatedParameterType;
+            }
         }
 
         private readonly EEType* _eeType;
@@ -1620,6 +1642,74 @@ namespace Internal.Runtime.CallConverter
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
         //    };
 
+        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thValueType, out bool usesRetBuffer, out uint fpReturnSize)
+        {
+            usesRetBuffer = false;
+            fpReturnSize = 0;
+
+            switch (type)
+            {
+                case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
+                    throw new NotSupportedException();
+#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+                    //                    if (sizeof(TypedByRef) > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+                    //                        flags |= RETURN_HAS_RET_BUFFER;
+#else
+//                    flags |= RETURN_HAS_RET_BUFFER;
+#endif
+                //                    break;
+
+                case CorElementType.ELEMENT_TYPE_R4:
+                    fpReturnSize = sizeof(float);
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_R8:
+                    fpReturnSize = sizeof(double);
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_VALUETYPE:
+#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+                    {
+                        Debug.Assert(!thValueType.IsNull());
+
+#if FEATURE_HFA
+                        if (thValueType.IsHFA() && !this.IsVarArg())
+                        {
+                            CorElementType hfaType = thValueType.GetHFAType();
+
+                            fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
+                                (4 * (uint)sizeof(float)) :
+                                (4 * (uint)sizeof(double));
+
+                            break;
+                        }
+#endif
+
+                        uint size = thValueType.GetSize();
+
+#if _TARGET_X86_ || _TARGET_AMD64_
+                        // Return value types of size which are not powers of 2 using a RetBuffArg
+                        if ((size & (size - 1)) != 0)
+                        {
+                            usesRetBuffer = true;
+                            break;
+                        }
+#endif
+
+                        if (size <= ArchitectureConstants.ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+                            break;
+                    }
+#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+
+                    // Value types are returned using return buffer by default
+                    usesRetBuffer = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         private void ComputeReturnFlags()
         {
             TypeHandle thValueType;
@@ -1627,67 +1717,7 @@ namespace Internal.Runtime.CallConverter
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                switch (type)
-                {
-                    case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
-                        throw new NotSupportedException();
-#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-                    //                    if (sizeof(TypedByRef) > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-                    //                        flags |= RETURN_HAS_RET_BUFFER;
-#else
-//                    flags |= RETURN_HAS_RET_BUFFER;
-#endif
-                    //                    break;
-
-                    case CorElementType.ELEMENT_TYPE_R4:
-                        _fpReturnSize = sizeof(float);
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_R8:
-                        _fpReturnSize = sizeof(double);
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_VALUETYPE:
-#if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-                        {
-                            Debug.Assert(!thValueType.IsNull());
-
-#if FEATURE_HFA
-                            if (thValueType.IsHFA() && !this.IsVarArg())
-                            {
-                                CorElementType hfaType = thValueType.GetHFAType();
-
-                                _fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                    (4 * (uint)sizeof(float)) :
-                                    (4 * (uint)sizeof(double));
-
-                                break;
-                            }
-#endif
-
-                            uint size = thValueType.GetSize();
-
-#if _TARGET_X86_ || _TARGET_AMD64_
-                            // Return value types of size which are not powers of 2 using a RetBuffArg
-                            if ((size & (size - 1)) != 0)
-                            {
-                                _RETURN_HAS_RET_BUFFER = true;
-                                break;
-                            }
-#endif
-
-                            if (size <= ArchitectureConstants.ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-                                break;
-                        }
-#endif // ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
-
-                        // Value types are returned using return buffer by default
-                        _RETURN_HAS_RET_BUFFER = true;
-                        break;
-
-                    default:
-                        break;
-                }
+                ComputeReturnValueTreatment(type, thValueType, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
             }
 
             _RETURN_FLAGS_COMPUTED = true;
