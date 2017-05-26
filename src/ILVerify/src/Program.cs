@@ -175,9 +175,10 @@ namespace ILVerify
                     }
                    
                     Console.WriteLine(message);
+
                     _numErrors++;
                 };
-                
+
                 importer.Verify();
             }
             catch (NotImplementedException e)
