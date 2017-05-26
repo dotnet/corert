@@ -65,14 +65,14 @@ namespace Internal.Runtime.CallConverter
 
     public static class CallingConventionInfo
     {
-        public static bool TypeUsesReturnBuffer(RuntimeTypeHandle returnType)
+        public static bool TypeUsesReturnBuffer(RuntimeTypeHandle returnType, bool methodWithReturnTypeIsVarArg)
         {
             TypeHandle thReturnType = new TypeHandle(false, returnType);
             CorElementType typeReturnType = thReturnType.GetCorElementType();
 
             bool usesReturnBuffer;
             uint fpReturnSizeIgnored;
-            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, out usesReturnBuffer, out fpReturnSizeIgnored);
+            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out fpReturnSizeIgnored);
             
             return usesReturnBuffer;
         }
@@ -1642,7 +1642,8 @@ namespace Internal.Runtime.CallConverter
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
         //    };
 
-        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thValueType, out bool usesRetBuffer, out uint fpReturnSize)
+        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thValueType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
@@ -1673,7 +1674,7 @@ namespace Internal.Runtime.CallConverter
                         Debug.Assert(!thValueType.IsNull());
 
 #if FEATURE_HFA
-                        if (thValueType.IsHFA() && !this.IsVarArg())
+                        if (thValueType.IsHFA() && !isVarArgMethod)
                         {
                             CorElementType hfaType = thValueType.GetHFAType();
 
@@ -1717,7 +1718,7 @@ namespace Internal.Runtime.CallConverter
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                ComputeReturnValueTreatment(type, thValueType, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                ComputeReturnValueTreatment(type, thValueType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
             }
 
             _RETURN_FLAGS_COMPUTED = true;
