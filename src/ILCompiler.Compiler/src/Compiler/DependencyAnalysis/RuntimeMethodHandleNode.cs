@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: https://github.com/dotnet/corert/issues/3224
             // We should figure out reflectable methods when scanning for reflection
             MethodDesc methodDefinition = _targetMethod.GetTypicalMethodDefinition();
-            if (!factory.MetadataManager.CanGenerateMetadata(methodDefinition))
+            if (factory.MetadataManager.CanGenerateMetadata(methodDefinition))
             {
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.Add(factory.MethodMetadata(methodDefinition), "LDTOKEN");
