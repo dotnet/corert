@@ -13,6 +13,11 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+.assembly extern System.Private.CoreLib
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
+  .ver 4:0:0:0
+}
 .assembly PreInitData
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -175,7 +180,7 @@
                                                                                      string) = ( 01 00 07 44 65 74 61 69 6C 73 1C 50 72 65 49 6E   // ...Details.PreIn
                                                                                                  69 74 69 61 6C 69 7A 65 64 46 69 65 6C 64 5F 44   // itializedField_D
                                                                                                  61 74 61 42 6C 6F 62 00 00 )                      // ataBlob..
-  .field private static class [mscorlib]System.RuntimeTypeHandle[] PreInitializedTypeField
+  .field private static class [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitializedTypeField
   .custom instance void System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 ) 
   .custom instance void System.Runtime.CompilerServices.InitDataBlobAttribute::.ctor(class [mscorlib]System.Type,
                                                                                      string) = ( 01 00 07 44 65 74 61 69 6C 73 20 50 72 65 49 6E   // ...Details PreIn
@@ -270,10 +275,10 @@
     IL_0038:  ldloc.2
     IL_0039:  brtrue.s   IL_0010
 
-    IL_003b:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
+    IL_003b:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
     IL_0040:  ldc.i4.0
-    IL_0041:  ldelem.ref
-              ldind.i
+    IL_0041:  ldelema valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+              call instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
     IL_0042:  ldtoken    [mscorlib]System.Int32
     IL_004c:  call       bool [mscorlib]System.RuntimeTypeHandle::op_Inequality(valuetype [mscorlib]System.RuntimeTypeHandle,
                                                                    valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -287,9 +292,10 @@
     IL_0059:  stloc.1
     IL_005a:  br.s       IL_00c3
 
-    IL_005c:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
+    IL_005c:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
     IL_0061:  ldc.i4.1
-    IL_0062:  ldelem.ref
+    IL_0062:  ldelema valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+              call instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
     IL_0063:  ldtoken    [mscorlib]System.Int16
     IL_006d:  call       bool [mscorlib]System.RuntimeTypeHandle::op_Inequality(valuetype [mscorlib]System.RuntimeTypeHandle,
                                                                    valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -303,9 +309,10 @@
     IL_007a:  stloc.1
     IL_007b:  br.s       IL_00c3
 
-    IL_007d:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
+    IL_007d:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
     IL_0082:  ldc.i4.2
-    IL_0083:  ldelem.ref
+    IL_0083:  ldelema valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+              call instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
     IL_0084:  ldtoken    [mscorlib]System.Int64
     IL_008e:  call       bool [mscorlib]System.RuntimeTypeHandle::op_Inequality(valuetype [mscorlib]System.RuntimeTypeHandle,
                                                                    valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -319,9 +326,10 @@
     IL_009b:  stloc.1
     IL_009c:  br.s       IL_00c3
 
-    IL_009e:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
+    IL_009e:  ldsfld     valuetype [System.Private.CoreLib]System.RuntimeTypeHandle[] PreInitDataTest::PreInitializedTypeField
     IL_00a3:  ldc.i4.3
-    IL_00a4:  ldelem.ref
+    IL_00a4:  ldelema valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+              call instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
     IL_00a5:  ldtoken    [mscorlib]System.String
     IL_00af:  call       bool [mscorlib]System.RuntimeTypeHandle::op_Inequality(valuetype [mscorlib]System.RuntimeTypeHandle,
                                                                    valuetype [mscorlib]System.RuntimeTypeHandle)
