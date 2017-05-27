@@ -12,12 +12,7 @@ namespace ILVerify.Tests
     static class TestDataLoader
     {
         /// <summary>
-        /// The folder which contains the core assembly (containing System.Object, etc.)
-        /// </summary>
-        static string COREASSEMBLYPATH = @"..\..\..\..\..\..\bin\Product\Windows_NT.x64.Debug\CoreTestAssembly\\";
-
-        /// <summary>
-        /// The folter with the binaries which are compiled from the test driver IL Code
+        /// The folder with the binaries which are compiled from the test driver IL Code
         /// </summary>
         static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
 
@@ -25,15 +20,20 @@ namespace ILVerify.Tests
         {
             var _typeSystemContext = new SimpleTypeSystemContext();
 
-            //we use the src\ILCompiler.TypeSystem\tests\CoreTestAssembly project as a "dummy" core dll
-            _typeSystemContext.InputFilePaths = new Dictionary<string, string> { { "CoreTestAssembly",
-                COREASSEMBLYPATH + "CoreTestAssembly.dll" } };
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName("CoreTestAssembly"));
+            var systemRuntime = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("System.Runtime"));
+            var systemPrivateCoreLib = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("System.Private.CoreLib"));
+                      
+            _typeSystemContext.InputFilePaths = new Dictionary<string, string>
+            {
+                { "System.Runtime", systemRuntime.Location },
+                { "System.Private.CoreLib", systemPrivateCoreLib.Location }
+            };
 
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName("System.Runtime"));
             return _typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
         }
 
-        public static ILImporter GetMethodDesc(EcmaModule module, string testMethodName)
+        public static ILImporter GetILImporterForMethod(EcmaModule module, string testMethodName)
         {
             EcmaMethod method = null;
             EcmaMethodIL methodIL = null;
@@ -52,7 +52,7 @@ namespace ILVerify.Tests
                 }
             }
 
-            if(method == null || methodIL == null)
+            if (method == null || methodIL == null)
             {
                 throw new Exception($"Method {testMethodName} not found in module");
             }

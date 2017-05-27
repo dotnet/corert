@@ -3,14 +3,19 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <FileAlignment>512</FileAlignment>
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- AutoGenerateBindingRedirects is not honoring the unification
-         table, and thus breaking unification by explicitly listing
-         bindingRedirects for assemblies that only differ by revision -->
-    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ILImporter.Verify.cs" />
+    <Compile Include="ILImporter.StackValue.cs" />
+    <Compile Include="SimpleTypeSystemContext.cs" />
+    <Compile Include="VerifierError.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
@@ -265,10 +270,10 @@
       <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
   </ItemGroup>
+  
   <ItemGroup>
     <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.0.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.1" />
     <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />
   </ItemGroup>
-
 </Project>

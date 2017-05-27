@@ -18,7 +18,7 @@ namespace ILVerify.Tests
         [Fact]
         public void SimpleAddTest()
         {
-            ILImporter importer = TestDataLoader.GetMethodDesc(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.ValidSimpleAdd");
+            ILImporter importer = TestDataLoader.GetILImporterForMethod(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.ValidSimpleAdd");
             
             var verifierErrors = new List<VerifierError>();
             importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
@@ -33,7 +33,7 @@ namespace ILVerify.Tests
         [Fact]    
         public void InvalidSimpleAddTest()
         {
-            ILImporter importer = TestDataLoader.GetMethodDesc(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.InvalidSimpleAdd");
+            ILImporter importer = TestDataLoader.GetILImporterForMethod(s_testModule, "[BasicArithmeticTests]BasicArithmeticTestsType.InvalidSimpleAdd");
 
             var verifierErrors = new List<VerifierError>();
             importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
