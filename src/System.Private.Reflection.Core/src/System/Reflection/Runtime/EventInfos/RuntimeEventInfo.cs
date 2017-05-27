@@ -68,9 +68,7 @@ namespace System.Reflection.Runtime.EventInfos
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
 
         public sealed override MethodInfo[] GetOtherMethods(bool nonPublic)
