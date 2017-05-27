@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -53,6 +54,20 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaField This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+
+            var attributeHandles = metadataReader.GetCustomAttributeHandles(metadataReader.GetFieldDefinition(This.Handle).GetCustomAttributes(),
+                attributeNamespace, attributeName);
+
+            foreach (var attributeHandle in attributeHandles)
+            {
+                yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+            }
+        }
+
         public static CustomAttributeHandle GetCustomAttributeHandle(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
@@ -70,6 +85,25 @@ namespace Internal.TypeSystem.Ecma
             }
 
             return default(CustomAttributeHandle);
+        }
+
+        public static IEnumerable<CustomAttributeHandle> GetCustomAttributeHandles(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
+             string attributeNamespace, string attributeName)
+        {
+            foreach (var attributeHandle in customAttributes)
+            {
+                StringHandle namespaceHandle, nameHandle;
+                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                    continue;
+
+                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
+                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                {
+                    yield return attributeHandle;
+                }
+            }
+
+            yield return default(CustomAttributeHandle);
         }
 
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,

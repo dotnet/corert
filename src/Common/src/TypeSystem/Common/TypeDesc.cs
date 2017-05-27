@@ -485,7 +485,7 @@ namespace Internal.TypeSystem
         /// is returned. Returns null if method not found.
         /// </summary>
         // TODO: Substitutions, generics, modopts, ...
-        public virtual MethodDesc GetMethod(string name, MethodSignature signature)
+        public virtual MethodDesc GetMethod(string name, MethodSignature signature = null)
         {
             foreach (var method in GetMethods())
             {

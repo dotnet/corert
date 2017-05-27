@@ -20,11 +20,40 @@ namespace System.Runtime.CompilerServices
 
         }
     }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    class TypeHandleFixupAttribute: Attribute
+    {
+        public TypeHandleFixupAttribute(int offset, Type fixupType)
+        {
+        }
+    }  
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    class MethodAddrFixupAttribute: Attribute
+    {
+        public MethodAddrFixupAttribute(int offset, Type fixupType, string methodName)
+        {
+        }
+    }      
 }
 
 class Details
 {
-    private static IntPtr PreInitializedField_DataBlob = IntPtr.Zero;
+    private static IntPtr PreInitializedIntField_DataBlob = IntPtr.Zero;
+
+#if 64BIT    
+    [TypeHandleFixupAttribute(0, typeof(int))]
+    [TypeHandleFixupAttribute(8, typeof(short))]
+    [TypeHandleFixupAttribute(16, typeof(long))]
+    [TypeHandleFixupAttribute(24, typeof(string))]
+#else
+    [TypeHandleFixupAttribute(0, typeof(int))]
+    [TypeHandleFixupAttribute(4, typeof(short))]
+    [TypeHandleFixupAttribute(8, typeof(long))]
+    [TypeHandleFixupAttribute(12, typeof(string))]
+#endif
+    private static IntPtr PreInitializedTypeField_DataBlob = IntPtr.Zero; 
 }
 
 public class PreInitDataTest
@@ -33,7 +62,11 @@ public class PreInitDataTest
 
     [System.Runtime.CompilerServices.PreInitialized]
     [System.Runtime.CompilerServices.InitDataBlob(typeof(Details), "PreInitializedField_DataBlob")]
-    static int[] PreInitializedField = new int[] { 1, 2, 3, 4 };
+    static int[] PreInitializedIntField = new int[] { 1, 2, 3, 4 };
+
+    [System.Runtime.CompilerServices.PreInitialized]
+    [System.Runtime.CompilerServices.InitDataBlob(typeof(Details), "PreInitializedField_DataBlob")]
+    static int[] PreInitializedTypeField;
 
     static string StaticStringField = "ABCDE";
 
@@ -64,9 +97,9 @@ public class PreInitDataTest
     {
         Console.WriteLine("Testing preinitialized array...");
 
-        for (int i = 0; i < PreInitializedField.Length; ++i)
+        for (int i = 0; i < PreInitializedIntField.Length; ++i)
         {
-            if (PreInitializedField[i] != i + 1)
+            if (PreInitializedIntField[i] != i + 1)
                 return false;
         }
 
