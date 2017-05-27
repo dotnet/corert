@@ -75,6 +75,11 @@ namespace System
             return false;
         }
 
+        public static bool operator ==(RuntimeTypeHandle left, RuntimeTypeHandle right)
+        {
+            return left.Equals(right);
+        }
+
         public static bool operator !=(object left, RuntimeTypeHandle right)
         {
             if (left is RuntimeTypeHandle)
@@ -87,6 +92,11 @@ namespace System
             if (right is RuntimeTypeHandle)
                 return !left.Equals((RuntimeTypeHandle)right);
             return true;
+        }
+
+        public static bool operator !=(RuntimeTypeHandle left, RuntimeTypeHandle right)
+        {
+            return !left.Equals(right);
         }
 
         public IntPtr Value => _value;

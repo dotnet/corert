@@ -4,6 +4,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -42,7 +44,7 @@ class Details
 {
     private static IntPtr PreInitializedIntField_DataBlob = IntPtr.Zero;
 
-#if 64BIT    
+#if BIT64
     [TypeHandleFixupAttribute(0, typeof(int))]
     [TypeHandleFixupAttribute(8, typeof(short))]
     [TypeHandleFixupAttribute(16, typeof(long))]
@@ -58,17 +60,17 @@ class Details
 
 public class PreInitDataTest
 {
-    static int[] StaticIntArrayField = new int[] { 5, 6, 7, 8 };
+    static string StaticStringFieldBefore = "BEFORE";
 
-    [System.Runtime.CompilerServices.PreInitialized]
-    [System.Runtime.CompilerServices.InitDataBlob(typeof(Details), "PreInitializedField_DataBlob")]
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedIntField_DataBlob")]
     static int[] PreInitializedIntField = new int[] { 1, 2, 3, 4 };
 
-    [System.Runtime.CompilerServices.PreInitialized]
-    [System.Runtime.CompilerServices.InitDataBlob(typeof(Details), "PreInitializedField_DataBlob")]
-    static int[] PreInitializedTypeField;
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedTypeField_DataBlob")]
+    static FixupRuntimeTypeHandle[] PreInitializedTypeField;
 
-    static string StaticStringField = "ABCDE";
+    static string StaticStringFieldAfter = "AFTER";
 
     const int Pass = 100;
     const int Fail = -1;
@@ -103,6 +105,15 @@ public class PreInitDataTest
                 return false;
         }
 
+        if (PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
+            return false;
+        if (PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
+            return false;
+        if (PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
+            return false;
+        if (PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
+            return false;
+
         return true;
     }
 
@@ -110,13 +121,10 @@ public class PreInitDataTest
     {
         Console.WriteLine("Testing other statics work well with preinitialized data in the same type...");
 
-        for (int i = 0; i < StaticIntArrayField.Length; ++i)
-        {
-            if (StaticIntArrayField[i] != i + 5)
-                return false;
-        }    
+        if (StaticStringFieldBefore != "BEFORE")
+            return false;
 
-        if (StaticStringField != "ABCDE")
+        if (StaticStringFieldAfter != "AFTER")
             return false;
 
         return true;

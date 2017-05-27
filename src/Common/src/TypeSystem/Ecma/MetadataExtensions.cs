@@ -64,6 +64,9 @@ namespace Internal.TypeSystem.Ecma
 
             foreach (var attributeHandle in attributeHandles)
             {
+                if (attributeHandle.IsNil)
+                    continue;
+
                 yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
             }
         }

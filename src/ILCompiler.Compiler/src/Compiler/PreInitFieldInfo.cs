@@ -90,7 +90,7 @@ namespace ILCompiler
         /// List of fixup to be apply to the data blob
         /// This is needed for information that can't be encoded into blob ahead of time before codegen
         /// </summary>
-        public List<PreInitTypeFixupInfo> FixupInfos { get; }
+        public List<PreInitFixupInfo> FixupInfos { get; }
 
         public PreInitFieldInfo(FieldDesc field, byte[] data, int length, List<PreInitFixupInfo> fixups)
         {
@@ -98,7 +98,11 @@ namespace ILCompiler
             Data = data;
             Length = length;
 
-            fixups.Sort();
+            if (fixups != null)
+            {
+                fixups.Sort();
+                FixupInfos = fixups;
+            }
         }
 
         public virtual int WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -173,13 +177,16 @@ namespace ILCompiler
 
             var typeDesc = decodedValue.FixedArguments[0].Value as TypeDesc;
             if (typeDesc == null)
-                return null;
+                throw new BadImageFormatException(); 
 
             if (decodedValue.FixedArguments[1].Type != field.Context.GetWellKnownType(WellKnownType.String))
-                return null;
+                throw new BadImageFormatException(); 
 
             var fieldName = (string)decodedValue.FixedArguments[1].Value;
-            return typeDesc.GetField(fieldName);
+            var dataField = typeDesc.GetField(fieldName);
+            if (dataField== null)
+                throw new BadImageFormatException();
+            return dataField;
         }
 
         /// <summary>
@@ -228,7 +235,7 @@ namespace ILCompiler
                 fixups.Add(new PreInitTypeFixupInfo(offset, fixupType));
             }
 
-            var methodFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "TypeHandleFixupAttribute");
+            var methodFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "MethodAddrFixupAttribute");
             foreach (var methodFixupAttr in methodFixupAttrs)
             {
                 if (!(methodFixupAttr.FixedArguments[0].Value is int))
