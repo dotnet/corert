@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: https://github.com/dotnet/corert/issues/3224
             // We should figure out reflectable fields when scanning for reflection
             FieldDesc fieldDefinition = _targetField.GetTypicalFieldDefinition();
-            if (!factory.MetadataManager.CanGenerateMetadata(fieldDefinition))
+            if (factory.MetadataManager.CanGenerateMetadata(fieldDefinition))
             {
                 return new DependencyList
                 {
