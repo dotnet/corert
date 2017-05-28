@@ -19,7 +19,7 @@
        extends [CoreTestAssembly]System.Object
 {
   .method public hidebysig instance int32 
-          ValidSimpleAdd(int32 a,
+          SimpleAdd_Valid(int32 a,
               int32 b) cil managed
   {
      .maxstack  2 
@@ -29,7 +29,7 @@
      ret
   } // end of method Class1::Add
 
-  .method public hidebysig instance void  InvalidSimpleAdd() cil managed
+  .method public hidebysig instance void  SimpleAdd_Invalid_ExpectedNumericType_Internal.IL.LocalVerificationException() cil managed
   {
     // Code size       16 (0x10)
     .maxstack  2
@@ -46,5 +46,4 @@
       stloc.3
       ret
   } // end of method Program::Add
-
 } // end of class ClassLibrary1.Class1

@@ -9,12 +9,12 @@ namespace ILVerify.Tests
     /// <summary>
     /// Helper method to load the binaries generated based on the il code, which drive the tests
     /// </summary>
-    static class TestDataLoader
+    public static class TestDataLoader
     {
         /// <summary>
         /// The folder with the binaries which are compiled from the test driver IL Code
         /// </summary>
-        static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
+        public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
 
         public static EcmaModule GetModuleForTestAssembly(string assemblyName)
         {
@@ -31,33 +31,6 @@ namespace ILVerify.Tests
 
             _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName("System.Runtime"));
             return _typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
-        }
-
-        public static ILImporter GetILImporterForMethod(EcmaModule module, string testMethodName)
-        {
-            EcmaMethod method = null;
-            EcmaMethodIL methodIL = null;
-            foreach (var methodHandle in module.MetadataReader.MethodDefinitions)
-            {
-                method = (EcmaMethod)module.GetMethod(methodHandle);
-
-                methodIL = EcmaMethodIL.Create(method);
-                if (methodIL == null)
-                    continue;
-
-                var methodName = method.ToString();
-                if (methodName == testMethodName)
-                {
-                    break;
-                }
-            }
-
-            if (method == null || methodIL == null)
-            {
-                throw new Exception($"Method {testMethodName} not found in module");
-            }
-
-            return new ILImporter(method, methodIL);
-        }
+        }      
     }
 }
