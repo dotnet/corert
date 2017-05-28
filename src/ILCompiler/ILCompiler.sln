@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26507.0
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{B2C35178-5E42-4010-A72A-938711D7F8F0}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler", "src\ILCompile
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repro", "repro\repro.csproj", "{FBA029C3-B184-4457-AEEC-38D0C2523067}"
 EndProject
-Project("{136993D1-B753-4487-9E24-E834774B942A}") = "ilrepro", "ilrepro\ilrepro.ilproj", "{136993D1-B753-4487-9E24-E834774B942A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ilrepro", "ilrepro\ilrepro.ilproj", "{136993D1-B753-4487-9E24-E834774B942A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem", "..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
 EndProject
@@ -117,6 +117,30 @@ Global
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Release|x64.Build.0 = Release|Any CPU
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Release|x86.ActiveCfg = Release|x86
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Release|x86.Build.0 = Release|x86
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|arm.ActiveCfg = Debug|arm
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|arm.Build.0 = Debug|arm
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|arm64.ActiveCfg = Debug|arm64
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|arm64.Build.0 = Debug|arm64
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|armel.ActiveCfg = Debug|armel
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|armel.Build.0 = Debug|armel
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|x64.ActiveCfg = Debug|x64
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|x64.Build.0 = Debug|x64
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|x86.ActiveCfg = Debug|x86
+		{136993D1-B753-4487-9E24-E834774B942A}.Debug|x86.Build.0 = Debug|x86
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|arm.ActiveCfg = Release|arm
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|arm.Build.0 = Release|arm
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|arm64.ActiveCfg = Release|arm64
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|arm64.Build.0 = Release|arm64
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|armel.ActiveCfg = Release|armel
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|armel.Build.0 = Release|armel
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|x64.ActiveCfg = Release|x64
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|x64.Build.0 = Release|x64
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|x86.ActiveCfg = Release|x86
+		{136993D1-B753-4487-9E24-E834774B942A}.Release|x86.Build.0 = Release|x86
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|arm.ActiveCfg = Debug|arm
