@@ -165,6 +165,10 @@ namespace Internal.IL
             _currentInstructionOffset = _currentOffset;
         }
 
+        private void StartImportingInstruction(ILOpcode opCode)
+        {
+        }
+
         private void ImportJmp(int token)
         {
             // TODO

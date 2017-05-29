@@ -317,7 +317,7 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
-                VerifyPendingPrefix(opCode);
+                StartImportingInstruction(opCode);
 
 again:
                 switch (opCode)

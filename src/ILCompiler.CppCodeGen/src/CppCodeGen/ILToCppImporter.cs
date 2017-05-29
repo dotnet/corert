@@ -480,6 +480,10 @@ namespace Internal.IL
             ForceAppendEmptyLine();
         }
 
+        private void StartImportingInstruction(ILOpcode opCode)
+        {
+        }
+
         private void EndImportingInstruction()
         {
             // Nothing to do, formatting is properly done.

@@ -104,8 +104,11 @@ namespace Internal.IL
         {
             FatalCheck(_stackTop < _maxStack, VerifierError.StackOverflow);
 
-            if ((_pendingPrefix & Prefix.ReadOnly) != 0)
+            if (HasPendingPrefix(Prefix.ReadOnly))
+            {
                 value.SetIsReadOnly();
+                ClearPendingPrefix(Prefix.ReadOnly);
+            }
 
             if (_stackTop >= _stack.Length)
                 Array.Resize(ref _stack, 2 * _stackTop + 3);
@@ -486,6 +489,11 @@ namespace Internal.IL
             _currentInstructionOffset = _currentOffset;
         }
 
+        void StartImportingInstruction(ILOpcode opCode)
+        {
+            VerifyPendingPrefix(opCode);
+        }
+
         void EndImportingInstruction()
         {
         }
@@ -661,15 +669,15 @@ namespace Internal.IL
 
             if (opcode != ILOpcode.newobj)
             {
-                if ((_pendingPrefix & Prefix.Constrained) != 0 && opcode == ILOpcode.callvirt)
+                if (HasPendingPrefix(Prefix.Constrained) && opcode == ILOpcode.callvirt)
                 {
-                    _pendingPrefix &= ~Prefix.Constrained;
+                    ClearPendingPrefix(Prefix.Constrained);
                     constrained = _constrained;
                 }
 
-                if ((_pendingPrefix & Prefix.Tail) != 0)
+                if (HasPendingPrefix(Prefix.Tail))
                 {
-                    _pendingPrefix &= ~Prefix.Tail;
+                    ClearPendingPrefix(Prefix.Tail);
                     tailCall = true;
                 }
             }
@@ -1301,7 +1309,6 @@ namespace Internal.IL
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
             CheckLoadIndirect(address, type);
-
             CheckIsAssignable(value, address.DereferenceByRef());
         }
 
@@ -1726,6 +1733,11 @@ namespace Internal.IL
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
         }
 
+        bool HasPendingPrefix(Prefix prefix)
+        {
+            return (_pendingPrefix & prefix) != 0;
+        }
+
         void ClearPendingPrefix(Prefix prefix)
         {
             _pendingPrefix &= ~prefix;
@@ -1733,7 +1745,10 @@ namespace Internal.IL
 
         void VerifyPendingPrefix(ILOpcode opCode)
         {
-            if ((_pendingPrefix & Prefix.Volatile) != 0 || (_pendingPrefix & Prefix.Unaligned) != 0)
+            if (_pendingPrefix == 0)
+                return;
+
+            if (HasPendingPrefix(Prefix.Volatile) || HasPendingPrefix(Prefix.Unaligned))
             {
                 switch (opCode)
                 {
@@ -1776,7 +1791,7 @@ namespace Internal.IL
 
                     case ILOpcode.ldsfld:
                     case ILOpcode.stsfld:
-                        Check((_pendingPrefix & Prefix.Unaligned) != 0, VerifierError.UnalignNotAllowed);
+                        Check(HasPendingPrefix(Prefix.Unaligned), VerifierError.UnalignNotAllowed);
                         break; // only allowed for volatile!
 
                     default:
@@ -1784,6 +1799,15 @@ namespace Internal.IL
                         break;
                 }
             }
+            if (HasPendingPrefix(Prefix.ReadOnly))
+                Check(opCode == ILOpcode.ldelema, VerifierError.ReadOnly);
+            if (HasPendingPrefix(Prefix.Tail))
+            {
+                if (opCode != ILOpcode.call && opCode != ILOpcode.calli && opCode != ILOpcode.callvirt)
+                    Check(false, VerifierError.TailCall);
+            }
+            if (HasPendingPrefix(Prefix.Constrained))
+                Check(opCode == ILOpcode.callvirt, VerifierError.Constrained);
         }
 
         //
