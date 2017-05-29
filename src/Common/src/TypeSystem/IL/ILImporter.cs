@@ -319,7 +319,7 @@ namespace Internal.IL
                 ILOpcode opCode = (ILOpcode)ReadILByte();
                 StartImportingInstruction(opCode);
 
-again:
+            again:
                 switch (opCode)
                 {
                     case ILOpcode.nop:
