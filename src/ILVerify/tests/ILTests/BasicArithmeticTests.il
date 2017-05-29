@@ -11,7 +11,7 @@
 }
 
 .class public auto ansi beforefieldinit BasicArithmeticTestsType
-       extends [CoreTestAssembly]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig instance int32 
           SimpleAdd_Valid(int32 a,
@@ -23,7 +23,7 @@
      ret
   }
 
-  .method public hidebysig instance void  SimpleAdd_Invalid_ExpectedNumericType_ExpectsException() cil managed
+  .method public hidebysig instance void  SimpleAdd_Invalid_ExpectedNumericType() cil managed
   {
     ldstr "sfdsf"
     ldc.i4.3
