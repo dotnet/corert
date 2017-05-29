@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using Internal.IL;
 using Internal.TypeSystem.Ecma;
@@ -28,7 +32,7 @@ namespace ILVerify.Tests
         /// The expected exception during validation.
         /// If no exception is thrown during verification this must be null.
         /// </summary>
-        public Type ExpectedException { get; set; }
+        public bool ExpectsException { get; set; }
     }
 
     /// <summary>
@@ -70,8 +74,8 @@ namespace ILVerify.Tests
         /// 1. part: a friendly name
         /// 2. part: must be the word 'Invalid'
         /// 3. part: the expected VerifierErrors as string separated by '.'.
-        /// 3. part: the expected exception type (with namespace) during validation.
-        /// E.g.: SimpleAdd_Invalid_ExpectedNumericType_Internal.IL.LocalVerificationException
+        /// 4. part: Either 'ExpectsException' or nothing. If 'ExpectsException' than ILVerify is expected to throw an exception during verification, otherwise not
+        /// E.g.: SimpleAdd_Invalid_ExpectedNumericType_ExpectsException
         /// </summary>      
         public static IEnumerable<Object[]> GetMethodsWithInvalidIL()
         {
@@ -97,15 +101,9 @@ namespace ILVerify.Tests
                         newItem.ExpectedVerifierError = verificationErros;
                     }
 
-                    if (mparams[3].Length > 0)
+                    if (mparams[3].Length > 0 && mparams[3].ToLower() == "expectsexception")
                     {
-                        newItem.ExpectedException = Type.GetType(mparams[3]);
-
-                        if (newItem.ExpectedException == null)
-                        {
-                            var ilVerifyAssembly = System.Reflection.Assembly.GetAssembly(typeof(VerifierError));
-                            newItem.ExpectedException = ilVerifyAssembly.GetType(mparams[3]);
-                        }
+                        newItem.ExpectsException = true;
                     }
 
                     newItem.MethodName = method.Name;
@@ -190,9 +188,9 @@ namespace ILVerify.Tests
                 verifierErrors.Add(err.Code);
             });
 
-            if (invalidILTestCase.ExpectedException != null)
+            if (invalidILTestCase.ExpectsException)
             {
-                Assert.Throws(invalidILTestCase.ExpectedException, () => importer.Verify());
+                Assert.ThrowsAny<Exception>(() => importer.Verify());
             }
             else
             {

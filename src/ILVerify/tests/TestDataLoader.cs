@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Internal.IL;
@@ -19,17 +23,14 @@ namespace ILVerify.Tests
         public static EcmaModule GetModuleForTestAssembly(string assemblyName)
         {
             var _typeSystemContext = new SimpleTypeSystemContext();
+            var coreAssembly = typeof(Object).Assembly;
 
-            var systemRuntime = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("System.Runtime"));
-            var systemPrivateCoreLib = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName("System.Private.CoreLib"));
-                      
             _typeSystemContext.InputFilePaths = new Dictionary<string, string>
             {
-                { "System.Runtime", systemRuntime.Location },
-                { "System.Private.CoreLib", systemPrivateCoreLib.Location }
+                { coreAssembly.GetName().Name, coreAssembly.Location }
             };
 
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName("System.Runtime"));
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(coreAssembly.GetName().Name));
             return _typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
         }      
     }

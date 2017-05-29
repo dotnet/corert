@@ -13,6 +13,7 @@ tests_downloaded/
 *.user
 *.userosscache
 *.sln.docstates
+launchSettings.json
 
 # Build results
 [Dd]ebug/
@@ -287,4 +288,3 @@ src/ILCompiler/reproNative/repro.cpp
 src/ILCompiler/reproNative/repro.s
 src/ILCompiler/reproNative/reproNative.sln
 src/ILCompiler/reproNative/reproNativeCpp.sln
-/src/ILVerify/src/Properties/launchSettings.json
