@@ -29,5 +29,7 @@ namespace Internal.TypeSystem
                 return this.GetType() == typeof(RuntimeDeterminedType);
             }
         }
+
+        public abstract TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation);
     }
 }

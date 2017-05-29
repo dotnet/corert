@@ -503,11 +503,23 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FieldDesc.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\FieldDesc.RuntimeDetermined.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs</Link>

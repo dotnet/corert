@@ -44,6 +44,14 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
+            // TODO: https://github.com/dotnet/corert/issues/3224
+            // We don't currently track the exact list of fields used - assume all are used
+            foreach (FieldDesc field in _type.GetFields())
+            {
+                if (factory.MetadataManager.CanGenerateMetadata(field))
+                    dependencies.Add(factory.FieldMetadata(field), "Field of a reflectable type");
+            }
+
             return dependencies;
         }
 
@@ -74,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
                         {
+                            dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
                         }
 
@@ -86,6 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)type))
                         {
+                            dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
                         }
                     }
