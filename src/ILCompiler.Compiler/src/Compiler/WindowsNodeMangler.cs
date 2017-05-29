@@ -11,7 +11,7 @@ namespace ILCompiler
     //
     // The naming format of these names is known to the debugger
     // 
-    public sealed class WindowsNodeMangler : NodeMangler
+    public class WindowsNodeMangler : NodeMangler
     {
         // Mangled name of boxed version of a type
         public sealed override string MangledBoxedTypeName(TypeDesc type)
@@ -44,6 +44,16 @@ namespace ILCompiler
         public sealed override string ThreadStatics(TypeDesc type)
         {
             return NameMangler.CompilationUnitPrefix + NameMangler.GetMangledTypeName(type) + "::__THREADSTATICS";
+        }
+
+        public sealed override string TypeGenericDictionary(TypeDesc type)
+        {
+            return GenericDictionaryNamePrefix + NameMangler.GetMangledTypeName(type);
+        }
+
+        public override string MethodGenericDictionary(MethodDesc method)
+        {
+            return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
         }
     }
 }

@@ -71,6 +71,11 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
         }
 
+        public override IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
+        {
+            return TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(unboxingFunctionPointer, declaringType);
+        }
+
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>
@@ -749,6 +754,57 @@ namespace Internal.Runtime.TypeLoader
 #else
             return false;
 #endif
+        }
+
+        public static IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
+        {
+            if (FunctionPointerOps.IsGenericMethodPointer(unboxingFunctionPointer))
+            {
+                // Handle shared generic methods
+                unsafe
+                {
+                    GenericMethodDescriptor* functionPointerDescriptor = FunctionPointerOps.ConvertToGenericDescriptor(unboxingFunctionPointer);
+                    IntPtr nonUnboxingTarget = RuntimeAugments.GetCodeTarget(functionPointerDescriptor->MethodFunctionPointer);
+                    Debug.Assert(nonUnboxingTarget != functionPointerDescriptor->MethodFunctionPointer);
+                    Debug.Assert(nonUnboxingTarget == RuntimeAugments.GetCodeTarget(nonUnboxingTarget));
+                    return FunctionPointerOps.GetGenericMethodFunctionPointer(nonUnboxingTarget, functionPointerDescriptor->InstantiationArgument);
+                }
+            }
+
+            // GetCodeTarget will look through simple unboxing stubs (ones that consist of adjusting the this pointer and then
+            // jumping to the target.
+            IntPtr exactTarget = RuntimeAugments.GetCodeTarget(unboxingFunctionPointer);
+            if (RuntimeAugments.IsGenericType(declaringType))
+            {
+                IntPtr fatFunctionPointerTarget;
+
+                // This check looks for unboxing and instantiating stubs generated via the compiler backend
+                if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(exactTarget, out fatFunctionPointerTarget))
+                {
+                    // If this is an unboxing and instantiating stub, use seperate table, find target, and create fat function pointer
+                    exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
+                                                                                        declaringType.ToIntPtr());
+                }
+                else
+                {
+                    IntPtr newExactTarget;
+                    // This check looks for unboxing and instantiating stubs generated dynamically as thunks in the calling convention converter
+                    if (CallConverterThunk.TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(exactTarget,
+                        declaringType, out newExactTarget))
+                    {
+                        // CallingConventionConverter determined non-unboxing stub
+                        exactTarget = newExactTarget;
+                    }
+                    else
+                    {
+                        // Target method was a method on a generic, but it wasn't a shared generic, and thus none of the above
+                        // complex unboxing stub digging logic was necessary. Do nothing, and use exactTarget as discovered
+                        // from GetCodeTarget
+                    }
+                }
+            }
+
+            return exactTarget;
         }
     }
 }

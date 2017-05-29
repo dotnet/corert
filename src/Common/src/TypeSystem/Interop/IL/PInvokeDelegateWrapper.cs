@@ -203,6 +203,8 @@ namespace Internal.TypeSystem.Interop
                 flags |= TypeFlags.Class;
             }
 
+            flags |= TypeFlags.HasFinalizerComputed;
+
             return flags;
         }
 

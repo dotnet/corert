@@ -279,6 +279,14 @@ namespace Internal.TypeSystem.NativeFormat
                 }
             }
 
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (GetFinalizer() != null)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
             return flags;
         }
 

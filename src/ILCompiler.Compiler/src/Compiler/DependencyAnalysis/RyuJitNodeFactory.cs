@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
-            if (CompilationModuleGroup.ContainsMethod(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method))
             {
                 return new MethodCodeNode(method);
             }

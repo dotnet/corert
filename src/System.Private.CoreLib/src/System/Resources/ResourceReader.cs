@@ -108,9 +108,6 @@ namespace System.Resources
 
         public ResourceReader(String fileName)
         {
-            throw new NotImplementedException();
-#if FILE_TYPES_IN_CORELIB
-            // todo remove the throw and ifdef when File and FileStream are in CoreLib
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.RandomAccess), Encoding.UTF8);
 
@@ -123,7 +120,6 @@ namespace System.Resources
                 _store.Dispose(); // If we threw an exception, close the file.
                 throw;
             }
-#endif // FILE_TYPES_IN_CORELIB
         }
 
         public ResourceReader(Stream stream)

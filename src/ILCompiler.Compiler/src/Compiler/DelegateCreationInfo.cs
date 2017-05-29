@@ -98,6 +98,9 @@ namespace ILCompiler
                 case TargetKind.InterfaceDispatch:
                     return factory.GenericLookup.VirtualMethodAddress(TargetMethod);
 
+                case TargetKind.MethodHandle:
+                    return factory.GenericLookup.MethodHandle(TargetMethod);
+
                 default:
                     Debug.Assert(false);
                     return null;
@@ -233,7 +236,7 @@ namespace ILCompiler
                 TargetKind kind;
                 if (targetMethod.HasInstantiation)
                 {
-                    if (targetMethod.IsVirtual)
+                    if (followVirtualDispatch && targetMethod.IsVirtual)
                     {
                         initializeMethodName = "InitializeClosedInstanceWithGVMResolution";
                         kind = TargetKind.MethodHandle;

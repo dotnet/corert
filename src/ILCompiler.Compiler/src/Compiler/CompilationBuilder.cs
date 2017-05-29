@@ -23,13 +23,14 @@ namespace ILCompiler
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected bool _generateDebugInfo = false;
-        private string _metadataLogFile = null;
+        protected MetadataManager _metadataManager;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = nameMangler;
+            _metadataManager = new EmptyMetadataManager(compilationGroup, context);
         }
 
         public CompilationBuilder UseLogger(Logger logger)
@@ -41,6 +42,12 @@ namespace ILCompiler
         public CompilationBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
         {
             _dependencyTrackingLevel = trackingLevel;
+            return this;
+        }
+
+        public CompilationBuilder UseMetadataManager(MetadataManager metadataManager)
+        {
+            _metadataManager = metadataManager;
             return this;
         }
 
@@ -56,12 +63,6 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseMetadataLogFile(string fileName)
-        {
-            _metadataLogFile = fileName;
-            return this;
-        }
-
         public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
         {
             _generateDebugInfo = generateDebugInfo;
@@ -74,11 +75,6 @@ namespace ILCompiler
         {
             // TODO: add graph sorter when we go multi-threaded
             return _dependencyTrackingLevel.CreateDependencyGraph(factory);
-        }
-
-        protected MetadataManager CreateMetadataManager()
-        {
-            return new CompilerGeneratedMetadataManager(_compilationGroup, _context, _metadataLogFile);
         }
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)

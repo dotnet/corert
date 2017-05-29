@@ -85,6 +85,23 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            NativeFormatRuntimePropertyInfo otherProperty = other as NativeFormatRuntimePropertyInfo;
+            if (otherProperty == null)
+                return false;
+            if (!(_reader == otherProperty._reader))
+                return false;
+            if (!(_propertyHandle.Equals(otherProperty._propertyHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(otherProperty._definingTypeInfo)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
             NativeFormatRuntimePropertyInfo other = obj as NativeFormatRuntimePropertyInfo;
@@ -125,6 +142,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
             return defaultValue;
         }
+
 
         public sealed override int MetadataToken
         {

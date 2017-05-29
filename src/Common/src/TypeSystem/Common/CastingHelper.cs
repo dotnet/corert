@@ -352,6 +352,11 @@ namespace Internal.TypeSystem
                     return thisType.CanCastTo(otherType.Instantiation[0]);
                 }
 
+                if (curType.IsInterface)
+                {
+                    return otherType.IsObject;
+                }
+
                 do
                 {
                     if (curType == otherType)

@@ -76,7 +76,8 @@ namespace ILCompiler
         {
             return TypeFlags.Class |
                 TypeFlags.HasGenericVarianceComputed |
-                TypeFlags.HasStaticConstructorComputed;
+                TypeFlags.HasStaticConstructorComputed |
+                TypeFlags.HasFinalizerComputed;
         }
 
         public override ClassLayoutMetadata GetClassLayout()

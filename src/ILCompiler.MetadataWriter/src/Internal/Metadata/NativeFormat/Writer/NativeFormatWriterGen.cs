@@ -4360,6 +4360,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             EntryPoint = visitor.Visit(this, EntryPoint);
             GlobalModuleType = visitor.Visit(this, GlobalModuleType);
             CustomAttributes = visitor.Visit(this, CustomAttributes);
+            ModuleName = visitor.Visit(this, ModuleName);
+            ModuleCustomAttributes = visitor.Visit(this, ModuleCustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4376,6 +4378,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (RevisionNumber != other.RevisionNumber) return false;
             if (!PublicKey.SequenceEqual(other.PublicKey)) return false;
             if (!Object.Equals(Culture, other.Culture)) return false;
+            if (!Object.Equals(ModuleName, other.ModuleName)) return false;
+            if (!Mvid.SequenceEqual(other.Mvid)) return false;
             return true;
         } // Equals
 
@@ -4400,6 +4404,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 }
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (ModuleName == null ? 0 : ModuleName.GetHashCode());
+            if (Mvid != null)
+            {
+                for (int i = 0; i < Mvid.Length; i++)
+                {
+                    hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
+                }
+            }
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -4420,6 +4432,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(EntryPoint);
             writer.Write(GlobalModuleType);
             writer.Write(CustomAttributes);
+            writer.Write(ModuleName);
+            writer.Write(Mvid);
+            writer.Write(ModuleCustomAttributes);
         } // Save
 
         internal static ScopeDefinitionHandle AsHandle(ScopeDefinition record)
@@ -4455,6 +4470,9 @@ namespace Internal.Metadata.NativeFormat.Writer
         public QualifiedMethod EntryPoint;
         public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
+        public ConstantStringValue ModuleName;
+        public Byte[] Mvid;
+        public List<CustomAttribute> ModuleCustomAttributes = new List<CustomAttribute>();
     } // ScopeDefinition
 
     public partial class ScopeReference : MetadataRecord

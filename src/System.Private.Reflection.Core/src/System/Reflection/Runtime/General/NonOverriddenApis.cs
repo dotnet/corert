@@ -102,7 +102,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
 namespace System.Reflection.Runtime.Modules
 {
-    internal sealed partial class RuntimeModule
+    internal abstract partial class RuntimeModule
     {
 #if DEBUG
         public sealed override Type[] FindTypes(TypeFilter filter, object filterCriteria) => base.FindTypes(filter, filterCriteria);

@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.General
     internal static partial class TypeUnifier
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader)
+        public static RuntimeTypeDefinitionTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader)
         {
             return typeDefinitionHandle.GetNamedType(reader, default(RuntimeTypeHandle));
         }
@@ -52,7 +52,7 @@ namespace System.Reflection.Runtime.General
         // waste cycles looking up the handle again from the mapping tables.)
         //======================================================================================================
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, RuntimeTypeHandle precomputedTypeHandle)
+        public static RuntimeTypeDefinitionTypeInfo GetNamedType(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, RuntimeTypeHandle precomputedTypeHandle)
         {
             return EcmaFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, typeDefinitionHandle, precomputedTypeHandle: precomputedTypeHandle);
         }
@@ -113,7 +113,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
         {
             protected sealed override EcmaFormatRuntimeGenericParameterTypeInfoForTypes Factory(UnificationKey key)
             {
-                RuntimeTypeInfo typeOwner = key.TypeDefinitionHandle.GetNamedType(key.Reader);
+                RuntimeTypeDefinitionTypeInfo typeOwner = key.TypeDefinitionHandle.GetNamedType(key.Reader);
                 return new EcmaFormatRuntimeGenericParameterTypeInfoForTypes(key.Reader, key.GenericParameterHandle, typeOwner);
             }
 

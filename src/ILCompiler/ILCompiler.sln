@@ -1,28 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+VisualStudioVersion = 15.0.26507.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{B2C35178-5E42-4010-A72A-938711D7F8F0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FBA029C3-B184-4457-AEEC-38D0C2523067} = {FBA029C3-B184-4457-AEEC-38D0C2523067}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler", "src\ILCompiler.csproj", "{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler", "src\ILCompiler.csproj", "{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repro", "repro\repro.csproj", "{FBA029C3-B184-4457-AEEC-38D0C2523067}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.TypeSystem", "..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem", "..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.DependencyAnalysisFramework", "..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj", "{DAC23E9F-F826-4577-AE7A-0849FF83280C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.DependencyAnalysisFramework", "..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj", "{DAC23E9F-F826-4577-AE7A-0849FF83280C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.Compiler", "..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj", "{13BB3788-C3EB-4046-8105-A95F8AE49404}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Compiler", "..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj", "{13BB3788-C3EB-4046-8105-A95F8AE49404}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "..\System.Private.CoreLib\src\System.Private.CoreLib.csproj", "{BE95C560-B508-4588-8907-F9FC5BC1A0CF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataWriter", "..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj", "{D66338D4-F9E4-4051-B302-232C6BFB6EF6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.MetadataWriter", "..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj", "{D66338D4-F9E4-4051-B302-232C6BFB6EF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.MetadataTransform", "..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.CppCodegen", "..\ILCompiler.CppCodegen\src\ILCompiler.CppCodegen.csproj", "{971AE7E7-08C6-48B4-902A-63851E6DAC66}"
 EndProject

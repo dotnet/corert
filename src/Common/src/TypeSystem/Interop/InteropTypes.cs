@@ -4,6 +4,8 @@
 
 using Internal.IL;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes
@@ -50,9 +52,9 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
         }
 
-        public static MetadataType GetStringBuilder(TypeSystemContext context)
+        public static MetadataType GetStringBuilder(TypeSystemContext context, bool throwIfNotFound = true)
         {
-            return context.SystemModule.GetKnownType("System.Text", "StringBuilder");
+            return context.SystemModule.GetKnownType("System.Text", "StringBuilder", throwIfNotFound);
         }
 
         public static MetadataType GetSystemArray(TypeSystemContext context)
@@ -107,7 +109,8 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsStringBuilder(TypeSystemContext context, TypeDesc type)
         {
-            return type == GetStringBuilder(context);
+            Debug.Assert(type != null);
+            return type == GetStringBuilder(context, throwIfNotFound: false);
         }
 
         public static bool IsSystemDecimal(TypeSystemContext context, TypeDesc type)

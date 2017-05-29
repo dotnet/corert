@@ -32,7 +32,11 @@ namespace ILCompiler
         /// <summary>
         /// If true, "method" is in the set of input assemblies being compiled
         /// </summary>
-        public abstract bool ContainsMethod(MethodDesc method);
+        public abstract bool ContainsMethodBody(MethodDesc method);
+        /// <summary>
+        /// If true, the generic dictionary of "method" is in the set of input assemblies being compiled
+        /// </summary>
+        public abstract bool ContainsMethodDictionary(MethodDesc method);
         /// <summary>
         /// If true, "type" is exported by the set of input assemblies being compiled
         /// </summary>
@@ -40,7 +44,11 @@ namespace ILCompiler
         /// <summary>
         /// If true, "method" is exported by the set of input assemblies being compiled
         /// </summary>
-        public abstract bool ExportsMethod(MethodDesc method);        
+        public abstract bool ExportsMethod(MethodDesc method);
+        /// <summary>
+        /// If true, the generic dictionary of "method" is exported by the set of input assemblies being compiled
+        /// </summary>
+        public abstract bool ExportsMethodDictionary(MethodDesc method);
         /// <summary>
         /// If true, all code is compiled into a single module
         /// </summary>

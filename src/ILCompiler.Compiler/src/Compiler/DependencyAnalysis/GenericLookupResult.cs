@@ -21,6 +21,45 @@ namespace ILCompiler.DependencyAnalysis
         ConditionalIndirect, // The slot may be a direct pointer or an indirection cell, depending on the last digit
     }
 
+    // Represents a generic lookup within a canonical method body.
+    // TODO: unify with NativeFormat.FixupSignatureKind
+    public enum LookupResultType
+    {
+        Invalid,
+        EEType,             // a type
+        UnwrapNullable,     // a type (The type T described by a type spec that is generic over Nullable<T>)
+        NonGcStatic,        // the non-gc statics of a type
+        GcStatic,           // the gc statics of a type
+        Method,             // a method
+        InterfaceDispatchCell,  // the dispatch cell for calling an interface method
+        MethodDictionary,   // a dictionary for calling a generic method
+        UnboxingStub,       // the unboxing stub for a method
+        ArrayType,          // an array of type
+        DefaultCtor,        // default ctor of a type
+        TlsIndex,           // tls index of a type
+        TlsOffset,          // tls offset of a type
+        AllocObject,        // the allocator of a type
+        GvmVtableOffset,    // vtable offset of a generic virtual method
+        ProfileCounter,     // profiling counter cell
+        MethodLdToken,      // a ldtoken result for a method
+        FieldLdToken,       // a ldtoken result for a field
+        Field,              // a field descriptor
+        IsInst,             // isinst helper
+        CastClass,          // castclass helper
+        AllocArray,         // the array allocator of a type
+        CheckArrayElementType, // check the array element type
+        TypeSize,           // size of the type
+        FieldOffset,        // field offset
+        CallingConvention,  // CallingConventionConverterThunk
+        VtableOffset,       // Offset of a virtual method into the type's vtable
+        Constrained,        // ConstrainedCallDesc
+    }
+
+    public interface IGenericLookupResultTocWriter
+    {
+        void WriteData(GenericLookupResultReferenceType referenceType, LookupResultType slotType, TypeSystemEntity context);
+    }
+
     /// <summary>
     /// Represents the result of a generic lookup within a canonical method body.
     /// The concrete artifact the generic lookup will result in can only be determined after substituting
@@ -55,6 +94,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
+
+        public abstract void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer);
 
         // Call this api to get non-reloc dependencies that arise from use of a dictionary lookup
         public virtual IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
@@ -118,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
             // We are getting a constructed type symbol because this might be something passed to newobj.
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.ConstructedTypeSymbol(instantiatedType);
         }
 
@@ -147,6 +188,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.EEType, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeHandleGenericLookupResult)other)._type);
@@ -171,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
 
             // Unwrap the nullable type if necessary
             if (instantiatedType.IsNullable)
@@ -206,6 +252,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.UnwrapNullable, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((UnwrapNullableTypeHandleGenericLookupResult)other)._type);
@@ -235,7 +286,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            FieldDesc instantiatedField = _field.InstantiateSignature(typeInstantiation, methodInstantiation);
+            FieldDesc instantiatedField = _field.GetNonRuntimeDeterminedFieldFromRuntimeDeterminedFieldViaSubstitution(typeInstantiation, methodInstantiation);
             int offset = instantiatedField.Offset.AsInt;
             builder.EmitNaturalInt(offset);
         }
@@ -252,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.FieldOffsetDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldOffset, _field);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -314,6 +370,11 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.VtableOffset, _method);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((VTableOffsetGenericLookupResult)other)._method);
@@ -337,7 +398,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.RuntimeMethodHandle(instantiatedMethod);
         }
 
@@ -352,6 +413,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.MethodLdTokenDictionarySlot(_method);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodLdToken, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -377,7 +443,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            FieldDesc instantiatedField = _field.InstantiateSignature(typeInstantiation, methodInstantiation);
+            FieldDesc instantiatedField = _field.GetNonRuntimeDeterminedFieldFromRuntimeDeterminedFieldViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.RuntimeFieldHandle(instantiatedField);
         }
 
@@ -392,6 +458,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.FieldLdTokenDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldLdToken, _field);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -417,7 +488,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.MethodGenericDictionary(instantiatedMethod);
         }
 
@@ -446,6 +517,11 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.MethodDictionaryDictionarySlot(_method);
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodDictionary, _method);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((MethodDictionaryGenericLookupResult)other)._method);
@@ -471,7 +547,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
@@ -491,6 +567,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             return factory.NativeLayout.MethodEntrypointDictionarySlot
                         (_method, unboxing: true, functionPointerTarget: factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.Method, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -528,12 +609,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
                 return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
             }
             else
             {
-                MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
                 return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
             }
         }
@@ -555,6 +636,19 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+            else
+            {
+                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
             }
         }
 
@@ -588,12 +682,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
-                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
                 return factory.InterfaceDispatchCell(instantiatedMethod);
             }
             else
             {
-                MethodDesc instantiatedMethod = _method.InstantiateSignature(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
                 return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
             }
         }
@@ -617,6 +711,19 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            }
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            if (factory.Target.Abi == TargetAbi.CoreRT)
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
+            else
+            {
+                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
             }
         }
 
@@ -644,7 +751,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(factory.TypeNonGCStaticsSymbol(instantiatedType));
         }
 
@@ -664,6 +771,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.NonGcStatic, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -690,7 +802,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.TypeThreadStaticIndex(instantiatedType);
         }
 
@@ -705,6 +817,12 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.NotSupportedDictionarySlot;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -731,7 +849,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            var instantiatedType = (MetadataType)_type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(factory.TypeGCStaticsSymbol(instantiatedType));
         }
 
@@ -751,6 +869,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.GcStatic, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -776,7 +899,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType)));
         }
 
@@ -796,6 +919,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocObject, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -821,7 +949,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             Debug.Assert(instantiatedType.IsArray);
             return factory.Indirection(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(instantiatedType)));
         }
@@ -842,6 +970,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocArray, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -867,7 +1000,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, true)));
         }
 
@@ -887,6 +1020,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.CastClass, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -912,7 +1050,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, false)));
         }
 
@@ -932,6 +1070,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.IsInst, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -956,7 +1099,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             return factory.Indirection(utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType));
         }
 
@@ -976,6 +1119,11 @@ namespace ILCompiler.DependencyAnalysis
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
             return GenericLookupResultReferenceType.Indirect;
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsIndex, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1000,7 +1148,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             Debug.Assert(instantiatedType is MetadataType);
             return factory.Indirection(utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType));
         }
@@ -1023,6 +1171,11 @@ namespace ILCompiler.DependencyAnalysis
             return GenericLookupResultReferenceType.Indirect;
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsOffset, _type);
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((ThreadStaticOffsetLookupResult)other)._type);
@@ -1043,7 +1196,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             MethodDesc defaultCtor = instantiatedType.GetDefaultConstructor();
 
             if (defaultCtor == null)
@@ -1073,6 +1226,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.DefaultCtor, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1118,6 +1276,12 @@ namespace ILCompiler.DependencyAnalysis
             return factory.NativeLayout.CallingConventionConverter(_callingConventionConverter);
         }
 
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             var otherEntry = (CallingConventionConverterLookupResult)other;
@@ -1148,7 +1312,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
             int typeSize;
 
             if (_type.IsDefType)
@@ -1174,6 +1338,11 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.TypeSizeDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TypeSize, _type);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -1202,8 +1371,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
         {
-            MethodDesc instantiatedConstrainedMethod = _constrainedMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
-            TypeDesc instantiatedConstraintType = _constraintType.InstantiateSignature(typeInstantiation, methodInstantiation);
+            MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+            TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
 
             MethodDesc implMethod = instantiatedConstraintType.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
 
@@ -1235,6 +1404,12 @@ namespace ILCompiler.DependencyAnalysis
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
             return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)

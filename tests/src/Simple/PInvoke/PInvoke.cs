@@ -564,7 +564,7 @@ namespace PInvokeTests
                 ssa[i].f1 = 0;
                 ssa[i].f1 = i;
                 ssa[i].f2 = i*i;
-                ssa[i].f3 = i.ToString(); 
+                ssa[i].f3 = i.LowLevelToString(); 
             }
             ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
 
@@ -640,4 +640,35 @@ namespace PInvokeTests
         }
     } //end of SafeMemoryHandle class
 
+    public static class LowLevelExtensions
+    {
+        // Int32.ToString() calls into glob/loc garbage that hits CppCodegen limitations
+        public static string LowLevelToString(this int i)
+        {
+            char[] digits = new char[11];
+            int numDigits = 0;
+
+            if (i == int.MinValue)
+                return "-2147483648";
+
+            bool negative = i < 0;
+            if (negative)
+                i = -i;
+
+            do
+            {
+                digits[numDigits] = (char)('0' + (i % 10));
+                numDigits++;
+                i /= 10;
+            }
+            while (i != 0);
+            if (negative)
+            {
+                digits[numDigits] = '-';
+                numDigits++;
+            }
+            Array.Reverse(digits);
+            return new string(digits, digits.Length - numDigits, numDigits);
+        }
+    }
 }

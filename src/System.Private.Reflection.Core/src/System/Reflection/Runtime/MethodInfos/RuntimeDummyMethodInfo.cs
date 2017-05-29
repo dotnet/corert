@@ -29,6 +29,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsConstructedGenericMethod { get { throw NotImplemented.ByDesign; } }
         public sealed override bool IsGenericMethod { get { throw NotImplemented.ByDesign; } }
         public sealed override bool IsGenericMethodDefinition { get { throw NotImplemented.ByDesign; } }
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) { throw NotImplemented.ByDesign; }
         public sealed override MethodImplAttributes MethodImplementationFlags { get { throw NotImplemented.ByDesign; } }
         public sealed override Module Module { get { throw NotImplemented.ByDesign; } }
         public sealed override MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }

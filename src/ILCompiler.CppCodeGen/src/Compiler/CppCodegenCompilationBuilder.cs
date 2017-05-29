@@ -29,8 +29,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            MetadataManager metadataManager = CreateMetadataManager();
-            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
+            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             return new CppCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);

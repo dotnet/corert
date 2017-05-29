@@ -243,8 +243,9 @@ namespace System.Resources
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
-
-            return copyOfTable[name];
+            object value;
+            copyOfTable.TryGetValue(name, out value);
+            return value;
         }
 
         private Object GetCaseInsensitiveObjectInternal(String name)
@@ -266,8 +267,9 @@ namespace System.Resources
                 }
                 _caseInsensitiveTable = caseTable;
             }
-
-            return caseTable[name];
+            object value;
+            caseTable.TryGetValue(name, out value);
+            return value;
         }
 
         /// <summary>

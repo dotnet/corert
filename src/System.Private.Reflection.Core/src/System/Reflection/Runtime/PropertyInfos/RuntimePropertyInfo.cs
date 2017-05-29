@@ -123,9 +123,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
 
         public sealed override MethodInfo GetMethod
@@ -162,6 +160,8 @@ namespace System.Reflection.Runtime.PropertyInfos
                 index = Array.Empty<Object>();
             return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override Module Module
         {

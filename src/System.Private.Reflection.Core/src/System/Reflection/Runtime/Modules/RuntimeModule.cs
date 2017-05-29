@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Reflection.Runtime.Assemblies;
@@ -15,34 +13,20 @@ namespace System.Reflection.Runtime.Modules
     // The runtime's implementation of a Module.
     //
     // Modules are quite meaningless in ProjectN but we have to keep up the appearances since they still exist in Win8P's surface area.
-    // As far as ProjectN is concerned, each Assembly has one module whose name is "<Unknown>".
+    // As far as ProjectN is concerned, each Assembly has one module.
     //
     [Serializable]
-    internal sealed partial class RuntimeModule : Module
+    internal abstract partial class RuntimeModule : Module
     {
-        private RuntimeModule(RuntimeAssembly assembly)
+        protected RuntimeModule()
             : base()
-        {
-            _assembly = assembly;
-        }
+        { }
 
-        public sealed override Assembly Assembly
-        {
-            get
-            {
-                return _assembly;
-            }
-        }
+        public abstract override Assembly Assembly { get; }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return Empty<CustomAttributeData>.Enumerable;
-            }
-        }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
 
-        public sealed override String FullyQualifiedName
+        public sealed override string FullyQualifiedName
         {
             get
             {
@@ -50,62 +34,42 @@ namespace System.Reflection.Runtime.Modules
             }
         }
 
-        public sealed override String Name
-        {
-            get
-            {
-                return this.Assembly.GetName().Name;
-            }
-        }
+        public abstract override string Name { get; }
 
-        public sealed override bool Equals(Object o)
+        public sealed override bool Equals(object o)
         {
             RuntimeModule other = o as RuntimeModule;
             if (other == null)
                 return false;
-            return _assembly.Equals(other._assembly);
+            return Assembly.Equals(other.Assembly);
         }
 
         public sealed override int GetHashCode()
         {
-            return _assembly.GetHashCode();
+            return Assembly.GetHashCode();
         }
 
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.ModuleUnity, ScopeName, Assembly);
+            throw new PlatformNotSupportedException();
         }
 
-        public sealed override int MetadataToken
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
-        }
+        public abstract override int MetadataToken { get; }
 
-        public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
+        public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            return _assembly.GetType(name, throwOnError, ignoreCase);
+            return Assembly.GetType(name, throwOnError, ignoreCase);
         }
 
         public sealed override Type[] GetTypes()
         {
-            Debug.Assert(this.Equals(_assembly.ManifestModule)); // We only support single-module assemblies so we have to be the manifest module.
-            return _assembly.GetTypes();
+            Debug.Assert(this.Equals(Assembly.ManifestModule)); // We only support single-module assemblies so we have to be the manifest module.
+            return Assembly.GetTypes();
         }
 
-        public sealed override Guid ModuleVersionId
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.ModuleVersionIdNotSupported);
-            }
-        }
+        public abstract override Guid ModuleVersionId { get; }
 
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
             return "<Unknown>";
         }
@@ -127,8 +91,6 @@ namespace System.Reflection.Runtime.Modules
         public sealed override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
 
         protected sealed override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(this);
-
-        private readonly Assembly _assembly;
     }
 }
 

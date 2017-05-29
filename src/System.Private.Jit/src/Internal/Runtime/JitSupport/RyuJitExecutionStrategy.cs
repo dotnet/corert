@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using Internal.JitInterface;
+using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
@@ -62,7 +63,7 @@ namespace Internal.Runtime.JitSupport
             {
                 if (_corInfoImpl == null)
                 {
-                    InitJitCodeManager(RuntimeImports.RhGetOSModuleForMrt ());
+                    InitJitCodeManager(RuntimeAugments.RhGetOSModuleForMrt ());
 
                     // TODO: Recycle jit interface object and TypeSystemContext
                     _context = TypeSystemContextFactory.Create();

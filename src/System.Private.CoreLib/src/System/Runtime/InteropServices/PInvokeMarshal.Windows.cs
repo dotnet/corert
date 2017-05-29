@@ -102,7 +102,6 @@ namespace System.Runtime.InteropServices
         }
 
         #region String marshalling
-        private const uint WC_NO_BEST_FIT_CHARS = Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
 
         public static unsafe int ConvertMultiByteToWideChar(byte* buffer, int ansiLength, char* pWChar, int uniLength)
         {
@@ -128,18 +127,26 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            uint flags,
-                                                            IntPtr usedDefaultChar)
+                                                            bool bestFit,
+                                                            bool throwOnUnmappableChar)
         {
-            return Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
+            uint flags = (bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS);
+            int defaultCharUsed = 0;
+            int ret = Interop.Kernel32.WideCharToMultiByte(Interop.Kernel32.CP_ACP,
                                                         flags,
                                                         wideCharStr,
                                                         wideCharLen,
                                                         multiByteStr,
                                                         multiByteLen,
                                                         default(IntPtr),
-                                                        usedDefaultChar
+                                                        throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
                                                         );
+            if (defaultCharUsed != 0)
+            {
+                throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
+            }
+
+            return ret;
         }
 
         // Return size in bytes required to convert a UTF16 string to byte array.
