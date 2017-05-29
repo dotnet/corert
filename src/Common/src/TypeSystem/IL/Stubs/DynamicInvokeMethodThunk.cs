@@ -32,6 +32,11 @@ namespace Internal.IL.Stubs
             _targetSignature = signature;
         }
 
+        public static bool SupportsThunks(TypeSystemContext context)
+        {
+            return context.SystemModule.GetType("System", "InvokeUtils", false) != null;
+        }
+
         public override TypeSystemContext Context
         {
             get

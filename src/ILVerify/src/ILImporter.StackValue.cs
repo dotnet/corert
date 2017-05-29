@@ -184,29 +184,7 @@ namespace Internal.IL
                 return false;
             }
 
-            var t = src;
-
-            while (t != null)
-            {
-                if (t == dst)
-                    return true;
-
-                if (t.IsInterface)
-                {
-                    t = GetWellKnownType(WellKnownType.Object);
-                }
-                else
-                {
-                    t = t.BaseType;
-                }
-            }
-
-            if (dst.IsInterface || dst.IsArray)
-                throw new NotImplementedException($"{nameof(IsAssignable)} is only partially implemented.");
-
-            // TODO: Other cases - variance, etc.
-
-            return false;
+            return CastingHelper.CanCastTo(src, dst);
         }
 
         bool IsAssignable(StackValue src, StackValue dst)
@@ -224,7 +202,7 @@ namespace Internal.IL
                 if (src.Type == null)
                     return true;
 
-                return IsAssignable(src.Type, dst.Type);
+                return CastingHelper.CanCastTo(src.Type, dst.Type);
 
             case StackValueKind.ValueType:
 

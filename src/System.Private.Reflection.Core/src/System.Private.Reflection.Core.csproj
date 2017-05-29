@@ -45,6 +45,7 @@
     <Compile Include="System\Reflection\Runtime\EventInfos\EcmaFormat\EcmaFormatRuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\EcmaFormat\EcmaFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\EcmaFormat\EcmaFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\EcmaFormat\EcmaFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\EcmaFormat\EcmaFormatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\EcmaFormat\EcmaFormatRuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfo.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
@@ -143,6 +145,7 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\VirtualRuntimeParameterInfoArray.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
@@ -249,6 +252,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

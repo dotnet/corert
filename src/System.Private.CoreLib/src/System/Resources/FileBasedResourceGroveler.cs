@@ -82,9 +82,6 @@ namespace System.Resources
 
         private String FindResourceFile(CultureInfo culture, String fileName)
         {
-            throw new NotImplementedException();
-            // todo remove the throw and ifdef when File and FileStream are in CoreLib
-#if FILE_TYPES_IN_CORELIB
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
@@ -104,7 +101,6 @@ namespace System.Resources
                 return fileName;
                 
             return null;  // give up.
-#endif // FILE_TYPES_IN_CORELIB
         }
 
         // Constructs a new ResourceSet for a given file name.  The logic in

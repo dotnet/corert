@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -40,7 +41,9 @@ namespace System.Threading
             if (s_timerEvent == null)
             {
                 s_timerEvent = new AutoResetEvent(false);
-                ThreadPool.QueueLongRunningWork(TimerThread);
+                RuntimeThread thread = RuntimeThread.Create(TimerThread, 0);
+                thread.IsBackground = true; // Keep this thread from blocking process shutdown
+                thread.Start();
             }
             else
             {

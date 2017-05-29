@@ -151,7 +151,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
 namespace System.Reflection.Runtime.Modules
 {
-    internal sealed partial class RuntimeModule
+    internal abstract partial class RuntimeModule
     {
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public sealed override object[] GetCustomAttributes(bool inherit) => CustomAttributeExtensions.GetCustomAttributes(this).ToArray();  // inherit is meaningless for Modules

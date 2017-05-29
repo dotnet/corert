@@ -311,6 +311,17 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             }
         }
 
+        public bool HasSameMetadataDefinitionAs(NativeFormatMethodCommon other)
+        {
+            if (!(_reader == other._reader))
+                return false;
+            if (!(_methodHandle.Equals(other._methodHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(other._definingTypeInfo)))
+                return false;
+            return true;
+        }
+
         public override bool Equals(Object obj)
         {
             if (!(obj is NativeFormatMethodCommon))

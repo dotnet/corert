@@ -1275,7 +1275,10 @@ namespace Internal.Runtime.TypeLoader
                         var type = metadata.GetType(token);
                         TypeLoaderLogger.WriteLine("UnwrapNullableType of: " + type.ToString());
 
-                        cell = new UnwrapNullableTypeCell() { Type = (DefType)type };
+                        if (type is DefType)
+                            cell = new UnwrapNullableTypeCell() { Type = (DefType)type };
+                        else
+                            cell = new TypeHandleCell() { Type = type };
                     }
                     break;
 
@@ -1595,7 +1598,10 @@ namespace Internal.Runtime.TypeLoader
                         var type = nativeLayoutInfoLoadContext.GetType(ref parser);
                         TypeLoaderLogger.WriteLine("UnwrapNullableType of: " + type.ToString());
 
-                        cell = new UnwrapNullableTypeCell() { Type = (DefType)type };
+                        if (type is DefType)
+                            cell = new UnwrapNullableTypeCell() { Type = (DefType)type };
+                        else
+                            cell = new TypeHandleCell() { Type = type };
                     }
                     break;
 

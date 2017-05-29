@@ -51,6 +51,7 @@ namespace TypeSystemTests
 
             Assert.True(classImplementingIFooType.CanCastTo(iFooType));
             Assert.True(classImplementingIFooIndirectlyType.CanCastTo(iFooType));
+            Assert.True(iFooType.CanCastTo(objectType));
 
             Assert.False(objectType.CanCastTo(iFooType));
         }

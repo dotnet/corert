@@ -411,6 +411,9 @@ namespace ILCompiler
                 // If the file doesn't exist, try the path specified in the CodeView section of the image
                 foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
                 {
+                    if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                        continue;
+
                     string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
                     if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
                     {

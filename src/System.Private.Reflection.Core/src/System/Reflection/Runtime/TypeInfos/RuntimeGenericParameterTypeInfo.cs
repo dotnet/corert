@@ -73,6 +73,19 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // Unlike most other MemberInfo objects, generic parameter types never get cloned due to containing generic types being instantiated.
+            // That is, their DeclaringType is always the generic type definition. As a Type, the ReflectedType property is always equal to the DeclaringType.
+            //
+            // Because of these conditions, we can safely implement both the method token equivalence and the "is this type from the same implementor"
+            // check as our regular Equals() method.
+            return Equals(other);
+        }
+
         public sealed override int GenericParameterPosition
         {
             get

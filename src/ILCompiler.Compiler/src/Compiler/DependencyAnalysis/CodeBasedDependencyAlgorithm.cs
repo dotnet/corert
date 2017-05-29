@@ -28,7 +28,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (dependencies == null)
                     dependencies = new DependencyList();
 
-                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method) && !method.IsCanonicalMethod(CanonicalFormKind.Any) /* Shared generics handled in the shadow concrete method node */)
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method)
+                    && ((factory.Target.Abi != TargetAbi.ProjectN) || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
                 {
                     MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
                     if (canonInvokeStub.IsSharedByGenericInstantiations)

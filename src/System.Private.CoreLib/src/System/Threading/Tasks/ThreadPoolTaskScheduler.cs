@@ -12,12 +12,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Security;
-using System.Diagnostics.Contracts;
-using System.Collections.Generic;
-using System.Text;
+using Internal.Runtime.Augments;
 using Internal.Threading.Tasks.Tracing;
+using System.Collections.Generic;
 
 namespace System.Threading.Tasks
 {
@@ -32,6 +29,9 @@ namespace System.Threading.Tasks
         internal ThreadPoolTaskScheduler()
         {
         }
+
+        // static delegate for threads allocated to handle LongRunning tasks.
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s => ((Task)s).ExecuteEntry(false);
 
         /// <summary>
         /// Schedules a task to the ThreadPool.
@@ -51,7 +51,10 @@ namespace System.Threading.Tasks
 
             if ((task.Options & TaskCreationOptions.LongRunning) != 0)
             {
-                ThreadPool.QueueLongRunningWork(() => task.ExecuteEntry(false));
+                // Run LongRunning tasks on their own dedicated thread.
+                RuntimeThread thread = RuntimeThread.Create(s_longRunningThreadWork, 0);
+                thread.IsBackground = true; // Keep this thread from blocking process shutdown
+                thread.Start(task);
             }
             else
             {

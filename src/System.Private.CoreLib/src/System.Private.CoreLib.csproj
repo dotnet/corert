@@ -115,6 +115,9 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
@@ -154,7 +157,6 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
@@ -214,6 +216,9 @@
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
+    <Compile Include="System\IO\File.cs" />
+    <Compile Include="System\IO\File.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\IO\File.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
@@ -235,7 +240,6 @@
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
-    <Compile Include="System\Environment.EnvironmentVariables.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
     <Compile Include="System\Globalization\CalendarData.cs" />
@@ -298,6 +302,7 @@
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
+    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
@@ -479,6 +484,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
@@ -528,9 +534,7 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentProcessorNumber.cs</Link>
     </Compile>
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.Uap.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
@@ -725,6 +729,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Numerics\Hashing\HashHelpers.cs">
       <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
