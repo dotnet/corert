@@ -207,7 +207,6 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
-    InitializeHeapType(fUseServerGC);
     g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     // Create the GC heap itself.
@@ -1491,6 +1490,105 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     assert(g_pFreeObjectMethodTable != nullptr);
     return g_pFreeObjectMethodTable;
+}
+
+bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+{
+    // these configuration values are given to us via startup flags.
+    if (strcmp(key, "gcServer") == 0)
+    {
+        *value = g_heap_type == GC_HEAP_SVR;
+        return true;
+    }
+
+    if (strcmp(key, "gcConcurrent") == 0)
+    {
+        *value = g_pConfig->GetGCconcurrent() != 0;
+        return true;
+    }
+
+    if (strcmp(key, "GCRetainVM") == 0)
+    {
+        *value = !!g_pConfig->GetGCRetainVM();
+        return true;
+    }
+
+    if (strcmp(key, "gcConservative") == 0)
+    {
+        *value = g_pConfig->GetGCConservative();
+        return true;
+    }
+
+    if (strcmp(key, "gcForceCompact") == 0)
+    {
+        *value = g_pConfig->GetGCForceCompact() != 0;
+        return true;
+    }
+
+    if (strcmp(key, "GCStressMix") == 0)
+    {
+        *value = g_pConfig->IsGCStressMix();
+        return true;
+    }
+
+    if (strcmp(key, "GCBreakOnOOM") == 0)
+    {
+        *value = g_pConfig->IsGCBreakOnOOMEnabled();
+        return true;
+    }
+
+    if (strcmp(key, "GCNoAffinitize") == 0)
+    {
+        *value = g_pConfig->GetGCNoAffinitize();
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+{
+    if (strcmp(key, "HeapVerify") == 0)
+    {
+        *value = g_pConfig->GetHeapVerifyLevel();
+        return true;
+    }
+
+    if (strcmp(key, "GCLOHCompact") == 0)
+    {
+        *value = g_pConfig->GetGCLOHCompactionMode();
+        return true;
+    }
+
+    if (strcmp(key, "GCHeapCount") == 0)
+    {
+        *value = g_pConfig->GetGCHeapCount();
+        return true;
+    }
+
+    if (strcmp(key, "GCgen0size") == 0)
+    {
+        *value = g_pConfig->GetGCgen0size();
+        return true;
+    }
+
+    if (strcmp(key, "GCLatencyMode") == 0)
+    {
+        *value = g_pConfig->GetGCLatencyMode();
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+{
+    return false;
+}
+
+void GCToEEInterface::FreeStringConfigValue(const char* value)
+{
+    delete[] value;
 }
 
 #endif // !DACCESS_COMPILE

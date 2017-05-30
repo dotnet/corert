@@ -21,7 +21,6 @@
 
 #define USE_INTROSORT
 
-
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 BOOL bgc_heap_walk_for_etw_p = FALSE;
 #endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
@@ -176,7 +175,7 @@ size_t GetHighPrecisionTimeStamp()
 GCStatistics g_GCStatistics;
 GCStatistics g_LastGCStatistics;
 
-TCHAR* GCStatistics::logFileName = NULL;
+char* GCStatistics::logFileName = NULL;
 FILE*  GCStatistics::logFile = NULL;
 
 void GCStatistics::AddGCStats(const gc_mechanisms& settings, size_t timeInMSec)
@@ -1426,15 +1425,6 @@ int mark_time, plan_time, sweep_time, reloc_time, compact_time;
 #ifndef MULTIPLE_HEAPS
 
 #endif // MULTIPLE_HEAPS
-
-#ifdef TRACE_GC
-
-int     print_level     = DEFAULT_GC_PRN_LVL;  //level of detail of the debug trace
-BOOL    trace_gc        = FALSE;
-int       gc_trace_fac = 0;
-hlet* hlet::bindings = 0;
-
-#endif //TRACE_GC
 
 void reset_memory (uint8_t* o, size_t sizeo);
 
@@ -3793,7 +3783,7 @@ public:
         _ASSERTE(pMT->SanityCheck());
 
         bool noRangeChecks =
-            (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_NO_RANGE_CHECKS) == EEConfig::HEAPVERIFY_NO_RANGE_CHECKS;
+            (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_NO_RANGE_CHECKS) == GCConfig::HEAPVERIFY_NO_RANGE_CHECKS;
 
         BOOL fSmallObjectHeapPtr = FALSE, fLargeObjectHeapPtr = FALSE;
         if (!noRangeChecks)
@@ -3817,7 +3807,7 @@ public:
 #endif // FEATURE_64BIT_ALIGNMENT
 
 #ifdef VERIFY_HEAP
-        if (bDeep && (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC))
+        if (bDeep && (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC))
             g_theGCHeap->ValidateObjectMember(this);
 #endif
         if (fSmallObjectHeapPtr)
@@ -3908,7 +3898,7 @@ public:
         //This introduces a bug in the free list management. 
         //((void**) this)[-1] = 0;    // clear the sync block,
         assert (*numComponentsPtr >= 0);
-        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+        if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
             memset (((uint8_t*)this)+sizeof(ArrayBase), 0xcc, *numComponentsPtr);
 #endif //VERIFY_HEAP
     }
@@ -4391,12 +4381,12 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
     if (!large_seg)
     {
         initial_seg_size = INITIAL_ALLOC;
-        seg_size = g_pConfig->GetSegmentSize();
+        seg_size = GCConfig::GetSegmentSize();
     }
     else
     {
         initial_seg_size = LHEAP_ALLOC;
-        seg_size = g_pConfig->GetSegmentSize() / 2;
+        seg_size = GCConfig::GetSegmentSize() / 2;
     }
 
 #ifdef MULTIPLE_HEAPS
@@ -5681,7 +5671,7 @@ void gc_mechanisms::first_init()
 #ifdef BACKGROUND_GC
     pause_mode = gc_heap::gc_can_use_concurrent ? pause_interactive : pause_batch;
 #ifdef _DEBUG
-    int debug_pause_mode = g_pConfig->GetGCLatencyMode();
+    int debug_pause_mode = static_cast<int>(GCConfig::GetLatencyMode());
     if (debug_pause_mode >= 0)
     {
         assert (debug_pause_mode <= pause_sustained_low_latency);
@@ -9354,7 +9344,7 @@ void gc_heap::rearrange_large_heap_segments()
     while (seg)
     {
         heap_segment* next_seg = heap_segment_next (seg);
-        delete_heap_segment (seg, (g_pConfig->GetGCRetainVM() != 0));
+        delete_heap_segment (seg, GCConfig::GetRetainVM());
         seg = next_seg;
     }
     freeable_large_heap_segment = 0;
@@ -9397,7 +9387,7 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
                 assert (prev_seg);
                 assert (seg != ephemeral_heap_segment);
                 heap_segment_next (prev_seg) = next_seg;
-                delete_heap_segment (seg, (g_pConfig->GetGCRetainVM() != 0));
+                delete_heap_segment (seg, GCConfig::GetRetainVM());
 
                 dprintf (2, ("Deleting heap segment %Ix", (size_t)seg));
             }
@@ -9803,28 +9793,20 @@ void gc_heap::adjust_ephemeral_limits ()
 }
 
 #if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
-FILE* CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
+FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config)
 {
     FILE* logFile;
-    TCHAR * temp_logfile_name = NULL;
-    CLRConfig::GetConfigValue(info, &temp_logfile_name);
 
-    TCHAR logfile_name[MAX_LONGPATH+1];
-    if (temp_logfile_name != 0)
+    if (!temp_logfile_name.Get())
     {
-        _tcscpy(logfile_name, temp_logfile_name);
+        return nullptr;
     }
 
-    size_t logfile_name_len = _tcslen(logfile_name);
-    TCHAR* szPid = logfile_name + logfile_name_len;
-    size_t remaining_space = MAX_LONGPATH + 1 - logfile_name_len;
-
-    _stprintf_s(szPid, remaining_space, _T(".%d%s"), GCToOSInterface::GetCurrentProcessId(), (is_config ? _T(".config.log") : _T(".log")));
-
-    logFile = _tfopen(logfile_name, _T("wb"));
-
-    delete temp_logfile_name;
-
+    char logfile_name[MAX_LONGPATH+1];
+    uint32_t pid = GCToOSInterface::GetCurrentProcessId();
+    const char* suffix = is_config ? ".config.log" : ".log";
+    _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
+    logFile = fopen(logfile_name, "wb");
     return logFile;
 }
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
@@ -9837,18 +9819,17 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 )
 {
 #ifdef TRACE_GC
-    int log_last_gcs = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogEnabled);
-    if (log_last_gcs)
+    if (GCConfig::GetLogEnabled())
     {
-        gc_log = CreateLogFile(CLRConfig::UNSUPPORTED_GCLogFile, FALSE);
+        gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
 
         if (gc_log == NULL)
             return E_FAIL;
 
         // GCLogFileSize in MBs.
-        gc_log_file_size = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogFileSize);
+        gc_log_file_size = GCConfig::GetLogFileSize();
 
-        if (gc_log_file_size > 500)
+        if (gc_log_file_size <= 0 || gc_log_file_size > 500)
         {
             fclose (gc_log);
             return E_FAIL;
@@ -9869,10 +9850,9 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #endif // TRACE_GC
 
 #ifdef GC_CONFIG_DRIVEN
-    gc_config_log_on = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCConfigLogEnabled);
-    if (gc_config_log_on)
+    if (GCConfig::GetConfigLogEnabled())
     {
-        gc_config_log = CreateLogFile(CLRConfig::UNSUPPORTED_GCConfigLogFile, TRUE);
+        gc_config_log = CreateLogFile(GCConfig::GetConfigLogFile(), true);
 
         if (gc_config_log == NULL)
             return E_FAIL;
@@ -9884,7 +9864,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
             return E_FAIL;
         }
 
-        compact_ratio = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCCompactRatio);
+        compact_ratio = static_cast<int>(GCConfig::GetCompactRatio());
 
         //         h#  | GC  | gen | C   | EX   | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP | 
         cprintf (("%2s | %6s | %1s | %1s | %2s | %2s | %2s | %2s | %2s || %5s | %5s | %5s | %5s | %5s | %5s | %5s | %5s | %5s |",
@@ -9911,10 +9891,15 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef GC_STATS
-    GCStatistics::logFileName = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCMixLog);
-    if (GCStatistics::logFileName != NULL)
+    GCConfigStringHolder logFileName = GCConfig::GetMixLogFile();
+    if (logFileName.Get() != nullptr)
     {
-        GCStatistics::logFile = _tfopen(GCStatistics::logFileName, _T("a"));
+        GCStatistics::logFileName = _strdup(logFileName.Get());
+        GCStatistics::logFile = fopen(GCStatistics::logFileName, "a");
+        if (!GCStatistics::logFile)
+        {
+            return E_FAIL;
+        }
     }
 #endif // GC_STATS
 
@@ -9923,7 +9908,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #ifdef WRITE_WATCH
     hardware_write_watch_api_supported();
 #ifdef BACKGROUND_GC
-    if (can_use_write_watch_for_gc_heap() && g_pConfig->GetGCconcurrent() != 0)
+    if (can_use_write_watch_for_gc_heap() && GCConfig::GetConcurrentGC())
     {
         gc_can_use_concurrent = true;
 #ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -10023,11 +10008,6 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 
 #endif //MULTIPLE_HEAPS
 
-#ifdef TRACE_GC
-    print_level = g_pConfig->GetGCprnLvl();
-    gc_trace_fac = g_pConfig->GetGCtraceFac();
-#endif //TRACE_GC
-
     if (!init_semi_shared())
     {
         hres = E_FAIL;
@@ -10109,14 +10089,14 @@ gc_heap::init_semi_shared()
     should_expand_in_full_gc = FALSE;
 
 #ifdef FEATURE_LOH_COMPACTION
-    loh_compaction_always_p = (g_pConfig->GetGCLOHCompactionMode() != 0);
+    loh_compaction_always_p = GCConfig::GetLOHCompactionMode() != 0;
     loh_compaction_mode = loh_compaction_default;
 #endif //FEATURE_LOH_COMPACTION
 
 #ifdef BACKGROUND_GC
     memset (ephemeral_fgc_counts, 0, sizeof (ephemeral_fgc_counts));
-    bgc_alloc_spin_count = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BGCSpinCount);
-    bgc_alloc_spin = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BGCSpin);
+    bgc_alloc_spin_count = static_cast<uint32_t>(GCConfig::GetBGCSpinCount());
+    bgc_alloc_spin = static_cast<uint32_t>(GCConfig::GetBGCSpin());
 
     {   
         int number_bgc_threads = 1;
@@ -11548,7 +11528,7 @@ void gc_heap::handle_oom (int heap_num, oom_reason reason, size_t alloc_size,
 
     // Break early - before the more_space_lock is release so no other threads
     // could have allocated on the same heap when OOM happened.
-    if (g_pConfig->IsGCBreakOnOOMEnabled())
+    if (GCConfig::GetBreakOnOOM())
     {
         GCToOSInterface::DebugBreak();
     }
@@ -11941,7 +11921,7 @@ void gc_heap::bgc_loh_alloc_clr (uint8_t* alloc_start,
 #ifdef VERIFY_HEAP
     // since we filled in 0xcc for free object when we verify heap,
     // we need to make sure we clear those bytes.
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         if (size_to_clear < saved_size_to_clear)
         {
@@ -13150,7 +13130,7 @@ int gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
 #ifdef SYNCHRONIZATION_STATS
         good_suspension++;
 #endif //SYNCHRONIZATION_STATS
-        BOOL fStress = (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_TRANSITION) != 0;
+        BOOL fStress = (g_pConfig->GetGCStressLevel() & GCConfig::GCSTRESS_TRANSITION) != 0;
         if (!fStress)
         {
             //Rendez vous early (MP scaling issue)
@@ -14498,6 +14478,8 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     // We can only do Concurrent GC Stress if the caller did not explicitly ask for all
     // generations to be collected,
 
+    // [LOCALGC TODO] STRESS_HEAP is not defined for a standalone GC so there are multiple
+    // things that need to be fixed in this code block.
     if (n_original != max_generation &&
         g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
     {
@@ -15557,7 +15539,6 @@ void gc_heap::gc1()
     }
 
     descr_generations (FALSE);
-    descr_card_table();
 
     verify_soh_segment_list();
 
@@ -15591,7 +15572,7 @@ void gc_heap::gc1()
         // value. If we ever allow randomly adjusting this as the process runs,
         // we cannot call it this way as joins need to match - we must have the same
         // value for all heaps like we do with bgc_heap_walk_for_etw_p.
-        || (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+        || (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
 #endif
 #if defined(FEATURE_EVENT_TRACE) && defined(BACKGROUND_GC)
         || (bgc_heap_walk_for_etw_p && settings.concurrent)
@@ -15653,7 +15634,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 
 #ifdef VERIFY_HEAP
-        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+        if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
             verify_heap (FALSE);
 #endif // VERIFY_HEAP
 
@@ -16634,14 +16615,6 @@ int gc_heap::garbage_collect (int n)
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-#ifdef TRACE_GC
-        int gc_count = (int)dd_collection_count (dynamic_data_of (0));
-        if (gc_count >= g_pConfig->GetGCtraceStart())
-            trace_gc = 1;
-        if (gc_count >=  g_pConfig->GetGCtraceEnd())
-            trace_gc = 0;
-#endif //TRACE_GC
-
 #ifdef MULTIPLE_HEAPS
 #if !defined(SEG_MAPPING_TABLE) && !defined(FEATURE_BASICFREEZE)
         //delete old slots from the segment table
@@ -16788,12 +16761,12 @@ int gc_heap::garbage_collect (int n)
 //    descr_card_table();
 
 #ifdef VERIFY_HEAP
-    if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC) &&
-       !(g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_POST_GC_ONLY))
+    if ((GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC) &&
+       !(GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_POST_GC_ONLY))
     {
         verify_heap (TRUE);
     }
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_BARRIERCHECK)
         checkGCWriteBarrier();
 
 #endif // VERIFY_HEAP
@@ -17165,7 +17138,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
         heap_segment* seg = find_segment_per_heap (interior, FALSE);
         if (seg
 #ifdef FEATURE_CONSERVATIVE_GC
-            && (!g_pConfig->GetGCConservative() || interior <= heap_segment_allocated(seg))
+            && (GCConfig::GetConservativeGC() || interior <= heap_segment_allocated(seg))
 #endif
             )
         {
@@ -17173,7 +17146,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
             // we don't have brick entry for it, and we may incorrectly treat it as on large object heap.
             int align_const = get_alignment_constant (heap_segment_read_only_p (seg)
 #ifdef FEATURE_CONSERVATIVE_GC
-                                                       || (g_pConfig->GetGCConservative() && !heap_segment_loh_p (seg))
+                                                       || (GCConfig::GetConservativeGC() && !heap_segment_loh_p (seg))
 #endif
                                                       );
             //int align_const = get_alignment_constant (heap_segment_read_only_p (seg));
@@ -18643,7 +18616,7 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 #ifdef FEATURE_CONSERVATIVE_GC
     // For conservative GC, a value on stack may point to middle of a free object.
     // In this case, we don't need to promote the pointer.
-    if (g_pConfig->GetGCConservative() && ((CObjectHeader*)o)->IsFree())
+    if (GCConfig::GetConservativeGC() && ((CObjectHeader*)o)->IsFree())
     {
         return;
     }
@@ -23754,7 +23727,7 @@ void gc_heap::relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end)
 void gc_heap::verify_pins_with_post_plug_info (const char* msg)
 {
 #if defined  (_DEBUG) && defined (VERIFY_HEAP)
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         if (!verify_pinned_queue_p)
             return;
@@ -26636,7 +26609,7 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 #ifdef FEATURE_CONSERVATIVE_GC
     // For conservative GC, a value on stack may point to middle of a free object.
     // In this case, we don't need to promote the pointer.
-    if (g_pConfig->GetGCConservative() && ((CObjectHeader*)o)->IsFree())
+    if (GCConfig::GetConservativeGC() && ((CObjectHeader*)o)->IsFree())
     {
         return;
     }
@@ -29232,7 +29205,7 @@ gc_heap::realloc_plugs (generation* consing_gen, heap_segment* seg,
 void gc_heap::verify_no_pins (uint8_t* start, uint8_t* end)
 {
 #ifdef VERIFY_HEAP
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         BOOL contains_pinned_plugs = FALSE;
         size_t mi = 0;
@@ -30299,7 +30272,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
 #endif // GC_STATS
 #endif //STRESS_HEAP
 
-    if (g_pConfig->GetGCForceCompact())
+    if (GCConfig::GetForceCompact())
         should_compact = TRUE;
 
     if ((condemned_gen_number == max_generation) && last_gc_before_oom)
@@ -30636,7 +30609,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
 
     if (jsize >= maxObjectSize)
     {
-        if (g_pConfig->IsGCBreakOnOOMEnabled())
+        if (GCConfig::GetBreakOnOOM())
         {
             GCToOSInterface::DebugBreak();
         }
@@ -30862,8 +30835,8 @@ void gc_heap::set_mem_verify (uint8_t* start, uint8_t* end, uint8_t b)
 #ifdef VERIFY_HEAP
     if (end > start)
     {
-        if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC) &&
-           !(g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_NO_MEM_FILL))
+        if ((GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC) &&
+           !(GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_NO_MEM_FILL))
         {
             dprintf (3, ("setting mem to %c [%Ix, [%Ix", b, start, end));
             memset (start, b, (end - start));
@@ -32018,36 +31991,6 @@ void gc_heap::descr_segment (heap_segment* seg )
 #endif // TRACE_GC
 }
 
-void gc_heap::descr_card_table ()
-{
-#ifdef TRACE_GC
-    if (trace_gc && (print_level >= 4))
-    {
-        ptrdiff_t  min = -1;
-        dprintf(3,("Card Table set at: "));
-        for (size_t i = card_of (lowest_address); i < card_of (highest_address); i++)
-        {
-            if (card_set_p (i))
-            {
-                if (min == -1)
-                {
-                    min = i;
-                }
-            }
-            else
-            {
-                if (! ((min == -1)))
-                {
-                    dprintf (3,("[%Ix %Ix[, ",
-                            (size_t)card_address (min), (size_t)card_address (i)));
-                    min = -1;
-                }
-            }
-        }
-    }
-#endif //TRACE_GC
-}
-
 void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 {
 #ifdef MULTIPLE_HEAPS
@@ -32431,7 +32374,7 @@ BOOL gc_heap::bgc_mark_array_range (heap_segment* seg,
 void gc_heap::bgc_verify_mark_array_cleared (heap_segment* seg)
 {
 #if defined (VERIFY_HEAP) && defined (MARK_ARRAY)
-    if (recursive_gc_sync::background_running_p() && g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (recursive_gc_sync::background_running_p() && GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         uint8_t* range_beg = 0;
         uint8_t* range_end = 0;
@@ -32615,7 +32558,7 @@ void gc_heap::verify_mark_array_cleared (heap_segment* seg)
 void gc_heap::verify_mark_array_cleared ()
 {
 #if defined (VERIFY_HEAP) && defined (MARK_ARRAY)
-    if (recursive_gc_sync::background_running_p() && g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (recursive_gc_sync::background_running_p() && GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         generation* gen = generation_of (max_generation);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -32645,7 +32588,7 @@ void gc_heap::verify_mark_array_cleared ()
 void gc_heap::verify_seg_end_mark_array_cleared()
 {
 #if defined (VERIFY_HEAP) && defined (MARK_ARRAY)
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         generation* gen = generation_of (max_generation);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -32707,7 +32650,7 @@ void gc_heap::verify_seg_end_mark_array_cleared()
 void gc_heap::verify_soh_segment_list()
 {
 #ifdef VERIFY_HEAP
-    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC)
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
         generation* gen = generation_of (max_generation);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -32893,7 +32836,7 @@ gc_heap::verify_free_lists ()
 void
 gc_heap::verify_heap (BOOL begin_gc_p)
 {
-    int             heap_verify_level = g_pConfig->GetHeapVerifyLevel();
+    int             heap_verify_level = static_cast<int>(GCConfig::GetHeapVerifyLevel());
     size_t          last_valid_brick = 0;
     BOOL            bCurrentBrickInvalid = FALSE;
     BOOL            large_brick_p = TRUE;
@@ -32955,7 +32898,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
     if (!settings.concurrent)
 #endif //BACKGROUND_GC
     {
-        if (!(heap_verify_level & EEConfig::HEAPVERIFY_NO_MEM_FILL))
+        if (!(heap_verify_level & GCConfig::HEAPVERIFY_NO_MEM_FILL))
         {
             //uninit the unused portions of segments.
             generation* gen1 = large_object_generation;
@@ -33235,7 +33178,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
 #endif //BACKGROUND_GC
 
             BOOL deep_verify_obj = can_verify_deep;
-            if ((heap_verify_level & EEConfig::HEAPVERIFY_DEEP_ON_COMPACT) && !settings.compaction)
+            if ((heap_verify_level & GCConfig::HEAPVERIFY_DEEP_ON_COMPACT) && !settings.compaction)
                 deep_verify_obj = FALSE;
 
             ((CObjectHeader*)curr_object)->ValidateHeap((Object*)curr_object, deep_verify_obj);
@@ -33528,6 +33471,7 @@ HRESULT GCHeap::Initialize ()
         return E_FAIL;
     }
 
+
     g_gc_pFreeObjectMethodTable = GCToEEInterface::GetFreeObjectMethodTable();
 
 //Initialize the static members.
@@ -33543,10 +33487,10 @@ HRESULT GCHeap::Initialize ()
     gc_heap::min_segment_size = min (seg_size, large_seg_size);
 
 #ifdef MULTIPLE_HEAPS
-    if (g_pConfig->GetGCNoAffinitize())
+    if (GCConfig::GetNoAffinitize())
         gc_heap::gc_thread_no_affinitize_p = true;
 
-    uint32_t nhp_from_config = g_pConfig->GetGCHeapCount();
+    uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
     // GetGCProcessCpuCount only returns up to 64 procs.
     uint32_t nhp_from_process = CPUGroupInfo::CanEnableGCCPUGroups() ?
                                 CPUGroupInfo::GetNumActiveProcessors():
@@ -33849,7 +33793,7 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 #ifdef FEATURE_CONSERVATIVE_GC
     // For conservative GC, a value on stack may point to middle of a free object.
     // In this case, we don't need to promote the pointer.
-    if (g_pConfig->GetGCConservative()
+    if (GCConfig::GetConservativeGC()
         && ((CObjectHeader*)o)->IsFree())
     {
         return;
@@ -34122,14 +34066,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
                     str->SetMethodTable (g_pStringClass);
                     str->SetStringLength (strLen);
 
-#if CHECK_APP_DOMAIN_LEAKS
-                    if (g_pConfig->AppDomainLeaks() && str->SetAppDomainNoThrow())
-                    {
-#endif
-                        HndAssignHandle(m_StressObjs[i], ObjectToOBJECTREF(str));
-#if CHECK_APP_DOMAIN_LEAKS
-                    }
-#endif
+                    HndAssignHandle(m_StressObjs[i], ObjectToOBJECTREF(str));
                 }
                 i = (i + 1) % NUM_HEAP_STRESS_OBJS;
                 if (i == m_CurStressObj) break;
@@ -35546,7 +35483,7 @@ size_t GCHeap::GetValidSegmentSize(bool large_seg)
 // Get the max gen0 heap size, making sure it conforms.
 size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 {
-    size_t gen0size = g_pConfig->GetGCgen0size();
+    size_t gen0size = GCConfig::GetGen0Size();
 
     if ((gen0size == 0) || !g_theGCHeap->IsValidGen0MaxSize(gen0size))
     {
@@ -35752,7 +35689,7 @@ bool CFinalize::Initialize()
     {
         ASSERT (m_Array);
         STRESS_LOG_OOM_STACK(sizeof(Object*[100]));
-        if (g_pConfig->IsGCBreakOnOOMEnabled())
+        if (GCConfig::GetBreakOnOOM())
         {
             GCToOSInterface::DebugBreak();
         }
@@ -35861,7 +35798,7 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
                 ((CObjectHeader*)obj)->SetFree(size);
             }
             STRESS_LOG_OOM_STACK(0);
-            if (g_pConfig->IsGCBreakOnOOMEnabled())
+            if (GCConfig::GetBreakOnOOM())
             {
                 GCToOSInterface::DebugBreak();
             }
@@ -36542,7 +36479,7 @@ void deleteGCShadow()
     // Called at startup and right after a GC, get a snapshot of the GC Heap
 void initGCShadow()
 {
-    if (!(g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK))
+    if (!(GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_BARRIERCHECK))
         return;
 
     size_t len = g_gc_highest_address - g_gc_lowest_address;
