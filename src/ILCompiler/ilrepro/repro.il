@@ -43,7 +43,7 @@
     // Code size       13 (0xd)
     .maxstack  8
     IL_0000:  nop
-    IL_0001:  ldstr      "Hello world"
+    IL_0001:  ldstr      "Hello world from MSIL!"
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ret
