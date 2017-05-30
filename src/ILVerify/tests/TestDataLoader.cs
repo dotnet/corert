@@ -6,9 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Internal.IL;
 using Internal.TypeSystem.Ecma;
+using Newtonsoft.Json;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace ILVerify.Tests
 {
@@ -31,13 +35,13 @@ namespace ILVerify.Tests
         /// The word after the '_' has to be 'Valid'. 
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
-        public static IEnumerable<Object[]> GetMethodsWithValidIL()
+        public static TheoryData<TestCase> GetMethodsWithValidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
                 if (mparams.Length == 2 && mparams[1].ToLower() == "valid")
                 {
-                    return new ValidILTestCase { MethodHandle = methodHandle };
+                    return new ValidILTestCase { MetaDataToken = MetadataTokens.GetToken(methodHandle) };
                 }
                 return null;
             });
@@ -53,7 +57,7 @@ namespace ILVerify.Tests
         /// 3. part: the expected VerifierErrors as string separated by '.'.      
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
         /// </summary>      
-        public static IEnumerable<Object[]> GetMethodsWithInvalidIL()
+        public static TheoryData<TestCase> GetMethodsWithInvalidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
@@ -70,11 +74,11 @@ namespace ILVerify.Tests
                         }
                     }
 
-                    var newItem = new InvalidILTestCase { MethodHandle = methodHandle };
+                    var newItem = new InvalidILTestCase { MetaDataToken = MetadataTokens.GetToken(methodHandle) };
 
                     if (expectedErrors.Length > 0)
                     {
-                        newItem.ExpectedVerifierError = verificationErros;
+                        newItem.ExpectedVerifierErrors = verificationErros;
                     }
 
                     return newItem;
@@ -84,9 +88,9 @@ namespace ILVerify.Tests
             return GetTestMethodsFromDll(methodSelector);
         }
 
-        private static IEnumerable<Object[]> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
+        private static TheoryData<TestCase> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
         {
-            List<TestCase[]> retVal = new List<TestCase[]>();
+            var retVal = new Xunit.TheoryData<TestCase>();
 
             foreach (var testDllName in GetAllTestDlls())
             {
@@ -107,7 +111,7 @@ namespace ILVerify.Tests
                             newItem.MethodName = methodName;
                             newItem.ModuleName = testDllName;
 
-                            retVal.Add(new TestCase[] { newItem });
+                            retVal.Add(newItem);
                         }
                     }
                 }
@@ -143,11 +147,30 @@ namespace ILVerify.Tests
         }
     }
 
-    abstract class TestCase
+    abstract class TestCase : IXunitSerializable
     {
         public string MethodName { get; set; }
-        public MethodDefinitionHandle MethodHandle { get; set; }
+        public int MetaDataToken { get; set; }
         public string ModuleName { get; set; }
+
+        public virtual void Deserialize(IXunitSerializationInfo info)
+        {
+            MethodName = info.GetValue<string>(nameof(MethodName));
+            MetaDataToken = info.GetValue<int>(nameof(MetaDataToken));
+            ModuleName = info.GetValue<string>(nameof(ModuleName));
+        }
+
+        public virtual void Serialize(IXunitSerializationInfo info)
+        {
+            info.AddValue(nameof(MethodName), MethodName);
+            info.AddValue(nameof(MetaDataToken), MetaDataToken);
+            info.AddValue(nameof(ModuleName), ModuleName);
+        }
+
+        public override string ToString()
+        {
+            return $"{ModuleName} - {MethodName}";
+        }
     }
 
     /// <summary>
@@ -160,6 +183,20 @@ namespace ILVerify.Tests
     /// </summary>
     class InvalidILTestCase : TestCase
     {
-        public List<VerifierError> ExpectedVerifierError { get; set; }
+        public List<VerifierError> ExpectedVerifierErrors { get; set; }
+
+        public override void Serialize(IXunitSerializationInfo info)
+        {
+            base.Serialize(info);
+            var serializedExpectedErrors = JsonConvert.SerializeObject(ExpectedVerifierErrors);
+            info.AddValue(nameof(ExpectedVerifierErrors), serializedExpectedErrors);
+        }
+
+        public override void Deserialize(IXunitSerializationInfo info)
+        {
+            base.Deserialize(info);
+            var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
+            ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
+        }
     }
 }

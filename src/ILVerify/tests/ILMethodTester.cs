@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using Internal.IL;
 using Internal.TypeSystem.Ecma;
 using Xunit;
@@ -53,9 +54,9 @@ namespace ILVerify.Tests
             }
             finally
             {
-                Assert.Equal(invalidILTestCase.ExpectedVerifierError.Count, verifierErrors.Count);
+                Assert.Equal(invalidILTestCase.ExpectedVerifierErrors.Count, verifierErrors.Count);
 
-                foreach (var item in invalidILTestCase.ExpectedVerifierError)
+                foreach (var item in invalidILTestCase.ExpectedVerifierErrors)
                 {
                     Assert.True(verifierErrors.Contains(item));
                 }
@@ -65,7 +66,7 @@ namespace ILVerify.Tests
         private ILImporter ConstructILImporter(TestCase testCase)
         {
             var module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
-            var method = (EcmaMethod)module.GetMethod(testCase.MethodHandle);
+            var method = (EcmaMethod)module.GetMethod(MetadataTokens.EntityHandle(testCase.MetaDataToken));
             var methodIL = EcmaMethodIL.Create(method);
 
             return new ILImporter(method, methodIL);
