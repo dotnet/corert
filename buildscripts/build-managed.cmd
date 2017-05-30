@@ -72,8 +72,6 @@ if "%__GenRespFiles%"=="1" (
     call :CopyResponseFile "%__ReproProjectObjDir%\native\repro.ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ILReproProjectDir%\ilrepro.ilproj"
-    @echo %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ReproProjectDir%\ilrepro.ilproj"
-
     call :CopyResponseFile "%__ILReproProjectObjDir%\native\ilrepro.ilc.rsp" "%__ObjDir%\ilryujit.rsp"  
 
     if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
