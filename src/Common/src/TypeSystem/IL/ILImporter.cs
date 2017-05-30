@@ -317,7 +317,6 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
-                StartImportingInstruction(opCode);
 
             again:
                 switch (opCode)

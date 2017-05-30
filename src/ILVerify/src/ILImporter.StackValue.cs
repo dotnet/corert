@@ -22,11 +22,11 @@ namespace Internal.IL
         public readonly StackValueKind Kind;
         public readonly TypeDesc Type;
 
-        private StackValue(StackValueKind kind, TypeDesc type = null)
+        private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
         {
             this.Kind = kind;
             this.Type = type;
-            this.Flags = StackValueFlags.None;
+            this.Flags = flags;
         }
 
         public void SetIsReadOnly()
@@ -71,9 +71,9 @@ namespace Internal.IL
             return new StackValue(StackValueKind.ValueType, type);
         }
 
-        static public StackValue CreateByRef(TypeDesc type)
+        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false)
         {
-            return new StackValue(StackValueKind.ByRef, type);
+            return new StackValue(StackValueKind.ByRef, type, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
         }
 
         static public StackValue CreateFromType(TypeDesc type)

@@ -225,12 +225,6 @@
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
   </data>
-  <data name="UnalignedOrVolatileUnexpected" xml:space="preserve">
-    <value>Unexpected prefix unalign or volatile prefix</value>
-  </data>
-  <data name="UnalignNotAllowed" xml:space="preserve">
-    <value>Unalign not allowed for ldsfld and stsfld.</value>
-  </data>
   <data name="UnrecognizedArgumentNumber" xml:space="preserve">
     <value>Unrecognized argument number.</value>
   </data>

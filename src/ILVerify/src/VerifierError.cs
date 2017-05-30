@@ -249,7 +249,5 @@ namespace ILVerify
         //IDS_E_ILERROR        "[IL]: Error: "
         //IDS_E_GLOBAL         "<GlobalFunction>"
         //IDS_E_MDTOKEN        "[mdToken=0x%x]"
-        UnalignNotAllowed,     // "Unaligned prefix not allowed for ldsfld and stsfld"
-        UnalignedOrVolatileUnexpected,      // "Unexpected prefix unalign or volatile prefix"
     }
 }
