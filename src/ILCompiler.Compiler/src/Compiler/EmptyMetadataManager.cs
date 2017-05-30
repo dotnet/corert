@@ -14,18 +14,14 @@ namespace ILCompiler
 {
     class EmptyMetadataManager : MetadataManager
     {
-        public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext) : base(group, typeSystemContext)
+        public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext)
+            : base(group, typeSystemContext, new FullyBlockedMetadataPolicy())
         {
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             return Array.Empty<ModuleDesc>();
-        }
-
-        public override bool IsReflectionBlocked(MetadataType type)
-        {
-            return true;
         }
 
         protected override MetadataCategory GetMetadataCategory(FieldDesc field)
@@ -77,6 +73,27 @@ namespace ILCompiler
         public override bool WillUseMetadataTokenToReferenceField(FieldDesc field)
         {
             return false;
+        }
+
+        private sealed class FullyBlockedMetadataPolicy : MetadataBlockingPolicy
+        {
+            public override bool IsBlocked(MetadataType type)
+            {
+                Debug.Assert(type.IsTypeDefinition);
+                return true;
+            }
+
+            public override bool IsBlocked(MethodDesc method)
+            {
+                Debug.Assert(method.IsTypicalMethodDefinition);
+                return true;
+            }
+
+            public override bool IsBlocked(FieldDesc field)
+            {
+                Debug.Assert(field.IsTypicalFieldDefinition);
+                return true;
+            }
         }
     }
 }

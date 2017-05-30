@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (CompilationModuleGroup.ContainsMethod(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method))
             {
                 return new CppMethodCodeNode(method);
             }

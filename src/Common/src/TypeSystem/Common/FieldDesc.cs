@@ -76,6 +76,14 @@ namespace Internal.TypeSystem
             return this;
         }
 
+        public bool IsTypicalFieldDefinition
+        {
+            get
+            {
+                return GetTypicalFieldDefinition() == this;
+            }
+        }
+
         public virtual FieldDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             FieldDesc field = this;

@@ -145,6 +145,17 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor = other as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
+            if (otherConstructor == null)
+                return false;
+            return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
+        }
+
         public sealed override bool Equals(Object obj)
         {
             RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;

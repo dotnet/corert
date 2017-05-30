@@ -36,6 +36,15 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override StructLayoutAttribute StructLayoutAttribute => BaseType.StructLayoutAttribute;
         public sealed override string ToString() => BaseType.ToString();
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is RuntimeCLSIDTypeInfo;
+        }
+
         protected sealed override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
         protected sealed override int InternalGetHashCode() => _key.GetHashCode();
 

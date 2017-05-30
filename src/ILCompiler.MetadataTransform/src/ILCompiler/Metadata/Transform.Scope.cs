@@ -85,6 +85,18 @@ namespace ILCompiler.Metadata
                     {
                         scopeDefinition.EntryPoint = (QualifiedMethod)HandleQualifiedMethod(entryPoint);
                     }
+
+                    Ecma.MetadataReader reader = ecmaAssembly.MetadataReader;
+                    Ecma.ModuleDefinition moduleDefinition = reader.GetModuleDefinition();
+                    scopeDefinition.ModuleName = HandleString(reader.GetString(moduleDefinition.Name));
+                    scopeDefinition.Mvid = reader.GetGuid(moduleDefinition.Mvid).ToByteArray();
+
+                    // This is rather awkward because ModuleDefinition doesn't offer means to get to the custom attributes
+                    Ecma.CustomAttributeHandleCollection moduleAttributes = reader.GetCustomAttributes(Ecma.Ecma335.MetadataTokens.EntityHandle(0x1));
+                    if (moduleAttributes.Count > 0)
+                    {
+                        scopeDefinition.ModuleCustomAttributes = HandleCustomAttributes(ecmaAssembly, moduleAttributes);
+                    }
                 }
             }
             else

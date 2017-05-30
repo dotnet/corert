@@ -83,6 +83,21 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            EcmaFormatRuntimePropertyInfo otherProperty = other as EcmaFormatRuntimePropertyInfo;
+            if (otherProperty == null)
+                return false;
+            if (!(_reader == otherProperty._reader))
+                return false;
+            if (!(_propertyHandle.Equals(otherProperty._propertyHandle)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
             EcmaFormatRuntimePropertyInfo other = obj as EcmaFormatRuntimePropertyInfo;

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.Modules.EcmaFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.EcmaFormat;
 using System.Reflection.Runtime.TypeInfos;
@@ -228,6 +229,14 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                     // TODO Implement linked resources, when FileStream, and CodeBase are fully implemented
                     throw new NotImplementedException();
                 }
+            }
+        }
+
+        public sealed override Module ManifestModule
+        {
+            get
+            {
+                return EcmaFormatRuntimeModule.GetRuntimeModule(this);
             }
         }
 

@@ -526,11 +526,6 @@ namespace Internal.JitInterface
             {
                 sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
             }
-
-            if (method.HasInstantiation)
-            {
-                sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_GENERIC;
-            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
@@ -1721,7 +1716,8 @@ namespace Internal.JitInterface
             TypeDesc fieldType = fieldDesc.FieldType;
             CorInfoType type = asCorInfoType(fieldType, out structType);
 
-            Debug.Assert(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.ByReferenceOfT).GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
+            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
+                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
             if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
             {
                 Debug.Assert(structType == null);
@@ -2809,13 +2805,11 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
+                    if (contextMethod == MethodBeingCompiled)
                     {
-                        return;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                     }
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                 }
                 else
                 {
@@ -2943,12 +2937,17 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
-                        return;
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    if (contextMethod == MethodBeingCompiled)
+                    {
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    }
                 }
+
+                // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
+                // We don't need an instantiation parameter, so let's just not report it. Might be nice to
+                // move that assert to some place later though.
+                targetIsFatFunctionPointer = true;
             }
             else
             {
@@ -2978,13 +2977,11 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
+                    if (contextMethod == MethodBeingCompiled)
                     {
-                        return;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
                     }
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
                 }
                 else
                 {

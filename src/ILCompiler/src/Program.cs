@@ -335,14 +335,16 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
+            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
+
             ICompilation compilation = builder
                 .UseBackendOptions(_codegenOptions)
+                .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
                 .UseDebugInfo(_enableDebugInfo)
-                .UseMetadataLogFile(_metadataLogFileName)
                 .ToCompilation();
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;

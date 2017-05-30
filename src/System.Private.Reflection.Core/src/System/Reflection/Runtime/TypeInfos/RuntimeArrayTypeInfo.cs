@@ -51,10 +51,20 @@ namespace System.Reflection.Runtime.TypeInfos
                 bool multiDim = this.IsVariableBoundArray;
                 int rank = this.GetArrayRank();
 
-                RuntimeTypeInfo arrayType = this;
+                RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo countType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
 
                 {
+                    //
+                    // Expose a constructor that takes n Int32's (one for each dimension) and constructs a zero lower-bounded array. For example,
+                    //
+                    //   String[,]
+                    //
+                    // exposes
+                    //
+                    //   .ctor(int32, int32)
+                    //
+
                     RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[rank];
                     for (int i = 0; i < rank; i++)
                         ctorParameters[i] = countType;
@@ -91,7 +101,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                     int parameterCount = 2;
                     RuntimeTypeInfo elementType = this.InternalRuntimeElementType;
-                    while (elementType.IsArray && elementType.GetArrayRank() == 1)
+                    while (elementType.IsSZArray)
                     {
                         RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[parameterCount];
                         for (int i = 0; i < parameterCount; i++)
@@ -119,6 +129,16 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 if (multiDim)
                 {
+                    //
+                    // Expose a constructor that takes n*2 Int32's (two for each dimension) and constructs a arbitrarily lower-bounded array. For example,
+                    //
+                    //   String[,]
+                    //
+                    // exposes
+                    //
+                    //   .ctor(int32, int32, int32, int32)
+                    //
+
                     RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[rank * 2];
                     for (int i = 0; i < rank * 2; i++)
                         ctorParameters[i] = countType;
@@ -150,7 +170,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 int rank = this.GetArrayRank();
 
                 RuntimeTypeInfo indexType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
-                RuntimeTypeInfo arrayType = this;
+                RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
                 RuntimeTypeInfo voidType = CommonRuntimeTypes.Void.CastToRuntimeTypeInfo();
 

@@ -77,9 +77,7 @@ namespace ILCompiler
             // TODO: make this configurable?
             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
 
-            MetadataManager metadataManager = CreateMetadataManager();
-
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _nameMangler);
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);

@@ -113,6 +113,21 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            EcmaFormatRuntimeEventInfo otherEvent = other as EcmaFormatRuntimeEventInfo;
+            if (otherEvent == null)
+                return false;
+            if (!(_reader == otherEvent._reader))
+                return false;
+            if (!(_eventHandle.Equals(otherEvent._eventHandle)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
             EcmaFormatRuntimeEventInfo other = obj as EcmaFormatRuntimeEventInfo;

@@ -26,13 +26,13 @@
             <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
             <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
-            <JitPackageVersion>2.0.0-preview2-25311-01</JitPackageVersion>
+            <JitPackageVersion>2.1.0-preview1-25324-01</JitPackageVersion>
             <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx.10.12-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(JitNuPkgRid)'==''">$(NuPkgRid)</JitNuPkgRid>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>
 
-            <ObjectWriterPackageVersion>1.0.18-prerelease-00001</ObjectWriterPackageVersion>
+            <ObjectWriterPackageVersion>1.0.18-prerelease-00002</ObjectWriterPackageVersion>
             <ObjectWriterNuPkgRid Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</ObjectWriterNuPkgRid>
             <ObjectWriterNuPkgRid Condition="'$(ObjectWriterNuPkgRid)'==''">$(NuPkgRid)</ObjectWriterNuPkgRid>
         </PropertyGroup>

@@ -92,18 +92,6 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
 
-        internal static void QueueLongRunningWork(Action callback)
-        {
-            GCHandle gcHandle = GCHandle.Alloc(callback);
-
-            if (!Interop.Sys.RuntimeThread_CreateThread(IntPtr.Zero /*use default stack size*/,
-                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(LongRunningWorkCallback), GCHandle.ToIntPtr(gcHandle)))
-            {
-                gcHandle.Free();
-                throw new OutOfMemoryException();
-            }
-        }
-
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.
         /// </summary>
@@ -122,19 +110,5 @@ namespace System.Threading
 
             } while (true);
         }
-
-        [NativeCallable]
-        private static IntPtr LongRunningWorkCallback(IntPtr context)
-        {
-            RuntimeThread.InitializeThreadPoolThread();
-
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Action callback = (Action)gcHandle.Target;
-            gcHandle.Free();
-
-            callback();
-            return IntPtr.Zero;
-        }
-
     }
 }

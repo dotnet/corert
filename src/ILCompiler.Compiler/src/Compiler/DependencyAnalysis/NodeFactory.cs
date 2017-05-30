@@ -412,7 +412,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>
             {
-                if (CompilationModuleGroup.ContainsMethod(method))
+                if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
                     return new MethodGenericDictionaryNode(method);
                 }
@@ -433,6 +433,26 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ImportedTypeGenericDictionaryNode(this, type);
                 }
+            });
+
+            _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
+            {
+                return new TypeMetadataNode(type);
+            });
+
+            _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
+            {
+                return new MethodMetadataNode(method);
+            });
+
+            _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
+            {
+                return new FieldMetadataNode(field);
+            });
+
+            _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
+            {
+                return new ModuleMetadataNode(module);
             });
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
@@ -852,6 +872,34 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _indirectionNodes.GetOrAdd(symbol);
             }
+        }
+
+        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadata;
+
+        internal TypeMetadataNode TypeMetadata(MetadataType type)
+        {
+            return _typesWithMetadata.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;
+
+        internal MethodMetadataNode MethodMetadata(MethodDesc method)
+        {
+            return _methodsWithMetadata.GetOrAdd(method);
+        }
+
+        private NodeCache<FieldDesc, FieldMetadataNode> _fieldsWithMetadata;
+
+        internal FieldMetadataNode FieldMetadata(FieldDesc field)
+        {
+            return _fieldsWithMetadata.GetOrAdd(field);
+        }
+
+        private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;
+
+        internal ModuleMetadataNode ModuleMetadata(ModuleDesc module)
+        {
+            return _modulesWithMetadata.GetOrAdd(module);
         }
 
         private NodeCache<string, FrozenStringNode> _frozenStringNodes;

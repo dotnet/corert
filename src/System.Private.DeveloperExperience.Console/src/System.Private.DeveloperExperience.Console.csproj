@@ -34,6 +34,9 @@
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConnector.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConsole.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

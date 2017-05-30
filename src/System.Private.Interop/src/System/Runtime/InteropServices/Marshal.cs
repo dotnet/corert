@@ -25,8 +25,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-
-
+#if PLATFORM_WINDOWS
         private const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
 
         // Win32 has the concept of Atoms, where a pointer can either be a pointer
@@ -46,6 +45,10 @@ namespace System.Runtime.InteropServices
             long lPtr = (long)ptr;
             return 0 != (lPtr & HIWORDMASK);
         }
+#else // PLATFORM_WINDOWS
+        private static bool IsWin32Atom(IntPtr ptr) => false;
+        private static bool IsNotWin32Atom(IntPtr ptr) => true;
+#endif // PLATFORM_WINDOWS
 
         //====================================================================
         // The default character size for the system. This is always 2 because
@@ -78,7 +81,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    return ConvertToUnicode(ptr, nb);
+                    return new string((sbyte*)ptr);
                 }
             }
         }
@@ -656,7 +659,7 @@ namespace System.Runtime.InteropServices
             fixed (char* pch = source)
             {
                 int convertedBytes =
-                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer);
+                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer, false, false);
                 ((byte*)pbNativeBuffer)[convertedBytes] = 0;
             }
         }

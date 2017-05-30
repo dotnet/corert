@@ -249,6 +249,12 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
         }
 
+        protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
+        {
+            // The interface type will be visible to reflection and should be considered constructed.
+            return factory.ConstructedTypeSymbol(interfaceType);
+        }
+
         protected override int GCDescSize => GCDescEncoder.GetGCDescSize(_type);
 
         protected override void OutputGCDesc(ref ObjectDataBuilder builder)
