@@ -213,7 +213,10 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = _useSharedGenerics || !_isCppCodegen ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
-            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT), genericsMode);
+            // TODO: compiler switch for SIMD support?
+            var simdVectorLength = _isCppCodegen ? MaximumSimdVectorLength.None : MaximumSimdVectorLength.VectorLength16; 
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
+            var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since

@@ -7,7 +7,11 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.JitInterface;
+using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -74,8 +78,12 @@ namespace ILCompiler
             if (_generateDebugInfo)
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
-            // TODO: make this configurable?
-            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+            if (_context.Target.MaximumSimdVectorLength != MaximumSimdVectorLength.None)
+            {
+                // TODO: AVX
+                Debug.Assert(_context.Target.MaximumSimdVectorLength == MaximumSimdVectorLength.VectorLength16);
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+            }
 
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _nameMangler);
 

@@ -65,6 +65,9 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport("jitinterface")]
+        private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS flags);
+
+        [DllImport("jitinterface")]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         private IntPtr AllocException(Exception ex)
@@ -794,29 +797,25 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
-        private ModuleDesc[] _simdModulesCached;
+        private SimdHelper _simdHelper;
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
         {
             TypeDesc type = HandleToObject(classHnd);
-            if (type.IsDefType)
+            
+            if (_simdHelper.IsInSimdModule(type))
             {
-                if (_simdModulesCached == null)
-                {
-                    ModuleDesc[] simdModules = new ModuleDesc[]
-                    {
-                        // GetModuleForSimpleName doesn't exist in Jit configuration, so excluding for now
-#if !SUPPORT_JIT
-                        _compilation.TypeSystemContext.GetModuleForSimpleName("System.Numerics", false),
-                        _compilation.TypeSystemContext.GetModuleForSimpleName("System.Numerics.Vectors", false),
-#endif
-                    };
-                    _simdModulesCached = simdModules;
-                }
+#if DEBUG
+                // If this is Vector<T>, make sure the codegen and the type system agree on what instructions/registers
+                // we're generating code for.
 
-                ModuleDesc typeModule = ((MetadataType)type).Module;
-                foreach (ModuleDesc simdModule in _simdModulesCached)
-                    if (typeModule == simdModule)
-                        return true;
+                CORJIT_FLAGS flags = default(CORJIT_FLAGS);
+                getJitFlags(ref flags, (uint)sizeof(CORJIT_FLAGS));
+
+                Debug.Assert(!_simdHelper.IsVectorOfT(type)
+                    || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, flags));
+#endif
+
+                return true;
             }
 
             return false;
