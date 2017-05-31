@@ -203,6 +203,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
+
+            CodeBasedDependencyAlgorithm.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);
+
             return dependencies;
         }
 

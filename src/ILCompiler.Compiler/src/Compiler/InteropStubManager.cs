@@ -101,32 +101,49 @@ namespace ILCompiler
         internal struct DelegateMarshallingThunks
         {
             public TypeDesc DelegateType;
-            public DelegateMarshallingMethodThunk OpenStaticDelegateMarshallingThunk;
-            public DelegateMarshallingMethodThunk ClosedDelegateMarshallingThunk;
-            public ForwardDelegateCreationThunk DelegateCreationThunk;
+            public MethodDesc OpenStaticDelegateMarshallingThunk;
+            public MethodDesc ClosedDelegateMarshallingThunk;
+            public MethodDesc DelegateCreationThunk;
         }
 
         internal IEnumerable<DelegateMarshallingThunks> GetDelegateMarshallingThunks()
         {
             foreach (var delegateType in _delegateMarshalingTypes)
             {
-                var openStub = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType);
-                var closedStub = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType);
-                var delegateCreationStub = InteropStateManager.GetForwardDelegateCreationThunk(delegateType);
                 yield return 
                     new DelegateMarshallingThunks()
                     {
                         DelegateType = delegateType,
-                        OpenStaticDelegateMarshallingThunk = openStub,
-                        ClosedDelegateMarshallingThunk = closedStub,
-                        DelegateCreationThunk = delegateCreationStub
+                        OpenStaticDelegateMarshallingThunk = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType),
+                        ClosedDelegateMarshallingThunk = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType),
+                        DelegateCreationThunk = InteropStateManager.GetForwardDelegateCreationThunk(delegateType)
                     };
             }
         }
 
-        internal HashSet<NativeStructType> GetStructMarshallingTypes()
+        internal struct StructMarshallingThunks
         {
-            return _structMarshallingTypes;
+            public TypeDesc StructType;
+            public NativeStructType NativeStructType;
+            public MethodDesc MarshallingThunk;
+            public MethodDesc UnmarshallingThunk;
+            public MethodDesc CleanupThunk;
+        }
+
+        internal IEnumerable<StructMarshallingThunks> GetStructMarshallingTypes()
+        {
+                foreach (var nativeStuctType in _structMarshallingTypes)
+            {
+                yield return
+                    new StructMarshallingThunks()
+                    {
+                        StructType = nativeStuctType.ManagedStructType,
+                        NativeStructType = nativeStuctType,
+                        MarshallingThunk = InteropStateManager.GetStructMarshallingManagedToNativeThunk(nativeStuctType.ManagedStructType),
+                        UnmarshallingThunk = InteropStateManager.GetStructMarshallingNativeToManagedThunk(nativeStuctType.ManagedStructType),
+                        CleanupThunk = InteropStateManager.GetStructMarshallingCleanupThunk(nativeStuctType.ManagedStructType)
+                    };
+            }
         }
     }
 }

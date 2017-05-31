@@ -148,6 +148,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />    
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />

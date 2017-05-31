@@ -519,6 +519,16 @@ namespace PInvokeTests
 
             public ExplicitStruct f2;
         }
+        
+        [StructLayout(LayoutKind.Explicit)]
+        public struct TestStruct2
+        {
+            [FieldOffset(0)]
+            public int f1;
+
+            [FieldOffset(8)]
+            public bool f2;
+        }
 
         private static void TestStruct()
         {
@@ -582,6 +592,24 @@ namespace PInvokeTests
             ius.inlineString = "Hello World";
 
 #if !CODEGEN_CPP
+
+            TestStruct2 ts = new Program.TestStruct2() { f1 = 100, f2 = true };
+            int size = Marshal.SizeOf<TestStruct2>(ts);
+            IntPtr memory = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr<Program.TestStruct2>(ts, memory, false);
+                TestStruct2 ts2 = Marshal.PtrToStructure<Program.TestStruct2>(memory);
+                ThrowIfNotEquals(true, ts2.f1 == 100 && ts2.f2 == true, "Struct marshalling Marshal API failed");
+
+                IntPtr offset = Marshal.OffsetOf<Program.TestStruct2>("f2");
+                ThrowIfNotEquals(new IntPtr(8), offset, "Struct marshalling OffsetOf failed.");
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(memory);
+            }
+
             ThrowIfNotEquals(true, InlineArrayTest(ref ias, ref ius), "inline array marshalling failed");
             bool pass = true;
             for (short i = 0; i < 128; i++)

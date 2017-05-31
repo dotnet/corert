@@ -20,6 +20,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices.ComTypes;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.InteropServices
 {
@@ -178,7 +179,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
             RuntimeTypeHandle unsafeStructType;
-            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
+            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
             {
                 return unsafeStructType.GetValueTypeSize();
             }
@@ -216,7 +217,7 @@ namespace System.Runtime.InteropServices
         {
             bool structExists;
             uint offset;
-            if (McgModuleManager.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
+            if (RuntimeInteropData.Instance.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
             {
                 return new IntPtr(offset);
             }
@@ -1096,7 +1097,7 @@ namespace System.Runtime.InteropServices
             }
 
             IntPtr unmarshalStub;
-            if (McgModuleManager.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
             {
                 InteropExtensions.PinObjectAndCall(structure,
                     unboxedStructPtr =>
@@ -1191,7 +1192,7 @@ namespace System.Runtime.InteropServices
 
             bool isBlittable = false; // whether Mcg treat this struct as blittable struct
             IntPtr marshalStub;
-            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
             {
                 if (marshalStub != IntPtr.Zero)
                 {
@@ -1279,7 +1280,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr destroyStructureStub;
             bool hasInvalidLayout;
-            if (McgModuleManager.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
+            if (RuntimeInteropData.Instance.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
             {
                 if (hasInvalidLayout)
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());

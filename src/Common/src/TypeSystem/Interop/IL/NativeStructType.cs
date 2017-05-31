@@ -127,7 +127,23 @@ namespace Internal.TypeSystem.Interop
 
         private NativeStructField[] _fields;
         private InteropStateManager _interopStateManager;
+        private bool _hasInvalidLayout;
 
+        public bool HasInvalidLayout
+        {
+            get
+            {
+                return _hasInvalidLayout;
+            }
+        }
+
+        public FieldDesc[] Fields
+        {
+            get
+            {
+                return _fields;
+            }
+        }
 
         public NativeStructType(ModuleDesc owningModule, MetadataType managedStructType, InteropStateManager interopStateManager)
         {
@@ -138,6 +154,7 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
+            _hasInvalidLayout = false;
             CalculateFields();
         }
 
@@ -179,6 +196,7 @@ namespace Internal.TypeSystem.Interop
                     // if marshalling is not supported for this type the generated stubs will emit appropriate
                     // error message. We just set native type to be same as managedtype
                     nativeType = managedType;
+                    _hasInvalidLayout = true;
                 }
 
                 _fields[index++] = new NativeStructField(nativeType, this, field);
