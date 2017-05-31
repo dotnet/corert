@@ -189,8 +189,6 @@ while [ "$1" != "" ]; do
             ;;
         armel)
             export __BuildArch=armel
-            export __ClangMajorVersion=3
-            export __ClangMinorVersion=5
             ;;
         debug)
             export __BuildType=Debug
