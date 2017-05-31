@@ -503,8 +503,12 @@ namespace Internal.TypeSystem
                 if (baseType == null)
                     return foundOnCurrentType;
 
-                if (foundOnCurrentType == null && (ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, baseType) == null))
+                if (foundOnCurrentType == null)
                 {
+                    MethodDesc foundOnBaseType = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, baseType);
+                    if (foundOnBaseType != null)
+                        return foundOnBaseType;
+
                     // TODO! Does this handle the case where the base type explicitly implements the interface, but is abstract
                     // and doesn't actually have an implementation?
                     if (!IsInterfaceImplementedOnType(baseType, interfaceType))
