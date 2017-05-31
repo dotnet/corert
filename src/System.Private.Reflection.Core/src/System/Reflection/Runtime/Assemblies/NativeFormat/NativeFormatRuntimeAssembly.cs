@@ -11,6 +11,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.Modules.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.TypeParsing;
@@ -20,7 +21,6 @@ using System.Collections.Generic;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
-
 using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
@@ -133,6 +133,14 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         public sealed override Stream GetManifestResourceStream(String name)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
+        }
+
+        public sealed override Module ManifestModule
+        {
+            get
+            {
+                return NativeFormatRuntimeModule.GetRuntimeModule(this);
+            }
         }
 
         internal sealed override RuntimeAssemblyName RuntimeAssemblyName

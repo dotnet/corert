@@ -52,11 +52,14 @@
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(JitSupport)' == 'true'">
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs" />

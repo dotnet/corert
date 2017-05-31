@@ -3,36 +3,51 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Threading;
 using System.Collections;
-using System.Runtime;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
     /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
     public static partial class EnvironmentAugments
     {
-        public static string GetEnvironmentVariable(string variable)
+        private static string GetEnvironmentVariableCore(string variable)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
+            Debug.Assert(variable != null);
             return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
         }
 
-        public static IDictionary GetEnvironmentVariables()
+        private static void SetEnvironmentVariableCore(string variable, string value)
         {
-            if ("".Length != 0)
-                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3688 Need to implement GetEnvironmentVariables() properly.
-            return new LowLevelListDictionary();
+            Debug.Assert(variable != null);
+            throw new NotImplementedException();
         }
 
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) { throw new NotImplementedException(); }
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
-        public static void SetEnvironmentVariable(string variable, string value) { throw new NotImplementedException(); }
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) { throw new NotImplementedException(); }
+        public static IEnumerable<KeyValuePair<string,string>> EnumerateEnvironmentVariables()
+        {
+            if ("".Length != 0)
+                throw new NotImplementedException(); // Need to return something better than an empty environment block.
+
+            return Array.Empty<KeyValuePair<string,string>>();
+        }
+
+        private static string GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
+        {
+            Debug.Assert(variable != null);
+            return null; // Unix systems pretend that the registry environment subkeys are empty lists.
+        }
+
+        private static void SetEnvironmentVariableFromRegistry(string variable, string value, bool fromMachine)
+        {
+            Debug.Assert(variable != null);
+            return;  // Unix systems pretend that the registry environment subkeys are empty lists that throw all write requests into a black hole.
+        }
+
+        private static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(bool fromMachine)
+        {
+            return Array.Empty<KeyValuePair<string, string>>();  // Unix systems pretend that the registry environment subkeys are empty lists.
+        }
     }
 }

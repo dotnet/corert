@@ -40,7 +40,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (isOpenResolver)
                 {
                     OpenMethodResolver* resolver = (OpenMethodResolver*)originalLdFtnResult;
-                    if (resolver->ResolverType == OpenMethodResolver.OpenNonVirtualResolve)
+                    if (resolver->IsOpenNonVirtualResolve)
                     {
                         originalLdFtnResult = resolver->CodePointer;
                         // And go on to do normal ldftn processing.

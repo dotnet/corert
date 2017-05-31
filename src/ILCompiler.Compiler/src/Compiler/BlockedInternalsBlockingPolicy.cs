@@ -19,6 +19,31 @@ namespace ILCompiler
     /// </summary>
     public sealed class BlockedInternalsBlockingPolicy : MetadataBlockingPolicy
     {
+        private class ModuleBlockingState
+        {
+            public ModuleDesc Module { get; }
+            public bool HasBlockedInternals { get; }
+            public ModuleBlockingState(ModuleDesc module, bool hasBlockedInternals)
+            {
+                Module = module;
+                HasBlockedInternals = hasBlockedInternals;
+            }
+        }
+
+        private class BlockedModulesHashtable : LockFreeReaderHashtable<ModuleDesc, ModuleBlockingState>
+        {
+            protected override int GetKeyHashCode(ModuleDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(ModuleBlockingState value) => value.Module.GetHashCode();
+            protected override bool CompareKeyToValue(ModuleDesc key, ModuleBlockingState value) => Object.ReferenceEquals(key, value.Module);
+            protected override bool CompareValueToValue(ModuleBlockingState value1, ModuleBlockingState value2) => Object.ReferenceEquals(value1.Module, value2.Module);
+            protected override ModuleBlockingState CreateValueFromKey(ModuleDesc module)
+            {
+                bool moduleHasBlockingPolicy = module.GetType("System.Runtime.CompilerServices", "__BlockReflectionAttribute", false) != null;
+                return new ModuleBlockingState(module, moduleHasBlockingPolicy);
+            }
+        }
+        private BlockedModulesHashtable _blockedModules = new BlockedModulesHashtable();
+
         private class BlockingState
         {
             public EcmaType Type { get; }
@@ -32,6 +57,13 @@ namespace ILCompiler
 
         private class BlockedTypeHashtable : LockFreeReaderHashtable<EcmaType, BlockingState>
         {
+            private readonly BlockedModulesHashtable _blockedModules;
+
+            public BlockedTypeHashtable(BlockedModulesHashtable blockedModules)
+            {
+                _blockedModules = blockedModules;
+            }
+
             protected override int GetKeyHashCode(EcmaType key) => key.GetHashCode();
             protected override int GetValueHashCode(BlockingState value) => value.Type.GetHashCode();
             protected override bool CompareKeyToValue(EcmaType key, BlockingState value) => Object.ReferenceEquals(key, value.Type);
@@ -39,8 +71,7 @@ namespace ILCompiler
             protected override BlockingState CreateValueFromKey(EcmaType type)
             {
                 bool isBlocked = false;
-                bool moduleHasBlockingPolicy = type.Module.GetType("System.Runtime.CompilerServices", "__BlockReflectionAttribute", false) != null;
-                if (moduleHasBlockingPolicy)
+                if (_blockedModules.GetOrCreateValue(type.EcmaModule).HasBlockedInternals)
                 {
                     isBlocked = ComputeIsBlocked(type);
                 }
@@ -82,7 +113,12 @@ namespace ILCompiler
                 return false;
             }
         }
-        private BlockedTypeHashtable _blockedTypes = new BlockedTypeHashtable();
+        private BlockedTypeHashtable _blockedTypes;
+
+        public BlockedInternalsBlockingPolicy()
+        {
+            _blockedTypes = new BlockedTypeHashtable(_blockedModules);
+        }
 
         public override bool IsBlocked(MetadataType type)
         {
@@ -106,8 +142,11 @@ namespace ILCompiler
             if (_blockedTypes.GetOrCreateValue((EcmaType)ecmaMethod.OwningType).IsBlocked)
                 return true;
 
-            if ((ecmaMethod.Attributes & MethodAttributes.Public) != MethodAttributes.Public)
-                return true;
+            if (_blockedModules.GetOrCreateValue(ecmaMethod.Module).HasBlockedInternals)
+            {
+                if ((ecmaMethod.Attributes & MethodAttributes.Public) != MethodAttributes.Public)
+                    return true;
+            }
 
             return false;
         }
@@ -123,8 +162,11 @@ namespace ILCompiler
             if (_blockedTypes.GetOrCreateValue((EcmaType)ecmaField.OwningType).IsBlocked)
                 return true;
 
-            if ((ecmaField.Attributes & FieldAttributes.Public) != FieldAttributes.Public)
-                return true;
+            if (_blockedModules.GetOrCreateValue(ecmaField.Module).HasBlockedInternals)
+            {
+                if ((ecmaField.Attributes & FieldAttributes.Public) != FieldAttributes.Public)
+                    return true;
+            }
 
             return false;
         }

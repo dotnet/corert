@@ -115,21 +115,6 @@ namespace System.Reflection.Runtime.Assemblies
     }
 }
 
-namespace System.Reflection.Runtime.Modules
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
-    //          mapping between Assemblies and Modules.)
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeModule
-    {
-        internal static RuntimeModule GetRuntimeModule(RuntimeAssembly assembly)
-        {
-            return new RuntimeModule(assembly);
-        }
-    }
-}
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //-----------------------------------------------------------------------------------------------------------

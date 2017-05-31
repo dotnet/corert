@@ -312,33 +312,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (decodeUnboxing)
                 {
-                    exactTarget = RuntimeAugments.GetCodeTarget(targetOnTypeVtable);
-                    if (RuntimeAugments.IsGenericType(callDesc->_constraintType))
-                    {
-                        IntPtr fatFunctionPointerTarget;
-                        if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(exactTarget, out fatFunctionPointerTarget))
-                        {
-                            // If this is an unboxing and instantiating stub, use seperate table, find target, and create fat function pointer
-                            exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
-                                                                                             callDesc->_constraintType.ToIntPtr());
-                        }
-                        else
-                        {
-                            IntPtr newExactTarget;
-                            if (CallConverterThunk.TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(exactTarget,
-                                callDesc->_constraintType, out newExactTarget))
-                            {
-                                // CallingConventionConverter determined non-unboxing stub
-                                exactTarget = newExactTarget;
-                            }
-                            else
-                            {
-                                // Target method was a method on a generic, but it wasn't a shared generic, and thus none of the above
-                                // complex unboxing stub digging logic was necessary. Do nothing, and use exactTarget as discovered
-                                // from GetCodeTarget
-                            }
-                        }
-                    }
+                    exactTarget = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(targetOnTypeVtable, callDesc->_constraintType);
                 }
                 else
                 {

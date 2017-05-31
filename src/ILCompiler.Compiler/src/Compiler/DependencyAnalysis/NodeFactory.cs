@@ -445,6 +445,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new MethodMetadataNode(method);
             });
 
+            _fieldsWithMetadata = new NodeCache<FieldDesc, FieldMetadataNode>(field =>
+            {
+                return new FieldMetadataNode(field);
+            });
+
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
             {
                 return new ModuleMetadataNode(module);
@@ -881,6 +886,13 @@ namespace ILCompiler.DependencyAnalysis
         internal MethodMetadataNode MethodMetadata(MethodDesc method)
         {
             return _methodsWithMetadata.GetOrAdd(method);
+        }
+
+        private NodeCache<FieldDesc, FieldMetadataNode> _fieldsWithMetadata;
+
+        internal FieldMetadataNode FieldMetadata(FieldDesc field)
+        {
+            return _fieldsWithMetadata.GetOrAdd(field);
         }
 
         private NodeCache<ModuleDesc, ModuleMetadataNode> _modulesWithMetadata;

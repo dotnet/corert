@@ -154,9 +154,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
 
         public sealed override MethodBody GetMethodBody()
@@ -434,7 +432,11 @@ namespace System.Reflection.Runtime.MethodInfos
                     if (!delegateParameterEnumerator.MoveNext())
                         return null;
                     isOpen = true;
-                    if (!IsAssignableFrom(executionEnvironment, this.DeclaringType, delegateParameterEnumerator.Current.ParameterType))
+                    Type firstParameterOfMethodType = this.DeclaringType;
+                    if (firstParameterOfMethodType.IsValueType)
+                        firstParameterOfMethodType = firstParameterOfMethodType.MakeByRefType();
+
+                    if (!IsAssignableFrom(executionEnvironment, firstParameterOfMethodType, delegateParameterEnumerator.Current.ParameterType))
                         return null;
                     if (target != null)
                         return null;

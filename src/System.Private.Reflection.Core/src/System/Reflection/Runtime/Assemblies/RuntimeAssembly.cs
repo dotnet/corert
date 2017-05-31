@@ -53,19 +53,10 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.AssemblyUnity, FullName, this);
+            throw new PlatformNotSupportedException();
         }
 
-        public sealed override Module ManifestModule
-        {
-            get
-            {
-                return RuntimeModule.GetRuntimeModule(this);
-            }
-        }
+        public abstract override Module ManifestModule { get; }
 
         public sealed override IEnumerable<Module> Modules
         {

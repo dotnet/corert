@@ -100,7 +100,7 @@ namespace ILCompiler
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
-            var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(this, factory), GetCompilationModulesWithMetadata());
+            var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory), GetCompilationModulesWithMetadata());
 
             // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
             //       TypeReference records for _typeDefinitionsGenerated that don't have metadata.
@@ -239,21 +239,20 @@ namespace ILCompiler
 
         private struct GeneratedTypesAndCodeMetadataPolicy : IMetadataPolicy
         {
-            private readonly CompilerGeneratedMetadataManager _parent;
+            private readonly MetadataBlockingPolicy _blockingPolicy;
             private readonly NodeFactory _factory;
             private readonly ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
 
-            public GeneratedTypesAndCodeMetadataPolicy(CompilerGeneratedMetadataManager parent, NodeFactory factory)
+            public GeneratedTypesAndCodeMetadataPolicy(MetadataBlockingPolicy blockingPolicy, NodeFactory factory)
             {
-                _parent = parent;
+                _blockingPolicy = blockingPolicy;
                 _factory = factory;
                 _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return _factory.TypeMetadata((MetadataType)fieldDef.OwningType).Marked &&
-                    !_parent._blockingPolicy.IsBlocked(fieldDef);
+                return _factory.FieldMetadata(fieldDef).Marked;
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
@@ -268,12 +267,12 @@ namespace ILCompiler
 
             public bool IsBlocked(MetadataType typeDef)
             {
-                return _parent._blockingPolicy.IsBlocked(typeDef);
+                return _blockingPolicy.IsBlocked(typeDef);
             }
 
             public bool IsBlocked(MethodDesc methodDef)
             {
-                return _parent._blockingPolicy.IsBlocked(methodDef);
+                return _blockingPolicy.IsBlocked(methodDef);
             }
 
             public ModuleDesc GetModuleOfType(MetadataType typeDef)

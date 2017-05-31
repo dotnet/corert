@@ -115,6 +115,7 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
@@ -156,7 +157,6 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
@@ -443,8 +443,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\Registry.cs" />
     <Compile Include="Microsoft\Win32\RegistryHive.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
@@ -454,6 +457,12 @@
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
+      <Link>Interop\Windows\advapi32\Interop.RegDeleteValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
+      <Link>Interop\Windows\advapi32\Interop.RegSetValueEx.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
       <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
     </Compile>
@@ -480,6 +489,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
+      <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
