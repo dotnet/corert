@@ -25,6 +25,8 @@ namespace ILVerify.Tests
     {
         /// <summary>
         /// The folder with the binaries which are compiled from the test driver IL Code
+        /// Currently the test .il code is built manually, but the plan is to have a ProjectReference and automatically build the .il files.
+        /// See: https://github.com/dotnet/corert/pull/3725#discussion_r118820770
         /// </summary>
         public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
 
@@ -32,16 +34,16 @@ namespace ILVerify.Tests
         /// Returns all methods that contain valid IL code based on the following naming convention:
         /// [FriendlyName]_Valid
         /// The method must contain 1 '_'. The part before the '_' is a friendly name describing what the method does. 
-        /// The word after the '_' has to be 'Valid'. 
+        /// The word after the '_' has to be 'Valid' (Case sensitive) 
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
         public static TheoryData<TestCase> GetMethodsWithValidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
-                if (mparams.Length == 2 && mparams[1].ToLower() == "valid")
+                if (mparams.Length == 2 && mparams[1] == "Valid")
                 {
-                    return new ValidILTestCase { MetaDataToken = MetadataTokens.GetToken(methodHandle) };
+                    return new ValidILTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
                 }
                 return null;
             });
@@ -53,7 +55,7 @@ namespace ILVerify.Tests
         /// [FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]_[ExpectedExceptionDuringValidation]
         /// The method name must contain 3 '_' characters.
         /// 1. part: a friendly name
-        /// 2. part: must be the word 'Invalid'
+        /// 2. part: must be the word 'Invalid' (Case sensitive)
         /// 3. part: the expected VerifierErrors as string separated by '.'.      
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
         /// </summary>      
@@ -61,7 +63,7 @@ namespace ILVerify.Tests
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
-                if (mparams.Length == 3 && mparams[1].ToLower() == "invalid")
+                if (mparams.Length == 3 && mparams[1] == "Invalid")
                 {
                     var expectedErrors = mparams[2].Split('.');
                     var verificationErros = new List<VerifierError>();
@@ -74,7 +76,7 @@ namespace ILVerify.Tests
                         }
                     }
 
-                    var newItem = new InvalidILTestCase { MetaDataToken = MetadataTokens.GetToken(methodHandle) };
+                    var newItem = new InvalidILTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
 
                     if (expectedErrors.Length > 0)
                     {
@@ -150,20 +152,20 @@ namespace ILVerify.Tests
     abstract class TestCase : IXunitSerializable
     {
         public string MethodName { get; set; }
-        public int MetaDataToken { get; set; }
+        public int MetadataToken { get; set; }
         public string ModuleName { get; set; }
 
         public virtual void Deserialize(IXunitSerializationInfo info)
         {
             MethodName = info.GetValue<string>(nameof(MethodName));
-            MetaDataToken = info.GetValue<int>(nameof(MetaDataToken));
+            MetadataToken = info.GetValue<int>(nameof(MetadataToken));
             ModuleName = info.GetValue<string>(nameof(ModuleName));
         }
 
         public virtual void Serialize(IXunitSerializationInfo info)
         {
             info.AddValue(nameof(MethodName), MethodName);
-            info.AddValue(nameof(MetaDataToken), MetaDataToken);
+            info.AddValue(nameof(MetadataToken), MetadataToken);
             info.AddValue(nameof(ModuleName), ModuleName);
         }
 

@@ -66,7 +66,7 @@ namespace ILVerify.Tests
         private ILImporter ConstructILImporter(TestCase testCase)
         {
             var module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
-            var method = (EcmaMethod)module.GetMethod(MetadataTokens.EntityHandle(testCase.MetaDataToken));
+            var method = (EcmaMethod)module.GetMethod(MetadataTokens.EntityHandle(testCase.MetadataToken));
             var methodIL = EcmaMethodIL.Create(method);
 
             return new ILImporter(method, methodIL);
