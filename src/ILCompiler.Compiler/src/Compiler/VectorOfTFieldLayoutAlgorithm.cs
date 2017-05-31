@@ -14,7 +14,7 @@ namespace ILCompiler
     /// </summary>
     internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
-        private FieldLayoutAlgorithm _fallbackAlgorithm;
+        private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
 
         public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
         {
@@ -24,6 +24,8 @@ namespace ILCompiler
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType defType, InstanceLayoutKind layoutKind)
         {
             TargetDetails targetDetails = defType.Context.Target;
+
+            ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
             LayoutInt instanceFieldSize;
 
@@ -38,34 +40,17 @@ namespace ILCompiler
             else
             {
                 Debug.Assert(targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.None);
-                return _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
+                return layoutFromMetadata;
             }
 
-            // We need to lay out the first (and only) field too. It might be used for e.g. reflection.
-            // Codegen won't use it.
-            FieldDesc firstField = null;
-            foreach (var field in defType.GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-
-                Debug.Assert(firstField == null);
-                firstField = field;
-            }
-
-            ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout
+            return new ComputedInstanceFieldLayout
             {
                 ByteCountUnaligned = instanceFieldSize,
-                ByteCountAlignment = new LayoutInt(TargetDetails.MaximumAlignment),
-                FieldAlignment = new LayoutInt(TargetDetails.MaximumAlignment),
+                ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
+                FieldAlignment = layoutFromMetadata.FieldAlignment,
                 FieldSize = instanceFieldSize,
-                Offsets = new FieldAndOffset[]
-                {
-                    new FieldAndOffset(firstField, LayoutInt.Zero),
-                }
+                Offsets = layoutFromMetadata.Offsets,
             };
-
-            return result;
         }
 
         public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
