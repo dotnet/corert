@@ -37,10 +37,6 @@ Result Message:	System.InvalidOperationException : No data found for ILVerify.Te
 
 The test project itself is under [src/ILVerify/tests](https://github.com/dotnet/corert/tree/master/src/ILVerify/tests)
 
-The generated .dll files are automatically fed into two XUnit based test methods:
- - 1 method expects valid IL code and asserts that the validation runs through without errors
- - 1 method expects invalid IL code and asserts on the expected errors. 
-
  Method names in the .il files must follow the following naming convention:
 
 ### Methods with Valid IL:
@@ -48,25 +44,25 @@ The generated .dll files are automatically fed into two XUnit based test methods
 ```
 [FriendlyName]_Valid
 ```
-The method must contain 1 '_'. 
- - The part before the '_' is a friendly name describing what the method does.
- - The word after the '_' must be 'Valid' (Case sensitive) 
+The method must contain 1 '`_`'. 
+ - The part before the `_` is a friendly name describing what the method does.
+ - The word after the `_` must be 'Valid' (Case sensitive) 
 
-E.g.: 'SimpleAdd_Valid'
+E.g.: ```SimpleAdd_Valid```
 
 ### Methods with Invalid IL:
 ```
-[FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]_...[ExpectedVerifierErrorN]
+[FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]....[ExpectedVerifierErrorN]
 ```
 
-The method name must contain 3 '_' characters.
+The method name must contain 2 '`_`' characters.
  1. part: a friendly name
  2. part: must be the word 'Invalid' (Case sensitive)
  3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerify/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
  
- E.g.: SimpleAdd_Invalid_ExpectedNumericType
+ E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
 
-Methods not following this naming conventions are ignored by the test scaffolding system. 
+The methods are automatically fed into appropriate XUnit theories based on the naming convention. Methods not following this naming conventions are ignored by the test scaffolding system.
 
 You can run the tests either in Visual Studio (in Test Explorer) or with the ```dotnet test ``` command from the command line.
 
