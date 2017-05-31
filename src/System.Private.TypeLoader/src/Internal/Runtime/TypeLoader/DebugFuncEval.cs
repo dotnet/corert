@@ -53,11 +53,12 @@ namespace Internal.Runtime.TypeLoader
                 object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
                 GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
                 IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
-                uint identifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
 
                 // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
                 funcEvalCompleteCommand->commandCode = 0;
+                funcEvalCompleteCommand->returnHandleIdentifier = returnHandleIdentifier;
                 funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
                 IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
                 RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
@@ -83,7 +84,7 @@ namespace Internal.Runtime.TypeLoader
             [FieldOffset(0)]
             public int commandCode;
             [FieldOffset(4)]
-            public int unused;
+            public uint returnHandleIdentifier;
             [FieldOffset(8)]
             public long returnAddress;
         }
