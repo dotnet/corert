@@ -65,7 +65,7 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport("jitinterface")]
-        private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS flags);
+        private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
 
         [DllImport("jitinterface")]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
@@ -812,7 +812,7 @@ namespace Internal.JitInterface
                 getJitFlags(ref flags, (uint)sizeof(CORJIT_FLAGS));
 
                 Debug.Assert(!_simdHelper.IsVectorOfT(type)
-                    || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, flags));
+                    || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, &flags));
 #endif
 
                 return true;
