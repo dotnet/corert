@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
@@ -21,8 +20,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of ConstructorInfo.
     //
-    [Serializable]
-    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo, ISerializable
+    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo
     {
         public abstract override MethodAttributes Attributes { get; }
 
@@ -47,11 +45,6 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         public sealed override MethodBody GetMethodBody()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
