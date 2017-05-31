@@ -16,6 +16,60 @@ Historically on Full Framework IL generators used PEVerify to make sure that the
 - It should be easy to add new verification rules
 - Fast spin up/tear down. 
 
+## The codebase
+The project targets netcoreapp2.0 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.0 tooling. Currently this is supported in Visual Studio 2017 Update 3 Preview (Version 15.3). The other option is to use command (with .NET Core 2.0 tooling - currenly also preview). 
+
+## Tests
+
+To test ILVerify we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/ILVerify/tests/ILTests](https://github.com/dotnet/corert/tree/master/src/ILVerify/tests/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method. 
+
+Currently the IL files are NOT compiled automatically. You have to compile manually (We want to automatize this step later):
+
+```
+ilasm [filename.il] /dll /ERROR
+```
+
+Note: if you run the tests and get an error similar to this then it means that the .il files were not compiled, or none of them contained methods that follow the naming convention described below:
+
+```
+Result Message:	System.InvalidOperationException : No data found for ILVerify.Tests.ILMethodTester.TestMethodsWithInvalidIL
+```
+
+The test project itself is under [src/ILVerify/tests](https://github.com/dotnet/corert/tree/master/src/ILVerify/tests)
+
+The generated .dll files are automatically fed into two XUnit based test methods:
+ - 1 method expects valid IL code and asserts that the validation runs through without errors
+ - 1 method expects invalid IL code and asserts on the expected errors. 
+
+ Method names in the .il files must follow the following naming convention:
+
+### Methods with Valid IL:
+
+```
+[FriendlyName]_Valid
+```
+The method must contain 1 '_'. 
+ - The part before the '_' is a friendly name describing what the method does.
+ - The word after the '_' must be 'Valid' (Case sensitive) 
+
+E.g.: 'SimpleAdd_Valid'
+
+### Methods with Invalid IL:
+```
+[FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]_...[ExpectedVerifierErrorN]
+```
+
+The method name must contain 3 '_' characters.
+ 1. part: a friendly name
+ 2. part: must be the word 'Invalid' (Case sensitive)
+ 3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerify/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
+ 
+ E.g.: SimpleAdd_Invalid_ExpectedNumericType
+
+Methods not following this naming conventions are ignored by the test scaffolding system. 
+
+You can run the tests either in Visual Studio (in Test Explorer) or with the ```dotnet test ``` command from the command line.
+
 ## How to contribute
 All ILVerify issues are labeled with [area-ILVerification](https://github.com/search?utf8=%E2%9C%93&q=label%3Aarea-ILVerification&type=).
 
@@ -27,8 +81,10 @@ Currently every IL command falls into one of these categories:
  - Partially implemented: These are typically methods with TODOs in it. As the first phase we want to make sure that for every command the stack is correctly maintained, therefore for some commands we either have no verification or we have only a not complete verification. You can also pick one of these and finish it.
  - Implemented: find and fix bugs ;) .  
 
+Another option to contribute is to write tests (see Tests section).
+
 Useful sources:
  - [PEVerify source code](https://github.com/lewischeng-ms/sscli/blob/master/clr/src/jit64/newverify.cpp)
  - [RyuJIT source code](https://github.com/dotnet/coreclr/blob/master/src/jit), specifically: [exception handling specific part](https://github.com/dotnet/coreclr/blob/master/src/jit/jiteh.cpp), [importer.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/importer.cpp) (look for `Compiler::ver`, `Verify`, `VerifyOrReturn`, and `VerifyOrReturnSpeculative`), [_typeinfo.h](https://github.com/dotnet/coreclr/blob/master/src/jit/_typeinfo.h), [typeinfo.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/typeinfo.cpp)
  - [ECMA-335 standard](https://www.ecma-international.org/publications/standards/Ecma-335.htm)
- - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin
+ - [Expert .NET 2.0 IL Assembler book](http://www.apress.com/us/book/9781590596463) by Serge Lidin 

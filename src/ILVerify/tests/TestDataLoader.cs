@@ -52,7 +52,7 @@ namespace ILVerify.Tests
 
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
-        /// [FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]_[ExpectedExceptionDuringValidation]
+        /// [FriendlyName]_Invalid_[ExpectedVerifierError1].[ExpectedVerifierError2]...[ExpectedVerifierErrorN]
         /// The method name must contain 3 '_' characters.
         /// 1. part: a friendly name
         /// 2. part: must be the word 'Invalid' (Case sensitive)
