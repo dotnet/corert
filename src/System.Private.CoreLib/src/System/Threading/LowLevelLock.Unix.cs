@@ -182,7 +182,6 @@ namespace System.Threading
                 _monitor.Wait();
 
                 /// Indicate to <see cref="SignalWaiter"/> that the signaled thread has woken up
-                Debug.Assert(_isAnyWaitingThreadSignaled);
                 _isAnyWaitingThreadSignaled = false;
 
                 state = _state;
