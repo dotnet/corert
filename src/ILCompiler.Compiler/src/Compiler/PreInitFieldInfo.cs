@@ -97,12 +97,10 @@ namespace ILCompiler
             Field = field;
             Data = data;
             Length = length;
+            FixupInfos = fixups;
 
-            if (fixups != null)
-            {
-                fixups.Sort();
-                FixupInfos = fixups;
-            }
+            if (FixupInfos != null)
+                FixupInfos.Sort();
         }
 
         public virtual int WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -119,14 +117,17 @@ namespace ILCompiler
                     builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
 
                     // write the fixup
-                    int length = FixupInfos[i].WriteData(ref builder, factory);
+                    int fixupBytes = FixupInfos[i].WriteData(ref builder, factory);
 
                     // move pointer past the fixup
-                    offset = fixupInfo.Offset + length;
+                    offset = fixupInfo.Offset + fixupBytes;
                 }
             }
 
-            // Emit remaining bytes
+            if (offset > Data.Length)
+                throw new BadImageFormatException();
+
+            // Emit remaining bytes. 0 length emit is a no-op
             builder.EmitBytes(Data, offset, Data.Length - offset);
 
             return Data.Length;
@@ -221,7 +222,7 @@ namespace ILCompiler
             var typeFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "TypeHandleFixupAttribute");
             foreach (var typeFixupAttr in typeFixupAttrs)
             {
-                if (!(typeFixupAttr.FixedArguments[0].Value is int))
+                if (typeFixupAttr.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Int32))
                     throw new BadImageFormatException();
 
                 int offset = (int)typeFixupAttr.FixedArguments[0].Value;
@@ -238,7 +239,7 @@ namespace ILCompiler
             var methodFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "MethodAddrFixupAttribute");
             foreach (var methodFixupAttr in methodFixupAttrs)
             {
-                if (!(methodFixupAttr.FixedArguments[0].Value is int))
+                if (methodFixupAttr.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Int32))
                     throw new BadImageFormatException();
 
                 int offset = (int)methodFixupAttr.FixedArguments[0].Value;
