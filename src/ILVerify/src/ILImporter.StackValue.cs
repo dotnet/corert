@@ -45,7 +45,6 @@ namespace Internal.IL
             return CreateFromType(Type);
         }
 
-
         static public StackValue CreateUnknown()
         {
             return new StackValue(StackValueKind.Unknown);
