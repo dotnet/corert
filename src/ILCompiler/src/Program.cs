@@ -214,7 +214,7 @@ namespace ILCompiler
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
-            var simdVectorLength = _isCppCodegen ? MaximumSimdVectorLength.None : MaximumSimdVectorLength.Vector128Bit; 
+            var simdVectorLength = _isCppCodegen ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 

@@ -2,30 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     // Extension to TargetDetails related to code generation
     partial class TargetDetails
     {
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, MaximumSimdVectorLength simdVectorLength)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength)
             : this(architecture, targetOS, abi)
         {
             MaximumSimdVectorLength = simdVectorLength;
         }
 
-        public MaximumSimdVectorLength MaximumSimdVectorLength
+        /// <summary>
+        /// Specifies the maximum size of native vectors on the target architecture.
+        /// </summary>
+        public SimdVectorLength MaximumSimdVectorLength
         {
             get;
         }
     }
 
-    public enum MaximumSimdVectorLength
+    /// <summary>
+    /// Specifies the size of native vectors.
+    /// </summary>
+    public enum SimdVectorLength
     {
+        /// <summary>
+        /// Specifies that native vectors are not supported.
+        /// </summary>
         None,
+
+        /// <summary>
+        /// Specifies that native vectors are 128 bit (e.g. SSE on x86).
+        /// </summary>
         Vector128Bit,
+
+        /// <summary>
+        /// Specifies that native vectors are 256 bit (e.g. AVX on x86).
+        /// </summary>
         Vector256Bit,
     }
 }

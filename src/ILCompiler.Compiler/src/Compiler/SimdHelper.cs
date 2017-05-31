@@ -10,6 +10,9 @@ using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Helper type that deals with System.Numerics.Vectors intrinsics.
+    /// </summary>
     internal struct SimdHelper
     {
         private ModuleDesc[] _simdModulesCached;

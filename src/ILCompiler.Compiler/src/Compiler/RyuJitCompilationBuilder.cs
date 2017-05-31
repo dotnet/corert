@@ -78,10 +78,10 @@ namespace ILCompiler
             if (_generateDebugInfo)
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
-            if (_context.Target.MaximumSimdVectorLength != MaximumSimdVectorLength.None)
+            if (_context.Target.MaximumSimdVectorLength != SimdVectorLength.None)
             {
                 // TODO: AVX
-                Debug.Assert(_context.Target.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector128Bit);
+                Debug.Assert(_context.Target.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit);
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             }
 

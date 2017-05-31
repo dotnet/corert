@@ -29,17 +29,17 @@ namespace ILCompiler
 
             LayoutInt instanceFieldSize;
 
-            if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector128Bit)
+            if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
             {
                 instanceFieldSize = new LayoutInt(16);
             }
-            else if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector256Bit)
+            else if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
             {
                 instanceFieldSize = new LayoutInt(32);
             }
             else
             {
-                Debug.Assert(targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.None);
+                Debug.Assert(targetDetails.MaximumSimdVectorLength == SimdVectorLength.None);
                 return layoutFromMetadata;
             }
 
