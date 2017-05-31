@@ -348,22 +348,6 @@ namespace Internal.IL
                 CheckIsObjRef(type);
             }
 
-#if false
-            if (ptr.IsByRef())
-            {
-                ptrVal = DereferenceByRef(ptr);
-                if (instrType == TI_REF)
-                {
-                    VerifyIsObjRef(ptrVal); //@TODO: give better error: Expected Obref or Variable on stack
-                }
-                else
-                {
-                    VerifyCompatibleWith(vertype(ptrVal).MakeByRef(), vertype(instrType).MakeByRef());
-                    VerifyAndReportFound(instrType == ptrVal.GetRawType(), ptr,
-                                         MVER_E_STACK_UNEXPECTED);
-                }
-            }
-#endif
             return type;
         }
 
