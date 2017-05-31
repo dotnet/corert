@@ -334,23 +334,6 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
-        private TypeDesc CheckIsAddressCompatibleWithType(StackValue address, TypeDesc type)
-        {
-            CheckIsByRef(address);
-
-            if (type != null)
-            {
-                CheckIsAssignablePointer(address.Type, type);
-            }
-            else
-            {
-                type = address.Type;
-                CheckIsObjRef(type);
-            }
-
-            return type;
-        }
-
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
@@ -1263,7 +1246,16 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var address = Pop();
-            type = CheckIsAddressCompatibleWithType(address, type);
+
+            CheckIsByRef(address);
+            if (type != null)
+              CheckIsAssignablePointer(address.Type, type);
+            else
+            {
+                type = address.Type;
+                CheckIsObjRef(type);
+            }
+
             Push(StackValue.CreateFromType(type));
         }
 
@@ -1281,7 +1273,13 @@ namespace Internal.IL
             var address = Pop();
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
-            CheckIsAddressCompatibleWithType(address, type);
+
+            CheckIsByRef(address);
+            if (type != null)
+                CheckIsAssignablePointer(type, address.Type);
+            else
+                CheckIsObjRef(address.Type);
+
             CheckIsAssignable(value, address.DereferenceByRef());
         }
 
