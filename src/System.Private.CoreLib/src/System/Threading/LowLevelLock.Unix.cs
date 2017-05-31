@@ -65,6 +65,18 @@ namespace System.Threading
             GC.SuppressFinalize(this);
         }
 
+#if DEBUG
+        public bool IsLocked
+        {
+            get
+            {
+                bool isLocked = _ownerThread == RuntimeThread.CurrentThread;
+                Debug.Assert(!isLocked || (_state & LockedMask) != 0);
+                return isLocked;
+            }
+        }
+#endif
+
         public void VerifyIsLocked()
         {
 #if DEBUG
