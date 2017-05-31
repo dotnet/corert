@@ -25,7 +25,7 @@ namespace Internal.TypeSystem
     public enum MaximumSimdVectorLength
     {
         None,
-        VectorLength16,
-        VectorLength32,
+        Vector128Bit,
+        Vector256Bit,
     }
 }

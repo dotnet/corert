@@ -81,7 +81,7 @@ namespace ILCompiler
             if (_context.Target.MaximumSimdVectorLength != MaximumSimdVectorLength.None)
             {
                 // TODO: AVX
-                Debug.Assert(_context.Target.MaximumSimdVectorLength == MaximumSimdVectorLength.VectorLength16);
+                Debug.Assert(_context.Target.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector128Bit);
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             }
 

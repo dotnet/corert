@@ -29,11 +29,11 @@ namespace ILCompiler
 
             LayoutInt instanceFieldSize;
 
-            if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.VectorLength16)
+            if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector128Bit)
             {
                 instanceFieldSize = new LayoutInt(16);
             }
-            else if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.VectorLength32)
+            else if (targetDetails.MaximumSimdVectorLength == MaximumSimdVectorLength.Vector256Bit)
             {
                 instanceFieldSize = new LayoutInt(32);
             }
