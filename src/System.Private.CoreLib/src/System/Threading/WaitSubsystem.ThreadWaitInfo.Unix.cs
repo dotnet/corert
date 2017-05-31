@@ -321,12 +321,20 @@ namespace System.Threading
                     return waitResult;
                 }
 
+                var tickCount = Environment.TickCount;
+                var i = 0;
+                while(Environment.TickCount < tickCount + 10000)
+                {
+                    i++;
+                }
+
                 /// Timeout. It's ok to read <see cref="_waitedCount"/> without acquiring <see cref="s_lock"/> here, because it
                 /// is initially set by this thread, and another thread cannot unregister this thread's wait without first
                 /// signaling this thread, in which case this thread wouldn't be timing out.
                 Debug.Assert(isSleep == (_waitedCount == 0));
                 if (!isSleep)
                 {
+
                     s_lock.Acquire();
                     try
                     {

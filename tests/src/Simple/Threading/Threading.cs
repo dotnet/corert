@@ -14,6 +14,9 @@ internal static class Runner
 
     public static int Main()
     {
+        Console.WriteLine("    WaitSubsystemTests.EventWaitHandleSetCrash");
+        WaitSubsystemTests.EventWaitHandleSetCrash();
+
         Console.WriteLine("    WaitSubsystemTests.ManualResetEventTest");
         WaitSubsystemTests.ManualResetEventTest();
 
@@ -388,6 +391,31 @@ internal static class WaitSubsystemTests
         {
             Assert.False(ss[i].WaitOne(0));
         }
+    }
+
+    [Fact]
+    public static void EventWaitHandleSetCrash()
+    {
+        AutoResetEvent resetEvent = new AutoResetEvent(false);
+        Thread thread = new Thread(() => {
+            var i = 0;
+            var tickCount = Environment.TickCount;
+            while(Environment.TickCount < tickCount + 1000) {
+                i++;
+            }
+            Console.WriteLine("Setting");
+            resetEvent.Set();
+            resetEvent.Set();
+            Console.WriteLine("Done Setting");
+        });
+
+        thread.Start();
+        Console.WriteLine("Waiting");
+        if(!resetEvent.WaitOne(100)) {
+            Console.WriteLine("Timed out");
+        }
+        Console.WriteLine("Done Waiting");
+        thread.Join();
     }
 
     [Fact]
