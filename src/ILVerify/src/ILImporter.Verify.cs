@@ -334,6 +334,39 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
+        private TypeDesc CheckIsAddressCompatibleWithType(StackValue address, TypeDesc type)
+        {
+            CheckIsByRef(address);
+
+            if (type != null)
+            {
+                CheckIsAssignablePointer(address.Type, type);
+            }
+            else
+            {
+                type = address.Type;
+                CheckIsObjRef(type);
+            }
+
+#if false
+            if (ptr.IsByRef())
+            {
+                ptrVal = DereferenceByRef(ptr);
+                if (instrType == TI_REF)
+                {
+                    VerifyIsObjRef(ptrVal); //@TODO: give better error: Expected Obref or Variable on stack
+                }
+                else
+                {
+                    VerifyCompatibleWith(vertype(ptrVal).MakeByRef(), vertype(instrType).MakeByRef());
+                    VerifyAndReportFound(instrType == ptrVal.GetRawType(), ptr,
+                                         MVER_E_STACK_UNEXPECTED);
+                }
+            }
+#endif
+            return type;
+        }
+
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
@@ -1245,42 +1278,9 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            var value = Pop();
-            type = CheckLoadIndirect(value, type);
+            var address = Pop();
+            type = CheckIsAddressCompatibleWithType(address, type);
             Push(StackValue.CreateFromType(type));
-        }
-
-        private TypeDesc CheckLoadIndirect(StackValue value, TypeDesc type)
-        {
-            CheckIsByRef(value);
-
-            if (type != null)
-            {
-                CheckIsAssignablePointer(value.Type, type);
-            }
-            else
-            {
-                type = value.Type;
-                CheckIsObjRef(type);
-            }
-
-#if false
-            if (ptr.IsByRef())
-            {
-                ptrVal = DereferenceByRef(ptr);
-                if (instrType == TI_REF)
-                {
-                    VerifyIsObjRef(ptrVal); //@TODO: give better error: Expected Obref or Variable on stack
-                }
-                else
-                {
-                    VerifyCompatibleWith(vertype(ptrVal).MakeByRef(), vertype(instrType).MakeByRef());
-                    VerifyAndReportFound(instrType == ptrVal.GetRawType(), ptr,
-                                         MVER_E_STACK_UNEXPECTED);
-                }
-            }
-#endif
-            return type;
         }
 
         void ImportStoreIndirect(int token)
@@ -1297,7 +1297,7 @@ namespace Internal.IL
             var address = Pop();
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
-            CheckLoadIndirect(address, type);
+            CheckIsAddressCompatibleWithType(address, type);
             CheckIsAssignable(value, address.DereferenceByRef());
         }
 
