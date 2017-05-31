@@ -34,6 +34,8 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
 
   - The repro project has a dummy program that you can modify for ad-hoc testing
 
+  - If you want to write your repro code using IL (instead of C#), you can search/replace `"repro\repro.csproj"` to `"repro\repro.ilproj"` in ILCompiler.sln and use repro.ilproj instead. Everything else below still applies. Please don't check this in.
+
   - To suppress spew from NuGet during the build, go to NuGet Package Manager in Options, and uncheck `Allow NuGet to download missing packages`.
 
 2. Open `c:\corert\src\ILCompiler\reproNative\reproNative.vcxproj`
