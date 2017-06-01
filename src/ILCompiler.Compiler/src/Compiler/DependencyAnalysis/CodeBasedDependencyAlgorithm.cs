@@ -88,7 +88,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-                AddMarshalAPIsGenericDependencies(ref dependencies, factory, method);
             }
             else
             {
@@ -101,111 +100,8 @@ namespace ILCompiler.DependencyAnalysis
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
             }
 
-            // On Project N, the compiler doesn't generate the interop code on the fly
-            if (method.Context.Target.Abi != TargetAbi.ProjectN)
-            {
-                if (method.IsPInvoke)
-                {
-                    if (dependencies == null)
-                        dependencies = new DependencyList();
+            factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
 
-                    MethodSignature methodSig = method.Signature;
-                    AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
-
-                    for (int i = 0; i < methodSig.Length; i++)
-                    {
-                        AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
-                    }
-                }
-            }
-        }
-
-        public static void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (type.IsDelegate)
-            {
-                var delegateType = type as MetadataType;
-                if (delegateType != null && delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
-                {
-                    AddDependenciesDuePInvokeDelegate(ref dependencies, factory, delegateType);
-                }
-            }
-            
-            //
-            //  https://github.com/dotnet/corert/issues/3763
-            // TODO: Add an attribute which indicates a struct is interesting for interop
-            //
-            //else if (type.IsValueType && type.IsTypeDefinition && !(type is NativeStructType))
-            //{
-            //    var structType = type as MetadataType;
-            //    if (structType != null && structType.HasCustomAttribute("System.Runtime.InteropServices", "StructLayoutAttribute"))
-            //    {
-            //        AddDependenciesDuePInvokeStruct(ref dependencies, factory, type);
-            //    }
-            //}
-        }
-
-
-        /// <summary>
-        /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
-        /// the generic parameter as dependencies so that we can generate runtime data for them
-        /// </summary>
-        public static void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            TypeDesc owningType = method.OwningType;
-            MetadataType metadataType = owningType as MetadataType;
-
-            if (metadataType != null)
-            {
-                if (metadataType.Name == "Marshal" && metadataType.Namespace == "System.Runtime.InteropServices")
-                {
-                    foreach (TypeDesc type in method.Instantiation)
-                    {
-                        AddPInvokeParameterDependencies(ref dependencies, factory, type);
-                    }
-                }
-            }
-        }
-
-        public static void AddPInvokeParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
-        {
-            AddDependenciesDuePInvokeDelegate(ref dependencies, factory, parameter);
-            AddDependenciesDuePInvokeStruct(ref dependencies, factory, parameter);
-        }
-
-        public static void AddDependenciesDuePInvokeDelegate(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (type.IsDelegate)
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(type), "Delegate Marshalling Stub");
-
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetOpenStaticDelegateMarshallingStub(type)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetClosedDelegateMarshallingStub(type)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetForwardDelegateCreationStub(type)), "Delegate Marshalling Stub");
-            }
-        }
-
-        public static void AddDependenciesDuePInvokeStruct(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (MarshalHelpers.IsStructMarshallingRequired(type))
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(type), "Struct Marshalling Stub");
-
-                var stub = (Internal.IL.Stubs.StructMarshallingThunk)factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(type);
-                dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(type)), "Struct Marshalling Type");
-                dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(type)), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(type)), "Struct Marshalling stub");
-
-                foreach (var inlineArrayCandidate in stub.GetInlineArrayCandidates())
-                {
-                    dependencies.Add(factory.ConstructedTypeSymbol(factory.InteropStubManager.GetInlineArrayType(inlineArrayCandidate)), "Struct Marshalling Type");
-                    foreach (var method in inlineArrayCandidate.ElementType.GetMethods())
-                    {
-                        dependencies.Add(factory.MethodEntrypoint(method), "inline array marshalling stub");
-                    }
-                }
-            }
         }
     }
 }

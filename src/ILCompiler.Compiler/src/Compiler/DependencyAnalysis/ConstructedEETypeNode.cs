@@ -166,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
             // Ask the metadata manager if we have any dependencies due to reflectability.
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 
-            CodeBasedDependencyAlgorithm.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             return dependencyList;
         }
