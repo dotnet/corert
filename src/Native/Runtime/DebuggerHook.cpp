@@ -121,7 +121,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     {
         if (curr == nullptr)
         {
-            // The debugger is trying to remove a conservatively reported buffer that does not exist
+            assert("Debugger is trying to remove a conservative reporting entry which is no longer exist." && false);
             break;
         }
         if (curr->identifier == request->identifier)
@@ -156,13 +156,13 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     {
         if (curr == nullptr)
         {
-            // The debugger is trying to remove a handle that is not obtained
+            assert("Debugger is trying to remove a gc handle entry which is no longer exist." && false);
             break;
         }
         if (curr->identifier == request->identifier)
         {
             DebuggerOwnedHandleList* toDelete = curr;
-            RedhawkGCInterface::DestroyTypedHandle(toDelete->handle);
+            DestroyTypedHandle((OBJECTHANDLE)toDelete->handle);
 
             if (prev == nullptr)
             {
@@ -188,6 +188,12 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 EXTERN_C REDHAWK_API UInt32 __cdecl RhpRecordDebuggeeInitiatedHandle(void* objectHandle)
 {
     return DebuggerHook::RecordDebuggeeInitiatedHandle(objectHandle);
+}
+
+EXTERN_C REDHAWK_API void __cdecl RhpVerifyDebuggerCleanup()
+{
+    assert(DebuggerHook::s_debuggerOwnedHandleList == nullptr);
+    assert(DebuggerHook::s_debuggerProtectedBuffers == nullptr);
 }
 
 #endif // !DACCESS_COMPILE
