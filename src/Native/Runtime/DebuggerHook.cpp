@@ -5,6 +5,8 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
+#include "daccess.h"
+#include "gcrhinterface.h"
 #include "DebuggerHook.h"
 #include "DebugEventSource.h"
 
@@ -12,11 +14,6 @@
 GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 #ifndef DACCESS_COMPILE
-
-// Forward declaration to remove an object handle from the handle table
-struct OBJECTHANDLE__;
-typedef struct OBJECTHANDLE__* OBJECTHANDLE;
-void DestroyTypedHandle(OBJECTHANDLE handle);
 
 /* static */ DebuggerProtectedBufferList* DebuggerHook::s_debuggerProtectedBuffers = nullptr;
 
@@ -165,7 +162,7 @@ void DestroyTypedHandle(OBJECTHANDLE handle);
         if (curr->identifier == request->identifier)
         {
             DebuggerOwnedHandleList* toDelete = curr;
-            DestroyTypedHandle((OBJECTHANDLE)toDelete->handle);
+            RedhawkGCInterface::DestroyTypedHandle(toDelete->handle);
 
             if (prev == nullptr)
             {
