@@ -608,16 +608,22 @@ namespace ILCompiler
             }
         }
 
+        protected bool IsReflectionBlocked(Instantiation instantiation)
+        {
+            foreach (TypeDesc type in instantiation)
+            {
+                if (IsReflectionBlocked(type))
+                    return true;
+            }
+            return false;
+        }
+
         public bool IsReflectionBlocked(FieldDesc field)
         {
             FieldDesc typicalFieldDefinition = field.GetTypicalFieldDefinition();
-            if (typicalFieldDefinition != field)
+            if (typicalFieldDefinition != field && IsReflectionBlocked(field.OwningType.Instantiation))
             {
-                foreach (TypeDesc type in field.OwningType.Instantiation)
-                {
-                    if (IsReflectionBlocked(type))
-                        return true;
-                }
+                return true;
             }
 
             return _blockingPolicy.IsBlocked(typicalFieldDefinition);
@@ -626,23 +632,15 @@ namespace ILCompiler
         public bool IsReflectionBlocked(MethodDesc method)
         {
             MethodDesc methodDefinition = method.GetMethodDefinition();
-            if (method != methodDefinition)
+            if (method != methodDefinition && IsReflectionBlocked(method.Instantiation))
             {
-                foreach (TypeDesc type in method.Instantiation)
-                {
-                    if (IsReflectionBlocked(type))
-                        return true;
-                }
+                return true;
             }
 
             MethodDesc typicalMethodDefinition = methodDefinition.GetTypicalMethodDefinition();
-            if (typicalMethodDefinition != methodDefinition)
+            if (typicalMethodDefinition != methodDefinition && IsReflectionBlocked(method.OwningType.Instantiation))
             {
-                foreach (TypeDesc type in method.OwningType.Instantiation)
-                {
-                    if (IsReflectionBlocked(type))
-                        return true;
-                }
+                return true;
             }
 
             return _blockingPolicy.IsBlocked(typicalMethodDefinition);
@@ -657,6 +655,12 @@ namespace ILCompiler
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
+        }
+
+        public bool CanGenerateMetadata(FieldDesc field)
+        {
+            Debug.Assert(field.IsTypicalFieldDefinition);
+            return (GetMetadataCategory(field) & MetadataCategory.Description) != 0;
         }
 
         /// <summary>

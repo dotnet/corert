@@ -15,10 +15,7 @@ namespace System
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.EmptyUnity, null, null);
+            throw new PlatformNotSupportedException();
         }
     }
 }

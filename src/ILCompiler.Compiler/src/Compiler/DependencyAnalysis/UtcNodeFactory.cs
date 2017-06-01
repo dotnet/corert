@@ -169,7 +169,7 @@ namespace ILCompiler
                 return new RuntimeImportMethodNode(method);
             }
 
-            if (CompilationModuleGroup.ContainsMethod(method))
+            if (CompilationModuleGroup.ContainsMethodBody(method))
             {
                 return NonExternMethodSymbol(method, false);
             }
@@ -184,7 +184,7 @@ namespace ILCompiler
                 // Unboxing stubs to canonical instance methods need a special unboxing instantiating stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // The unboxing instantiating stub is emitted by UTC.
-                if (CompilationModuleGroup.ContainsMethod(method))
+                if (CompilationModuleGroup.ContainsMethodBody(method))
                 {
                     return NonExternMethodSymbol(method, true);
                 }

@@ -22,6 +22,7 @@ namespace ILCompiler
         public uint tlsIndexOrdinal;
         public ReadOnlyDictionary<TypeDesc, uint> typeOrdinals;
         public ReadOnlyDictionary<MethodDesc, uint> methodOrdinals;
+        public ReadOnlyDictionary<MethodDesc, uint> methodDictionaryOrdinals;
     }
 
     public class UTCNameMangler : NameMangler
@@ -37,7 +38,7 @@ namespace ILCompiler
         private bool HasImport { get; set; }
         private bool HasExport { get; set; }
 
-        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals) : base(new WindowsNodeMangler())
+        public UTCNameMangler(bool hasImport, bool hasExport, ImportExportOrdinals ordinals) : base(new UtcNodeMangler())
         {
             // Do not support both imports and exports for one module
             Debug.Assert(!hasImport || !hasExport);
@@ -62,6 +63,22 @@ namespace ILCompiler
             }
 
             if (HasExport && _exportOrdinals.methodOrdinals.TryGetValue(method, out ordinal))
+            {
+                return true;
+            }
+
+            ordinal = 0;
+            return false;
+        }
+
+        private bool GetMethodDictionaryOrdinal(MethodDesc method, out uint ordinal)
+        {
+            if (HasImport && _importOrdinals.methodDictionaryOrdinals.TryGetValue(method, out ordinal))
+            {
+                return true;
+            }
+
+            if (HasExport && _exportOrdinals.methodDictionaryOrdinals.TryGetValue(method, out ordinal))
             {
                 return true;
             }
@@ -456,6 +473,35 @@ namespace ILCompiler
             }
 
             return utf8MangledName;
+        }
+
+        protected ImmutableDictionary<MethodDesc, Utf8String> _mangledMethodDictNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
+
+        public Utf8String GetMangledMethodNameForDictionary(MethodDesc method)
+        {
+            Utf8String mangledName;
+            if (_mangledMethodDictNames.TryGetValue(method, out mangledName))
+                return mangledName;
+
+            return ComputeMangledMethodDictonaryName(method);
+        }
+
+        private Utf8String ComputeMangledMethodDictonaryName(MethodDesc method)
+        {
+            Utf8String methodName = GetMangledMethodName(method);
+            uint ordinal;
+            if (GetMethodDictionaryOrdinal(method, out ordinal))
+            {
+                methodName += OrdinalPrefix + ordinal;
+            }
+
+            lock (this)
+            {
+                if (!_mangledMethodDictNames.ContainsKey(method))
+                    _mangledMethodDictNames = _mangledMethodDictNames.Add(method, methodName);
+            }
+
+            return _mangledMethodDictNames[method];
         }
 
         private ImmutableDictionary<FieldDesc, Utf8String> _mangledFieldNames = ImmutableDictionary<FieldDesc, Utf8String>.Empty;

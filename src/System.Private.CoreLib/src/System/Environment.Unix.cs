@@ -34,12 +34,12 @@ namespace System
             return executionId;
         }
 
-        public static unsafe String GetEnvironmentVariable(String variable)
+#if DEBUG
+        [Obsolete("ExpandEnvironmentVariables() only called on Windows so not implemented on Unix.")]
+        public static string ExpandEnvironmentVariables(string name)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
-            return Marshal.PtrToStringAnsi(Interop.Sys.GetEnv(variable));
+            throw new PlatformNotSupportedException("ExpandEnvironmentVariables() only called on Windows so not implemented on Unix.");
         }
+#endif
     }
 }

@@ -2810,14 +2810,12 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
+                    if (contextMethod == MethodBeingCompiled)
                     {
-                        return;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                     }
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
                 else
                 {
@@ -2945,13 +2943,18 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
-                        return;
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
+                    if (contextMethod == MethodBeingCompiled)
+                    {
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
+                    }
                 }
+
+                // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
+                // We don't need an instantiation parameter, so let's just not report it. Might be nice to
+                // move that assert to some place later though.
+                targetIsFatFunctionPointer = true;
             }
             else
             {
@@ -2981,14 +2984,12 @@ namespace Internal.JitInterface
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
                     MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod != MethodBeingCompiled)
+                    if (contextMethod == MethodBeingCompiled)
                     {
-                        return;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                     }
-
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                    pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = null;
                 }
                 else
                 {

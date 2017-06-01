@@ -141,6 +141,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
+#if CORERT
         private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
@@ -171,6 +172,7 @@ namespace Internal.Runtime.CompilerHelpers
                 }
             }
         }
+#endif // CORERT
     }
 
     [StructLayout(LayoutKind.Sequential)]

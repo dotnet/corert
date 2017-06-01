@@ -228,7 +228,6 @@ namespace Internal.Runtime.TypeLoader
                     if (conversionInfo.IsOpenInstanceDelegateThunk)
                     {
                         _delegateData._boxedFirstParameter = BoxedCallerFirstArgument;
-                        Debug.Assert(_delegateData._boxedFirstParameter != null);
                         _callerArgs.Reset();
 
                         IntPtr resolvedTargetFunctionPointer = OpenMethodResolver.ResolveMethod(_delegateData._extraFunctionPointerOrData, _delegateData._boxedFirstParameter);
@@ -386,6 +385,12 @@ namespace Internal.Runtime.TypeLoader
                 if (thValueType.IsNull())
                 {
                     Debug.Assert(_callerArgs.GetArgSize() == IntPtr.Size);
+
+                    // For Open non-virtual calls to instance methods on valuetypes, the first argument
+                    // is a byref parameter. In that case, pass null to the resolution function.
+                    if (_callerArgs.IsArgPassedByRef())
+                        return null;
+
                     Debug.Assert(!_callerArgs.IsArgPassedByRef());
                     return Unsafe.As<IntPtr, Object>(ref *(IntPtr*)pSrc);
                 }
@@ -443,7 +448,7 @@ namespace Internal.Runtime.TypeLoader
                         // Assert that we have extracted the delegate data
                         Debug.Assert(_conversionInfo.IsReflectionDynamicInvokerThunk || !_delegateData.Equals(default(DelegateData)));
 
-                        if (_conversionInfo.IsAnyDynamicInvokerThunk)
+                        if (_conversionInfo.IsAnyDynamicInvokerThunk || _conversionInfo.IsOpenInstanceDelegateThunk)
                         {
                             // Resilience to multiple or out of order calls
                             _callerArgs.Reset();
@@ -455,18 +460,6 @@ namespace Internal.Runtime.TypeLoader
 
                             // No need to pin since the thisPtr is one of the arguments on the caller TB
                             return *pSrc;
-                        }
-                        if (_conversionInfo.IsOpenInstanceDelegateThunk)
-                        {
-                            // We should have already extracted and boxed the first parameter
-                            Debug.Assert(_delegateData._boxedFirstParameter != null);
-                            s_pinnedGCHandles._thisPtrHandle.Target = _delegateData._boxedFirstParameter;
-
-                            // Note: We should advance the caller's ArgIterator since the first parameter is used as a thisPointer,
-                            // not as an actual parameter passed to the callee.
-                            // We do not need to advance the callee's ArgIterator because we already initialized it with a
-                            // 'skipFirstArg' flag
-                            _callerArgs.GetNextOffset();
                         }
                         else if (_conversionInfo.IsMulticastDelegate)
                         {

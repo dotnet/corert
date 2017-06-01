@@ -27,9 +27,9 @@ struct DebuggerProtectedBufferList
 
 struct DebuggerOwnedHandleList
 {
-	void* handle;
-	UInt32 identifier;
-	struct DebuggerOwnedHandleList* next;
+    void* handle;
+    UInt32 identifier;
+    struct DebuggerOwnedHandleList* next;
 };
 
 class DebuggerHook

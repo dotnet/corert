@@ -75,9 +75,7 @@ namespace System.Reflection.Runtime.FieldInfos
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
 
         public abstract override Type[] GetOptionalCustomModifiers();
@@ -103,6 +101,8 @@ namespace System.Reflection.Runtime.FieldInfos
             FieldAccessor fieldAccessor = this.FieldAccessor;
             return fieldAccessor.GetFieldDirect(obj);
         }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override Module Module
         {

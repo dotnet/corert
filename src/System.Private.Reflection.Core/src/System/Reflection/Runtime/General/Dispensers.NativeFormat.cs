@@ -156,6 +156,21 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
     }
 }
 
+namespace System.Reflection.Runtime.Modules.NativeFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
+    //          mapping between Assemblies and Modules.)
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class NativeFormatRuntimeModule
+    {
+        internal static RuntimeModule GetRuntimeModule(NativeFormatRuntimeAssembly assembly)
+        {
+            return new NativeFormatRuntimeModule(assembly);
+        }
+    }
+}
+
 namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 {
     //-----------------------------------------------------------------------------------------------------------

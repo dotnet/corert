@@ -44,5 +44,15 @@ namespace ILCompiler
         {
             return NameMangler.CompilationUnitPrefix + "__THREADSTATICS" + NameMangler.GetMangledTypeName(type);
         }
+
+        public sealed override string TypeGenericDictionary(TypeDesc type)
+        {
+            return GenericDictionaryNamePrefix + NameMangler.GetMangledTypeName(type);
+        }
+
+        public sealed override string MethodGenericDictionary(MethodDesc method)
+        {
+            return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
+        }
     }
 }

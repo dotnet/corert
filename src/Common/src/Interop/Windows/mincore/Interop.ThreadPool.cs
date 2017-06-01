@@ -9,42 +9,29 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        internal struct TP_CALLBACK_ENVIRON
-        {
-            private uint Version;
-            private IntPtr Pool;
-            private IntPtr CleanupGroup;
-            private IntPtr CleanupGroupCancelCallback;
-            private IntPtr RaceDll;
-            private IntPtr ActivationContext;
-            private IntPtr FinalizationCallback;
-            private uint Flags;
-
-            internal void Initialize()
-            {
-                Version = 1;
-            }
-
-            internal void SetLongFunction()
-            {
-                Flags |= 1;
-            }
-        }
+        internal delegate void WorkCallback(IntPtr Instance, IntPtr Context, IntPtr Work);
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
         internal extern static IntPtr CreateThreadpoolWork(IntPtr pfnwk, IntPtr pv, IntPtr pcbe);
 
-        internal delegate void WorkCallback(IntPtr Instance, IntPtr Context, IntPtr Work);
+        [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
+        internal extern static void SubmitThreadpoolWork(IntPtr pwk);
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
-        internal extern static IntPtr CloseThreadpoolWork(IntPtr pfnwk);
+        internal extern static void CloseThreadpoolWork(IntPtr pwk);
+
+        internal delegate void WaitCallback(IntPtr Instance, IntPtr Context, IntPtr Wait, uint WaitResult);
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
-        internal extern static IntPtr SubmitThreadpoolWork(IntPtr pwk);
+        internal extern static IntPtr CreateThreadpoolWait(IntPtr pfnwa, IntPtr pv, IntPtr pcbe);
 
         [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
-        internal extern static unsafe bool TrySubmitThreadpoolCallback(IntPtr pns, IntPtr pv, TP_CALLBACK_ENVIRON* pcbe);
+        internal extern static void SetThreadpoolWait(IntPtr pwa, IntPtr h, IntPtr pftTimeout);
 
-        internal delegate void SimpleCallback(IntPtr Instance, IntPtr Context);
+        [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
+        internal extern static void WaitForThreadpoolWaitCallbacks(IntPtr pwa, bool fCancelPendingCallbacks);
+
+        [DllImport("api-ms-win-core-threadpool-l1-2-0.dll")]
+        internal extern static void CloseThreadpoolWait(IntPtr pwa);
     }
 }

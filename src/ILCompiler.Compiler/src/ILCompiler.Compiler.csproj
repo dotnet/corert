@@ -107,12 +107,14 @@
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
+    <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
@@ -292,9 +294,10 @@
     <Compile Include="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
-    <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
+    <Compile Include="Compiler\UtcNameMangler.cs" />
+    <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />

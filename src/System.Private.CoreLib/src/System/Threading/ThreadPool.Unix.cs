@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -10,6 +11,15 @@ namespace System.Threading
     //
     // Unix-specific implementation of ThreadPool
     //
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    {
+        public bool Unregister(WaitHandle waitObject)
+        {
+            // UNIXTODO: ThreadPool
+            throw new NotImplementedException();
+        }
+    }
+
     public static partial class ThreadPool
     {
         // TODO: this is a very primitive (temporary) implementation of Thread Pool to allow Tasks to be
@@ -92,18 +102,6 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
 
-        internal static void QueueLongRunningWork(Action callback)
-        {
-            GCHandle gcHandle = GCHandle.Alloc(callback);
-
-            if (!Interop.Sys.RuntimeThread_CreateThread(IntPtr.Zero /*use default stack size*/,
-                AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(LongRunningWorkCallback), GCHandle.ToIntPtr(gcHandle)))
-            {
-                gcHandle.Free();
-                throw new OutOfMemoryException();
-            }
-        }
-
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.
         /// </summary>
@@ -123,18 +121,30 @@ namespace System.Threading
             } while (true);
         }
 
-        [NativeCallable]
-        private static IntPtr LongRunningWorkCallback(IntPtr context)
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
         {
-            RuntimeThread.InitializeThreadPoolThread();
+            //
+            // This is just a quick-and-dirty implementation to make TaskFactory.FromAsync
+            // work for the few apps that are using it.  A proper implementation would coalesce
+            // multiple waits onto a single thread, so that fewer machine resources would be
+            // consumed.
+            //
 
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            Action callback = (Action)gcHandle.Target;
-            gcHandle.Free();
+            Debug.Assert(executeOnlyOnce);
 
-            callback();
-            return IntPtr.Zero;
+            QueueUserWorkItem(_ =>
+            {
+                bool timedOut = waitObject.WaitOne((int)millisecondsTimeOutInterval);
+                callBack(state, timedOut);
+            });
+
+            return new RegisteredWaitHandle();
         }
-
     }
 }
