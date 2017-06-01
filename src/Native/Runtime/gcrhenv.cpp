@@ -889,6 +889,11 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
     tls_pLastAllocationEEType = pEEType;
 }
 
+void RedhawkGCInterface::DestroyTypedHandle(void * handle)
+{
+    ::DestroyTypedHandle((OBJECTHANDLE)handle);
+}
+
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
 #ifdef FEATURE_EVENT_TRACE

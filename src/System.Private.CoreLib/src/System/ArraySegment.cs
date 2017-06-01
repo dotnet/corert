@@ -25,7 +25,7 @@ namespace System
     // because assignments to value types are not atomic, and also because one thread reading 
     // three fields from an ArraySegment may not see the same ArraySegment from one call to another
     // (ie, users could assign a new value to the old location).  
-
+    [Serializable]
     public struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
     {
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of

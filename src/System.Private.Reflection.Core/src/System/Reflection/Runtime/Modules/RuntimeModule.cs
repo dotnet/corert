@@ -15,7 +15,6 @@ namespace System.Reflection.Runtime.Modules
     // Modules are quite meaningless in ProjectN but we have to keep up the appearances since they still exist in Win8P's surface area.
     // As far as ProjectN is concerned, each Assembly has one module.
     //
-    [Serializable]
     internal abstract partial class RuntimeModule : Module
     {
         protected RuntimeModule()
