@@ -30,11 +30,14 @@ namespace System.Reflection.Runtime.General
         {
         }
 
-        public sealed override Assembly Load(AssemblyName refName)
+        public sealed override Assembly Load(AssemblyName assemblyRef, bool throwOnFileNotFound)
         {
-            if (refName == null)
-                throw new ArgumentNullException("assemblyRef");
-            return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
+            if (assemblyRef == null)
+                throw new ArgumentNullException(nameof(assemblyRef));
+            if (throwOnFileNotFound)
+                return RuntimeAssembly.GetRuntimeAssembly(assemblyRef.ToRuntimeAssemblyName());
+            else
+                return RuntimeAssembly.GetRuntimeAssemblyIfExists(assemblyRef.ToRuntimeAssemblyName());
         }
 
         public sealed override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore)
