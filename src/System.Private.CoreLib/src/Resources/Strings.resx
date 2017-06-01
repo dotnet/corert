@@ -2334,7 +2334,7 @@
   </data>
   <data name="PlatformNotSupported_Remoting" xml:space="preserve">
     <value>Remoting is not supported on this platform.</value>
-  </data>   
+  </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
   </data>
@@ -2430,7 +2430,7 @@
   </data>
   <data name="WrongSizeArrayInNStruct" xml:space="preserve">
     <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
-  </data>  
+  </data>
   <data name="Arg_InteropMarshalUnmappableChar" xml:space="preserve">
     <value>Cannot marshal: Encountered unmappable character.</value>
   </data>
@@ -2442,5 +2442,8 @@
   </data>
   <data name="Arg_RegValStrLenBug" xml:space="preserve">
     <value>Registry value names should not be greater than 16,383 characters.</value>
+  </data>
+  <data name="Serialization_DelegatesNotSupported" xml:space="preserve">
+    <value>Serializing delegates is not supported on this platform.</value>
   </data>
 </root>

@@ -21,6 +21,7 @@ namespace System
     // Wrapper for unsigned 16 bit integers.
     [CLSCompliant(false)]
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct UInt16 : IComparable, IFormattable, IComparable<UInt16>, IEquatable<UInt16>, IConvertible
     {
         private ushort _value;

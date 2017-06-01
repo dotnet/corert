@@ -168,7 +168,6 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    [Serializable]
     public class ResourceManager
     {
         internal class CultureNameResourceSetPair

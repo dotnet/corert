@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     public sealed class RuntimeWrappedException : Exception
     {
         private Object _wrappedException;

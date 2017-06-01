@@ -13,7 +13,6 @@ using Internal.Reflection.Augments;
 
 namespace System
 {
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct RuntimeMethodHandle : ISerializable
     {

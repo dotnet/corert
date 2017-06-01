@@ -102,7 +102,6 @@ namespace System.Text
         }
     }
 
-    [Serializable]
     public sealed class EncoderFallbackException : ArgumentException
     {
         private char _charUnknown;

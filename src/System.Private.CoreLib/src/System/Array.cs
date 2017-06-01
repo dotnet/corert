@@ -14,6 +14,7 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
+    [Serializable]
     public abstract partial class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
         public static Array CreateInstance(Type elementType, params long[] lengths)

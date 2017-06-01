@@ -73,6 +73,7 @@ namespace System
     //
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
+    [Serializable]
     public sealed partial class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible, ICloneable
     {
 #if BIT64
@@ -94,7 +95,9 @@ namespace System
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
         // Get in touch with the diagnostics team if you have questions.
+        [NonSerialized]
         private int _stringLength;
+        [NonSerialized]
         private char _firstChar;
 
 #pragma warning restore
