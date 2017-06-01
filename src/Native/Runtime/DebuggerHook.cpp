@@ -162,7 +162,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         if (curr->identifier == request->identifier)
         {
             DebuggerOwnedHandleList* toDelete = curr;
-            DestroyTypedHandle((OBJECTHANDLE)toDelete->handle);
+            RedhawkGCInterface::DestroyTypedHandle(toDelete->handle);
 
             if (prev == nullptr)
             {
