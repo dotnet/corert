@@ -36,6 +36,7 @@ namespace System
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
         // This field should be the first field in Array as the runtime/compilers depend on it
+        [NonSerialized]
         private int _numComponents;
 #pragma warning restore
 

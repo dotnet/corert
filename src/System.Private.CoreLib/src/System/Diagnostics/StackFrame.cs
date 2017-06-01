@@ -16,7 +16,6 @@ namespace System.Diagnostics
     /// offset information and / or MethodBase reflection information.
     /// There is no good reason for the methods of this class to be virtual.
     /// </summary>
-    [Serializable]
     public class StackFrame
     {
         /// <summary>

@@ -11,7 +11,6 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    [Serializable]
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public struct RuntimeFieldHandle : ISerializable
     {
