@@ -130,14 +130,19 @@ namespace ILCompiler.DependencyAnalysis
                     AddDependenciesDuePInvokeDelegate(ref dependencies, factory, delegateType);
                 }
             }
-            else if (type.IsValueType && type.IsTypeDefinition && !(type is NativeStructType))
-            {
-                var structType = type as MetadataType;
-                if (structType != null && structType.HasCustomAttribute("System.Runtime.InteropServices", "StructLayoutAttribute"))
-                {
-                    AddDependenciesDuePInvokeStruct(ref dependencies, factory, type);
-                }
-            }
+            
+            //
+            //  https://github.com/dotnet/corert/issues/3763
+            // TODO: Add an attribute which indicates a struct is interesting for interop
+            //
+            //else if (type.IsValueType && type.IsTypeDefinition && !(type is NativeStructType))
+            //{
+            //    var structType = type as MetadataType;
+            //    if (structType != null && structType.HasCustomAttribute("System.Runtime.InteropServices", "StructLayoutAttribute"))
+            //    {
+            //        AddDependenciesDuePInvokeStruct(ref dependencies, factory, type);
+            //    }
+            //}
         }
 
 
