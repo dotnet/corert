@@ -22,9 +22,12 @@ namespace ILCompiler
     {
         private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
+        private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+
+        private SimdHelper _simdHelper;
 
         private TypeDesc[] _arrayOfTInterfaces;
         
@@ -99,6 +102,8 @@ namespace ILCompiler
             : base(details)
         {
             _genericsMode = genericsMode;
+
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
         }
 
         public IReadOnlyDictionary<string, string> InputFilePaths
@@ -258,6 +263,8 @@ namespace ILCompiler
                 return UniversalCanonLayoutAlgorithm.Instance;
             else if (type.IsRuntimeDeterminedType)
                 return _runtimeDeterminedFieldLayoutAlgorithm;
+            else if (_simdHelper.IsVectorOfT(type))
+                return _vectorOfTFieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }
