@@ -262,3 +262,8 @@ void SetGCSpecialThread(ThreadType threadType);
 // it accurately in full GCs if the handle count is requested.
 extern DWORD g_dwHandles;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
+/* _TRUNCATE */
+#if !defined (_TRUNCATE)
+#define _TRUNCATE ((size_t)-1)
+#endif  /* !defined (_TRUNCATE) */

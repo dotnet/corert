@@ -100,6 +100,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
 #define swprintf_s swprintf
+#define _snprintf_s(string, sizeInBytes, count, format, ...) \
+  snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
 #endif
 
 #ifdef UNICODE

@@ -1855,6 +1855,11 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     return (st == 0);
 }
 
+uint32_t GCToOSInterface::GetTotalProcessorCount()
+{
+    return g_SystemInfo.dwNumberOfProcessors;
+}
+
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
 {
