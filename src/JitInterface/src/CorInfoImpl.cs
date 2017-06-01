@@ -2449,17 +2449,17 @@ namespace Internal.JitInterface
                 pResult.lookup.lookupKind.needsRuntimeLookup = true;
                 pResult.lookup.runtimeLookup.signature = null;
                 pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
-                pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
-
+                
                 MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
 
                 // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                 // to abort the inlining attempt anyway.
-                if (contextMethod != MethodBeingCompiled)
-                    return;
-
-                pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                if (contextMethod == MethodBeingCompiled)
+                {
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
+                    pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                }
             }
             else
             {
