@@ -366,16 +366,6 @@ namespace Internal.IL
             }
         }
 
-        void CheckIsAssignablePointer(TypeDesc src, TypeDesc dst)
-        {
-            if (!IsAssignable(src, dst))
-            {
-                VerificationError(VerifierError.StackUnexpected, "address of " + TypeToStringForIsAssignable(src), "address of " + TypeToStringForIsAssignable(dst));
-                VerificationError(VerifierError.StackUnexpected, "address of " + TypeToStringForIsAssignable(src));
-                AbortBasicBlockVerification();
-            }
-        }
-
         void CheckIsArrayElementCompatibleWith(TypeDesc src, TypeDesc dst)
         {
             if (!IsAssignable(src, dst, true))
@@ -1247,17 +1237,11 @@ namespace Internal.IL
 
             var address = Pop();
 
-            CheckIsByRef(address);
-            if (type != null)
-            {
-                CheckIsAssignablePointer(address.Type, type);
-            }
-            else
-            {
-                type = address.Type;
-                CheckIsObjRef(type);
-            }
+            if (type == null)
+                type = GetWellKnownType(WellKnownType.Object);
 
+            CheckIsByRef(address);
+            CheckIsAssignable(address.Type, type);
             Push(StackValue.CreateFromType(type));
         }
 
@@ -1271,18 +1255,17 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
+            if (type == null)
+                type = GetWellKnownType(WellKnownType.Object);
+
             var value = Pop();
             var address = Pop();
 
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
             CheckIsByRef(address);
-            if (type != null)
-                CheckIsAssignablePointer(type, address.Type);
-            else
-                CheckIsObjRef(address.Type);
-
-            CheckIsAssignable(value, address.DereferenceByRef());
+            CheckIsAssignable(type, address.Type);
+            CheckIsAssignable(value, StackValue.CreateFromType(type));
         }
 
         void ImportThrow()

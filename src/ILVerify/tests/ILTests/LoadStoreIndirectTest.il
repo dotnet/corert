@@ -13,6 +13,27 @@
 .class public auto ansi beforefieldinit LoadStoreIndirectTestsType
        extends [System.Runtime]System.Object
 {
+    .method static public void LoadIndirect.FromStringRef_Valid(string&) cil managed
+    {
+        ldarg.0
+        ldind.ref
+        ret
+    }
+
+    .method static public void LoadIndirect.FromInt32Ref_Valid(int32&) cil managed
+    {
+        ldarg.0
+        ldind.i4
+        ret
+    }
+
+    .method static public void LoadIndirect.FromInt64Ref_Invalid_StackUnexpected(int64&) cil managed
+    {
+        ldarg.0
+        ldind.i4
+        ret
+    }
+
     .method static public void StoreIndirect.AssignToInt_Valid(int32&) cil managed
     {
         // arg = 0;
@@ -60,14 +81,14 @@
         ret
     }
 
-    .method static public void  StoreObject_Invalid() cil managed
+    .method static public void  StoreObject_Invalid_StackUnexpected() cil managed
     {
         .maxstack  2
         .locals init (object V_0)
 
         ldloca.s   V_0
         ldstr      "Hello"
-        stobj  [mscorlib]System.IO.Stream
+        stobj  [System.Runtime]System.IO.Stream
         ret
     }
 }
