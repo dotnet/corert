@@ -14,8 +14,8 @@ internal static class Runner
 
     public static int Main()
     {
-        Console.WriteLine("    WaitSubsystemTests.Reproduce3616");
-        WaitSubsystemTests.Reproduce3616();
+        Console.WriteLine("    WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList");
+        WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList();
 
         Console.WriteLine("    WaitSubsystemTests.ManualResetEventTest");
         WaitSubsystemTests.ManualResetEventTest();
@@ -393,23 +393,26 @@ internal static class WaitSubsystemTests
         }
     }
 
+    // There is a race condition between a timed out WaitOne and a Set call not clearing the waiters list
+    // in the wait subsystem (Unix only). More information can be found at 
+    // https://github.com/dotnet/corert/issues/3616 and https://github.com/dotnet/corert/pull/3782.
     [Fact]
-    public static void Reproduce3616()
+    public static void DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList()
     {
+        AutoResetEvent threadStartedEvent = new AutoResetEvent(false);
         AutoResetEvent resetEvent = new AutoResetEvent(false);
         Thread thread = new Thread(() => {
-            var i = 0;
-            var tickCount = Environment.TickCount;
-            while(Environment.TickCount < tickCount + 1000) {
-                i++;
-            }
+            threadStartedEvent.Set();
+            Thread.Sleep(50);
             resetEvent.Set();
             resetEvent.Set();
         });
 
+        thread.IsBackground = true;
         thread.Start();
-        resetEvent.WaitOne(100);
-        thread.Join();
+        threadStartedEvent.WaitOne();
+        resetEvent.WaitOne(50);
+        thread.Join(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
     }
 
     [Fact]
