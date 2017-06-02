@@ -27,12 +27,27 @@ namespace System.Threading
         internal int Timeout { get; }
         internal bool Repeating { get; }
         internal WaitHandle UserUnregisterWaitHandle { get; private set; }
+        private bool SignaledUserWaitHandle { get; set; } = false;
+        private LowLevelLock SignalUserWaitHandleLock { get; } = new LowLevelLock();
+
+        internal ManualResetEventSlim CanUnregister { get; } = new ManualResetEventSlim(true);
 
         public bool Unregister(WaitHandle waitObject)
         {
             UserUnregisterWaitHandle = waitObject;
             WaitThread.QueueUnregisterWait(this);
             return true;
+        }
+
+        internal void SignalUserWaitHandle()
+        {
+            SignalUserWaitHandleLock.Acquire();
+            if(!SignaledUserWaitHandle && UserUnregisterWaitHandle != null)
+            {
+                SignaledUserWaitHandle = true;
+                WaitSubsystem.SetEvent(UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());
+            }
+            SignalUserWaitHandleLock.Release();
         }
     }
 

@@ -102,11 +102,13 @@ namespace System.Threading
         private static void CompleteWait(object state)
         {
             CompletedWaitHandle handle = (CompletedWaitHandle)state;
+            handle.CompletedHandle.CanUnregister.Reset();
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(handle.CompletedHandle.Callback, handle.TimedOut);
             if (!handle.CompletedHandle.Repeating)
             {
                 UnregisterWait(handle.CompletedHandle);
             }
+            handle.CompletedHandle.CanUnregister.Set();
         }
 
         public static void RegisterWaitHandle(RegisteredWaitHandle handle)
@@ -143,6 +145,7 @@ namespace System.Threading
         private static void UnregisterWait(object state)
         {
             RegisteredWaitHandle handle = (RegisteredWaitHandle)state;
+            handle.CanUnregister.Wait();
             s_activeWaitMonitor.Acquire();
             int handleIndex = -1;
             for (int i = 0; i < s_numActiveWaits; i++)
@@ -153,16 +156,14 @@ namespace System.Threading
                     break;
                 }
             }
-            Debug.Assert(handleIndex != -1);
-            Array.Copy(s_registeredWaitHandles, handleIndex + 1, s_registeredWaitHandles, handleIndex, WaitHandle.MaxWaitHandles - (handleIndex + 1));
-            s_registeredWaitHandles[s_numActiveWaits--] = null;
-            s_activeWaitMonitor.Release();
-
-            WaitHandle unregisterWaitHandle = handle.UserUnregisterWaitHandle;
-            if (unregisterWaitHandle != null)
+            if(handleIndex != -1)
             {
-                WaitSubsystem.SetEvent(unregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());
+                Array.Copy(s_registeredWaitHandles, handleIndex + 1, s_registeredWaitHandles, handleIndex, WaitHandle.MaxWaitHandles - (handleIndex + 1));
+                s_registeredWaitHandles[s_numActiveWaits--] = null;
             }
+
+            s_activeWaitMonitor.Release();
+            handle.SignalUserWaitHandle();
         }
     }
 }
