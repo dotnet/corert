@@ -69,19 +69,7 @@ namespace System.Globalization
 
         void IDeserializationCallback.OnDeserialization(Object sender)
         {
-            OnDeserialized();
-        }
-
-        private void OnDeserialized()
-        {
-            // this method will be called twice because of the support of IDeserializationCallback
-            if (_cultureData == null)
-            {
-                // Get the text info name belonging to that culture
-                _cultureData = CultureInfo.GetCultureInfo(_cultureName)._cultureData;
-                _textInfoName = _cultureData.STEXTINFO;
-                FinishInitialization(_textInfoName);
-            }
+            throw new PlatformNotSupportedException();
         }
 
         //
