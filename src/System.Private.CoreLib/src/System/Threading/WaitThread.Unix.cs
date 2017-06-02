@@ -16,10 +16,8 @@ namespace System.Threading
 
         private static LowLevelMonitor s_activeWaitMonitor = new LowLevelMonitor();
 
-        private static IntPtr WaitThreadStart(IntPtr context)
+        private static void WaitThreadStart()
         {
-            RuntimeThread.InitializeThreadPoolThread();
-
             s_waitThreadStartedMonitor.Acquire();
             s_waitThreadStarted = true;
             s_waitThreadStartedMonitor.Signal_Release();
@@ -104,15 +102,12 @@ namespace System.Threading
         private static void StartWaitThreadIfNotStarted()
         {
             s_waitThreadStartedMonitor.Acquire();
-            if (!s_waitThreadStarted)
+            if(!s_waitThreadStarted)
             {
-                if (!Interop.Sys.RuntimeThread_CreateThread(IntPtr.Zero /*use default stack size*/,
-                    AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(WaitThreadStart), IntPtr.Zero))
-                {
-                    throw new OutOfMemoryException();
-                }
-
-                while (!s_waitThreadStarted)
+                RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
+                waitThread.IsBackground = true;
+                waitThread.Start();
+                while(!s_waitThreadStarted)
                 {
                     s_waitThreadStartedMonitor.Wait();
                 }
