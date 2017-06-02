@@ -13,7 +13,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class MissingFieldException : MissingMemberException
     {
         public MissingFieldException()

@@ -449,7 +449,6 @@ namespace System.Runtime
         }
 
 #if DEBUG
-        [Serializable]
         internal sealed class MemoryFailPointState
         {
             private ulong _segmentSize;

@@ -62,7 +62,6 @@ namespace System.Collections.Generic
         }
     }
 
-    [Serializable]
     internal sealed class DefaultEqualityComparer<T> : EqualityComparer<T>
     {
         public DefaultEqualityComparer()

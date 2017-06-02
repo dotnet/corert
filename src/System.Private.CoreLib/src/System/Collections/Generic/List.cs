@@ -1163,7 +1163,6 @@ namespace System.Collections.Generic
             return true;
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private List<T> _list;

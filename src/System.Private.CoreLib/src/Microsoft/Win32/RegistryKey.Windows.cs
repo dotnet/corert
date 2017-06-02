@@ -125,6 +125,33 @@ namespace Microsoft.Win32
             return null;
         }
 
+        private void DeleteValueCore(string name, bool throwOnMissingValue)
+        {
+            int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
+
+            //
+            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE
+            // This still means the name doesn't exist. We need to be consistent with previous OS.
+            //
+            if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+            {
+                if (throwOnMissingValue)
+                {
+                    throw new ArgumentException(SR.Arg_RegSubKeyValueAbsent);
+                }
+                else
+                {
+                    // Otherwise, reset and just return giving no indication to the user.
+                    // (For compatibility)
+                    errorCode = 0;
+                }
+            }
+            // We really should throw an exception here if errorCode was bad,
+            // but we can't for compatibility reasons.
+            Debug.Assert(errorCode == 0, "RegDeleteValue failed.  Here's your error code: " + errorCode);
+        }
+
         /// <summary>
         /// Retrieves a new RegistryKey that represents the requested key. Valid
         /// values are:
@@ -512,6 +539,11 @@ namespace Microsoft.Win32
                             // pass in the whole char[] to prevent truncating a character
                             data = new string(blob);
                         }
+
+                        if (!doNotExpand)
+                        {
+                            data = Environment.ExpandEnvironmentVariables((string)data);
+                        }
                     }
                     break;
                 case Interop.mincore.RegistryValues.REG_MULTI_SZ:
@@ -612,6 +644,21 @@ namespace Microsoft.Win32
                 type == Interop.mincore.RegistryValues.REG_NONE ? RegistryValueKind.None :
                 !Enum.IsDefined(typeof(RegistryValueKind), type) ? RegistryValueKind.Unknown :
                 (RegistryValueKind)type;
+        }
+
+        // We only need to set String values, this is a cut-down version of SetValueCore(string name, object value, RegistryValueKind valueKind)
+        // that supports only that.
+        private unsafe void SetValueCore(string name, string value)
+        {
+            int ret = Interop.Advapi32.RegSetValueEx(_hkey, name, 0, RegistryValueKind.String, value, checked(value.Length * 2 + 2));
+            if (ret == 0)
+            {
+                SetDirty();
+            }
+            else
+            {
+                Win32Error(ret, null);
+            }
         }
 
         /// <summary>

@@ -5,9 +5,11 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
+#include "daccess.h"
+#include "gcrhinterface.h"
 #include "DebuggerHook.h"
 #include "DebugEventSource.h"
-#include "Debug.h"
+
 
 GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
@@ -59,54 +61,15 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         {
             if (requests[i].kind == DebuggerGcProtectionRequestKind::EnsureConservativeReporting)
             {
-                DebuggerProtectedBufferList* tail = DebuggerHook::s_debuggerProtectedBuffers;
-                s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferList();
-                if (s_debuggerProtectedBuffers == nullptr)
-                {
-                    // TODO: We cannot handle the debugger request to protect a buffer (we have to break our promise)
-                    // TODO: We need to figure out how to communicate this broken promise to the debugger
-                }
-                else
-                {
-                    s_debuggerProtectedBuffers->address = requests[i].address;
-                    s_debuggerProtectedBuffers->size = requests[i].size;
-                    s_debuggerProtectedBuffers->identifier = requests[i].identifier;
-                    s_debuggerProtectedBuffers->next = tail;
-                }
+                EnsureConservativeReporting(requests + i);
             }
             else if (requests[i].kind == DebuggerGcProtectionRequestKind::RemoveConservativeReporting)
             {
-                DebuggerProtectedBufferList* prev = nullptr;
-                DebuggerProtectedBufferList* curr = DebuggerHook::s_debuggerProtectedBuffers;
-                while (true)
-                {
-                    if (curr == nullptr)
-                    {
-                        // The debugger is trying to remove a conservatively reported buffer that does not exist
-                        break;
-                    }
-                    if (curr->identifier == requests[i].identifier)
-                    {
-                        DebuggerProtectedBufferList* toDelete = curr;
-                        if (prev == nullptr)
-                        {
-                            // We are trying to remove the head of the linked list
-                            DebuggerHook::s_debuggerProtectedBuffers = curr->next;
-                        }
-                        else
-                        {
-                            prev->next = curr->next;
-                        }
-
-                        delete toDelete;
-                        break;
-                    }
-                    else
-                    {
-                        prev = curr;
-                        curr = curr->next;
-                    }
-                }
+                RemoveConservativeReporting(requests + i);
+            }
+            else if (requests[i].kind == DebuggerGcProtectionRequestKind::RemoveHandle)
+            {
+                RemoveHandle(requests + i);
             }
         }
 
@@ -130,6 +93,96 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     s_debuggeeInitiatedHandleIdentifier += 2;
 
     return head->identifier;
+}
+
+/* static */ void DebuggerHook::EnsureConservativeReporting(GcProtectionRequest* request)
+{
+    DebuggerProtectedBufferList* tail = DebuggerHook::s_debuggerProtectedBuffers;
+    s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferList();
+    if (s_debuggerProtectedBuffers == nullptr)
+    {
+        // TODO: We cannot handle the debugger request to protect a buffer (we have to break our promise)
+        // TODO: We need to figure out how to communicate this broken promise to the debugger
+    }
+    else
+    {
+        s_debuggerProtectedBuffers->address = request->address;
+        s_debuggerProtectedBuffers->size = request->size;
+        s_debuggerProtectedBuffers->identifier = request->identifier;
+        s_debuggerProtectedBuffers->next = tail;
+    }
+}
+
+/* static */ void DebuggerHook::RemoveConservativeReporting(GcProtectionRequest* request)
+{
+    DebuggerProtectedBufferList* prev = nullptr;
+    DebuggerProtectedBufferList* curr = DebuggerHook::s_debuggerProtectedBuffers;
+    while (true)
+    {
+        if (curr == nullptr)
+        {
+            // The debugger is trying to remove a conservatively reported buffer that does not exist
+            break;
+        }
+        if (curr->identifier == request->identifier)
+        {
+            DebuggerProtectedBufferList* toDelete = curr;
+            if (prev == nullptr)
+            {
+                // We are trying to remove the head of the linked list
+                DebuggerHook::s_debuggerProtectedBuffers = curr->next;
+            }
+            else
+            {
+                prev->next = curr->next;
+            }
+
+            delete toDelete;
+            break;
+        }
+        else
+        {
+            prev = curr;
+            curr = curr->next;
+        }
+    }
+}
+
+/* static */ void DebuggerHook::RemoveHandle(GcProtectionRequest* request)
+{
+    DebuggerOwnedHandleList* prev = nullptr;
+    DebuggerOwnedHandleList* curr = DebuggerHook::s_debuggerOwnedHandleList;
+    while (true)
+    {
+        if (curr == nullptr)
+        {
+            // The debugger is trying to remove a handle that is not obtained
+            break;
+        }
+        if (curr->identifier == request->identifier)
+        {
+            DebuggerOwnedHandleList* toDelete = curr;
+            RedhawkGCInterface::DestroyTypedHandle(toDelete->handle);
+
+            if (prev == nullptr)
+            {
+                // We are trying to remove the head of the linked list
+                DebuggerHook::s_debuggerOwnedHandleList = curr->next;
+            }
+            else
+            {
+                prev->next = curr->next;
+            }
+
+            delete toDelete;
+            break;
+        }
+        else
+        {
+            prev = curr;
+            curr = curr->next;
+        }
+    }
 }
 
 EXTERN_C REDHAWK_API UInt32 __cdecl RhpRecordDebuggeeInitiatedHandle(void* objectHandle)

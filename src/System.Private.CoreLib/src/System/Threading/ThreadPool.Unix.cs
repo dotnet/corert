@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -10,6 +11,15 @@ namespace System.Threading
     //
     // Unix-specific implementation of ThreadPool
     //
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    {
+        public bool Unregister(WaitHandle waitObject)
+        {
+            // UNIXTODO: ThreadPool
+            throw new NotImplementedException();
+        }
+    }
+
     public static partial class ThreadPool
     {
         // TODO: this is a very primitive (temporary) implementation of Thread Pool to allow Tasks to be
@@ -109,6 +119,32 @@ namespace System.Threading
                 s_semaphore.Wait();
 
             } while (true);
+        }
+
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            //
+            // This is just a quick-and-dirty implementation to make TaskFactory.FromAsync
+            // work for the few apps that are using it.  A proper implementation would coalesce
+            // multiple waits onto a single thread, so that fewer machine resources would be
+            // consumed.
+            //
+
+            Debug.Assert(executeOnlyOnce);
+
+            QueueUserWorkItem(_ =>
+            {
+                bool timedOut = waitObject.WaitOne((int)millisecondsTimeOutInterval);
+                callBack(state, timedOut);
+            });
+
+            return new RegisteredWaitHandle();
         }
     }
 }

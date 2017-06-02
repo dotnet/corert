@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime;
@@ -20,10 +21,37 @@ namespace Internal.Runtime.Augments
             return GetEnvironmentVariableCore(variable);
         }
 
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Process)
+                return GetEnvironmentVariable(variable);
+
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            return GetEnvironmentVariableFromRegistry(variable, fromMachine: fromMachine);
+        }
+
         public static void SetEnvironmentVariable(string variable, string value)
         {
             ValidateVariableAndValue(variable, ref value);
+
             SetEnvironmentVariableCore(variable, value);
+        }
+
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Process)
+            {
+                SetEnvironmentVariable(variable, value);
+                return;
+            }
+
+            ValidateVariableAndValue(variable, ref value);
+
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
         }
 
         private static void ValidateVariableAndValue(string variable, ref string value)
@@ -56,37 +84,30 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        // TODO Perf: Once CoreCLR gets PopulateEnvironmentVariables(), get rid of GetEnvironmentVariables() and have 
-        // corefx call PopulateEnvironmentVariables() instead so we don't have to create a dictionary just to copy it into
+        // TODO Perf: Once CoreCLR gets EnumerateEnvironmentVariables(), get rid of GetEnvironmentVariables() and have 
+        // corefx call EnumerateEnvironmentVariables() instead so we don't have to create a dictionary just to copy it into
         // another dictionary.
-        public static IDictionary GetEnvironmentVariables()
-        {
-            IDictionary dictionary = new Dictionary<string, string>(EnumerateEnvironmentVariables());
-            return dictionary;
-        }
+        public static IDictionary GetEnvironmentVariables() => new Dictionary<string, string>(EnumerateEnvironmentVariables());
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => new Dictionary<string, string>(EnumerateEnvironmentVariables(target));
 
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             if (target == EnvironmentVariableTarget.Process)
-                return GetEnvironmentVariable(variable);
-            throw new NotImplementedException();
+                return EnumerateEnvironmentVariables();
+
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            return EnumerateEnvironmentVariablesFromRegistry(fromMachine: fromMachine);
         }
 
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
         {
-            if (target == EnvironmentVariableTarget.Process)
-            {
-                SetEnvironmentVariable(variable, value);
-                return;
-            }
-            throw new NotImplementedException();
-        }
-
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
-        {
-            if (target == EnvironmentVariableTarget.Process)
-                return GetEnvironmentVariables();
-            throw new NotImplementedException();
+            Debug.Assert(target != EnvironmentVariableTarget.Process);
+            if (target == EnvironmentVariableTarget.Machine)
+                return true;
+            else if (target == EnvironmentVariableTarget.User)
+                return false;
+            else
+                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
     }
 }

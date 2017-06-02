@@ -10,6 +10,7 @@ namespace System
 {
     // Represents a Globally Unique Identifier.
     [StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
     {
         public static readonly Guid Empty = new Guid();

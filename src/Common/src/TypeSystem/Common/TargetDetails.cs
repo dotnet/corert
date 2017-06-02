@@ -54,7 +54,7 @@ namespace Internal.TypeSystem
     /// Represents various details about the compilation target that affect
     /// layout, padding, allocations, or ABI.
     /// </summary>
-    public class TargetDetails
+    public partial class TargetDetails
     {
         /// <summary>
         /// Gets the target CPU architecture.

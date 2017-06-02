@@ -23,6 +23,7 @@ namespace System
     // provides object representation of the byte primitive type. 
     // 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct Byte : IComparable, IFormattable, IComparable<Byte>, IEquatable<Byte>, IConvertible
     {
         private byte _value;
