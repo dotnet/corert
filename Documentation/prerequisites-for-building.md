@@ -2,7 +2,7 @@ The following pre-requisites need to be installed for building the repo:
 
 # Windows (Windows 7+)
 
-1. Install [Visual Studio 2017](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx), including Visual C++ support. Visual Studio 2015 also works.
+1. Install [Visual Studio 2017](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx), including Visual C++ support.
 2. Install [CMake](http://www.cmake.org/download/) 3.8.0 or later. Make sure you add it to the PATH in the setup wizard.
 3. (Windows 7 only) Install PowerShell 3.0. It's part of [Windows Management Framework 3.0](http://go.microsoft.com/fwlink/?LinkID=240290). Windows 8 or later comes with the right version inbox.
 
