@@ -1021,6 +1021,10 @@ namespace Internal.JitInterface
         CORINFO_VIRTUALCALL_VTABLE
     };
 
+    public enum CORINFO_VIRTUALCALL_NO_CHUNK : uint
+    {
+        Value = 0xFFFFFFFF,
+    }
 
     public unsafe struct CORINFO_CALL_INFO
     {

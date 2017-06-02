@@ -792,8 +792,22 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("getMethodModule"); }
+
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
-        { throw new NotImplementedException("getMethodVTableOffset"); }
+        {
+            MethodDesc methodDesc = HandleToObject(method);
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
+            offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
+
+            // Normalize to the slot defining method. We don't have slot information for the overrides.
+            methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc);
+            Debug.Assert(slot != -1);
+
+            offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
+        }
+
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
@@ -2947,6 +2961,39 @@ namespace Internal.JitInterface
                 // We don't need an instantiation parameter, so let's just not report it. Might be nice to
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
+            }
+            else if (!_compilation.IsReadyToRun
+                && !targetMethod.OwningType.IsInterface
+                && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
+                pResult.nullInstanceCheck = true;
+            }
+            else if (!_compilation.IsReadyToRun
+                && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod == MethodBeingCompiled)
+                    {
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.InterfaceDispatchCell;
+                    }
+                }
+                else
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.InterfaceDispatchCell(targetMethod));
+                }
             }
             else
             {

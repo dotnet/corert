@@ -24,6 +24,7 @@ namespace ILCompiler
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected bool _generateDebugInfo = false;
         protected MetadataManager _metadataManager;
+        protected bool _isReadyToRun = false;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -66,6 +67,12 @@ namespace ILCompiler
         public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
         {
             _generateDebugInfo = generateDebugInfo;
+            return this;
+        }
+
+        public CompilationBuilder UseReadyToRun(bool isReadyToRun)
+        {
+            _isReadyToRun = isReadyToRun;
             return this;
         }
 

@@ -38,6 +38,8 @@ namespace ILCompiler
             }
         }
 
+        public override bool IsReadyToRun => throw new NotImplementedException(); // CppWriter doesn't use this.
+
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
         {
             yield return new CppCodegenCompilationRootProvider(factory.TypeSystemContext);

@@ -32,6 +32,8 @@ namespace ILCompiler
 
         protected abstract bool GenerateDebugInfo { get; }
 
+        public abstract bool IsReadyToRun { get; }
+
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
         private readonly MethodBaseGetCurrentMethodThunkCache _methodBaseGetCurrentMethodThunks;

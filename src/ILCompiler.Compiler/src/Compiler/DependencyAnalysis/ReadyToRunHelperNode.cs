@@ -30,7 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         MethodHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry
+        MethodEntry,
+        InterfaceDispatchCell,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
