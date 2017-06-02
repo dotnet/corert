@@ -62,7 +62,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate CORINFO_METHOD_STRUCT_* __mapMethodDeclToMethodImpl(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate void __getGSCookie(IntPtr _this, IntPtr* ppException, GSCookie* pCookieVal, GSCookie** ppCookieVal);
+        delegate void __getGSCookie(IntPtr _this, IntPtr* ppException, IntPtr* pCookieVal, IntPtr** ppCookieVal);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate void __resolveToken(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
@@ -238,7 +238,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate int* __getAddrOfCaptureThreadGlobal(IntPtr _this, IntPtr* ppException, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate SIZE_T* __getAddrModuleDomainID(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module);
+        delegate void* __getAddrModuleDomainID(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate void* __getHelperFtn(IntPtr _this, IntPtr* ppException, CorInfoHelpFunc ftnNum, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
@@ -686,7 +686,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getGSCookie(IntPtr thisHandle, IntPtr* ppException, GSCookie* pCookieVal, GSCookie** ppCookieVal)
+        static void _getGSCookie(IntPtr thisHandle, IntPtr* ppException, IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1900,7 +1900,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static SIZE_T* _getAddrModuleDomainID(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module)
+        static void* _getAddrModuleDomainID(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1910,7 +1910,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(SIZE_T*);
+                return default(void*);
             }
         }
 
