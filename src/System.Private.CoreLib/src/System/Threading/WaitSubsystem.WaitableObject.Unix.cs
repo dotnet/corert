@@ -198,8 +198,6 @@ namespace System.Threading
                     s_lock.VerifyIsLocked();
 
                     bool isSignaled = _signalCount != 0;
-                    Debug.Assert(!isSignaled || _waitersHead == null);
-                    Debug.Assert(!isSignaled || _waitersTail == null);
                     Debug.Assert(isSignaled || !IsMutex || _ownershipInfo.Thread != null);
                     return isSignaled;
                 }
@@ -663,9 +661,6 @@ namespace System.Threading
 
                 if (oldSignalCount != 0)
                 {
-                    Debug.Assert(_waitersHead == null);
-                    Debug.Assert(_waitersTail == null);
-
                     _signalCount = oldSignalCount + count;
                     return oldSignalCount;
                 }
