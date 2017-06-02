@@ -14,8 +14,8 @@ internal static class Runner
 
     public static int Main()
     {
-        Console.WriteLine("    WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList");
-        WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList();
+        Console.WriteLine("    WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList");
+        WaitSubsystemTests.DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList();
 
         Console.WriteLine("    WaitSubsystemTests.ManualResetEventTest");
         WaitSubsystemTests.ManualResetEventTest();
@@ -397,7 +397,7 @@ internal static class WaitSubsystemTests
     // in the wait subsystem (Unix only). More information can be found at 
     // https://github.com/dotnet/corert/issues/3616 and https://github.com/dotnet/corert/pull/3782.
     [Fact]
-    public static void DoubleSetOnEventWithTimedOutWaiterShouldNotSayInWaitersList()
+    public static void DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList()
     {
         AutoResetEvent threadStartedEvent = new AutoResetEvent(false);
         AutoResetEvent resetEvent = new AutoResetEvent(false);
@@ -410,7 +410,7 @@ internal static class WaitSubsystemTests
 
         thread.IsBackground = true;
         thread.Start();
-        threadStartedEvent.WaitOne();
+        threadStartedEvent.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
         resetEvent.WaitOne(50);
         thread.Join(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
     }
