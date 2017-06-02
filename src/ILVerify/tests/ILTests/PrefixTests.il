@@ -13,7 +13,7 @@
 .class public auto ansi beforefieldinit PrefixTestsType
        extends [System.Runtime]System.Object
 {
-    .method static public void Prefix.Readonly_Valid() cil managed 
+    .method static public hidebysig void Prefix.Readonly_Valid() cil managed 
     {
         .locals init (int32[] V_0)
 
@@ -30,7 +30,7 @@
         ret
     }
 
-    .method static public void Prefix.Readonly_Invalid_ReadOnly() cil managed 
+    .method static public hidebysig void Prefix.Readonly_Invalid_ReadOnly() cil managed 
     {
         .locals init (int32[] V_0)
 
@@ -46,7 +46,7 @@
         ret
     }
 
-    .method static public void Prefix.PrefixUnalignedAndVolatile_Valid() cil managed 
+    .method static public hidebysig void Prefix.PrefixUnalignedAndVolatile_Valid() cil managed 
     {
         .locals init (int32& V_0, int32 V_1)
         // ref int x;

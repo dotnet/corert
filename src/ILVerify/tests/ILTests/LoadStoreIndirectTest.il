@@ -13,28 +13,28 @@
 .class public auto ansi beforefieldinit LoadStoreIndirectTestsType
        extends [System.Runtime]System.Object
 {
-    .method static public void LoadIndirect.FromStringRef_Valid(string&) cil managed
+    .method static public hidebysig void LoadIndirect.FromStringRef_Valid(string&) cil managed
     {
         ldarg.0
         ldind.ref
         ret
     }
 
-    .method static public void LoadIndirect.FromInt32Ref_Valid(int32&) cil managed
+    .method static public hidebysig void LoadIndirect.FromInt32Ref_Valid(int32&) cil managed
     {
         ldarg.0
         ldind.i4
         ret
     }
 
-    .method static public void LoadIndirect.FromInt64Ref_Invalid_StackUnexpected(int64&) cil managed
+    .method static public hidebysig void LoadIndirect.FromInt64Ref_Invalid_StackUnexpected(int64&) cil managed
     {
         ldarg.0
         ldind.i4
         ret
     }
 
-    .method static public void StoreIndirect.AssignToInt_Valid(int32&) cil managed
+    .method static public hidebysig void StoreIndirect.AssignToInt_Valid(int32&) cil managed
     {
         // arg = 0;
         ldarg.0
@@ -43,7 +43,7 @@
         ret
     }
 
-    .method static public void StoreIndirect.AssignToRefBase_Valid(object&) cil managed
+    .method static public hidebysig void StoreIndirect.AssignToRefBase_Valid(object&) cil managed
     {
         .locals init (string V_0)
 
@@ -57,7 +57,7 @@
         ret
     }
 
-    .method static public void StoreIndirect.AssignToRefString_Invalid(string&) cil managed
+    .method static public hidebysig void StoreIndirect.AssignToRefString_Invalid_StackUnexpected(string&) cil managed
     {
         .locals init (object V_0)
 
@@ -71,24 +71,23 @@
         ret
     }
 
-    .method static public void  StoreObject_Valid() cil managed
+    .method static public hidebysig void StoreObject.ValidTypeToken_Valid() cil managed
     {
         .locals init (object V_0)
 
-        ldloca.s   V_0
-        ldstr      "Hello"
-        stobj string
+        ldloca.s    V_0
+        ldstr       "Hello"
+        stobj       string
         ret
     }
 
-    .method static public void  StoreObject_Invalid_StackUnexpected() cil managed
+    .method static public hidebysig void StoreObject.InvalidTypeToken_Invalid_StackUnexpected() cil managed
     {
-        .maxstack  2
         .locals init (object V_0)
 
-        ldloca.s   V_0
-        ldstr      "Hello"
-        stobj  [System.Runtime]System.IO.Stream
+        ldloca.s    V_0
+        ldstr       "Hello"
+        stobj       [System.Runtime]System.IO.Stream
         ret
     }
 }
