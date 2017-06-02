@@ -30,6 +30,7 @@ namespace System.Threading
         public bool Unregister(WaitHandle waitObject)
         {
             WaitThread.UnregisterWaitHandle(this, waitObject);
+            return true;
         }
     }
 
