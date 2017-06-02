@@ -60,15 +60,24 @@ if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
 set __GenRespFiles=0
 if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
 if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
+if not exist "%__ObjDir%\ilryujit.rsp" set __GenRespFiles=1
+if not exist "%__ObjDir%\ilcpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
-    if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
-    if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
+     if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
+     if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
+     if exist "%__ILReproProjectBinDir%" rd /s /q "%__ILReproProjectBinDir%"
+     if exist "%__ILReproProjectObjDir%" rd /s /q "%__ILReproProjectObjDir%"
 
     %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ReproProjectDir%\repro.csproj"
     call :CopyResponseFile "%__ReproProjectObjDir%\native\repro.ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
+    %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ILReproProjectDir%\ilrepro.ilproj"
+    call :CopyResponseFile "%__ILReproProjectObjDir%\native\ilrepro.ilc.rsp" "%__ObjDir%\ilryujit.rsp"  
+
     if exist "%__ReproProjectBinDir%" rd /s /q "%__ReproProjectBinDir%"
     if exist "%__ReproProjectObjDir%" rd /s /q "%__ReproProjectObjDir%"
+    if exist "%__ILReproProjectBinDir%" rd /s /q "%__ILReproProjectBinDir%"
+    if exist "%__ILReproProjectObjDir%" rd /s /q "%__ILReproProjectObjDir%"
 
     set __ExtraArgs=/p:NativeCodeGen=cpp
     if /i "%__BuildType%"=="debug" (
@@ -76,6 +85,9 @@ if "%__GenRespFiles%"=="1" (
     )
     %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ReproProjectDir%\repro.csproj" !__ExtraArgs!
     call :CopyResponseFile "%__ReproProjectObjDir%\native\repro.ilc.rsp" "%__ObjDir%\cpp.rsp"
+
+    %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%__BinDir%\packaging\publish1" /p:Configuration=%__BuildType% /t:IlcCompile "%__ILReproProjectDir%\ilrepro.ilproj" !__ExtraArgs!
+    call :CopyResponseFile "%__ILReproProjectObjDir%\native\ilrepro.ilc.rsp" "%__ObjDir%\ilcpp.rsp" 
 )
 :AfterVsDevGenerateRespFiles
 exit /b %ERRORLEVEL%

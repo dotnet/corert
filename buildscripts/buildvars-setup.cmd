@@ -63,6 +63,9 @@ set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.lo
 set "__ReproProjectDir=%__ProjectDir%\src\ILCompiler\repro"
 set "__ReproProjectBinDir=%__BinDir%\repro"
 set "__ReproProjectObjDir=%__ObjDir%\repro"
+set "__ILReproProjectDir=%__ProjectDir%\src\ILCompiler\ilrepro"
+set "__ILReproProjectBinDir=%__BinDir%\ilrepro"
+set "__ILReproProjectObjDir=%__ObjDir%\ilrepro"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
