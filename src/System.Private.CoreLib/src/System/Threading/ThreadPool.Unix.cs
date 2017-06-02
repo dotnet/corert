@@ -26,10 +26,12 @@ namespace System.Threading
         internal WaitHandle Handle { get; }
         internal int Timeout { get; }
         internal bool Repeating { get; }
+        internal WaitHandle UserUnregisterWaitHandle { get; private set; }
 
         public bool Unregister(WaitHandle waitObject)
         {
-            WaitThread.UnregisterWaitHandle(this, waitObject);
+            UserUnregisterWaitHandle = waitObject;
+            WaitThread.QueueUnregisterWait(this);
             return true;
         }
     }

@@ -6,6 +6,18 @@ namespace System.Threading
 {
     public static class WaitThread
     {
+        private struct CompletedWaitHandle
+        {
+            public CompletedWaitHandle(RegisteredWaitHandle completedHandle, bool timedOut)
+            {
+                CompletedHandle = completedHandle;
+                TimedOut = timedOut;
+            }
+
+            public RegisteredWaitHandle CompletedHandle { get; }
+            public bool TimedOut { get; }
+        }
+
         private static readonly RegisteredWaitHandle[] s_registeredWaitHandles = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles];
 
         private static int s_numActiveWaits = 0;
@@ -62,7 +74,7 @@ namespace System.Threading
                         RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
                         if (registeredHandle.Handle == waitHandles[signalledHandle])
                         {
-                            CompleteWait(registeredHandle, false);
+                            ExecuteWaitCompletion(registeredHandle, false);
                         }
                     }
                 }
@@ -73,7 +85,7 @@ namespace System.Threading
                         RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
                         if (registeredHandle.Timeout == timeout)
                         {
-                            CompleteWait(registeredHandle, true);
+                            ExecuteWaitCompletion(registeredHandle, true);
                         }
                     }
                 }
@@ -81,12 +93,19 @@ namespace System.Threading
             }
         }
 
-        private static void CompleteWait(RegisteredWaitHandle registeredHandle, bool timedOut)
+        private static void ExecuteWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
         {
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(registeredHandle.Callback, timedOut);
-            if (!registeredHandle.Repeating)
+            // TODO: Check for blocking case (InternalCompletionEvent in CoreCLR)
+            ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
+        }
+
+        private static void CompleteWait(object state)
+        {
+            CompletedWaitHandle handle = (CompletedWaitHandle)state;
+            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(handle.CompletedHandle.Callback, handle.TimedOut);
+            if (!handle.CompletedHandle.Repeating)
             {
-                UnregisterWaitHandleDangerous(registeredHandle);
+                UnregisterWait(handle.CompletedHandle);
             }
         }
 
@@ -115,23 +134,16 @@ namespace System.Threading
             s_waitThreadStartedMonitor.Release();
         }
 
-        public static void UnregisterWaitHandle(RegisteredWaitHandle handle, WaitHandle unregisterEvent)
+        public static void QueueUnregisterWait(RegisteredWaitHandle handle)
         {
-            s_activeWaitMonitor.Acquire();
-            UnregisterWaitHandleDangerous(handle);
-            if (unregisterEvent != null)
-            {
-                WaitSubsystem.SetEvent(unregisterEvent.SafeWaitHandle.DangerousGetHandle());
-            }
-            s_activeWaitMonitor.Release();
+            ThreadPool.QueueUserWorkItem(UnregisterWait, handle);
+            UnregisterWait(handle);
         }
 
-        /// <summary>
-        /// Unregister a registered wait handle. This method does not acquire or release the <see cref="s_activeWaitMonitor"/>. That needs to be done by the caller.
-        /// </summary>
-        /// <param name="handle">The registered wait handle to unregister.</param>
-        private static void UnregisterWaitHandleDangerous(RegisteredWaitHandle handle)
+        private static void UnregisterWait(object state)
         {
+            RegisteredWaitHandle handle = (RegisteredWaitHandle)state;
+            s_activeWaitMonitor.Acquire();
             int handleIndex = -1;
             for (int i = 0; i < s_numActiveWaits; i++)
             {
@@ -144,6 +156,13 @@ namespace System.Threading
             Debug.Assert(handleIndex != -1);
             Array.Copy(s_registeredWaitHandles, handleIndex + 1, s_registeredWaitHandles, handleIndex, WaitHandle.MaxWaitHandles - (handleIndex + 1));
             s_registeredWaitHandles[s_numActiveWaits--] = null;
+            s_activeWaitMonitor.Release();
+
+            WaitHandle unregisterWaitHandle = handle.UserUnregisterWaitHandle;
+            if (unregisterWaitHandle != null)
+            {
+                WaitSubsystem.SetEvent(unregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());
+            }
         }
     }
 }
