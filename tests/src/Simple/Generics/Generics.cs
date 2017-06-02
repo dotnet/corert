@@ -717,6 +717,7 @@ class Program
             public virtual string IFaceMethod1(T t) { return "BaseClass.IFaceMethod1"; }
             public virtual string IFaceGVMethod1<U>(T t, U u) { return "BaseClass.IFaceGVMethod1"; }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public virtual string VirtualButNotUsedVirtuallyMethod(T t) { return "BaseClass.VirtualButNotUsedVirtuallyMethod"; }
         }
 
