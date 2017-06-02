@@ -269,8 +269,11 @@
     <Compile Include="..\..\Common\src\CommandLine\CommandLineHelpers.cs">
       <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.0.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.1" />
