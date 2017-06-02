@@ -1249,7 +1249,9 @@ namespace Internal.IL
 
             CheckIsByRef(address);
             if (type != null)
-              CheckIsAssignablePointer(address.Type, type);
+            {
+                CheckIsAssignablePointer(address.Type, type);
+            }
             else
             {
                 type = address.Type;
