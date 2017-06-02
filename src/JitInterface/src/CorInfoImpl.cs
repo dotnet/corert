@@ -1037,8 +1037,7 @@ namespace Internal.JitInterface
         {
             // We support enough of this to make SIMD work, but not much else.
 
-            // TODO: figure out why the marshalling for fFullInst and fAssembly is wrong.
-            Debug.Assert(fNamespace /*&& !fFullInst && !fAssembly */);
+            Debug.Assert(fNamespace && !fFullInst && !fAssembly);
 
             var type = HandleToObject(cls);
             string name = TypeString.Instance.FormatName(type);
