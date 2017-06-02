@@ -22,6 +22,7 @@ namespace System
     // This type is LayoutKind Sequential
 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct Int32 : IComparable, IFormattable, IComparable<Int32>, IEquatable<Int32>, IConvertible
     {
         // _value is never assigned to by any of the methods.

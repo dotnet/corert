@@ -228,19 +228,36 @@ namespace System.Threading
                 }
             }
 
-            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds)
+            public bool Wait(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
             {
+                Debug.Assert(waitInfo != null);
+                Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
+
+                Debug.Assert(timeoutMilliseconds >= -1);
+
                 s_lock.Acquire();
-                return Wait_Locked(waitInfo, timeoutMilliseconds);
+
+                if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
+                {
+                    s_lock.Release();
+                    throw new ThreadInterruptedException();
+                }
+
+                return Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize);
             }
 
-            public bool Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds)
+            /// <summary>
+            /// This function does not check for a pending thread interrupt. Callers are expected to do that soon after
+            /// acquiring <see cref="s_lock"/>.
+            /// </summary>
+            public bool Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread == RuntimeThread.CurrentThread);
 
                 Debug.Assert(timeoutMilliseconds >= -1);
+                Debug.Assert(!interruptible || !waitInfo.CheckAndResetPendingInterrupt);
 
                 bool needToWait = false;
                 try
@@ -273,7 +290,7 @@ namespace System.Threading
 
                     WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
                     waitableObjects[0] = this;
-                    waitInfo.RegisterWait(1, isWaitForAll: false);
+                    waitInfo.RegisterWait(1, prioritize, isWaitForAll: false);
                     needToWait = true;
                 }
                 finally
@@ -285,7 +302,12 @@ namespace System.Threading
                     }
                 }
 
-                return waitInfo.Wait(timeoutMilliseconds, waitHandlesForAbandon: null, isSleep: false) != WaitHandle.WaitTimeout;
+                return
+                    waitInfo.Wait(
+                        timeoutMilliseconds,
+                        interruptible,
+                        waitHandlesForAbandon: null,
+                        isSleep: false) != WaitHandle.WaitTimeout;
             }
 
             public static int Wait(
@@ -294,6 +316,8 @@ namespace System.Threading
                 bool waitForAll,
                 ThreadWaitInfo waitInfo,
                 int timeoutMilliseconds,
+                bool interruptible,
+                bool prioritize,
                 WaitHandle[] waitHandlesForAbandon)
             {
                 s_lock.VerifyIsNotLocked();
@@ -309,6 +333,11 @@ namespace System.Threading
                 s_lock.Acquire();
                 try
                 {
+                    if (interruptible && waitInfo.CheckAndResetPendingInterrupt)
+                    {
+                        throw new ThreadInterruptedException();
+                    }
+
                     if (!waitForAll)
                     {
                         // Check if any is already signaled
@@ -417,7 +446,7 @@ namespace System.Threading
                     }
 
                     waitableObjects = null; // no need to clear this anymore, RegisterWait / Wait will take over from here
-                    waitInfo.RegisterWait(count, waitForAll);
+                    waitInfo.RegisterWait(count, prioritize, waitForAll);
                     needToWait = true;
                 }
                 finally
@@ -437,7 +466,7 @@ namespace System.Threading
                     }
                 }
 
-                return waitInfo.Wait(timeoutMilliseconds, waitHandlesForAbandon, isSleep: false);
+                return waitInfo.Wait(timeoutMilliseconds, interruptible, waitHandlesForAbandon, isSleep: false);
             }
 
             public static bool WouldWaitForAllBeSatisfiedOrAborted(
@@ -448,6 +477,7 @@ namespace System.Threading
                 ref bool wouldAnyMutexReacquireCountOverflow,
                 ref bool isAnyAbandonedMutex)
             {
+                s_lock.VerifyIsLocked();
                 Debug.Assert(waitingThread != null);
                 Debug.Assert(waitingThread != RuntimeThread.CurrentThread);
                 Debug.Assert(waitedObjects != null);
@@ -502,6 +532,7 @@ namespace System.Threading
                 int waitedCount,
                 int signaledWaitedObjectIndex)
             {
+                s_lock.VerifyIsLocked();
                 Debug.Assert(waitInfo != null);
                 Debug.Assert(waitInfo.Thread != RuntimeThread.CurrentThread);
                 Debug.Assert(waitedObjects != null);
@@ -540,10 +571,12 @@ namespace System.Threading
                 switch (_type)
                 {
                     case WaitableObjectType.ManualResetEvent:
+                        Debug.Assert(count == 1);
                         SignalManualResetEvent();
                         break;
 
                     case WaitableObjectType.AutoResetEvent:
+                        Debug.Assert(count == 1);
                         SignalAutoResetEvent();
                         break;
 
@@ -552,6 +585,7 @@ namespace System.Threading
                         break;
 
                     default:
+                        Debug.Assert(count == 1);
                         SignalMutex();
                         break;
                 }

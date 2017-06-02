@@ -99,7 +99,6 @@ namespace System.Text
     }
 
     // Exception for decoding unknown byte sequences.
-    [Serializable]
     public sealed class DecoderFallbackException : ArgumentException
     {
         private byte[] _bytesUnknown = null;

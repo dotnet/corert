@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct Single : IComparable, IFormattable, IComparable<Single>, IEquatable<Single>, IConvertible
     {
         private float _value;

@@ -13,7 +13,6 @@ namespace System.Diagnostics
     /// StackTrace, we use an InheritanceDemand to prevent partially-trusted
     /// subclasses.
     /// </summary>
-    [Serializable]
     public class StackTrace
     {
         public const int METHODS_TO_SKIP = 0;

@@ -14,6 +14,7 @@ using Internal.Diagnostics;
 
 namespace System
 {
+    [Serializable]
     public class Exception : ISerializable
     {
         private void Init()

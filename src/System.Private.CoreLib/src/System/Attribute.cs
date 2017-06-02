@@ -7,6 +7,7 @@ using System.Diagnostics;
 namespace System
 {
     [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
+    [Serializable]
     public abstract partial class Attribute
     {
         protected Attribute() { }

@@ -20,6 +20,7 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [Serializable]
     public struct Int64 : IComparable, IFormattable, IComparable<Int64>, IEquatable<Int64>, IConvertible
     {
         private long _value;

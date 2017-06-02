@@ -34,6 +34,7 @@ namespace System
     // services to subclasses. 
 
     // PREFER: public class Object
+    [Serializable]
     public unsafe class Object
     {
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
@@ -42,6 +43,7 @@ namespace System
         // statement on partially typed objects. Wouldn't have to do this if we could directly declared pinned
         // locals.
         // @TODO: Consider making this EETypePtr instead of void *.
+        [NonSerialized]
         internal IntPtr m_pEEType;
 #pragma warning restore
 

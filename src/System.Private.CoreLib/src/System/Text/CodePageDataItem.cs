@@ -4,7 +4,6 @@
 
 namespace System.Text
 {
-    [Serializable]
     internal class CodePageDataItem
     {
         public int CodePage { get; }

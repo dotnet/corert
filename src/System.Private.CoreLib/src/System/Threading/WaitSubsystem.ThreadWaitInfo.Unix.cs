@@ -64,6 +64,18 @@ namespace System.Threading
             /// </summary>
             private WaitHandleArray<WaitedListNode> _waitedListNodes;
 
+            /// <summary>
+            /// Indicates whether the next wait should be interrupted.
+            /// 
+            /// Synchronization:
+            /// - In most cases, reads and writes are synchronized with <see cref="s_lock"/>
+            /// - Sleep(nonzero) intentionally does not acquire <see cref="s_lock"/>, but it must acquire
+            ///   <see cref="_waitMonitor"/> to do the wait. To support this case, a pending interrupt is recorded while
+            ///   <see cref="s_lock"/> and <see cref="_waitMonitor"/> are locked, and the read and reset for Sleep(nonzero) are
+            ///   done while <see cref="_waitMonitor"/> is locked.
+            /// - Sleep(0) intentionally does not acquire any lock, so it uses an interlocked compare-exchange for the read and
+            ///   reset, see <see cref="CheckAndResetPendingInterrupt_NotLocked"/>
+            /// </summary>
             private int _isPendingInterrupt;
 
             ////////////////////////////////////////////////////////////////
@@ -81,12 +93,22 @@ namespace System.Threading
 
                 _thread = thread;
                 _waitMonitor = new LowLevelMonitor();
+                _waitSignalState = WaitSignalState.NotWaiting;
                 _waitedObjectIndexThatSatisfiedWait = -1;
                 _waitedObjects = new WaitHandleArray<WaitableObject>(elementInitializer: null);
                 _waitedListNodes = new WaitHandleArray<WaitedListNode>(i => new WaitedListNode(this, i));
             }
 
             public RuntimeThread Thread => _thread;
+
+            private bool IsWaiting
+            {
+                get
+                {
+                    _waitMonitor.VerifyIsLocked();
+                    return _waitSignalState < WaitSignalState.NotWaiting;
+                }
+            }
 
             /// <summary>
             /// Callers must ensure to clear the array after use. Once <see cref="RegisterWait(int, bool)"/> is called (followed
@@ -114,7 +136,7 @@ namespace System.Threading
             /// <summary>
             /// The caller is expected to populate <see cref="WaitedObjects"/> and pass in the number of objects filled
             /// </summary>
-            public void RegisterWait(int waitedCount, bool isWaitForAll)
+            public void RegisterWait(int waitedCount, bool prioritize, bool isWaitForAll)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(_thread == RuntimeThread.CurrentThread);
@@ -158,9 +180,19 @@ namespace System.Threading
 
                 _isWaitForAll = isWaitForAll;
                 _waitedCount = waitedCount;
-                for (int i = 0; i < waitedCount; ++i)
+                if (prioritize)
                 {
-                    waitedListNodes[i].RegisterWait(waitedObjects[i]);
+                    for (int i = 0; i < waitedCount; ++i)
+                    {
+                        waitedListNodes[i].RegisterPrioritizedWait(waitedObjects[i]);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < waitedCount; ++i)
+                    {
+                        waitedListNodes[i].RegisterWait(waitedObjects[i]);
+                    }
                 }
             }
 
@@ -177,7 +209,7 @@ namespace System.Threading
                 _waitedCount = 0;
             }
 
-            private int ProcessSignaledWaitState(WaitHandle[] waitHandlesForAbandon, out Exception exception)
+            private int ProcessSignaledWaitState(WaitHandle[] waitHandlesForAbandon)
             {
                 s_lock.VerifyIsNotLocked();
                 _waitMonitor.VerifyIsLocked();
@@ -186,52 +218,53 @@ namespace System.Threading
                 switch (_waitSignalState)
                 {
                     case WaitSignalState.Waiting:
-                        exception = null;
+                    case WaitSignalState.Waiting_Interruptible:
                         return WaitHandle.WaitTimeout;
 
-                    case WaitSignalState.Waiting_SignaledToSatisfyWait:
+                    case WaitSignalState.NotWaiting_SignaledToSatisfyWait:
                         {
                             Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
                             int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
                             _waitedObjectIndexThatSatisfiedWait = -1;
-                            exception = null;
                             return waitedObjectIndexThatSatisfiedWait;
                         }
 
-                    case WaitSignalState.Waiting_SignaledToSatisfyWaitWithAbandonedMutex:
+                    case WaitSignalState.NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex:
                         Debug.Assert(_waitedObjectIndexThatSatisfiedWait >= 0);
                         if (waitHandlesForAbandon == null)
                         {
                             _waitedObjectIndexThatSatisfiedWait = -1;
-                            exception = new AbandonedMutexException();
+                            throw new AbandonedMutexException();
                         }
                         else
                         {
                             int waitedObjectIndexThatSatisfiedWait = _waitedObjectIndexThatSatisfiedWait;
                             _waitedObjectIndexThatSatisfiedWait = -1;
-                            exception =
+                            throw
                                 new AbandonedMutexException(
                                     waitedObjectIndexThatSatisfiedWait,
                                     waitHandlesForAbandon[waitedObjectIndexThatSatisfiedWait]);
                         }
-                        return 0;
 
-                    case WaitSignalState.Waiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount:
+                    case WaitSignalState.NotWaiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount:
                         Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
-                        exception = new OverflowException(SR.Overflow_MutexReacquireCount);
-                        return 0;
+                        throw new OverflowException(SR.Overflow_MutexReacquireCount);
 
                     default:
-                        Debug.Assert(_waitSignalState == WaitSignalState.Waiting_SignaledToInterruptWait);
+                        Debug.Assert(_waitSignalState == WaitSignalState.NotWaiting_SignaledToInterruptWait);
                         Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
-                        exception = new ThreadInterruptedException();
-                        return 0;
+                        throw new ThreadInterruptedException();
                 }
             }
 
-            public int Wait(int timeoutMilliseconds, WaitHandle[] waitHandlesForAbandon, bool isSleep)
+            public int Wait(int timeoutMilliseconds, bool interruptible, WaitHandle[] waitHandlesForAbandon, bool isSleep)
             {
-                if (!isSleep)
+                if (isSleep)
+                {
+                    s_lock.VerifyIsNotLocked();
+                    Debug.Assert(waitHandlesForAbandon == null);
+                }
+                else
                 {
                     s_lock.VerifyIsLocked();
                 }
@@ -254,54 +287,55 @@ namespace System.Threading
                 Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
                 Debug.Assert(_waitSignalState == WaitSignalState.NotWaiting);
 
-                /// A signaled state may be set only when the thread is in the
-                /// <see cref="WaitSignalState.Waiting"/> state
-                _waitSignalState = WaitSignalState.Waiting;
+                // A signaled state may be set only when the thread is in one of the following states
+                _waitSignalState = interruptible ? WaitSignalState.Waiting_Interruptible : WaitSignalState.Waiting;
 
-                int waitResult;
-                Exception exception;
                 try
                 {
+                    if (isSleep && interruptible && CheckAndResetPendingInterrupt)
+                    {
+                        throw new ThreadInterruptedException();
+                    }
+
                     if (timeoutMilliseconds < 0)
                     {
                         do
                         {
                             _waitMonitor.Wait();
-                        } while (_waitSignalState == WaitSignalState.Waiting);
+                        } while (IsWaiting);
 
-                        waitResult = ProcessSignaledWaitState(waitHandlesForAbandon, out exception);
-                        Debug.Assert(exception != null || waitResult != WaitHandle.WaitTimeout);
+                        int waitResult = ProcessSignaledWaitState(waitHandlesForAbandon);
+                        Debug.Assert(waitResult != WaitHandle.WaitTimeout);
+                        return waitResult;
                     }
-                    else
+
+                    int elapsedMilliseconds = 0;
+                    int startTimeMilliseconds = Environment.TickCount;
+                    while (true)
                     {
-                        int elapsedMilliseconds = 0;
-                        int startTimeMilliseconds = Environment.TickCount;
-                        while (true)
+                        bool monitorWaitResult = _waitMonitor.Wait(timeoutMilliseconds - elapsedMilliseconds);
+
+                        // It's possible for the wait to have timed out, but before the monitor could reacquire the lock, a
+                        // signaler could have acquired it and signaled to satisfy the wait or interrupt the thread. Accept the
+                        // signal and ignore the wait timeout.
+                        int waitResult = ProcessSignaledWaitState(waitHandlesForAbandon);
+                        if (waitResult != WaitHandle.WaitTimeout)
                         {
-                            bool monitorWaitResult = _waitMonitor.Wait(timeoutMilliseconds - elapsedMilliseconds);
-
-                            // It's possible for the wait to have timed out, but before the monitor could reacquire the lock, a
-                            // signaler could have acquired it and signaled to satisfy the wait or interrupt the thread. Accept the
-                            // signal and ignore the wait timeout.
-                            waitResult = ProcessSignaledWaitState(waitHandlesForAbandon, out exception);
-                            if (exception != null || waitResult != WaitHandle.WaitTimeout)
-                            {
-                                break;
-                            }
-
-                            if (monitorWaitResult)
-                            {
-                                elapsedMilliseconds = Environment.TickCount - startTimeMilliseconds;
-                                if (elapsedMilliseconds < timeoutMilliseconds)
-                                {
-                                    continue;
-                                }
-                            }
-
-                            // Timeout
-                            Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
-                            break;
+                            return waitResult;
                         }
+
+                        if (monitorWaitResult)
+                        {
+                            elapsedMilliseconds = Environment.TickCount - startTimeMilliseconds;
+                            if (elapsedMilliseconds < timeoutMilliseconds)
+                            {
+                                continue;
+                            }
+                        }
+
+                        // Timeout
+                        Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
+                        break;
                     }
                 }
                 finally
@@ -311,16 +345,7 @@ namespace System.Threading
 
                     _thread.ClearWaitSleepJoinState();
                 }
-
-                if (exception != null)
-                {
-                    throw exception;
-                }
-                if (waitResult != WaitHandle.WaitTimeout)
-                {
-                    return waitResult;
-                }
-                
+              
                 /// Timeout. It's ok to read <see cref="_waitedCount"/> without acquiring <see cref="s_lock"/> here, because it
                 /// is initially set by this thread, and another thread cannot unregister this thread's wait without first
                 /// signaling this thread, in which case this thread wouldn't be timing out.
@@ -329,20 +354,16 @@ namespace System.Threading
                 {
 
                     s_lock.Acquire();
-                    try
-                    {
-                        UnregisterWait();
-                    }
-                    finally
-                    {
-                        s_lock.Release();
-                    }
+                    UnregisterWait();
+                    s_lock.Release();
                 }
-                return waitResult;
+                return WaitHandle.WaitTimeout;
             }
 
             public static void UninterruptibleSleep0()
             {
+                s_lock.VerifyIsNotLocked();
+
                 // On Unix, a thread waits on a condition variable. The timeout time will have already elapsed at the time
                 // of the call. The documentation does not state whether the thread yields or does nothing before returning
                 // an error, and in some cases, suggests that doing nothing is acceptable. The behavior could also be
@@ -350,20 +371,27 @@ namespace System.Threading
                 RuntimeThread.Yield();
             }
 
-            public void Sleep(int timeoutMilliseconds)
+            public static void Sleep(int timeoutMilliseconds, bool interruptible)
             {
                 s_lock.VerifyIsNotLocked();
-                Debug.Assert(_thread == RuntimeThread.CurrentThread);
-
                 Debug.Assert(timeoutMilliseconds >= -1);
 
                 if (timeoutMilliseconds == 0)
                 {
+                    if (interruptible && RuntimeThread.CurrentThread.WaitInfo.CheckAndResetPendingInterrupt_NotLocked)
+                    {
+                        throw new ThreadInterruptedException();
+                    }
+
                     UninterruptibleSleep0();
                     return;
                 }
 
-                int waitResult = Wait(timeoutMilliseconds, waitHandlesForAbandon: null, isSleep: true);
+                int waitResult =
+                    RuntimeThread
+                        .CurrentThread
+                        .WaitInfo
+                        .Wait(timeoutMilliseconds, interruptible, waitHandlesForAbandon: null, isSleep: true);
                 Debug.Assert(waitResult == WaitHandle.WaitTimeout);
             }
 
@@ -405,7 +433,7 @@ namespace System.Threading
                 // the thread can accept a signal.
                 _waitMonitor.Acquire();
 
-                if (_waitSignalState != WaitSignalState.Waiting)
+                if (!IsWaiting)
                 {
                     _waitMonitor.Release();
                     return false;
@@ -422,15 +450,15 @@ namespace System.Threading
                 Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
                 if (wouldAnyMutexReacquireCountOverflow)
                 {
-                    _waitSignalState = WaitSignalState.Waiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount;
+                    _waitSignalState = WaitSignalState.NotWaiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount;
                 }
                 else
                 {
                     _waitedObjectIndexThatSatisfiedWait = signaledWaitedObjectIndex;
                     _waitSignalState =
                         isAbandonedMutex
-                            ? WaitSignalState.Waiting_SignaledToSatisfyWaitWithAbandonedMutex
-                            : WaitSignalState.Waiting_SignaledToSatisfyWait;
+                            ? WaitSignalState.NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex
+                            : WaitSignalState.NotWaiting_SignaledToSatisfyWait;
                 }
 
                 _waitMonitor.Signal_Release();
@@ -443,10 +471,10 @@ namespace System.Threading
 
                 _waitMonitor.Acquire();
 
-                if (_waitSignalState != WaitSignalState.Waiting)
+                if (_waitSignalState != WaitSignalState.Waiting_Interruptible)
                 {
-                    _waitMonitor.Release();
                     RecordPendingInterrupt();
+                    _waitMonitor.Release();
                     return;
                 }
 
@@ -456,13 +484,46 @@ namespace System.Threading
                 }
 
                 Debug.Assert(_waitedObjectIndexThatSatisfiedWait < 0);
-                _waitSignalState = WaitSignalState.Waiting_SignaledToInterruptWait;
+                _waitSignalState = WaitSignalState.NotWaiting_SignaledToInterruptWait;
 
                 _waitMonitor.Signal_Release();
             }
 
-            private void RecordPendingInterrupt() => Interlocked.Exchange(ref _isPendingInterrupt, 1);
-            public bool CheckAndResetPendingInterrupt => Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
+            private void RecordPendingInterrupt()
+            {
+                s_lock.VerifyIsLocked();
+                _waitMonitor.VerifyIsLocked();
+
+                _isPendingInterrupt = 1;
+            }
+
+            public bool CheckAndResetPendingInterrupt
+            {
+                get
+                {
+#if DEBUG
+                    Debug.Assert(s_lock.IsLocked || _waitMonitor.IsLocked);
+#endif
+
+                    if (_isPendingInterrupt == 0)
+                    {
+                        return false;
+                    }
+                    _isPendingInterrupt = 0;
+                    return true;
+                }
+            }
+
+            private bool CheckAndResetPendingInterrupt_NotLocked
+            {
+                get
+                {
+                    s_lock.VerifyIsNotLocked();
+                    _waitMonitor.VerifyIsNotLocked();
+
+                    return Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
+                }
+            }
 
             public WaitableObject LockedMutexesHead
             {
@@ -590,6 +651,29 @@ namespace System.Threading
                     waitableObject.WaitersTail = this;
                 }
 
+                public void RegisterPrioritizedWait(WaitableObject waitableObject)
+                {
+                    s_lock.VerifyIsLocked();
+                    Debug.Assert(_waitInfo.Thread == RuntimeThread.CurrentThread);
+
+                    Debug.Assert(waitableObject != null);
+
+                    Debug.Assert(_previous == null);
+                    Debug.Assert(_next == null);
+
+                    WaitedListNode head = waitableObject.WaitersHead;
+                    if (head != null)
+                    {
+                        _next = head;
+                        head._previous = this;
+                    }
+                    else
+                    {
+                        waitableObject.WaitersTail = this;
+                    }
+                    waitableObject.WaitersHead = this;
+                }
+
                 public void UnregisterWait(WaitableObject waitableObject)
                 {
                     s_lock.VerifyIsLocked();
@@ -624,12 +708,13 @@ namespace System.Threading
 
             private enum WaitSignalState : byte
             {
-                NotWaiting,
                 Waiting,
-                Waiting_SignaledToSatisfyWait,
-                Waiting_SignaledToSatisfyWaitWithAbandonedMutex,
-                Waiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount,
-                Waiting_SignaledToInterruptWait
+                Waiting_Interruptible,
+                NotWaiting,
+                NotWaiting_SignaledToSatisfyWait,
+                NotWaiting_SignaledToSatisfyWaitWithAbandonedMutex,
+                NotWaiting_SignaledToAbortWaitDueToMaximumMutexReacquireCount,
+                NotWaiting_SignaledToInterruptWait
             }
         }
     }
