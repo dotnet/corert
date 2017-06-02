@@ -170,6 +170,10 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
 
+                // Vararg methods are not supported in .NET Core
+                if (signatureCallConv == SignatureCallingConvention.VarArgs)
+                    throw new TypeSystemException.BadImageFormatException();
+
                 flags = (MethodSignatureFlags)signatureCallConv;
             }
 
