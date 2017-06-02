@@ -458,8 +458,7 @@ namespace Internal.TypeSystem.NativeFormat
                 return null;
             }
 
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            throw new NotImplementedException();
+            throw new TypeLoadException(this.GetFullName());
         }
 
         public override IEnumerable<FieldDesc> GetFields()

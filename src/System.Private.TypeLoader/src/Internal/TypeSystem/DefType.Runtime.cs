@@ -15,13 +15,6 @@ namespace Internal.TypeSystem
     {
         internal static readonly LayoutInt MaximumAlignmentPossible = new LayoutInt(8);
 
-        public override IEnumerable<FieldDesc> GetFields()
-        {
-            // TODO davidwr! This isn't right for types with metadata, although it will work for now.
-            // Right now it serves to verify that none of our loading paths for the template type loader use it.
-            throw new NotImplementedException();
-        }
-
         internal IEnumerable<FieldDesc> GetDiagnosticFields()
         {
             if (HasNativeLayout)

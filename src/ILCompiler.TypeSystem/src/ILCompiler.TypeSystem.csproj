@@ -560,6 +560,9 @@
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\ArrayType.Sorting.cs">
       <Link>TypeSystem\Sorting\ArrayType.Sorting.cs</Link>
     </Compile>

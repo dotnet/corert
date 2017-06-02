@@ -191,7 +191,7 @@ namespace Internal.Runtime.TypeLoader
 
                 default:
                     if (throwIfNotFound)
-                        throw new NotImplementedException();
+                        throw new TypeLoadException();
                     else
                         return null;
             }

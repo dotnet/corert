@@ -547,7 +547,7 @@ namespace Internal.TypeSystem
 
             public void Reset()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public TValue Current
@@ -562,7 +562,7 @@ namespace Internal.TypeSystem
             {
                 get
                 {
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
                 }
             }
         }
