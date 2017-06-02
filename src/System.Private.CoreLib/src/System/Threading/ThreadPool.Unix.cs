@@ -13,10 +13,23 @@ namespace System.Threading
     //
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
+        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
+            uint millisecondsTimeout, bool repeating)
+        {
+            Handle = waitHandle;
+            Callback = callbackHelper;
+            Timeout = (int)millisecondsTimeout;
+            Repeating = repeating;
+        }
+
+        internal _ThreadPoolWaitOrTimerCallback Callback { get; }
+        internal WaitHandle Handle { get; }
+        internal int Timeout { get; }
+        internal bool Repeating { get; }
+
         public bool Unregister(WaitHandle waitObject)
         {
-            // UNIXTODO: ThreadPool
-            throw new NotImplementedException();
+            WaitThread.UnregisterWaitHandle(this, waitObject);
         }
     }
 
@@ -129,22 +142,13 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            //
-            // This is just a quick-and-dirty implementation to make TaskFactory.FromAsync
-            // work for the few apps that are using it.  A proper implementation would coalesce
-            // multiple waits onto a single thread, so that fewer machine resources would be
-            // consumed.
-            //
-
-            Debug.Assert(executeOnlyOnce);
-
-            QueueUserWorkItem(_ =>
-            {
-                bool timedOut = waitObject.WaitOne((int)millisecondsTimeOutInterval);
-                callBack(state, timedOut);
-            });
-
-            return new RegisteredWaitHandle();
+            RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+            WaitThread.RegisterWaitHandle(registeredHandle);
+            return registeredHandle;
         }
     }
 }
