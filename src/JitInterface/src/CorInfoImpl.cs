@@ -879,13 +879,13 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
-        private void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
+        private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             // TODO: fully implement GS cookies
 
             if (pCookieVal != null)
             {
-                *pCookieVal = (GSCookie)0x216D6F6D202C6948;
+                *pCookieVal = (IntPtr)0x216D6F6D202C6948;
                 *ppCookieVal = null;
             }
             else
@@ -2287,7 +2287,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
         { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
-        private SIZE_T* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
+        private void* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
         { throw new NotImplementedException("getAddrModuleDomainID"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
