@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public partial class TypeLoadException : SystemException
     {
         public TypeLoadException()

@@ -17,7 +17,7 @@ namespace System
 {
     // CONTRACT with Runtime
     // Place holder type for type hierarchy, Compiler/Runtime requires this class
-
+    [Serializable]
     public abstract class ValueType
     {
         public override String ToString()

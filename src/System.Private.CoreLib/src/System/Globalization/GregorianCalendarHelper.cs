@@ -10,7 +10,6 @@ using System.Threading;
 namespace System.Globalization
 {
     // Gregorian Calendars use Era Info
-    [Serializable]
     internal class EraInfo
     {
         internal int era;          // The value of the era.

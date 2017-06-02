@@ -13,7 +13,6 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {

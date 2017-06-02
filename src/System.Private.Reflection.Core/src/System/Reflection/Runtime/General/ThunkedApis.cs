@@ -8,15 +8,10 @@
 // keep the main files less cluttered.
 //
 
-using System;
 using System.IO;
 using System.Text;
-using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 
 using Internal.LowLevelLinq;

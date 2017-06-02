@@ -12,6 +12,7 @@ using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
+    [Serializable]
     public struct Nullable<T> where T : struct
     {
         // Changing the name of this field will break MDbg and Debugger tests

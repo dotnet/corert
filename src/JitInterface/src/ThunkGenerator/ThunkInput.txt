@@ -39,7 +39,7 @@ LPVOID,void*,void*
 void*
 const void *,void*
 HRESULT,,int
-SIZE_T*,,size_t*
+SIZE_T*,void*,size_t*
 int
 INT,int,int
 INT32,int,int
@@ -51,14 +51,14 @@ unsigned int, uint
 size_t,UIntPtr
 SIZE_T,UIntPtr,size_t
 WORD,ushort,unsigned short
-BOOL,[MarshalAs(UnmanagedType.Bool)]bool,bool
+BOOL,[MarshalAs(UnmanagedType.Bool)]bool,int
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*
 mdMethodDef,mdToken,unsigned int
 mdToken,,unsigned int
 BYTE*,byte*,unsigned char*
-GSCookie*,,void*
-GSCookie**,,void**
+GSCookie*,IntPtr*,void*
+GSCookie**,IntPtr**,void**
 
 BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool,int*
 bool*,[MarshalAs(UnmanagedType.U1)] ref bool
@@ -151,7 +151,7 @@ ICorDebugInfo::BoundaryTypes*,BoundaryTypes*,void*
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
 
 RETURNTYPES
-BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,bool
+BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,int
 bool,[return: MarshalAs(UnmanagedType.I1)]bool
 LPCWSTR,[return: MarshalAs(UnmanagedType.LPWStr)]string,const wchar_t*
 ; NOTE in managed SIZE_T is an enum that is 64bits in size, and returning one of those causing mcg to do the wrong thing.

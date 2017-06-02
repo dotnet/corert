@@ -107,6 +107,9 @@
     <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.cs" />
     <Compile Include="Compiler\CompilerGeneratedType.Sorting.cs" />
@@ -298,6 +301,8 @@
     <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\UtcNodeMangler.cs" />
+    <Compile Include="Compiler\SimdHelper.cs" />
+    <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
