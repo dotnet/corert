@@ -55,26 +55,28 @@ namespace ILCompiler.DependencyAnalysis
 
                 // the order of data written is as follows:
                 //  0. managed struct type
-                //  1. native struct type
-                //  2. struct marshalling thunk
-                //  3. struct unmarshalling thunk
-                //  4. struct cleanup thunk
-                //  5.  NumFields << 1 | HasInvalidLayout 
-                //  6  for each field
+                //  1. struct marshalling thunk
+                //  2. struct unmarshalling thunk
+                //  3. struct cleanup thunk
+                //  4. uint = NumFields:11 | Size:20 | HasInvalidLayout:1
+                //  5  for each field
                 //      a. name
                 //      b. offset
 
                 var structType = structEntry.StructType;
                 var nativeType = structEntry.NativeStructType;
-                Vertex data= writer.GetTuple(
+                Vertex thunks= writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.MarshallingThunk))),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk)))
                     );
 
-                uint mask = (uint)(nativeType.Fields.Length << 1) | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
-                data = writer.GetTuple(
-                     data,
+                uint mask = (uint)((nativeType.Fields.Length & 0xEFF) << 21) 
+                    | (uint)((nativeType.InstanceByteCount.AsInt & 0xFFFFF)<< 1) 
+                    | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
+
+                Vertex data = writer.GetTuple(
+                     thunks,
                      writer.GetUnsignedConstant(mask)
                     );
 
@@ -89,7 +91,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(structType))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(nativeType))),
                     data
                 );
 

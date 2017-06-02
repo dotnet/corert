@@ -20,11 +20,6 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         #region "Struct Data"
-        public override bool TryGetStructUnsafeStructType(RuntimeTypeHandle structureTypeHandle, out RuntimeTypeHandle unsafeStructType)
-        {
-            return McgModuleManager.TryGetStructUnsafeStructType(structureTypeHandle, out unsafeStructType);
-        }
-
         public override bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
         {
             return McgModuleManager.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub);
@@ -43,6 +38,18 @@ namespace Internal.Runtime.CompilerHelpers
         public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
         {
             return McgModuleManager.TryGetStructFieldOffset(structureTypeHandle, fieldName,  out structExists, out offset);
+        }
+
+        public override bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
+        {
+            RuntimeTypeHandle unsafeStructType;
+            size = 0;
+            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
+            {
+                size = unsafeStructType.GetValueTypeSize();
+                return true;
+            }
+            return false;
         }
         #endregion
     }

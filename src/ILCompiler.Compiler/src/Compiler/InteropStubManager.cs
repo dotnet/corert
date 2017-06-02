@@ -23,7 +23,7 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationModuleGroup;
         private readonly CompilerTypeSystemContext _typeSystemContext;
         internal HashSet<TypeDesc> _delegateMarshalingTypes = new HashSet<TypeDesc>();
-        private HashSet<NativeStructType> _structMarshallingTypes = new HashSet<NativeStructType>();
+        private HashSet<TypeDesc> _structMarshallingTypes = new HashSet<TypeDesc>();
         private ModuleDesc _interopModule;
         private const string _interopModuleName = "System.Private.Interop";
 
@@ -66,18 +66,12 @@ namespace ILCompiler
             return stub;
         }
 
-        internal TypeDesc GetStructMarshallingType(TypeDesc structType)
-        {
-            NativeStructType nativeType = InteropStateManager.GetStructMarshallingNativeType(structType);
-            Debug.Assert(nativeType != null);
-            _structMarshallingTypes.Add(nativeType);
-            return nativeType;
-        }
-
         internal MethodDesc GetStructMarshallingManagedToNativeStub(TypeDesc structType)
         {
             MethodDesc stub = InteropStateManager.GetStructMarshallingManagedToNativeThunk(structType);
             Debug.Assert(stub != null);
+
+            _structMarshallingTypes.Add(structType);
             return stub;
         }
 
@@ -85,6 +79,8 @@ namespace ILCompiler
         {
             MethodDesc stub = InteropStateManager.GetStructMarshallingNativeToManagedThunk(structType);
             Debug.Assert(stub != null);
+
+            _structMarshallingTypes.Add(structType);
             return stub;
         }
 
@@ -92,6 +88,8 @@ namespace ILCompiler
         {
             MethodDesc stub = InteropStateManager.GetStructMarshallingCleanupThunk(structType);
             Debug.Assert(stub != null);
+
+            _structMarshallingTypes.Add(structType);
             return stub;
         }
 
@@ -136,16 +134,16 @@ namespace ILCompiler
 
         internal IEnumerable<StructMarshallingThunks> GetStructMarshallingTypes()
         {
-                foreach (var nativeStuctType in _structMarshallingTypes)
+                foreach (var structType in _structMarshallingTypes)
             {
                 yield return
                     new StructMarshallingThunks()
                     {
-                        StructType = nativeStuctType.ManagedStructType,
-                        NativeStructType = nativeStuctType,
-                        MarshallingThunk = InteropStateManager.GetStructMarshallingManagedToNativeThunk(nativeStuctType.ManagedStructType),
-                        UnmarshallingThunk = InteropStateManager.GetStructMarshallingNativeToManagedThunk(nativeStuctType.ManagedStructType),
-                        CleanupThunk = InteropStateManager.GetStructMarshallingCleanupThunk(nativeStuctType.ManagedStructType)
+                        StructType = structType,
+                        NativeStructType = InteropStateManager.GetStructMarshallingNativeType(structType),
+                        MarshallingThunk = InteropStateManager.GetStructMarshallingManagedToNativeThunk(structType),
+                        UnmarshallingThunk = InteropStateManager.GetStructMarshallingNativeToManagedThunk(structType),
+                        CleanupThunk = InteropStateManager.GetStructMarshallingCleanupThunk(structType)
                     };
             }
         }
@@ -160,11 +158,11 @@ namespace ILCompiler
                     dependencies = dependencies ?? new DependencyList();
 
                     MethodSignature methodSig = method.Signature;
-                    AddPInvokeParameterDependencies(ref dependencies, factory, methodSig.ReturnType);
+                    AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig.ReturnType);
 
                     for (int i = 0; i < methodSig.Length; i++)
                     {
-                        AddPInvokeParameterDependencies(ref dependencies, factory, methodSig[i]);
+                        AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig[i]);
                     }
                 }
 
@@ -186,7 +184,10 @@ namespace ILCompiler
                     AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, delegateType);
                 }
             }
+        }
 
+        public void AddInterestingPInvokeStructDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
             //
             //  https://github.com/dotnet/corert/issues/3763
             // TODO: Add an attribute which indicates a struct is interesting for interop
@@ -200,7 +201,6 @@ namespace ILCompiler
             //    }
             //}
         }
-
 
         /// <summary>
         /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
@@ -226,17 +226,13 @@ namespace ILCompiler
                     {
                         foreach (TypeDesc type in method.Instantiation)
                         {
-                            AddPInvokeParameterDependencies(ref dependencies, factory, type);
+                            AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, type);
+                            AddDependenciesDueToPInvokeStruct(ref dependencies, factory, type);
+
                         }
                     }
                 }
             }
-        }
-
-        public void AddPInvokeParameterDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc parameter)
-        {
-            AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, parameter);
-            AddDependenciesDueToPInvokeStruct(ref dependencies, factory, parameter);
         }
 
         public void AddDependenciesDueToPInvokeDelegate(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -258,7 +254,6 @@ namespace ILCompiler
                 dependencies.Add(factory.NecessaryTypeSymbol(type), "Struct Marshalling Stub");
 
                 var stub = (Internal.IL.Stubs.StructMarshallingThunk)factory.InteropStubManager.GetStructMarshallingManagedToNativeStub(type);
-                dependencies.Add(factory.NecessaryTypeSymbol(factory.InteropStubManager.GetStructMarshallingType(type)), "Struct Marshalling Type");
                 dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingNativeToManagedStub(type)), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(factory.InteropStubManager.GetStructMarshallingCleanupStub(type)), "Struct Marshalling stub");

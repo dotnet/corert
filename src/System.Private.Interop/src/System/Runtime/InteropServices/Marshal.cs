@@ -178,10 +178,10 @@ namespace System.Runtime.InteropServices
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            RuntimeTypeHandle unsafeStructType;
-            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
+            int size;
+            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructSize(typeHandle, out size))
             {
-                return unsafeStructType.GetValueTypeSize();
+                return size;
             }
 
             if (!typeHandle.IsBlittable() && !typeHandle.IsValueType())

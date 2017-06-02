@@ -31,39 +31,39 @@ namespace Internal.Runtime.CompilerHelpers
             return true;
         }
         #region "Struct Data"
-        public override bool TryGetStructUnsafeStructType(RuntimeTypeHandle structureTypeHandle, out RuntimeTypeHandle unsafeStructType)
-        {
-            IntPtr marshalStub;
-            IntPtr unmarshalStub;
-            IntPtr destroyStub;
-            bool hasInvalidLayout;
-            return TryGetMarshallersForStruct(structureTypeHandle, out unsafeStructType, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout);
-        }
-
         public override bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
         {
-            RuntimeTypeHandle unsafeStructType;
             IntPtr marshalStub;
             IntPtr destroyStub;
             bool hasInvalidLayout;
-            return TryGetMarshallersForStruct(structureTypeHandle, out unsafeStructType, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout);
+            int size;
+            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
         }
 
         public override bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub)
         {
-            RuntimeTypeHandle unsafeStructType;
             IntPtr unmarshalStub;
             IntPtr destroyStub;
             bool hasInvalidLayout;
-            return TryGetMarshallersForStruct(structureTypeHandle, out unsafeStructType, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout);
+            int size;
+            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
         }
 
         public override bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStub, out bool hasInvalidLayout)
         {
-            RuntimeTypeHandle unsafeStructType;
             IntPtr marshalStub;
             IntPtr unmarshalStub;
-            return TryGetMarshallersForStruct(structureTypeHandle, out unsafeStructType, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout);
+            int size;
+            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
+        }
+
+        public override bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
+        {
+            IntPtr marshalStub;
+            IntPtr unmarshalStub;
+            IntPtr destroyStub;
+            bool hasInvalidLayout;
+            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
         }
 
         public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
@@ -74,15 +74,14 @@ namespace Internal.Runtime.CompilerHelpers
             if (TryGetStructData(structureTypeHandle, out externalReferences, out entryParser))
             {
                 structExists = true;
-                // skip the first 4 IntPtrs
-                for (int i = 0; i < 4; i++)
-                {
-                    entryParser.GetUnsigned();
-                }
+                // skip the first 3 IntPtrs
+                entryParser.GetUnsigned();
+                entryParser.GetUnsigned();
+                entryParser.GetUnsigned();
 
                 uint mask = entryParser.GetUnsigned();
                 bool hasInvalidLayout = (mask & 0x1) == 1;
-                uint fieldCount = mask >> 1;
+                uint fieldCount = (mask & 0xFFE00000) >> 21;
                 for (uint index = 0; index < fieldCount; index++)
                 {
                     string name = entryParser.GetString();
@@ -178,24 +177,24 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private unsafe bool TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out RuntimeTypeHandle unsafeStructType, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub, out bool hasInvalidLayout)
+        private unsafe bool TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub, out bool hasInvalidLayout, out int size)
         {
             marshalStub = IntPtr.Zero;
             unmarshalStub = IntPtr.Zero;
             destroyStub = IntPtr.Zero;
-            unsafeStructType = default(RuntimeTypeHandle);
             hasInvalidLayout = true;
+            size = 0;
 
             ExternalReferencesTable externalReferences;
             NativeParser entryParser;
             if (TryGetStructData(structTypeHandle, out externalReferences, out entryParser))
             {
-                unsafeStructType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                 marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 uint mask = entryParser.GetUnsigned();
                 hasInvalidLayout = (mask & 0x1) == 1;
+                size = (int)(mask & 0x001FFFFE) >> 1;
                 return true;
             }
             return false;
