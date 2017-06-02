@@ -32,13 +32,6 @@ namespace System.Runtime.CompilerServices
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("WrappedException", _wrappedException, typeof(Object));
-        }
-
-        internal RuntimeWrappedException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            _wrappedException = info.GetValue("WrappedException", typeof(Object));
         }
 
         public Object WrappedException

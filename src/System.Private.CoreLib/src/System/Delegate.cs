@@ -792,7 +792,7 @@ namespace System
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException(SR.Serialization_DelegatesNotSupported);
         }
 
         internal bool IsOpenStatic

@@ -33,6 +33,9 @@ namespace System.IO
             HResult = __HResults.COR_E_IO;
         }
 
-        protected IOException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected IOException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

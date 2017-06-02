@@ -126,11 +126,6 @@ namespace System.Text
             _index = index;
         }
 
-        internal DecoderFallbackException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
         public byte[] BytesUnknown
         {
             get
