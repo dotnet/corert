@@ -86,6 +86,11 @@ namespace Internal.TypeSystem
             {
             }
 
+            public TypeLoadException(TypeDesc type)
+                : this(ExceptionStringID.ClassLoadGeneral, Format.Type(type), Format.OwningModule(type))
+            {
+            }
+
             public TypeLoadException(ExceptionStringID id, MethodDesc method)
                 : this(id, Format.Type(method.OwningType), Format.OwningModule(method), Format.Method(method))
             {

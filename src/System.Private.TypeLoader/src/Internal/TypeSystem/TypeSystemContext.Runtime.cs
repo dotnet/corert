@@ -56,7 +56,7 @@ namespace Internal.TypeSystem
 
             protected override RuntimeTypeHandle CreateValueFromKey(RuntimeTypeHandle key)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             protected override int GetKeyHashCode(RuntimeTypeHandle key)
