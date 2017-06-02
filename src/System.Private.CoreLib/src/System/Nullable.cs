@@ -101,6 +101,11 @@ namespace System
             if (n2.HasValue) return false;
             return true;
         }
+        
+        public static bool IsNullOrDefault<T>(this T? box, T defaultValue = default(T)) where T : struct
+        {
+            return !box.HasValue || Equals(box.value, defaultValue);
+        }
 
         public static Type GetUnderlyingType(Type nullableType)
         {
