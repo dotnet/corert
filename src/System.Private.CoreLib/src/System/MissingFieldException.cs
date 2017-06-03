@@ -42,6 +42,7 @@ namespace System
         protected MissingFieldException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override String Message

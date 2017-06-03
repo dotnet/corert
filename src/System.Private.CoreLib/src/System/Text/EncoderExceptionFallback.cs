@@ -153,11 +153,6 @@ namespace System.Text
             _index = index;
         }
 
-        internal EncoderFallbackException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
         public char CharUnknown
         {
             get

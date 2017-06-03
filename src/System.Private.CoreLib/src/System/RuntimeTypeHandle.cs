@@ -100,44 +100,9 @@ namespace System
             return type.Module.ModuleHandle;
         }
 
-        public RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            try
-            {
-                Type type = (Type)info.GetValue("TypeObj", typeof(Type));
-                if (type == null)
-                    throw new SerializationException(SR.Serialization_InsufficientState);
-
-                _value = type.TypeHandle.ToEETypePtr().RawValue;
-            }
-            catch (Exception e) when (!(e is SerializationException))
-            {
-                throw new SerializationException(e.Message, e);
-            }
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            try
-            {
-                if(_value == IntPtr.Zero)
-                    throw new SerializationException(SR.Serialization_InvalidFieldState);
-
-                Type type = Type.GetTypeFromHandle(this);
-                Debug.Assert(type != null);
-
-                info.AddValue("TypeObj", type, typeof(Type));
-            }
-            catch (Exception e) when (!(e is SerializationException))
-            {
-                throw new SerializationException(e.Message, e);
-            }
+            throw new PlatformNotSupportedException();
         }
 
         internal EETypePtr ToEETypePtr()

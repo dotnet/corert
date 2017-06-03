@@ -29,7 +29,7 @@ namespace System
         protected TypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _typeName = info.GetString("TypeLoadClassName");
+            throw new PlatformNotSupportedException();
         }
 
         public override string Message
@@ -55,9 +55,8 @@ namespace System
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("TypeLoadClassName", _typeName, typeof(string));
         }
 
-        private string _typeName;
+        private readonly string _typeName;
     }
 }
