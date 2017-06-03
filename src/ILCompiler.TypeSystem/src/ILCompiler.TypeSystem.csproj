@@ -503,6 +503,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\INonEmittableType.cs">
+      <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs</Link>
     </Compile>

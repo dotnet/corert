@@ -74,14 +74,15 @@ namespace Internal.Runtime.CompilerHelpers
             if (TryGetStructData(structureTypeHandle, out externalReferences, out entryParser))
             {
                 structExists = true;
-                // skip the first 3 IntPtrs
+                // skip the first 4 IntPtrs(3 stubs and size)
+                entryParser.GetUnsigned();
                 entryParser.GetUnsigned();
                 entryParser.GetUnsigned();
                 entryParser.GetUnsigned();
 
                 uint mask = entryParser.GetUnsigned();
                 bool hasInvalidLayout = (mask & 0x1) == 1;
-                uint fieldCount = (mask & 0xFFE00000) >> 21;
+                uint fieldCount = mask >> 1;
                 for (uint index = 0; index < fieldCount; index++)
                 {
                     string name = entryParser.GetString();
@@ -192,9 +193,9 @@ namespace Internal.Runtime.CompilerHelpers
                 marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                size = (int)entryParser.GetUnsigned();
                 uint mask = entryParser.GetUnsigned();
                 hasInvalidLayout = (mask & 0x1) == 1;
-                size = (int)(mask & 0x001FFFFE) >> 1;
                 return true;
             }
             return false;

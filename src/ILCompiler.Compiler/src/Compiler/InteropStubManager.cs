@@ -150,27 +150,23 @@ namespace ILCompiler
 
         public void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            // On Project N, the compiler doesn't generate the interop code on the fly
-            if (method.Context.Target.Abi != TargetAbi.ProjectN)
+            if (method.IsPInvoke)
             {
-                if (method.IsPInvoke)
+                dependencies = dependencies ?? new DependencyList();
+
+                MethodSignature methodSig = method.Signature;
+                AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig.ReturnType);
+
+                for (int i = 0; i < methodSig.Length; i++)
                 {
-                    dependencies = dependencies ?? new DependencyList();
-
-                    MethodSignature methodSig = method.Signature;
-                    AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig.ReturnType);
-
-                    for (int i = 0; i < methodSig.Length; i++)
-                    {
-                        AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig[i]);
-                    }
+                    AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig[i]);
                 }
+            }
 
-                if (method.HasInstantiation)
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    AddMarshalAPIsGenericDependencies(ref dependencies, factory, method);
-                }
+            if (method.HasInstantiation)
+            {
+                dependencies = dependencies ?? new DependencyList();
+                AddMarshalAPIsGenericDependencies(ref dependencies, factory, method);
             }
         }
 
@@ -178,8 +174,8 @@ namespace ILCompiler
         {
             if (type.IsDelegate)
             {
-                var delegateType = type as MetadataType;
-                if (delegateType != null && delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
+                var delegateType = (MetadataType)type;
+                if (delegateType.HasCustomAttribute("System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute"))
                 {
                     AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, delegateType);
                 }

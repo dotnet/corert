@@ -8,7 +8,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Interop;
 
 using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
@@ -100,8 +99,11 @@ namespace ILCompiler.DependencyAnalysis
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
             }
 
-            factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
-
+            // On Project N, the compiler doesn't generate the interop code on the fly
+            if (method.Context.Target.Abi != TargetAbi.ProjectN)
+            {
+                factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
+            }
         }
     }
 }

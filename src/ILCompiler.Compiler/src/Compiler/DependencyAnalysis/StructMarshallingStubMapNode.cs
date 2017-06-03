@@ -58,8 +58,9 @@ namespace ILCompiler.DependencyAnalysis
                 //  1. struct marshalling thunk
                 //  2. struct unmarshalling thunk
                 //  3. struct cleanup thunk
-                //  4. uint = NumFields:11 | Size:20 | HasInvalidLayout:1
-                //  5  for each field
+                //  4. size
+                //  5. NumFields<< 1 | HasInvalidLayout
+                //  6  for each field
                 //      a. name
                 //      b. offset
 
@@ -71,12 +72,12 @@ namespace ILCompiler.DependencyAnalysis
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk)))
                     );
 
-                uint mask = (uint)((nativeType.Fields.Length & 0xEFF) << 21) 
-                    | (uint)((nativeType.InstanceByteCount.AsInt & 0xFFFFF)<< 1) 
-                    | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
+                uint size = (uint)nativeType.InstanceByteCount.AsInt;
+                uint mask = (uint)(nativeType.Fields.Length << 1)  | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
 
                 Vertex data = writer.GetTuple(
                      thunks,
+                     writer.GetUnsignedConstant(size),
                      writer.GetUnsignedConstant(mask)
                     );
 
