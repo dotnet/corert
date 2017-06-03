@@ -267,10 +267,10 @@ if [ ${CoreRT_CrossBuild} != 0 ]; then
                  source $ROOTFS_DIR/etc/os-release
              fi
              if [ "$ID" = "tizen" ]; then
-                 CoreRT_CrossCXXFlags="${CoreRT_CrossCXXFlags} -isystem ${CoreRT_CrossRootFS}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++ `
-                                      `-isystem ${CoreRT_CrossRootFS}//usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi `
+                 TIZEN_TOOLCHAIN="armv7l-tizen-linux-gnueabi/6.2.1"
+                 CoreRT_CrossCXXFlags="${CoreRT_CrossCXXFlags} -isystem ${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++ `
+                                      `-isystem ${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/armv7l-tizen-linux-gnueabi `
                                       `-isystem ${CoreRT_CrossRootFS}/armel/usr/include"
-                 TIZEN_TOOLCHAIN="armv7l-tizen-linux-gnueabi/4.9.2"
                  CoreRT_CrossLinkerFlags="${CoreRT_CrossLinkerFlags} -B${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN} `
                                          `-L${CoreRT_CrossRootFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}"
              else

@@ -81,6 +81,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.NewObject:
                     mangledName = "RhNewObject";
                     break;
+                case ReadyToRunHelper.NewArr1:
+                    mangledName = "RhNewArr1";
+                    break;
 
                 case ReadyToRunHelper.Stelem_Ref:
                     mangledName = "RhpStelemRef";
