@@ -52,17 +52,21 @@ namespace System.Threading
             GC.SuppressFinalize(this);
         }
 
+#if DEBUG
+        public bool IsLocked => _ownerThread == RuntimeThread.CurrentThread;
+#endif
+
         public void VerifyIsLocked()
         {
 #if DEBUG
-            Debug.Assert(_ownerThread == RuntimeThread.CurrentThread);
+            Debug.Assert(IsLocked);
 #endif
         }
 
         public void VerifyIsNotLocked()
         {
 #if DEBUG
-            Debug.Assert(_ownerThread != RuntimeThread.CurrentThread);
+            Debug.Assert(!IsLocked);
 #endif
         }
 

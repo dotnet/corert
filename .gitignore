@@ -13,6 +13,7 @@ tests_downloaded/
 *.user
 *.userosscache
 *.sln.docstates
+launchSettings.json
 
 # Build results
 [Dd]ebug/

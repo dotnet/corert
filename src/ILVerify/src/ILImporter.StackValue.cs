@@ -11,13 +11,38 @@ namespace Internal.IL
 {
     struct StackValue
     {
+        [Flags]
+        public enum StackValueFlags
+        {
+            None = 0,
+            ReadOnly = 1 << 1
+        }
+        private StackValueFlags Flags;
+
         public readonly StackValueKind Kind;
         public readonly TypeDesc Type;
 
-        private StackValue(StackValueKind kind, TypeDesc type = null)
+        private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
         {
             this.Kind = kind;
             this.Type = type;
+            this.Flags = flags;
+        }
+
+        public void SetIsReadOnly()
+        {
+            Flags |= StackValueFlags.ReadOnly;
+        }
+
+        public bool IsReadOnly
+        {
+            get { return (Flags & StackValueFlags.ReadOnly) == StackValueFlags.ReadOnly; }
+        }
+
+        public StackValue DereferenceByRef()
+        {
+            Debug.Assert(Kind == StackValueKind.ByRef && Type != null, "Cannot dereference");
+            return CreateFromType(Type);
         }
 
         static public StackValue CreateUnknown()
@@ -45,9 +70,9 @@ namespace Internal.IL
             return new StackValue(StackValueKind.ValueType, type);
         }
 
-        static public StackValue CreateByRef(TypeDesc type)
+        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false)
         {
-            return new StackValue(StackValueKind.ByRef, type);
+            return new StackValue(StackValueKind.ByRef, type, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
         }
 
         static public StackValue CreateFromType(TypeDesc type)

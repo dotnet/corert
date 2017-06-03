@@ -64,10 +64,14 @@ namespace Internal.Runtime.Augments
         [NativeCallable]
         private static void OnThreadExit()
         {
-            // Set the Stopped bit and signal the current thread as stopped
             RuntimeThread currentThread = t_currentThread;
             if (currentThread != null)
             {
+                // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
+                // the thread.
+                WaitSubsystem.OnThreadExiting(currentThread);
+
+                // Set the Stopped bit and signal the current thread as stopped
                 int state = currentThread._threadState;
                 if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
                 {
