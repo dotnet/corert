@@ -532,6 +532,7 @@ namespace PInvokeTests
 
         private static void TestStruct()
         {
+#if !CODEGEN_CPP
             Console.WriteLine("Testing Structs");
             SequentialStruct ss = new SequentialStruct();
             ss.f0 = 100;
@@ -591,7 +592,6 @@ namespace PInvokeTests
             InlineUnicodeStruct ius = new InlineUnicodeStruct();
             ius.inlineString = "Hello World";
 
-#if !CODEGEN_CPP
 
             TestStruct2 ts = new Program.TestStruct2() { f1 = 100, f2 = true };
             int size = Marshal.SizeOf<TestStruct2>(ts);
