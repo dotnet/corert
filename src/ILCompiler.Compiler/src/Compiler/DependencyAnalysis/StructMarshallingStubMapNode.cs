@@ -52,7 +52,6 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var structEntry in factory.InteropStubManager.GetStructMarshallingTypes())
             {
-
                 // the order of data written is as follows:
                 //  0. managed struct type
                 //  1. struct marshalling thunk
@@ -69,8 +68,7 @@ namespace ILCompiler.DependencyAnalysis
                 Vertex thunks= writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.MarshallingThunk))),
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk)))
-                    );
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk))));
 
                 uint size = (uint)nativeType.InstanceByteCount.AsInt;
                 uint mask = (uint)(nativeType.Fields.Length << 1)  | (uint)(nativeType.HasInvalidLayout ? 1 : 0);

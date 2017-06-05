@@ -139,7 +139,12 @@ namespace Internal.IL.Stubs
                             marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
                         }
 
-                        TypeDesc nativeReturnType = GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
+                        TypeDesc nativeReturnType = GetNativeMethodParameterType(delegateSignature.ReturnType, 
+                            marshalAs,
+                            _interopStateManager,
+                            isReturn:true,
+                            isAnsi:isAnsi);
+
                         for (int i = 0; i < delegateSignature.Length; i++)
                         {
                             int sequence = i + 1;
@@ -158,7 +163,11 @@ namespace Internal.IL.Stubs
 
                             var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
 
-                            var nativeType = GetNativeMethodParameterType(managedType, marshalAs, _interopStateManager, false, isAnsi);
+                            var nativeType = GetNativeMethodParameterType(managedType, 
+                                marshalAs,
+                                _interopStateManager,
+                                isReturn:false,
+                                isAnsi:isAnsi);
 
                             nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                         }

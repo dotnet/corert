@@ -75,13 +75,12 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 structExists = true;
                 // skip the first 4 IntPtrs(3 stubs and size)
-                entryParser.GetUnsigned();
-                entryParser.GetUnsigned();
-                entryParser.GetUnsigned();
-                entryParser.GetUnsigned();
+                entryParser.SkipInteger();
+                entryParser.SkipInteger();
+                entryParser.SkipInteger();
+                entryParser.SkipInteger();
 
                 uint mask = entryParser.GetUnsigned();
-                bool hasInvalidLayout = (mask & 0x1) == 1;
                 uint fieldCount = mask >> 1;
                 for (uint index = 0; index < fieldCount; index++)
                 {

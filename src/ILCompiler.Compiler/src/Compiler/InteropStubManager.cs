@@ -182,22 +182,6 @@ namespace ILCompiler
             }
         }
 
-        public void AddInterestingPInvokeStructDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            //
-            //  https://github.com/dotnet/corert/issues/3763
-            // TODO: Add an attribute which indicates a struct is interesting for interop
-            //
-            //else if (type.IsValueType && type.IsTypeDefinition && !(type is NativeStructType))
-            //{
-            //    var structType = type as MetadataType;
-            //    if (structType != null && structType.HasCustomAttribute("System.Runtime.InteropServices", "StructLayoutAttribute"))
-            //    {
-            //        AddDependenciesDuePInvokeStruct(ref dependencies, factory, type);
-            //    }
-            //}
-        }
-
         /// <summary>
         /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
         /// the generic parameter as dependencies so that we can generate runtime data for them
@@ -224,7 +208,6 @@ namespace ILCompiler
                         {
                             AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, type);
                             AddDependenciesDueToPInvokeStruct(ref dependencies, factory, type);
-
                         }
                     }
                 }
