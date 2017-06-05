@@ -171,6 +171,8 @@
     <Compile Include="System\Resources\ResourceSet.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.Unix.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Unix.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
