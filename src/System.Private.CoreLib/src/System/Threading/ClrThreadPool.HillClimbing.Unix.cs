@@ -22,9 +22,7 @@ namespace System.Threading
                 Starvation,
                 ThreadTimedOut,
             }
-
-            private State _currentState;
-
+            
             private readonly int _wavePeriod;
             private readonly int _samplesToMeasure;
             private readonly double _targetThroughputRatio;
