@@ -1101,6 +1101,11 @@ namespace Internal.Runtime.Augments
         {
             return RuntimeImports.RhGetOSModuleForMrt();
         }
+
+        public static void RhpVerifyDebuggerCleanup()
+        {
+            RuntimeImports.RhpVerifyDebuggerCleanup();
+        }
     }
 }
 

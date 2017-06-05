@@ -10,6 +10,7 @@
 #define FEATURE_APPX
 #endif // ENABLE_WINRT
 
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using System;
@@ -50,8 +51,23 @@ namespace System.Resources
                                                               Version version,
                                                               bool throwOnFileNotFound)
         {
-            // TODO: Make this work (but we can't throw NotImplemented because that would break all resource lookups)
-            return null;
+            AssemblyName mainAssemblyAn = mainAssembly.GetName();
+            AssemblyName an = new AssemblyName();
+
+            an.CultureInfo = culture;
+            an.Name = name;
+            an.SetPublicKeyToken(mainAssemblyAn.GetPublicKeyToken());
+            an.Flags = mainAssemblyAn.Flags;
+            an.Version = version ?? mainAssemblyAn.Version;
+
+            Assembly retAssembly = ReflectionAugments.ReflectionCoreCallbacks.Load(an, false);
+
+            if (retAssembly == mainAssembly || (retAssembly == null && throwOnFileNotFound))
+            {
+                throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, an.Name));
+            }
+
+            return retAssembly;
         }
     }
 

@@ -11,22 +11,24 @@ namespace Internal.TypeSystem
     {
         private static bool VerifyGenericParamConstraint(Instantiation typeInstantiation, Instantiation methodInstantiation, GenericParameterDesc genericParam, TypeDesc instantiationParam)
         {
+            GenericConstraints constraints = genericParam.Constraints;
+
             // Check class constraint
-            if (genericParam.HasReferenceTypeConstraint)
+            if ((constraints & GenericConstraints.ReferenceTypeConstraint) != 0)
             {
                 if (!instantiationParam.IsGCPointer)
                     return false;
             }
 
             // Check default constructor constraint
-            if (genericParam.HasDefaultConstructorConstraint)
+            if ((constraints & GenericConstraints.DefaultConstructorConstraint) != 0)
             {
                 if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor())
                     return false;
             }
 
             // Check struct constraint
-            if (genericParam.HasNotNullableValueTypeConstraint)
+            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
             {
                 if (!instantiationParam.IsValueType)
                     return false;

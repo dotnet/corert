@@ -36,6 +36,9 @@ namespace System
             HResult = __HResults.E_POINTER;
         }
 
-        protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
