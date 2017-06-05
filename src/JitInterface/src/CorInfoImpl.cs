@@ -808,8 +808,74 @@ namespace Internal.JitInterface
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
 
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
-        { throw new NotImplementedException("resolveVirtualMethod"); }
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, CORINFO_CONTEXT_STRUCT* ownerType)
+        {
+            TypeDesc implType = HandleToObject(derivedClass);
+
+            // __Canon cannot be devirtualized
+            if (implType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return null;
+            }
+
+            implType = implType.GetClosestDefType();
+
+            MethodDesc decl = HandleToObject(baseMethod);
+            Debug.Assert(decl.IsVirtual);
+            Debug.Assert(!decl.HasInstantiation);
+
+            MethodDesc impl;
+
+            TypeDesc declOwningType = decl.OwningType;
+            if (declOwningType.IsInterface)
+            {
+                // Interface call devirtualization.
+                //
+                // We must ensure that the type actually implements the
+                // interface corresponding to decl.
+                if (!implType.CanCastTo(declOwningType))
+                {
+                    return null;
+                }
+
+                if (implType.IsValueType)
+                {
+                    // TODO: this ends up asserting RyuJIT - why?
+                    return null;
+                }
+
+                // For generic interface methods we must have an ownerType to
+                // safely devirtualize.
+                if (ownerType != null)
+                {
+                    TypeDesc ownerTypeDesc = typeFromContext(ownerType);
+
+                    // If the derived class is a shared class, make sure the
+                    // owner class is too.
+                    if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        ownerTypeDesc = ownerTypeDesc.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    }
+
+                    // TODO: handle the complicated case where interface type is instantiated over __Canon
+
+                    impl = implType.ResolveInterfaceMethodTarget(decl);
+                    Debug.Assert(impl != null);
+                }
+                else
+                {
+                    impl = implType.ResolveInterfaceMethodTarget(decl);
+                    Debug.Assert(impl != null);
+                }
+            }
+            else
+            {
+                impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
+                Debug.Assert(impl != null);
+            }
+
+            return impl != null ? ObjectToHandle(impl) : null;
+        }
 
         private SimdHelper _simdHelper;
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
