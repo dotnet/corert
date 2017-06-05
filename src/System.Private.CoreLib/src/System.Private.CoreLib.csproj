@@ -171,7 +171,6 @@
     <Compile Include="System\Resources\ResourceSet.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
-    <Compile Include="System\Threading\WaitThread.Unix.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
@@ -663,6 +662,7 @@
     <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
+    <Compile Include="System\Threading\WaitThread.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

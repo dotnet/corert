@@ -42,7 +42,7 @@ namespace System.Threading
         internal void SignalUserWaitHandle()
         {
             SignalUserWaitHandleLock.Acquire();
-            if(!SignaledUserWaitHandle && UserUnregisterWaitHandle != null)
+            if(!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
             {
                 SignaledUserWaitHandle = true;
                 WaitSubsystem.SetEvent(UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());

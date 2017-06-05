@@ -1,6 +1,8 @@
-﻿using Internal.Runtime.Augments;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -95,7 +97,6 @@ namespace System.Threading
 
         private static void ExecuteWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
         {
-            // TODO: Check for blocking case (InternalCompletionEvent in CoreCLR)
             ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
         }
 
@@ -104,11 +105,11 @@ namespace System.Threading
             CompletedWaitHandle handle = (CompletedWaitHandle)state;
             handle.CompletedHandle.CanUnregister.Reset();
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(handle.CompletedHandle.Callback, handle.TimedOut);
+            handle.CompletedHandle.CanUnregister.Set();
             if (!handle.CompletedHandle.Repeating)
             {
-                UnregisterWait(handle.CompletedHandle);
+                QueueUnregisterWait(handle.CompletedHandle);
             }
-            handle.CompletedHandle.CanUnregister.Set();
         }
 
         public static void RegisterWaitHandle(RegisteredWaitHandle handle)
@@ -138,8 +139,14 @@ namespace System.Threading
 
         public static void QueueUnregisterWait(RegisteredWaitHandle handle)
         {
-            ThreadPool.QueueUserWorkItem(UnregisterWait, handle);
-            UnregisterWait(handle);
+            if(handle.Handle?.SafeWaitHandle.DangerousGetHandle() == (IntPtr)(-1))
+            {
+                UnregisterWait(handle);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(UnregisterWait, handle);
+            }
         }
 
         private static void UnregisterWait(object state)
