@@ -102,6 +102,10 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
 
+        internal static bool NotifyWorkItemComplete()
+        {
+        }
+
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.
         /// </summary>

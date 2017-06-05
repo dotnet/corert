@@ -277,6 +277,11 @@ namespace System.Threading
             completionPortThreads = availableThreads;
         }
 
+        public static bool NotifyWorkItemComplete()
+        {
+            return true;
+        }
+
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {

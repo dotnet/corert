@@ -678,7 +678,7 @@ namespace System.Threading
         //requests in the current domain.
         private const uint tpQuantum = 30U;
 
-        internal static void Dispatch()
+        internal static bool Dispatch()
         {
             var workQueue = ThreadPoolGlobals.workQueue;
 
@@ -729,7 +729,7 @@ namespace System.Threading
                         // which will be more efficient than this thread doing it anyway.
                         //
                         needAnotherThread = missedSteal;
-                        return;
+                        return true;
                     }
 
                     //
@@ -748,7 +748,14 @@ namespace System.Threading
                         workItem = null;
                         SynchronizationContext.SetSynchronizationContext(null);
                     }
+
+                    if(!ThreadPool.NotifyWorkItemComplete())
+                    {
+                        return false;
+                    }
                 }
+
+                return true;
             }
             catch (Exception e)
             {
