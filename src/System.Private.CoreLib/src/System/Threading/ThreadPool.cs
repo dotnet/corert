@@ -1162,10 +1162,6 @@ namespace System.Threading
             ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
         }
 
-        internal static void NotifyWorkItemProgress()
-        {
-        }
-
         // This method tries to take the target callback out of the current thread's queue.
         internal static bool TryPopCustomWorkItem(IThreadPoolWorkItem workItem)
         {

@@ -104,6 +104,12 @@ namespace System.Threading
 
         internal static bool NotifyWorkItemComplete()
         {
+            return ClrThreadPool.NotifyWorkItemComplete();
+        }
+
+        internal static void NotifyWorkItemProgress()
+        {
+            ClrThreadPool.NotifyWorkItemComplete();
         }
 
         /// <summary>

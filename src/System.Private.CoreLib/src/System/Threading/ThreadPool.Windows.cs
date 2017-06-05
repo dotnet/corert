@@ -277,6 +277,10 @@ namespace System.Threading
             completionPortThreads = availableThreads;
         }
 
+        internal static void NotifyWorkItemProgress()
+        {
+        }
+
         public static bool NotifyWorkItemComplete()
         {
             return true;
