@@ -26,6 +26,10 @@ namespace System.Threading
 
             private static int s_numActiveWaits = 0;
 
+            private static WaitHandle[] s_waitHandles = new WaitHandle[0];
+
+            private static int s_currentTimeout = Timeout.Infinite;
+
             private static bool s_waitThreadStarted = false;
 
             private static LowLevelMonitor s_waitThreadStartedMonitor = new LowLevelMonitor();
@@ -45,24 +49,8 @@ namespace System.Threading
                     {
                         s_activeWaitMonitor.Wait();
                     }
-
-                    int timeout = Timeout.Infinite;
-                    WaitHandle[] waitHandles = new WaitHandle[s_numActiveWaits];
-                    for (int i = 0; i < s_numActiveWaits; i++)
-                    {
-                        RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
-                        if (timeout == Timeout.Infinite)
-                        {
-                            timeout = registeredHandle.Timeout;
-                        }
-                        else
-                        {
-                            timeout = Math.Min(timeout, registeredHandle.Timeout);
-                        }
-                        waitHandles[i] = registeredHandle.Handle;
-                    }
                     s_activeWaitMonitor.Release();
-                    int signalledHandle = WaitHandle.WaitAny(waitHandles, timeout);
+                    int signalledHandle = WaitHandle.WaitAny(s_waitHandles, s_currentTimeout);
 
                     s_activeWaitMonitor.Acquire();
                     if (s_numActiveWaits == 0)
@@ -76,7 +64,7 @@ namespace System.Threading
                         for (int i = 0; i < s_numActiveWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
-                            if (registeredHandle.Handle == waitHandles[signalledHandle])
+                            if (registeredHandle.Handle == s_waitHandles[signalledHandle])
                             {
                                 ExecuteWaitCompletion(registeredHandle, false);
                             }
@@ -87,13 +75,32 @@ namespace System.Threading
                         for (int i = 0; i < s_numActiveWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
-                            if (registeredHandle.Timeout == timeout)
+                            if (registeredHandle.Timeout == s_currentTimeout)
                             {
                                 ExecuteWaitCompletion(registeredHandle, true);
                             }
                         }
                     }
                     s_activeWaitMonitor.Release();
+                }
+            }
+
+            private static void UpdateWaitHandlesAndTimeout()
+            {
+                s_currentTimeout = Timeout.Infinite;
+                s_waitHandles = new WaitHandle[s_numActiveWaits];
+                for (int i = 0; i < s_numActiveWaits; i++)
+                {
+                    RegisteredWaitHandle registeredHandle = s_registeredWaitHandles[i];
+                    if (s_currentTimeout == Timeout.Infinite)
+                    {
+                        s_currentTimeout = registeredHandle.Timeout;
+                    }
+                    else
+                    {
+                        s_currentTimeout = Math.Min(s_currentTimeout, registeredHandle.Timeout);
+                    }
+                    s_waitHandles[i] = registeredHandle.Handle;
                 }
             }
 
@@ -120,6 +127,8 @@ namespace System.Threading
 
                 s_activeWaitMonitor.Acquire();
                 s_registeredWaitHandles[s_numActiveWaits++] = handle;
+
+                UpdateWaitHandlesAndTimeout();
                 s_activeWaitMonitor.Signal_Release();
             }
 
@@ -171,6 +180,7 @@ namespace System.Threading
                     s_registeredWaitHandles[s_numActiveWaits--] = null;
                 }
 
+                UpdateWaitHandlesAndTimeout();
                 s_activeWaitMonitor.Release();
                 handle.SignalUserWaitHandle();
             }
