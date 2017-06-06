@@ -43,7 +43,7 @@
     .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected.PathStackUnexpected() cil managed
     {
         //object o = null;
-        //Type t = o != null ? o.GetType() : null;
+        //Type t = o != null ? o.GetType() : o;
         //Type.GetTypeCode(t);
 
         .maxstack 1
