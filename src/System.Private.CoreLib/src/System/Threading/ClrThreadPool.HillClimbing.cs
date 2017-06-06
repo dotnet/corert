@@ -7,10 +7,11 @@ namespace System.Threading
     internal static partial class ClrThreadPool
     {
         // Config values pulled from CoreCLR
-        private static readonly HillClimbing s_threadPoolHillClimber = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
-
+        
         private class HillClimbing
         {
+            public static HillClimbing ThreadPoolHillClimber { get; } = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
+
             public enum State
             {
                 Warmup,
