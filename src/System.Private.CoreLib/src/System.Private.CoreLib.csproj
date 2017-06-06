@@ -649,15 +649,16 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
+<<<<<<< HEAD
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+=======
+>>>>>>> Alphabetically sort project entries.
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
     <Compile Include="System\Threading\ThreadPool.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />
     <Compile Include="System\Threading\WaitHandle.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
