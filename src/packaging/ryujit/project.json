@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Jit": "2.1.0-preview1-25406-02"
+  },
+  "frameworks": {
+    "netcoreapp2.0": { }
+  },
+  "runtimes": {
+    "win-x64": { },
+    "osx-x64": { },
+    "linux-x64": { }
+  }
+}

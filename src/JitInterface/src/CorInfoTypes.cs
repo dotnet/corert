@@ -280,6 +280,9 @@ namespace Internal.JitInterface
         public IntPtr offset1;
         public IntPtr offset2;
         public IntPtr offset3;
+
+        public byte _indirectFirstOffset;
+        public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
     }
 
     // Result of calling embedGenericHandle
