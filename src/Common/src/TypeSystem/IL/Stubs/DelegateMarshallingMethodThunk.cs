@@ -93,6 +93,22 @@ namespace Internal.IL.Stubs
             }
         }
 
+        private TypeDesc GetNativeMethodParameterType(TypeDesc managedType, MarshalAsDescriptor marshalAs, InteropStateManager interopStateManager, bool isReturn, bool isAnsi)
+        {
+            TypeDesc nativeType;
+            try
+            {
+                nativeType = MarshalHelpers.GetNativeMethodParameterType(managedType, marshalAs, interopStateManager, isReturn, isAnsi);
+            }
+            catch (NotSupportedException)
+            {
+                // if marshalling is not supported for this type the generated stubs will emit appropriate
+                // error message. We just set native type to be same as managedtype
+                nativeType = managedType;
+            }
+            return nativeType;
+        }
+
         public override MethodSignature Signature
         {
             get
@@ -123,7 +139,12 @@ namespace Internal.IL.Stubs
                             marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
                         }
 
-                        TypeDesc nativeReturnType = MarshalHelpers.GetNativeMethodParameterType(delegateSignature.ReturnType, null, _interopStateManager, true, isAnsi);
+                        TypeDesc nativeReturnType = GetNativeMethodParameterType(delegateSignature.ReturnType, 
+                            marshalAs,
+                            _interopStateManager,
+                            isReturn:true,
+                            isAnsi:isAnsi);
+
                         for (int i = 0; i < delegateSignature.Length; i++)
                         {
                             int sequence = i + 1;
@@ -142,7 +163,11 @@ namespace Internal.IL.Stubs
 
                             var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
 
-                            var nativeType = MarshalHelpers.GetNativeMethodParameterType(managedType, marshalAs, _interopStateManager, false, isAnsi);
+                            var nativeType = GetNativeMethodParameterType(managedType, 
+                                marshalAs,
+                                _interopStateManager,
+                                isReturn:false,
+                                isAnsi:isAnsi);
 
                             nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                         }
