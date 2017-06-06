@@ -46,7 +46,6 @@ namespace Internal.Runtime.Augments
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
-        public abstract EnumInfo GetEnumInfoIfAvailable(Type enumType);
         public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);

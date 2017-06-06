@@ -111,6 +111,7 @@
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EnumInfoImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
