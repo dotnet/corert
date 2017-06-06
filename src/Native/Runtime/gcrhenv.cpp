@@ -1071,6 +1071,11 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 #endif
 }
 
+bool GCToEEInterface::TrapReturningThreads()
+{
+    return !!g_TrapReturningThreads;
+}
+
 #ifndef DACCESS_COMPILE
 
 // Context passed to the above.
