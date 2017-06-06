@@ -1,16 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.LowLevelLinq;
 
 namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
-        private const int CpuUtilizationHigh = 95;
-        private const int CpuUtilizationLow = 80;
-        private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
-        
-        private static int s_minThreads; // TODO: Initialize
-        private static int s_maxThreads; // TODO: Initialize
 
         [StructLayout(LayoutKind.Explicit)]
         struct ThreadCounts
@@ -56,6 +51,14 @@ namespace System.Threading
             }
         }
 
+        private const int CpuUtilizationHigh = 95;
+        private const int CpuUtilizationLow = 80;
+        private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
+        
+        private static int s_minThreads; // TODO: Initialize
+        private static int s_maxThreads; // TODO: Initialize
+        private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
+
 
         private static readonly LowLevelLock s_threadAdjustmentLock = new LowLevelLock();
         private static ThreadCounts s_counts = new ThreadCounts();
@@ -67,34 +70,79 @@ namespace System.Threading
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
-        // TODO: SetMinThreads and SetMaxThreads need to be synchronized with a lock
-        // TODO: Compare with CoreCLR implementation and ensure this has the same guarantees.
         public static bool SetMinThreads(int threads)
         {
+            s_maxMinThreadLock.Acquire();
+            bool success;
             if (threads < 0 || threads > s_maxThreads)
             {
-                return false;
+                success = false;
             }
             else
             {
                 s_minThreads = threads;
-                return true;
+
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                while(counts.maxWorking < s_minThreads)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.maxWorking = (short)s_minThreads;
+
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                    if (oldCounts.asLong == counts.asLong)
+                    {
+                        counts = newCounts;
+
+                        if(newCounts.maxWorking > oldCounts.maxWorking && ThreadPool.GetQueuedWorkItems().Any())
+                        {
+                            WorkerThread.MaybeAddWorkingWorker();
+                        }
+                    }
+                    else
+                    {
+                        counts = oldCounts;
+                    }
+                }
+                success = true;
             }
+            s_maxMinThreadLock.Release();
+            return success;
         }
 
         public static int GetMinThreads() => s_minThreads;
 
         public static bool SetMaxThreads(int threads)
         {
+            s_maxMinThreadLock.Acquire();
+            bool success;
             if (threads < s_minThreads || threads == 0)
             {
-                return false;
+                success = false;
             }
             else
             {
                 s_maxThreads = threads;
-                return true;
+
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                while (counts.maxWorking > s_maxThreads)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.maxWorking = (short)s_maxThreads;
+
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                    if (oldCounts.asLong == counts.asLong)
+                    {
+                        counts = newCounts;
+                    }
+                    else
+                    {
+                        counts = oldCounts;
+                    }
+                }
+                success = true;
             }
+            s_maxMinThreadLock.Release();
+            return success;
         }
 
         public static int GetMaxThreads() => s_maxThreads;
