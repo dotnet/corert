@@ -22,7 +22,7 @@ namespace Internal.Runtime.CompilerHelpers
             __vtable_IUnknown.Initialize();
             McgModuleManager.Initialize();
 #endif
-            RuntimeAugments.InitializeInteropLookups(new Callbacks());
+            RuntimeAugments.InitializeInteropLookups(RuntimeInteropData.Instance);
         }
     }
 }

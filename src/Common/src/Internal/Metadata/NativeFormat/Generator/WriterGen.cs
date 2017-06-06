@@ -133,7 +133,7 @@ class WriterGen : CsWriter
 
         // Compute hash seed using stable hashcode
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(record.Name);
-        byte[] hashBytes = new System.Security.Cryptography.SHA1Managed().ComputeHash(nameBytes);
+        byte[] hashBytes = System.Security.Cryptography.SHA256.Create().ComputeHash(nameBytes);
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
         WriteLine($"int hash = {hashSeed};");
 

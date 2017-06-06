@@ -222,7 +222,7 @@ namespace Internal.Runtime.TypeLoader
 
             lock (s_allocatedThunks)
             {
-                if (callConversionInfo < s_allocatedThunks.Count)
+                if (callConversionInfo < s_allocatedThunks.Count && s_allocatedThunks[callConversionInfo] != IntPtr.Zero)
                     return s_allocatedThunks[callConversionInfo];
 
                 if (s_thunkPoolHeap == null)
@@ -237,8 +237,13 @@ namespace Internal.Runtime.TypeLoader
                 fixed (CallingConventionConverter_CommonCallingStub_PointerData* commonStubData = &s_commonStubData)
                 {
                     RuntimeAugments.SetThunkData(s_thunkPoolHeap, thunk, new IntPtr(callConversionInfo), new IntPtr(commonStubData));
-                    Debug.Assert(callConversionInfo == s_allocatedThunks.Count);
-                    s_allocatedThunks.Add(thunk);
+
+                    if (callConversionInfo >= s_allocatedThunks.Count)
+                    {
+                        s_allocatedThunks.Expand(count: callConversionInfo + 1);
+                    }
+                    Debug.Assert(s_allocatedThunks[callConversionInfo] == IntPtr.Zero);
+                    s_allocatedThunks[callConversionInfo] = thunk;
                 }
             }
 

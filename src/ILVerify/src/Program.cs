@@ -19,6 +19,8 @@ using Internal.IL;
 
 using Internal.CommandLine;
 using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Resources;
 
 namespace ILVerify
 {
@@ -33,6 +35,7 @@ namespace ILVerify
         private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
 
         private SimpleTypeSystemContext _typeSystemContext;
+        private ResourceManager _stringResourceManager;
 
         private int _numErrors;
 
@@ -162,7 +165,13 @@ namespace ILVerify
 
                     message.Append(" ");
 
-                    message.Append(SR.GetResourceString(args.Code.ToString(), null) ?? args.Code.ToString());
+                    if (_stringResourceManager == null)
+                    {
+                        _stringResourceManager = new ResourceManager("ILVerify.Resources.Strings", Assembly.GetExecutingAssembly());
+                    }
+            
+                    var str = _stringResourceManager.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
+                    message.Append(string.IsNullOrEmpty(str) ? args.Code.ToString() : str);
 
                     Console.WriteLine(message);
 

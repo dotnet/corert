@@ -102,7 +102,6 @@ namespace System.Text
         }
     }
 
-    [Serializable]
     public sealed class EncoderFallbackException : ArgumentException
     {
         private char _charUnknown;
@@ -152,11 +151,6 @@ namespace System.Text
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;
             _index = index;
-        }
-
-        internal EncoderFallbackException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
         }
 
         public char CharUnknown

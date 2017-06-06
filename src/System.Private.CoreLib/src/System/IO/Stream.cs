@@ -513,7 +513,6 @@ namespace System.IO
 
         // SyncStream is a wrapper around a stream that takes 
         // a lock for every operation making it thread safe.
-        [Serializable]
         private sealed class SyncStream : Stream, IDisposable
         {
             private Stream _stream;

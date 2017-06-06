@@ -16,6 +16,7 @@ using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
+    [Serializable]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         public int CompareTo(Object target)

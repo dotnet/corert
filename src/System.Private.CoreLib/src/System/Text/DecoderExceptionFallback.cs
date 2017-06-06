@@ -99,7 +99,6 @@ namespace System.Text
     }
 
     // Exception for decoding unknown byte sequences.
-    [Serializable]
     public sealed class DecoderFallbackException : ArgumentException
     {
         private byte[] _bytesUnknown = null;
@@ -125,11 +124,6 @@ namespace System.Text
         {
             _bytesUnknown = bytesUnknown;
             _index = index;
-        }
-
-        internal DecoderFallbackException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
         }
 
         public byte[] BytesUnknown

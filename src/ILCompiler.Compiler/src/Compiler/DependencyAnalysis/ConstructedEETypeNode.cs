@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Runtime;
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.IL;
 
@@ -167,6 +165,8 @@ namespace ILCompiler.DependencyAnalysis
 
             // Ask the metadata manager if we have any dependencies due to reflectability.
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
+
+            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             return dependencyList;
         }

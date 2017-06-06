@@ -65,6 +65,9 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport("jitinterface")]
+        private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
+
+        [DllImport("jitinterface")]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         private IntPtr AllocException(Exception ex)
@@ -794,9 +797,27 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
 
+        private SimdHelper _simdHelper;
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
         {
-            // TODO: SIMD
+            TypeDesc type = HandleToObject(classHnd);
+            
+            if (_simdHelper.IsInSimdModule(type))
+            {
+#if DEBUG
+                // If this is Vector<T>, make sure the codegen and the type system agree on what instructions/registers
+                // we're generating code for.
+
+                CORJIT_FLAGS flags = default(CORJIT_FLAGS);
+                getJitFlags(ref flags, (uint)sizeof(CORJIT_FLAGS));
+
+                Debug.Assert(!_simdHelper.IsVectorOfT(type)
+                    || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, &flags));
+#endif
+
+                return true;
+            }
+
             return false;
         }
 
@@ -858,13 +879,13 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
-        private void getGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
+        private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             // TODO: fully implement GS cookies
 
             if (pCookieVal != null)
             {
-                *pCookieVal = (GSCookie)0x216D6F6D202C6948;
+                *pCookieVal = (IntPtr)0x216D6F6D202C6948;
                 *ppCookieVal = null;
             }
             else
@@ -1013,7 +1034,30 @@ namespace Internal.JitInterface
         }
 
         private int appendClassName(short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
-        { throw new NotImplementedException("appendClassName"); }
+        {
+            // We support enough of this to make SIMD work, but not much else.
+
+            Debug.Assert(fNamespace && !fFullInst && !fAssembly);
+
+            var type = HandleToObject(cls);
+            string name = TypeString.Instance.FormatName(type);
+
+            int length = name.Length;
+            if (pnBufLen > 0)
+            {
+                short* buffer = *ppBuf;
+                for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
+                    buffer[i] = (short)name[i];
+                if (name.Length < pnBufLen)
+                    buffer[name.Length] = 0;
+                else
+                    buffer[pnBufLen - 1] = 0;
+                pnBufLen -= length;
+                *ppBuf = buffer + length;
+            }
+
+            return length;
+        }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -2242,7 +2286,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
         { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
-        private SIZE_T* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
+        private void* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
         { throw new NotImplementedException("getAddrModuleDomainID"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();

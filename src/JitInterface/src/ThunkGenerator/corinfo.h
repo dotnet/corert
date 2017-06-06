@@ -1323,6 +1323,13 @@ struct CORINFO_RUNTIME_LOOKUP
     bool                    testForFixup;
 
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
+
+    // If set, first offset is indirect.
+    // 0 means that value stored at first offset (offsets[0]) from pointer is next pointer, to which the next offset
+    // (offsets[1]) is added and so on.
+    // 1 means that value stored at first offset (offsets[0]) from pointer is offset1, and the next pointer is
+    // stored at pointer+offsets[0]+offset1.
+    bool                indirectFirstOffset;
 } ;
 
 // Result of calling embedGenericHandle
@@ -1513,7 +1520,8 @@ enum CORINFO_CALL_KIND
     CORINFO_VIRTUALCALL_VTABLE
 };
 
-
+// Indicates that the CORINFO_VIRTUALCALL_VTABLE lookup needn't do a chunk indirection
+#define CORINFO_VIRTUALCALL_NO_CHUNK 0xFFFFFFFF
 
 enum CORINFO_THIS_TRANSFORM
 {

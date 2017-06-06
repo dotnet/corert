@@ -58,7 +58,6 @@ namespace System.Collections.Generic
         private static Comparer<T> _default;
     }
 
-    [Serializable]
     internal class DefaultComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
@@ -103,7 +102,6 @@ namespace System.Collections.Generic
         }
     }
 
-    [Serializable]
     internal class ComparisonComparer<T> : Comparer<T>
     {
         private readonly Comparison<T> _comparison;

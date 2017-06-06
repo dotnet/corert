@@ -14,6 +14,7 @@ namespace System.Collections.ObjectModel
 {
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class Collection<T> : IList<T>, IList, IReadOnlyList<T>
     {
         private IList<T> _items;
