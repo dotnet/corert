@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
-        // The Hill Climbing algorithm is described at http://mattwarren.org/2017/04/13/The-CLR-Thread-Pool-Thread-Injection-Algorithm/
-        private partial class HillClimbing
-        {
-            // Config values pulled from CoreCLR
-            // TODO: Move to runtime configuration variables.
-            public static HillClimbing ThreadPoolHillClimber { get; } = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
+        // Config values pulled from CoreCLR
+        private static readonly HillClimbing s_threadPoolHillClimber = new HillClimbing(4, 20, 100, 8, 15, 300, 4, 20, 10, 200, 1, 200, 15);
 
-            public enum StateOrTransition
+        private class HillClimbing
+        {
+            public enum State
             {
                 Warmup,
                 Initializing,
@@ -48,7 +44,7 @@ namespace System.Threading
             private double _secondsElapsedSinceLastChange;
             private double _completionsSinceLastChange;
             private int _accumulatedCompletionCount;
-            private double _accumulatedSampleDurationSeconds;
+            private double _accumulatedSampleDuration;
             private double[] _samples;
             private double[] _threadCounts;
             private int _currentSampleInterval;
@@ -61,43 +57,43 @@ namespace System.Threading
             {
                 _wavePeriod = wavePeriod;
                 _maxThreadWaveMagnitude = maxWaveMagnitude;
-                _threadMagnitudeMultiplier = waveMagnitudeMultiplier;
+                _threadMagnitudeMultiplier = waveMagnitudeMultiplier / 100.0;
                 _samplesToMeasure = wavePeriod * waveHistorySize;
-                _targetThroughputRatio = targetThroughputRatio;
-                _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
+                _targetThroughputRatio = targetThroughputRatio / 100.0;
+                _targetSignalToNoiseRatio = targetSignalToNoiseRatio / 100.0;
                 _maxChangePerSecond = maxChangePerSecond;
                 _maxChangePerSample = maxChangePerSample;
                 _sampleIntervalLow = sampleIntervalLow;
                 _sampleIntervalHigh = sampleIntervalHigh;
-                _throughputErrorSmoothingFactor = errorSmoothingFactor;
-                _gainExponent = gainExponent;
-                _maxSampleError = maxSampleError;
+                _throughputErrorSmoothingFactor = errorSmoothingFactor / 100.0;
+                _gainExponent = gainExponent / 100.0;
+                _maxSampleError = maxSampleError / 100.0;
 
                 _samples = new double[_samplesToMeasure];
                 _threadCounts = new double[_samplesToMeasure];
 
-                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh + 1);
+                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh);
             }
 
-            public (int newThreadCount, int newSampleInterval) Update(int currentThreadCount, double sampleDurationSeconds, int numCompletions)
+            public (int newThreadCount, int newSampleInterval) Update(int currentThreadCount, double sampleDuration, int numCompletions)
             {
 
                 //
                 // If someone changed the thread count without telling us, update our records accordingly.
                 // 
                 if (currentThreadCount != _lastThreadCount)
-                    ForceChange(currentThreadCount, StateOrTransition.Initializing);
+                    ForceChange(currentThreadCount, State.Initializing);
 
                 //
                 // Update the cumulative stats for this thread count
                 //
-                _secondsElapsedSinceLastChange += sampleDurationSeconds;
+                _secondsElapsedSinceLastChange += sampleDuration;
                 _completionsSinceLastChange += numCompletions;
 
                 //
                 // Add in any data we've already collected about this sample
                 //
-                sampleDurationSeconds += _accumulatedSampleDurationSeconds;
+                sampleDuration += _accumulatedSampleDuration;
                 numCompletions += _accumulatedCompletionCount;
 
                 //
@@ -125,7 +121,7 @@ namespace System.Threading
                 {
                     // not accurate enough yet.  Let's accumulate the data so far, and tell the ThreadPool
                     // to collect a little more.
-                    _accumulatedSampleDurationSeconds = sampleDurationSeconds;
+                    _accumulatedSampleDuration = sampleDuration;
                     _accumulatedCompletionCount = numCompletions;
                     return (currentThreadCount, 10);
                 }
@@ -133,14 +129,14 @@ namespace System.Threading
                 //
                 // We've got enouugh data for our sample; reset our accumulators for next time.
                 //
-                _accumulatedSampleDurationSeconds = 0;
+                _accumulatedSampleDuration = 0;
                 _accumulatedCompletionCount = 0;
 
                 //
                 // Add the current thread count and throughput sample to our history
                 //
-                double throughput = numCompletions / sampleDurationSeconds;
-                // TODO: Event: Worker Thread Adjustment Sample
+                double throughput = numCompletions / sampleDuration;
+                //Worker Thread Adjustment Sample event
 
                 int sampleIndex = _totalSamples % _samplesToMeasure;
                 _samples[sampleIndex] = throughput;
@@ -150,13 +146,13 @@ namespace System.Threading
                 //
                 // Set up defaults for our metrics
                 //
-                Complex threadWaveComponent = default(Complex);
-                Complex throughputWaveComponent = default(Complex);
+                (double real, double imaginary) threadWaveComponent = (0, 0);
+                (double real, double imaginary) throughputWaveComponent = (0, 0);
                 double throughputErrorEstimate = 0;
-                Complex ratio = default(Complex);
+                (double real, double imaginary) ratio = (0, 0);
                 double confidence = 0;
 
-                StateOrTransition state = StateOrTransition.Warmup;
+                State state = State.Warmup;
 
                 //
                 // How many samples will we use?  It must be at least the three wave periods we're looking for, and it must also be a whole
@@ -194,18 +190,22 @@ namespace System.Threading
                         // throughput).  Our "error" estimate (the amount of noise that might be present in the
                         // frequency band we're really interested in) is the average of the adjacent bands.
                         //
-                        throughputWaveComponent = GetWaveComponent(_samples, sampleCount, _wavePeriod) / averageThroughput;
-                        throughputErrorEstimate = (GetWaveComponent(_samples, sampleCount, adjacentPeriod1) / averageThroughput).Abs();
+                        throughputWaveComponent = GetWaveComponent(_samples, sampleCount, _wavePeriod);
+                        throughputWaveComponent = (throughputWaveComponent.real / averageThroughput, throughputWaveComponent.imaginary / averageThroughput);
+                        (double real, double imaginary) intermediateErrorEstimate = GetWaveComponent(_samples, sampleCount, adjacentPeriod1);
+                        throughputErrorEstimate = Abs((intermediateErrorEstimate.real / averageThroughput, intermediateErrorEstimate.imaginary / averageThroughput));
                         if (adjacentPeriod2 <= sampleCount)
                         {
-                            throughputErrorEstimate = Math.Max(throughputErrorEstimate, (GetWaveComponent(_samples, sampleCount, adjacentPeriod2) / averageThroughput).Abs());
+                            intermediateErrorEstimate = GetWaveComponent(_samples, sampleCount, adjacentPeriod2);
+                            throughputErrorEstimate = Math.Max(throughputErrorEstimate, Abs((intermediateErrorEstimate.real / averageThroughput, intermediateErrorEstimate.imaginary / averageThroughput)));
                         }
 
                         //
                         // Do the same for the thread counts, so we have something to compare to.  We don't measure thread count
                         // noise, because there is none; these are exact measurements.
                         //
-                        threadWaveComponent = GetWaveComponent(_threadCounts, sampleCount, _wavePeriod) / averageThreadCount;
+                        (double real, double imaginary) intermediateThreadWaveComponent = GetWaveComponent(_threadCounts, sampleCount, _wavePeriod);
+                        threadWaveComponent = (intermediateThreadWaveComponent.real / averageThreadCount, intermediateThreadWaveComponent.imaginary / averageThreadCount);
 
                         //
                         // Update our moving average of the throughput noise.  We'll use this later as feedback to
@@ -216,18 +216,19 @@ namespace System.Threading
                         else
                             _averageThroughputNoise = (_throughputErrorSmoothingFactor * throughputErrorEstimate) + ((1.0 - _throughputErrorSmoothingFactor) * _averageThroughputNoise);
 
-                        if (threadWaveComponent.Abs() > 0)
+                        if (Abs(threadWaveComponent) > 0)
                         {
                             //
                             // Adjust the throughput wave so it's centered around the target wave, and then calculate the adjusted throughput/thread ratio.
                             //
-                            ratio = (throughputWaveComponent - (_targetThroughputRatio * threadWaveComponent)) / threadWaveComponent;
-                            state = StateOrTransition.ClimbingMove;
+                            ratio.real = (throughputWaveComponent.real - (_targetThroughputRatio * threadWaveComponent.real)) / threadWaveComponent.real;
+                            ratio.imaginary = (throughputWaveComponent.imaginary - (_targetThroughputRatio * threadWaveComponent.imaginary)) / threadWaveComponent.imaginary;
+                            state = State.ClimbingMove;
                         }
                         else
                         {
-                            ratio = new Complex(0, 0);
-                            state = StateOrTransition.Stabilizing;
+                            ratio = (0, 0);
+                            state = State.Stabilizing;
                         }
 
                         //
@@ -236,7 +237,7 @@ namespace System.Threading
                         //
                         double noiseForConfidence = Math.Max(_averageThroughputNoise, throughputErrorEstimate);
                         if (noiseForConfidence > 0)
-                            confidence = (threadWaveComponent.Abs() / noiseForConfidence) / _targetSignalToNoiseRatio;
+                            confidence = (Abs(threadWaveComponent) / noiseForConfidence) / _targetSignalToNoiseRatio;
                         else
                             confidence = 1.0; //there is no noise!
 
@@ -251,7 +252,7 @@ namespace System.Threading
                 // If they're 90 degrees out of phase, we won't move at all, because we can't tell wether we're
                 // having a negative or positive effect on throughput.
                 //
-                double move = Math.Min(1.0, Math.Max(-1.0, ratio.Real));
+                double move = Math.Min(1.0, Math.Max(-1.0, ratio.real));
 
                 //
                 // Apply our confidence multiplier.
@@ -263,7 +264,7 @@ namespace System.Threading
                 // are enhanced.  This allows us to move quickly if we're far away from the target, but more slowly
                 // if we're getting close, giving us rapid ramp-up without wild oscillations around the target.
                 // 
-                double gain = _maxChangePerSecond * sampleDurationSeconds;
+                double gain = _maxChangePerSecond * sampleDuration;
                 move = Math.Pow(Math.Abs(move), _gainExponent) * (move >= 0.0 ? 1 : -1) * gain;
                 move = Math.Min(move, _maxChangePerSample);
 
@@ -310,7 +311,7 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
                 
-                // TODO: Event: Worker Thread Adjustment stats
+                // Worker Thread Adjustment stats event
 
 
                 //
@@ -328,30 +329,30 @@ namespace System.Threading
                 // we'll simply stay at minThreads much longer, and only occasionally try a higher value.
                 //
                 int newSampleInterval;
-                if (ratio.Real < 0.0 && newThreadCount == minThreads)
-                    newSampleInterval = (int)(0.5 + _currentSampleInterval * (10.0 * Math.Max(-ratio.Real, 1.0)));
+                if (ratio.real < 0.0 && newThreadCount == minThreads)
+                    newSampleInterval = (int)(0.5 + _currentSampleInterval * (10.0 * Math.Max(-ratio.real, 1.0)));
                 else
                     newSampleInterval = _currentSampleInterval;
 
                 return (newThreadCount, newSampleInterval);
             }
 
-            private void ChangeThreadCount(int newThreadCount, StateOrTransition state)
+            private void ChangeThreadCount(int newThreadCount, State state)
             {
                 _lastThreadCount = newThreadCount;
-                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh + 1);
+                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh);
                 double throughput = _secondsElapsedSinceLastChange > 0 ? _completionsSinceLastChange / _secondsElapsedSinceLastChange : 0;
                 LogTransition(newThreadCount, throughput, state);
                 _secondsElapsedSinceLastChange = 0;
                 _completionsSinceLastChange = 0;
             }
 
-            private void LogTransition(int newThreadCount, double throughput, StateOrTransition state)
+            private void LogTransition(int newThreadCount, double throughput, State state)
             {
                 // TODO: Log transitions
             }
 
-            public void ForceChange(int newThreadCount, StateOrTransition state)
+            public void ForceChange(int newThreadCount, State state)
             {
                 if(_lastThreadCount != newThreadCount)
                 {
@@ -360,28 +361,24 @@ namespace System.Threading
                 }
             }
 
-            private Complex GetWaveComponent(double[] samples, int numSamples, double period)
+            private static (double real, double imaginary) GetWaveComponent(double[] samples, int numSamples, double period)
             {
-                Debug.Assert(numSamples >= period); // can't measure a wave that doesn't fit
-                Debug.Assert(period >= 2); // can't measure above the Nyquist frequency
-                Debug.Assert(numSamples <= samples.Length); // can't measure more samples than we have
-
-                //
-                // Calculate the sinusoid with the given period.
-                // We're using the Goertzel algorithm for this.  See http://en.wikipedia.org/wiki/Goertzel_algorithm.
-                //
-
                 double w = 2 * Math.PI / period;
                 double cos = Math.Cos(w);
                 double coeff = 2 * cos;
                 double q0 = 0, q1 = 0, q2 = 0;
-                for(int i = 0; i < numSamples; ++i)
+                for(int i = 0; i < numSamples && i < samples.Length; ++i)
                 {
-                    q0 = coeff * q1 - q2 + samples[(_totalSamples - numSamples + i) % _samplesToMeasure];
+                    q0 = coeff * q1 - q2 + samples[i];
                     q2 = q1;
                     q1 = q0;
                 }
-                return new Complex(q1 - q2 * cos, q2 * Math.Sin(w)) / numSamples;
+                return ((q1 - q2 * cos) / samples.Length, (q2 * Math.Sin(w)) / samples.Length);
+            }
+
+            private static double Abs((double real, double imaginary) complex)
+            {
+                return Math.Sqrt(complex.real * complex.real + complex.imaginary * complex.imaginary);
             }
         }
     }

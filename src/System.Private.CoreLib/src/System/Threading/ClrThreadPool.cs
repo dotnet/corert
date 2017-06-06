@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -10,11 +9,9 @@ namespace System.Threading
         private const int CpuUtilizationLow = 80;
         private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
         
-        private static int s_minThreads; // TODO: Initialize
-        private static int s_maxThreads; // TODO: Initialize
+        private static int s_minThreads;
+        private static int s_maxThreads;
 
-        // TODO: SetMinThreads and SetMaxThreads need to be synchronized with a lock
-        // TODO: Compare with CoreCLR implementation and ensure this has the same guarantees.
         public static bool SetMinThreads(int threads)
         {
             if (threads < 0 || threads > s_maxThreads)
@@ -32,7 +29,7 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int threads)
         {
-            if (threads < s_minThreads || threads == 0)
+            if (threads < ThreadPoolGlobals.processorCount || threads < s_minThreads)
             {
                 return false;
             }
