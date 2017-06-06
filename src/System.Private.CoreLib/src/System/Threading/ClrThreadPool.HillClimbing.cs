@@ -386,7 +386,7 @@ namespace System.Threading
                     q2 = q1;
                     q1 = q0;
                 }
-                return ((q1 - q2 * cos) / samples.Length, (q2 * Math.Sin(w)) / samples.Length);
+                return ((q1 - q2 * cos) / numSamples, (q2 * Math.Sin(w)) / numSamples);
             }
 
             private static double Abs((double real, double imaginary) complex)
