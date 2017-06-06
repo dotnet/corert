@@ -50,7 +50,7 @@ namespace System.Threading
                         if (oldCounts.asLong == counts.asLong)
                         {
                             s_threadAdjustmentLock.Release();
-                            s_threadPoolHillClimber.ForceChange(newCounts.maxWorking, HillClimbing.State.ThreadTimedOut);
+                            HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.maxWorking, HillClimbing.StateOrTransition.ThreadTimedOut);
                             // Worker Thread stop event
                             return IntPtr.Zero;
                         }

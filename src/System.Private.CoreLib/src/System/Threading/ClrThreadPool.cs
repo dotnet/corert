@@ -152,7 +152,7 @@ namespace System.Threading
             {
                 ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_counts);
                 int newMax;
-                (newMax, s_threadAdjustmentInterval) = s_threadPoolHillClimber.Update(currentCounts.maxWorking, elapsed, numCompletions);
+                (newMax, s_threadAdjustmentInterval) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.maxWorking, elapsed, numCompletions);
 
                 while(newMax != currentCounts.maxWorking)
                 {
