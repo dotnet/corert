@@ -31,7 +31,7 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int threads)
         {
-            if (threads < ThreadPoolGlobals.processorCount || threads < s_minThreads)
+            if (threads < s_minThreads || threads == 0)
             {
                 return false;
             }
