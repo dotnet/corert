@@ -978,18 +978,22 @@ namespace Internal.IL
 
             if (entryStack != null)
             {
-                // TODO: Better error messages
                 if (entryStack.Length != _stackTop)
-                    throw new InvalidProgramException();
+                    VerificationError(VerifierError.PathStackDepth);
 
                 for (int i = 0; i < entryStack.Length; i++)
                 {
                     // TODO: Do we need to allow conversions?
                     if (entryStack[i].Kind != _stack[i].Kind)
-                        throw new InvalidProgramException();
-
-                    if (entryStack[i].Type != _stack[i].Type)
-                        throw new InvalidProgramException();
+                    {
+                        VerificationError(VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    }
+                    else if (entryStack[i].Type != _stack[i].Type)
+                    {
+                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
+                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
+                            VerificationError(VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    }
                 }
             }
             else
