@@ -26,7 +26,7 @@
             <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
             <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
-            <JitPackageVersion>2.1.0-preview1-25406-02</JitPackageVersion>
+            <JitPackageVersion>2.1.0-preview1-25406-04</JitPackageVersion>
             <JitNuPkgRid Condition="'$(OSGroup)'=='Windows_NT'">win-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(OSGroup)'=='Linux'">linux-x64</JitNuPkgRid>
