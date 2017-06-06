@@ -9,9 +9,11 @@ namespace System.Threading
         private const int CpuUtilizationLow = 80;
         private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
         
-        private static int s_minThreads;
-        private static int s_maxThreads;
+        private static int s_minThreads; // TODO: Initialize
+        private static int s_maxThreads; // TODO: Initialize
 
+        // TODO: SetMinThreads and SetMaxThreads need to be synchronized with a lock
+        // TODO: Compare with CoreCLR implementation and ensure this has the same guarantees.
         public static bool SetMinThreads(int threads)
         {
             if (threads < 0 || threads > s_maxThreads)

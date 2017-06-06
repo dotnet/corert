@@ -7,7 +7,7 @@ namespace System.Threading
     internal static partial class ClrThreadPool
     {
         // Config values pulled from CoreCLR
-        private static readonly HillClimbing s_threadPoolHillClimber = new HillClimbing(4, 20, 100, 8, 15, 300, 4, 20, 10, 200, 1, 200, 15);
+        private static readonly HillClimbing s_threadPoolHillClimber = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
 
         private class HillClimbing
         {
@@ -57,17 +57,17 @@ namespace System.Threading
             {
                 _wavePeriod = wavePeriod;
                 _maxThreadWaveMagnitude = maxWaveMagnitude;
-                _threadMagnitudeMultiplier = waveMagnitudeMultiplier / 100.0;
+                _threadMagnitudeMultiplier = waveMagnitudeMultiplier;
                 _samplesToMeasure = wavePeriod * waveHistorySize;
-                _targetThroughputRatio = targetThroughputRatio / 100.0;
-                _targetSignalToNoiseRatio = targetSignalToNoiseRatio / 100.0;
+                _targetThroughputRatio = targetThroughputRatio;
+                _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
                 _maxChangePerSecond = maxChangePerSecond;
                 _maxChangePerSample = maxChangePerSample;
                 _sampleIntervalLow = sampleIntervalLow;
                 _sampleIntervalHigh = sampleIntervalHigh;
-                _throughputErrorSmoothingFactor = errorSmoothingFactor / 100.0;
-                _gainExponent = gainExponent / 100.0;
-                _maxSampleError = maxSampleError / 100.0;
+                _throughputErrorSmoothingFactor = errorSmoothingFactor;
+                _gainExponent = gainExponent;
+                _maxSampleError = maxSampleError;
 
                 _samples = new double[_samplesToMeasure];
                 _threadCounts = new double[_samplesToMeasure];
