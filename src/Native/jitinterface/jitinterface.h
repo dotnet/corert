@@ -23,13 +23,13 @@ struct JitInterfaceCallbacks
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
     void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
+    void (__stdcall * expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
     bool (__stdcall * isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
     int (__stdcall * getUnmanagedCallConv)(void * thisHandle, CorInfoException** ppException, void* method);
     int (__stdcall * pInvokeMarshalingRequired)(void * thisHandle, CorInfoException** ppException, void* method, void* callSiteSig);
     int (__stdcall * satisfiesMethodConstraints)(void * thisHandle, CorInfoException** ppException, void* parent, void* method);
     int (__stdcall * isCompatibleDelegate)(void * thisHandle, CorInfoException** ppException, void* objCls, void* methodParentCls, void* method, void* delegateCls, int* pfIsOpenDelegate);
-    int (__stdcall * isDelegateCreationAllowed)(void * thisHandle, CorInfoException** ppException, void* delegateHnd, void* calleeHnd);
     int (__stdcall * isInstantiationOfVerifiedGeneric)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * initConstraintsForVerification)(void * thisHandle, CorInfoException** ppException, void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint);
     int (__stdcall * canSkipMethodVerification)(void * thisHandle, CorInfoException** ppException, void* ftnHandle);
@@ -123,7 +123,6 @@ struct JitInterfaceCallbacks
     unsigned int (__stdcall * getThreadTLSIndex)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
     const void* (__stdcall * getInlinedCallFrameVptr)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
     long* (__stdcall * getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
-    size_t* (__stdcall * getAddrModuleDomainID)(void * thisHandle, CorInfoException** ppException, void* module);
     void* (__stdcall * getHelperFtn)(void * thisHandle, CorInfoException** ppException, int ftnNum, void** ppIndirection);
     void (__stdcall * getFunctionEntryPoint)(void * thisHandle, CorInfoException** ppException, void* ftn, void* pResult, int accessFlags);
     void (__stdcall * getFunctionFixedEntryPoint)(void * thisHandle, CorInfoException** ppException, void* ftn, void* pResult);
@@ -301,6 +300,14 @@ public:
         return _ret;
     }
 
+    virtual void expandRawHandleIntrinsic(void* pResolvedToken, void* pResult)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->expandRawHandleIntrinsic(_thisHandle, &pException, pResolvedToken, pResult);
+        if (pException != nullptr)
+            throw pException;
+    }
+
     virtual int getIntrinsicID(void* method, bool* pMustExpand)
     {
         CorInfoException* pException = nullptr;
@@ -350,15 +357,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->isCompatibleDelegate(_thisHandle, &pException, objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual int isDelegateCreationAllowed(void* delegateHnd, void* calleeHnd)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->isDelegateCreationAllowed(_thisHandle, &pException, delegateHnd, calleeHnd);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -1153,15 +1151,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         long* _ret = _callbacks->getAddrOfCaptureThreadGlobal(_thisHandle, &pException, ppIndirection);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual size_t* getAddrModuleDomainID(void* module)
-    {
-        CorInfoException* pException = nullptr;
-        size_t* _ret = _callbacks->getAddrModuleDomainID(_thisHandle, &pException, module);
         if (pException != nullptr)
             throw pException;
         return _ret;

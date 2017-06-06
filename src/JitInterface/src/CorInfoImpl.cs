@@ -796,6 +796,8 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
         { throw new NotImplementedException("resolveVirtualMethod"); }
+        private CORINFO_METHOD_STRUCT_* expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
         private SimdHelper _simdHelper;
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
@@ -856,12 +858,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
-
-        private bool isDelegateCreationAllowed(CORINFO_CLASS_STRUCT_* delegateHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
-        {
-            return true;
-        }
-
         private CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
         private void initConstraintsForVerification(CORINFO_METHOD_STRUCT_* method, ref bool pfHasCircularClassConstraints, ref bool pfHasCircularMethodConstraint)
@@ -2286,8 +2282,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
         { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
-        private void* getAddrModuleDomainID(CORINFO_MODULE_STRUCT_* module)
-        { throw new NotImplementedException("getAddrModuleDomainID"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
