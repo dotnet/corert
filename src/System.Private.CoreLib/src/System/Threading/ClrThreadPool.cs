@@ -6,7 +6,6 @@ namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
-
         [StructLayout(LayoutKind.Explicit)]
         struct ThreadCounts
         {
@@ -17,7 +16,7 @@ namespace System.Threading
             [FieldOffset(4)]
             public short numWorking;
             [FieldOffset(0)]
-            public long asLong;
+            private long asLong;
 
             public static ThreadCounts VolatileReadCounts(ref ThreadCounts counts)
             {
@@ -40,6 +39,20 @@ namespace System.Threading
                     ValidateCounts(newCounts);
                 }
                 return result;
+            }
+
+            public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs.asLong == rhs.asLong;
+
+            public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs.asLong != rhs.asLong;
+
+            public override bool Equals(object obj)
+            {
+                return obj is ThreadCounts counts && this.asLong == counts.asLong;
+            }
+
+            public override int GetHashCode()
+            {
+                return (int)(asLong >> 8) ^ maxWorking;
             }
 
             private static void ValidateCounts(ThreadCounts counts)
@@ -89,7 +102,7 @@ namespace System.Threading
                     newCounts.maxWorking = (short)s_minThreads;
 
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-                    if (oldCounts.asLong == counts.asLong)
+                    if (oldCounts == counts)
                     {
                         counts = newCounts;
 
@@ -130,7 +143,7 @@ namespace System.Threading
                     newCounts.maxWorking = (short)s_maxThreads;
 
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-                    if (oldCounts.asLong == counts.asLong)
+                    if (oldCounts == counts)
                     {
                         counts = newCounts;
                     }
@@ -177,7 +190,7 @@ namespace System.Threading
 
                 ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
 
-                if(oldCounts.asLong == counts.asLong)
+                if(oldCounts == counts)
                 {
                     return false;
                 }
@@ -208,7 +221,7 @@ namespace System.Threading
                     newCounts.maxWorking = (short)newMax;
 
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, currentCounts);
-                    if (oldCounts.asLong == currentCounts.asLong)
+                    if (oldCounts == currentCounts)
                     {
                         if(newMax > oldCounts.maxWorking)
                         {

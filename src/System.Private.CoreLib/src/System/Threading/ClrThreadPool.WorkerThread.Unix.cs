@@ -12,16 +12,15 @@ namespace System.Threading
             internal static WaitSubsystem.WaitableObject s_semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, int.MaxValue);
 
             private const int TimeoutMs = 20 * 1000;
-
-
+            
             private static IntPtr WorkerThreadStart(IntPtr context)
             {
                 RuntimeThread.InitializeThreadPoolThread();
-                // Worker Thread Start event
+                // TODO: Event: Worker Thread Start event
 
                 while (true)
                 {
-                    // Worker thread wait event
+                    // TODO: Event:  Worker thread wait event
                     while (WaitSubsystem.Wait(s_semaphore, TimeoutMs, false, true))
                     {
                         if(!ThreadPoolWorkQueue.Dispatch())
@@ -47,11 +46,11 @@ namespace System.Threading
                         newCounts.numActive--;
                         newCounts.maxWorking = (short)Math.Max(s_minThreads, Math.Min(newCounts.numActive, newCounts.maxWorking));
                         ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-                        if (oldCounts.asLong == counts.asLong)
+                        if (oldCounts == counts)
                         {
                             s_threadAdjustmentLock.Release();
                             HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.maxWorking, HillClimbing.StateOrTransition.ThreadTimedOut);
-                            // Worker Thread stop event
+                            // TODO: Event:  Worker Thread stop event
                             return IntPtr.Zero;
                         }
                         counts = oldCounts;
@@ -69,14 +68,14 @@ namespace System.Threading
                     newCounts.numWorking = Math.Max(counts.numWorking, Math.Min((short)(counts.numWorking + 1), counts.maxWorking));
                     newCounts.numActive = Math.Max(counts.numActive, newCounts.numWorking);
                     
-                    if(newCounts.asLong == counts.asLong)
+                    if(newCounts == counts)
                     {
                         return;
                     }
 
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
 
-                    if(oldCounts.asLong == counts.asLong)
+                    if(oldCounts == counts)
                     {
                         break;
                     }
@@ -117,7 +116,7 @@ namespace System.Threading
 
                             ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
 
-                            if (oldCounts.asLong == counts.asLong)
+                            if (oldCounts == counts)
                             {
                                 break;
                             }
