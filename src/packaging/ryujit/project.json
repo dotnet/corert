@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Jit": "2.1.0-preview1-25406-02"
+    "Microsoft.NETCore.Jit": "2.1.0-preview1-25406-04"
   },
   "frameworks": {
     "netcoreapp2.0": { }

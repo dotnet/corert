@@ -171,13 +171,13 @@ FUNCTIONS
     CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection        );
     CORINFO_METHOD_HANDLE resolveVirtualMethod(            CORINFO_METHOD_HANDLE       virtualMethod,          CORINFO_CLASS_HANDLE        implementingClass,            CORINFO_CONTEXT_HANDLE      ownerType);
+    void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , bool * pMustExpand);
     bool isInSIMDModule(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
     BOOL pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     BOOL satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
     BOOL isCompatibleDelegate(        CORINFO_CLASS_HANDLE        objCls,        CORINFO_CLASS_HANDLE        methodParentCls,        CORINFO_METHOD_HANDLE       method,        CORINFO_CLASS_HANDLE        delegateCls,        BOOL                        *pfIsOpenDelegate        );
-    BOOL isDelegateCreationAllowed(        CORINFO_CLASS_HANDLE        delegateHnd,        CORINFO_METHOD_HANDLE       calleeHnd        );
     CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(        CORINFO_METHOD_HANDLE   method        );
     void initConstraintsForVerification(        CORINFO_METHOD_HANDLE   method,        BOOL *pfHasCircularClassConstraints,        BOOL *pfHasCircularMethodConstraint        );
     CorInfoCanSkipVerificationResult canSkipMethodVerification(        CORINFO_METHOD_HANDLE       ftnHandle        );
@@ -271,7 +271,6 @@ FUNCTIONS
     DWORD getThreadTLSIndex(void                  **ppIndirection);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     LONG * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
-    SIZE_T*       getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module);
     void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult);
