@@ -1476,9 +1476,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
         {
-            // @TODO - if this is something we recognize, create a strongly-typed RCW
-            // Otherwise, create a weakly typed RCW
-            throw new PlatformNotSupportedException();
+            return Type.GetTypeFromCLSID(clsid);
         }
 
         //====================================================================

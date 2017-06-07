@@ -867,7 +867,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static unsafe IntPtr CreateInstanceFromApp(Guid clsid)
+        public static unsafe IntPtr CoCreateInstanceEx(Guid clsid, string server)
         {
 #if ENABLE_WINRT
             Interop.COM.MULTI_QI results;
@@ -879,7 +879,26 @@ namespace System.Runtime.InteropServices
                 results.pIID = new IntPtr(pIID);
                 results.pItf = IntPtr.Zero;
                 results.hr = 0;
-                int hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, 0x15 /* (CLSCTX_SERVER) */, IntPtr.Zero, 1, pResults);
+                int hr;
+                            
+                // if server name is specified, do remote server activation
+                if (!String.IsNullOrEmpty(server))
+                {
+                    Interop.COM.COSERVERINFO serverInfo;
+                    fixed (char* pName = server)
+                    {
+                        serverInfo.Name = new IntPtr(pName);
+                        IntPtr pServerInfo = new IntPtr(&serverInfo);
+
+                        hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, (int)Interop.COM.CLSCTX.CLSCTX_REMOTE_SERVER, pServerInfo, 1, pResults);
+                    }
+            
+                }
+                else
+                {
+                   hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, (int)Interop.COM.CLSCTX.CLSCTX_SERVER, IntPtr.Zero, 1, pResults);
+                }
+
                 if (hr < 0)
                 {
                     throw McgMarshal.GetExceptionForHR(hr, /*isWinRTScenario = */ false);
@@ -888,11 +907,17 @@ namespace System.Runtime.InteropServices
                 {
                     throw McgMarshal.GetExceptionForHR(results.hr, /* isWinRTScenario = */ false);
                 }
-                return results.pItf;
+            return results.pItf;
             }
 #else
-            throw new PlatformNotSupportedException("CreateInstanceFromApp");
+            throw new PlatformNotSupportedException("CoCreateInstanceEx");
 #endif
+
+        }
+
+        public static unsafe IntPtr CoCreateInstanceEx(Guid clsid)
+        {
+            return CoCreateInstanceEx(clsid, string.Empty);
         }
 
 #endregion
