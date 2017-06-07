@@ -84,5 +84,21 @@ namespace System.Collections.Generic
                 return 0;
             return obj.GetHashCode();
         }
+
+        // Equals method for the comparer itself.
+        public sealed override bool Equals(Object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+
+            // This needs to use GetType instead of typeof to avoid infinite recursion in the type loader
+            return obj.GetType().Equals(GetType());
+        }
+
+
+        // This needs to use GetType instead of typeof to avoid infinite recursion in the type loader
+        public sealed override int GetHashCode() => GetType().GetHashCode();
     }
 }

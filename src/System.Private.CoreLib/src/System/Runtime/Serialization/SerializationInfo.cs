@@ -143,7 +143,9 @@ namespace System.Runtime.Serialization
             _types = newTypes;
         }
 
-        internal void UpdateValue(string name, object value, Type type)
+        // This isn't a public API, but it gets invoked dynamically by 
+        // BinaryFormatter
+        public void UpdateValue(string name, object value, Type type)
         {
             Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
             Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");

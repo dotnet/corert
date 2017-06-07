@@ -85,8 +85,12 @@ namespace ILCompiler
                     else if (tse is MethodDesc)
                     {
                         MethodDesc method = (MethodDesc)tse;
-                        metadataModules.Add(((MetadataType)method.OwningType).Module);
-                        methodMappings.Add(method, metadataTokenValue);
+                        // Finalizers are called via a field on the EEType. They should not be reflectable.
+                        if (!method.IsFinalizer)
+                        {
+                            metadataModules.Add(((MetadataType)method.OwningType).Module);
+                            methodMappings.Add(method, metadataTokenValue);
+                        }
                     }
                     else if (tse is FieldDesc)
                     {
@@ -269,6 +273,9 @@ namespace ILCompiler
 
                 // If there is a possible canonical method, use that instead of a specific method (folds canonically equivalent methods away)
                 if (method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
+                    continue;
+
+                if (!IsReflectionInvokable(method))
                     continue;
 
                 int token;

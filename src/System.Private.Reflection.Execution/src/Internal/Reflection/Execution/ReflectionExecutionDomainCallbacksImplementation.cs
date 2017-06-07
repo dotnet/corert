@@ -96,32 +96,6 @@ namespace Internal.Reflection.Execution
             return _executionDomain.CreateMissingMetadataException(pertainant);
         }
 
-        public sealed override EnumInfo GetEnumInfoIfAvailable(Type enumType)
-        {
-            // Handle the weird case of an enum type nested under a generic type that makes the
-            // enum itself generic.
-            if (enumType.IsConstructedGenericType)
-            {
-                enumType = enumType.GetGenericTypeDefinition();
-            }
-
-            QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(enumType.TypeHandle, out qTypeDefinition))
-                return null;
-
-            if (qTypeDefinition.IsNativeFormatMetadataBased)
-            {
-                return new NativeFormatEnumInfoImplementation(enumType, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
-            }
-#if ECMA_METADATA_SUPPORT
-            if (qTypeDefinition.IsEcmaFormatMetadataBased)
-            {
-                return new EcmaFormatEnumInfoImplementation(enumType, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
-            }
-#endif
-            return null;
-        }
-
         // This is called from the ToString() helper of a RuntimeType that does not have full metadata.
         // This helper makes a "best effort" to give the caller something better than "EETypePtr nnnnnnnnn".
         public sealed override String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
