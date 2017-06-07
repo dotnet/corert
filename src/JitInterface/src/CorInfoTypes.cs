@@ -137,10 +137,6 @@ namespace Internal.JitInterface
         mdtBaseType = 0x72000000,
     }
 
-    public enum SIZE_T : ulong { } // Really should be IntPtr
-
-    public enum GSCookie : ulong { } // Really should be IntPtr
-
     public enum HRESULT { }
 
     public unsafe struct CORINFO_SIG_INFO
@@ -280,10 +276,13 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
-        public SIZE_T offset0;
-        public SIZE_T offset1;
-        public SIZE_T offset2;
-        public SIZE_T offset3;
+        public IntPtr offset0;
+        public IntPtr offset1;
+        public IntPtr offset2;
+        public IntPtr offset3;
+
+        public byte _indirectFirstOffset;
+        public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
     }
 
     // Result of calling embedGenericHandle

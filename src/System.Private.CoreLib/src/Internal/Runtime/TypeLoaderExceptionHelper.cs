@@ -86,7 +86,7 @@ namespace Internal.Runtime
                     return SR.Arg_BadImageFormatException;
                 default:
                     Debug.Assert(false);
-                    throw new NotImplementedException();
+                    return "";
             }
         }
     }

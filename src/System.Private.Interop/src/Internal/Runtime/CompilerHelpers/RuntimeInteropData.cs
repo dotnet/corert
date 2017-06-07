@@ -12,11 +12,19 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    internal class Callbacks : InteropCallbacks
+    internal partial class RuntimeInteropData : InteropCallbacks
     {
-        public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
+        private static RuntimeInteropData s_interopData;
+        public static RuntimeInteropData Instance
         {
-            return McgModuleManager.GetPInvokeDelegateData(delegateTypeHandle, out data);
+            get
+            {
+                if (s_interopData == null)
+                {
+                    s_interopData = new RuntimeInteropData();
+                }
+                return s_interopData;
+            }
         }
     }
 }

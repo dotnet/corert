@@ -11,7 +11,6 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    [Serializable]
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public struct RuntimeFieldHandle : ISerializable
     {
@@ -67,46 +66,9 @@ namespace System
             return !left.Equals(right);
         }
 
-        public RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            try
-            {
-                FieldInfo field = (FieldInfo)info.GetValue("FieldObj", typeof(FieldInfo));
-                if (field == null)
-                    throw new SerializationException(SR.Serialization_InsufficientState);
-
-                this = field.FieldHandle;
-            }
-            catch (Exception e) when (!(e is SerializationException))
-            {
-                throw new SerializationException(e.Message, e);
-            }
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            try
-            {
-                if (_value == IntPtr.Zero)
-                    throw new SerializationException(SR.Serialization_InvalidFieldState);
-
-                string fieldName;
-                RuntimeTypeHandle declaringType;
-                RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
-
-                FieldInfo field = FieldInfo.GetFieldFromHandle(this, declaringType);
-                info.AddValue("FieldObj", field, typeof(FieldInfo));
-            }
-            catch (Exception e) when (!(e is SerializationException))
-            {
-                throw new SerializationException(e.Message, e);
-            }
+            throw new PlatformNotSupportedException();
         }
     }
 }

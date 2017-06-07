@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class ThreadInterruptedException : SystemException
     {
         public ThreadInterruptedException()
@@ -40,6 +39,7 @@ namespace System.Threading
         protected ThreadInterruptedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

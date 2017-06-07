@@ -121,6 +121,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DelegateCreationInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\SimdHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MemoryHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
@@ -137,6 +138,7 @@
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.Intrinsics.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.cs" />
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\TypeString.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />

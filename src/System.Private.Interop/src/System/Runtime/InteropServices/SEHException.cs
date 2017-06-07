@@ -17,7 +17,6 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public class SEHException : ExternalException
     {
         public SEHException()
@@ -40,6 +39,7 @@ namespace System.Runtime.InteropServices
 
         protected SEHException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         // Exceptions can be resumable, meaning a filtered exception

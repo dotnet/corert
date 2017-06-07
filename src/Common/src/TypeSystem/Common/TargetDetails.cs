@@ -54,7 +54,7 @@ namespace Internal.TypeSystem
     /// Represents various details about the compilation target that affect
     /// layout, padding, allocations, or ABI.
     /// </summary>
-    public class TargetDetails
+    public partial class TargetDetails
     {
         /// <summary>
         /// Gets the target CPU architecture.
@@ -94,7 +94,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.X86:
                         return 4;
                     default:
-                        throw new NotImplementedException();
+                        throw new NotSupportedException();
                 }
             }
         }
@@ -214,7 +214,7 @@ namespace Internal.TypeSystem
                 case TargetArchitecture.X86:
                     return new LayoutInt(4);
                 default:
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
             }
         }
 

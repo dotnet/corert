@@ -26,8 +26,10 @@
             <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
             <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
-            <JitPackageVersion>2.1.0-preview1-25324-01</JitPackageVersion>
-            <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx.10.12-x64</JitNuPkgRid>
+            <JitPackageVersion>2.1.0-preview1-25406-04</JitPackageVersion>
+            <JitNuPkgRid Condition="'$(OSGroup)'=='Windows_NT'">win-x64</JitNuPkgRid>
+            <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</JitNuPkgRid>
+            <JitNuPkgRid Condition="'$(OSGroup)'=='Linux'">linux-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(JitNuPkgRid)'==''">$(NuPkgRid)</JitNuPkgRid>
 
             <MicrosoftNetCoreNativePackageVersion>2.0.0-beta-25021-03</MicrosoftNetCoreNativePackageVersion>

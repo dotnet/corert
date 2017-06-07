@@ -293,7 +293,7 @@ namespace Internal.TypeSystem
                     {
                         if (implMethod != null)
                         {
-                            throw new NotImplementedException("NYI: differentiating between overloads on instantiations when the instantiated signatures match.");
+                            throw NotImplemented.ActiveIssue("https://github.com/dotnet/corert/issues/190");
                         }
                         implMethod = candidate;
                     }
