@@ -110,18 +110,9 @@ LEAF_ENTRY RhNewString, _TEXT
         cmp         rdx, 07fffffffh
         ja          StringSizeOverflow
 
-        ; save element count
-        mov         r8, rdx
-
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).
-        movzx       eax, word ptr [rcx + OFFSETOF__EEType__m_usComponentSize]
-        mul         rdx
-        mov         edx, [rcx + OFFSETOF__EEType__m_uBaseSize]
-        add         rax, rdx
-        add         rax, 7
+        lea         rax, [rdx * 2 + (2 * 8 + 4 + 2) + 7]
         and         rax, -8
-
-        mov         rdx, r8
 
         ; rax == array size
         ; rcx == EEType
