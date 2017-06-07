@@ -6,46 +6,47 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
 
 using Internal.Reflection.Extensions.NonPortable;
 
 using System.Reflection.Metadata;
 
-namespace System.Reflection.Runtime
+namespace System.Reflection.Runtime.General.EcmaFormat
 {
-    public static class DefaultValueProcessing
+    internal static class DefaultValueProcessing
     {
-        public static bool GetDefaultValueIfAny(MetadataReader reader, ref FieldDefinition field, FieldInfo fieldInfo, out object defaultValue)
+        public static bool GetDefaultValueIfAny(MetadataReader reader, ref FieldDefinition field, FieldInfo fieldInfo, bool raw, out object defaultValue)
         {
             if (0 != (field.Attributes & FieldAttributes.HasDefault))
             {
-                defaultValue = ConstantValueAsObject(field.GetDefaultValue(), reader);
+                defaultValue = ConstantValueAsObject(field.GetDefaultValue(), reader, fieldInfo.FieldType, raw);
                 return true;
             }
             else
             {
-                return GetCustomAttributeDefaultValueIfAny(fieldInfo.CustomAttributes, out defaultValue);
+                return Helpers.GetCustomAttributeDefaultValueIfAny(fieldInfo.CustomAttributes, raw, out defaultValue);
             }
         }
 
-        public static bool GetDefaultValueIfAny(MetadataReader reader, ref Parameter parameter, ParameterInfo parameterInfo, out object defaultValue)
+        public static bool GetDefaultValueIfAny(MetadataReader reader, ref Parameter parameter, ParameterInfo parameterInfo, bool raw, out object defaultValue)
         {
             if (0 != (parameter.Attributes & ParameterAttributes.HasDefault))
             {
-                defaultValue = ConstantValueAsObject(parameter.GetDefaultValue(), reader);
+                defaultValue = ConstantValueAsObject(parameter.GetDefaultValue(), reader, parameterInfo.ParameterType, raw);
                 return true;
             }
             else
             {
-                return GetCustomAttributeDefaultValueIfAny(parameterInfo.CustomAttributes, out defaultValue);
+                return Helpers.GetCustomAttributeDefaultValueIfAny(parameterInfo.CustomAttributes, raw, out defaultValue);
             }
         }
 
-        public static bool GetDefaultValueIfAny(MetadataReader reader, ref PropertyDefinition property, PropertyInfo propertyInfo, out object defaultValue)
+        public static bool GetDefaultValueIfAny(MetadataReader reader, ref PropertyDefinition property, PropertyInfo propertyInfo, bool raw, out object defaultValue)
         {
             if (0 != (property.Attributes & PropertyAttributes.HasDefault))
             {
-                defaultValue = ConstantValueAsObject(property.GetDefaultValue(), reader);
+                defaultValue = ConstantValueAsObject(property.GetDefaultValue(), reader, propertyInfo.PropertyType, raw);
                 return true;
             }
             else
@@ -54,33 +55,18 @@ namespace System.Reflection.Runtime
                 defaultValue = null;
                 return false;
             }
-        }                
-
-        private static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, out object defaultValue)
-        {
-            // Legacy: If there are multiple default value attribute, the desktop picks one at random (and so do we...)
-            foreach (CustomAttributeData cad in customAttributes)
-            {
-                Type attributeType = cad.AttributeType;
-                if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
-                {
-                    CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
-                    defaultValue = customConstantAttribute.Value;
-                    return true;
-                }
-                if (attributeType.Equals(typeof(DecimalConstantAttribute)))
-                {
-                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(cad.Instantiate());
-                    defaultValue = decimalConstantAttribute.Value;
-                    return true;
-                }
-            }
-
-            defaultValue = null;
-            return false;
         }
 
-        public static object ConstantValueAsObject(ConstantHandle constantHandle, MetadataReader metadataReader)
+        private static object ConstantValueAsObject(ConstantHandle constantHandle, MetadataReader metadataReader, Type declaredType, bool raw)
+        {
+            object defaultValue = ConstantValueAsRawObject(constantHandle, metadataReader);
+            if ((!raw) && declaredType.IsEnum)
+                defaultValue = Enum.ToObject(declaredType, defaultValue);
+            return defaultValue;
+        }
+
+
+        private static object ConstantValueAsRawObject(ConstantHandle constantHandle, MetadataReader metadataReader)
         {
             if (constantHandle.IsNil)
                 throw new BadImageFormatException();

@@ -124,14 +124,6 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
-        public static object ToRawValue(this object defaultValueOrLiteral)
-        {
-            Enum e = defaultValueOrLiteral as Enum;
-            if (e != null)
-                return RuntimeAugments.GetEnumValue(e);
-            return defaultValueOrLiteral;
-        }
-
         public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
         {
             RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
@@ -231,6 +223,48 @@ namespace System.Reflection.Runtime.General
             object[] result = (object[])Array.CreateInstance(actualElementType, count);
             attributes.CopyTo(result, 0);
             return result;
+        }
+
+        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object defaultValue)
+        {
+            // Legacy: If there are multiple default value attribute, the desktop picks one at random (and so do we...)
+            foreach (CustomAttributeData cad in customAttributes)
+            {
+                Type attributeType = cad.AttributeType;
+                if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
+                {
+                    if (raw)
+                    {
+                        foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
+                        {
+                            if (namedArgument.MemberInfo.Name.Equals("Value"))
+                            {
+                                defaultValue = namedArgument.TypedValue.Value;
+                                return true;
+                            }
+                        }
+                        defaultValue = null;
+                        return false;
+                    }
+                    else
+                    {
+                        CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
+                        defaultValue = customConstantAttribute.Value;
+                        return true;
+                    }
+                }
+                if (attributeType.Equals(typeof(DecimalConstantAttribute)))
+                {
+                    // We should really do a non-instanting check if "raw == false" but given that we don't support
+                    // reflection-only loads, there isn't an observable difference.
+                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(cad.Instantiate());
+                    defaultValue = decimalConstantAttribute.Value;
+                    return true;
+                }
+            }
+
+            defaultValue = null;
+            return false;
         }
     }
 }

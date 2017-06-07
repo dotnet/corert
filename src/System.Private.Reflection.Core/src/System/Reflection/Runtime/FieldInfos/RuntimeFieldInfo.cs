@@ -169,6 +169,18 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
+        public sealed override object GetRawConstantValue()
+        {
+            if (!IsLiteral)
+                throw new InvalidOperationException();
+
+            object defaultValue;
+            if (!GetDefaultValueIfAvailable(raw: true, defaultValue: out defaultValue))
+                throw new BadImageFormatException(); // Field marked literal but has no default value.
+
+            return defaultValue;
+        }
+
         // Types that derive from RuntimeFieldInfo must implement the following public surface area members
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override FieldAttributes Attributes { get; }
@@ -181,7 +193,7 @@ namespace System.Reflection.Runtime.FieldInfos
         /// <summary>
         /// Get the default value if exists for a field by parsing metadata. Return false if there is no default value.
         /// </summary>
-        protected abstract bool TryGetDefaultValue(out object defaultValue);
+        protected abstract bool GetDefaultValueIfAvailable(bool raw, out object defaultValue);
 
         /// <summary>
         /// Return a FieldAccessor object for accessing the value of a non-literal field. May rely on metadata to create correct accessor.
@@ -201,7 +213,7 @@ namespace System.Reflection.Runtime.FieldInfos
                         // For desktop compat, we return the metadata literal as is and do not attempt to convert or validate against the Field type.
 
                         Object defaultValue;
-                        if (!TryGetDefaultValue(out defaultValue))
+                        if (!GetDefaultValueIfAvailable(raw: false, defaultValue: out defaultValue))
                         {
                             throw new BadImageFormatException(); // Field marked literal but has no default value.
                         }
