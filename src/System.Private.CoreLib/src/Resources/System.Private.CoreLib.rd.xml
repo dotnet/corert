@@ -93,6 +93,8 @@
             <TypeParameter Name="delegateType" Activate="Public"/>
           </Method>
         </Type>
+        <!-- Do not remove to avoid breaking missing metadata logging -->
+        <Type Name="MissingMetadataException" Browse="Public" />
       </Namespace>
       <Namespace Name="System.Diagnostics.Tracing">
         <Type Name="EventSourceAttribute" Dynamic="Required All">
