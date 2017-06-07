@@ -61,17 +61,18 @@ namespace System.Globalization
         // ie: en-US would have an en-US sort.  For haw-US (custom), then we serialize it as haw-US.
         // The interesting part is that since haw-US doesn't have its own sort, it has to point at another
         // locale, which is what SCOMPAREINFO does.
+        [OptionalField(VersionAdded = 2)]
+        private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
 
-        private String _name;  // The name used to construct this CompareInfo
-        
         [NonSerialized]
         private String _sortName; // The name that defines our behavior
 
-        private SortVersion _sortVersion;
+        [OptionalField(VersionAdded = 3)]
+        private SortVersion m_sortVersion; // Do not rename (binary serialization)
 
         internal CompareInfo(CultureInfo culture)
         {
-            _name = culture.m_name;
+            m_name = culture.m_name;
             InitSort(culture);
         }
 
@@ -201,7 +202,7 @@ namespace System.Globalization
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            _name = null;
+            m_name = null;
         }
 
         void IDeserializationCallback.OnDeserialization(object sender)
@@ -217,9 +218,9 @@ namespace System.Globalization
 
         private void OnDeserialized()
         {
-            if (_name != null)
+            if (m_name != null)
             {
-                InitSort(CultureInfo.GetCultureInfo(_name));
+                InitSort(CultureInfo.GetCultureInfo(m_name));
             }
         }
 
@@ -245,10 +246,10 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_name != null, "CompareInfo.Name Expected _name to be set");
-                if (_name == "zh-CHT" || _name == "zh-CHS")
+                Debug.Assert(m_name != null, "CompareInfo.Name Expected _name to be set");
+                if (m_name == "zh-CHT" || m_name == "zh-CHS")
                 {
-                    return _name;
+                    return m_name;
                 }
 
                 return _sortName;
@@ -1079,12 +1080,12 @@ namespace System.Globalization
         {
             get
             {
-                if (_sortVersion == null)
+                if (m_sortVersion == null)
                 {
-                    _sortVersion = GetSortVersion();
+                    m_sortVersion = GetSortVersion();
                 }
 
-                return _sortVersion;
+                return m_sortVersion;
             }
         }
 
