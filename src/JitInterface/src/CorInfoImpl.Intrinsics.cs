@@ -127,6 +127,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem, "get_Item", "System", "Span`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ReadOnlySpan_GetItem, "get_Item", "System", "ReadOnlySpan`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "DefaultConstructorOf", "System", "Activator");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
             Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 50);
@@ -202,6 +203,10 @@ namespace Internal.JitInterface
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
                     pMustExpand = true;
+                    break;
+
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle:
+                    pMustExpand = method.Name == "DefaultConstructorOf";
                     break;
 
                 default:

@@ -77,6 +77,21 @@ namespace Internal.IL
         }
 
         /// <summary>
+        /// Retrieves a nested type on <paramref name="type"/> that is well known to the compiler.
+        /// Throws an exception if the nested type doesn't exist.
+        /// </summary>
+        public static MetadataType GetKnownNestedType(this MetadataType type, string name)
+        {
+            MetadataType nestedType = type.GetNestedType(name);
+            if (nestedType == null)
+            {
+                throw new InvalidOperationException(String.Format("Expected type '{0}' not found on type '{1}'", name, type));
+            }
+
+            return nestedType;
+        }
+
+        /// <summary>
         /// Retrieves a namespace type in <paramref name= "module" /> that is well known to the compiler.
         /// Throws an exception if the type doesn't exist.
         /// </summary>

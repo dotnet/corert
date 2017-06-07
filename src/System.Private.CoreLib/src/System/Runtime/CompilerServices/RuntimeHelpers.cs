@@ -219,6 +219,13 @@ namespace System.Runtime.CompilerServices
             return !pEEType.IsValueType || pEEType.HasPointers;
         }
 
+        [Intrinsic]
+        public static bool IsReference<T>()
+        {
+            var pEEType = EETypePtr.EETypePtrOf<T>();
+            return !pEEType.IsValueType;
+        }
+
         // Constrained Execution Regions APIs are NOP's because we do not support CERs in .NET Core at all.
         public static void ProbeForSufficientStack() { }
         public static void PrepareConstrainedRegions() { }
