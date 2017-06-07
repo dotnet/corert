@@ -9,10 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" Link="TypeSystem\IL\HelperExtensions.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs" Link="TypeSystem\IL\Stubs\ILEmitter.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ILImporter.Verify.cs" />
     <Compile Include="ILImporter.StackValue.cs" />
+    <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="SimpleTypeSystemContext.cs" />
     <Compile Include="VerifierError.cs" />
   </ItemGroup>
