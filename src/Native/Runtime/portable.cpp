@@ -110,6 +110,13 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (EEType* pEEType))
     return pObject;
 }
 
+COOP_PINVOKE_HELPER(Array *, RhNewString, (EEType * pArrayEEType, int numElements))
+{
+    Array * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
 COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElements))
 {
     ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
