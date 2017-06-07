@@ -968,7 +968,7 @@ namespace Internal.IL
                     else
                         callViaSlot = true;
 
-                    if (!_nodeFactory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                    if (!_nodeFactory.VTable(method.OwningType).HasFixedSlots)
                         _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
                 }
             }

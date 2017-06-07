@@ -262,7 +262,7 @@ namespace ILCompiler
             {
                 Debug.Assert(method.IsVirtual);
 
-                if (!_factory.CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType))
+                if (!_factory.VTable(method.OwningType).HasFixedSlots)
                     _graph.AddRoot(_factory.VirtualMethodUse(method), reason);
 
                 if (method.IsAbstract)

@@ -29,6 +29,14 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the slots are assigned at the beginning of the compilation.
+        /// </summary>
+        public abstract bool HasFixedSlots
+        {
+            get;
+        }
+
         protected override string GetName(NodeFactory factory) => $"__vtable_{factory.NameMangler.GetMangledTypeName(_type).ToString()}";
 
         public override bool StaticDependenciesAreComputed => true;
@@ -97,6 +105,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override bool HasFixedSlots
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             if (_type.HasBaseType)
@@ -150,6 +166,14 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 return _slots;
+            }
+        }
+
+        public override bool HasFixedSlots
+        {
+            get
+            {
+                return false;
             }
         }
 

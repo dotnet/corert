@@ -327,9 +327,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
-                // We don't need to track virtual method uses for types that are producing full vtables.
+                // We don't need to track virtual method uses for types that have a vtable with a known layout.
                 // It's a waste of CPU time and memory.
-                Debug.Assert(!CompilationModuleGroup.ShouldProduceFullVTable(method.OwningType));
+                Debug.Assert(!VTable(method.OwningType).HasFixedSlots);
 
                 return new VirtualMethodUseNode(method);
             });
