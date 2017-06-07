@@ -74,6 +74,26 @@
         ret
     }
 
+    .method static public hidebysig void Casting.ArrayOfTToIReadOnlyCollectionOfT_Valid(int32[] test) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.Collections.Generic.IReadOnlyCollection`1<int32> V_0
+        )
+        ldarg.0
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Casting.ArrayOfTToIReadOnlyListOfT_Valid(int32[] test) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.Collections.Generic.IReadOnlyList`1<int32> V_0
+        )
+        ldarg.0
+        stloc.0
+        ret
+    }
+
     .method static public hidebysig void Casting.ArrayOfTToArray_Valid(int32[] test) cil managed
     {
         .locals init (

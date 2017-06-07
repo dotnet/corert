@@ -15,16 +15,32 @@ namespace ILVerify
         private MetadataType[] _genericRuntimeInterfaces;
         private ModuleDesc _systemModule;
 
+        private static readonly string[] s_genericRuntimeInterfacesNames = 
+        {
+            "IEnumerable`1",
+            "ICollection`1",
+            "IList`1",
+            "IReadOnlyList`1",
+            "IReadOnlyCollection`1",
+        };
+
         public SimpleArrayOfTRuntimeInterfacesAlgorithm(ModuleDesc systemModule)
         {
             _systemModule = systemModule;
-            _arrayRuntimeInterfaces = _systemModule.GetKnownType("System", "Array").RuntimeInterfaces;
-            _genericRuntimeInterfaces = new MetadataType[]
+
+            // initialize interfaces
+            _arrayRuntimeInterfaces = _systemModule.GetType("System", "Array")?.RuntimeInterfaces 
+                ?? Array.Empty<DefType>();
+
+            _genericRuntimeInterfaces = new MetadataType[s_genericRuntimeInterfacesNames.Length];
+            int count = 0;
+            for (int i = 0; i < s_genericRuntimeInterfacesNames.Length; ++i)
             {
-                _systemModule.GetKnownType("System.Collections.Generic", "IEnumerable`1"),
-                _systemModule.GetKnownType("System.Collections.Generic", "ICollection`1"),
-                _systemModule.GetKnownType("System.Collections.Generic", "IList`1")
+                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic", s_genericRuntimeInterfacesNames[i], false);
+                if (runtimeInterface != null)
+                    _genericRuntimeInterfaces[count++] = runtimeInterface;
             };
+            Array.Resize(ref _genericRuntimeInterfaces, count);
         }
 
         public override DefType[] ComputeRuntimeInterfaces(TypeDesc type)
