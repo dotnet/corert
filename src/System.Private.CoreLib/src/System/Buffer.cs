@@ -36,7 +36,8 @@ namespace System
                 throw new ArgumentNullException(nameof(dst));
 
             // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
-            if (src.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<byte[]>()))
+            // We only need an unreliable comparison since the slow path can handle the byte[] case too.
+            if (src.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
             {
                 uSrcLen = (nuint)src.Length;
             }
@@ -50,7 +51,9 @@ namespace System
 
             if (src != dst)
             {
-                if (dst.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<byte[]>()))
+                // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
+                // We only need an unreliable comparison since the slow path can handle the byte[] case too.
+                if (dst.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
                 {
                     uDstLen = (nuint)dst.Length;
                 }
