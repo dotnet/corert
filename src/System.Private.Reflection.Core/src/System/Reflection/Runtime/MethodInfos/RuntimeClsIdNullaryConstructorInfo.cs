@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -58,7 +59,22 @@ namespace System.Reflection.Runtime.MethodInfos
 
             Guid clsid = _declaringType.GUID;
             string server = _declaringType.Server;
-            throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/1764 - Make the call out to Interop to create an RCW from the supplied CLSID and server.
+            IntPtr pItf = IntPtr.Zero;
+            try
+            {
+                pItf = McgMarshal.CoCreateInstanceEx(clsid, server);
+
+                // CoCreateInstanceEx will throw exception if it fails to 
+                // create an instance.
+                Debug.Assert(pItf != IntPtr.Zero);
+
+                return Marshal.GetObjectForIUnknown(pItf);
+            }
+            finally
+            {
+                if (pItf != IntPtr.Zero)
+                    Marshal.Release(pItf);
+            }
         }
 
         public sealed override MethodBase MetadataDefinitionMethod { get { throw new NotSupportedException(); } }
