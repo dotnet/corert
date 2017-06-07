@@ -37,7 +37,9 @@ namespace ILCompiler
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             InteropStateManager = interopStateManager;
-            _interopModule = typeSystemContext.GetModuleForSimpleName(_interopModuleName);
+
+            // Note: interopModule might be null if we're building with a class library that doesn't support rich interop
+            _interopModule = typeSystemContext.GetModuleForSimpleName(_interopModuleName, false);
         }
     
         internal MethodDesc GetOpenStaticDelegateMarshallingStub(TypeDesc delegateType)
