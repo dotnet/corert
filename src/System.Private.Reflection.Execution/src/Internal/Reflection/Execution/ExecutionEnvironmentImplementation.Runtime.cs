@@ -72,27 +72,6 @@ namespace Internal.Reflection.Execution
         }
 
         //==============================================================================================
-        // Default Value support.
-        //==============================================================================================
-        public sealed override bool GetDefaultValueIfAny(MetadataReader reader, ParameterHandle parameterHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue)
-        {
-            Parameter parameter = parameterHandle.GetParameter(reader);
-            return DefaultValueParser.GetDefaultValueIfAny(DefaultValueParser.MemberType.Parameter, reader, parameter.DefaultValue, declaredType, customAttributes, out defaultValue);
-        }
-
-        public sealed override bool GetDefaultValueIfAny(MetadataReader reader, FieldHandle fieldHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue)
-        {
-            Field field = fieldHandle.GetField(reader);
-            return DefaultValueParser.GetDefaultValueIfAny(DefaultValueParser.MemberType.Field, reader, field.DefaultValue, declaredType, customAttributes, out defaultValue);
-        }
-
-        public sealed override bool GetDefaultValueIfAny(MetadataReader reader, PropertyHandle propertyHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue)
-        {
-            Property property = propertyHandle.GetProperty(reader);
-            return DefaultValueParser.GetDefaultValueIfAny(DefaultValueParser.MemberType.Property, reader, property.DefaultValue, declaredType, customAttributes, out defaultValue);
-        }
-
-        //==============================================================================================
         // Pseudo Custom Attributes
         //==============================================================================================
         public sealed override IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle)

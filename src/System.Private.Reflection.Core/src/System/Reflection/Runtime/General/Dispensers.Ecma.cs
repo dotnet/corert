@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
     //-----------------------------------------------------------------------------------------------------------
     // ParameterInfos for MethodBase objects with Parameter metadata.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class EcmaFormatMethodParameterInfo : RuntimeMethodParameterInfo
+    internal sealed partial class EcmaFormatMethodParameterInfo
     {
         internal static EcmaFormatMethodParameterInfo GetEcmaFormatMethodParameterInfo(MethodBase member, MethodDefinitionHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
