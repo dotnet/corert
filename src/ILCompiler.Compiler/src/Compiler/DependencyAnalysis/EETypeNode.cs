@@ -450,7 +450,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.
-            if (relocsOnly && !factory.CompilationModuleGroup.ShouldProduceFullVTable(declType))
+            if (relocsOnly && !factory.VTable(declType).HasFixedSlots)
                 return;
 
             // Actual vtable slots follow

@@ -362,7 +362,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
-            if (factory.CompilationModuleGroup.ShouldProduceFullVTable(canonMethod.OwningType))
+            if (factory.VTable(canonMethod.OwningType).HasFixedSlots)
                 return Array.Empty<DependencyNodeCore<NodeFactory>>();
 
             return new DependencyNodeCore<NodeFactory>[] {

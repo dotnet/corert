@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
 
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.CompilationModuleGroup.ShouldProduceFullVTable(_type))
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(_type).HasFixedSlots)
             {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
@@ -197,7 +197,7 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type.GetClosestDefType();
 
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(defType))
+            if (!factory.VTable(defType).HasFixedSlots)
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {

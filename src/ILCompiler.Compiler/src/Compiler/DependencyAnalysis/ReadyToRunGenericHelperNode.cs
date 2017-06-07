@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (createInfo.NeedsVirtualMethodUseTracking)
                         {
                             MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTargetMethod.OwningType))
+                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasFixedSlots)
                             {
                                 result.Add(
                                     new DependencyListEntry(
@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
                         MethodDesc instantiatedTarget = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                        if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTarget.OwningType))
+                        if (!factory.VTable(instantiatedTarget.OwningType).HasFixedSlots)
                         {
                             result.Add(
                                 new DependencyListEntry(
