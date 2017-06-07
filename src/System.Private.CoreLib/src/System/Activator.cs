@@ -35,12 +35,15 @@ namespace System
 
             EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
 
-            // ProjectN:936613 - Early exit for variable sized types (strings, arrays, etc.) as we cannot call
-            // CreateInstanceIntrinsic on them since the intrinsic will attempt to allocate an instance of these types
-            // and that is verboten (it results in silent heap corruption!).
-            if (eetype.ComponentSize != 0)
+            if (!RuntimeHelpers.IsReference<T>())
+            {
+                // Early out for valuetypes since we don't support default constructors anyway.
+                // This lets codegens that expand IsReference<T> optimize away the rest of this code.
+            }
+            else if (eetype.ComponentSize != 0)
             {
                 // ComponentSize > 0 indicates an array-like type (e.g. string, array, etc).
+                // Allocating this using the normal allocator would result in silent heap corruption.
                 missingDefaultConstructor = true;
             }
             else if (eetype.IsInterface)
@@ -58,17 +61,14 @@ namespace System
                     t = CreateInstanceIntrinsic<T>();
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 #else
-                    if (RuntimeHelpers.IsReference<T>())
-                    {
-                        t = (T)(RuntimeImports.RhNewObject(eetype));
+                    t = (T)(RuntimeImports.RhNewObject(eetype));
 
-                        // Run the default constructor. If the default constructor was missing, codegen
-                        // will expand DefaultConstructorOf to ClassWithMissingConstructor::.ctor
-                        // and we detect that later.
-                        IntPtr defaultConstructor = DefaultConstructorOf<T>();
-                        RawCalliHelper.Call(defaultConstructor, t);
-                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                    }
+                    // Run the default constructor. If the default constructor was missing, codegen
+                    // will expand DefaultConstructorOf to ClassWithMissingConstructor::.ctor
+                    // and we detect that later.
+                    IntPtr defaultConstructor = DefaultConstructorOf<T>();
+                    RawCalliHelper.Call(defaultConstructor, t);
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 #endif
                 }
                 catch (Exception e)
