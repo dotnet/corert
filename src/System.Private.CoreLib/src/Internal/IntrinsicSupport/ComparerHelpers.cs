@@ -12,6 +12,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Internal.IntrinsicSupport;
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
@@ -116,7 +117,7 @@ namespace Internal.IntrinsicSupport
 
         // This routine emulates System.Collection.Comparer.Default.Compare(), which lives in the System.Collections.NonGenerics contract.
         // To avoid adding a reference to that contract just for this hack, we'll replicate the implementation here.
-        private static int CompareObjects(object x, object y)
+        internal static int CompareObjects(object x, object y)
         {
             if (x == y)
                 return 0;
@@ -145,56 +146,77 @@ namespace Internal.IntrinsicSupport
 
             throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
+    }
+}
 
-        //-----------------------------------------------------------------------
-        // Implementations of EqualityComparer<T> for the various possible scenarios
-        //-----------------------------------------------------------------------
-
-        private sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
+namespace System.Collections.Generic
+{ 
+    //-----------------------------------------------------------------------
+    // Implementations of EqualityComparer<T> for the various possible scenarios
+    // Because these are serializable, they must not be renamed
+    //-----------------------------------------------------------------------
+    [Serializable]
+    internal sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
+    {
+        public sealed override int Compare(T x, T y)
         {
-            public sealed override int Compare(T x, T y)
+            if (x != null)
             {
-                if (x != null)
-                {
-                    if (y != null)
-                        return x.CompareTo(y);
-
-                    return 1;
-                }
-
                 if (y != null)
-                    return -1;
+                    return x.CompareTo(y);
 
-                return 0;
+                return 1;
             }
+
+            if (y != null)
+                return -1;
+
+            return 0;
         }
 
-        private sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
+        // Equals method for the comparer itself. 
+        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+
+        public sealed override int GetHashCode() => GetType().GetHashCode();
+    }
+
+    [Serializable]
+    internal sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
+    {
+        public sealed override int Compare(Nullable<T> x, Nullable<T> y)
         {
-            public sealed override int Compare(Nullable<T> x, Nullable<T> y)
+            if (x.HasValue)
             {
-                if (x.HasValue)
-                {
-                    if (y.HasValue)
-                        return x.Value.CompareTo(y.Value);
-
-                    return 1;
-                }
-
                 if (y.HasValue)
-                    return -1;
+                    return x.Value.CompareTo(y.Value);
 
-                return 0;
+                return 1;
             }
+
+            if (y.HasValue)
+                return -1;
+
+            return 0;
         }
 
-        private sealed class ObjectComparer<T> : Comparer<T>
+        // Equals method for the comparer itself. 
+        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+
+        public sealed override int GetHashCode() => GetType().GetHashCode();
+    }
+
+    [Serializable]
+    internal sealed class ObjectComparer<T> : Comparer<T>
+    {
+        public sealed override int Compare(T x, T y)
         {
-            public sealed override int Compare(T x, T y)
-            {
-                return ComparerHelpers.CompareObjects(x, y);
-            }
+            return ComparerHelpers.CompareObjects(x, y);
         }
+
+        // Equals method for the comparer itself. 
+        public sealed override bool Equals(Object obj) => obj != null && GetType() == obj.GetType();
+
+        public sealed override int GetHashCode() => GetType().GetHashCode();
     }
 }
 
