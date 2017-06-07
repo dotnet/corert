@@ -36,25 +36,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\VT\callconv\_il_dbgvtret\_il_dbgvtret.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\VT\callconv\_il_relvtret\_il_relvtret.*" />
     
-    <!-- CreateInstance<T> -->
-    <!-- https://github.com/dotnet/corert/issues/368 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\CheckedCtor\Generic_Test_CSharp_Base_6\Generic_Test_CSharp_Base_6.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\CheckedCtor\Generic_Test_CSharp_Peer_6\Generic_Test_CSharp_Peer_6.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class1_cs_d\class1_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class1_cs_do\class1_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class1_cs_r\class1_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class1_cs_ro\class1_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_cs_d\class2_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_cs_do\class2_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_cs_r\class2_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class2_cs_ro\class2_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_d\vt4_cs_d.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_do\vt4_cs_do.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_r\vt4_cs_r.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_ro\vt4_cs_ro.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\regressions\341477\Test\Test.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" />
-
     <!-- System.Reflection.Emit.Lightweight -->
     <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\dynamic_methods\bug_445388\bug_445388.*" />

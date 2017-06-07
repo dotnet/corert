@@ -55,6 +55,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
                     return ((DelegateCreationInfo)target).GetLookupKind(factory);
+                case ReadyToRunHelperId.DefaultConstructor:
+                    return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
                 default:
                     throw new NotImplementedException();
             }

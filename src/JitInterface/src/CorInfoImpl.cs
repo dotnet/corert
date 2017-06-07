@@ -801,8 +801,6 @@ namespace Internal.JitInterface
         {
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            
-            Debug.Assert(method.Name == "EETypePtrOf");
 
             if (method.IsRuntimeDeterminedExactMethod)
             {
@@ -816,15 +814,47 @@ namespace Internal.JitInterface
                 // to abort the inlining attempt anyway.
                 if (contextMethod == MethodBeingCompiled)
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
-                    pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
+                    switch (method.Name)
+                    {
+                        case "EETypePtrOf":
+                            pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                            pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
+                            break;
+                        case "DefaultConstructorOf":
+                            pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DefaultConstructor;
+                            pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
+                            break;
+                        default:
+                            Debug.Assert(false);
+                            break;
+                    }
+
                     pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                 }
             }
             else
             {
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
-                pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(method.Instantiation[0]));
+                
+                switch (method.Name)
+                {
+                    case "EETypePtrOf":
+                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(method.Instantiation[0]));
+                        break;
+                    case "DefaultConstructorOf":
+                        MethodDesc ctor = method.Instantiation[0].GetDefaultConstructor();
+                        if (ctor == null)
+                        {
+                            MetadataType activatorType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
+                            MetadataType classWithMissingCtor = activatorType.GetKnownNestedType("ClassWithMissingConstructor");
+                            ctor = classWithMissingCtor.GetParameterlessConstructor();
+                        }
+                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.CanonicalEntrypoint(ctor));
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
             }
         }
 

@@ -1203,8 +1203,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If there isn't a default constructor, use the fallback one.
                 MetadataType missingCtorType = factory.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
-                missingCtorType = missingCtorType.GetNestedType("ClassWithMissingConstructor");                
-                Debug.Assert(missingCtorType != null);
+                missingCtorType = missingCtorType.GetKnownNestedType("ClassWithMissingConstructor");                
                 defaultCtor = missingCtorType.GetParameterlessConstructor();
             }
             else
