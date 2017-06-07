@@ -32,6 +32,8 @@ namespace Internal.Runtime
         DynamicInvokeTemplateData                   = 23,
         BlobIdResourceIndex                         = 24,
         BlobIdResourceData                          = 25,
+        BlobIdStackTraceEmbeddedMetadata            = 26,
+        BlobIdStackTraceMethodRvaToTokenMapping     = 27,
 
         //Native layout blobs:
         NativeLayoutInfo                            = 30,

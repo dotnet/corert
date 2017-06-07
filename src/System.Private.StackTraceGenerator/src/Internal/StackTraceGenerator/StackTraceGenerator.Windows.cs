@@ -13,11 +13,27 @@ namespace Internal.StackTraceGenerator
 {
     public static class StackTraceGenerator
     {
+        /// <summary>
+        /// Check the AppCompat switch 'Diagnostics.DisableDiaStackTraceResolution'.
+        /// This is used for testing of metadata-based stack trace resolution.
+        /// </summary>
+        private static bool IsDiaStackTraceResolutionDisabled()
+        {
+            bool disableDia = false;
+            AppContext.TryGetSwitch("Diagnostics.DisableDiaStackTraceResolution", out disableDia);
+            return disableDia;
+        }
+
         //
         // Makes reasonable effort to construct one useful line of a stack trace. Returns null if it can't.
         //
         public static String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
+            if (IsDiaStackTraceResolutionDisabled())
+            {
+                return null;
+            }
+
             try
             {
                 int hr;
