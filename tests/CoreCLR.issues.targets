@@ -549,6 +549,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\InterfaceImplementation\HelloWorld\HelloWorld.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TSAmbiguities\CollapsedMethods\Override\HelloWorld\HelloWorld.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\Variance2\Variance2.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_568786\4_Misc\SealedTypes\SealedTypes.*" /> 
 
     <!-- Marshal.GetExceptionForHR not setting HResult -->
     <!-- https://github.com/dotnet/corert/issues/2256 -->
