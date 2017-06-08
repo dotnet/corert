@@ -52,7 +52,7 @@ namespace System
     // Decimal throws an OverflowException if the value is not within
     // the range of the Decimal type.
     [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Explicit)]
     public partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
@@ -99,13 +99,27 @@ namespace System
         // and finally bit 31 indicates the sign of the Decimal value, 0 meaning
         // positive and 1 meaning negative.
         //
-        // NOTE: Do not change the order in which these fields are declared. The
-        // native methods in this class rely on this particular order.
-        private uint uflags; // Do not rename (binary serialization)
-        private uint uhi; // Do not rename (binary serialization)
-        private uint ulo; // Do not rename (binary serialization)
-        private uint umid; // Do not rename (binary serialization)
+        // NOTE: Do not change the offsets of these fields. This structure maps to the OleAut DECIMAL structure
+        // and can be passed as such in P/Invokes.
+        [FieldOffset(0)]
+        private int flags; // Do not rename (binary serialization)
+        [FieldOffset(4)]
+        private int hi; // Do not rename (binary serialization)
+        [FieldOffset(8)]
+        private int lo; // Do not rename (binary serialization)
+        [FieldOffset(12)]
+        private int mid; // Do not rename (binary serialization)
 
+        // NOTE: This set of fields overlay the ones exposed to serialization (which have to be signed ints for serialization compat.)
+        // The code inside Decimal was ported from C++ and expect unsigned values.
+        [FieldOffset(0), NonSerialized]
+        private uint uflags;
+        [FieldOffset(4), NonSerialized]
+        private uint uhi;
+        [FieldOffset(8), NonSerialized]
+        private uint ulo;
+        [FieldOffset(12), NonSerialized]
+        private uint umid;
 
         // Constructs a zero Decimal.
         //public Decimal() {
