@@ -49,6 +49,16 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override object RawDefaultValue
+        {
+            get
+            {
+                // Returning "null" matches the desktop behavior, though this is inconsistent with the DBNull/Missing values
+                // returned by non-return ParameterInfo's without default values. 
+                return null;
+            }
+        }
+
         public sealed override bool HasDefaultValue
         {
             get

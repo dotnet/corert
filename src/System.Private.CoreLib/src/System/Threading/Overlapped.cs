@@ -241,9 +241,7 @@ namespace System.Threading
             }
 
             void* pOverlappedData = (byte*)nativeOverlappedPtr - s_nativeOverlappedOffset;
-            // https://devdiv.visualstudio.com/DevDiv/_workitems/edit/428968
-            //return Unsafe.Read<OverlappedData>(&pOverlappedData);
-            throw new NotImplementedException();
+            return Unsafe.Read<OverlappedData>(&pOverlappedData);
         }
 
         private static unsafe void CalculateNativeOverlappedOffset()

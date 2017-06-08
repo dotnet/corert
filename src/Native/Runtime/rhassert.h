@@ -26,8 +26,6 @@
 
 void Assert(const char * expr, const char * file, unsigned int line_num, const char * message);
 
-void NYI_Assert();
-
 #else
 
 #define ASSERT(expr)
@@ -38,7 +36,13 @@ void NYI_Assert();
 
 #define ASSERT_UNCONDITIONALLY(message)
 
-#endif 
+#endif
+
+#if defined(_DEBUG)
+
+void NYI_ASSERT();
+
+#endif
 
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \

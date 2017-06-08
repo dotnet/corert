@@ -362,7 +362,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
-            if (factory.CompilationModuleGroup.ShouldProduceFullVTable(canonMethod.OwningType))
+            if (factory.VTable(canonMethod.OwningType).HasFixedSlots)
                 return Array.Empty<DependencyNodeCore<NodeFactory>>();
 
             return new DependencyNodeCore<NodeFactory>[] {
@@ -1203,8 +1203,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If there isn't a default constructor, use the fallback one.
                 MetadataType missingCtorType = factory.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
-                missingCtorType = missingCtorType.GetNestedType("ClassWithMissingConstructor");                
-                Debug.Assert(missingCtorType != null);
+                missingCtorType = missingCtorType.GetKnownNestedType("ClassWithMissingConstructor");                
                 defaultCtor = missingCtorType.GetParameterlessConstructor();
             }
             else

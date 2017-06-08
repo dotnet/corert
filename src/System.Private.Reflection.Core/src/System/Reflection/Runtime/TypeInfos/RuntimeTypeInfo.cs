@@ -12,6 +12,8 @@ using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
 
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
+
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -605,6 +607,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return null;
             }
         }
+
+        internal EnumInfo EnumInfo => Cache.EnumInfo;
 
         internal abstract Type InternalDeclaringType { get; }
 

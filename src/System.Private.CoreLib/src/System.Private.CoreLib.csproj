@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -112,6 +112,7 @@
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
+    <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
@@ -646,6 +647,9 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />

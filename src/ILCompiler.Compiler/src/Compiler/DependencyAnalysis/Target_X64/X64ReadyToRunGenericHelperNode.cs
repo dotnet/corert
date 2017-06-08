@@ -211,6 +211,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                 case ReadyToRunHelperId.MethodEntry:
                 case ReadyToRunHelperId.InterfaceDispatchCell:
+                case ReadyToRunHelperId.DefaultConstructor:
                     {
                         EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();

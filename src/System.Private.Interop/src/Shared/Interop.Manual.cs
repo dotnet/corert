@@ -85,6 +85,24 @@ partial class Interop
             internal int hr;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct COSERVERINFO
+        {
+            internal int  Reserved1;
+            internal IntPtr Name;
+            internal IntPtr AuthInfo;
+            internal int Reserved2;
+        }
+
+        [Flags]
+        internal enum CLSCTX : int
+        {
+            CLSCTX_INPROC_SERVER = 0x1,
+            CLSCTX_LOCAL_SERVER = 0x4,
+            CLSCTX_REMOTE_SERVER = 0x10,
+            CLSCTX_SERVER = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         static unsafe internal string ConvertBSTRToString(IntPtr pBSTR)
         {

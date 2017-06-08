@@ -23,6 +23,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         public abstract override ParameterAttributes Attributes { get; }
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override Object DefaultValue { get; }
+        public abstract override object RawDefaultValue { get; }
 
         public sealed override bool Equals(Object obj)
         {

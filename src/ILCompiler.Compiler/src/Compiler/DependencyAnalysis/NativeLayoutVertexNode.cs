@@ -1331,7 +1331,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                    if (factory.CompilationModuleGroup.ShouldProduceFullVTable(declType))
+                    if (factory.VTable(declType).HasFixedSlots)
                     {
                         vtableEntriesToProcess = factory.VTable(declType).Slots;
                     }
@@ -1342,7 +1342,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                    if (factory.CompilationModuleGroup.ShouldProduceFullVTable(declType))
+                    if (factory.VTable(declType).HasFixedSlots)
                     {
                         vtableEntriesToProcess = Array.Empty<MethodDesc>();
                     }

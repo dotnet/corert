@@ -101,10 +101,10 @@ namespace System
         //
         // NOTE: Do not change the order in which these fields are declared. The
         // native methods in this class rely on this particular order.
-        private uint _flags;
-        private uint _hi;
-        private uint _lo;
-        private uint _mid;
+        private uint flags; // Do not rename (binary serialization)
+        private uint hi; // Do not rename (binary serialization)
+        private uint lo; // Do not rename (binary serialization)
+        private uint mid; // Do not rename (binary serialization)
 
 
         // Constructs a zero Decimal.
@@ -124,16 +124,16 @@ namespace System
             int value_copy = value;
             if (value_copy >= 0)
             {
-                _flags = 0;
+                flags = 0;
             }
             else
             {
-                _flags = SignMask;
+                flags = SignMask;
                 value_copy = -value_copy;
             }
-            _lo = (uint)value_copy;
-            _mid = 0;
-            _hi = 0;
+            lo = (uint)value_copy;
+            mid = 0;
+            hi = 0;
         }
 
         // Constructs a Decimal from an unsigned integer value.
@@ -141,10 +141,10 @@ namespace System
         [CLSCompliant(false)]
         public Decimal(uint value)
         {
-            _flags = 0;
-            _lo = value;
-            _mid = 0;
-            _hi = 0;
+            flags = 0;
+            lo = value;
+            mid = 0;
+            hi = 0;
         }
 
         // Constructs a Decimal from a long value.
@@ -156,16 +156,16 @@ namespace System
             long value_copy = value;
             if (value_copy >= 0)
             {
-                _flags = 0;
+                flags = 0;
             }
             else
             {
-                _flags = SignMask;
+                flags = SignMask;
                 value_copy = -value_copy;
             }
-            _lo = (uint)value_copy;
-            _mid = (uint)(value_copy >> 32);
-            _hi = 0;
+            lo = (uint)value_copy;
+            mid = (uint)(value_copy >> 32);
+            hi = 0;
         }
 
         // Constructs a Decimal from an unsigned long value.
@@ -173,10 +173,10 @@ namespace System
         [CLSCompliant(false)]
         public Decimal(ulong value)
         {
-            _flags = 0;
-            _lo = (uint)value;
-            _mid = (uint)(value >> 32);
-            _hi = 0;
+            flags = 0;
+            lo = (uint)value;
+            mid = (uint)(value >> 32);
+            hi = 0;
         }
 
         // Constructs a Decimal from a float value.
@@ -264,10 +264,10 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            _lo = 0;
-            _mid = 0;
-            _hi = 0;
-            _flags = 0;
+            lo = 0;
+            mid = 0;
+            hi = 0;
+            flags = 0;
             SetBits(bits);
         }
 
@@ -281,10 +281,10 @@ namespace System
                 uint f = (uint)bits[3];
                 if (IsValid(f))
                 {
-                    _lo = (uint)bits[0];
-                    _mid = (uint)bits[1];
-                    _hi = (uint)bits[2];
-                    _flags = f;
+                    lo = (uint)bits[0];
+                    mid = (uint)bits[1];
+                    hi = (uint)bits[2];
+                    flags = f;
                     return;
                 }
             }
@@ -298,12 +298,12 @@ namespace System
             if (scale > 28)
                 throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
             Contract.EndContractBlock();
-            _lo = (uint)lo;
-            _mid = (uint)mid;
-            _hi = (uint)hi;
-            _flags = ((uint)scale) << 16;
+            this.lo = (uint)lo;
+            this.mid = (uint)mid;
+            this.hi = (uint)hi;
+            flags = ((uint)scale) << 16;
             if (isNegative)
-                _flags |= SignMask;
+                flags |= SignMask;
         }
 
         void IDeserializationCallback.OnDeserialization(Object sender)
@@ -325,10 +325,10 @@ namespace System
         {
             if ((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16))
             {
-                _lo = (uint)lo;
-                _mid = (uint)mid;
-                _hi = (uint)hi;
-                _flags = (uint)flags;
+                this.lo = (uint)lo;
+                this.mid = (uint)mid;
+                this.hi = (uint)hi;
+                this.flags = (uint)flags;
                 return;
             }
             throw new ArgumentException(SR.Arg_DecBitCtor);
@@ -340,7 +340,7 @@ namespace System
         //
         internal static Decimal Abs(Decimal d)
         {
-            return new Decimal((int)d._lo, (int)d._mid, (int)d._hi, (int)(d._flags & ~SignMask));
+            return new Decimal((int)d.lo, (int)d.mid, (int)d.hi, (int)(d.flags & ~SignMask));
         }
 
 
@@ -558,7 +558,7 @@ namespace System
         //
         public static int[] GetBits(Decimal d)
         {
-            return new int[] { (int)d._lo, (int)d._mid, (int)d._hi, (int)d._flags };
+            return new int[] { (int)d.lo, (int)d.mid, (int)d.hi, (int)d.flags };
         }
 
         // Returns the larger of two Decimal values.
@@ -595,7 +595,7 @@ namespace System
         //
         public static Decimal Negate(Decimal d)
         {
-            return new Decimal((int)d._lo, (int)d._mid, (int)d._hi, (int)(d._flags ^ SignMask));
+            return new Decimal((int)d.lo, (int)d.mid, (int)d.hi, (int)(d.flags ^ SignMask));
         }
 
         // Rounds a Decimal value to a given number of decimal places. The value
@@ -731,9 +731,9 @@ namespace System
         public static int ToInt32(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d._hi == 0 && d._mid == 0)
+            if (d.hi == 0 && d.mid == 0)
             {
-                int i = (int)d._lo;
+                int i = (int)d.lo;
                 if (!d.Sign)
                 {
                     if (i >= 0) return i;
@@ -754,9 +754,9 @@ namespace System
         public static long ToInt64(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d._hi == 0)
+            if (d.hi == 0)
             {
-                long l = d._lo | (long)(int)d._mid << 32;
+                long l = d.lo | (long)(int)d.mid << 32;
                 if (!d.Sign)
                 {
                     if (l >= 0) return l;
@@ -798,10 +798,10 @@ namespace System
         public static uint ToUInt32(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d._hi == 0 && d._mid == 0)
+            if (d.hi == 0 && d.mid == 0)
             {
-                if (!d.Sign || d._lo == 0)
-                    return d._lo;
+                if (!d.Sign || d.lo == 0)
+                    return d.lo;
             }
             throw new OverflowException(SR.Overflow_UInt32);
         }
@@ -814,9 +814,9 @@ namespace System
         public static ulong ToUInt64(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d._hi == 0)
+            if (d.hi == 0)
             {
-                ulong l = (ulong)d._lo | ((ulong)d._mid << 32);
+                ulong l = (ulong)d.lo | ((ulong)d.mid << 32);
                 if (!d.Sign || l == 0)
                     return l;
             }

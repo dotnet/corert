@@ -1135,6 +1135,7 @@ namespace System.Diagnostics.Tracing
             /// managed object is pinned.
             /// </summary>
             public unsafe IntPtr DataPointer { get { return (IntPtr)(void*)m_Ptr; } set { m_Ptr = unchecked((ulong)(void*)value); } }
+
             /// <summary>
             /// Size of the argument referenced by DataPointer
             /// </summary>

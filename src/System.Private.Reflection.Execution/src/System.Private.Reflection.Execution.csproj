@@ -53,7 +53,6 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.Ecma.cs" />
-    <Compile Include="Internal\Reflection\Execution\EcmaFormatEnumInfoImplementation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
@@ -76,9 +75,6 @@
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.ManifestResources.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionExecutionDomainCallbacksImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\MetadataReaderExtensions.cs" />
-    <Compile Include="Internal\Reflection\Execution\EnumInfoImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\NativeFormatEnumInfoImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\DefaultValueParser.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\InstanceFieldAccessor.cs" />

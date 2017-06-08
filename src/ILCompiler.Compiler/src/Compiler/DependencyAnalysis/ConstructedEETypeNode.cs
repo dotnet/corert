@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Runtime;
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.IL;
 
@@ -53,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
 
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.CompilationModuleGroup.ShouldProduceFullVTable(_type))
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(_type).HasFixedSlots)
             {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
@@ -168,6 +166,8 @@ namespace ILCompiler.DependencyAnalysis
             // Ask the metadata manager if we have any dependencies due to reflectability.
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
 
+            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+
             return dependencyList;
         }
 
@@ -197,7 +197,7 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type.GetClosestDefType();
 
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(defType))
+            if (!factory.VTable(defType).HasFixedSlots)
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {

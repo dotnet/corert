@@ -4,4 +4,29 @@
 
 #include <unixasmmacros.inc>
 
+.syntax unified
+.thumb
+
 // TODO: Implement Arm support
+
+NESTED_ENTRY RhCallDescrWorker, _TEXT, NoHandler
+LOCAL_LABEL(ReturnFromCallDescrThunk):
+
+    // UNIXTODO: Implement this function
+	  // int 3
+#ifdef _DEBUG
+    bl C_FUNC(NYI_Assert)
+#endif
+NESTED_END RhCallDescrWorker, _TEXT
+
+//.text
+//.align      8
+//C_FUNC(PointerToReturnFromCallDescrThunk):
+//.quad       LOCAL_LABEL(ReturnFromCallDescrThunk)
+//.global     C_FUNC(PointerToReturnFromCallDescrThunk)
+
+LEAF_ENTRY PointerToReturnFromCallDescrThunk, _TEXT
+#ifdef _DEBUG
+    bl C_FUNC(NYI_Assert)
+#endif
+LEAF_END PointerToReturnFromCallDescrThunk, _TEXT

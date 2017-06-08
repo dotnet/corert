@@ -390,5 +390,7 @@ namespace System.Reflection.Runtime.General
         }
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssembly.GetLoadedAssemblies();
+
+        public sealed override EnumInfo GetEnumInfo(Type type) => type.CastToRuntimeTypeInfo().EnumInfo;
     }
 }

@@ -22,6 +22,24 @@ namespace Internal.DeveloperExperience
 
         public virtual String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
+            StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+            if (stackTraceCallbacks != null)
+            {
+                IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
+                if (methodStart != IntPtr.Zero)
+                {
+                    string methodName = stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
+                    if (methodName != null)
+                    {
+                        if (ip != methodStart)
+                        {
+                            methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
+                        }
+                        return methodName;
+                    }
+                }
+            }
+
             ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
             String moduleFullFileName = null;
 

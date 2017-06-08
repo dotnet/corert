@@ -21,7 +21,7 @@ namespace Internal.Runtime
         EmbeddedMetadata                            = 13,
         DefaultConstructorMap                       = 14,
         UnboxingAndInstantiatingStubMap             = 15,
-        InvokeInstantiations                        = 16, // unused
+        StructMarshallingStubMap                    = 16,
         DelegateMarshallingStubMap                  = 17,
         GenericVirtualMethodTable                   = 18,
         InterfaceGenericVirtualMethodTable          = 19,
@@ -32,6 +32,8 @@ namespace Internal.Runtime
         DynamicInvokeTemplateData                   = 23,
         BlobIdResourceIndex                         = 24,
         BlobIdResourceData                          = 25,
+        BlobIdStackTraceEmbeddedMetadata            = 26,
+        BlobIdStackTraceMethodRvaToTokenMapping     = 27,
 
         //Native layout blobs:
         NativeLayoutInfo                            = 30,

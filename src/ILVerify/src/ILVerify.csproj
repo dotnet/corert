@@ -13,6 +13,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="ILImporter.Verify.cs" />
     <Compile Include="ILImporter.StackValue.cs" />
+    <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="SimpleTypeSystemContext.cs" />
     <Compile Include="VerifierError.cs" />
   </ItemGroup>

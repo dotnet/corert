@@ -35,12 +35,15 @@ namespace System
 
             EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
 
-            // ProjectN:936613 - Early exit for variable sized types (strings, arrays, etc.) as we cannot call
-            // CreateInstanceIntrinsic on them since the intrinsic will attempt to allocate an instance of these types
-            // and that is verboten (it results in silent heap corruption!).
-            if (eetype.ComponentSize != 0)
+            if (!RuntimeHelpers.IsReference<T>())
+            {
+                // Early out for valuetypes since we don't support default constructors anyway.
+                // This lets codegens that expand IsReference<T> optimize away the rest of this code.
+            }
+            else if (eetype.ComponentSize != 0)
             {
                 // ComponentSize > 0 indicates an array-like type (e.g. string, array, etc).
+                // Allocating this using the normal allocator would result in silent heap corruption.
                 missingDefaultConstructor = true;
             }
             else if (eetype.IsInterface)
@@ -54,8 +57,19 @@ namespace System
 
                 try
                 {
+#if PROJECTN
                     t = CreateInstanceIntrinsic<T>();
-                    System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+#else
+                    t = (T)(RuntimeImports.RhNewObject(eetype));
+
+                    // Run the default constructor. If the default constructor was missing, codegen
+                    // will expand DefaultConstructorOf to ClassWithMissingConstructor::.ctor
+                    // and we detect that later.
+                    IntPtr defaultConstructor = DefaultConstructorOf<T>();
+                    RawCalliHelper.Call(defaultConstructor, t);
+                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+#endif
                 }
                 catch (Exception e)
                 {
@@ -81,27 +95,14 @@ namespace System
         }
 
         [Intrinsic]
-        [DebuggerGuidedStepThrough]
-        private static T CreateInstanceIntrinsic<T>()
+        private extern static T CreateInstanceIntrinsic<T>();
+
+        [Intrinsic]
+        private static IntPtr DefaultConstructorOf<T>()
         {
-            // Fallback implementation for codegens that don't support this intrinsic.
-            // This uses the type loader and doesn't have the kind of guarantees about it always working
-            // as the intrinsic expansion has. Also, it's slower.
-
-            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
-
-            // The default(T) check can be evaluated statically and will result in the body of this method
-            // becoming empty for valuetype Ts. We still need a dynamic IsNullable check to cover Nullables though.
-            // This will obviously need work once we start supporting default valuetype constructors.
-            if (default(T) == null && !eetype.IsNullable)
-            {
-                object o = null;
-                TypeLoaderExports.ActivatorCreateInstanceAny(ref o, eetype.RawValue);
-                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                return (T)o;
-            }
-
-            return default(T);
+            // Codegens must expand this intrinsic.
+            // We could implement a fallback with the type loader if we wanted to, but it will be slow and unreliable.
+            throw new NotSupportedException();
         }
 
         [ThreadStatic]

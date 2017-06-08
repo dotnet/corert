@@ -24,6 +24,8 @@ using System.Globalization;
 
 using RhCorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
+
 namespace Internal.Reflection.Augments
 {
     public static class ReflectionAugments
@@ -149,5 +151,7 @@ namespace Internal.Reflection.Augments
         public abstract void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset);
 
         public abstract Assembly[] GetLoadedAssemblies();
+
+        public abstract EnumInfo GetEnumInfo(Type type);
     }
 }

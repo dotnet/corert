@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -12,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Runtime.Augments;
-using Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -854,7 +853,7 @@ namespace System
             if (!runtimeTypeHandle.ToEETypePtr().IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            return s_enumInfoCache.GetOrAdd(new TypeUnificationKey(enumType));
+            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
         }
 
         //
@@ -1011,9 +1010,7 @@ namespace System
             }
 
             // Parse as string. Now (and only now) do we look for metadata information.
-            EnumInfo enumInfo = RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(enumType);
-            if (enumInfo == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType);
+            EnumInfo enumInfo = ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
             ulong v = 0;
 
             // Port note: The docs are silent on how multiple matches are resolved when doing case-insensitive parses.
@@ -1268,18 +1265,6 @@ namespace System
                 return String.Format("{0}", GetValue());
             }
         }
-
-
-        private sealed class EnumInfoUnifier : ConcurrentUnifierW<TypeUnificationKey, EnumInfo>
-        {
-            protected override EnumInfo Factory(TypeUnificationKey key)
-            {
-                return RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(key.Type);
-            }
-        }
-
-        private static EnumInfoUnifier s_enumInfoCache = new EnumInfoUnifier();
-
 
         #region IConvertible
         public TypeCode GetTypeCode()

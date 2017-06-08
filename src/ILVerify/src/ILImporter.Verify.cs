@@ -123,7 +123,7 @@ namespace Internal.IL
             _typeSystemContext = method.Context;
 
             if (!_methodSignature.IsStatic)
-                _thisType = method.OwningType;
+                _thisType = method.OwningType.InstantiateAsOpen();
 
             _methodIL = methodIL;
 
@@ -232,6 +232,20 @@ namespace Internal.IL
         void FatalCheck(bool cond, VerifierError error)
         {
             if (!Check(cond, error))
+                AbortMethodVerification();
+        }
+
+        // Check whether the condition is true. If not, terminate the verification of current method.
+        void FatalCheck(bool cond, VerifierError error, StackValue found)
+        {
+            if (!Check(cond, error, found))
+                AbortMethodVerification();
+        }
+
+        // Check whether the condition is true. If not, terminate the verification of current method.
+        void FatalCheck(bool cond, VerifierError error, StackValue found, StackValue expected)
+        {
+            if (!Check(cond, error, found, expected))
                 AbortMethodVerification();
         }
 
@@ -978,18 +992,19 @@ namespace Internal.IL
 
             if (entryStack != null)
             {
-                // TODO: Better error messages
-                if (entryStack.Length != _stackTop)
-                    throw new InvalidProgramException();
+                FatalCheck(entryStack.Length == _stackTop, VerifierError.PathStackDepth);
 
                 for (int i = 0; i < entryStack.Length; i++)
                 {
                     // TODO: Do we need to allow conversions?
-                    if (entryStack[i].Kind != _stack[i].Kind)
-                        throw new InvalidProgramException();
-
+                    FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    
                     if (entryStack[i].Type != _stack[i].Type)
-                        throw new InvalidProgramException();
+                    {
+                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
+                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
+                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    }
                 }
             }
             else
