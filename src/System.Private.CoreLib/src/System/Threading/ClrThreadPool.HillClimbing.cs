@@ -9,34 +9,8 @@ namespace System.Threading
     internal static partial class ClrThreadPool
     {
         
-        private class HillClimbing
+        private partial class HillClimbing
         {
-            private struct Complex
-            {
-                public Complex(double real, double imaginary)
-                {
-                    Real = real;
-                    Imaginary = imaginary;
-                }
-
-                public double Imaginary { get; }
-                public double Real { get; }
-
-                public static Complex operator*(double scalar, Complex complex) => new Complex(scalar * complex.Real, scalar * complex.Imaginary);
-
-                public static Complex operator/(Complex complex, double scalar) => new Complex(complex.Real / scalar, complex.Imaginary / scalar);
-
-                public static Complex operator-(Complex lhs, Complex rhs) => new Complex(lhs.Real - rhs.Real, lhs.Imaginary - rhs.Imaginary);
-
-                public static Complex operator/(Complex lhs, Complex rhs)
-                {
-                    double denom = rhs.Real * rhs.Real + rhs.Imaginary * rhs.Imaginary;
-                    return new Complex((lhs.Real * rhs.Real + lhs.Imaginary * rhs.Imaginary) / denom, (-lhs.Real * rhs.Imaginary + lhs.Imaginary * rhs.Real) / denom);
-                }
-
-                public static double Abs(Complex complex) => Math.Sqrt(complex.Real * complex.Real + complex.Imaginary * complex.Imaginary);
-            }
-
             // Config values pulled from CoreCLR
             // TODO: Move to runtime configuration variables.
             public static HillClimbing ThreadPoolHillClimber { get; } = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
@@ -221,10 +195,10 @@ namespace System.Threading
                         // frequency band we're really interested in) is the average of the adjacent bands.
                         //
                         throughputWaveComponent = GetWaveComponent(_samples, sampleCount, _wavePeriod) / averageThroughput;
-                        throughputErrorEstimate = Complex.Abs(GetWaveComponent(_samples, sampleCount, adjacentPeriod1) / averageThroughput);
+                        throughputErrorEstimate = (GetWaveComponent(_samples, sampleCount, adjacentPeriod1) / averageThroughput).Abs();
                         if (adjacentPeriod2 <= sampleCount)
                         {
-                            throughputErrorEstimate = Math.Max(throughputErrorEstimate, Complex.Abs(GetWaveComponent(_samples, sampleCount, adjacentPeriod2) / averageThroughput));
+                            throughputErrorEstimate = Math.Max(throughputErrorEstimate, (GetWaveComponent(_samples, sampleCount, adjacentPeriod2) / averageThroughput).Abs());
                         }
 
                         //
@@ -242,7 +216,7 @@ namespace System.Threading
                         else
                             _averageThroughputNoise = (_throughputErrorSmoothingFactor * throughputErrorEstimate) + ((1.0 - _throughputErrorSmoothingFactor) * _averageThroughputNoise);
 
-                        if (Complex.Abs(threadWaveComponent) > 0)
+                        if (threadWaveComponent.Abs() > 0)
                         {
                             //
                             // Adjust the throughput wave so it's centered around the target wave, and then calculate the adjusted throughput/thread ratio.
@@ -262,7 +236,7 @@ namespace System.Threading
                         //
                         double noiseForConfidence = Math.Max(_averageThroughputNoise, throughputErrorEstimate);
                         if (noiseForConfidence > 0)
-                            confidence = (Complex.Abs(threadWaveComponent) / noiseForConfidence) / _targetSignalToNoiseRatio;
+                            confidence = (threadWaveComponent.Abs() / noiseForConfidence) / _targetSignalToNoiseRatio;
                         else
                             confidence = 1.0; //there is no noise!
 
@@ -407,7 +381,7 @@ namespace System.Threading
                     q2 = q1;
                     q1 = q0;
                 }
-                return new Complex((q1 - q2 * cos) / numSamples, (q2 * Math.Sin(w)) / numSamples);
+                return new Complex(q1 - q2 * cos, q2 * Math.Sin(w)) / numSamples;
             }
         }
     }
