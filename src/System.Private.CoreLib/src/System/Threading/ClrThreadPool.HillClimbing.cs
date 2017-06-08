@@ -8,7 +8,7 @@ namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
-        
+        // The Hill Climbing algorithm is described at http://mattwarren.org/2017/04/13/The-CLR-Thread-Pool-Thread-Injection-Algorithm/
         private partial class HillClimbing
         {
             // Config values pulled from CoreCLR
