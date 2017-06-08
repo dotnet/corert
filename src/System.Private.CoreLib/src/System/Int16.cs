@@ -23,7 +23,7 @@ namespace System
     [Serializable]
     public struct Int16 : IComparable, IFormattable, IComparable<Int16>, IEquatable<Int16>, IConvertible
     {
-        private short _value;
+        private short m_value; // Do not rename (binary serialization)
 
         public const short MaxValue = (short)0x7FFF;
         public const short MinValue = unchecked((short)0x8000);
@@ -43,7 +43,7 @@ namespace System
 
             if (value is Int16)
             {
-                return _value - ((Int16)value)._value;
+                return m_value - ((Int16)value).m_value;
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt16);
@@ -51,7 +51,7 @@ namespace System
 
         public int CompareTo(Int16 value)
         {
-            return _value - value;
+            return m_value - value;
         }
 
         public override bool Equals(Object obj)
@@ -60,32 +60,32 @@ namespace System
             {
                 return false;
             }
-            return _value == ((Int16)obj)._value;
+            return m_value == ((Int16)obj).m_value;
         }
 
         [NonVersionable]
         public bool Equals(Int16 obj)
         {
-            return _value == obj;
+            return m_value == obj;
         }
 
         // Returns a HashCode for the Int16
         public override int GetHashCode()
         {
-            return ((int)((ushort)_value) | (((int)_value) << 16));
+            return ((int)((ushort)m_value) | (((int)m_value) << 16));
         }
 
 
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(_value, null, null);
+            return FormatProvider.FormatInt32(m_value, null, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(_value, null, provider);
+            return FormatProvider.FormatInt32(m_value, null, provider);
         }
 
         public String ToString(String format)
@@ -99,12 +99,12 @@ namespace System
             Contract.Ensures(Contract.Result<String>() != null);
 
 
-            if (_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
+            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
-                uint temp = (uint)(_value & 0x0000FFFF);
+                uint temp = (uint)(m_value & 0x0000FFFF);
                 return FormatProvider.FormatUInt32(temp, format, provider);
             }
-            return FormatProvider.FormatInt32(_value, format, provider);
+            return FormatProvider.FormatInt32(m_value, format, provider);
         }
 
         public static short Parse(String s)
@@ -198,67 +198,67 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            return Convert.ToBoolean(_value);
+            return Convert.ToBoolean(m_value);
         }
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            return Convert.ToChar(_value);
+            return Convert.ToChar(m_value);
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            return Convert.ToSByte(_value);
+            return Convert.ToSByte(m_value);
         }
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(_value);
+            return Convert.ToByte(m_value);
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            return _value;
+            return m_value;
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return Convert.ToUInt16(_value);
+            return Convert.ToUInt16(m_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            return Convert.ToInt32(_value);
+            return Convert.ToInt32(m_value);
         }
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return Convert.ToUInt32(_value);
+            return Convert.ToUInt32(m_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(_value);
+            return Convert.ToInt64(m_value);
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            return Convert.ToUInt64(_value);
+            return Convert.ToUInt64(m_value);
         }
 
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            return Convert.ToSingle(_value);
+            return Convert.ToSingle(m_value);
         }
 
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            return Convert.ToDouble(_value);
+            return Convert.ToDouble(m_value);
         }
 
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            return Convert.ToDecimal(_value);
+            return Convert.ToDecimal(m_value);
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
