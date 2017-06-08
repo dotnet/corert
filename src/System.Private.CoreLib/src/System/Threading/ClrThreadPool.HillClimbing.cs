@@ -380,7 +380,7 @@ namespace System.Threading
                     q2 = q1;
                     q1 = q0;
                 }
-                return new Complex((q1 - q2 * cos) / numSamples, (q2 * Math.Sin(w)) / numSamples);
+                return new Complex(q1 - q2 * cos, q2 * Math.Sin(w)) / numSamples;
             }
         }
     }
