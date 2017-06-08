@@ -35,7 +35,7 @@ namespace System.Threading
         public bool Unregister(WaitHandle waitObject)
         {
             UserUnregisterWaitHandle = waitObject;
-            WaitThread.QueueUnregisterWait(this);
+            ClrThreadPool.WaitThread.QueueUnregisterWait(this);
             return true;
         }
 
