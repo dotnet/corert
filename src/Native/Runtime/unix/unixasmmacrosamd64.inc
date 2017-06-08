@@ -224,12 +224,12 @@ C_FUNC(\Name):
 
 .macro EXPORT_POINTER_TO_ADDRESS Name
 
-AddressToExport\@:
+1:
 
         .data
         .align      8
 C_FUNC(\Name):
-        .quad       AddressToExport\@
+        .quad       1b
         .global     C_FUNC(\Name)
         .text
 
