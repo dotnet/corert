@@ -146,6 +146,7 @@
             <ILCompilerAnyFrameworkFiles Include="System.IO.FileSystem.Primitives" />
             <ILCompilerAnyFrameworkFiles Include="System.Linq" />
             <ILCompilerAnyFrameworkFiles Include="System.Net.Primitives" />
+            <ILCompilerAnyFrameworkFiles Include="System.Numerics.Vectors" />
             <ILCompilerAnyFrameworkFiles Include="System.ObjectModel" />
             <ILCompilerAnyFrameworkFiles Include="System.Private.Uri" />
             <ILCompilerAnyFrameworkFiles Include="System.Reflection" />
