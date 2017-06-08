@@ -278,7 +278,7 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
             }
 
-            if (type.IsArray || type.IsByRef || type.IsPointer)
+            if (type.HasElementType || type.IsGenericParameter)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
             }

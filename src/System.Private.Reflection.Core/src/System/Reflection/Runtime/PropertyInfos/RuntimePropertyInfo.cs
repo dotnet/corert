@@ -341,8 +341,12 @@ namespace System.Reflection.Runtime.PropertyInfos
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
-        public abstract override Object GetConstantValue();
         public abstract override int MetadataToken { get; }
+
+        public sealed override object GetConstantValue() => GetConstantValue(raw: false);
+        public sealed override object GetRawConstantValue() => GetConstantValue(raw: true);
+
+        protected abstract bool GetDefaultValueIfAny(bool raw, out object defaultValue);
 
         /// <summary>
         /// Return a qualified handle that can be used to get the type of the property.
@@ -374,6 +378,21 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         protected readonly RuntimeTypeInfo ContextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;
+
+        private object GetConstantValue(bool raw)
+        {
+#if ENABLE_REFLECTION_TRACE
+            if (ReflectionTrace.Enabled)
+                ReflectionTrace.PropertyInfo_GetConstantValue(this);
+#endif
+
+            object defaultValue;
+            if (!GetDefaultValueIfAny(raw, out defaultValue))
+            {
+                throw new InvalidOperationException(SR.Arg_EnumLitValueNotFound);
+            }
+            return defaultValue;
+        }
 
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;

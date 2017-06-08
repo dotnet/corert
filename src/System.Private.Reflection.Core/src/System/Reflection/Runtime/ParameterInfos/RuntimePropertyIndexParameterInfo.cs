@@ -46,6 +46,13 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override object RawDefaultValue
+        {
+            get
+            {
+                return _backingParameter.RawDefaultValue;
+            }
+        }
 
         public sealed override Type[] GetOptionalCustomModifiers()
         {

@@ -44,13 +44,6 @@ namespace Internal.Reflection.Core.Execution
         public abstract string GetLastResortString(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
-        // Default Value support.
-        //==============================================================================================
-        public abstract bool GetDefaultValueIfAny(MetadataReader reader, ParameterHandle parameterHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue);
-        public abstract bool GetDefaultValueIfAny(MetadataReader reader, FieldHandle fieldHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue);
-        public abstract bool GetDefaultValueIfAny(MetadataReader reader, PropertyHandle propertyHandle, Type declaredType, IEnumerable<CustomAttributeData> customAttributes, out Object defaultValue);
-
-        //==============================================================================================
         // Reflection Mapping Tables
         //==============================================================================================
         public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition);

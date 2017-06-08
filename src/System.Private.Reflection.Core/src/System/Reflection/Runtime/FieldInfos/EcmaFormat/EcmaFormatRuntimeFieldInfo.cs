@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.EcmaFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.CustomAttributes;
@@ -181,9 +182,9 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
 
         public sealed override Type[] GetRequiredCustomModifiers() { throw new NotImplementedException(); }
 
-        protected sealed override bool TryGetDefaultValue(out object defaultValue)
+        protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object defaultValue)
         {
-            return DefaultValueProcessing.GetDefaultValueIfAny(_reader, ref _field, this, out defaultValue);
+            return DefaultValueProcessing.GetDefaultValueIfAny(_reader, ref _field, this, raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()

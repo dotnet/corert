@@ -46,6 +46,11 @@ namespace Internal.Runtime.Augments
         /// </summary>
         private static DesktopSupportCallbacks s_desktopSupportCallbacks;
 
+        /// <summary>
+        /// Callbacks used for metadata-based stack trace resolution.
+        /// </summary>
+        private static StackTraceMetadataCallbacks s_stackTraceMetadataCallbacks;
+
         //==============================================================================================
         // One-time initialization.
         //==============================================================================================
@@ -71,6 +76,12 @@ namespace Internal.Runtime.Augments
         public static void InitializeDesktopSupport(DesktopSupportCallbacks callbacks)
         {
             s_desktopSupportCallbacks = callbacks;
+        }
+
+        [CLSCompliant(false)]
+        public static void InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks)
+        {
+            s_stackTraceMetadataCallbacks = callbacks;
         }
 
         //==============================================================================================
@@ -830,6 +841,14 @@ namespace Internal.Runtime.Augments
                 if (callbacks != null)
                     return callbacks;
                 throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+            }
+        }
+
+        internal static StackTraceMetadataCallbacks StackTraceCallbacksIfAvailable
+        {
+            get
+            {
+                return s_stackTraceMetadataCallbacks;
             }
         }
 

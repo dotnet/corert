@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
@@ -123,27 +124,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             return _propertyHandle.GetHashCode();
         }
 
-        public sealed override Object GetConstantValue()
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetConstantValue(this);
-#endif
-
-            Object defaultValue;
-            if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                _reader,
-                _propertyHandle,
-                this.PropertyType,
-                this.CustomAttributes,
-                out defaultValue))
-            {
-                throw new InvalidOperationException();
-            }
-            return defaultValue;
-        }
-
-
         public sealed override int MetadataToken
         {
             get
@@ -158,6 +138,11 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             {
                 return new QSignatureTypeHandle(_reader, _property.Signature.GetPropertySignature(_reader).Type);
             }
+        }
+
+        protected sealed override bool GetDefaultValueIfAny(bool raw, out object defaultValue)
+        {
+            return DefaultValueParser.GetDefaultValueIfAny(_reader, _property.DefaultValue, PropertyType, CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

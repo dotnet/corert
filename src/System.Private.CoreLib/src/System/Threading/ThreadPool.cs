@@ -30,6 +30,7 @@ using Internal.Runtime.Augments;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -1262,6 +1263,17 @@ namespace System.Threading
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
             return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        public static bool BindHandle(IntPtr osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        public static bool BindHandle(SafeHandle osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
         internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.Current != null; } }
