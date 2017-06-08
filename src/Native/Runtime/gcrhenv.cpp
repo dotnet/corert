@@ -1071,6 +1071,11 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 #endif
 }
 
+Thread* GCToEEInterface::GetThread()
+{
+    return ::GetThread();
+}
+
 bool GCToEEInterface::TrapReturningThreads()
 {
     return !!g_TrapReturningThreads;
