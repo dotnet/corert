@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => IsTypeNodeShareable(_type);
-        public override bool HasConditionalStaticDependencies => false;
         protected override bool EmitVirtualSlotsAndInterfaces => true;
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
