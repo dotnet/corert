@@ -194,6 +194,17 @@ namespace Internal.Runtime.Augments
                 }
                 return GetThreadStateBit(ThreadPoolThread);
             }
+            internal set
+            {
+                if(value)
+                {
+                    SetThreadStateBit(ThreadPoolThread);
+                }
+                else
+                {
+                    ClearThreadStateBit(ThreadPoolThread);
+                }
+            }
         }
 
         public int ManagedThreadId => _managedThreadId.Id;

@@ -13,7 +13,7 @@ namespace System.Threading
 
             private const int TimeoutMs = 20 * 1000;
             
-            private static IntPtr WorkerThreadStart(IntPtr context)
+            private static void WorkerThreadStart()
             {
                 RuntimeThread.InitializeThreadPoolThread();
                 // TODO: Event: Worker Thread Start event
@@ -25,7 +25,7 @@ namespace System.Threading
                     {
                         if(!ThreadPoolWorkQueue.Dispatch())
                         {
-                            return IntPtr.Zero;
+                            return;
                         }
 
                         RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;
@@ -51,7 +51,7 @@ namespace System.Threading
                             s_threadAdjustmentLock.Release();
                             HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.maxWorking, HillClimbing.StateOrTransition.ThreadTimedOut);
                             // TODO: Event:  Worker Thread stop event
-                            return IntPtr.Zero;
+                            return;
                         }
                         counts = oldCounts;
                     } 
@@ -91,48 +91,17 @@ namespace System.Threading
                     WaitSubsystem.ReleaseSemaphore(s_semaphore, toRelease);
                 }
 
-                while(toCreate > 0)
+                for (int i = 0; i < toCreate; i++)
                 {
-                    if(CreateWorkerThread())
-                    {
-                        toCreate--;
-                    }
-                    else
-                    {
-                        //
-                        // Uh-oh, we promised to create a new thread, but the creation failed.  We have to renege on our
-                        // promise.  This may possibly result in no work getting done for a while, but the gate thread will
-                        // eventually notice that no completions are happening and force the creation of a new thread.
-                        // Of course, there's no guarantee *that* will work - but hopefully enough time will have passed
-                        // to allow whoever's using all the memory right now to release some.
-                        //
-
-                        counts = ThreadCounts.VolatileReadCounts(ref s_counts);
-                        while(true)
-                        {
-                            newCounts = counts;
-                            newCounts.numWorking -= toCreate;
-                            newCounts.numActive -= toCreate;
-
-                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-
-                            if (oldCounts == counts)
-                            {
-                                break;
-                            }
-
-                            counts = oldCounts;
-                        }
-
-                        toCreate = 0;
-                    }
+                    CreateWorkerThread();
                 }
             }
 
-            private static bool CreateWorkerThread()
+            private static void CreateWorkerThread()
             {
-                return Interop.Sys.RuntimeThread_CreateThread(IntPtr.Zero /*use default stack size*/,
-                    AddrofIntrinsics.AddrOf<Interop.Sys.ThreadProc>(WorkerThreadStart), IntPtr.Zero);
+                RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
+                workerThread.IsThreadPoolThread = true;
+                workerThread.Start();
             }
         }
     }
