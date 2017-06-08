@@ -275,15 +275,15 @@ namespace Internal.Runtime.TypeLoader
 
         internal bool GetCallingConverterDataFromMethodSignature_NativeLayout(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout)
         {
-            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, null);
+            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, null, null);
         }
 
-        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader)
+        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader, ulong[] debuggerPreparedExternalReferences)
         {
-            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, nativeReader);
+            return GetCallingConverterDataFromMethodSignature_NativeLayout_Common(context, methodSig, typeInstantiation, methodInstantiation, out hasThis, out parameters, out parametersWithGenericDependentLayout, nativeReader, debuggerPreparedExternalReferences);
         }
 
-        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Common(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader)
+        internal bool GetCallingConverterDataFromMethodSignature_NativeLayout_Common(TypeSystemContext context, RuntimeSignature methodSig, Instantiation typeInstantiation, Instantiation methodInstantiation, out bool hasThis, out TypeDesc[] parameters, out bool[] parametersWithGenericDependentLayout, NativeReader nativeReader, ulong[] debuggerPreparedExternalReferences)
         {
             bool isNotDebuggerCall = nativeReader == null;
             hasThis = false;
@@ -295,6 +295,7 @@ namespace Internal.Runtime.TypeLoader
             nativeLayoutContext._typeSystemContext = context;
             nativeLayoutContext._typeArgumentHandles = typeInstantiation;
             nativeLayoutContext._methodArgumentHandles = methodInstantiation;
+            nativeLayoutContext._debuggerPreparedExternalReferences = debuggerPreparedExternalReferences;
 
             NativeReader reader = isNotDebuggerCall ? GetNativeLayoutInfoReader(methodSig) : nativeReader;
             NativeFormatModuleInfo module = isNotDebuggerCall ? ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSig.ModuleHandle)) : null;

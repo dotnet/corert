@@ -138,18 +138,19 @@ namespace Internal.Runtime.TypeLoader
                     offset = reader.DecodeUnsigned(offset, out parameterValue);
                     typesAndValues.parameterValues[i] = (int)parameterValue;
                 }
-                offset = reader.DecodeUnsigned(offset, out eeTypeCount); 
+                offset = reader.DecodeUnsigned(offset, out eeTypeCount);
+                ulong[] debuggerPreparedExternalReferences = new ulong[eeTypeCount];
                 for (int i = 0; i < eeTypeCount; i++)
                 {
-                    // TODO: Stuff these eeType values into the external reference table
                     offset = reader.DecodeUnsignedLong(offset, out eeType);
+                    debuggerPreparedExternalReferences[i] = eeType;
                 }
 
                 TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
                 bool hasThis;
                 TypeDesc[] parameters;
                 bool[] parametersWithGenericDependentLayout;
-                bool result = TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(typeSystemContext, RuntimeSignature.CreateFromNativeLayoutSignatureForDebugger(offset), Instantiation.Empty, Instantiation.Empty, out hasThis, out parameters, out parametersWithGenericDependentLayout, reader);
+                bool result = TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(typeSystemContext, RuntimeSignature.CreateFromNativeLayoutSignatureForDebugger(offset), Instantiation.Empty, Instantiation.Empty, out hasThis, out parameters, out parametersWithGenericDependentLayout, reader, debuggerPreparedExternalReferences);
 
                 typesAndValues.types = new RuntimeTypeHandle[parameters.Length];
 
