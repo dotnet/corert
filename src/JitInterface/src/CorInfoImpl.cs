@@ -1025,7 +1025,12 @@ namespace Internal.JitInterface
             {
                 TypeDesc type = (TypeDesc)result;
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                {
+                    if (type.IsVoid)
+                        throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
+
                     type = type.MakeArrayType();
+                }
                 pResolvedToken.hClass = ObjectToHandle(type);
             }
 

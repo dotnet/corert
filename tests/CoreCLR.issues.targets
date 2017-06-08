@@ -457,10 +457,6 @@
     <!-- https://github.com/dotnet/corert/issues/2272 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\callipinvoke\callipinvoke.*" />
 
-    <!-- Newarr void -->
-    <!-- https://github.com/dotnet/corert/issues/2280 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b353858\b353858\b353858.*" />
-    
     <!-- Bad check for Explicit/Sequential layout -->
     <!-- https://github.com/dotnet/corert/issues/2281 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01d_seq_ser\Base01d_seq_ser.*" />
