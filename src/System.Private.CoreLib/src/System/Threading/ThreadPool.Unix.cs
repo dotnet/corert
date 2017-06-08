@@ -165,7 +165,7 @@ namespace System.Threading
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
                 millisecondsTimeOutInterval,
                 !executeOnlyOnce);
-            WaitThread.RegisterWaitHandle(registeredHandle);
+            ClrThreadPool.WaitThread.RegisterWaitHandle(registeredHandle);
             return registeredHandle;
         }
     }
