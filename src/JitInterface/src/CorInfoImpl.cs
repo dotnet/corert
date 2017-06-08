@@ -3094,15 +3094,8 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
-            else if (!_compilation.IsReadyToRun
-                && !targetMethod.OwningType.IsInterface
-                && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
-            {
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
-                pResult.nullInstanceCheck = true;
-            }
-            else if (!_compilation.IsReadyToRun
-                && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                && targetMethod.OwningType.IsInterface)
             {
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
@@ -3117,7 +3110,8 @@ namespace Internal.JitInterface
                     if (contextMethod == MethodBeingCompiled)
                     {
                         pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.InterfaceDispatchCell;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
                     }
                 }
                 else
@@ -3126,6 +3120,12 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
                     pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.InterfaceDispatchCell(targetMethod));
                 }
+            }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                && _compilation.HasFixedSlotVTable(targetMethod.OwningType))
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
+                pResult.nullInstanceCheck = true;
             }
             else
             {

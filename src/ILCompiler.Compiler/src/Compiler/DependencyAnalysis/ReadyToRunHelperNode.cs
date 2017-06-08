@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         FieldHandle,
         MethodDictionary,
         MethodEntry,
-        InterfaceDispatchCell,
+        VirtualDispatchCell,
         DefaultConstructor,
     }
 

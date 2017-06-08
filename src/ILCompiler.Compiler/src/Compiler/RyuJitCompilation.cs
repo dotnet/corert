@@ -18,19 +18,16 @@ namespace ILCompiler
     {
         private CorInfoImpl _corInfo;
         private JitConfigProvider _jitConfigProvider;
-        private bool _isReadyToRun;
 
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
-            JitConfigProvider configProvider,
-            bool isReadyToRun)
+            JitConfigProvider configProvider)
             : base(dependencyGraph, nodeFactory, roots, logger)
         {
             _jitConfigProvider = configProvider;
-            _isReadyToRun = isReadyToRun;
         }
 
         protected override bool GenerateDebugInfo
@@ -40,8 +37,6 @@ namespace ILCompiler
                 return _jitConfigProvider.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
             }
         }
-
-        public override bool IsReadyToRun => _isReadyToRun;
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {

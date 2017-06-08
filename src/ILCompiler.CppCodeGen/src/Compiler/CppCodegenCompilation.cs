@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -38,8 +37,6 @@ namespace ILCompiler
                 return true;
             }
         }
-
-        public override bool IsReadyToRun => throw new NotImplementedException(); // CppWriter doesn't use this.
 
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
         {

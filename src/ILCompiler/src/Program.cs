@@ -348,7 +348,6 @@ namespace ILCompiler
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
                 .UseDebugInfo(_enableDebugInfo)
-                .UseReadyToRun(true)
                 .ToCompilation();
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;

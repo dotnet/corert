@@ -33,9 +33,6 @@ namespace ILCompiler
 
         protected override bool GenerateDebugInfo => false;
 
-        // TODO: Does IsReadyToRun actually matter for ILScanner?
-        public override bool IsReadyToRun => false;
-
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             // TODO: We should have a base class for compilation that doesn't implement ICompilation so that

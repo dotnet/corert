@@ -38,8 +38,6 @@ namespace ILCompiler
 
         public NameMangler NameMangler { get { return null; } }
 
-        public bool IsReadyToRun => false;
-
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
             // Use the typical field definition in case this is an instantiated generic type
@@ -97,6 +95,11 @@ namespace ILCompiler
             }
 
             return intrinsicMethod;
+        }
+
+        public bool HasFixedSlotVTable(TypeDesc type)
+        {
+            return true;
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)

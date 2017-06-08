@@ -32,8 +32,6 @@ namespace ILCompiler
 
         protected abstract bool GenerateDebugInfo { get; }
 
-        public abstract bool IsReadyToRun { get; }
-
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
         private readonly MethodBaseGetCurrentMethodThunkCache _methodBaseGetCurrentMethodThunks;
@@ -176,6 +174,11 @@ namespace ILCompiler
             }
 
             return intrinsicMethod;
+        }
+
+        public bool HasFixedSlotVTable(TypeDesc type)
+        {
+            return NodeFactory.VTable(type).HasFixedSlots;
         }
 
         void ICompilation.Compile(string outputFile, ObjectDumper dumper)
