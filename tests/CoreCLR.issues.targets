@@ -153,10 +153,6 @@
     <!-- Reflection enabling a virtual method methodimpl'd by other virtual method -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
 
-    <!-- DynamicInvoke stub for a method with 8192 parameters -->
-    <!-- https://github.com/dotnet/corert/issues/2349 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b191926\b191926\b191926.*" />
-    
     <!-- Bogus MethodImpls -->
     <!-- https://github.com/dotnet/corert/issues/2350 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\MethodImpl\self_override3\self_override3.*" />
@@ -457,10 +453,6 @@
     <!-- https://github.com/dotnet/corert/issues/2272 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\callipinvoke\callipinvoke.*" />
 
-    <!-- Newarr void -->
-    <!-- https://github.com/dotnet/corert/issues/2280 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b353858\b353858\b353858.*" />
-    
     <!-- Bad check for Explicit/Sequential layout -->
     <!-- https://github.com/dotnet/corert/issues/2281 -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01d_seq_ser\Base01d_seq_ser.*" />
@@ -580,17 +572,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_speed_relarrres\_speed_relarrres.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_speed_dbgarrres\_speed_dbgarrres.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_relarrres\_relarrres.*" />
-
-    <!-- Tests that fail after RyuJIT update -->
-    <!-- https://github.com/dotnet/corert/issues/2782 -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinkstay\doublinkstay.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinkgen\doublinkgen.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\nstructresur\nstructresur.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpinfinal\ndpinfinal.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinning\object-pin\object-pin\object-pin.*" />
-
-    <!-- More failing GC tests -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
 
     <!-- Variant interface method resolution -->
     <!-- https://github.com/dotnet/corert/issues/2358 -->
