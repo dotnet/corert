@@ -15,8 +15,7 @@ namespace System.Threading
         private static int s_minThreads; // TODO: Initialize
         private static int s_maxThreads; // TODO: Initialize
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
-
-
+        
         private static readonly LowLevelLock s_threadAdjustmentLock = new LowLevelLock();
         private static ThreadCounts s_counts = new ThreadCounts();
         private static int s_lastDequeueTime;
