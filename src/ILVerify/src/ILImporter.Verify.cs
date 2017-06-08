@@ -123,7 +123,7 @@ namespace Internal.IL
             _typeSystemContext = method.Context;
 
             if (!_methodSignature.IsStatic)
-                _thisType = method.OwningType;
+                _thisType = method.OwningType.InstantiateAsOpen();
 
             _methodIL = methodIL;
 
