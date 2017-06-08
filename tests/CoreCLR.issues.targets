@@ -10,6 +10,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_do\intrinsic_cs_do.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\pow\pow1\pow1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_r\intrinsic_cs_r.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
 
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
