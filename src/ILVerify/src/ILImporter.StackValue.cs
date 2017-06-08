@@ -227,14 +227,7 @@ namespace Internal.IL
                 if (src.Type == null)
                     return true;
 
-                TypeDesc srcType = src.Type;
-
-                if (srcType.IsGenericDefinition)
-                    srcType = srcType.InstantiateAsOpen();
-
-                Debug.Assert(!dst.Type.IsGenericDefinition);
-
-                return CastingHelper.CanCastTo(srcType, dst.Type);
+                return CastingHelper.CanCastTo(src.Type, dst.Type);
 
             case StackValueKind.ValueType:
 
