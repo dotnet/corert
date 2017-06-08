@@ -754,8 +754,6 @@ namespace System.Threading
                         return false;
                     }
                 }
-
-                return true;
             }
             catch (Exception e)
             {
@@ -774,6 +772,8 @@ namespace System.Threading
                 if (needAnotherThread)
                     workQueue.EnsureThreadRequested();
             }
+
+            return true;
         }
     }
 
