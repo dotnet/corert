@@ -72,7 +72,8 @@ FASTCALL_FUNC  RhpThrowHwEx, 0
         ;; ecx still contains the exception code
         ;; edx contains the address of the ExInfo
         call    RhThrowHwEx
-ALTERNATE_ENTRY RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowHwEx2
 
         ;; no return
         int 3
@@ -148,7 +149,8 @@ FASTCALL_FUNC  RhpThrowEx, 0
         ;; ecx still contains the exception object
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
-ALTERNATE_ENTRY RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowEx2
 
         ;; no return
         int 3
@@ -216,7 +218,8 @@ FASTCALL_FUNC  RhpRethrow, 0
         ;; ecx contains the currently active ExInfo
         ;; edx contains the address of the new ExInfo
         call    RhRethrow
-ALTERNATE_ENTRY RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpRethrow2
 
         ;; no return
         int 3
@@ -305,7 +308,8 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 0
         ;; EDX: funclet IP
         ;; EAX: funclet EBP
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallCatchFunclet2
 
         ;; eax: resume IP
         mov         [esp + esp_offsetof_ResumeIP], eax              ;; save for later
@@ -381,7 +385,8 @@ FASTCALL_FUNC  RhpCallFinallyFunclet, 0
         ;; EDX: funclet IP
         ;; EAX: funclet EBP
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFinallyFunclet2
 
         pop         edx     ;; restore REGDISPLAY*
 
@@ -434,7 +439,8 @@ FASTCALL_FUNC  RhpCallFilterFunclet, 0
         mov         edx, [esp + 0]                  ;; reload filter funclet address
 
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFilterFunclet2
 
         ;; EAX contains the result of the filter execution
         mov         edx, [ebp + 8]
