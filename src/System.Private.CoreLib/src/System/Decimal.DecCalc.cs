@@ -1190,7 +1190,7 @@ namespace System
             //
             private static Decimal Abs(Decimal d)
             {
-                return new Decimal((int)d.ulo, (int)d.umid, (int)d.uhi, (int)(d.uflags & ~SignMask));
+                return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
             }
 
             /***

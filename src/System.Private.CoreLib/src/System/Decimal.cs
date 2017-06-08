@@ -145,9 +145,9 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            ulo = (uint)value_copy;
-            umid = 0;
-            uhi = 0;
+            lo = value_copy;
+            mid = 0;
+            hi = 0;
         }
 
         // Constructs a Decimal from an unsigned integer value.
@@ -278,10 +278,10 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            ulo = 0;
-            umid = 0;
-            uhi = 0;
-            uflags = 0;
+            lo = 0;
+            mid = 0;
+            hi = 0;
+            flags = 0;
             SetBits(bits);
         }
 
@@ -295,9 +295,9 @@ namespace System
                 uint f = (uint)bits[3];
                 if (IsValid(f))
                 {
-                    ulo = (uint)bits[0];
-                    umid = (uint)bits[1];
-                    uhi = (uint)bits[2];
+                    lo = bits[0];
+                    mid = bits[1];
+                    hi = bits[2];
                     uflags = f;
                     return;
                 }
@@ -312,9 +312,9 @@ namespace System
             if (scale > 28)
                 throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
             Contract.EndContractBlock();
-            this.ulo = (uint)lo;
-            this.umid = (uint)mid;
-            this.uhi = (uint)hi;
+            this.lo = lo;
+            this.mid = mid;
+            this.hi = hi;
             uflags = ((uint)scale) << 16;
             if (isNegative)
                 uflags |= SignMask;
@@ -339,10 +339,10 @@ namespace System
         {
             if ((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16))
             {
-                this.ulo = (uint)lo;
-                this.umid = (uint)mid;
-                this.uhi = (uint)hi;
-                this.uflags = (uint)flags;
+                this.lo = lo;
+                this.mid = mid;
+                this.hi = hi;
+                this.flags = flags;
                 return;
             }
             throw new ArgumentException(SR.Arg_DecBitCtor);
@@ -354,7 +354,7 @@ namespace System
         //
         internal static Decimal Abs(Decimal d)
         {
-            return new Decimal((int)d.ulo, (int)d.umid, (int)d.uhi, (int)(d.uflags & ~SignMask));
+            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
         }
 
 
@@ -572,7 +572,7 @@ namespace System
         //
         public static int[] GetBits(Decimal d)
         {
-            return new int[] { (int)d.ulo, (int)d.umid, (int)d.uhi, (int)d.uflags };
+            return new int[] { d.lo, d.mid, d.hi, d.flags };
         }
 
         // Returns the larger of two Decimal values.
@@ -609,7 +609,7 @@ namespace System
         //
         public static Decimal Negate(Decimal d)
         {
-            return new Decimal((int)d.ulo, (int)d.umid, (int)d.uhi, (int)(d.uflags ^ SignMask));
+            return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags ^ SignMask));
         }
 
         // Rounds a Decimal value to a given number of decimal places. The value
@@ -745,9 +745,9 @@ namespace System
         public static int ToInt32(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
-            if (d.uhi == 0 && d.umid == 0)
+            if (d.hi == 0 && d.mid == 0)
             {
-                int i = (int)d.ulo;
+                int i = d.lo;
                 if (!d.Sign)
                 {
                     if (i >= 0) return i;
