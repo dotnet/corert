@@ -1279,7 +1279,7 @@ namespace Internal.IL
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
             CheckIsByRef(address);
-            if (value.Type != null)
+            if (!value.IsNullReference)
                 CheckIsAssignable(type, address.Type);
 
             CheckIsAssignable(value, StackValue.CreateFromType(type));

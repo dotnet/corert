@@ -39,6 +39,11 @@ namespace Internal.IL
             get { return (Flags & StackValueFlags.ReadOnly) == StackValueFlags.ReadOnly; }
         }
 
+        public bool IsNullReference
+        {
+            get { return Kind == StackValueKind.ObjRef && Type == null; }
+        }
+
         public StackValue DereferenceByRef()
         {
             Debug.Assert(Kind == StackValueKind.ByRef && Type != null, "Cannot dereference");
@@ -357,7 +362,7 @@ namespace Internal.IL
                         case StackValueKind.ObjRef:
                             return op == ILOpcode.beq || op == ILOpcode.beq_s ||
                                    op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
-                                   op == ILOpcode.ceq;
+                                   op == ILOpcode.ceq || op == ILOpcode.cgt_un;
                         default:
                             return false;
                     }
