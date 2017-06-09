@@ -39,6 +39,11 @@ namespace Internal.IL
             get { return (Flags & StackValueFlags.ReadOnly) == StackValueFlags.ReadOnly; }
         }
 
+        public bool IsNullReference
+        {
+            get { return Kind == StackValueKind.ObjRef && Type == null; }
+        }
+
         public StackValue DereferenceByRef()
         {
             Debug.Assert(Kind == StackValueKind.ByRef && Type != null, "Cannot dereference");
