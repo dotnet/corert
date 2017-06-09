@@ -4,7 +4,7 @@
 
 namespace System.IO
 {
-    internal static partial class File
+    internal static partial class InternalFile
     {
         internal static bool InternalExists(String path)
         {

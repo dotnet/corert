@@ -7,7 +7,7 @@ using System.Security;
 
 namespace System.IO
 {
-    internal static partial class File
+    internal static partial class InternalFile
     {
         // Tests if a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
