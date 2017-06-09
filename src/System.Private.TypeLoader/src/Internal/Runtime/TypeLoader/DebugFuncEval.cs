@@ -209,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
                 LocalVariableType[] argumentTypes = new LocalVariableType[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    // TODO: What these false really means? Need to make sure our format contains those information
+                    // TODO, FuncEval, what these false really means? Need to make sure our format contains those information
                     argumentTypes[i] = new LocalVariableType(typesAndValues.types[i], false, false);
                 }
 
