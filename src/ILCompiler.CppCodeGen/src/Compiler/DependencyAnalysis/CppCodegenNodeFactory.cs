@@ -10,8 +10,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class CppCodegenNodeFactory : NodeFactory
     {
-        public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
-            : base(context, compilationModuleGroup, metadataManager, nameMangler, new LazyGenericsDisabledPolicy())
+        public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
+            NameMangler nameMangler, VTableSliceProvider vtableSliceProvider)
+            : base(context, compilationModuleGroup, metadataManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider)
         {
         }
 
