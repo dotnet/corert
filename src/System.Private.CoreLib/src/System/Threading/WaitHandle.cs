@@ -147,19 +147,21 @@ namespace System.Threading
         private static SafeWaitHandle[] ObtainSafeWaitHandles(
             RuntimeThread currentThread,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             out SafeWaitHandle[] rentedSafeWaitHandles)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(waitHandles != null);
-            Debug.Assert(waitHandles.Length > 0);
-            Debug.Assert(waitHandles.Length <= MaxWaitHandles);
+            Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= MaxWaitHandles);
+            Debug.Assert(numWaitHandles <= waitHandles.Length);
 
-            rentedSafeWaitHandles = currentThread.RentWaitedSafeWaitHandleArray(waitHandles.Length);
-            SafeWaitHandle[] safeWaitHandles = rentedSafeWaitHandles ?? new SafeWaitHandle[waitHandles.Length];
+            rentedSafeWaitHandles = currentThread.RentWaitedSafeWaitHandleArray(numWaitHandles);
+            SafeWaitHandle[] safeWaitHandles = rentedSafeWaitHandles ?? new SafeWaitHandle[numWaitHandles];
             bool success = false;
             try
             {
-                for (int i = 0; i < waitHandles.Length; ++i)
+                for (int i = 0; i < numWaitHandles; ++i)
                 {
                     WaitHandle waitHandle = waitHandles[i];
                     if (waitHandle == null)
@@ -183,7 +185,7 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < waitHandles.Length; ++i)
+                    for (int i = 0; i < numWaitHandles; ++i)
                     {
                         SafeWaitHandle safeWaitHandle = safeWaitHandles[i];
                         if (safeWaitHandle == null)
@@ -271,7 +273,9 @@ namespace System.Threading
         ** signalled or timeout milliseonds have elapsed.
         ========================================================================*/
 
-        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout)
+        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) => WaitAny(waitHandles, waitHandles.Length, millisecondsTimeout);
+
+        internal static int WaitAny(WaitHandle[] waitHandles, int numWaitHandles, int millisecondsTimeout)
         {
             if (waitHandles == null)
             {
@@ -293,10 +297,10 @@ namespace System.Threading
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
             SafeWaitHandle[] rentedSafeWaitHandles;
-            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, out rentedSafeWaitHandles);
+            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, numWaitHandles, out rentedSafeWaitHandles);
             try
             {
-                return WaitAnyCore(currentThread, safeWaitHandles, waitHandles, millisecondsTimeout);
+                return WaitAnyCore(currentThread, safeWaitHandles, waitHandles, numWaitHandles, millisecondsTimeout);
             }
             finally
             {

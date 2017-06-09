@@ -28,9 +28,9 @@ namespace System.Threading
         internal bool Repeating { get; }
         internal WaitHandle UserUnregisterWaitHandle { get; private set; }
         private bool SignaledUserWaitHandle { get; set; } = false;
-        private LowLevelLock SignalUserWaitHandleLock { get; } = new LowLevelLock();
+        private LowLevelLock SignalAndCallbackLock { get; } = new LowLevelLock();
 
-        internal ManualResetEventSlim CanUnregister { get; } = new ManualResetEventSlim(true);
+        internal ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
 
         public bool Unregister(WaitHandle waitObject)
         {
@@ -41,13 +41,23 @@ namespace System.Threading
 
         internal void SignalUserWaitHandle()
         {
-            SignalUserWaitHandleLock.Acquire();
+            SignalAndCallbackLock.Acquire();
             if(!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
             {
                 SignaledUserWaitHandle = true;
                 WaitSubsystem.SetEvent(UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());
             }
-            SignalUserWaitHandleLock.Release();
+            SignalAndCallbackLock.Release();
+        }
+
+        internal void PerformCallback(bool timedOut)
+        {
+            SignalAndCallbackLock.Acquire();
+            if(!SignaledUserWaitHandle)
+            {
+                _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
+            }
+            SignalAndCallbackLock.Release();
         }
     }
 

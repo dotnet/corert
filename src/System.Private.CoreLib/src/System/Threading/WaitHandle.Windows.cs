@@ -158,6 +158,7 @@ namespace System.Threading
             RuntimeThread currentThread,
             SafeWaitHandle[] safeWaitHandles,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             int millisecondsTimeout)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
@@ -168,7 +169,7 @@ namespace System.Threading
             Debug.Assert(waitHandles.Length <= MaxWaitHandles);
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = WaitMultiple(currentThread, safeWaitHandles, waitHandles.Length, millisecondsTimeout, false /* waitany*/ );
+            int ret = WaitMultiple(currentThread, safeWaitHandles, numWaitHandles, millisecondsTimeout, false /* waitany*/ );
 
             if ((WaitAbandoned <= ret) && (WaitAbandoned + waitHandles.Length > ret))
             {

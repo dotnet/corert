@@ -285,6 +285,7 @@ namespace System.Threading
             RuntimeThread currentThread,
             SafeWaitHandle[] safeWaitHandles,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
@@ -296,12 +297,11 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            int count = waitHandles.Length;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(count);
+            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(numWaitHandles);
             bool success = false;
             try
             {
-                for (int i = 0; i < count; ++i)
+                for (int i = 0; i < numWaitHandles; ++i)
                 {
                     Debug.Assert(safeWaitHandles[i] != null);
                     WaitableObject waitableObject = HandleManager.FromHandle(safeWaitHandles[i].DangerousGetHandle());
@@ -328,14 +328,14 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < count; ++i)
+                    for (int i = 0; i < numWaitHandles; ++i)
                     {
                         waitableObjects[i] = null;
                     }
                 }
             }
 
-            if (count == 1)
+            if (numWaitHandles == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
@@ -348,7 +348,7 @@ namespace System.Threading
             return
                 WaitableObject.Wait(
                     waitableObjects,
-                    count,
+                    numWaitHandles,
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
