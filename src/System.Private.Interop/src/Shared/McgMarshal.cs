@@ -49,6 +49,11 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.SaveLastWin32Error();
         }
 
+        public static void ClearLastWin32Error()
+        {
+            PInvokeMarshal.ClearLastWin32Error();
+        }
+
         public static bool GuidEquals(ref Guid left, ref Guid right)
         {
             return InteropExtensions.GuidEquals(ref left, ref right);

@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
             s_lastWin32Error = Interop.mincore.GetLastError();
         }
 
-        internal static void ClearLastWin32Error()
+        public static void ClearLastWin32Error()
         {
             Interop.mincore.SetLastError(0);
         }
