@@ -28,7 +28,18 @@ namespace Internal.Runtime.TypeLoader
         {
             for (int i = 0; i < param.parameterValues.Length; i++)
             {
-                arguments.SetVar<int>(i + 1, param.parameterValues[i]);
+                unsafe
+                {
+                    IntPtr input = arguments.GetAddressOfVarData(i + 1);
+                    byte* pInput = (byte*)input;
+                    fixed(byte* pParam = param.parameterValues[i])
+                    {
+                        for (int j = 0; j < param.parameterValues[i].Length; j++)
+                        {
+                            pInput[j] = pParam[j];
+                        }
+                    }
+                }
             }
 
             // Obtain the target method address from the runtime
@@ -92,8 +103,7 @@ namespace Internal.Runtime.TypeLoader
         struct TypesAndValues
         {
             public RuntimeTypeHandle[] types;
-            // TODO: We should support arguments of *any* type
-            public int[] parameterValues;            
+            public byte[][] parameterValues;
         }
 
         private static void HighLevelDebugFuncEvalHelper()
@@ -123,7 +133,7 @@ namespace Internal.Runtime.TypeLoader
 
                 uint trash;
                 uint parameterCount;
-                uint parameterValue;
+                uint parameterValueSize;
                 uint eeTypeCount;
                 ulong eeType;
                 uint offset = 0;
@@ -132,11 +142,18 @@ namespace Internal.Runtime.TypeLoader
                 offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
                 offset = reader.DecodeUnsigned(offset, out parameterCount);
 
-                typesAndValues.parameterValues = new int[parameterCount];
+                typesAndValues.parameterValues = new byte[parameterCount][];
                 for (int i = 0; i < parameterCount; i++)
                 {
-                    offset = reader.DecodeUnsigned(offset, out parameterValue);
-                    typesAndValues.parameterValues[i] = (int)parameterValue;
+                    offset = reader.DecodeUnsigned(offset, out parameterValueSize);
+                    byte[] parameterValue = new byte[parameterValueSize];
+                    for (int j = 0; j < parameterValueSize; j++)
+                    {
+                        uint parameterByte;
+                        offset = reader.DecodeUnsigned(offset, out parameterByte);
+                        parameterValue[j] = (byte)parameterByte;
+                    }
+                    typesAndValues.parameterValues[i] = parameterValue;
                 }
                 offset = reader.DecodeUnsigned(offset, out eeTypeCount);
                 ulong[] debuggerPreparedExternalReferences = new ulong[eeTypeCount];
