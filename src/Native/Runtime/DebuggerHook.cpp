@@ -49,7 +49,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
             }
         }
 
-        // TODO: Consider an optimization to eliminate this message when they is nothing required from the
+        // TODO, FuncEval, consider an optimization to eliminate this message when they is nothing required from the
         // debugger side to fill
 
         command.commandCode = DebuggerGcProtectionMessage::ConservativeReportingBufferReady;
@@ -101,8 +101,8 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferList();
     if (s_debuggerProtectedBuffers == nullptr)
     {
-        // TODO: We cannot handle the debugger request to protect a buffer (we have to break our promise)
-        // TODO: We need to figure out how to communicate this broken promise to the debugger
+        // TODO, FuncEval, we cannot handle the debugger request to protect a buffer (we have to break our promise)
+        // TODO, FuncEval, we need to figure out how to communicate this broken promise to the debugger
     }
     else
     {

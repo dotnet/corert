@@ -100,7 +100,7 @@ PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
     return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
 }
 
-// TODO: Remove the assumption that there is only 1 func eval in progress
+// TODO, FuncEval, remove the assumption that there is only 1 func eval in progress
 GVAL_IMPL_INIT(UInt64, g_debuggermagic, 0);
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
