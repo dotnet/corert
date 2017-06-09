@@ -182,6 +182,10 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// WARNING: Never call unless the EEType came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum) 
+        /// and this helper has undefined behavior when passed such as a enum.
+        /// </summary>
         internal bool IsEnum
         {
             get
