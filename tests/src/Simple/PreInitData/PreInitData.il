@@ -39,6 +39,7 @@
        extends [mscorlib]System.Object
 {
   .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16'  PreInitializedField_DataBlob at Data_IntArray
+
   .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=32' PreInitializedTypeField_DataBlob at Data_TypeArray
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.TypeHandleFixupAttribute::.ctor(int32,
                                                                                         class [mscorlib]System.Type) = ( 01 00 18 00 00 00 5A 53 79 73 74 65 6D 2E 53 74   // ......ZSystem.St
@@ -72,23 +73,46 @@
                                                                                                                          20 50 75 62 6C 69 63 4B 65 79 54 6F 6B 65 6E 3D   //  PublicKeyToken=
                                                                                                                          62 37 37 61 35 63 35 36 31 39 33 34 65 30 38 39   // b77a5c561934e089
                                                                                                                          00 00 ) 
+
+  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16' PreInitializedMethodField_DataBlob at Data_MethodArray
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.MethodAddrFixupAttribute::.ctor(int32,
+                                                                                        class [mscorlib]System.Type,
+                                                                                        string) = ( 01 00 00 00 00 00 0D 4E 61 74 69 76 65 4D 65 74   // .......NativeMet
+                                                                                                    68 6F 64 73 05 46 75 6E 63 31 00 00 )             // hods.Func1..
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.MethodAddrFixupAttribute::.ctor(int32,
+                                                                                        class [mscorlib]System.Type,
+                                                                                        string) = ( 01 00 08 00 00 00 0D 4E 61 74 69 76 65 4D 65 74   // .......NativeMet
+                                                                                                    68 6F 64 73 05 46 75 6E 63 32 00 00 )             // hods.Func2..    
 } // end of class Details
 
 .class public auto ansi beforefieldinit PreInitData
 {
   .field private static string StaticStringFieldBefore
+
+  //===================================================================
+  // preinitialized fields
   .field private static int32[] PreInitializedIntField
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 ) 
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.InitDataBlobAttribute::.ctor(class [mscorlib]System.Type,
                                                                                      string) = ( 01 00 07 44 65 74 61 69 6C 73 1C 50 72 65 49 6E   // ...Details.PreIn
                                                                                                  69 74 69 61 6C 69 7A 65 64 46 69 65 6C 64 5F 44   // itializedField_D
                                                                                                  61 74 61 42 6C 6F 62 00 00 )                      // ataBlob..
+
   .field private static class [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitializedTypeField
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 ) 
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.InitDataBlobAttribute::.ctor(class [mscorlib]System.Type,
-                                                                                     string) = ( 01 00 07 44 65 74 61 69 6C 73 20 50 72 65 49 6E   // ...Details PreIn
+                                                                                     string) = ( 01 00 07 44 65 74 61 69 6C 73 20 50 72 65 49 6E   // ...Details.PreIn
                                                                                                  69 74 69 61 6C 69 7A 65 64 54 79 70 65 46 69 65   // itializedTypeFie
                                                                                                  6C 64 5F 44 61 74 61 42 6C 6F 62 00 00 )          // ld_DataBlob..
+
+  .field static assembly native int[] PreInitializedMethodField
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.InitDataBlobAttribute::.ctor(class [mscorlib]System.Type,
+                                                                                     string) = ( 01 00 07 44 65 74 61 69 6C 73 22 50 72 65 49 6E   // ...Details.PreIn
+                                                                                                 69 74 69 61 6C 69 7A 65 64 4D 65 74 68 6F 64 46   // itializedMethodF
+                                                                                                 69 65 6C 64 5F 44 61 74 61 42 6C 6F 62 00 00 )    // ield_DataBlob..   
+  //===================================================================
+
   .field private static string StaticStringFieldAfter
 
   .method private hidebysig specialname rtspecialname static 
@@ -122,6 +146,30 @@
   } // end of class '__StaticArrayInitTypeSize=16'
 } // end of class '<PrivateImplementationDetails>'
 
+.class private abstract auto ansi sealed beforefieldinit NativeMethods
+       extends [mscorlib]System.Object
+{
+  .method assembly hidebysig static void 
+          Func1(int32 a) cil managed
+  {
+    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.NativeCallableAttribute::.ctor() = ( 01 00 00 00 ) 
+    // Code size       2 (0x2)
+    .maxstack  8
+    IL_0000:  nop
+    IL_0001:  ret
+  } // end of method NativeMethods::Func1
+
+  .method assembly hidebysig static void 
+          Func2(float32 b) cil managed
+  {
+    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.NativeCallableAttribute::.ctor() = ( 01 00 00 00 ) 
+    // Code size       2 (0x2)
+    .maxstack  8
+    IL_0000:  nop
+    IL_0001:  ret
+  } // end of method NativeMethods::Func2
+
+} // end of class NativeMethods
 
 // =============================================================
 // Data blob
@@ -129,29 +177,127 @@
 
 .data cil Data_IntArray = bytearray ( 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00) 
 .data cil Data_TypeArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
+.data cil Data_MethodArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00) 
 
 // =============================================================
-// Test code (disassembled)
+// Intrinsics
+// =============================================================
+
+.class private auto ansi beforefieldinit System.Runtime.InteropServices.McgIntrinsicsAttribute
+       extends [mscorlib]System.Attribute
+{
+  .custom instance void [mscorlib]System.AttributeUsageAttribute::.ctor(valuetype [mscorlib]System.AttributeTargets) = ( 01 00 44 00 00 00 00 00 )                         // ..D.....
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method McgIntrinsicsAttribute::.ctor
+
+} // end of class System.Runtime.InteropServices.McgIntrinsicsAttribute
+
+.class private abstract auto ansi sealed beforefieldinit System.Runtime.InteropServices.AddrofIntrinsics
+       extends [mscorlib]System.Object
+{
+  .custom instance void System.Runtime.InteropServices.McgIntrinsicsAttribute::.ctor() = ( 01 00 00 00 ) 
+  .method assembly hidebysig static native int 
+          AddrOf<T>(!!T ftn) cil managed
+  {
+    // Code size       7 (0x7)
+    .maxstack  8
+    IL_0000:  nop
+    IL_0001:  newobj     instance void [mscorlib]System.PlatformNotSupportedException::.ctor()
+    IL_0006:  throw
+  } // end of method AddrofIntrinsics::AddrOf
+
+} // end of class System.Runtime.InteropServices.AddrofIntrinsics
+
+// =============================================================
+// Test code
 // =============================================================
 
 .class public auto ansi beforefieldinit PreInitDataTest
        extends [mscorlib]System.Object
 {
+.class auto ansi sealed nested public Func1Proc
+         extends [mscorlib]System.MulticastDelegate
+  {
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor(object 'object',
+                                 native int 'method') runtime managed
+    {
+    } // end of method Func1Proc::.ctor
+
+    .method public hidebysig newslot virtual 
+            instance void  Invoke(int32 a) runtime managed
+    {
+    } // end of method Func1Proc::Invoke
+
+    .method public hidebysig newslot virtual 
+            instance class [mscorlib]System.IAsyncResult 
+            BeginInvoke(int32 a,
+                        class [mscorlib]System.AsyncCallback callback,
+                        object 'object') runtime managed
+    {
+    } // end of method Func1Proc::BeginInvoke
+
+    .method public hidebysig newslot virtual 
+            instance void  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
+    {
+    } // end of method Func1Proc::EndInvoke
+
+  } // end of class Func1Proc
+
+  .class auto ansi sealed nested public Func2Proc
+         extends [mscorlib]System.MulticastDelegate
+  {
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor(object 'object',
+                                 native int 'method') runtime managed
+    {
+    } // end of method Func2Proc::.ctor
+
+    .method public hidebysig newslot virtual 
+            instance void  Invoke(float32 a) runtime managed
+    {
+    } // end of method Func2Proc::Invoke
+
+    .method public hidebysig newslot virtual 
+            instance class [mscorlib]System.IAsyncResult 
+            BeginInvoke(float32 a,
+                        class [mscorlib]System.AsyncCallback callback,
+                        object 'object') runtime managed
+    {
+    } // end of method Func2Proc::BeginInvoke
+
+    .method public hidebysig newslot virtual 
+            instance void  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
+    {
+    } // end of method Func2Proc::EndInvoke
+
+  } // end of class Func2Proc 
+
   .field private static literal int32 Pass = int32(0x00000064)
   .field private static literal int32 Fail = int32(0xFFFFFFFF)
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
     .entrypoint
-    // Code size       64 (0x40)
+    // Code size       122 (0x7a)
     .maxstack  2
     .locals init (int32 V_0,
              bool V_1,
              bool V_2,
-             int32 V_3)
+             bool V_3,
+             bool V_4,
+             int32 V_5)
     IL_0000:  nop
     IL_0001:  ldc.i4.s   100
     IL_0003:  stloc.0
-    IL_0004:  call       bool PreInitDataTest::TestPreInitData()
+    IL_0004:  call       bool PreInitDataTest::TestPreInitIntData()
     IL_0009:  ldc.i4.0
     IL_000a:  ceq
     IL_000c:  stloc.1
@@ -165,7 +311,7 @@
     IL_001c:  ldc.i4.m1
     IL_001d:  stloc.0
     IL_001e:  nop
-    IL_001f:  call       bool PreInitDataTest::TestOtherStatics()
+    IL_001f:  call       bool PreInitDataTest::TestPreInitTypeData()
     IL_0024:  ldc.i4.0
     IL_0025:  ceq
     IL_0027:  stloc.2
@@ -179,34 +325,57 @@
     IL_0037:  ldc.i4.m1
     IL_0038:  stloc.0
     IL_0039:  nop
-    IL_003a:  ldloc.0
-    IL_003b:  stloc.3
-    IL_003c:  br.s       IL_003e
+    IL_003a:  call       bool PreInitDataTest::TestPreInitMethodData()
+    IL_003f:  ldc.i4.0
+    IL_0040:  ceq
+    IL_0042:  stloc.3
+    IL_0043:  ldloc.3
+    IL_0044:  brfalse.s  IL_0055
 
-    IL_003e:  ldloc.3
-    IL_003f:  ret
+    IL_0046:  nop
+    IL_0047:  ldstr      "Failed"
+    IL_004c:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0051:  nop
+    IL_0052:  ldc.i4.m1
+    IL_0053:  stloc.0
+    IL_0054:  nop
+    IL_0055:  call       bool PreInitDataTest::TestOtherStatics()
+    IL_005a:  ldc.i4.0
+    IL_005b:  ceq
+    IL_005d:  stloc.s    V_4
+    IL_005f:  ldloc.s    V_4
+    IL_0061:  brfalse.s  IL_0072
+
+    IL_0063:  nop
+    IL_0064:  ldstr      "Failed"
+    IL_0069:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_006e:  nop
+    IL_006f:  ldc.i4.m1
+    IL_0070:  stloc.0
+    IL_0071:  nop
+    IL_0072:  ldloc.0
+    IL_0073:  stloc.s    V_5
+    IL_0075:  br.s       IL_0077
+
+    IL_0077:  ldloc.s    V_5
+    IL_0079:  ret
   } // end of method PreInitDataTest::Main
 
-  .method private hidebysig static bool  TestPreInitData() cil managed
+  .method private hidebysig static bool  TestPreInitIntData() cil managed
   {
-    // Code size       271 (0x10f)
+    // Code size       65 (0x41)
     .maxstack  3
     .locals init (int32 V_0,
              bool V_1,
              bool V_2,
-             bool V_3,
-             bool V_4,
-             valuetype [mscorlib]System.RuntimeTypeHandle V_5,
-             bool V_6,
-             bool V_7,
-             bool V_8)
+             bool V_3)
     IL_0000:  nop
-    IL_0001:  ldstr      "Testing preinitialized array..."
+    IL_0001:  ldstr      "Testing preinitialized int array..."
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldc.i4.0
     IL_000d:  stloc.0
-    IL_000e:  br.s       IL_0030
+    IL_000e:  br.s       IL_002d
 
     IL_0010:  nop
     IL_0011:  ldsfld     int32[] PreInitData::PreInitializedIntField
@@ -220,105 +389,187 @@
     IL_001e:  ceq
     IL_0020:  stloc.1
     IL_0021:  ldloc.1
-    IL_0022:  brfalse.s  IL_002b
+    IL_0022:  brfalse.s  IL_0028
 
     IL_0024:  ldc.i4.0
     IL_0025:  stloc.2
-    IL_0026:  br         IL_010d
+    IL_0026:  br.s       IL_003f
 
-    IL_002b:  nop
-    IL_002c:  ldloc.0
-    IL_002d:  ldc.i4.1
-    IL_002e:  add
-    IL_002f:  stloc.0
-    IL_0030:  ldloc.0
-    IL_0031:  ldsfld     int32[] PreInitData::PreInitializedIntField
-    IL_0036:  ldlen
-    IL_0037:  conv.i4
-    IL_0038:  clt
-    IL_003a:  stloc.3
-    IL_003b:  ldloc.3
-    IL_003c:  brtrue.s   IL_0010
+    IL_0028:  nop
+    IL_0029:  ldloc.0
+    IL_002a:  ldc.i4.1
+    IL_002b:  add
+    IL_002c:  stloc.0
+    IL_002d:  ldloc.0
+    IL_002e:  ldsfld     int32[] PreInitData::PreInitializedIntField
+    IL_0033:  ldlen
+    IL_0034:  conv.i4
+    IL_0035:  clt
+    IL_0037:  stloc.3
+    IL_0038:  ldloc.3
+    IL_0039:  brtrue.s   IL_0010
 
-    IL_003e:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_0043:  ldc.i4.0
-    IL_0044:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_0049:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_004e:  stloc.s    V_5
-    IL_0050:  ldloca.s   V_5
-    IL_0052:  ldtoken    [mscorlib]System.Int32
-    IL_0057:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_005c:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_0061:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0066:  stloc.s    V_4
-    IL_0068:  ldloc.s    V_4
-    IL_006a:  brtrue.s  IL_0073
+    IL_003b:  ldc.i4.1
+    IL_003c:  stloc.2
+    IL_003d:  br.s       IL_003f
 
-    IL_006c:  ldc.i4.0
-    IL_006d:  stloc.2
-    IL_006e:  br         IL_010d
+    IL_003f:  ldloc.2
+    IL_0040:  ret
+  } // end of method PreInitDataTest::TestPreInitIntData
+
+  .method private hidebysig static bool  TestPreInitTypeData() cil managed
+  {
+    // Code size       225 (0xe1)
+    .maxstack  2
+    .locals init (bool V_0,
+             valuetype [mscorlib]System.RuntimeTypeHandle V_1,
+             bool V_2,
+             bool V_3,
+             bool V_4,
+             bool V_5)
+    IL_0000:  nop
+    IL_0001:  ldstr      "Testing preinitialized type array..."
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+    IL_0011:  ldc.i4.0
+    IL_0012:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+    IL_0017:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
+    IL_001c:  stloc.1
+    IL_001d:  ldloca.s   V_1
+    IL_001f:  ldtoken    [mscorlib]System.Int32
+    IL_0024:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_0029:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+    IL_002e:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_0033:  ldc.i4.0
+    IL_0034:  ceq
+    IL_0036:  stloc.0
+    IL_0037:  ldloc.0
+    IL_0038:  brfalse.s  IL_0041
+
+    IL_003a:  ldc.i4.0
+    IL_003b:  stloc.2
+    IL_003c:  br         IL_00df
+
+    IL_0041:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+    IL_0046:  ldc.i4.1
+    IL_0047:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+    IL_004c:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
+    IL_0051:  stloc.1
+    IL_0052:  ldloca.s   V_1
+    IL_0054:  ldtoken    [mscorlib]System.Int16
+    IL_0059:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_005e:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+    IL_0063:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_0068:  ldc.i4.0
+    IL_0069:  ceq
+    IL_006b:  stloc.3
+    IL_006c:  ldloc.3
+    IL_006d:  brfalse.s  IL_0073
+
+    IL_006f:  ldc.i4.0
+    IL_0070:  stloc.2
+    IL_0071:  br.s       IL_00df
 
     IL_0073:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_0078:  ldc.i4.1
+    IL_0078:  ldc.i4.2
     IL_0079:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
     IL_007e:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_0083:  stloc.s    V_5
-    IL_0085:  ldloca.s   V_5
-    IL_0087:  ldtoken    [mscorlib]System.Int16
-    IL_008c:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0091:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_0096:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_009b:  stloc.s    V_6
-    IL_009d:  ldloc.s    V_6
-    IL_009f:  brtrue.s  IL_00a5
+    IL_0083:  stloc.1
+    IL_0084:  ldloca.s   V_1
+    IL_0086:  ldtoken    [mscorlib]System.Int64
+    IL_008b:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_0090:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+    IL_0095:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_009a:  ldc.i4.0
+    IL_009b:  ceq
+    IL_009d:  stloc.s    V_4
+    IL_009f:  ldloc.s    V_4
+    IL_00a1:  brfalse.s  IL_00a7
 
-    IL_00a1:  ldc.i4.0
-    IL_00a2:  stloc.2
-    IL_00a3:  br.s       IL_010d
+    IL_00a3:  ldc.i4.0
+    IL_00a4:  stloc.2
+    IL_00a5:  br.s       IL_00df
 
-    IL_00a5:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_00aa:  ldc.i4.2
-    IL_00ab:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_00b0:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_00b5:  stloc.s    V_5
-    IL_00b7:  ldloca.s   V_5
-    IL_00b9:  ldtoken    [mscorlib]System.Int64
-    IL_00be:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00c3:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_00c8:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00cd:  stloc.s    V_7
-    IL_00cf:  ldloc.s    V_7
-    IL_00d1:  brtrue.s  IL_00d7
+    IL_00a7:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+    IL_00ac:  ldc.i4.3
+    IL_00ad:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
+    IL_00b2:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
+    IL_00b7:  stloc.1
+    IL_00b8:  ldloca.s   V_1
+    IL_00ba:  ldtoken    [mscorlib]System.String
+    IL_00bf:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_00c4:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+    IL_00c9:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+    IL_00ce:  ldc.i4.0
+    IL_00cf:  ceq
+    IL_00d1:  stloc.s    V_5
+    IL_00d3:  ldloc.s    V_5
+    IL_00d5:  brfalse.s  IL_00db
 
-    IL_00d3:  ldc.i4.0
-    IL_00d4:  stloc.2
-    IL_00d5:  br.s       IL_010d
+    IL_00d7:  ldc.i4.0
+    IL_00d8:  stloc.2
+    IL_00d9:  br.s       IL_00df
 
-    IL_00d7:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_00dc:  ldc.i4.3
-    IL_00dd:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_00e2:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_00e7:  stloc.s    V_5
-    IL_00e9:  ldloca.s   V_5
-    IL_00eb:  ldtoken    [mscorlib]System.String
-    IL_00f0:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00f5:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_00fa:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00ff:  stloc.s    V_8
-    IL_0101:  ldloc.s    V_8
-    IL_0103:  brtrue.s  IL_0109
+    IL_00db:  ldc.i4.1
+    IL_00dc:  stloc.2
+    IL_00dd:  br.s       IL_00df
 
-    IL_0105:  ldc.i4.0
-    IL_0106:  stloc.2
-    IL_0107:  br.s       IL_010d
+    IL_00df:  ldloc.2
+    IL_00e0:  ret
+  } // end of method PreInitDataTest::TestPreInitTypeData
 
-    IL_0109:  ldc.i4.1
-    IL_010a:  stloc.2
-    IL_010b:  br.s       IL_010d
+  .method private hidebysig static bool  TestPreInitMethodData() cil managed
+  {
+    // Code size       88 (0x58)
+    .maxstack  3
+    .locals init (bool V_0,
+             bool V_1,
+             bool V_2)
+    IL_0000:  nop
+    IL_0001:  ldstr      "Testing preinitialized method array..."
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldsfld     native int[] PreInitData::PreInitializedMethodField
+    IL_0011:  ldc.i4.0
+    IL_0012:  ldelem.i
+    IL_0013:  ldnull
+    IL_0014:  ldftn      void NativeMethods::Func1(int32)
+    IL_001a:  newobj     instance void PreInitDataTest/Func1Proc::.ctor(object,
+                                                                        native int)
+    IL_001f:  call       native int System.Runtime.InteropServices.AddrofIntrinsics::AddrOf<class PreInitDataTest/Func1Proc>(!!0)
+    IL_0024:  call       bool [mscorlib]System.IntPtr::op_Inequality(native int,
+                                                                     native int)
+    IL_0029:  stloc.0
+    IL_002a:  ldloc.0
+    IL_002b:  brfalse.s  IL_0052
 
-    IL_010d:  ldloc.2
-    IL_010e:  ret
-  } // end of method PreInitDataTest::TestPreInitData
+    IL_002d:  ldsfld     native int[] PreInitData::PreInitializedMethodField
+    IL_0032:  ldc.i4.1
+    IL_0033:  ldelem.i
+    IL_0034:  ldnull
+    IL_0035:  ldftn      void NativeMethods::Func2(float32)
+    IL_003b:  newobj     instance void PreInitDataTest/Func2Proc::.ctor(object,
+                                                                        native int)
+    IL_0040:  call       native int System.Runtime.InteropServices.AddrofIntrinsics::AddrOf<class PreInitDataTest/Func2Proc>(!!0)
+    IL_0045:  call       bool [mscorlib]System.IntPtr::op_Inequality(native int,
+                                                                     native int)
+    IL_004a:  stloc.1
+    IL_004b:  ldloc.1
+    IL_004c:  brfalse.s  IL_0052
+
+    IL_004e:  ldc.i4.0
+    IL_004f:  stloc.2
+    IL_0050:  br.s       IL_0056
+
+    IL_0052:  ldc.i4.1
+    IL_0053:  stloc.2
+    IL_0054:  br.s       IL_0056
+
+    IL_0056:  ldloc.2
+    IL_0057:  ret
+  } // end of method PreInitDataTest::TestPreInitMethodData
+                                                           
 
   .method private hidebysig static bool  TestOtherStatics() cil managed
   {
@@ -375,5 +626,5 @@
     IL_0007:  ret
   } // end of method PreInitDataTest::.ctor
 
-} // end of class PreInitDataTest
+} // end of class PreInitDataTest 
 

@@ -50,7 +50,37 @@ namespace Internal.Runtime.CompilerServices
     }
 }
 
+namespace System.Runtime.InteropServices
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class NativeCallableAttribute : Attribute
+    {
+        public string EntryPoint;
+
+        public CallingConvention CallingConvention;
+
+        public NativeCallableAttribute()
+        {
+        }
+    }
+}
+ 
 #endregion
+
+namespace System.Runtime.InteropServices
+{
+    [AttributeUsage((System.AttributeTargets.Method | System.AttributeTargets.Class))]
+    internal class McgIntrinsicsAttribute : Attribute
+    {
+    }
+
+    [McgIntrinsics]
+    internal static class AddrofIntrinsics
+    {
+        // This method is implemented elsewhere in the toolchain
+        internal static IntPtr AddrOf<T>(T ftn) { throw new PlatformNotSupportedException(); }
+    }
+}
 
 class Details
 {
@@ -68,6 +98,28 @@ class Details
     [TypeHandleFixupAttribute(12, typeof(string))]
 #endif
     private static IntPtr PreInitializedTypeField_DataBlob; 
+
+#if BIT64    
+    [MethodAddrFixupAttribute(0, typeof(NativeMethods), "Func1")]
+    [MethodAddrFixupAttribute(8, typeof(NativeMethods), "Func2")]
+#else
+    [MethodAddrFixupAttribute(0, typeof(NativeMethods), "Func1")]
+    [MethodAddrFixupAttribute(4, typeof(NativeMethods), "Func2")]
+#endif
+    private static IntPtr PreInitializedMethodTypeField_DataBlob;     
+}
+
+static class NativeMethods
+{
+    [NativeCallable]
+    internal static void Func1(int a)
+    {
+    }
+
+    [NativeCallable]
+    internal static void Func2(float b)
+    {
+    }
 }
 
 class PreInitData
@@ -82,6 +134,10 @@ class PreInitData
     [InitDataBlob(typeof(Details), "PreInitializedTypeField_DataBlob")]
     internal static FixupRuntimeTypeHandle[] PreInitializedTypeField;
 
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedMethodField_DataBlob")]
+    internal static IntPtr[] PreInitializedMethodField;
+
     internal static string StaticStringFieldAfter = "AFTER";
 }
 
@@ -94,12 +150,24 @@ public class PreInitDataTest
     {
         int result = Pass;
 
-        if (!TestPreInitData())
+        if (!TestPreInitIntData())
         {
             Console.WriteLine("Failed");
             result = Fail;
         }
      
+        if (!TestPreInitTypeData())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
+        if (!TestPreInitMethodData())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
         // Make sure PreInitializedField works with other statics
         if (!TestOtherStatics())
         {
@@ -110,15 +178,22 @@ public class PreInitDataTest
         return result;
     }
 
-    static bool TestPreInitData()
+    static bool TestPreInitIntData()
     {
-        Console.WriteLine("Testing preinitialized array...");
+        Console.WriteLine("Testing preinitialized int array...");
 
         for (int i = 0; i < PreInitData.PreInitializedIntField.Length; ++i)
         {
             if (PreInitData.PreInitializedIntField[i] != i + 1)
                 return false;
         }
+
+        return true;
+    }
+
+    static bool TestPreInitTypeData()
+    {
+        Console.WriteLine("Testing preinitialized type array...");
 
         if (!PreInitData.PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
             return false;
@@ -127,6 +202,20 @@ public class PreInitDataTest
         if (!PreInitData.PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
             return false;
         if (!PreInitData.PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
+            return false;
+
+        return true;
+    }
+
+    public delegate void Func1Proc(int a);
+    public delegate void Func2Proc(float a);
+
+    static bool TestPreInitMethodData()
+    {
+        Console.WriteLine("Testing preinitialized method array...");
+
+        if (PreInitData.PreInitializedMethodField[0] != System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Func1Proc>(NativeMethods.Func1))
+        if (PreInitData.PreInitializedMethodField[1] != System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Func2Proc>(NativeMethods.Func2))
             return false;
 
         return true;
