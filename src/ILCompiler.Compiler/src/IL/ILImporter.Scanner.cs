@@ -102,7 +102,7 @@ namespace Internal.IL
 
         public DependencyList Import()
         {
-            if (_canonMethod.IsNativeCallable)
+            if (_canonMethod.Signature.IsStatic)
             {
                 TypeDesc owningType = _canonMethod.OwningType;
                 if (!_isFallbackBodyCompilation && _factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
