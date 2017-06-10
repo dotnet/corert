@@ -100,6 +100,9 @@ namespace ILCompiler
             var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
 
+            var structMapNode = new StructMarshallingStubMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode, structMapNode, structMapNode.EndSymbol);
+
             var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
@@ -655,6 +658,12 @@ namespace ILCompiler
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             return (GetMetadataCategory(method) & MetadataCategory.Description) != 0;
+        }
+
+        public bool CanGenerateMetadata(FieldDesc field)
+        {
+            Debug.Assert(field.IsTypicalFieldDefinition);
+            return (GetMetadataCategory(field) & MetadataCategory.Description) != 0;
         }
 
         /// <summary>

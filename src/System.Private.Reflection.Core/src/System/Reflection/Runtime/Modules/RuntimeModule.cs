@@ -15,7 +15,6 @@ namespace System.Reflection.Runtime.Modules
     // Modules are quite meaningless in ProjectN but we have to keep up the appearances since they still exist in Win8P's surface area.
     // As far as ProjectN is concerned, each Assembly has one module.
     //
-    [Serializable]
     internal abstract partial class RuntimeModule : Module
     {
         protected RuntimeModule()
@@ -51,9 +50,7 @@ namespace System.Reflection.Runtime.Modules
 
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.ModuleUnity, ScopeName, Assembly);
+            throw new PlatformNotSupportedException();
         }
 
         public abstract override int MetadataToken { get; }

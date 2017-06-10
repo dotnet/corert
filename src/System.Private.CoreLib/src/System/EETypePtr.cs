@@ -90,6 +90,19 @@ namespace System
             return RuntimeImports.AreTypesEquivalent(this, other);
         }
 
+        //
+        // An even faster version of FastEquals that only checks if two EEType pointers are identical.
+        // Note: this method might return false for cases where FastEquals would return true.
+        // Only use if you know what you're doing.
+        //
+        internal bool FastEqualsUnreliable(EETypePtr other)
+        {
+            Debug.Assert(!this.IsNull);
+            Debug.Assert(!other.IsNull);
+
+            return this.RawValue == other.RawValue;
+        }
+
         // Caution: You cannot safely compare RawValue's as RH does NOT unify EETypes. Use the == or Equals() methods exposed by EETypePtr itself.
         internal IntPtr RawValue
         {
@@ -169,6 +182,10 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// WARNING: Never call unless the EEType came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum) 
+        /// and this helper has undefined behavior when passed such as a enum.
+        /// </summary>
         internal bool IsEnum
         {
             get

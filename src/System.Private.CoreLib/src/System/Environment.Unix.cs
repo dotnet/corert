@@ -33,5 +33,13 @@ namespace System
 
             return executionId;
         }
+
+#if DEBUG
+        [Obsolete("ExpandEnvironmentVariables() only called on Windows so not implemented on Unix.")]
+        public static string ExpandEnvironmentVariables(string name)
+        {
+            throw new PlatformNotSupportedException("ExpandEnvironmentVariables() only called on Windows so not implemented on Unix.");
+        }
+#endif
     }
 }

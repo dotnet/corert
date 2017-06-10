@@ -21,15 +21,8 @@ using nuint = System.UInt32;
 
 namespace System
 {
-    [EagerStaticClassConstruction]
     public static class Buffer
     {
-        /// <summary>
-        /// This field is used to quickly check whether an array that is given to the BlockCopy
-        /// method is a byte array and the code can take optimized path.
-        /// </summary>
-        private static readonly EETypePtr s_byteArrayEEType = EETypePtr.EETypePtrOf<byte[]>();
-
         public static unsafe void BlockCopy(Array src, int srcOffset,
                                             Array dst, int dstOffset,
                                             int count)
@@ -43,8 +36,8 @@ namespace System
                 throw new ArgumentNullException(nameof(dst));
 
             // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
-            EETypePtr byteArrayEEType = s_byteArrayEEType;
-            if (src.EETypePtr.FastEquals(byteArrayEEType))
+            // We only need an unreliable comparison since the slow path can handle the byte[] case too.
+            if (src.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
             {
                 uSrcLen = (nuint)src.Length;
             }
@@ -58,7 +51,9 @@ namespace System
 
             if (src != dst)
             {
-                if (dst.EETypePtr.FastEquals(byteArrayEEType))
+                // Use optimized path for byte arrays since this is the main scenario for Buffer::BlockCopy
+                // We only need an unreliable comparison since the slow path can handle the byte[] case too.
+                if (dst.EETypePtr.FastEqualsUnreliable(EETypePtr.EETypePtrOf<byte[]>()))
                 {
                     uDstLen = (nuint)dst.Length;
                 }

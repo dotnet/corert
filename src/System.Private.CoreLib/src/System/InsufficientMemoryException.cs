@@ -21,7 +21,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class InsufficientMemoryException : OutOfMemoryException
     {
         // There may be a problem here interacting with the ResourceManager in out of memory conditions,
@@ -43,7 +42,5 @@ namespace System
         {
             HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
         }
-
-        internal InsufficientMemoryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

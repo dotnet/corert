@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class MissingMemberException : MemberAccessException
     {
         public MissingMemberException()
@@ -46,17 +45,12 @@ namespace System
         protected MissingMemberException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            ClassName = (String)info.GetString("MMClassName");
-            MemberName = (String)info.GetString("MMMemberName");
-            Signature = (byte[])info.GetValue("MMSignature", typeof(byte[]));
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("MMClassName", ClassName, typeof(String));
-            info.AddValue("MMMemberName", MemberName, typeof(String));
-            info.AddValue("MMSignature", Signature, typeof(byte[]));
         }
 
         public override string Message

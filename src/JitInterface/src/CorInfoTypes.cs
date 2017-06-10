@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
@@ -135,10 +136,6 @@ namespace Internal.JitInterface
         mdtName = 0x71000000,
         mdtBaseType = 0x72000000,
     }
-
-    public enum SIZE_T : ulong { } // Really should be IntPtr
-
-    public enum GSCookie : ulong { } // Really should be IntPtr
 
     public enum HRESULT { }
 
@@ -279,21 +276,21 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
-        public SIZE_T offset0;
-        public SIZE_T offset1;
-        public SIZE_T offset2;
-        public SIZE_T offset3;
+        public IntPtr offset0;
+        public IntPtr offset1;
+        public IntPtr offset2;
+        public IntPtr offset3;
+
+        public byte _indirectFirstOffset;
+        public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
     }
 
     // Result of calling embedGenericHandle
-    [StructLayout(LayoutKind.Explicit)]
-    public struct CORINFO_LOOKUP
+    public unsafe struct CORINFO_LOOKUP
     {
-        [FieldOffset(0)]
         public CORINFO_LOOKUP_KIND lookupKind;
 
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
-        [FieldOffset(24)]
         public CORINFO_RUNTIME_LOOKUP runtimeLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
@@ -301,8 +298,16 @@ namespace Internal.JitInterface
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
-        [FieldOffset(24)]
-        public CORINFO_CONST_LOOKUP constLookup;
+        public ref CORINFO_CONST_LOOKUP constLookup
+        {
+            get
+            {
+                // constLookup is union with runtimeLookup
+                Debug.Assert(sizeof(CORINFO_RUNTIME_LOOKUP) >= sizeof(CORINFO_CONST_LOOKUP));
+                fixed (CORINFO_RUNTIME_LOOKUP * p = &runtimeLookup)
+                    return ref *(CORINFO_CONST_LOOKUP *)p;
+            }
+        }
     }
 
     public unsafe struct CORINFO_RESOLVED_TOKEN
@@ -471,6 +476,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_ByReference_Value,
         CORINFO_INTRINSIC_Span_GetItem,
         CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
+        CORINFO_INTRINSIC_GetRawHandle,
 
         CORINFO_INTRINSIC_Count,
         CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,

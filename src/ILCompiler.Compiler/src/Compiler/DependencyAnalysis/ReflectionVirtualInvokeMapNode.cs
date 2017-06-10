@@ -108,6 +108,15 @@ namespace ILCompiler.DependencyAnalysis
                 NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
                 NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
                 dependencies.Add(placedNameAndSig, "Reflection virtual invoke method signature");
+
+                if (!method.HasInstantiation)
+                {
+                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    if (!factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
+                    {
+                        dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Reflection virtual invoke method");
+                    }
+                }
             }
         }
 
@@ -207,13 +216,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Get the declaring method for slot on the instantiated declaring type
                     int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, factory.Target.Abi != TargetAbi.ProjectN);
-
-                    if (slot == -1)
-                    {
-                        // This method doesn't have a slot. (At this time, this is only done for the Object.Finalize method)
-                        Debug.Assert(declaringMethodForSlot.Name == "Finalize");
-                        continue;
-                    }
+                    Debug.Assert(slot != -1);
 
                     vertex = writer.GetTuple(
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(containingTypeKeyNode)),

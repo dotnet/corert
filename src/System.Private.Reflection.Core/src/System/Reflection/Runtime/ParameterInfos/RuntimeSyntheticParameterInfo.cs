@@ -49,6 +49,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override Object RawDefaultValue
+        {
+            get
+            {
+                return null; // Legacy: This is what the desktop returns.
+            }
+        }
+
         public sealed override bool HasDefaultValue
         {
             get

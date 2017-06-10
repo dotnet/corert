@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
@@ -160,14 +161,9 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             }
         }
 
-        protected sealed override bool TryGetDefaultValue(out object defaultValue)
+        protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object defaultValue)
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                            _reader,
-                            _fieldHandle,
-                            this.FieldType,
-                            this.CustomAttributes,
-                            out defaultValue);
+            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()

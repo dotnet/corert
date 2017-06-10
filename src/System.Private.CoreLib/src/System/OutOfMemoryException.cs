@@ -15,7 +15,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class OutOfMemoryException : SystemException
     {
         public OutOfMemoryException()
@@ -36,6 +35,9 @@ namespace System
             HResult = __HResults.COR_E_OUTOFMEMORY;
         }
 
-        protected OutOfMemoryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected OutOfMemoryException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

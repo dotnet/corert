@@ -30,6 +30,7 @@ class Program
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
+        TestNativeLayoutGeneration.Run();
 
         return 100;
     }
@@ -716,6 +717,9 @@ class Program
 
             public virtual string IFaceMethod1(T t) { return "BaseClass.IFaceMethod1"; }
             public virtual string IFaceGVMethod1<U>(T t, U u) { return "BaseClass.IFaceGVMethod1"; }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string VirtualButNotUsedVirtuallyMethod(T t) { return "BaseClass.VirtualButNotUsedVirtuallyMethod"; }
         }
 
         public class DerivedClass1<T> : BaseClass<T>, IFace<T>
@@ -728,6 +732,12 @@ class Program
             public new virtual string GVMethod3<U>(T t, U u) { return "DerivedClass1.GVMethod3"; }
 
             public override string IFaceMethod1(T t) { return "DerivedClass1.IFaceMethod1"; }
+
+            public string UseVirtualButNotUsedVirtuallyMethod(T t)
+            {
+                // Calling through base produces a `call` instead of `callvirt` instruction.
+                return base.VirtualButNotUsedVirtuallyMethod(t);
+            }
         }
 
         public class DerivedClass2<T> : DerivedClass1<T>, IFace<T>
@@ -801,6 +811,7 @@ class Program
                 new DerivedClass1<string>().GVMethod2<string>("string", "string2");
                 new DerivedClass1<string>().GVMethod3<string>("string", "string2");
                 new DerivedClass1<string>().GVMethod4<string>("string", "string2");
+                new DerivedClass1<string>().UseVirtualButNotUsedVirtuallyMethod("string");
                 new DerivedClass2<string>().Method1("string");
                 new DerivedClass2<string>().Method2("string");
                 new DerivedClass2<string>().Method3("string");
@@ -816,6 +827,7 @@ class Program
                 MethodInfo m2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method2");
                 MethodInfo m3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method3");
                 MethodInfo m4 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method4");
+                MethodInfo unusedMethod = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("VirtualButNotUsedVirtuallyMethod");
                 MethodInfo gvm1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
                 MethodInfo gvm2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
                 MethodInfo gvm3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
@@ -824,6 +836,7 @@ class Program
                 Verify("BaseClass.Method2", m2.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("BaseClass.Method3", m3.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("BaseClass.Method4", m4.Invoke(new BaseClass<string>(), new[] { "" }));
+                Verify("BaseClass.VirtualButNotUsedVirtuallyMethod", unusedMethod.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
                 Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass1<string>(), new[] { "" }));
                 Verify("BaseClass.Method3", m3.Invoke(new DerivedClass1<string>(), new[] { "" }));
@@ -1358,6 +1371,45 @@ class Program
             }
         }
 
+        class Base
+        {
+            public virtual string Frob<T>(string s)
+            {
+                return typeof(T).Name + ": Base: " + s;
+            }
+        }
+
+        class Derived : Base
+        {
+            public override string Frob<T>(string s)
+            {
+                return typeof(T).Name + ": Derived: " + s;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void ValidateShared<T>(string s)
+            {
+                Func<string, string> f = Frob<T>;
+                if (f(s) != typeof(T).Name + ": Derived: " + s)
+                    throw new Exception();
+
+                f = base.Frob<T>;
+                if (f(s) != typeof(T).Name + ": Base: " + s)
+                    throw new Exception();
+            }
+
+            public void Validate(string s)
+            {
+                Func<string, string> f = Frob<string>;
+                if (f(s) != typeof(string).Name + ": Derived: " + s)
+                    throw new Exception();
+
+                f = base.Frob<string>;
+                if (f(s) != typeof(string).Name + ": Base: " + s)
+                    throw new Exception();
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void RunShared<T>(IFoo foo)
         {
@@ -1373,8 +1425,10 @@ class Program
             if (a(123) != "Atom123")
                 throw new Exception();
 
-            // https://github.com/dotnet/corert/issues/2796
-            // RunShared<Atom>(new FooShared());
+            RunShared<Atom>(new FooShared());
+
+            new Derived().Validate("hello");
+            new Derived().ValidateShared<object>("ola");
         }
     }
 
@@ -1909,6 +1963,55 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception(s_NumErrors + " errors!");
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/corert/issues/3659
+    class TestNativeLayoutGeneration
+    {
+#pragma warning disable 649 // s_ref was never assigned
+        private static object s_ref;
+#pragma warning restore 649
+
+        class Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string DoStuff()
+            {
+                return "Used";
+            }
+        }
+
+        class Unused<T> : Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override string DoStuff()
+            {
+                return "Unused " + typeof(T).ToString();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Blagh()
+            {
+            }
+        }
+
+        public static void Run()
+        {
+            new Used().DoStuff();
+
+            try
+            {
+                // Call an instance method on something we never allocated, but overrides a used virtual.
+                // This asserted the compiler when trying to build a template for Unused<__Canon>.
+                ((Unused<object>)s_ref).Blagh();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+
+            throw new Exception();
         }
     }
 }

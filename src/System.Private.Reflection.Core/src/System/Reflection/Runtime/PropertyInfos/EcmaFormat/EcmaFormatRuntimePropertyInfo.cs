@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.EcmaFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.MethodInfos;
@@ -119,20 +120,6 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
             return _propertyHandle.GetHashCode();
         }
 
-        public sealed override Object GetConstantValue()
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetConstantValue(this);
-#endif
-            Object defaultValue;
-            if (!DefaultValueProcessing.GetDefaultValueIfAny(_reader, ref _property, this, out defaultValue))
-            {
-                throw new InvalidOperationException();
-            }
-            return defaultValue;
-        }
-
         public sealed override int MetadataToken
         {
             get
@@ -147,6 +134,11 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
             {
                 return new QSignatureTypeHandle(_reader, _reader.GetBlobReader(_property.Signature));
             }
+        }
+
+        protected sealed override bool GetDefaultValueIfAny(bool raw, out object defaultValue)
+        {
+            return DefaultValueProcessing.GetDefaultValueIfAny(_reader, ref _property, this, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

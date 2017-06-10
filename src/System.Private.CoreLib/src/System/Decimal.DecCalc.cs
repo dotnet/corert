@@ -15,38 +15,38 @@ namespace System
         // Low level accessors used by a DecCalc and formatting 
         internal uint High
         {
-            get { return _hi; }
-            set { _hi = value; }
+            get { return uhi; }
+            set { uhi = value; }
         }
 
         internal uint Low
         {
-            get { return _lo; }
-            set { _lo = value; }
+            get { return ulo; }
+            set { ulo = value; }
         }
 
         internal uint Mid
         {
-            get { return _mid; }
-            set { _mid = value; }
+            get { return umid; }
+            set { umid = value; }
         }
 
         internal bool Sign
         {
-            get { return (_flags & SignMask) != 0; }
-            set { _flags = (_flags & ~SignMask) | (value ? SignMask : 0); }
+            get { return (uflags & SignMask) != 0; }
+            set { uflags = (uflags & ~SignMask) | (value ? SignMask : 0); }
         }
 
         internal int Scale
         {
-            get { return (int)((_flags & ScaleMask) >> ScaleShift); }
-            set { _flags = (_flags & ~ScaleMask) | ((uint)value << ScaleShift); }
+            get { return (int)((uflags & ScaleMask) >> ScaleShift); }
+            set { uflags = (uflags & ~ScaleMask) | ((uint)value << ScaleShift); }
         }
 
         private ulong Low64
         {
-            get { return ((ulong)_mid << 32) | _lo; }
-            set { _mid = (uint)(value >> 32); _lo = (uint)value; }
+            get { return ((ulong)umid << 32) | ulo; }
+            set { umid = (uint)(value >> 32); ulo = (uint)value; }
         }
 
         #region APIs need by number formatting.
@@ -1190,7 +1190,7 @@ namespace System
             //
             private static Decimal Abs(Decimal d)
             {
-                return new Decimal((int)d._lo, (int)d._mid, (int)d._hi, (int)(d._flags & ~SignMask));
+                return new Decimal(d.lo, d.mid, d.hi, (int)(d.uflags & ~SignMask));
             }
 
             /***
@@ -1219,9 +1219,9 @@ namespace System
 
                 if (input.Scale > 0)
                 {
-                    tmpNum[0] = input._lo;
-                    tmpNum[1] = input._mid;
-                    tmpNum[2] = input._hi;
+                    tmpNum[0] = input.ulo;
+                    tmpNum[1] = input.umid;
+                    tmpNum[2] = input.uhi;
                     scale = input.Scale;
                     result.Sign = input.Sign;
                     remainder = 0;
@@ -1237,9 +1237,9 @@ namespace System
                         scale -= MaxInt32Scale;
                     } while (scale > 0);
 
-                    result._lo = tmpNum[0];
-                    result._mid = tmpNum[1];
-                    result._hi = tmpNum[2];
+                    result.ulo = tmpNum[0];
+                    result.umid = tmpNum[1];
+                    result.uhi = tmpNum[2];
                     result.Scale = 0;
 
                     return remainder;
@@ -1255,7 +1255,7 @@ namespace System
             //**********************************************************************
             internal static void VarCyFromDec(ref Decimal pdecIn, out long pcyOut)
             {
-                if (!Decimal.IsValid(pdecIn._flags))
+                if (!Decimal.IsValid(pdecIn.uflags))
                     throw new OverflowException(SR.Overflow_Currency);
 
                 Split64 sdlTmp = default(Split64);
@@ -2388,9 +2388,9 @@ namespace System
                 scale = input.Scale - decimals;
                 if (scale > 0)
                 {
-                    tmpNum[0] = input._lo;
-                    tmpNum[1] = input._mid;
-                    tmpNum[2] = input._hi;
+                    tmpNum[0] = input.ulo;
+                    tmpNum[1] = input.umid;
+                    tmpNum[2] = input.uhi;
                     result.Sign = input.Sign;
                     remainder = sticky = 0;
 
@@ -2416,9 +2416,9 @@ namespace System
                         && ++tmpNum[1] == 0)
                         ++tmpNum[2];
 
-                    result._lo = tmpNum[0];
-                    result._mid = tmpNum[1];
-                    result._hi = tmpNum[2];
+                    result.ulo = tmpNum[0];
+                    result.umid = tmpNum[1];
+                    result.uhi = tmpNum[2];
                     result.Scale = decimals;
                     return;
                 }
@@ -2434,7 +2434,7 @@ namespace System
                 // OleAut doesn't provide a VarDecMod.            
 
                 // In the operation x % y the sign of y does not matter. Result will have the sign of x.
-                d2._flags = (d2._flags & ~SignMask) | (d1._flags & SignMask);
+                d2.uflags = (d2.uflags & ~SignMask) | (d1.uflags & SignMask);
 
 
                 // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
@@ -2449,7 +2449,7 @@ namespace System
                 if (d1 == 0)
                 {
                     // The sign of D1 will be wrong here. Fall through so that we still get a DivideByZeroException
-                    d1._flags = (d1._flags & ~SignMask) | (d2._flags & SignMask);
+                    d1.uflags = (d1.uflags & ~SignMask) | (d2.uflags & SignMask);
                 }
 
                 // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)            
@@ -2457,14 +2457,14 @@ namespace System
                 Decimal multipliedResult = dividedResult * d2;
                 Decimal result = d1 - multipliedResult;
                 // See if the result has crossed 0
-                if ((d1._flags & SignMask) != (result._flags & SignMask))
+                if ((d1.uflags & SignMask) != (result.uflags & SignMask))
                 {
                     if (NearNegativeZero <= result && result <= NearPositiveZero)
                     {
                         // Certain Remainder operations on decimals with 28 significant digits round
                         // to [+-]0.000000000000000000000000001m instead of [+-]0m during the intermediate calculations. 
                         // 'zero' results just need their sign corrected.
-                        result._flags = (result._flags & ~SignMask) | (d1._flags & SignMask);
+                        result.uflags = (result.uflags & ~SignMask) | (d1.uflags & SignMask);
                     }
                     else
                     {
@@ -2487,17 +2487,17 @@ namespace System
             {
                 UInt32 v;
                 UInt32 sum;
-                v = value._lo;
+                v = value.ulo;
                 sum = v + i;
-                value._lo = sum;
+                value.ulo = sum;
                 if (sum < v || sum < i)
                 {
-                    v = value._mid;
+                    v = value.umid;
                     sum = v + 1;
-                    value._mid = sum;
+                    value.umid = sum;
                     if (sum < v || sum < 1)
                     {
-                        value._hi = value._hi + 1;
+                        value.uhi = value.uhi + 1;
                     }
                 }
             }
@@ -2509,22 +2509,22 @@ namespace System
             {
                 UInt32 remainder = 0;
                 UInt64 n;
-                if (value._hi != 0)
+                if (value.uhi != 0)
                 {
-                    n = value._hi;
-                    value._hi = (UInt32)(n / divisor);
+                    n = value.uhi;
+                    value.uhi = (UInt32)(n / divisor);
                     remainder = (UInt32)(n % divisor);
                 }
-                if (value._mid != 0 || remainder != 0)
+                if (value.umid != 0 || remainder != 0)
                 {
-                    n = ((UInt64)remainder << 32) | value._mid;
-                    value._mid = (UInt32)(n / divisor);
+                    n = ((UInt64)remainder << 32) | value.umid;
+                    value.umid = (UInt32)(n / divisor);
                     remainder = (UInt32)(n % divisor);
                 }
-                if (value._lo != 0 || remainder != 0)
+                if (value.ulo != 0 || remainder != 0)
                 {
-                    n = ((UInt64)remainder << 32) | value._lo;
-                    value._lo = (UInt32)(n / divisor);
+                    n = ((UInt64)remainder << 32) | value.ulo;
+                    value.ulo = (UInt32)(n / divisor);
                     remainder = (UInt32)(n % divisor);
                 }
                 return remainder;
@@ -2573,17 +2573,17 @@ namespace System
             internal static uint DecDivMod1E9(ref Decimal value)
             {
                 return D32DivMod1E9(D32DivMod1E9(D32DivMod1E9(0,
-                                                              ref value._hi),
-                                                 ref value._mid),
-                                    ref value._lo);
+                                                              ref value.uhi),
+                                                 ref value.umid),
+                                    ref value.ulo);
             }
 
             internal static void DecAddInt32(ref Decimal value, uint i)
             {
-                if (D32AddCarry(ref value._lo, i))
+                if (D32AddCarry(ref value.ulo, i))
                 {
-                    if (D32AddCarry(ref value._mid, 1))
-                        D32AddCarry(ref value._hi, 1);
+                    if (D32AddCarry(ref value.umid, 1))
+                        D32AddCarry(ref value.uhi, 1);
                 }
             }
 
@@ -2615,16 +2615,16 @@ namespace System
 
             private static void DecAdd(ref Decimal value, Decimal d)
             {
-                if (D32AddCarry(ref value._lo, d.Low))
+                if (D32AddCarry(ref value.ulo, d.Low))
                 {
-                    if (D32AddCarry(ref value._mid, 1))
-                        D32AddCarry(ref value._hi, 1);
+                    if (D32AddCarry(ref value.umid, 1))
+                        D32AddCarry(ref value.uhi, 1);
                 }
 
-                if (D32AddCarry(ref value._mid, d.Mid))
-                    D32AddCarry(ref value._hi, 1);
+                if (D32AddCarry(ref value.umid, d.Mid))
+                    D32AddCarry(ref value.uhi, 1);
 
-                D32AddCarry(ref value._hi, d.High);
+                D32AddCarry(ref value.uhi, d.High);
             }
 
             #endregion

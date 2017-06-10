@@ -921,7 +921,8 @@ namespace ILCompiler.DependencyAnalysis
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
-                    if (!factory.Target.IsWindows)
+                    // The DWARF CFI unwind is implemented for AMD64 only.
+                    if (!factory.Target.IsWindows && (factory.Target.Architecture == TargetArchitecture.X64))
                         objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map

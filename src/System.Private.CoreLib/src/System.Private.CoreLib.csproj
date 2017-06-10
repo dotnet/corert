@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -112,6 +112,7 @@
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
+    <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
@@ -157,7 +158,6 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
-    <Compile Include="System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
     <Compile Include="System\Reflection\MethodBody.cs" />
     <Compile Include="System\Reflection\TypeInfo.Workaround.cs" />
@@ -217,9 +217,9 @@
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\File.cs" />
-    <Compile Include="System\IO\File.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\IO\File.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
+    <Compile Include="System\IO\InternalFile.cs" />
+    <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
@@ -331,7 +331,6 @@
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
-    <Compile Include="System\DelegateSerializationHolder.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
@@ -444,8 +443,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\Registry.cs" />
     <Compile Include="Microsoft\Win32\RegistryHive.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
@@ -455,6 +457,12 @@
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegDeleteValue.cs">
+      <Link>Interop\Windows\advapi32\Interop.RegDeleteValue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\advapi32\Interop.RegSetValueEx.cs">
+      <Link>Interop\Windows\advapi32\Interop.RegSetValueEx.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegistryOptions.cs">
       <Link>Interop\Windows\mincore\Interop.RegistryOptions.cs</Link>
     </Compile>
@@ -481,6 +489,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
+      <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
@@ -636,6 +647,9 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />

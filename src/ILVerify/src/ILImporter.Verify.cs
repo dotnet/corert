@@ -123,7 +123,7 @@ namespace Internal.IL
             _typeSystemContext = method.Context;
 
             if (!_methodSignature.IsStatic)
-                _thisType = method.OwningType;
+                _thisType = method.OwningType.InstantiateAsOpen();
 
             _methodIL = methodIL;
 
@@ -232,6 +232,20 @@ namespace Internal.IL
         void FatalCheck(bool cond, VerifierError error)
         {
             if (!Check(cond, error))
+                AbortMethodVerification();
+        }
+
+        // Check whether the condition is true. If not, terminate the verification of current method.
+        void FatalCheck(bool cond, VerifierError error, StackValue found)
+        {
+            if (!Check(cond, error, found))
+                AbortMethodVerification();
+        }
+
+        // Check whether the condition is true. If not, terminate the verification of current method.
+        void FatalCheck(bool cond, VerifierError error, StackValue found, StackValue expected)
+        {
+            if (!Check(cond, error, found, expected))
                 AbortMethodVerification();
         }
 
@@ -366,16 +380,6 @@ namespace Internal.IL
             }
         }
 
-        void CheckIsAssignablePointer(TypeDesc src, TypeDesc dst)
-        {
-            if (!IsAssignable(src, dst))
-            {
-                VerificationError(VerifierError.StackUnexpected, "address of " + TypeToStringForIsAssignable(src), "address of " + TypeToStringForIsAssignable(dst));
-                VerificationError(VerifierError.StackUnexpected, "address of " + TypeToStringForIsAssignable(src));
-                AbortBasicBlockVerification();
-            }
-        }
-
         void CheckIsArrayElementCompatibleWith(TypeDesc src, TypeDesc dst)
         {
             if (!IsAssignable(src, dst, true))
@@ -485,6 +489,7 @@ namespace Internal.IL
 
         void EndImportingInstruction()
         {
+            CheckPendingPrefix(_pendingPrefix);
         }
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
@@ -658,15 +663,15 @@ namespace Internal.IL
 
             if (opcode != ILOpcode.newobj)
             {
-                if ((_pendingPrefix & Prefix.Constrained) != 0 && opcode == ILOpcode.callvirt)
+                if (HasPendingPrefix(Prefix.Constrained) && opcode == ILOpcode.callvirt)
                 {
-                    _pendingPrefix &= ~Prefix.Constrained;
+                    ClearPendingPrefix(Prefix.Constrained);
                     constrained = _constrained;
                 }
 
-                if ((_pendingPrefix & Prefix.Tail) != 0)
+                if (HasPendingPrefix(Prefix.Tail))
                 {
-                    _pendingPrefix &= ~Prefix.Tail;
+                    ClearPendingPrefix(Prefix.Tail);
                     tailCall = true;
                 }
             }
@@ -987,18 +992,19 @@ namespace Internal.IL
 
             if (entryStack != null)
             {
-                // TODO: Better error messages
-                if (entryStack.Length != _stackTop)
-                    throw new InvalidProgramException();
+                FatalCheck(entryStack.Length == _stackTop, VerifierError.PathStackDepth);
 
                 for (int i = 0; i < entryStack.Length; i++)
                 {
                     // TODO: Do we need to allow conversions?
-                    if (entryStack[i].Kind != _stack[i].Kind)
-                        throw new InvalidProgramException();
-
+                    FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    
                     if (entryStack[i].Type != _stack[i].Type)
-                        throw new InvalidProgramException();
+                    {
+                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
+                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
+                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                    }
                 }
             }
             else
@@ -1144,6 +1150,9 @@ namespace Internal.IL
 
         void ImportLoadField(int token, bool isStatic)
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             var field = ResolveFieldToken(token);
 
             if (isStatic)
@@ -1200,6 +1209,9 @@ namespace Internal.IL
 
         void ImportStoreField(int token, bool isStatic)
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             var value = Pop();
 
             var field = ResolveFieldToken(token);
@@ -1235,37 +1247,16 @@ namespace Internal.IL
 
         void ImportLoadIndirect(TypeDesc type)
         {
-            var value = Pop();
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
 
-            CheckIsByRef(value);
+            var address = Pop();
 
-            if (type != null)
-            {
-                CheckIsAssignablePointer(value.Type, type);
-            }
-            else
-            {
-                type = value.Type;
-                CheckIsObjRef(type);
-            }
+            if (type == null)
+                type = GetWellKnownType(WellKnownType.Object);
 
-#if false
-            if (ptr.IsByRef())
-            {
-                ptrVal = DereferenceByRef(ptr);
-                if (instrType == TI_REF)
-                {
-                    VerifyIsObjRef(ptrVal); //@TODO: give better error: Expected Obref or Variable on stack
-                }
-                else
-                {
-                    VerifyCompatibleWith(vertype(ptrVal).MakeByRef(), vertype(instrType).MakeByRef());
-                    VerifyAndReportFound(instrType == ptrVal.GetRawType(), ptr,
-                                         MVER_E_STACK_UNEXPECTED);
-                }
-            }
-#endif
-
+            CheckIsByRef(address);
+            CheckIsAssignable(address.Type, type);
             Push(StackValue.CreateFromType(type));
         }
 
@@ -1276,7 +1267,22 @@ namespace Internal.IL
 
         void ImportStoreIndirect(TypeDesc type)
         {
-            throw new NotImplementedException($"{nameof(ImportStoreIndirect)} not implemented");
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
+            if (type == null)
+                type = GetWellKnownType(WellKnownType.Object);
+
+            var value = Pop();
+            var address = Pop();
+
+            Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
+
+            CheckIsByRef(address);
+            if (!value.IsNullReference)
+                CheckIsAssignable(type, address.Type);
+
+            CheckIsAssignable(value, StackValue.CreateFromType(type));
         }
 
         void ImportThrow()
@@ -1455,7 +1461,8 @@ namespace Internal.IL
                 CheckIsPointerElementCompatibleWith(actualElementType, elementType);
             }
 
-            Push(StackValue.CreateByRef(elementType));
+            Push(StackValue.CreateByRef(elementType, HasPendingPrefix(Prefix.ReadOnly)));
+            ClearPendingPrefix(Prefix.ReadOnly);
         }
 
         void ImportLoadLength()
@@ -1516,7 +1523,7 @@ namespace Internal.IL
             {
                 Check(type.IsValueType, VerifierError.ValueTypeExpected);
 
-                Push(StackValue.CreateByRef(type));
+                Push(StackValue.CreateByRef(type ,true));
             }
         }
 
@@ -1582,6 +1589,9 @@ namespace Internal.IL
 
         void ImportCpBlk()
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             Unverifiable();
 
             var size = Pop();
@@ -1595,6 +1605,9 @@ namespace Internal.IL
 
         void ImportInitBlk()
         {
+            ClearPendingPrefix(Prefix.Unaligned);
+            ClearPendingPrefix(Prefix.Volatile);
+
             Unverifiable();
 
             var size = Pop();
@@ -1692,6 +1705,16 @@ namespace Internal.IL
             Check((mask & Prefix.Volatile) == 0, VerifierError.Volatile);
             Check((mask & Prefix.ReadOnly) == 0, VerifierError.ReadOnly);
             Check((mask & Prefix.Constrained) == 0, VerifierError.Constrained);
+        }
+
+        bool HasPendingPrefix(Prefix prefix)
+        {
+            return (_pendingPrefix & prefix) != 0;
+        }
+
+        void ClearPendingPrefix(Prefix prefix)
+        {
+            _pendingPrefix &= ~prefix;
         }
 
         //

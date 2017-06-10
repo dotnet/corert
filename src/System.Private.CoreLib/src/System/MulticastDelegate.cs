@@ -153,33 +153,7 @@ namespace System
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            Delegate[] invocationList = m_helperObject as Delegate[];
-            if (invocationList == null)
-            {
-                if (Method == null)
-                    throw new SerializationException(SR.DelegateSer_InsufficientMetadata);
-
-                DelegateSerializationHolder.GetDelegateSerializationInfo(info, this.GetType(), Target, Method, 0);
-            }
-            else
-            {
-                int targetIndex = 0;
-                DelegateSerializationHolder.DelegateEntry previousEntry = null;
-                int invocationCount = (int)m_extraFunctionPointerOrData;
-                for (int i = invocationCount; --i >= 0;)
-                {
-                    MulticastDelegate d = (MulticastDelegate)invocationList[i];
-
-                    if (d.Method == null)
-                        throw new SerializationException(SR.DelegateSer_InsufficientMetadata);
-
-                    DelegateSerializationHolder.DelegateEntry de = DelegateSerializationHolder.GetDelegateSerializationInfo(info, d.GetType(), d.Target, d.Method, targetIndex++);
-                    if (previousEntry != null)
-                        previousEntry.NextEntry = de;
-
-                    previousEntry = de;
-                }
-            }
+            throw new PlatformNotSupportedException(SR.Serialization_DelegatesNotSupported);
         }
     }
 }

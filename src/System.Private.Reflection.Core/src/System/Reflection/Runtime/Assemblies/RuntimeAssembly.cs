@@ -27,8 +27,7 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // The runtime's implementation of an Assembly. 
     //
-    [Serializable]
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, ISerializable
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
     {
         public bool Equals(RuntimeAssembly other)
         {
@@ -53,10 +52,7 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.AssemblyUnity, FullName, this);
+            throw new PlatformNotSupportedException();
         }
 
         public abstract override Module ManifestModule { get; }

@@ -28,7 +28,18 @@ namespace Internal.Runtime.TypeLoader
         {
             for (int i = 0; i < param.parameterValues.Length; i++)
             {
-                arguments.SetVar<int>(i + 1, param.parameterValues[i]);
+                unsafe
+                {
+                    IntPtr input = arguments.GetAddressOfVarData(i + 1);
+                    byte* pInput = (byte*)input;
+                    fixed(byte* pParam = param.parameterValues[i])
+                    {
+                        for (int j = 0; j < param.parameterValues[i].Length; j++)
+                        {
+                            pInput[j] = pParam[j];
+                        }
+                    }
+                }
             }
 
             // Obtain the target method address from the runtime
@@ -53,11 +64,12 @@ namespace Internal.Runtime.TypeLoader
                 object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
                 GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
                 IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
-                uint identifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
 
                 // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
                 funcEvalCompleteCommand->commandCode = 0;
+                funcEvalCompleteCommand->returnHandleIdentifier = returnHandleIdentifier;
                 funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
                 IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
                 RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
@@ -83,7 +95,7 @@ namespace Internal.Runtime.TypeLoader
             [FieldOffset(0)]
             public int commandCode;
             [FieldOffset(4)]
-            public int unused;
+            public uint returnHandleIdentifier;
             [FieldOffset(8)]
             public long returnAddress;
         }
@@ -91,8 +103,7 @@ namespace Internal.Runtime.TypeLoader
         struct TypesAndValues
         {
             public RuntimeTypeHandle[] types;
-            // TODO: We should support arguments of *any* type
-            public int[] parameterValues;            
+            public byte[][] parameterValues;
         }
 
         private static void HighLevelDebugFuncEvalHelper()
@@ -122,7 +133,7 @@ namespace Internal.Runtime.TypeLoader
 
                 uint trash;
                 uint parameterCount;
-                uint parameterValue;
+                uint parameterValueSize;
                 uint eeTypeCount;
                 ulong eeType;
                 uint offset = 0;
@@ -131,24 +142,32 @@ namespace Internal.Runtime.TypeLoader
                 offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
                 offset = reader.DecodeUnsigned(offset, out parameterCount);
 
-                typesAndValues.parameterValues = new int[parameterCount];
+                typesAndValues.parameterValues = new byte[parameterCount][];
                 for (int i = 0; i < parameterCount; i++)
                 {
-                    offset = reader.DecodeUnsigned(offset, out parameterValue);
-                    typesAndValues.parameterValues[i] = (int)parameterValue;
+                    offset = reader.DecodeUnsigned(offset, out parameterValueSize);
+                    byte[] parameterValue = new byte[parameterValueSize];
+                    for (int j = 0; j < parameterValueSize; j++)
+                    {
+                        uint parameterByte;
+                        offset = reader.DecodeUnsigned(offset, out parameterByte);
+                        parameterValue[j] = (byte)parameterByte;
+                    }
+                    typesAndValues.parameterValues[i] = parameterValue;
                 }
-                offset = reader.DecodeUnsigned(offset, out eeTypeCount); 
+                offset = reader.DecodeUnsigned(offset, out eeTypeCount);
+                ulong[] debuggerPreparedExternalReferences = new ulong[eeTypeCount];
                 for (int i = 0; i < eeTypeCount; i++)
                 {
-                    // TODO: Stuff these eeType values into the external reference table
                     offset = reader.DecodeUnsignedLong(offset, out eeType);
+                    debuggerPreparedExternalReferences[i] = eeType;
                 }
 
                 TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
                 bool hasThis;
                 TypeDesc[] parameters;
                 bool[] parametersWithGenericDependentLayout;
-                bool result = TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(typeSystemContext, RuntimeSignature.CreateFromNativeLayoutSignatureForDebugger(offset), Instantiation.Empty, Instantiation.Empty, out hasThis, out parameters, out parametersWithGenericDependentLayout, reader);
+                bool result = TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature_NativeLayout_Debugger(typeSystemContext, RuntimeSignature.CreateFromNativeLayoutSignatureForDebugger(offset), Instantiation.Empty, Instantiation.Empty, out hasThis, out parameters, out parametersWithGenericDependentLayout, reader, debuggerPreparedExternalReferences);
 
                 typesAndValues.types = new RuntimeTypeHandle[parameters.Length];
 
@@ -190,7 +209,7 @@ namespace Internal.Runtime.TypeLoader
                 LocalVariableType[] argumentTypes = new LocalVariableType[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    // TODO: What these false really means? Need to make sure our format contains those information
+                    // TODO, FuncEval, what these false really means? Need to make sure our format contains those information
                     argumentTypes[i] = new LocalVariableType(typesAndValues.types[i], false, false);
                 }
 

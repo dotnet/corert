@@ -20,6 +20,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices.ComTypes;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.InteropServices
 {
@@ -177,10 +178,10 @@ namespace System.Runtime.InteropServices
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            RuntimeTypeHandle unsafeStructType;
-            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
+            int size;
+            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructSize(typeHandle, out size))
             {
-                return unsafeStructType.GetValueTypeSize();
+                return size;
             }
 
             if (!typeHandle.IsBlittable() && !typeHandle.IsValueType())
@@ -216,7 +217,7 @@ namespace System.Runtime.InteropServices
         {
             bool structExists;
             uint offset;
-            if (McgModuleManager.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
+            if (RuntimeInteropData.Instance.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
             {
                 return new IntPtr(offset);
             }
@@ -1096,7 +1097,7 @@ namespace System.Runtime.InteropServices
             }
 
             IntPtr unmarshalStub;
-            if (McgModuleManager.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
             {
                 InteropExtensions.PinObjectAndCall(structure,
                     unboxedStructPtr =>
@@ -1191,7 +1192,7 @@ namespace System.Runtime.InteropServices
 
             bool isBlittable = false; // whether Mcg treat this struct as blittable struct
             IntPtr marshalStub;
-            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
             {
                 if (marshalStub != IntPtr.Zero)
                 {
@@ -1279,7 +1280,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr destroyStructureStub;
             bool hasInvalidLayout;
-            if (McgModuleManager.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
+            if (RuntimeInteropData.Instance.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
             {
                 if (hasInvalidLayout)
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
@@ -1476,9 +1477,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
         {
-            // @TODO - if this is something we recognize, create a strongly-typed RCW
-            // Otherwise, create a weakly typed RCW
-            throw new PlatformNotSupportedException();
+            return Type.GetTypeFromCLSID(clsid);
         }
 
         //====================================================================

@@ -5,13 +5,14 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
+
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
@@ -34,9 +35,8 @@ namespace System.Reflection.Runtime.TypeInfos
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
     //
-    [Serializable]
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeTypeInfo : TypeInfo, ISerializable, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
+    internal abstract partial class RuntimeTypeInfo : TypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
     {
         protected RuntimeTypeInfo()
         {
@@ -207,14 +207,6 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_InterfaceMap);
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, this);
         }
 
         //
@@ -615,6 +607,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return null;
             }
         }
+
+        internal EnumInfo EnumInfo => Cache.EnumInfo;
 
         internal abstract Type InternalDeclaringType { get; }
 

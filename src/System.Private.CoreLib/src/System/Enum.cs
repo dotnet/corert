@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -12,10 +11,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.Runtime.Augments;
-using Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Augments;
 
 namespace System
 {
+    [Serializable]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         public int CompareTo(Object target)
@@ -141,16 +141,20 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
 
-            EnumInfo enumInfo = GetEnumInfo(enumType);
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
-            Contract.EndContractBlock();
 
-            if (value.EETypePtr.IsEnum)
+            if (!enumType.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
+
+            EnumInfo enumInfo = GetEnumInfo(enumType);
+            if (value is Enum)
             {
                 EETypePtr enumTypeEEType;
                 if ((!enumType.TryGetEEType(out enumTypeEEType)) || enumTypeEEType != value.EETypePtr)
@@ -493,6 +497,9 @@ namespace System
             // For desktop compatibility, do not bounce an incoming integer that's the wrong size. 
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
 
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum);
+
             EnumInfo enumInfo = GetEnumInfo(enumType);
             String nameOrNull = GetNameIfAny(enumInfo, rawValue);
             return nameOrNull;
@@ -506,6 +513,9 @@ namespace System
             if (!enumType.IsRuntimeImplemented())
                 return enumType.GetEnumNames();
 
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum);
+
             KeyValuePair<String, ulong>[] namesAndValues = GetEnumInfo(enumType).NamesAndValues;
             String[] names = new String[namesAndValues.Length];
             for (int i = 0; i < namesAndValues.Length; i++)
@@ -518,46 +528,29 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
 
-            RuntimeTypeHandle runtimeTypeHandle = enumType.TypeHandle;
-            EETypePtr eeType = runtimeTypeHandle.ToEETypePtr();
-            if (!eeType.IsEnum)
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumUnderlyingType();
+
+            if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
-            switch (eeType.CorElementType)
-            {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return CommonRuntimeTypes.Boolean;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                    return CommonRuntimeTypes.Char;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                    return CommonRuntimeTypes.SByte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                    return CommonRuntimeTypes.Byte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                    return CommonRuntimeTypes.Int16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                    return CommonRuntimeTypes.UInt16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                    return CommonRuntimeTypes.Int32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                    return CommonRuntimeTypes.UInt32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                    return CommonRuntimeTypes.Int64;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                    return CommonRuntimeTypes.UInt64;
-                default:
-                    throw new ArgumentException();
-            }
+            return GetEnumInfo(enumType).UnderlyingType;
         }
 
         public static Array GetValues(Type enumType)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsRuntimeImplemented())
+                return enumType.GetEnumValues();
+
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum);
+
             Array values = GetEnumInfo(enumType).Values;
             int count = values.Length;
-            EETypePtr enumArrayType = enumType.MakeArrayType().TypeHandle.ToEETypePtr();
-            Array result = RuntimeImports.RhNewArray(enumArrayType, count);
+            Array result = Array.CreateInstance(enumType, count);
             Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
             return result;
         }
@@ -603,6 +596,9 @@ namespace System
 
             if (value.EETypePtr == EETypePtr.EETypePtrOf<string>())
             {
+                if (!enumType.IsEnum)
+                    throw new ArgumentException(SR.Arg_MustBeEnum);
+
                 EnumInfo enumInfo = GetEnumInfo(enumType);
                 foreach (KeyValuePair<String, ulong> kv in enumInfo.NamesAndValues)
                 {
@@ -623,20 +619,27 @@ namespace System
                 }
 
                 EnumInfo enumInfo = null;
-                if (value.EETypePtr.IsEnum)
+                if (value is Enum)
                 {
                     if (!ValueTypeMatchesEnumType(enumType, value))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), enumType));
                 }
                 else
                 {
+                    if (!enumType.IsEnum)
+                        throw new ArgumentException(SR.Arg_MustBeEnum);
+
                     enumInfo = GetEnumInfo(enumType);
                     if (!(enumInfo.UnderlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), enumInfo.UnderlyingType));
                 }
 
                 if (enumInfo == null)
+                {
+                    if (!enumType.IsEnum)
+                        throw new ArgumentException(SR.Arg_MustBeEnum);
                     enumInfo = GetEnumInfo(enumType);
+                }
                 String nameOrNull = GetNameIfAny(enumInfo, rawValue);
                 return nameOrNull != null;
             }
@@ -701,13 +704,17 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
 
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
             if (!enumType.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
 
-            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            if (!enumEEType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
+            if (enumType.ContainsGenericParameters)
+                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
 
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             unsafe
             {
                 byte* pValue = (byte*)&value;
@@ -810,7 +817,7 @@ namespace System
             if (format == null || format.Length == 0)
                 format = "G";
 
-            EnumInfo enumInfo = GetEnumInfoIfAvailable(this.GetType());
+            EnumInfo enumInfo = GetEnumInfo(this.GetType());
 
             // Project N port note: If Reflection info isn't available, fallback to ToString() which will substitute a numeric value for the "correct" output.
             // This scenario has been hit frequently when throwing exceptions formatted with error strings containing enum substitations.
@@ -833,27 +840,13 @@ namespace System
             return ToString();
         }
 
-        //
-        // Note: this helper also checks if the enumType is in fact an Enum and throws an user-visible ArgumentException if it's not.
-        //
         private static EnumInfo GetEnumInfo(Type enumType)
         {
-            EnumInfo enumInfo = GetEnumInfoIfAvailable(enumType);
-            if (enumInfo == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType);
-            return enumInfo;
-        }
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsRuntimeImplemented());
+            Debug.Assert(enumType.IsEnum);
 
-        //
-        // Note: this helper also checks if the enumType is in fact an Enum and throws an user-visible ArgumentException if it's not.
-        //
-        private static EnumInfo GetEnumInfoIfAvailable(Type enumType)
-        {
-            RuntimeTypeHandle runtimeTypeHandle = enumType.TypeHandle;
-            if (!runtimeTypeHandle.ToEETypePtr().IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
-
-            return s_enumInfoCache.GetOrAdd(new TypeUnificationKey(enumType));
+            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
         }
 
         //
@@ -996,10 +989,14 @@ namespace System
                 return false;
             }
 
-            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
-            if (!enumEEType.IsEnum)
+            if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
+            // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
+            if (enumType.ContainsGenericParameters)
+                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
+
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             if (TryParseAsInteger(enumEEType, value, firstNonWhitespaceIndex, out result))
                 return true;
 
@@ -1010,9 +1007,7 @@ namespace System
             }
 
             // Parse as string. Now (and only now) do we look for metadata information.
-            EnumInfo enumInfo = RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(enumType);
-            if (enumInfo == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType);
+            EnumInfo enumInfo = GetEnumInfo(enumType);
             ulong v = 0;
 
             // Port note: The docs are silent on how multiple matches are resolved when doing case-insensitive parses.
@@ -1267,18 +1262,6 @@ namespace System
                 return String.Format("{0}", GetValue());
             }
         }
-
-
-        private sealed class EnumInfoUnifier : ConcurrentUnifierW<TypeUnificationKey, EnumInfo>
-        {
-            protected override EnumInfo Factory(TypeUnificationKey key)
-            {
-                return RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(key.Type);
-            }
-        }
-
-        private static EnumInfoUnifier s_enumInfoCache = new EnumInfoUnifier();
-
 
         #region IConvertible
         public TypeCode GetTypeCode()

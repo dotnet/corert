@@ -14,16 +14,18 @@ namespace System.Collections.ObjectModel
 {
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class Collection<T> : IList<T>, IList, IReadOnlyList<T>
     {
-        private IList<T> _items;
+        private IList<T> items; // Do not rename (binary serialization)
+        [NonSerialized]
         private Object _syncRoot;
 
         public Collection()
         {
             // We must implement our backing list using List<T>() as we have store apps that call Collection<T>.Items and cast
             // the result to List<T>.
-            _items = new List<T>();
+            items = new List<T>();
         }
 
         public Collection(IList<T> list)
@@ -32,30 +34,30 @@ namespace System.Collections.ObjectModel
             {
                 throw new ArgumentNullException(nameof(list));
             }
-            _items = list;
+            items = list;
         }
 
         public int Count
         {
-            get { return _items.Count; }
+            get { return items.Count; }
         }
 
         protected IList<T> Items
         {
-            get { return _items; }
+            get { return items; }
         }
 
         public T this[int index]
         {
-            get { return _items[index]; }
+            get { return items[index]; }
             set
             {
-                if (_items.IsReadOnly)
+                if (items.IsReadOnly)
                 {
                     throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
                 }
 
-                if (index < 0 || index >= _items.Count)
+                if (index < 0 || index >= items.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListItem);
                 }
@@ -66,18 +68,18 @@ namespace System.Collections.ObjectModel
 
         public void Add(T item)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            int index = _items.Count;
+            int index = items.Count;
             InsertItem(index, item);
         }
 
         public void Clear()
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -87,32 +89,32 @@ namespace System.Collections.ObjectModel
 
         public void CopyTo(T[] array, int index)
         {
-            _items.CopyTo(array, index);
+            items.CopyTo(array, index);
         }
 
         public bool Contains(T item)
         {
-            return _items.Contains(item);
+            return items.Contains(item);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            return _items.GetEnumerator();
+            return items.GetEnumerator();
         }
 
         public int IndexOf(T item)
         {
-            return _items.IndexOf(item);
+            return items.IndexOf(item);
         }
 
         public void Insert(int index, T item)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            if (index < 0 || index > _items.Count)
+            if (index < 0 || index > items.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListInsert);
             }
@@ -122,12 +124,12 @@ namespace System.Collections.ObjectModel
 
         public bool Remove(T item)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            int index = _items.IndexOf(item);
+            int index = items.IndexOf(item);
             if (index < 0) return false;
             RemoveItem(index);
             return true;
@@ -135,12 +137,12 @@ namespace System.Collections.ObjectModel
 
         public void RemoveAt(int index)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            if (index < 0 || index >= _items.Count)
+            if (index < 0 || index >= items.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ListRemoveAt);
             }
@@ -150,35 +152,35 @@ namespace System.Collections.ObjectModel
 
         protected virtual void ClearItems()
         {
-            _items.Clear();
+            items.Clear();
         }
 
         protected virtual void InsertItem(int index, T item)
         {
-            _items.Insert(index, item);
+            items.Insert(index, item);
         }
 
         protected virtual void RemoveItem(int index)
         {
-            _items.RemoveAt(index);
+            items.RemoveAt(index);
         }
 
         protected virtual void SetItem(int index, T item)
         {
-            _items[index] = item;
+            items[index] = item;
         }
 
         bool ICollection<T>.IsReadOnly
         {
             get
             {
-                return _items.IsReadOnly;
+                return items.IsReadOnly;
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)_items).GetEnumerator();
+            return ((IEnumerable)items).GetEnumerator();
         }
 
         bool ICollection.IsSynchronized
@@ -192,7 +194,7 @@ namespace System.Collections.ObjectModel
             {
                 if (_syncRoot == null)
                 {
-                    ICollection c = _items as ICollection;
+                    ICollection c = items as ICollection;
                     if (c != null)
                     {
                         _syncRoot = c.SyncRoot;
@@ -236,7 +238,7 @@ namespace System.Collections.ObjectModel
             T[] tArray = array as T[];
             if (tArray != null)
             {
-                _items.CopyTo(tArray, index);
+                items.CopyTo(tArray, index);
             }
             else
             {
@@ -265,12 +267,12 @@ namespace System.Collections.ObjectModel
                     throw new ArgumentException(SR.Argument_InvalidArrayType);
                 }
 
-                int count = _items.Count;
+                int count = items.Count;
                 try
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        objects[index++] = _items[i];
+                        objects[index++] = items[i];
                     }
                 }
                 catch (ArrayTypeMismatchException)
@@ -282,7 +284,7 @@ namespace System.Collections.ObjectModel
 
         object IList.this[int index]
         {
-            get { return _items[index]; }
+            get { return items[index]; }
             set
             {
                 if (value == null && !(default(T) == null))
@@ -305,7 +307,7 @@ namespace System.Collections.ObjectModel
         {
             get
             {
-                return _items.IsReadOnly;
+                return items.IsReadOnly;
             }
         }
 
@@ -317,18 +319,18 @@ namespace System.Collections.ObjectModel
                 // readonly collections are fixed size, if our internal item 
                 // collection does not implement IList.  Note that Array implements
                 // IList, and therefore T[] and U[] will be fixed-size.
-                IList list = _items as IList;
+                IList list = items as IList;
                 if (list != null)
                 {
                     return list.IsFixedSize;
                 }
-                return _items.IsReadOnly;
+                return items.IsReadOnly;
             }
         }
 
         int IList.Add(object value)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -370,7 +372,7 @@ namespace System.Collections.ObjectModel
 
         void IList.Insert(int index, object value)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -391,7 +393,7 @@ namespace System.Collections.ObjectModel
 
         void IList.Remove(object value)
         {
-            if (_items.IsReadOnly)
+            if (items.IsReadOnly)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }

@@ -117,6 +117,7 @@
     <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
+    <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
     <Compile Include="System\Reflection\Runtime\General\NonOverriddenApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
@@ -147,6 +148,7 @@
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />

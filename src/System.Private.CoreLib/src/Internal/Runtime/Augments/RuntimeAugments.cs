@@ -46,6 +46,11 @@ namespace Internal.Runtime.Augments
         /// </summary>
         private static DesktopSupportCallbacks s_desktopSupportCallbacks;
 
+        /// <summary>
+        /// Callbacks used for metadata-based stack trace resolution.
+        /// </summary>
+        private static StackTraceMetadataCallbacks s_stackTraceMetadataCallbacks;
+
         //==============================================================================================
         // One-time initialization.
         //==============================================================================================
@@ -71,6 +76,12 @@ namespace Internal.Runtime.Augments
         public static void InitializeDesktopSupport(DesktopSupportCallbacks callbacks)
         {
             s_desktopSupportCallbacks = callbacks;
+        }
+
+        [CLSCompliant(false)]
+        public static void InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks)
+        {
+            s_stackTraceMetadataCallbacks = callbacks;
         }
 
         //==============================================================================================
@@ -833,6 +844,14 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        internal static StackTraceMetadataCallbacks StackTraceCallbacksIfAvailable
+        {
+            get
+            {
+                return s_stackTraceMetadataCallbacks;
+            }
+        }
+
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
         private static InteropCallbacks s_interopCallbacks;
@@ -1100,6 +1119,11 @@ namespace Internal.Runtime.Augments
         public static IntPtr RhGetOSModuleForMrt()
         {
             return RuntimeImports.RhGetOSModuleForMrt();
+        }
+
+        public static void RhpVerifyDebuggerCleanup()
+        {
+            RuntimeImports.RhpVerifyDebuggerCleanup();
         }
     }
 }

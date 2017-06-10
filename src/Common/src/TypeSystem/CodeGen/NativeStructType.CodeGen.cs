@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.IO
+namespace Internal.TypeSystem.Interop
 {
-    internal static partial class File
+    // Implements INonEmittableType
+    partial class NativeStructType : INonEmittableType
     {
-        internal static bool InternalExists(String path)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

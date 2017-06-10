@@ -37,14 +37,17 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
         internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr RhpGetFuncEvalTargetAddress();
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern unsafe uint RhpRecordDebuggeeInitiatedHandle(void* objectHandle);
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpVerifyDebuggerCleanup();
 
         //
         // calls to GC

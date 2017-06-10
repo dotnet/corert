@@ -90,11 +90,14 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
+            string methodName = method.Name;
+
             switch (owningType.Name)
             {
                 case "RuntimeHelpers":
                     {
-                        if (owningType.Namespace == "System.Runtime.CompilerServices" && method.Name == "IsReferenceOrContainsReferences")
+                        if ((methodName == "IsReferenceOrContainsReferences" || methodName == "IsReference")
+                            && owningType.Namespace == "System.Runtime.CompilerServices")
                         {
                             TypeDesc elementType = method.Instantiation[0];
 
@@ -102,8 +105,11 @@ namespace Internal.IL
                             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                                 return null;
 
-                            bool result = elementType.IsGCPointer || 
-                                (elementType.IsDefType ? ((DefType)elementType).ContainsGCPointers : false);
+                            bool result = elementType.IsGCPointer;
+                            if (methodName == "IsReferenceOrContainsReferences")
+                            {
+                                result |= (elementType.IsDefType ? ((DefType)elementType).ContainsGCPointers : false);
+                            }
 
                             return new ILStubMethodIL(method, new byte[] {
                                     result ? (byte)ILOpcode.ldc_i4_1 : (byte)ILOpcode.ldc_i4_0,

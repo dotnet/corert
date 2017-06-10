@@ -55,6 +55,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
                     return ((DelegateCreationInfo)target).GetLookupKind(factory);
+                case ReadyToRunHelperId.DefaultConstructor:
+                    return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
                 default:
                     throw new NotImplementedException();
             }
@@ -110,12 +112,12 @@ namespace ILCompiler.DependencyAnalysis
                         DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
                         if (createInfo.NeedsVirtualMethodUseTracking)
                         {
-                            MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
-                            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTargetMethod.OwningType))
+                            MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasFixedSlots)
                             {
                                 result.Add(
                                     new DependencyListEntry(
-                                        factory.VirtualMethodUse(createInfo.TargetMethod.InstantiateSignature(typeInstantiation, methodInstantiation)),
+                                        factory.VirtualMethodUse(instantiatedTargetMethod),
                                         "Dictionary dependency"));
                             }
 
@@ -130,8 +132,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        MethodDesc instantiatedTarget = ((MethodDesc)_target).InstantiateSignature(typeInstantiation, methodInstantiation);
-                        if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(instantiatedTarget.OwningType))
+                        MethodDesc instantiatedTarget = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                        if (!factory.VTable(instantiatedTarget.OwningType).HasFixedSlots)
                         {
                             result.Add(
                                 new DependencyListEntry(

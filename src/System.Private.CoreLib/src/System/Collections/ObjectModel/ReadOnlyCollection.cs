@@ -12,6 +12,7 @@ namespace System.Collections.ObjectModel
 {
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>
     {
         private IList<T> list;      // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.

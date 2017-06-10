@@ -80,6 +80,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TargetDetails.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\TargetDetails.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
@@ -503,11 +506,29 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\INonEmittableType.cs">
+      <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FieldDesc.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\FieldDesc.RuntimeDetermined.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs</Link>
@@ -544,6 +565,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+      <Link>System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\ArrayType.Sorting.cs">
       <Link>TypeSystem\Sorting\ArrayType.Sorting.cs</Link>

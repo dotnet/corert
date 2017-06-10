@@ -30,7 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         MethodHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry
+        MethodEntry,
+        DefaultConstructor,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -149,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
                 }
 
-                if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(targetMethod.OwningType))
+                if (!factory.VTable(targetMethod.OwningType).HasFixedSlots)
 
                 {
                     dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
@@ -173,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
                         dependencyList.Add(factory.ReflectableMethod(targetMethod), "Abstract reflectable method");
                     }
 
-                    if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(info.TargetMethod.OwningType))
+                    if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
                     {
                         dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
                     }
