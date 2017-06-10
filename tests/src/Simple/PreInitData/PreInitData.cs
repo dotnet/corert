@@ -215,6 +215,8 @@ public class PreInitDataTest
         Console.WriteLine("Testing preinitialized method array...");
 
         if (PreInitData.PreInitializedMethodField[0] != System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Func1Proc>(NativeMethods.Func1))
+            return false;
+
         if (PreInitData.PreInitializedMethodField[1] != System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Func2Proc>(NativeMethods.Func2))
             return false;
 

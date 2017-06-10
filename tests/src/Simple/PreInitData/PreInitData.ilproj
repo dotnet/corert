@@ -5,6 +5,9 @@
   <ItemGroup Condition="'$(Platform)'=='x86' or '$(Platform)'=='arm'">
     <Compile Include="PreInitData32.il" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PreInitDataTest.il" />
+  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
 </Project>

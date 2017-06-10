@@ -30,7 +30,8 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Writes fixup data into current ObjectDataBuilder. Caller needs to make sure offset is correct.
+        /// Writes fixup data into current ObjectDataBuilder. Caller needs to make sure ObjectDataBuilder is
+        /// at correct offset before writing.
         /// </summary>
         /// <returns>Bytes written</returns>
         public abstract int WriteData(ref ObjectDataBuilder builder, NodeFactory factory);
@@ -113,6 +114,10 @@ namespace ILCompiler
                 {
                     var fixupInfo = FixupInfos[i];
 
+                    // do we have overlapping fixups?
+                    if (fixupInfo.Offset < offset)
+                        throw new BadImageFormatException();
+
                     // emit bytes before fixup
                     builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
 
@@ -126,8 +131,8 @@ namespace ILCompiler
 
             if (offset > Data.Length)
                 throw new BadImageFormatException();
-
-            // Emit remaining bytes. 0 length emit is a no-op
+            
+            // Emit remaining bytes
             builder.EmitBytes(Data, offset, Data.Length - offset);
 
             return Data.Length;
@@ -170,11 +175,11 @@ namespace ILCompiler
 
             var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
             if (decoded == null)
-                return null;
+                return null; 
 
             var decodedValue = decoded.Value;
             if (decodedValue.FixedArguments.Length != 2)
-                return null;
+                throw new BadImageFormatException();
 
             var typeDesc = decodedValue.FixedArguments[0].Value as TypeDesc;
             if (typeDesc == null)
@@ -187,6 +192,7 @@ namespace ILCompiler
             var dataField = typeDesc.GetField(fieldName);
             if (dataField== null)
                 throw new BadImageFormatException();
+
             return dataField;
         }
 
@@ -210,9 +216,11 @@ namespace ILCompiler
                 throw new NotSupportedException();
             
             var rvaData = ecmaDataField.GetFieldRvaData();
+
             int elementSize = arrType.ElementType.GetElementSize().AsInt;
             if (rvaData.Length % elementSize != 0)
                 throw new BadImageFormatException();
+            int elementCount = rvaData.Length / elementSize;
 
             //
             // Construct fixups
@@ -230,8 +238,7 @@ namespace ILCompiler
                 if (fixupType == null)
                     throw new BadImageFormatException();
 
-                if (fixups == null)
-                    fixups = new List<PreInitFixupInfo>();
+                fixups = fixups ?? new List<PreInitFixupInfo>();
 
                 fixups.Add(new PreInitTypeFixupInfo(offset, fixupType));
             }
@@ -255,13 +262,12 @@ namespace ILCompiler
                 if (method == null)
                     throw new BadImageFormatException();
 
-                if (fixups == null)
-                    fixups = new List<PreInitFixupInfo>();
+                fixups = fixups ?? new List<PreInitFixupInfo>();
 
                 fixups.Add(new PreInitMethodFixupInfo(offset, method));
             }
 
-            return new PreInitFieldInfo(field, rvaData, rvaData.Length / elementSize, fixups);
+            return new PreInitFieldInfo(field, rvaData, elementCount, fixups);
         }
     }
 }
