@@ -5,29 +5,25 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.6.1055.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 
-
-
-// Metadata version: v4.0.30319
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+
 .assembly extern System.Private.CoreLib
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 4:0:0:0
 }
+
 .assembly PreInitData
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
-                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+
 .module PreInitData.exe
-// MVID: {9448CCAF-5D07-453D-8015-888B75F6925D}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -35,95 +31,11 @@
 .corflags 0x00000001    //  ILONLY
 // Image base: 0x024E0000
 
-
-// =============== CLASS MEMBERS DECLARATION ===================
-
-.class private auto ansi beforefieldinit System.Runtime.CompilerServices.PreInitializedAttribute
-       extends [mscorlib]System.Attribute
-{
-  .custom instance void [mscorlib]System.AttributeUsageAttribute::.ctor(valuetype [mscorlib]System.AttributeTargets) = ( 01 00 00 01 00 00 01 00 54 02 0D 41 6C 6C 6F 77   // ........T..Allow
-                                                                                                                         4D 75 6C 74 69 70 6C 65 00 )                      // Multiple.
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor() cil managed
-  {
-    // Code size       7 (0x7)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
-    IL_0006:  ret
-  } // end of method PreInitializedAttribute::.ctor
-
-} // end of class System.Runtime.CompilerServices.PreInitializedAttribute
-
-.class private auto ansi beforefieldinit System.Runtime.CompilerServices.InitDataBlobAttribute
-       extends [mscorlib]System.Attribute
-{
-  .custom instance void [mscorlib]System.AttributeUsageAttribute::.ctor(valuetype [mscorlib]System.AttributeTargets) = ( 01 00 00 01 00 00 01 00 54 02 0D 41 6C 6C 6F 77   // ........T..Allow
-                                                                                                                         4D 75 6C 74 69 70 6C 65 00 )                      // Multiple.
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor(class [mscorlib]System.Type 'type',
-                               string fieldName) cil managed
-  {
-    // Code size       10 (0xa)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
-    IL_0006:  nop
-    IL_0007:  nop
-    IL_0008:  nop
-    IL_0009:  ret
-  } // end of method InitDataBlobAttribute::.ctor
-
-} // end of class System.Runtime.CompilerServices.InitDataBlobAttribute
-
-.class private auto ansi beforefieldinit System.Runtime.CompilerServices.TypeHandleFixupAttribute
-       extends [mscorlib]System.Attribute
-{
-  .custom instance void [mscorlib]System.AttributeUsageAttribute::.ctor(valuetype [mscorlib]System.AttributeTargets) = ( 01 00 00 01 00 00 01 00 54 02 0D 41 6C 6C 6F 77   // ........T..Allow
-                                                                                                                         4D 75 6C 74 69 70 6C 65 01 )                      // Multiple.
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor(int32 offset,
-                               class [mscorlib]System.Type fixupType) cil managed
-  {
-    // Code size       10 (0xa)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
-    IL_0006:  nop
-    IL_0007:  nop
-    IL_0008:  nop
-    IL_0009:  ret
-  } // end of method TypeHandleFixupAttribute::.ctor
-
-} // end of class System.Runtime.CompilerServices.TypeHandleFixupAttribute
-
-.class private auto ansi beforefieldinit System.Runtime.CompilerServices.MethodAddrFixupAttribute
-       extends [mscorlib]System.Attribute
-{
-  .custom instance void [mscorlib]System.AttributeUsageAttribute::.ctor(valuetype [mscorlib]System.AttributeTargets) = ( 01 00 00 01 00 00 01 00 54 02 0D 41 6C 6C 6F 77   // ........T..Allow
-                                                                                                                         4D 75 6C 74 69 70 6C 65 01 )                      // Multiple.
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor(int32 offset,
-                               class [mscorlib]System.Type fixupType,
-                               string methodName) cil managed
-  {
-    // Code size       10 (0xa)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
-    IL_0006:  nop
-    IL_0007:  nop
-    IL_0008:  nop
-    IL_0009:  ret
-  } // end of method MethodAddrFixupAttribute::.ctor
-
-} // end of class System.Runtime.CompilerServices.MethodAddrFixupAttribute
-
 .class private auto ansi beforefieldinit Details
        extends [mscorlib]System.Object
 {
-  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16'  PreInitializedField_DataBlob at I_00002208
-  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=32' PreInitializedTypeField_DataBlob at I_00002209
+  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16'  PreInitializedField_DataBlob at Data_IntArray
+  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=32' PreInitializedTypeField_DataBlob at Data_typeArray
   .custom instance void System.Runtime.CompilerServices.TypeHandleFixupAttribute::.ctor(int32,
                                                                                         class [mscorlib]System.Type) = ( 01 00 18 00 00 00 5A 53 79 73 74 65 6D 2E 53 74   // ......ZSystem.St
                                                                                                                          72 69 6E 67 2C 20 6D 73 63 6F 72 6C 69 62 2C 20   // ring, mscorlib, 
@@ -156,23 +68,10 @@
                                                                                                                          20 50 75 62 6C 69 63 4B 65 79 54 6F 6B 65 6E 3D   //  PublicKeyToken=
                                                                                                                          62 37 37 61 35 63 35 36 31 39 33 34 65 30 38 39   // b77a5c561934e089
                                                                                                                          00 00 ) 
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor() cil managed
-  {
-    // Code size       7 (0x7)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
-    IL_0006:  ret
-  } // end of method Details::.ctor
-
 } // end of class Details
 
-.class public auto ansi beforefieldinit PreInitDataTest
-       extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit PreInitData
 {
-  .field private static literal int32 Pass = int32(0x00000064)
-  .field private static literal int32 Fail = int32(0xFFFFFFFF)
   .field private static string StaticStringFieldBefore
   .field private static int32[] PreInitializedIntField
   .custom instance void System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 ) 
@@ -187,6 +86,40 @@
                                                                                                  69 74 69 61 6C 69 7A 65 64 54 79 70 65 46 69 65   // itializedTypeFie
                                                                                                  6C 64 5F 44 61 74 61 42 6C 6F 62 00 00 )          // ld_DataBlob..
   .field private static string StaticStringFieldAfter
+} // end of class PreInitData
+
+.class private auto ansi '<PrivateImplementationDetails>'
+       extends [mscorlib]System.Object
+{
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=16'
+         extends [mscorlib]System.ValueType
+  {
+    .pack 1
+    .size 16
+  } // end of class '__StaticArrayInitTypeSize=16'
+  .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=32'
+         extends [mscorlib]System.ValueType
+  {
+    .pack 1
+    .size 32
+  } // end of class '__StaticArrayInitTypeSize=16'
+} // end of class '<PrivateImplementationDetails>'
+
+
+// =============================================================
+// Data blob
+// =============================================================
+
+.data cil Data_IntArray = bytearray ( 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00) 
+.data cil Data_TypeArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
+
+/*
+.class public auto ansi beforefieldinit PreInitDataTest
+       extends [mscorlib]System.Object
+{
+  .field private static literal int32 Pass = int32(0x00000064)
+  .field private static literal int32 Fail = int32(0xFFFFFFFF)
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
     .entrypoint
@@ -422,30 +355,5 @@
 
 } // end of class PreInitDataTest
 
-.class private auto ansi '<PrivateImplementationDetails>'
-       extends [mscorlib]System.Object
-{
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
-  .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=16'
-         extends [mscorlib]System.ValueType
-  {
-    .pack 1
-    .size 16
-  } // end of class '__StaticArrayInitTypeSize=16'
-  .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=32'
-         extends [mscorlib]System.ValueType
-  {
-    .pack 1
-    .size 32
-  } // end of class '__StaticArrayInitTypeSize=16'
-} // end of class '<PrivateImplementationDetails>'
-
-
-// =============================================================
-
-.data cil I_00002208 = bytearray (
-                 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00) 
-.data cil I_00002209 = bytearray (
-                 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
 // *********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file PreInitData.res

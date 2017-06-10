@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
+#region Place holder types for internal System.Private.CoreLib types
+
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
@@ -40,9 +42,19 @@ namespace System.Runtime.CompilerServices
     }      
 }
 
+namespace Internal.Runtime.CompilerServices
+{
+    public struct FixupRuntimeTypeHandle
+    {
+        public RuntimeTypeHandle RuntimeTypeHandle => default(RuntimeTypeHandle);
+    }
+}
+
+#endregion
+
 class Details
 {
-    private static IntPtr PreInitializedIntField_DataBlob = IntPtr.Zero;
+    private static IntPtr PreInitializedIntField_DataBlob;
 
 #if BIT64
     [TypeHandleFixupAttribute(0, typeof(int))]
@@ -55,23 +67,26 @@ class Details
     [TypeHandleFixupAttribute(8, typeof(long))]
     [TypeHandleFixupAttribute(12, typeof(string))]
 #endif
-    private static IntPtr PreInitializedTypeField_DataBlob = IntPtr.Zero; 
+    private static IntPtr PreInitializedTypeField_DataBlob; 
+}
+
+class PreInitData
+{
+    internal static string StaticStringFieldBefore = "BEFORE";
+
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedIntField_DataBlob")]
+    internal static int[] PreInitializedIntField;
+
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedTypeField_DataBlob")]
+    internal static FixupRuntimeTypeHandle[] PreInitializedTypeField;
+
+    internal static string StaticStringFieldAfter = "AFTER";
 }
 
 public class PreInitDataTest
 {
-    static string StaticStringFieldBefore = "BEFORE";
-
-    [PreInitialized]
-    [InitDataBlob(typeof(Details), "PreInitializedIntField_DataBlob")]
-    static int[] PreInitializedIntField = new int[] { 1, 2, 3, 4 };
-
-    [PreInitialized]
-    [InitDataBlob(typeof(Details), "PreInitializedTypeField_DataBlob")]
-    static FixupRuntimeTypeHandle[] PreInitializedTypeField;
-
-    static string StaticStringFieldAfter = "AFTER";
-
     const int Pass = 100;
     const int Fail = -1;
 
@@ -99,19 +114,19 @@ public class PreInitDataTest
     {
         Console.WriteLine("Testing preinitialized array...");
 
-        for (int i = 0; i < PreInitializedIntField.Length; ++i)
+        for (int i = 0; i < PreInitData.PreInitializedIntField.Length; ++i)
         {
-            if (PreInitializedIntField[i] != i + 1)
+            if (PreInitData.PreInitializedIntField[i] != i + 1)
                 return false;
         }
 
-        if (PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
+        if (PreInitData.PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
             return false;
-        if (PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
+        if (PreInitData.PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
             return false;
-        if (PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
+        if (PreInitData.PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
             return false;
-        if (PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
+        if (PreInitData.PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
             return false;
 
         return true;
@@ -121,10 +136,10 @@ public class PreInitDataTest
     {
         Console.WriteLine("Testing other statics work well with preinitialized data in the same type...");
 
-        if (StaticStringFieldBefore != "BEFORE")
+        if (PreInitData.StaticStringFieldBefore != "BEFORE")
             return false;
 
-        if (StaticStringFieldAfter != "AFTER")
+        if (PreInitData.StaticStringFieldAfter != "AFTER")
             return false;
 
         return true;
