@@ -102,6 +102,27 @@ namespace Internal.IL
 
         public DependencyList Import()
         {
+            if (_canonMethod.Signature.IsStatic)
+            {
+                TypeDesc owningType = _canonMethod.OwningType;
+                if (!_isFallbackBodyCompilation && _factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
+                {
+                    // For beforefieldinit, we can wait for field access.
+                    if (!((MetadataType)owningType).IsBeforeFieldInit)
+                    {
+                        MethodDesc method = _methodIL.OwningMethod;
+                        if (method.OwningType.IsRuntimeDeterminedSubtype)
+                        {
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.GetNonGCStaticBase, method.OwningType), "Owning type cctor");
+                        }
+                        else
+                        {
+                            _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, method.OwningType), "Owning type cctor");
+                        }
+                    }
+                }
+            }
+
             FindBasicBlocks();
             ImportBasicBlocks();
 
@@ -261,12 +282,8 @@ namespace Internal.IL
                 {
                     // String .ctor handled specially below
                 }
-                else
+                else if (owningType.IsGCPointer)
                 {
-                    // Nullable needs to be unwrapped.
-                    if (owningType.IsNullable)
-                        owningType = owningType.Instantiation[0];
-
                     if (owningType.IsRuntimeDeterminedSubtype)
                     {
                         _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
@@ -336,6 +353,27 @@ namespace Internal.IL
                 {
                     if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.ldtoken)
                         return;
+                }
+
+                if (IsActivatorDefaultConstructorOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        MethodDesc ctor = method.Instantiation[0].GetDefaultConstructor();
+                        if (ctor == null)
+                        {
+                            MetadataType activatorType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
+                            MetadataType classWithMissingCtor = activatorType.GetKnownNestedType("ClassWithMissingConstructor");
+                            ctor = classWithMissingCtor.GetParameterlessConstructor();
+                        }
+                        _dependencies.Add(_factory.CanonicalEntrypoint(ctor), reason);
+                    }
+
+                    return;
                 }
             }
 
@@ -466,6 +504,31 @@ namespace Internal.IL
                 {
                     if (targetMethod.IsSharedByGenericInstantiations && !resolvedConstraint && !referencingArrayAddressMethod)
                     {
+                        ISymbolNode instParam = null;
+
+                        if (targetMethod.RequiresInstMethodDescArg())
+                        {
+                            instParam = GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod);
+                        }
+                        else if (targetMethod.RequiresInstMethodTableArg())
+                        {
+                            bool hasHiddenParameter = true;
+
+                            if (targetMethod.IsIntrinsic)
+                            {
+                                if (_factory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(targetMethod))
+                                    hasHiddenParameter = false;
+                            }
+
+                            if (hasHiddenParameter)
+                                instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                        }
+
+                        if (instParam != null)
+                        {
+                            _dependencies.Add(instParam, reason);
+                        }
+
                         _dependencies.Add(_factory.RuntimeDeterminedMethod(runtimeDeterminedMethod), reason);
                     }
                     else
@@ -639,6 +702,23 @@ namespace Internal.IL
             if (obj is TypeDesc)
             {
                 var type = (TypeDesc)obj;
+
+                // First check if this is a ldtoken Type / GetValueInternal sequence.
+                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
+                if (nextBasicBlock == null)
+                {
+                    if ((ILOpcode)_ilBytes[_currentOffset] == ILOpcode.call)
+                    {
+                        int methodToken = ReadILTokenAt(_currentOffset + 1);
+                        var method = (MethodDesc)_methodIL.GetObject(methodToken);
+                        if (IsRuntimeTypeHandleGetValueInternal(method))
+                        {
+                            // Codegen expands this and doesn't do the normal ldtoken.
+                            return;
+                        }
+                    }
+                }
+
                 if (type.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
@@ -769,6 +849,7 @@ namespace Internal.IL
         private void ImportLoadString(int token)
         {
             // If we care, this can include allocating the frozen string node.
+            _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
         }
 
         private void ImportBox(int token)
@@ -841,6 +922,21 @@ namespace Internal.IL
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelema");
         }
 
+        private void ImportBinaryOperation(ILOpcode opcode)
+        {
+            switch (opcode)
+            {
+                case ILOpcode.add_ovf:
+                case ILOpcode.add_ovf_un:
+                case ILOpcode.mul_ovf:
+                case ILOpcode.mul_ovf_un:
+                case ILOpcode.sub_ovf:
+                case ILOpcode.sub_ovf_un:
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                    break;
+            }
+        }
+
         private void ImportFallthrough(BasicBlock next)
         {
             MarkBasicBlock(next);
@@ -882,6 +978,20 @@ namespace Internal.IL
             return false;
         }
 
+        private bool IsActivatorDefaultConstructorOf(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "DefaultConstructorOf" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
         {
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
@@ -903,7 +1013,6 @@ namespace Internal.IL
         private void ImportLoadIndirect(TypeDesc type) { }
         private void ImportStoreIndirect(int token) { }
         private void ImportStoreIndirect(TypeDesc type) { }
-        private void ImportBinaryOperation(ILOpcode opcode) { }
         private void ImportShiftOperation(ILOpcode opcode) { }
         private void ImportCompareOperation(ILOpcode opcode) { }
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
