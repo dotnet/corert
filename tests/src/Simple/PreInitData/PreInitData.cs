@@ -120,13 +120,13 @@ public class PreInitDataTest
                 return false;
         }
 
-        if (PreInitData.PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
             return false;
-        if (PreInitData.PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
             return false;
-        if (PreInitData.PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
             return false;
-        if (PreInitData.PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
             return false;
 
         return true;
