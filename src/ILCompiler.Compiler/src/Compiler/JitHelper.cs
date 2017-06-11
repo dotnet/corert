@@ -45,6 +45,12 @@ namespace ILCompiler
                 case ReadyToRunHelper.ThrowDivZero:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException");
                     break;
+                case ReadyToRunHelper.ThrowArgumentOutOfRange:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentOutOfRangeException");
+                    break;
+                case ReadyToRunHelper.ThrowArgument:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowArgumentException");
+                    break;
 
                 case ReadyToRunHelper.DebugBreak:
                     mangledName = "RhDebugBreak";

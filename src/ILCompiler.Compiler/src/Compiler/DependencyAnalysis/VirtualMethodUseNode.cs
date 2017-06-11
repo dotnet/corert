@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             DefType universalCanonicalOwningType = (DefType)_decl.OwningType.ConvertToCanonForm(CanonicalFormKind.Universal);
             Debug.Assert(universalCanonicalOwningType.IsCanonicalSubtype(CanonicalFormKind.Universal));
 
-            if (!factory.CompilationModuleGroup.ShouldProduceFullVTable(universalCanonicalOwningType))
+            if (!factory.VTable(universalCanonicalOwningType).HasFixedSlots)
             {
                 // This code ensures that in cases where we don't structurally force all universal canonical instantiations
                 // to have full vtables, that we ensure that all vtables are equivalently shaped between universal and non-universal types

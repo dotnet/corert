@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -20,6 +19,9 @@ namespace ILVerify
 {
     class SimpleTypeSystemContext : MetadataTypeSystemContext
     {
+        private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
         class ModuleData
@@ -113,6 +115,20 @@ namespace ILVerify
         public string GetModulePath(EcmaModule module)
         {
             return _moduleData[module].Path;
+        }
+
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new SimpleArrayOfTRuntimeInterfacesAlgorithm(SystemModule);
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
+        }
+
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
+        {
+            return _metadataRuntimeInterfacesAlgorithm;
         }
     }
 }

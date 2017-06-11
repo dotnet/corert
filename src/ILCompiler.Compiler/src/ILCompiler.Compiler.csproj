@@ -136,7 +136,6 @@
     <Compile Include="Compiler\ILScanner.cs" />
     <Compile Include="Compiler\ILScannerBuilder.cs" />
     <Compile Include="Compiler\ILStreamReader.cs" />
-    <Compile Include="Compiler\INonEmittableType.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
@@ -151,6 +150,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />    
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
