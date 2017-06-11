@@ -534,6 +534,11 @@ namespace Internal.JitInterface
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
         {
             sig.callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+
+            // Varargs are not supported in .NET Core
+            if (sig.callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
+                throw new TypeSystemException.BadImageFormatException();
+
             if (!signature.IsStatic) sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
 
             TypeDesc returnType = signature.ReturnType;
