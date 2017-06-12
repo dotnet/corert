@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    internal class RuntimeInteropData : InteropCallbacks
+    internal partial class RuntimeInteropData : InteropCallbacks
     {
         public override bool TryGetMarshallerDataForDelegate(RuntimeTypeHandle delegateTypeHandle, out McgPInvokeDelegateData data)
         {
@@ -44,7 +44,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             RuntimeTypeHandle unsafeStructType;
             size = 0;
-            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
+            if (McgModuleManager.TryGetStructUnsafeStructType(structureTypeHandle, out unsafeStructType))
             {
                 size = unsafeStructType.GetValueTypeSize();
                 return true;

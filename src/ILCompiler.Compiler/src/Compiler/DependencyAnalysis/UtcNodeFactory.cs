@@ -18,6 +18,7 @@ namespace ILCompiler
     {
         public static string CompilationUnitPrefix = "";
         public string targetPrefix;
+        private bool buildMRT;
 
         private static byte[] ReadBytesFromFile(string filename)
         {
@@ -69,8 +70,8 @@ namespace ILCompiler
             }
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler, new AttributeDrivenLazyGenericsPolicy())
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT) 
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -79,6 +80,7 @@ namespace ILCompiler
             TLSDirectory = new ThreadStaticsDirectoryNode(targetPrefix);
             TlsStart = new ExternSymbolNode(targetPrefix + "_tls_start");
             TlsEnd = new ExternSymbolNode(targetPrefix + "_tls_end");
+            this.buildMRT = buildMRT;
         }
 
         private void CreateHostedNodeCaches()
@@ -145,8 +147,13 @@ namespace ILCompiler
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
-            graph.AddRoot(ThreadStaticsIndex, "Thread statics index is always generated");
-            graph.AddRoot(TLSDirectory, "TLS Directory is always generated");
+
+            // The native part of the MRT library links against CRT which defines _tls_index and _tls_used.
+            if (!buildMRT)
+            {
+                graph.AddRoot(ThreadStaticsIndex, "Thread statics index is always generated");
+                graph.AddRoot(TLSDirectory, "TLS Directory is always generated");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
@@ -156,7 +163,11 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticDesc, GCStaticDescRegion, GCStaticDescRegion.StartSymbol, GCStaticDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
+
+            if (!buildMRT)
+            {
+                ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
+            }
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
             MetadataManager.AttachToDependencyGraph(graph);

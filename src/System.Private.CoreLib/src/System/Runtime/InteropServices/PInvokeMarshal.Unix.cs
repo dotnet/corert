@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices
             s_lastWin32Error = Interop.Sys.GetErrNo();
         }
 
-        internal static void ClearLastWin32Error()
+        public static void ClearLastWin32Error()
         {
             Interop.Sys.ClearErrNo();
         }

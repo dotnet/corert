@@ -30,6 +30,7 @@ class Program
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
+        TestNativeLayoutGeneration.Run();
 
         return 100;
     }
@@ -1962,6 +1963,55 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception(s_NumErrors + " errors!");
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/corert/issues/3659
+    class TestNativeLayoutGeneration
+    {
+#pragma warning disable 649 // s_ref was never assigned
+        private static object s_ref;
+#pragma warning restore 649
+
+        class Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string DoStuff()
+            {
+                return "Used";
+            }
+        }
+
+        class Unused<T> : Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override string DoStuff()
+            {
+                return "Unused " + typeof(T).ToString();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Blagh()
+            {
+            }
+        }
+
+        public static void Run()
+        {
+            new Used().DoStuff();
+
+            try
+            {
+                // Call an instance method on something we never allocated, but overrides a used virtual.
+                // This asserted the compiler when trying to build a template for Unused<__Canon>.
+                ((Unused<object>)s_ref).Blagh();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+
+            throw new Exception();
         }
     }
 }

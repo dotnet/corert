@@ -24,6 +24,7 @@ namespace ILCompiler
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected bool _generateDebugInfo = false;
         protected MetadataManager _metadataManager;
+        protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -60,6 +61,12 @@ namespace ILCompiler
         public CompilationBuilder UseOptimizationMode(OptimizationMode mode)
         {
             _optimizationMode = mode;
+            return this;
+        }
+
+        public CompilationBuilder UseVTableSliceProvider(VTableSliceProvider provider)
+        {
+            _vtableSliceProvider = provider;
             return this;
         }
 

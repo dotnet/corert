@@ -51,79 +51,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
 
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(_type).HasFixedSlots)
-            {
-                foreach (var implementedInterface in _type.RuntimeInterfaces)
-                {
-                    // If the type implements ICastable, the methods are implicitly necessary
-                    if (implementedInterface == factory.ICastableInterface)
-                    {
-                        MethodDesc isInstDecl = implementedInterface.GetKnownMethod("IsInstanceOfInterface", null);
-                        MethodDesc getImplTypeDecl = implementedInterface.GetKnownMethod("GetImplType", null);
-
-                        MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
-                        MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
-
-                        if (isInstMethodImpl != null)
-                            dependencyList.Add(factory.VirtualMethodUse(isInstMethodImpl), "ICastable IsInst");
-                        if (getImplTypeMethodImpl != null)
-                            dependencyList.Add(factory.VirtualMethodUse(getImplTypeMethodImpl), "ICastable GetImplType");
-                    }
-
-                    // If any of the implemented interfaces have variance, calls against compatible interface methods
-                    // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
-                    // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
-                    // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    bool allInterfaceMethodsAreImplicitlyUsed = false;
-                    if (implementedInterface.HasVariance)
-                    {
-                        TypeDesc interfaceDefinition = implementedInterface.GetTypeDefinition();
-                        for (int i = 0; i < interfaceDefinition.Instantiation.Length; i++)
-                        {
-                            if (((GenericParameterDesc)interfaceDefinition.Instantiation[i]).Variance != 0 &&
-                                !implementedInterface.Instantiation[i].IsValueType)
-                            {
-                                allInterfaceMethodsAreImplicitlyUsed = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!allInterfaceMethodsAreImplicitlyUsed && 
-                        (_type.IsArray || _type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType) &&
-                        implementedInterface.HasInstantiation)
-                    {
-                        // NOTE: we need to also do this for generic interfaces on arrays because they have a weird casting rule
-                        // that doesn't require the implemented interface to be variant to consider it castable.
-                        // For value types, we only need this when the array is castable by size (int[] and ICollection<uint>),
-                        // or it's a reference type (Derived[] and ICollection<Base>).
-                        TypeDesc elementType = _type.IsArray ? ((ArrayType)_type).ElementType : _type.Instantiation[0];
-                        allInterfaceMethodsAreImplicitlyUsed =
-                            CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
-                            (elementType.IsDefType && !elementType.IsValueType);
-                    }
-
-                    if (allInterfaceMethodsAreImplicitlyUsed)
-                    {
-                        foreach (var interfaceMethod in implementedInterface.GetAllMethods())
-                        {
-                            if (interfaceMethod.Signature.IsStatic)
-                                continue;
-
-                            // Generic virtual methods are tracked by an orthogonal mechanism.
-                            if (interfaceMethod.HasInstantiation)
-                                continue;
-
-                            MethodDesc implMethod = closestDefType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
-                            if (implMethod != null)
-                            {
-                                dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
-                                dependencyList.Add(factory.VirtualMethodUse(implMethod), "Variant interface method");
-                            }
-                        }
-                    }
-                }
-            }
-
             if (_type.IsArray)
             {
                 // Array EEType depends on System.Array's virtuals. Array EETypes don't point to
@@ -139,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            dependencyList.Add(factory.VTable(_type), "VTable");
+            dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (closestDefType.HasInstantiation)
             {
@@ -169,79 +96,6 @@ namespace ILCompiler.DependencyAnalysis
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             return dependencyList;
-        }
-
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                // Since the vtable is dependency driven, generate conditional static dependencies for
-                // all possible vtable entries
-                foreach (var method in _type.GetClosestDefType().GetAllMethods())
-                {
-                    if (method.IsVirtual)
-                        return true;
-                }
-
-                // If the type implements at least one interface, calls against that interface could result in this type's
-                // implementation being used.
-                if (_type.RuntimeInterfaces.Length > 0)
-                    return true;
-
-                return false;
-            }
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            DefType defType = _type.GetClosestDefType();
-
-            // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
-            {
-                foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
-                {
-                    // Generic virtual methods are tracked by an orthogonal mechanism.
-                    if (decl.HasInstantiation)
-                        continue;
-
-                    MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
-                    if (impl.OwningType == defType && !impl.IsAbstract)
-                    {
-                        MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                        yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(canonImpl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
-                    }
-                }
-
-                Debug.Assert(
-                    _type == defType ||
-                    ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
-                    EqualityComparer<DefType>.Default));
-
-                // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
-                // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
-                // possible for any IFoo object to actually be an instance of T.
-                foreach (DefType interfaceType in defType.RuntimeInterfaces)
-                {
-                    Debug.Assert(interfaceType.IsInterface);
-
-                    foreach (MethodDesc interfaceMethod in interfaceType.GetAllMethods())
-                    {
-                        if (interfaceMethod.Signature.IsStatic)
-                            continue;
-
-                        // Generic virtual methods are tracked by an orthogonal mechanism.
-                        if (interfaceMethod.HasInstantiation)
-                            continue;
-
-                        MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
-                        if (implMethod != null)
-                        {
-                            yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method");
-                        }
-                    }
-                }
-            }
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

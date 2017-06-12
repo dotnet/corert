@@ -19,6 +19,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionCdecl      = 0x0001,
         UnmanagedCallingConventionStdCall    = 0x0002,
         UnmanagedCallingConventionThisCall   = 0x0003,
+        CallingConventionVarargs             = 0x0005,
 
         Static = 0x0010,
     }

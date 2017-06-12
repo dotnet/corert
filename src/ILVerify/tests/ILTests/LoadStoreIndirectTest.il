@@ -71,6 +71,17 @@
         ret
     }
 
+    .method static public hidebysig void StoreIndirect.AssignNullToRefString_Valid(string&) cil managed
+    {
+        // ref string x;
+        // x = null;
+
+        ldarg.0
+        ldnull
+        stind.ref
+        ret
+    }
+
     .method static public hidebysig void StoreObject.ValidTypeToken_Valid() cil managed
     {
         .locals init (object V_0)
