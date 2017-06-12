@@ -296,12 +296,9 @@ namespace Internal.Runtime.TypeLoader
                     UInt32 rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeFlag;          // Set the IsDynamicTypeFlag
                     rareFlags &= ~(uint)EETypeRareFlags.NullableTypeViaIATFlag;    // Remove the NullableTypeViaIATFlag flag
-                    rareFlags &= ~(uint)EETypeRareFlags.HasSealedVTableEntriesFlag;// Remove the HasSealedVTableEntriesFlag
-                                                                                   // we'll set IsDynamicTypeWithSealedVTableEntriesFlag instead
 
-                    // Set the IsDynamicTypeWithSealedVTableEntriesFlag if needed
                     if (state.NumSealedVTableEntries > 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag;
+                        rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
 
                     if (requiresDynamicDispatchMap)
                         rareFlags |= (uint)EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag;

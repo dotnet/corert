@@ -141,11 +141,9 @@ namespace Internal.Runtime
         HasCctorFlag = 0x0000020,
 
         /// <summary>
-        /// This EEType has sealed vtable entries (note that this flag is only used for
-        /// dynamically created types because they always have an optional field (hence the
-        /// very explicit flag name).
+        /// Old unused flag
         /// </summary>
-        IsDynamicTypeWithSealedVTableEntriesFlag = 0x00000040,
+        UNUSED = 0x00000040,
 
         /// <summary>
         /// This EEType was constructed from a universal canonical template, and has
@@ -160,8 +158,6 @@ namespace Internal.Runtime
 
         /// <summary>
         /// This EEType has sealed vtable entries
-        /// This is for statically generated types - we need two different flags because
-        /// the sealed vtable entries are reached in different ways in the static and dynamic case
         /// </summary>
         HasSealedVTableEntriesFlag = 0x00000200,
 
