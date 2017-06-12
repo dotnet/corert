@@ -237,7 +237,7 @@ namespace System.Threading
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
             SafeWaitHandle[] rentedSafeWaitHandles;
-            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, out rentedSafeWaitHandles);
+            SafeWaitHandle[] safeWaitHandles = ObtainSafeWaitHandles(currentThread, waitHandles, waitHandles.Length, out rentedSafeWaitHandles);
             try
             {
                 return WaitAllCore(currentThread, safeWaitHandles, waitHandles, millisecondsTimeout);
