@@ -78,7 +78,7 @@ namespace System.Threading
                     _safeToDisposeHandleEvent.Reset();
                     ProcessRemovals();
                     int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, _numUserWaits + 1, _currentTimeout);
-                    WaitHandle signaledHandle = _waitHandles[signaledHandleIndex];
+                    WaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _waitHandles[signaledHandleIndex] : null;
                     ProcessRemovals();
                     _safeToDisposeHandleEvent.Set();
 
@@ -91,7 +91,7 @@ namespace System.Threading
                             RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
                             if (registeredHandle.Handle == signaledHandle)
                             {
-                                ExecuteWaitCompletion(registeredHandle, false);
+                                QueueWaitCompletion(registeredHandle, false);
                             }
                         }
                     }
@@ -102,7 +102,7 @@ namespace System.Threading
                             RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
                             if (registeredHandle.Timeout == _currentTimeout)
                             {
-                                ExecuteWaitCompletion(registeredHandle, true);
+                                QueueWaitCompletion(registeredHandle, true);
                             }
                         }
                     }
@@ -178,7 +178,7 @@ namespace System.Threading
                 _removesLock.Release();
             }
 
-            private void ExecuteWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
+            private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
@@ -191,7 +191,7 @@ namespace System.Threading
                 handle.CompletedHandle.CanUnregister.Set();
                 if (!handle.CompletedHandle.Repeating)
                 {
-                    QueueUnregisterWait(handle.CompletedHandle);
+                    QueueOrExecuteUnregisterWait(handle.CompletedHandle);
                 }
             }
 
@@ -216,7 +216,6 @@ namespace System.Threading
 
                 _registeredWaitHandles[_numUserWaits] = handle;
                 _waitHandles[_numUserWaits + 1] = handle.Handle;
-                _numUserWaits++;
                 if (_currentTimeout == Timeout.Infinite)
                 {
                     _currentTimeout = handle.Timeout;
@@ -225,7 +224,7 @@ namespace System.Threading
                 {
                     _currentTimeout = Math.Min(_currentTimeout, handle.Timeout);
                 }
-
+                _numUserWaits++;
                 _registeredHandlesLock.Release();
             }
 
@@ -242,7 +241,7 @@ namespace System.Threading
                 _waitThreadStartedLock.Release();
             }
 
-            public void QueueUnregisterWait(RegisteredWaitHandle handle)
+            public void QueueOrExecuteUnregisterWait(RegisteredWaitHandle handle)
             {
                 if (handle.Handle?.SafeWaitHandle.DangerousGetHandle() == (IntPtr)(-1))
                 {
@@ -261,7 +260,10 @@ namespace System.Threading
                 
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
                 _removesLock.Acquire();
-                _pendingRemoves[_numPendingRemoves++] = handle;
+                if(Array.IndexOf(_pendingRemoves, handle) == -1) // If this handle is not already pending removal
+                {
+                    _pendingRemoves[_numPendingRemoves++] = handle;
+                }
                 _removesLock.Release();
                 _changeHandlesEvent.Set();
                 if (handle.UserUnregisterWaitHandle != null)
