@@ -278,24 +278,22 @@ namespace System.Threading
             {
                 StartWaitThreadIfNotStarted();
 
-                if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
-                {
-                    return false;
-                }
-
-                AddWaitHandleForNextWait(handle);
-                handle.WaitThread = this;
-                _changeHandlesEvent.Set();
-                return true;
+                return AddWaitHandleForNextWait(handle);
             }
 
             /// <summary>
             /// Adds a wait handle for the next call to <see cref="WaitHandle.WaitAny(WaitHandle[], int, int)"/>.
             /// </summary>
-            /// <param name="handle"></param>
-            private void AddWaitHandleForNextWait(RegisteredWaitHandle handle)
+            /// <param name="handle">The handle to add.</param>
+            /// <returns>If the handle was successfully registered on this wait thread.</returns>
+            private bool AddWaitHandleForNextWait(RegisteredWaitHandle handle)
             {
                 _registeredHandlesLock.Acquire();
+                if(_numUserWaits == WaitHandle.MaxWaitHandles - 1)
+                {
+                    _registeredHandlesLock.Release();
+                    return false;
+                }
 
                 _registeredWaitHandles[_numUserWaits] = handle;
                 _waitHandles[_numUserWaits + 1] = handle.Handle;
@@ -309,6 +307,10 @@ namespace System.Threading
                 }
                 _numUserWaits++;
                 _registeredHandlesLock.Release();
+                
+                handle.WaitThread = this;
+                _changeHandlesEvent.Set();
+                return true;
             }
 
             /// <summary>
