@@ -1109,7 +1109,7 @@ namespace ILCompiler.CppCodeGen
             {
                 OutputTypeFields(typeDefinitions, nodeType);
 
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType).Slots;
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType.GetClosestDefType()).Slots;
 
                 int baseSlots = 0;
                 var baseType = nodeType.BaseType;

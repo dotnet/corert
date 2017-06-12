@@ -231,10 +231,10 @@ namespace ILCompiler.DependencyAnalysis
 
         private void AddVirtualMethodUseDependencies(DependencyList dependencyList, NodeFactory factory)
         {
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(_type).HasFixedSlots)
-            {
-                DefType closestDefType = _type.GetClosestDefType();
+            DefType closestDefType = _type.GetClosestDefType();
 
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots)
+            {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     // If the type implements ICastable, the methods are implicitly necessary

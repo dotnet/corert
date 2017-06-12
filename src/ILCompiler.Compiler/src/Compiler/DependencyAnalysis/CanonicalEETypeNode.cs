@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.RuntimeInterfaces.Length > 0)
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
 
-            dependencyList.Add(factory.VTable(_type), "VTable");
+            dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");

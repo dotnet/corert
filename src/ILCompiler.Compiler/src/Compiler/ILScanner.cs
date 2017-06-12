@@ -74,8 +74,9 @@ namespace ILCompiler
             }
         }
 
-        public ILScanResults Scan()
+        ILScanResults IILScanner.Scan()
         {
+            _nodeFactory.NameMangler.CompilationUnitPrefix = "";
             return new ILScanResults(_dependencyGraph.MarkedNodeList);
         }
     }
@@ -94,16 +95,30 @@ namespace ILCompiler
             _markedNodes = markedNodes;
         }
 
-        public IEnumerable<MethodDesc> CompiledMethods
+        public VTableSliceProvider GetVTableLayoutInfo()
         {
-            get
+            return new ScannedVTableProvider(_markedNodes);
+        }
+
+        private class ScannedVTableProvider : VTableSliceProvider
+        {
+            private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
+
+            public ScannedVTableProvider(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
-                foreach (var node in _markedNodes)
+                foreach (var node in markedNodes)
                 {
-                    var methodNode = node as ScannedMethodNode;
-                    if (methodNode != null)
-                        yield return methodNode.Method;
+                    var vtableSliceNode = node as VTableSliceNode;
+                    if (vtableSliceNode != null)
+                    {
+                        _vtableSlices.Add(vtableSliceNode.Type, vtableSliceNode.Slots);
+                    }
                 }
+            }
+
+            internal override VTableSliceNode GetSlice(TypeDesc type)
+            {
+                return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
             }
         }
     }
