@@ -316,6 +316,11 @@ namespace System.Threading
             /// </summary>
             private void StartWaitThreadIfNotStarted()
             {
+                if(_waitThreadStarted)
+                {
+                    return;
+                }
+
                 _waitThreadStartedLock.Acquire();
                 if (!_waitThreadStarted)
                 {
@@ -323,6 +328,7 @@ namespace System.Threading
                     RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
                     waitThread.IsBackground = true;
                     waitThread.Start();
+                    _waitThreadStarted = true;
                 }
                 _waitThreadStartedLock.Release();
             }
