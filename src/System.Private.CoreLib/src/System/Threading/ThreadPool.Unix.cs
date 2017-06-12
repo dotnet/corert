@@ -32,10 +32,12 @@ namespace System.Threading
 
         internal ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
 
+        internal ClrThreadPool.WaitThread WaitThread { get; set; }
+
         public bool Unregister(WaitHandle waitObject)
         {
             UserUnregisterWaitHandle = waitObject;
-            ClrThreadPool.WaitThread.QueueUnregisterWait(this);
+            WaitThread.QueueUnregisterWait(this);
             return true;
         }
 
@@ -175,7 +177,7 @@ namespace System.Threading
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
                 millisecondsTimeOutInterval,
                 !executeOnlyOnce);
-            ClrThreadPool.WaitThread.RegisterWaitHandle(registeredHandle);
+            ClrThreadPool.RegisterWaitHandle(registeredHandle);
             return registeredHandle;
         }
     }
