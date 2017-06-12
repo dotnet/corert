@@ -1266,12 +1266,15 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 
 GCSystemInfo g_SystemInfo;
 
+uint32_t g_pageSizeUnixInl = 0;
+
 // Initialize the g_SystemInfo
 bool InitializeSystemInfo()
 {
     long pagesize = getpagesize();
     g_SystemInfo.dwPageSize = pagesize;
     g_SystemInfo.dwAllocationGranularity = pagesize;
+    g_pageSizeUnixInl = pagesize;
 
     int nrcpus = 0;
 
