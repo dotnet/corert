@@ -835,13 +835,6 @@ namespace Internal.JitInterface
             if (declOwningType.IsInterface)
             {
                 // Interface call devirtualization.
-                //
-                // We must ensure that the type actually implements the
-                // interface corresponding to decl.
-                if (!implType.CanCastTo(declOwningType))
-                {
-                    return null;
-                }
 
                 if (implType.IsValueType)
                 {
@@ -849,34 +842,17 @@ namespace Internal.JitInterface
                     return null;
                 }
 
-                // For generic interface methods we must have an ownerType to
-                // safely devirtualize.
-                if (ownerType != null)
+                if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
-                    TypeDesc ownerTypeDesc = typeFromContext(ownerType);
-
-                    // If the derived class is a shared class, make sure the
-                    // owner class is too.
-                    if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    {
-                        ownerTypeDesc = ownerTypeDesc.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    }
-
-                    // TODO: handle the complicated case where interface type is instantiated over __Canon
-
-                    impl = implType.ResolveInterfaceMethodTarget(decl);
-                    Debug.Assert(impl != null);
+                    // TODO: attempt to devirtualize methods on canonical interfaces
+                    return null;
                 }
-                else
-                {
-                    impl = implType.ResolveInterfaceMethodTarget(decl);
-                    Debug.Assert(impl != null);
-                }
+
+                impl = implType.ResolveInterfaceMethodTarget(decl);
             }
             else
             {
                 impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
-                Debug.Assert(impl != null);
             }
 
             return impl != null ? ObjectToHandle(impl) : null;
