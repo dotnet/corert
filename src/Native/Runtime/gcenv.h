@@ -35,6 +35,12 @@
 #include "RuntimeInstance.h"
 #include "eetype.inl"
 
+#ifdef PLATFORM_UNIX
+#include "gcenv.unix.inl"
+#else
+#include "gcenv.windows.inl"
+#endif
+
 #include "stressLog.h"
 #ifdef FEATURE_ETW
 
