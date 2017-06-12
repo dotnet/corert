@@ -41,7 +41,6 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
 
 #if HAVE_MACH_ABSOLUTE_TIME
     {
-        mach_timebase_info_data_t *machTimebaseInfo = GetMachTimebaseInfo();
         counts = mach_absolute_time();
     }
 #elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
