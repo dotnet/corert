@@ -58,7 +58,7 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
             assert(false);
             return counts;
         }
-        counts = ts.tv_sec * SecondsToNanoseconds + ts.tv_nsec;
+        counts = ts.tv_sec * NanosecondsPerSecond + ts.tv_nsec;
     }
 #else
     {
@@ -85,11 +85,11 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 #if HAVE_MACH_ABSOLUTE_TIME
     {
         mach_timebase_info_data_t *machTimebaseInfo = GetMachTimebaseInfo();
-        frequency = SecondsToNanoseconds * static_cast<uint64_t>(machTimebaseInfo->denom) / machTimebaseInfo->numer;
+        frequency = NanosecondsPerSecond * static_cast<uint64_t>(machTimebaseInfo->denom) / machTimebaseInfo->numer;
     }
 #elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {
-        frequency = SecondsToNanoseconds;
+        frequency = NanosecondsPerSecond;
     }
 #else
     {
