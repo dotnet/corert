@@ -820,7 +820,8 @@ class Program
                 new DerivedClass2<string>().GVMethod2<string>("string", "string2");
                 new DerivedClass2<string>().GVMethod3<string>("string", "string2");
                 new DerivedClass2<string>().GVMethod4<string>("string", "string2");
-                ((IFace<string>)new BaseClass<string>()).IFaceMethod1("string");
+                Func<IFace<string>> f = () => new BaseClass<string>(); // Hack to prevent devirtualization
+                f().IFaceMethod1("string");
                 ((IFace<string>)new BaseClass<string>()).IFaceGVMethod1<string>("string1", "string2");
 
                 MethodInfo m1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method1");
