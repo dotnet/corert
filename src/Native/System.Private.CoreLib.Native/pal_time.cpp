@@ -35,10 +35,6 @@ mach_timebase_info_data_t *InitializeTimebaseInfo()
 }
 #endif
 
-uint64_t GetNanoseconds() {
-    return CoreLibNative_GetHighPrecisionCounts() * (NanosecondsPerSecond / CoreLibNative_GetHighPrecisionCounts());
-}
-
 extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
 {
     uint64_t counts = 0;
@@ -109,7 +105,7 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 // time).
 extern "C" uint64_t CoreLibNative_GetTickCount64()
 {
-    return CoreLibNative_GetHighPrecisionCounts() * (MillisecondsPerSecond / CoreLibNative_GetHighPrecisionCounts());
+    return CoreLibNative_GetHighPrecisionCounts() * (MillisecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency());
 }
 
 
@@ -160,7 +156,7 @@ extern "C" int32_t CoreLibNative_GetCpuUtilization(PROCESS_CPU_INFORMATION* prev
         userTime = TimeValToNanoseconds(resUsage.ru_utime);
     }
 
-    uint64_t currentTime = GetNanoseconds();
+    uint64_t currentTime = CoreLibNative_GetHighPrecisionCounts() * (NanosecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency());
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;
