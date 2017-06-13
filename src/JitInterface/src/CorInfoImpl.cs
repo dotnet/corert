@@ -3454,8 +3454,8 @@ namespace Internal.JitInterface
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
             // TODO: Arbitrary relocs
-            if (locationBlock != BlockType.Code)
-                throw new NotImplementedException("Arbitrary relocs");
+            // if (locationBlock != BlockType.Code)
+            //     throw new NotImplementedException("Arbitrary relocs");
 
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
@@ -3469,7 +3469,7 @@ namespace Internal.JitInterface
 
                 case BlockType.ColdCode:
                     // TODO: Arbitrary relocs
-                    throw new NotImplementedException("Arbitrary relocs");
+                    throw new NotImplementedException("ColdCode relocs");
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
