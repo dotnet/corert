@@ -96,7 +96,7 @@ namespace ILCompiler
                     return factory.GenericLookup.MethodEntry(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
-                    return factory.GenericLookup.VirtualMethodAddress(TargetMethod);
+                    return factory.GenericLookup.VirtualCall(TargetMethod);
 
                 case TargetKind.MethodHandle:
                     return factory.GenericLookup.MethodHandle(TargetMethod);
