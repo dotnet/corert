@@ -17,7 +17,6 @@ namespace System.Threading
             
             private static void WorkerThreadStart()
             {
-                RuntimeThread.InitializeThreadPoolThread();
                 // TODO: Event: Worker Thread Start event
 
                 while (true)
@@ -103,6 +102,7 @@ namespace System.Threading
             {
                 RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
                 workerThread.IsThreadPoolThread = true;
+                workerThread.IsBackground = true;
                 workerThread.Start();
             }
         }
