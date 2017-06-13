@@ -10,6 +10,9 @@ namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
+        /// <summary>
+        /// The worker thread infastructure for the CLR thread pool.
+        /// </summary>
         internal static class WorkerThread
         {
             /// <summary>
@@ -28,7 +31,8 @@ namespace System.Threading
                     // TODO: Event:  Worker thread wait event
                     while (s_semaphore.Wait(TimeoutMs))
                     {
-                        if(ThreadPoolWorkQueue.Dispatch())
+                        Volatile.Write(ref s_lastDequeueTime, Environment.TickCount);
+                        if (ThreadPoolWorkQueue.Dispatch())
                         {
                             // If we ran out of work, we need to update s_counts that we are done working for now
                             // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
