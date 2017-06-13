@@ -32,44 +32,48 @@ namespace System.Threading
         public static bool SetMinThreads(int minThreads)
         {
             s_maxMinThreadLock.Acquire();
-            bool success;
-            if (minThreads < 0 || minThreads > s_maxThreads)
+            try
             {
-                success = false;
-            }
-            else
-            {
-                short threads = (short)Math.Min(minThreads, MaxPossibleThreadCount);
-                if (s_forcedMinWorkerThreads == 0)
+                if (minThreads < 0 || minThreads > s_maxThreads)
                 {
-                    s_minThreads = threads;
-
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
-                    while (counts.numThreadsGoal < s_minThreads)
+                    return false;
+                }
+                else
+                {
+                    short threads = (short)Math.Min(minThreads, MaxPossibleThreadCount);
+                    if (s_forcedMinWorkerThreads == 0)
                     {
-                        ThreadCounts newCounts = counts;
-                        newCounts.numThreadsGoal = s_minThreads;
+                        s_minThreads = threads;
 
-                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-                        if (oldCounts == counts)
+                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                        while (counts.numThreadsGoal < s_minThreads)
                         {
-                            counts = newCounts;
+                            ThreadCounts newCounts = counts;
+                            newCounts.numThreadsGoal = s_minThreads;
 
-                            if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && ThreadPool.GetQueuedWorkItems().Any())
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                            if (oldCounts == counts)
                             {
-                                WorkerThread.MaybeAddWorkingWorker();
+                                counts = newCounts;
+
+                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && ThreadPool.GetQueuedWorkItems().Any())
+                                {
+                                    WorkerThread.MaybeAddWorkingWorker();
+                                }
+                            }
+                            else
+                            {
+                                counts = oldCounts;
                             }
                         }
-                        else
-                        {
-                            counts = oldCounts;
-                        }
-                    } 
+                    }
+                    return true;
                 }
-                success = true;
             }
-            s_maxMinThreadLock.Release();
-            return success;
+            finally
+            {
+                s_maxMinThreadLock.Release();
+            }
         }
 
         public static int GetMinThreads() => s_minThreads;
@@ -77,39 +81,43 @@ namespace System.Threading
         public static bool SetMaxThreads(int maxThreads)
         {
             s_maxMinThreadLock.Acquire();
-            bool success;
-            if (maxThreads < s_minThreads || maxThreads == 0)
+            try
             {
-                success = false;
-            }
-            else
-            {
-                short threads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
-                if (s_forcedMaxWorkerThreads == 0)
+                if (maxThreads < s_minThreads || maxThreads == 0)
                 {
-                    s_maxThreads = threads;
-
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
-                    while (counts.numThreadsGoal > s_maxThreads)
-                    {
-                        ThreadCounts newCounts = counts;
-                        newCounts.numThreadsGoal = s_maxThreads;
-
-                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
-                        if (oldCounts == counts)
-                        {
-                            counts = newCounts;
-                        }
-                        else
-                        {
-                            counts = oldCounts;
-                        }
-                    } 
+                    return false;
                 }
-                success = true;
+                else
+                {
+                    short threads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
+                    if (s_forcedMaxWorkerThreads == 0)
+                    {
+                        s_maxThreads = threads;
+
+                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                        while (counts.numThreadsGoal > s_maxThreads)
+                        {
+                            ThreadCounts newCounts = counts;
+                            newCounts.numThreadsGoal = s_maxThreads;
+
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                            if (oldCounts == counts)
+                            {
+                                counts = newCounts;
+                            }
+                            else
+                            {
+                                counts = oldCounts;
+                            }
+                        }
+                    }
+                    return true;
+                }
             }
-            s_maxMinThreadLock.Release();
-            return success;
+            finally
+            {
+                s_maxMinThreadLock.Release();
+            }
         }
 
         public static int GetMaxThreads() => s_maxThreads;
