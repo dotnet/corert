@@ -8,6 +8,9 @@ namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
+        /// <summary>
+        /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
+        /// </summary>
         private partial class HillClimbing
         {
             // Config values pulled from CoreCLR
@@ -22,8 +25,8 @@ namespace System.Threading
                 ClimbingMove,
                 ChangePoint,
                 Stabilizing,
-                Starvation,
-                ThreadTimedOut,
+                Starvation, // Used as a message from the thread pool for a forced transition
+                ThreadTimedOut, // Usage as a message from the thread pool for a forced transition
             }
             
             private readonly int _wavePeriod;
