@@ -196,7 +196,11 @@ namespace Internal.Runtime.Augments
             }
             internal set
             {
-                if(value)
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                if (value)
                 {
                     SetThreadStateBit(ThreadPoolThread);
                 }
