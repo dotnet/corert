@@ -28,8 +28,17 @@ namespace ILCompiler.DependencyAnalysis.X86
 
         public void EmitJMP(ISymbolNode symbol)
         {
-            Builder.EmitByte(0xE9);
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            if (symbol.RepresentsIndirectionCell)
+            {
+                Builder.EmitByte(0xff);
+                Builder.EmitByte(0x25);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
+            else
+            {
+                Builder.EmitByte(0xE9);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
         }
         
         private bool InSignedByteRange(int i)

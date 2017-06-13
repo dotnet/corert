@@ -52,11 +52,18 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // b symbol
         public void EmitJMP(ISymbolNode symbol)
         {
+            Debug.Assert(!symbol.RepresentsIndirectionCell);
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_BRANCH24);
             Builder.EmitByte(0);
             Builder.EmitByte(0xF0);
             Builder.EmitByte(0);
             Builder.EmitByte(0xB8);
+        }
+
+        // bx reg
+        public void EmitJMP(Register destination)
+        {
+            Builder.EmitShort((short)(0x47 | ((byte)destination << 3)));
         }
     }
 }
