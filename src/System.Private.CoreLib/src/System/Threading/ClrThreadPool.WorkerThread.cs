@@ -46,6 +46,11 @@ namespace System.Threading
                                 currentCounts = oldCounts;
                             }
                         }
+
+                        // Reset thread-local state that we control.
+                        RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;
+                        CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
+                        CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
                     }
 
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
