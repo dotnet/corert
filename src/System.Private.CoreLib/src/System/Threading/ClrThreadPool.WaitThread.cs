@@ -16,12 +16,15 @@ namespace System.Threading
             Thread = new WaitThread()
         };
 
+        private static LowLevelLock s_waitThreadListLock = new LowLevelLock();
+
         /// <summary>
         /// Register a wait handle on a <see cref="WaitThread"/>.
         /// </summary>
         /// <param name="handle">A description of the requested registration.</param>
         internal static void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
+            s_waitThreadListLock.Acquire();
             // Register the wait handle on the first wait thread that is not at capacity.
             WaitThreadNode prev;
             WaitThreadNode current = s_waitThreadsHead;
@@ -29,6 +32,7 @@ namespace System.Threading
             {
                 if(current.Thread.RegisterWaitHandle(handle))
                 {
+                    s_waitThreadListLock.Release();
                     return;
                 }
                 prev = current;
@@ -41,6 +45,7 @@ namespace System.Threading
                 Thread = new WaitThread()
             };
             prev.Next.Thread.RegisterWaitHandle(handle);
+            s_waitThreadListLock.Release();
         }
 
         private class WaitThreadNode
