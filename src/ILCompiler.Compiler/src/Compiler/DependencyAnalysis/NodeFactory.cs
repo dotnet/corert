@@ -403,7 +403,12 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(TypeSystemContext.HasEagerStaticConstructor((MetadataType)method.OwningType));
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
-            
+
+            _namedJumpStubNodes = new NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode>((Tuple<string, ISymbolNode> id) =>
+            {
+                return new NamedJumpStubNode(id.Item1, id.Item2);
+            });
+
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
                 if (CompilationModuleGroup.ShouldProduceFullVTable(type))
@@ -936,6 +941,13 @@ namespace ILCompiler.DependencyAnalysis
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
 
+        private NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode> _namedJumpStubNodes;
+
+        public ISymbolNode NamedJumpStub(string name, ISymbolNode target)
+        {
+            return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
+        }
+        
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

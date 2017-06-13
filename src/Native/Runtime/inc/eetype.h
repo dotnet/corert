@@ -302,10 +302,8 @@ public:
         // This EEType has a Class Constructor
         HasCctorFlag            = 0x0000020,
 
-        // This EEType has sealed vtable entries (note that this flag is only used for
-        // dynamically created types because they always have an optional field (hence the
-        // very explicit flag name).
-        IsDynamicTypeWithSealedVTableEntriesFlag    = 0x00000040,
+        // Old unused flag
+        UNUSED                  = 0x00000040,
 
         // This EEType was constructed from a universal canonical template, and has
         // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
@@ -315,8 +313,6 @@ public:
         IsHFAFlag                           = 0x00000100,
 
         // This EEType has sealed vtable entries
-        // This is for statically generated types - we need two different flags because
-        // the sealed vtable entries are reached in different ways in the static and dynamic case
         HasSealedVTableEntriesFlag          = 0x00000200,
 
         // This dynamically created type has gc statics
