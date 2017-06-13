@@ -184,7 +184,7 @@ namespace System.Threading
                 }
                 s_priorCompletionCount = totalNumCompletions;
                 Volatile.Write(ref s_nextCompletedWorkRequestsTime, currentTicks + s_threadAdjustmentInterval);
-                s_priorCompletedWorkRequestsTime = currentTicks;
+                Volatile.Write(ref s_priorCompletedWorkRequestsTime, currentTicks);
                 s_currentSampleStartTime = endTime;
             }
         }
@@ -192,7 +192,7 @@ namespace System.Threading
         private static bool ShouldAdjustMaxWorkersActive()
         {
             // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute times unreliable.
-            int priorTime = s_priorCompletedWorkRequestsTime;
+            int priorTime = Volatile.Read(ref s_priorCompletedWorkRequestsTime);
             int requiredInterval = Volatile.Read(ref s_nextCompletedWorkRequestsTime) - priorTime;
             int elapsedInterval = Environment.TickCount - priorTime;
             if(elapsedInterval >= requiredInterval)
