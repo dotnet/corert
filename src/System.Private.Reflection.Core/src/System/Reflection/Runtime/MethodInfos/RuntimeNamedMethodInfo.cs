@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.ContextTypeInfo);
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.DefiningTypeInfo);
             }
         }
 
