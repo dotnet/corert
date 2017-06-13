@@ -11,7 +11,7 @@ namespace System.Threading
     {
         internal static class WorkerThread
         {
-            internal static WaitSubsystem.WaitableObject s_semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, int.MaxValue);
+            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, int.MaxValue);
 
             private const int TimeoutMs = 20 * 1000;
             
@@ -23,7 +23,7 @@ namespace System.Threading
                 while (true)
                 {
                     // TODO: Event:  Worker thread wait event
-                    while (WaitSubsystem.Wait(s_semaphore, TimeoutMs, false, true))
+                    while (s_semaphore.Wait(TimeoutMs))
                     {
                         if(!ThreadPoolWorkQueue.Dispatch())
                         {
@@ -90,7 +90,7 @@ namespace System.Threading
 
                 if(toRelease > 0)
                 {
-                    WaitSubsystem.ReleaseSemaphore(s_semaphore, toRelease);
+                    s_semaphore.Release(toRelease);
                 }
 
                 for (int i = 0; i < toCreate; i++)
