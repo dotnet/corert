@@ -37,20 +37,20 @@ namespace System.Threading
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
                     while (true)
                     {
-                        if (counts.numActive == counts.numWorking)
+                        if (counts.numExistingThreads == counts.numProcessingWork)
                         {
                             s_threadAdjustmentLock.Release();
                             break;
                         }
 
                         ThreadCounts newCounts = counts;
-                        newCounts.numActive--;
-                        newCounts.maxWorking = (short)Math.Max(s_minThreads, Math.Min(newCounts.numActive, newCounts.maxWorking));
+                        newCounts.numExistingThreads--;
+                        newCounts.numThreadsGoal = Math.Max(s_minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
                         ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
                         if (oldCounts == counts)
                         {
                             s_threadAdjustmentLock.Release();
-                            HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.maxWorking, HillClimbing.StateOrTransition.ThreadTimedOut);
+                            HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
                             // TODO: Event:  Worker Thread stop event
                             return;
                         }
@@ -66,8 +66,8 @@ namespace System.Threading
                 while (true)
                 {
                     newCounts = counts;
-                    newCounts.numWorking = Math.Max(counts.numWorking, Math.Min((short)(counts.numWorking + 1), counts.maxWorking));
-                    newCounts.numActive = Math.Max(counts.numActive, newCounts.numWorking);
+                    newCounts.numProcessingWork = Math.Max(counts.numProcessingWork, Math.Min((short)(counts.numProcessingWork + 1), counts.numThreadsGoal));
+                    newCounts.numExistingThreads = Math.Max(counts.numExistingThreads, newCounts.numProcessingWork);
                     
                     if(newCounts == counts)
                     {
@@ -84,8 +84,8 @@ namespace System.Threading
                     counts = oldCounts;
                 }
 
-                short toCreate = (short)(newCounts.numActive - counts.numActive);
-                int toRelease = newCounts.numWorking - counts.numWorking;
+                int toCreate = newCounts.numExistingThreads - counts.numExistingThreads;
+                int toRelease = newCounts.numProcessingWork - counts.numProcessingWork;
 
                 if(toRelease > 0)
                 {
@@ -95,6 +95,29 @@ namespace System.Threading
                 for (int i = 0; i < toCreate; i++)
                 {
                     CreateWorkerThread();
+                }
+            }
+
+            internal static bool ShouldWorkerKeepRunning()
+            {
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                while (true)
+                {
+                    if (counts.numExistingThreads <= counts.numProcessingWork)
+                    {
+                        return true;
+                    }
+
+                    ThreadCounts newCounts = counts;
+                    newCounts.numProcessingWork--;
+
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+
+                    if (oldCounts == counts)
+                    {
+                        return false;
+                    }
+                    counts = oldCounts;
                 }
             }
 

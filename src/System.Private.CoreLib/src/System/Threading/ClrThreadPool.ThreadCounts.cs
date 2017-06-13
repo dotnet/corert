@@ -9,15 +9,30 @@ namespace System.Threading
 {
     internal static partial class ClrThreadPool
     {
+        /// <summary>
+        /// Tracks information on the number of threads we want/have in different states in our thread pool.
+        /// </summary>
         [StructLayout(LayoutKind.Explicit)]
         struct ThreadCounts
         {
+            /// <summary>
+            /// Max possible thread pool threads we want to have.
+            /// </summary>
             [FieldOffset(0)]
-            public short maxWorking;
+            public short numThreadsGoal;
+
+            /// <summary>
+            /// Number of thread pool threads that currently exist.
+            /// </summary>
             [FieldOffset(2)]
-            public short numActive;
+            public short numExistingThreads;
+
+            /// <summary>
+            /// Number of threads processing work items.
+            /// </summary>
             [FieldOffset(4)]
-            public short numWorking;
+            public short numProcessingWork;
+
             [FieldOffset(0)]
             private long _asLong;
 
@@ -55,15 +70,15 @@ namespace System.Threading
 
             public override int GetHashCode()
             {
-                return (int)(_asLong >> 8) ^ maxWorking;
+                return (int)(_asLong >> 8) ^ numThreadsGoal;
             }
 
             private static void ValidateCounts(ThreadCounts counts)
             {
-                Debug.Assert(counts.maxWorking > 0);
-                Debug.Assert(counts.numActive >= 0);
-                Debug.Assert(counts.numWorking >= 0);
-                Debug.Assert(counts.numWorking <= counts.numActive);
+                Debug.Assert(counts.numThreadsGoal > 0);
+                Debug.Assert(counts.numExistingThreads >= 0);
+                Debug.Assert(counts.numProcessingWork >= 0);
+                Debug.Assert(counts.numProcessingWork <= counts.numExistingThreads);
             }
         }
     }
