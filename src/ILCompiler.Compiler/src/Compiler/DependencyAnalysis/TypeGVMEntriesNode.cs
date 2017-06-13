@@ -78,22 +78,21 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             // Type declares GVMs
-            if (type.HasGenericVirtualMethod())
+            if (type.HasGenericVirtualMethods())
                 return true;
 
+            //
             // Check if the type implements any interface with GVM methods, where the method implementations could be on 
             // base types.
             // Example:
-            //      interface IFace 
-            //      {
+            //      interface IFace {
             //          void IFaceGVMethod<U>();
             //      }
-            //      class BaseClass
-            //      {
+            //      class BaseClass {
             //          public virtual void IFaceGVMethod<U>() { ... }
             //      }
-            //      public class DerivedClass : AnotherBaseClass, IFace { }
-
+            //      public class DerivedClass : BaseClass, IFace { }
+            //
             foreach (var iface in type.RuntimeInterfaces)
             {
                 foreach (var method in iface.GetMethods())

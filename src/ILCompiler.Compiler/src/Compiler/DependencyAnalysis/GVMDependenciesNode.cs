@@ -151,14 +151,17 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             MethodDesc slotDecl = potentialOverrideType.ResolveInterfaceMethodTarget(_method.GetMethodDefinition());
                             if (slotDecl != null)
-                                CreateDependencyForMethodSlotAndInstantiation(slotDecl, dynamicDependencies, factory);
+                            {
+                                MethodDesc implementingMethodInstantiation = _method.Context.GetInstantiatedMethod(slotDecl, _method.Instantiation);
+                                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation), null, "ImplementingMethodInstantiation"));
+                            }
                         }
                     }
                 }
                 else
                 {
                     // Quickly check if the potential overriding type is at all related to the GVM's owning type (there is no need
-                    // to do any processing for a type that is not at all related to the GVM's owning type).
+                    // to do any processing for a type that is not at all related to the GVM's owning type. Resolving virtuals is expensive).
                     TypeDesc overrideTypeCur = potentialOverrideType;
                     {
                         do
@@ -193,31 +196,8 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
             return dynamicDependencies;
-        }
-
-        public static int repeat = 0;
-        public static int total = 0;
-        HashSet<MethodDesc> done = new HashSet<MethodDesc>();
-
-        private void CreateDependencyForMethodSlotAndInstantiation(MethodDesc methodDef, List<CombinedDependencyListEntry> dynamicDependencies, NodeFactory factory)
-        {
-            Debug.Assert(methodDef != null);
-            Debug.Assert(!methodDef.Signature.IsStatic);
-
-            if (methodDef.IsAbstract)
-                return;
-
-            total++;
-            if (!done.Add(methodDef))
-            {
-                //Debugger.Break();
-                repeat++;
-                return;
-            }
-
-            MethodDesc derivedMethodInstantiation = _method.Context.GetInstantiatedMethod(methodDef, _method.Instantiation);
-            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(derivedMethodInstantiation), null, "DerivedMethodInstantiation"));
         }
     }
 }

@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_type.IsInterface)
-                    return _type.HasGenericVirtualMethod();
+                    return _type.HasGenericVirtualMethods();
 
                 if (_type.IsDefType)
                 {

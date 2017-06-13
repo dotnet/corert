@@ -97,7 +97,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets a value indicating whether this type has any generic virtual methods.
         /// </summary>
-        public static bool HasGenericVirtualMethod(this TypeDesc type)
+        public static bool HasGenericVirtualMethods(this TypeDesc type)
         {
             foreach (var method in type.GetAllMethods())
             {
