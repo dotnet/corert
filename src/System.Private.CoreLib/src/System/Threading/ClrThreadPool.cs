@@ -124,6 +124,7 @@ namespace System.Threading
 
         internal static bool NotifyWorkItemComplete()
         {
+            // TODO: Check perf. Might need to make this thread-local.
             Interlocked.Increment(ref s_completionCount);
             Volatile.Write(ref s_lastDequeueTime, Environment.TickCount);
 
@@ -164,7 +165,13 @@ namespace System.Threading
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, currentCounts);
                     if (oldCounts == currentCounts)
                     {
-                        if(newMax > oldCounts.numThreadsGoal)
+                        //
+                        // If we're increasing the max, inject a thread.  If that thread finds work, it will inject
+                        // another thread, etc., until nobody finds work or we reach the new maximum.
+                        //
+                        // If we're reducing the max, whichever threads notice this first will retire themselves.
+                        //
+                        if (newMax > oldCounts.numThreadsGoal)
                         {
                             WorkerThread.MaybeAddWorkingWorker();
                         }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -51,6 +52,15 @@ namespace System.Threading
                         RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;
                         CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
                         CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+
+                        // It's possible that we decided we had no work just before some work came in, 
+                        // but reduced the worker count *after* the work came in.  In this case, we might
+                        // miss the notification of available work.  So we wake up a thread (maybe this one!)
+                        // if there is work to do.
+                        if (ThreadPool.GetQueuedWorkItems().Any())
+                        {
+                            MaybeAddWorkingWorker();
+                        }
                     }
 
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);

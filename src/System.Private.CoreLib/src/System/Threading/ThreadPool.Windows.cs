@@ -281,7 +281,7 @@ namespace System.Threading
         {
         }
 
-        public static bool NotifyWorkItemComplete()
+        internal static bool NotifyWorkItemComplete()
         {
             return true;
         }
