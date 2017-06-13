@@ -57,7 +57,7 @@ StackCopyLoop:                          ; copy the arguments to stack top-down t
 DoCall:
         call    qword ptr [rbx + OFFSETOF__CallDescrData__pTarget]     ; call target function
 
-ReturnFromCallDescrThunk label proc
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFromCallDescrThunk
 
         ; Symbol used to identify thunk call to managed function so the special 
         ; case unwinder can unwind through this function. Sadly we cannot directly
@@ -102,15 +102,5 @@ ReturnsDouble:
         jmp     Epilog
 
         NESTED_END RhCallDescrWorker, _TEXT
-
-        .const
-
-        align   8
- 
-PointerToReturnFromCallDescrThunk label qword
-
-        dq      offset ReturnFromCallDescrThunk
-
-        public  PointerToReturnFromCallDescrThunk
 
 end

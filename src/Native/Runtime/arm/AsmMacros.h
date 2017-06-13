@@ -189,6 +189,25 @@ $Name
 
         MEND
 
+        MACRO
+        EXPORT_POINTER_TO_ADDRESS $Name
+
+1
+
+        AREA        |.rdata|, ALIGN=4, DATA, READONLY
+
+$Name
+
+        DCD         %BT1
+
+        EXPORT      $Name
+
+        TEXTAREA
+
+        ROUT
+
+        MEND
+
 ;-----------------------------------------------------------------------------
 ; Macro used to check (in debug builds only) whether the stack is 64-bit aligned (a requirement before calling
 ; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly

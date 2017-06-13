@@ -49,7 +49,7 @@ donestack:
         mov     eax,[ebx + OFFSETOF__CallDescrData__pTarget]
         call    eax
 
-ReturnFromCallDescrThunk label proc
+        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFromCallDescrThunk
 
         ; Symbol used to identify thunk call to managed function so the special 
         ; case unwinder can unwind through this function. Sadly we cannot directly
@@ -91,16 +91,6 @@ ReturnsDouble:
         jmp     Epilog
 
 FASTCALL_ENDFUNC
-
-        .const
-
-        align   4
-
-_PointerToReturnFromCallDescrThunk label dword
-
-        dd      offset ReturnFromCallDescrThunk
-
-        public  _PointerToReturnFromCallDescrThunk
 
 endif
 

@@ -74,7 +74,8 @@ ALTERNATE_ENTRY Rhp&FunctionName&@0
         mov  edx, [ebp-4]    ; Get the extra argument to pass to the callee
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
-ReturnFrom&FunctionName label proc
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFrom&FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export an auxiliary variable
@@ -87,18 +88,6 @@ ReturnFrom&FunctionName label proc
         jmp eax
 
 FASTCALL_ENDFUNC
-
-        .const
-
-        align       4
-
-_PointerToReturnFrom&FunctionName label dword
-
-        dd          offset ReturnFrom&FunctionName 
-
-        public      _PointerToReturnFrom&FunctionName
-
-        .code
 
         endm
         
