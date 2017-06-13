@@ -176,6 +176,11 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
+        public bool HasFixedSlotVTable(TypeDesc type)
+        {
+            return NodeFactory.VTable(type).HasFixedSlots;
+        }
+
         void ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
             if (dumper != null)

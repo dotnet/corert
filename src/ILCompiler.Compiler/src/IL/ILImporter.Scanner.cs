@@ -592,32 +592,26 @@ namespace Internal.IL
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GVMLookupForSlot), reason);
             }
+            else if (method.OwningType.IsInterface)
+            {
+                if (exactContextNeedsRuntimeLookup)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.VirtualDispatchCell, runtimeDeterminedMethod), reason);
+                }
+                else
+                {
+                    _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
+                }
+            }
+            else if (_compilation.HasFixedSlotVTable(method.OwningType))
+            {
+                // No dependencies: virtual call through the vtable
+            }
             else
             {
-                ReadyToRunHelperId helper;
-                if (opcode == ILOpcode.ldvirtftn)
-                {
-                    helper = ReadyToRunHelperId.ResolveVirtualFunction;
-                }
-                else
-                {
-                    Debug.Assert(opcode == ILOpcode.callvirt);
-                    helper = ReadyToRunHelperId.VirtualCall;
-                }
-
-                if (exactContextNeedsRuntimeLookup && targetMethod.OwningType.IsInterface)
-                {
-                    _dependencies.Add(GetGenericLookupHelper(helper, runtimeDeterminedMethod), reason);
-                }
-                else
-                {
-                    // Get the slot defining method to make sure our virtual method use tracking gets this right.
-                    // For normal C# code the targetMethod will always be newslot.
-                    MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
+                MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
-
-                    _dependencies.Add(_factory.ReadyToRunHelper(helper, slotDefiningMethod), reason);
-                }
+                _dependencies.Add(_factory.VirtualMethodUse(slotDefiningMethod), reason);
             }
         }
 
