@@ -610,7 +610,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
                 MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                return factory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, instantiatedMethod);
+                return factory.InterfaceDispatchCell(instantiatedMethod);
             }
             else
             {
@@ -629,107 +629,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                return factory.NativeLayout.NotSupportedDictionarySlot;
-            }
-            else
-            {
-                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
-            }
+            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                // TODO
-                throw new NotImplementedException();
-            }
-            else
-            {
-                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
-            }
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((VirtualDispatchGenericLookupResult)other)._method);
-        }
-    }
-
-    /// <summary>
-    /// Generic lookup result that points to a virtual function address load stub.
-    /// </summary>
-    internal sealed class VirtualResolveGenericLookupResult : GenericLookupResult
-    {
-        private MethodDesc _method;
-
-        protected override int ClassCode => -12619218;
-
-        public VirtualResolveGenericLookupResult(MethodDesc method)
-        {
-            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
-            Debug.Assert(method.IsVirtual);
-
-            // Normal virtual methods don't need a generic lookup.
-            Debug.Assert(method.OwningType.IsInterface || method.HasInstantiation);
-
-            _method = method;
-        }
-
-        public override ISymbolNode GetTarget(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, GenericDictionaryNode dictionary)
-        {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                return factory.InterfaceDispatchCell(instantiatedMethod);
-            }
-            else
-            {
-                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
-            }
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("VirtualResolve_");
-            sb.Append(nameMangler.GetMangledMethodName(_method));
-        }
-
-        public override string ToString() => $"VirtualResolve: {_method}";
-
-        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
-        {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                // We should be able to get rid of this custom ABI handling
-                // once https://github.com/dotnet/corert/issues/3248 is fixed.
-                return factory.NativeLayout.NotSupportedDictionarySlot;
-            }
-            else
-            {
-                return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
-            }
-        }
-
-        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
-        {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                // TODO
-                throw new NotImplementedException();
-            }
-            else
-            {
-                writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
-            }
-        }
-
-        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
-        {
-            return comparer.Compare(_method, ((VirtualResolveGenericLookupResult)other)._method);
         }
     }
 

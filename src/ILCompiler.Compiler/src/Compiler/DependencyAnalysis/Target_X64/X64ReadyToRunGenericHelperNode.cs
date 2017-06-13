@@ -207,8 +207,6 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.FieldHandle:
                 case ReadyToRunHelperId.MethodDictionary:
-                case ReadyToRunHelperId.VirtualCall:
-                case ReadyToRunHelperId.ResolveVirtualFunction:
                 case ReadyToRunHelperId.MethodEntry:
                 case ReadyToRunHelperId.VirtualDispatchCell:
                 case ReadyToRunHelperId.DefaultConstructor:

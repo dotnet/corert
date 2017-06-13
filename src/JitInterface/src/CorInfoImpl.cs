@@ -3130,18 +3130,12 @@ namespace Internal.JitInterface
                 // Foo<string>.GetHashCode is needed too.
                 if (pResult.exactContextNeedsRuntimeLookup && targetMethod.OwningType.IsInterface)
                 {
-                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
+                    // We need JitInterface changes to fully support this.
+                    // If this is LDVIRTFTN of an interface method that is part of a verifiable delegate creation sequence,
+                    // RyuJIT is not going to use this value.
+                    Debug.Assert(helperId == ReadyToRunHelperId.ResolveVirtualFunction);
+                    pResult.exactContextNeedsRuntimeLookup = false;
+                    pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("NYI_LDVIRTFTN"));
                 }
                 else
                 {
