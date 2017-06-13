@@ -47,13 +47,12 @@ namespace System.Threading
                             }
                         }
                     }
-                    s_threadAdjustmentLock.Acquire();
+
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
                     while (true)
                     {
                         if (counts.numExistingThreads == counts.numProcessingWork)
                         {
-                            s_threadAdjustmentLock.Release();
                             break;
                         }
 
@@ -63,7 +62,6 @@ namespace System.Threading
                         ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
                         if (oldCounts == counts)
                         {
-                            s_threadAdjustmentLock.Release();
                             HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
                             // TODO: Event:  Worker Thread stop event
                             return;

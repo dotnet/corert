@@ -20,7 +20,6 @@ namespace System.Threading
         private static short s_maxThreads; // TODO: Initialize
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
         
-        private static readonly LowLevelLock s_threadAdjustmentLock = new LowLevelLock();
         private static ThreadCounts s_counts = new ThreadCounts();
         private static int s_lastDequeueTime;
         private static int s_priorCompletedWorkRequestsTime;
@@ -121,10 +120,9 @@ namespace System.Threading
             Volatile.Write(ref s_lastDequeueTime, Environment.TickCount);
 
             bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
-            if(shouldAdjustWorkers && s_threadAdjustmentLock.TryAcquire())
+            if(shouldAdjustWorkers)
             {
                 AdjustMaxWorkersActive();
-                s_threadAdjustmentLock.Release();
             }
             return WorkerThread.ShouldStopProcessingWorkNow();
         }
