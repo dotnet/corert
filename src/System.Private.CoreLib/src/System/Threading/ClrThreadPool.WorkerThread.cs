@@ -26,7 +26,7 @@ namespace System.Threading
                     {
                         if(!ThreadPoolWorkQueue.Dispatch())
                         {
-                            return;
+                            continue;
                         }
 
                         RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;

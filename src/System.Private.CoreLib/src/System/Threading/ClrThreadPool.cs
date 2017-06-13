@@ -128,7 +128,6 @@ namespace System.Threading
                 }
 
                 ThreadCounts newCounts = counts;
-                newCounts.numActive--;
                 newCounts.numWorking--;
 
                 ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
