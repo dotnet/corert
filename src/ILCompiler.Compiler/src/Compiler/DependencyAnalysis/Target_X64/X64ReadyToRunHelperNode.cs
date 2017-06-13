@@ -31,27 +31,22 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
 
-                        if (targetMethod.OwningType.IsInterface)
+                        Debug.Assert(!targetMethod.OwningType.IsInterface);
+
+                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                        int pointerSize = factory.Target.PointerSize;
+
+                        int slot = 0;
+                        if (!relocsOnly)
                         {
-                            encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
-                            AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                        }
-                        else
-                        {
-                            if (relocsOnly)
-                                break;
-
-                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
-                            int pointerSize = factory.Target.PointerSize;
-
-                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
                             Debug.Assert(slot != -1);
-                            AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
-                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                         }
+
+                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
+                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                     }
                     break;
 

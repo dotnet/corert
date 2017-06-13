@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            dependencyList.Add(factory.VTable(_type), "VTable");
+            dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (closestDefType.HasInstantiation)
             {

@@ -47,10 +47,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.TypeThreadStaticBaseIndex((TypeDesc)target);
                 case ReadyToRunHelperId.MethodDictionary:
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
-                case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.VirtualDispatchCell:
                     return factory.GenericLookup.VirtualCall((MethodDesc)target);
-                case ReadyToRunHelperId.ResolveVirtualFunction:
-                    return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
@@ -126,25 +124,6 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTargetMethod), "Abstract reflectable method"));
                             }
-                        }
-                    }
-                    break;
-
-                case ReadyToRunHelperId.ResolveVirtualFunction:
-                    {
-                        MethodDesc instantiatedTarget = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                        if (!factory.VTable(instantiatedTarget.OwningType).HasFixedSlots)
-                        {
-                            result.Add(
-                                new DependencyListEntry(
-                                    factory.VirtualMethodUse(instantiatedTarget),
-                                    "Dictionary dependency"));
-                        }
-
-                        // TODO: https://github.com/dotnet/corert/issues/3224 
-                        if (instantiatedTarget.IsAbstract)
-                        {
-                            result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTarget), "Abstract reflectable method"));
                         }
                     }
                     break;

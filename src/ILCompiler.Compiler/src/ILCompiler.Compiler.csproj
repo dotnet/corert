@@ -309,6 +309,7 @@
     <Compile Include="Compiler\SimdHelper.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
+    <Compile Include="Compiler\VTableSliceProvider.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />

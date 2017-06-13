@@ -119,12 +119,30 @@ namespace Internal.IL
             {
                 TypeDesc firstParam = delegateSignature[0];
 
-                bool generateOpenInstanceMethod = true;
+                bool generateOpenInstanceMethod;
 
-                if (firstParam.IsValueType ||
-                    (!firstParam.IsDefType && !firstParam.IsSignatureVariable) /* no arrays, pointers, byrefs, etc. */)
+                switch (firstParam.Category)
                 {
-                    generateOpenInstanceMethod = false;
+                    case TypeFlags.Pointer:
+                    case TypeFlags.FunctionPointer:
+                        generateOpenInstanceMethod = false;
+                        break;
+
+                    case TypeFlags.ByRef:
+                        firstParam = ((ByRefType)firstParam).ParameterType;
+                        generateOpenInstanceMethod = firstParam.IsSignatureVariable || firstParam.IsValueType;
+                        break;
+
+                    case TypeFlags.Array:
+                    case TypeFlags.SzArray:
+                    case TypeFlags.SignatureTypeVariable:
+                        generateOpenInstanceMethod = true;
+                        break;
+
+                    default:
+                        Debug.Assert(firstParam.IsDefType);
+                        generateOpenInstanceMethod = !firstParam.IsValueType;
+                        break;
                 }
 
                 if (generateOpenInstanceMethod)

@@ -23,14 +23,16 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
+        private VTableSliceProvider _vtableSliceProvider;
         private bool _markingComplete;
 
         public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy)
+            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy, VTableSliceProvider vtableSliceProvider)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
+            _vtableSliceProvider = vtableSliceProvider;
             NameMangler = nameMangler;
             InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
@@ -412,7 +414,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (CompilationModuleGroup.ShouldProduceFullVTable(type))
                     return new EagerlyBuiltVTableSliceNode(type);
                 else
-                    return new LazilyBuiltVTableSliceNode(type);
+                    return _vtableSliceProvider.GetSlice(type);
             });
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>

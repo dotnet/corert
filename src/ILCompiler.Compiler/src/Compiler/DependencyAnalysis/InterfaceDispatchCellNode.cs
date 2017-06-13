@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 using Internal.Runtime;
@@ -13,8 +12,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class InterfaceDispatchCellNode : ObjectNode, ISymbolDefinitionNode
     {
-        MethodDesc _targetMethod;
-        string _callSiteIdentifier;
+        private readonly MethodDesc _targetMethod;
+        private readonly string _callSiteIdentifier;
 
         public InterfaceDispatchCellNode(MethodDesc targetMethod, string callSiteIdentifier)
         {
@@ -49,7 +48,22 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
-        
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList result = new DependencyList();
+
+            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            {
+                result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
+            }
+
+            // TODO: https://github.com/dotnet/corert/issues/3224 
+            result.Add(factory.ReflectableMethod(_targetMethod), "Abstract reflectable method");
+
+            return result;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
