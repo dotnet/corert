@@ -34,7 +34,7 @@ namespace ILCompiler
         /// at correct offset before writing.
         /// </summary>
         /// <returns>Bytes written</returns>
-        public abstract int WriteData(ref ObjectDataBuilder builder, NodeFactory factory);
+        public abstract void WriteData(ref ObjectDataBuilder builder, NodeFactory factory);
     }
 
     public class PreInitTypeFixupInfo : PreInitFixupInfo
@@ -47,11 +47,9 @@ namespace ILCompiler
             TypeFixup = type;
         }
 
-        public override int WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             builder.EmitPointerReloc(factory.NecessaryTypeSymbol(TypeFixup));
-
-            return IntPtr.Size;
         }
     }
 
@@ -62,14 +60,15 @@ namespace ILCompiler
         public PreInitMethodFixupInfo(int offset, MethodDesc method)
             : base(offset)
         {
+            if (method.HasInstantiation)
+                throw new BadImageFormatException();
+
             MethodFixup = method;
         }
 
-        public override int WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             builder.EmitPointerReloc(factory.MethodEntrypoint(MethodFixup));
-
-            return IntPtr.Size;
         }
     }
 
@@ -91,7 +90,7 @@ namespace ILCompiler
         /// List of fixup to be apply to the data blob
         /// This is needed for information that can't be encoded into blob ahead of time before codegen
         /// </summary>
-        public List<PreInitFixupInfo> FixupInfos { get; }
+        private List<PreInitFixupInfo> FixupInfos { get; }
 
         public PreInitFieldInfo(FieldDesc field, byte[] data, int length, List<PreInitFixupInfo> fixups)
         {
@@ -104,12 +103,14 @@ namespace ILCompiler
                 FixupInfos.Sort();
         }
 
-        public virtual int WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        public void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             int offset = 0;
 
             if (FixupInfos != null)
             {
+                int startOffset = builder.CountBytes;
+
                 for (int i = 0; i < FixupInfos.Count; ++i)
                 {
                     var fixupInfo = FixupInfos[i];
@@ -122,10 +123,10 @@ namespace ILCompiler
                     builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
 
                     // write the fixup
-                    int fixupBytes = FixupInfos[i].WriteData(ref builder, factory);
+                    FixupInfos[i].WriteData(ref builder, factory);
 
                     // move pointer past the fixup
-                    offset = fixupInfo.Offset + fixupBytes;
+                    offset = builder.CountBytes - startOffset;
                 }
             }
 
@@ -134,8 +135,6 @@ namespace ILCompiler
             
             // Emit remaining bytes
             builder.EmitBytes(Data, offset, Data.Length - offset);
-
-            return Data.Length;
         }
 
         public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)
@@ -258,7 +257,7 @@ namespace ILCompiler
                 if (methodName == null)
                     throw new BadImageFormatException();
 
-                var method = fixupType.GetMethod(methodName);
+                var method = fixupType.GetMethod(methodName, signature : null);
                 if (method == null)
                     throw new BadImageFormatException();
 
