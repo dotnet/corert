@@ -19,13 +19,22 @@ namespace System.Threading
         private static short s_minThreads; // TODO: Initialize
         private static short s_maxThreads; // TODO: Initialize
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
-        
-        private static ThreadCounts s_counts = new ThreadCounts();
-        private static int s_lastDequeueTime;
+
+        [Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Explicit)]
+        private struct CacheLineAligned
+        {
+            [Runtime.InteropServices.FieldOffset(0)]
+            public ThreadCounts counts;
+            [Runtime.InteropServices.FieldOffset(16)]
+            public int lastDequeueTime;
+            [Runtime.InteropServices.FieldOffset(24)]
+            public int priorCompletionCount;
+        }
+
+        private static CacheLineAligned s_aligned = new CacheLineAligned();
         private static int s_priorCompletedWorkRequestsTime;
         private static int s_nextCompletedWorkRequestsTime;
         private static long s_currentSampleStartTime;
-        private static int s_priorCompletionCount = 0;
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
@@ -45,13 +54,13 @@ namespace System.Threading
                     {
                         s_minThreads = threads;
 
-                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                         while (counts.numThreadsGoal < s_minThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = s_minThreads;
 
-                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, counts);
                             if (oldCounts == counts)
                             {
                                 counts = newCounts;
@@ -94,13 +103,13 @@ namespace System.Threading
                     {
                         s_maxThreads = threads;
 
-                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                         while (counts.numThreadsGoal > s_maxThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = s_maxThreads;
 
-                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, counts);
                             if (oldCounts == counts)
                             {
                                 counts = newCounts;
@@ -126,7 +135,7 @@ namespace System.Threading
         {
             // TODO: Check perf. Might need to make this thread-local.
             Interlocked.Increment(ref s_completionCount);
-            Volatile.Write(ref s_lastDequeueTime, Environment.TickCount);
+            Volatile.Write(ref s_aligned.lastDequeueTime, Environment.TickCount);
 
             bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
             if(shouldAdjustWorkers)
@@ -144,7 +153,7 @@ namespace System.Threading
         {
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = Volatile.Read(ref s_completionCount);
-            int numCompletions = totalNumCompletions - Volatile.Read(ref s_priorCompletionCount);
+            int numCompletions = totalNumCompletions - Volatile.Read(ref s_aligned.priorCompletionCount);
             long startTime = s_currentSampleStartTime;
             long endTime = 0; // TODO: PAL High Performance Counter
             long freq = 0;
@@ -153,7 +162,7 @@ namespace System.Threading
 
             if(elapsedSeconds * 1000 >= s_threadAdjustmentInterval / 2)
             {
-                ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                 int newMax;
                 (newMax, s_threadAdjustmentInterval) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
 
@@ -162,7 +171,7 @@ namespace System.Threading
                     ThreadCounts newCounts = currentCounts;
                     newCounts.numThreadsGoal = (short)newMax;
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, currentCounts);
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, currentCounts);
                     if (oldCounts == currentCounts)
                     {
                         //
@@ -189,7 +198,7 @@ namespace System.Threading
                         currentCounts = oldCounts;
                     }
                 }
-                s_priorCompletionCount = totalNumCompletions;
+                s_aligned.priorCompletionCount = totalNumCompletions;
                 Volatile.Write(ref s_nextCompletedWorkRequestsTime, currentTicks + s_threadAdjustmentInterval);
                 Volatile.Write(ref s_priorCompletedWorkRequestsTime, currentTicks);
                 s_currentSampleStartTime = endTime;
@@ -204,7 +213,7 @@ namespace System.Threading
             int elapsedInterval = Environment.TickCount - priorTime;
             if(elapsedInterval >= requiredInterval)
             {
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                 return counts.numExistingThreads >= counts.numThreadsGoal;
             }
             return false;

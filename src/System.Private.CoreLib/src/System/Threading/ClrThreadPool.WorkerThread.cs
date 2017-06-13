@@ -31,18 +31,18 @@ namespace System.Threading
                     // TODO: Event:  Worker thread wait event
                     while (s_semaphore.Wait(TimeoutMs))
                     {
-                        Volatile.Write(ref s_lastDequeueTime, Environment.TickCount);
+                        Volatile.Write(ref s_aligned.lastDequeueTime, Environment.TickCount);
                         if (ThreadPoolWorkQueue.Dispatch())
                         {
-                            // If we ran out of work, we need to update s_counts that we are done working for now
+                            // If we ran out of work, we need to update s_aligned.counts that we are done working for now
                             // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
-                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                             while (true)
                             {
                                 ThreadCounts newCounts = currentCounts;
                                 newCounts.numProcessingWork--;
 
-                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, currentCounts);
+                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, currentCounts);
 
                                 if (oldCounts == currentCounts)
                                 {
@@ -67,7 +67,7 @@ namespace System.Threading
                         }
                     }
 
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                     while (true)
                     {
                         if (counts.numExistingThreads == counts.numProcessingWork)
@@ -78,7 +78,7 @@ namespace System.Threading
                         ThreadCounts newCounts = counts;
                         newCounts.numExistingThreads--;
                         newCounts.numThreadsGoal = Math.Max(s_minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
-                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, counts);
                         if (oldCounts == counts)
                         {
                             HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
@@ -92,7 +92,7 @@ namespace System.Threading
 
             internal static void MaybeAddWorkingWorker()
             {
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                 ThreadCounts newCounts;
                 while (true)
                 {
@@ -105,7 +105,7 @@ namespace System.Threading
                         return;
                     }
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, counts);
 
                     if(oldCounts == counts)
                     {
@@ -131,7 +131,7 @@ namespace System.Threading
 
             internal static bool ShouldStopProcessingWorkNow()
             {
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
                 while (true)
                 {
                     if (counts.numExistingThreads <= counts.numProcessingWork)
@@ -142,7 +142,7 @@ namespace System.Threading
                     ThreadCounts newCounts = counts;
                     newCounts.numProcessingWork--;
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, counts);
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_aligned.counts, newCounts, counts);
 
                     if (oldCounts == counts)
                     {

@@ -12,7 +12,8 @@ namespace System.Threading
         /// <summary>
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit)]
+        /// <remarks>The size parameter ensures that we are always on our own cache line.</remarks>
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
         struct ThreadCounts
         {
             /// <summary>
@@ -51,10 +52,10 @@ namespace System.Threading
                     _asLong = Interlocked.CompareExchange(ref location._asLong, newCounts._asLong, oldCounts._asLong)
                 };
 
-                if (result._asLong == oldCounts._asLong)
+                if (result == oldCounts)
                 {
-                    ValidateCounts(result);
-                    ValidateCounts(newCounts);
+                    result.Validate();
+                    newCounts.Validate();
                 }
                 return result;
             }
@@ -70,15 +71,15 @@ namespace System.Threading
 
             public override int GetHashCode()
             {
-                return (int)(_asLong >> 8) ^ numThreadsGoal;
+                return (int)(_asLong >> 8) + numThreadsGoal;
             }
 
-            private static void ValidateCounts(ThreadCounts counts)
+            private void Validate()
             {
-                Debug.Assert(counts.numThreadsGoal > 0);
-                Debug.Assert(counts.numExistingThreads >= 0);
-                Debug.Assert(counts.numProcessingWork >= 0);
-                Debug.Assert(counts.numProcessingWork <= counts.numExistingThreads);
+                Debug.Assert(numThreadsGoal > 0);
+                Debug.Assert(numExistingThreads >= 0);
+                Debug.Assert(numProcessingWork >= 0);
+                Debug.Assert(numProcessingWork <= numExistingThreads);
             }
         }
     }
