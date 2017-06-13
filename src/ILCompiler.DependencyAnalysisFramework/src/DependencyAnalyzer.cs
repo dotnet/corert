@@ -9,6 +9,11 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
+    public sealed class LoggingData
+    {
+        public static int s_dynamicDependencyInterestingList = 0;
+    }
+
     /// <summary>
     /// Implement a dependency analysis framework. This works much like a Garbage Collector's mark algorithm
     /// in that it finds a set of nodes from an initial root set.
@@ -90,6 +95,8 @@ namespace ILCompiler.DependencyAnalysisFramework
                     _markingCompleted = true;
                     ComputeMarkedNodes();
                 }
+
+                LoggingData.s_dynamicDependencyInterestingList = _dynamicDependencyInterestingList.Count;
 
                 return _markedNodesFinal;
             }

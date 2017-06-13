@@ -77,7 +77,37 @@ namespace ILCompiler.DependencyAnalysis
             if(!type.IsDefType || type.IsInterface)
                 return false;
 
-            return type.HasGenericVirtualMethod();
+            // Type declares GVMs
+            if (type.HasGenericVirtualMethod())
+                return true;
+
+            // Check if the type implements any interface with GVM methods, where the method implementations could be on 
+            // base types.
+            // Example:
+            //      interface IFace 
+            //      {
+            //          void IFaceGVMethod<U>();
+            //      }
+            //      class BaseClass
+            //      {
+            //          public virtual void IFaceGVMethod<U>() { ... }
+            //      }
+            //      public class DerivedClass : AnotherBaseClass, IFace { }
+
+            foreach (var iface in type.RuntimeInterfaces)
+            {
+                foreach (var method in iface.GetMethods())
+                {
+                    if (!method.HasInstantiation || method.Signature.IsStatic)
+                        continue;
+
+                    MethodDesc slotDecl = type.ResolveInterfaceMethodTarget(method);
+                    if (slotDecl != null)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public IEnumerable<TypeGVMEntryInfo> ScanForGenericVirtualMethodEntries()

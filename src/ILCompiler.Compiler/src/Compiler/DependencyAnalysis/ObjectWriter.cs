@@ -874,6 +874,40 @@ namespace ILCompiler.DependencyAnalysis
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);
 
+                // DEBUG LOG
+                {
+                    int numGvmDepNodes = 0;
+                    var listOfGVMs = new List<string>();
+                    foreach (DependencyNode depNode in nodes)
+                    {
+                        if (depNode is GVMDependenciesNode)
+                        {
+                            numGvmDepNodes++;
+                            continue;
+                        }
+                        MethodCodeNode m = depNode as MethodCodeNode;
+                        ShadowConcreteMethodNode sm = depNode as ShadowConcreteMethodNode;
+                        ShadowConcreteUnboxingThunkNode smt = depNode as ShadowConcreteUnboxingThunkNode;
+
+                        if (m != null && m.Method.IsVirtual && m.Method.HasInstantiation)
+                            listOfGVMs.Add("[C] " + m.Method.ToString());
+                        else if (sm != null && sm.Method.IsVirtual && sm.Method.HasInstantiation)
+                            listOfGVMs.Add("[S] " + sm.Method.ToString());
+                        //else if (smt != null && smt.Method.IsVirtual && sm.Method.HasInstantiation)
+                        //    listOfGVMs.Add("[S] " + smt.Method.ToString());
+                    }
+                    listOfGVMs.Sort();
+                    using (StreamWriter sw = new StreamWriter(new FileStream("D:\\gvm.txt", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite)))
+                    {
+                        foreach (var gvm in listOfGVMs)
+                            sw.WriteLine(gvm);
+                        sw.WriteLine("Calls Repeated = " + GVMDependenciesNode.repeat);
+                        sw.WriteLine("Total Calls = " + GVMDependenciesNode.total);
+                        sw.WriteLine("# InterestingForDynamicDependencyAnalysis = " + LoggingData.s_dynamicDependencyInterestingList);
+                        sw.WriteLine("# GVMDependenciesNodes = " + numGvmDepNodes);
+                    }
+                }
+
                 var listOfOffsets = new List<int>();
                 foreach (DependencyNode depNode in nodes)
                 {

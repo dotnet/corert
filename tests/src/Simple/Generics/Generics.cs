@@ -1142,6 +1142,16 @@ class Program
             string IMethod1<T>(T t1, T t2);
         }
 
+        public interface IBar<T>
+        {
+            U IBarGVMethod<U>(Func<T, U> arg);
+        }
+
+        public interface IFace<T>
+        {
+            string IFaceGVMethod1<U>(T t, U u);
+        }
+
         class Base : IFoo<string>, IFoo<int>
         {
             public virtual string GMethod1<T>(T t1, T t2) { return "Base.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
@@ -1187,6 +1197,31 @@ class Program
         {
             string IFoo<int>.IMethod1<T>(T t1, T t2) { return "MyStruct3.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
             public string IMethod1<T>(T t1, T t2) { return "MyStruct3.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+
+        public class AnotherBaseClass<T>
+        {
+            public virtual string IFaceMethod1(T t) { return "AnotherBaseClass.IFaceMethod1"; }
+            public virtual string IFaceGVMethod1<U>(T t, U u) { return "AnotherBaseClass.IFaceGVMethod1"; }
+        }
+
+        public class AnotherDerivedClass<T> : AnotherBaseClass<T>, IFace<T>
+        {
+        }
+
+        public class BarImplementor : IBar<int>
+        {
+            public virtual U IBarGVMethod<U>(Func<int, U> arg) { return arg(123); }
+        }
+
+        public class Yahoo<T>
+        {
+            public virtual U YahooGVM<U>(Func<T, U> arg) { return default(U); }
+        }
+
+        public class YahooDerived : Yahoo<int>
+        {
+            public override U YahooGVM<U>(Func<int, U> arg) { return arg(456); }
         }
 
         static string s_GMethod1;
@@ -1340,6 +1375,17 @@ class Program
                 s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
                 TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
                 Console.WriteLine("====================");
+            }
+
+            {
+                string res = ((IFace<string>)new AnotherDerivedClass<string>()).IFaceGVMethod1<string>("string1", "string2");
+                WriteLineWithVerification("AnotherBaseClass.IFaceGVMethod1", res);
+
+                res = ((IBar<int>)new BarImplementor()).IBarGVMethod<string>((i) => "BarImplementor:" + i.ToString());
+                WriteLineWithVerification("BarImplementor:123", res);
+
+                Yahoo<int> y = new YahooDerived();
+                WriteLineWithVerification("YahooDerived:456", y.YahooGVM<string>((i) => "YahooDerived:" + i.ToString()));
             }
 
             if (s_NumErrors != 0)

@@ -41,14 +41,42 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: https://github.com/dotnet/corert/issues/3224
             if (_method.IsAbstract)
             {
-                return new DependencyListEntry[]
-                {
-                    new DependencyListEntry(context.ReflectableMethod(_method), "Abstract reflectable method"),
-                };
+                yield return new DependencyListEntry(context.ReflectableMethod(_method), "Abstract reflectable method");
             }
+            else
+            {
+                // Universal canonical instantiations should be entirely universal canon
+                if (_method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    _method = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
-            return Array.Empty<DependencyListEntry>();
+                // TODO: verify for invalid instantiations, like List<void>?
+                bool validInstantiation =
+                    _method.IsSharedByGenericInstantiations ||       // Non-exact methods are always valid instantiations (always pass constraints check)
+                    _method.CheckConstraints();                      // Verify that the instantiation does not violate constraints
+
+                if (validInstantiation)
+                {
+                    MethodDesc canonMethodTarget = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                    bool getUnboxingStub = (_method.OwningType.IsValueType || _method.OwningType.IsEnum);
+                    yield return new DependencyListEntry(context.MethodEntrypoint(canonMethodTarget, getUnboxingStub), "GVM Dependency - Canon method");
+
+                    if (canonMethodTarget != _method)
+                    {
+                        // Dependency includes the generic method dictionary of the instantiation, and all its dependencies. This is done by adding the 
+                        // ShadowConcreteMethod to the list of dynamic dependencies. The generic dictionary will be reported as a dependency of the ShadowConcreteMethod
+                        // TODO: detect large recursive generics and fallback to USG templates
+                        Debug.Assert(!_method.IsCanonicalMethod(CanonicalFormKind.Any));
+                        yield return new DependencyListEntry(context.ShadowConcreteMethod(_method), "GVM Dependency - Dictionary");
+                    }
+                }
+                else
+                {
+                    // TODO: universal generics
+                }
+            }
         }
+
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
             return Array.Empty<CombinedDependencyListEntry>();
@@ -90,20 +118,25 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 TypeDesc potentialOverrideType = entryAsEETypeNode.Type;
-                if (!(potentialOverrideType is DefType))
+                if (!potentialOverrideType.IsDefType)
                     continue;
 
                 Debug.Assert(!potentialOverrideType.IsRuntimeDeterminedSubtype);
 
-                if (_method.OwningType.HasSameTypeDefinition(potentialOverrideType) && potentialOverrideType.IsInterface && (potentialOverrideType != _method.OwningType))
+                if (potentialOverrideType.IsInterface)
                 {
-                    if (_method.OwningType.CanCastTo(potentialOverrideType))
+                    if (_method.OwningType.HasSameTypeDefinition(potentialOverrideType) && (potentialOverrideType != _method.OwningType))
                     {
-                        // Variance expansion
-                        MethodDesc matchingMethodOnRelatedVariantMethod = potentialOverrideType.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
-                        matchingMethodOnRelatedVariantMethod = _method.Context.GetInstantiatedMethod(matchingMethodOnRelatedVariantMethod, _method.Instantiation);
-                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(matchingMethodOnRelatedVariantMethod), null, "GVM Variant Interface dependency"));
+                        if (_method.OwningType.CanCastTo(potentialOverrideType))
+                        {
+                            // Variance expansion
+                            MethodDesc matchingMethodOnRelatedVariantMethod = potentialOverrideType.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
+                            matchingMethodOnRelatedVariantMethod = _method.Context.GetInstantiatedMethod(matchingMethodOnRelatedVariantMethod, _method.Instantiation);
+                            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(matchingMethodOnRelatedVariantMethod), null, "GVM Variant Interface dependency"));
+                        }
                     }
+
+                    continue;
                 }
 
                 // If this is an interface gvm, look for types that implement the interface
@@ -112,17 +145,11 @@ namespace ILCompiler.DependencyAnalysis
                 // relationship in the vtable.
                 if (_method.OwningType.IsInterface)
                 {
-                    if (potentialOverrideType.IsInterface)
-                        continue;
-
                     foreach (DefType interfaceImpl in potentialOverrideType.RuntimeInterfaces)
                     {
-                        if (interfaceImpl.ConvertToCanonForm(CanonicalFormKind.Specific) == _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                        if (interfaceImpl == _method.OwningType)
                         {
-                            // Find if the type implements this method. (Note, do this comparision against the generic definition of the method, not the
-                            // specific method instantiation that is "method"
-                            MethodDesc genericDefinition = interfaceImpl.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
-                            MethodDesc slotDecl = potentialOverrideType.ResolveInterfaceMethodTarget(genericDefinition);
+                            MethodDesc slotDecl = potentialOverrideType.ResolveInterfaceMethodTarget(_method.GetMethodDefinition());
                             if (slotDecl != null)
                                 CreateDependencyForMethodSlotAndInstantiation(slotDecl, dynamicDependencies, factory);
                         }
@@ -130,29 +157,48 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    // TODO: Ensure GVM Canon Target
-
-                    TypeDesc overrideTypeCanonCur = potentialOverrideType;
-                    TypeDesc methodCanonContainingType = _method.OwningType;
-                    while (overrideTypeCanonCur != null)
+                    // Quickly check if the potential overriding type is at all related to the GVM's owning type (there is no need
+                    // to do any processing for a type that is not at all related to the GVM's owning type).
+                    TypeDesc overrideTypeCur = potentialOverrideType;
                     {
-                        if (overrideTypeCanonCur.ConvertToCanonForm(CanonicalFormKind.Specific) == methodCanonContainingType.ConvertToCanonForm(CanonicalFormKind.Specific))
+                        do
                         {
-                            MethodDesc methodDefInDerivedType = potentialOverrideType.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);
-                            if(methodDefInDerivedType != null)
-                                CreateDependencyForMethodSlotAndInstantiation(methodDefInDerivedType, dynamicDependencies, factory);
+                            if (overrideTypeCur == _method.OwningType)
+                                break;
 
-                            MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
-                            if (slotDecl != null)
-                                CreateDependencyForMethodSlotAndInstantiation(slotDecl.GetMethodDefinition(), dynamicDependencies, factory);
+                            overrideTypeCur = overrideTypeCur.BaseType;
+                        }
+                        while (overrideTypeCur != null);
+
+                        if (overrideTypeCur == null)
+                            continue;
+                    }
+
+                    overrideTypeCur = potentialOverrideType;
+                    while (overrideTypeCur != null)
+                    {
+                        if (overrideTypeCur == _method.OwningType)
+                        {
+                            // The GVMDependencyNode already declares the entrypoint/dictionary dependencies of the current method 
+                            // as static dependencies, therefore we can break the loop as soon we hit the current method's owning type
+                            // while we're traversing the hierarchy of the potential derived types.
+                            break;
                         }
 
-                        overrideTypeCanonCur = overrideTypeCanonCur.BaseType;
+                        MethodDesc instantiatedTargetMethod = overrideTypeCur.FindVirtualFunctionTargetMethodOnObjectType(_method);
+                        if (instantiatedTargetMethod != null)
+                            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
+
+                        overrideTypeCur = overrideTypeCur.BaseType;
                     }
                 }
             }
             return dynamicDependencies;
         }
+
+        public static int repeat = 0;
+        public static int total = 0;
+        HashSet<MethodDesc> done = new HashSet<MethodDesc>();
 
         private void CreateDependencyForMethodSlotAndInstantiation(MethodDesc methodDef, List<CombinedDependencyListEntry> dynamicDependencies, NodeFactory factory)
         {
@@ -162,39 +208,16 @@ namespace ILCompiler.DependencyAnalysis
             if (methodDef.IsAbstract)
                 return;
 
+            total++;
+            if (!done.Add(methodDef))
+            {
+                //Debugger.Break();
+                repeat++;
+                return;
+            }
+
             MethodDesc derivedMethodInstantiation = _method.Context.GetInstantiatedMethod(methodDef, _method.Instantiation);
-
-            // Universal canonical instantiations should be entirely universal canon
-            if (derivedMethodInstantiation.IsCanonicalMethod(CanonicalFormKind.Universal))
-            {
-                derivedMethodInstantiation = derivedMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Universal);
-            }
-
-            // TODO: verify for invalid instantiations, like List<void>?
-            bool validInstantiation = 
-                derivedMethodInstantiation.IsSharedByGenericInstantiations ||       // Non-exact methods are always valid instantiations (always pass constraints check)
-                derivedMethodInstantiation.CheckConstraints();                      // Verify that the instantiation does not violate constraints
-
-            if (validInstantiation)
-            {
-                MethodDesc canonMethodTarget = derivedMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-                bool getUnboxingStub = (derivedMethodInstantiation.OwningType.IsValueType || derivedMethodInstantiation.OwningType.IsEnum);
-                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(canonMethodTarget, getUnboxingStub), null, "DerivedMethodInstantiation"));
-
-                if (canonMethodTarget != derivedMethodInstantiation)
-                {
-                    // Dependency includes the generic method dictionary of the instantiation, and all its dependencies. This is done by adding the 
-                    // ShadowConcreteMethod to the list of dynamic dependencies. The generic dictionary will be reported as a dependency of the ShadowConcreteMethod
-                    // TODO: detect large recursive generics and fallback to USG templates
-                    Debug.Assert(!derivedMethodInstantiation.IsCanonicalMethod(CanonicalFormKind.Any));
-                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.ShadowConcreteMethod(derivedMethodInstantiation), null, "DerivedMethodInstantiation dictionary"));
-                }
-            }
-            else
-            {
-                // TODO: universal generics
-            }
+            dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(derivedMethodInstantiation), null, "DerivedMethodInstantiation"));
         }
     }
 }

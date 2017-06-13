@@ -29,7 +29,43 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _type.IsDefType && _type.HasGenericVirtualMethod();
+                if (_type.IsInterface)
+                    return _type.HasGenericVirtualMethod();
+
+                if (_type.IsDefType)
+                {
+                    // First, check if this type has any GVM that overrides a GVM on a parent type. If that's the case, this makes
+                    // the current type interesting for GVM analysis (i.e. instantiate its overriding GVMs for existing GVMDependenciesNodes
+                    // of the instantiated GVM on the parent types).
+                    foreach (var method in _type.GetAllMethods())
+                    {
+                        if (method.HasInstantiation && method.IsVirtual)
+                        {
+                            MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                            if (slotDecl != method)
+                                return true;
+                        }
+                    }
+
+                    // Second, check if this type has any GVMs that implement any GVM on any of the implemented interfaces. This would
+                    // make the current type interesting for dynamic dependency analysis to that we can instantiate its GVMs.
+                    foreach (DefType interfaceImpl in _type.RuntimeInterfaces)
+                    {
+                        foreach (var method in interfaceImpl.GetAllMethods())
+                        {
+                            if (method.HasInstantiation && method.IsVirtual)
+                            {
+                                // We found a GVM on one of the implemented interfaces. Find if the type implements this method. 
+                                // (Note, do this comparision against the generic definition of the method, not the specific method instantiation
+                                MethodDesc genericDefinition = method.GetMethodDefinition();
+                                MethodDesc slotDecl = _type.ResolveInterfaceMethodTarget(genericDefinition);
+                                if (slotDecl != null)
+                                    return true;
+                            }
+                        }
+                    }
+                }
+                return false;
             }
         }
 

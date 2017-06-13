@@ -40,6 +40,10 @@
       <Name>ILCompiler.TypeSystem</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <ReferencePath Include="D:\GIT\corert\bin\Product\Windows_NT.x64.Debug\ILCompiler.TypeSystem\ILCompiler.TypeSystem.dll" />
+    <ReferencePath Include="D:\GIT\corert\bin\Product\Windows_NT.x64.Debug\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.dll" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
