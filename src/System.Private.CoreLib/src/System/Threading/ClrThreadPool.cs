@@ -126,7 +126,7 @@ namespace System.Threading
                 AdjustMaxWorkersActive();
                 s_threadAdjustmentLock.Release();
             }
-            return WorkerThread.ShouldWorkerKeepRunning();
+            return WorkerThread.ShouldStopProcessingWorkNow();
         }
 
         //

@@ -672,12 +672,11 @@ namespace System.Threading
                 }
             }
         }
-
-
-        //Per-appDomain quantum (in ms) for which the thread keeps processing
-        //requests in the current domain.
-        private const uint tpQuantum = 30U;
-
+        
+        /// <summary>
+        /// Dipatches work items to this thread.
+        /// </summary>
+        /// <returns><c>true</c> if this thread did as much work as was available. <c>false</c> if this thread stopped working early.</returns>
         internal static bool Dispatch()
         {
             var workQueue = ThreadPoolGlobals.workQueue;
@@ -702,7 +701,6 @@ namespace System.Threading
             // false later, but only if we're absolutely certain that the queue is empty.
             //
             bool needAnotherThread = true;
-            IThreadPoolWorkItem workItem = null;
             try
             {
                 //
@@ -711,20 +709,18 @@ namespace System.Threading
                 ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
 
                 //
-                // Loop until our quantum expires.
+                // Loop until there is no work.
                 //
-                while ((Environment.TickCount - quantumStartTime) < tpQuantum)
+                while (true)
                 {
-                    bool missedSteal = false;
-                    workQueue.Dequeue(tl, out workItem, out missedSteal);
+                    workQueue.Dequeue(tl, out IThreadPoolWorkItem workItem, out bool missedSteal);
 
                     if (workItem == null)
                     {
                         //
-                        // No work.  We're going to return to the VM once we leave this protected region.
+                        // No work.
                         // If we missed a steal, though, there may be more work in the queue.
-                        // Instead of looping around and trying again, we'll just request another thread.  This way
-                        // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
+                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
                         // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
                         // which will be more efficient than this thread doing it anyway.
                         //
@@ -759,6 +755,7 @@ namespace System.Threading
             {
                 // Work items should not allow exceptions to escape.  For example, Task catches and stores any exceptions.
                 Environment.FailFast("Unhandled exception in ThreadPool dispatch loop", e);
+                return true; // Will never actually be executed because Environment.FailFast doesn't return
             }
             finally
             {
@@ -772,8 +769,6 @@ namespace System.Threading
                 if (needAnotherThread)
                     workQueue.EnsureThreadRequested();
             }
-
-            return true;
         }
     }
 

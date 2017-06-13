@@ -27,14 +27,25 @@ namespace System.Threading
                     // TODO: Event:  Worker thread wait event
                     while (s_semaphore.Wait(TimeoutMs))
                     {
-                        if(!ThreadPoolWorkQueue.Dispatch())
+                        if(ThreadPoolWorkQueue.Dispatch())
                         {
-                            continue;
-                        }
+                            // If we ran out of work, we need to update s_counts that we are done working for now
+                            // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
+                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_counts);
+                            while (true)
+                            {
+                                ThreadCounts newCounts = currentCounts;
+                                newCounts.numProcessingWork--;
 
-                        RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;
-                        CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
-                        CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_counts, newCounts, currentCounts);
+
+                                if (oldCounts == currentCounts)
+                                {
+                                    break;
+                                }
+                                currentCounts = oldCounts;
+                            }
+                        }
                     }
                     s_threadAdjustmentLock.Acquire();
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
@@ -101,7 +112,7 @@ namespace System.Threading
                 }
             }
 
-            internal static bool ShouldWorkerKeepRunning()
+            internal static bool ShouldStopProcessingWorkNow()
             {
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
                 while (true)
