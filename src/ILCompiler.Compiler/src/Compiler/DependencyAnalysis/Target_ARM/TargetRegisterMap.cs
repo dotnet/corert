@@ -16,12 +16,14 @@ namespace ILCompiler.DependencyAnalysis.ARM
         public readonly Register Arg0;
         public readonly Register Arg1;
         public readonly Register Result;
+        public readonly Register InterproceduralScratch;
 
         public TargetRegisterMap(TargetOS os)
         {
             Arg0 = Register.R0;
             Arg1 = Register.R1;
             Result = Register.R0;
+            InterproceduralScratch = Register.R12;
         }
     }
 }

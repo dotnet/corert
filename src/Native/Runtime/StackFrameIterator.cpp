@@ -52,21 +52,21 @@ GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, PointerToReturnFromCall
 #endif
 
 #ifdef _TARGET_X86_
-EXTERN_C void * RhpCallFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, &RhpCallFunclet2);
+EXTERN_C void * PointerToRhpCallFunclet2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, PointerToRhpCallFunclet2);
 #endif
-EXTERN_C void * RhpCallCatchFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallCatchFunclet2Addr, &RhpCallCatchFunclet2);
-EXTERN_C void * RhpCallFinallyFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFinallyFunclet2Addr, &RhpCallFinallyFunclet2);
-EXTERN_C void * RhpCallFilterFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFilterFunclet2Addr, &RhpCallFilterFunclet2);
-EXTERN_C void * RhpThrowEx2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowEx2Addr, &RhpThrowEx2);
-EXTERN_C void * RhpThrowHwEx2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowHwEx2Addr, &RhpThrowHwEx2);
-EXTERN_C void * RhpRethrow2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
+EXTERN_C void * PointerToRhpCallCatchFunclet2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpCallCatchFunclet2Addr, PointerToRhpCallCatchFunclet2);
+EXTERN_C void * PointerToRhpCallFinallyFunclet2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFinallyFunclet2Addr, PointerToRhpCallFinallyFunclet2);
+EXTERN_C void * PointerToRhpCallFilterFunclet2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFilterFunclet2Addr, PointerToRhpCallFilterFunclet2);
+EXTERN_C void * PointerToRhpThrowEx2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowEx2Addr, PointerToRhpThrowEx2);
+EXTERN_C void * PointerToRhpThrowHwEx2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowHwEx2Addr, PointerToRhpThrowHwEx2);
+EXTERN_C void * PointerToRhpRethrow2;
+GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #endif // !defined(USE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
@@ -78,10 +78,8 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
 // ingest the updated DIA, we're instead exposing a global void * variable
 // holding the return address.
 #ifdef DACCESS_COMPILE
-#define EQUALS_CODE_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
-#define EQUALS_RETURN_ADDRESS(x, func_name) EQUALS_CODE_ADDRESS((x), func_name)
+#define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
 #else
-#define EQUALS_CODE_ADDRESS(x, func_name) ((x) == &func_name)
 #define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
 #endif
 
@@ -583,13 +581,13 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_ControlPC = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
 
     ASSERT(
-        EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
-        EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFinallyFunclet2) ||
-        EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2)
+        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
+        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFinallyFunclet2) ||
+        EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2)
         );
 #endif
 
-    bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+    bool isFilterInvoke = EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
 
 #if defined(UNIX_AMD64_ABI) 
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
@@ -608,7 +606,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
             SP += 6 + 1; // 6 locals and stack alignment
         }
@@ -652,7 +650,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
         
-        if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+        if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
             SP += 2 + 1; // 2 locals and stack alignment
         }
@@ -703,7 +701,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 3 : 1;
 
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pR4  = m_RegDisplay.pR4;
@@ -1623,20 +1621,20 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     }
 #endif
 
-    if (EQUALS_CODE_ADDRESS(returnAddress, RhpThrowEx2) ||
-        EQUALS_CODE_ADDRESS(returnAddress, RhpThrowHwEx2) ||
-        EQUALS_CODE_ADDRESS(returnAddress, RhpRethrow2))
+    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowEx2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpRethrow2))
     {
         return InThrowSiteThunk; 
     }
 
     if (
 #ifdef _TARGET_X86_
-        EQUALS_CODE_ADDRESS(returnAddress, RhpCallFunclet2)
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2)
 #else
-        EQUALS_CODE_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
-        EQUALS_CODE_ADDRESS(returnAddress, RhpCallFinallyFunclet2) ||
-        EQUALS_CODE_ADDRESS(returnAddress, RhpCallFilterFunclet2)
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2)
 #endif
         )
     {

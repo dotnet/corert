@@ -70,7 +70,8 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         // rdi still contains the exception code
         // rsi contains the address of the ExInfo
         call    C_FUNC(RhThrowHwEx)
-ALTERNATE_ENTRY RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
         // no return
         int 3
@@ -150,7 +151,8 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         // rdi still contains the exception object
         // rsi contains the address of the ExInfo
         call    C_FUNC(RhThrowEx)
-ALTERNATE_ENTRY RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
         // no return
         int 3
@@ -219,7 +221,8 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // rdi contains the currently active ExInfo
         // rsi contains the address of the new ExInfo
         call    C_FUNC(RhRethrow)
-ALTERNATE_ENTRY RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 
         // no return
         int 3
@@ -330,7 +333,8 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         mov     rdi, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdi <- establisher frame
         mov     rsi, [rsp + locArg0]                                // rsi <- exception object
         call    qword ptr [rsp + locArg1]                           // call handler funclet
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
 
         mov     rdx, [rsp + locArg2]                                // rdx <- dispatch context
 
@@ -468,7 +472,8 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
         mov     rdi, [rsi + OFFSETOF__REGDISPLAY__SP]                // rdi <- establisher frame
         call    qword ptr [rsp + locArg0]                            // handler funclet address
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
 
         mov     rsi, [rsp + locArg1]                                 // rsi <- regdisplay
 
@@ -517,7 +522,8 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         mov     rsi, rdi                                            // rsi <- exception object
         mov     rdi, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdi <- establisher frame
         call    rax
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
         // RAX contains the result of the filter execution
 

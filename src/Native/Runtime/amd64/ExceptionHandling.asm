@@ -92,13 +92,13 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ;; rcx still contains the exception code
         ;; rdx contains the address of the ExInfo
         call    RhThrowHwEx
-ALTERNATE_ENTRY RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
         ;; no return
         int 3
 
 NESTED_END RhpThrowHwEx, _TEXT
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,7 +184,8 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rcx still contains the exception object
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
-ALTERNATE_ENTRY RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
         ;; no return
         int 3
@@ -267,7 +268,8 @@ NESTED_ENTRY RhpRethrow, _TEXT
         ;; rcx contains the currently active ExInfo
         ;; rdx contains the address of the new ExInfo
         call    RhRethrow
-ALTERNATE_ENTRY RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 
         ;; no return
         int 3
@@ -425,7 +427,8 @@ else
         mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
 endif
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
@@ -584,7 +587,8 @@ endif
 
         mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
 
         mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
@@ -626,7 +630,6 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
 NESTED_END RhpCallFinallyFunclet, _TEXT
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
@@ -653,7 +656,8 @@ else
         ;; RCX still contains the exception object
 endif
         call    rax
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 

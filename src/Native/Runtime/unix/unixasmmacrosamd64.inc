@@ -222,6 +222,19 @@ C_FUNC(\Name):
 
 .endm
 
+.macro EXPORT_POINTER_TO_ADDRESS Name
+
+1:
+
+        .data
+        .align      8
+C_FUNC(\Name):
+        .quad       1b
+        .global     C_FUNC(\Name)
+        .text
+
+.endm
+
 //
 // CONSTANTS -- INTEGER
 //
