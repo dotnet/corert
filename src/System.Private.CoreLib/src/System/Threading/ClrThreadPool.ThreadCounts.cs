@@ -19,13 +19,13 @@ namespace System.Threading
             [FieldOffset(4)]
             public short numWorking;
             [FieldOffset(0)]
-            private long asLong;
+            private long _asLong;
 
             public static ThreadCounts VolatileReadCounts(ref ThreadCounts counts)
             {
                 return new ThreadCounts
                 {
-                    asLong = Volatile.Read(ref counts.asLong)
+                    _asLong = Volatile.Read(ref counts._asLong)
                 };
             }
 
@@ -33,10 +33,10 @@ namespace System.Threading
             {
                 ThreadCounts result = new ThreadCounts
                 {
-                    asLong = Interlocked.CompareExchange(ref location.asLong, newCounts.asLong, oldCounts.asLong)
+                    _asLong = Interlocked.CompareExchange(ref location._asLong, newCounts._asLong, oldCounts._asLong)
                 };
 
-                if (result.asLong == oldCounts.asLong)
+                if (result._asLong == oldCounts._asLong)
                 {
                     ValidateCounts(result);
                     ValidateCounts(newCounts);
@@ -44,18 +44,18 @@ namespace System.Threading
                 return result;
             }
 
-            public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs.asLong == rhs.asLong;
+            public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._asLong == rhs._asLong;
 
-            public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs.asLong != rhs.asLong;
+            public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._asLong != rhs._asLong;
 
             public override bool Equals(object obj)
             {
-                return obj is ThreadCounts counts && this.asLong == counts.asLong;
+                return obj is ThreadCounts counts && this._asLong == counts._asLong;
             }
 
             public override int GetHashCode()
             {
-                return (int)(asLong >> 8) ^ maxWorking;
+                return (int)(_asLong >> 8) ^ maxWorking;
             }
 
             private static void ValidateCounts(ThreadCounts counts)
