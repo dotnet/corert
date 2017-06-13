@@ -11,9 +11,13 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
         private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
-        
-        private static int s_minThreads; // TODO: Initialize
-        private static int s_maxThreads; // TODO: Initialize
+
+        private static int s_forcedMinWorkerThreads = 0; // TODO: Config
+        private static int s_forcedMaxWorkerThreads = 0; // TODO: Config
+
+        private const short MaxPossibleThreadCount = short.MaxValue;
+        private static short s_minThreads; // TODO: Initialize
+        private static short s_maxThreads; // TODO: Initialize
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
         
         private static readonly LowLevelLock s_threadAdjustmentLock = new LowLevelLock();
@@ -26,23 +30,20 @@ namespace System.Threading
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
-        public static bool SetMinThreads(int threads)
+        public static bool SetMinThreads(int minThreads)
         {
             s_maxMinThreadLock.Acquire();
             bool success;
-            if (threads < 0 || threads > s_maxThreads)
+            if (minThreads < 0 || minThreads > s_maxThreads)
             {
                 success = false;
             }
             else
             {
-                s_minThreads = threads;
-
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
-                while(counts.maxWorking < s_minThreads)
+                short threads = (short)Math.Min(minThreads, MaxPossibleThreadCount);
+                if (s_forcedMinWorkerThreads == 0)
                 {
-                    ThreadCounts newCounts = counts;
-                    newCounts.maxWorking = (short)s_minThreads;
+                    s_minThreads = threads;
 
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
                     while (counts.numThreadsGoal < s_minThreads)
@@ -74,23 +75,20 @@ namespace System.Threading
 
         public static int GetMinThreads() => s_minThreads;
 
-        public static bool SetMaxThreads(int threads)
+        public static bool SetMaxThreads(int maxThreads)
         {
             s_maxMinThreadLock.Acquire();
             bool success;
-            if (threads < s_minThreads || threads == 0)
+            if (maxThreads < s_minThreads || maxThreads == 0)
             {
                 success = false;
             }
             else
             {
-                s_maxThreads = threads;
-
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
-                while (counts.maxWorking > s_maxThreads)
+                short threads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
+                if (s_forcedMaxWorkerThreads == 0)
                 {
-                    ThreadCounts newCounts = counts;
-                    newCounts.maxWorking = (short)s_maxThreads;
+                    s_maxThreads = threads;
 
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_counts);
                     while (counts.numThreadsGoal > s_maxThreads)
@@ -131,6 +129,10 @@ namespace System.Threading
             return WorkerThread.ShouldWorkerKeepRunning();
         }
 
+        //
+        // This method must only be called if ShouldAdjustMaxWorkersActive has returned true, *and*
+        // s_threadAdjustmentLock is held.
+        //
         private static void AdjustMaxWorkersActive()
         {
             int currentTicks = Environment.TickCount;
