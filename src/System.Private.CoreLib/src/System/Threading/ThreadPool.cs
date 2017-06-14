@@ -682,12 +682,6 @@ namespace System.Threading
             var workQueue = ThreadPoolGlobals.workQueue;
 
             //
-            // The clock is ticking!  We have ThreadPoolGlobals.tpQuantum milliseconds to get some work done, and then
-            // we need to return to the VM.
-            //
-            int quantumStartTime = Environment.TickCount;
-
-            //
             // Update our records to indicate that an outstanding request for a thread has now been fulfilled.
             // From this point on, we are responsible for requesting another thread if we stop working for any
             // reason, and we believe there might still be work in the queue.
