@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime;
 
 namespace Internal.Runtime.Augments
 {
@@ -12,25 +11,13 @@ namespace Internal.Runtime.Augments
     {
         public static void Exit(int exitCode)
         {
-            s_latchedExitCode = exitCode;
-
-            ShutdownCore();
-
-            RuntimeImports.RhpShutdown();
-
-            Interop.ExitProcess(s_latchedExitCode);
-        }
-
-        private static string[] s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] args)
-        {
-            s_commandLineArgs = args;
+            // This needs to be implemented for ProjectN.
+            throw new PlatformNotSupportedException();
         }
 
         public static string[] GetCommandLineArgs()
         {
-            return (string[])s_commandLineArgs.Clone();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_GetCommandLineArgs);
         }
     }
 }

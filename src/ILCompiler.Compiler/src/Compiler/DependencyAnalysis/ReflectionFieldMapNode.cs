@@ -39,6 +39,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection Section => _externalReferences.Section;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
+
         public override bool StaticDependenciesAreComputed => true;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -48,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public static void AddReflectionFieldMapEntryDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
+            if (!factory.MetadataManager.SupportsReflection)
+                return;
+
             // TODO: https://github.com/dotnet/corert/issues/3224
             // Reflection static field bases handling is here because in the current reflection model we reflection-enable
             // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before

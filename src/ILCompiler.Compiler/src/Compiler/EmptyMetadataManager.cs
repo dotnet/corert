@@ -14,6 +14,8 @@ namespace ILCompiler
 {
     class EmptyMetadataManager : MetadataManager
     {
+        public override bool SupportsReflection => false;
+
         public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext)
             : base(group, typeSystemContext, new FullyBlockedMetadataPolicy())
         {
