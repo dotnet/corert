@@ -32,6 +32,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
+
         public int Offset => 0;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
