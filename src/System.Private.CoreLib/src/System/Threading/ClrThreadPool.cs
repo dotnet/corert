@@ -7,6 +7,9 @@ using Internal.LowLevelLinq;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// A thread-pool run and managed on the CLR.
+    /// </summary>
     internal static partial class ClrThreadPool
     {
         private const int CpuUtilizationHigh = 95;
