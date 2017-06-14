@@ -2390,8 +2390,11 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
+
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
+        {
+            throw new NotImplementedException("getAddrOfCaptureThreadGlobal");
+        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -2748,14 +2751,12 @@ namespace Internal.JitInterface
 
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         {
-            MethodDesc md = HandleToObject(method);
+            CORINFO_CONST_LOOKUP pLookup = new CORINFO_CONST_LOOKUP();
 
-            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
-            Debug.Assert(externName != null);
-
-            CORINFO_CONST_LOOKUP pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
-            ppIndirection = null;
+            getAddressOfPInvokeTarget(method, ref pLookup);
             Debug.Assert(pLookup.addr != null);
+            Debug.Assert(pLookup.accessType == InfoAccessType.IAT_VALUE);
+            ppIndirection = null;
 
             return pLookup.addr;
         }
