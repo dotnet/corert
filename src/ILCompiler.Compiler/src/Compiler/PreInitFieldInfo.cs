@@ -33,7 +33,6 @@ namespace ILCompiler
         /// Writes fixup data into current ObjectDataBuilder. Caller needs to make sure ObjectDataBuilder is
         /// at correct offset before writing.
         /// </summary>
-        /// <returns>Bytes written</returns>
         public abstract void WriteData(ref ObjectDataBuilder builder, NodeFactory factory);
     }
 
@@ -60,7 +59,7 @@ namespace ILCompiler
         public PreInitMethodFixupInfo(int offset, MethodDesc method)
             : base(offset)
         {
-            if (method.HasInstantiation)
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
                 throw new BadImageFormatException();
 
             MethodFixup = method;
@@ -90,7 +89,7 @@ namespace ILCompiler
         /// List of fixup to be apply to the data blob
         /// This is needed for information that can't be encoded into blob ahead of time before codegen
         /// </summary>
-        private List<PreInitFixupInfo> FixupInfos { get; }
+        private List<PreInitFixupInfo> FixupInfos;
 
         public PreInitFieldInfo(FieldDesc field, byte[] data, int length, List<PreInitFixupInfo> fixups)
         {
