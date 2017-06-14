@@ -38,7 +38,7 @@ namespace ILCompiler
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
-        private bool _useScanner = true;
+        private bool _useScanner;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -140,6 +140,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
+                syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -339,7 +340,7 @@ namespace ILCompiler
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
             ILScanResults scanResults = null;
-            if (_useScanner)
+            if (_useScanner && !_isCppCodegen)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots);
@@ -359,15 +360,19 @@ namespace ILCompiler
 
             CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
 
-            ICompilation compilation = builder
+            builder
                 .UseBackendOptions(_codegenOptions)
                 .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
-                .UseDebugInfo(_enableDebugInfo)
-                .ToCompilation();
+                .UseDebugInfo(_enableDebugInfo);
+
+            if (scanResults != null)
+                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
+
+            ICompilation compilation = builder.ToCompilation();
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
@@ -378,6 +383,8 @@ namespace ILCompiler
 
             if (scanResults != null)
             {
+                SimdHelper simdHelper = new SimdHelper();
+
                 if (_scanDgmlLogFileName != null)
                     scanResults.WriteDependencyLog(_scanDgmlLogFileName);
 
@@ -392,14 +399,17 @@ namespace ILCompiler
                 // But there's at least some value in checking the scanner doesn't expand the universe too much in debug.
                 if (_optimizationMode == OptimizationMode.None)
                 {
-                    DiffCompilationResults(ref scanningFail, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
-                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod));
-                    DiffCompilationResults(ref scanningFail, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
+                    bool dummy = false;
+
+                    // We additionally skip SIMD module because there's just too many intrisics to handle.
+                    DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
+                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || simdHelper.IsInSimdModule(method.OwningType));
+                    DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
 
                 if (scanningFail)
-                    return 1;
+                    throw new Exception("Scanning failure");
             }
 
             return 0;
@@ -424,7 +434,6 @@ namespace ILCompiler
 
                 foreach (var d in diff)
                 {
-                    // TODO: better formatting
                     Console.WriteLine(d.ToString());
                 }
             }

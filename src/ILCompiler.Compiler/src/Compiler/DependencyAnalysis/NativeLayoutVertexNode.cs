@@ -1585,13 +1585,23 @@ namespace ILCompiler.DependencyAnalysis
         {
             yield return new DependencyListEntry(_signature, "TypeSignature");
 
-            if (!factory.VTable(_method.OwningType).HasFixedSlots)
-                yield return new DependencyListEntry(factory.VirtualMethodUse(_method), "Slot number");
+            MethodDesc method = _method;
+            if (method.IsRuntimeDeterminedExactMethod)
+                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            {
+                yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
+            }
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _method);
+            MethodDesc method = _method;
+            if (method.IsRuntimeDeterminedExactMethod)
+                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, method);
 
             return writer.GetMethodSlotSignature(_signature.WriteVertex(factory), checked((uint)slot));
         }

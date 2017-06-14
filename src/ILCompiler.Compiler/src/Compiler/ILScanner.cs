@@ -121,7 +121,12 @@ namespace ILCompiler
 
             internal override VTableSliceNode GetSlice(TypeDesc type)
             {
-                return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
+                // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
+                // https://github.com/dotnet/corert/issues/3873
+                if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                    return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
+                else
+                    return new LazilyBuiltVTableSliceNode(type);
             }
         }
     }
