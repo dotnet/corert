@@ -173,8 +173,8 @@ namespace System.Threading
             int totalNumCompletions = Volatile.Read(ref s_completionCount);
             int numCompletions = totalNumCompletions - s_separated.priorCompletionCount;
             long startTime = s_currentSampleStartTime;
-            long endTime = 0; // TODO: PAL High Performance Counter
-            long freq = 0;
+            long endTime = Environment.TickCount64; // TODO: PAL High Performance Counter
+            long freq = 1000;
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 
