@@ -77,7 +77,12 @@ namespace ILCompiler
         ILScanResults IILScanner.Scan()
         {
             _nodeFactory.NameMangler.CompilationUnitPrefix = "";
-            return new ILScanResults(_dependencyGraph.MarkedNodeList);
+
+            // Touch the MarkedNodeList to trigger dependency analysis.
+            // This really shouldn't be a property...
+            var m = _dependencyGraph.MarkedNodeList;
+
+            return new ILScanResults(_dependencyGraph, _nodeFactory);
         }
     }
 
@@ -86,18 +91,16 @@ namespace ILCompiler
         ILScanResults Scan();
     }
 
-    public class ILScanResults
+    public class ILScanResults : CompilationResults
     {
-        private readonly ImmutableArray<DependencyNodeCore<NodeFactory>> _markedNodes;
-
-        internal ILScanResults(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+        internal ILScanResults(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            : base(graph, factory)
         {
-            _markedNodes = markedNodes;
         }
 
         public VTableSliceProvider GetVTableLayoutInfo()
         {
-            return new ScannedVTableProvider(_markedNodes);
+            return new ScannedVTableProvider(MarkedNodes);
         }
 
         private class ScannedVTableProvider : VTableSliceProvider

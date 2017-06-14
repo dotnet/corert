@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class CppMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodNode
+    internal class CppMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodBodyNode
     {
         private MethodDesc _method;
         private string _methodCode;

@@ -26,6 +26,8 @@ namespace ILCompiler
 
         private string _dgmlLogFileName;
         private bool _generateFullDgmlLog;
+        private string _scanDgmlLogFileName;
+        private bool _generateFullScanDgmlLog;
 
         private TargetArchitecture _targetArchitecture;
         private string _targetArchitectureStr;
@@ -36,6 +38,7 @@ namespace ILCompiler
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
+        private bool _useScanner = true;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -126,6 +129,8 @@ namespace ILCompiler
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
+                syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
+                syntax.DefineOption("scanfulllog", ref _generateFullScanDgmlLog, "Save detailed log of scanner dependency analysis");
                 syntax.DefineOption("verbose", ref _isVerbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
@@ -333,6 +338,20 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            ILScanResults scanResults = null;
+            if (_useScanner)
+            {
+                ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
+                    .UseCompilationRoots(compilationRoots);
+
+                if (_scanDgmlLogFileName != null)
+                    scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
+
+                IILScanner scanner = scannerBuilder.ToILScanner();
+
+                scanResults = scanner.Scan();
+            }
+
             var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
 
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
@@ -352,12 +371,63 @@ namespace ILCompiler
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 
-            compilation.Compile(_outputFilePath, dumper);
+            CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
 
             if (_dgmlLogFileName != null)
-                compilation.WriteDependencyLog(_dgmlLogFileName);
+                compilationResults.WriteDependencyLog(_dgmlLogFileName);
+
+            if (scanResults != null)
+            {
+                if (_scanDgmlLogFileName != null)
+                    scanResults.WriteDependencyLog(_scanDgmlLogFileName);
+
+                // If the scanner and compiler don't agree on what to compile, the outputs of the scanner might not actually be usable.
+                bool scanningFail = false;
+                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod));
+                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
+                    "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
+
+                // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.
+                // But there's at least some value in checking the scanner doesn't expand the universe too much in debug.
+                if (_optimizationMode == OptimizationMode.None)
+                {
+                    DiffCompilationResults(ref scanningFail, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
+                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod));
+                    DiffCompilationResults(ref scanningFail, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
+                        "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
+                }
+
+                if (scanningFail)
+                    return 1;
+            }
 
             return 0;
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
+            string set1name, string set2name, Predicate<T> filter)
+        {
+            HashSet<T> diff = new HashSet<T>(set1);
+            diff.ExceptWith(set2);
+
+            // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
+            // https://github.com/dotnet/corert/issues/3873
+            diff.RemoveWhere(filter);
+
+            if (diff.Count > 0)
+            {
+                result = true;
+
+                Console.WriteLine($"*** {prefix} {set1name} but not {set2name}:");
+
+                foreach (var d in diff)
+                {
+                    // TODO: better formatting
+                    Console.WriteLine(d.ToString());
+                }
+            }
         }
 
         private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)

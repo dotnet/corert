@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a method that should be scanned by an IL scanner and its dependencies
     /// analyzed.
     /// </summary>
-    public class ScannedMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
+    public class ScannedMethodNode : DependencyNodeCore<NodeFactory>, IMethodBodyNode
     {
         private readonly MethodDesc _method;
         private DependencyList _dependencies;
