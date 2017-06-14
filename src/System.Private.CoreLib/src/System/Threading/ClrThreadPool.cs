@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Internal.LowLevelLinq;
 
 namespace System.Threading
@@ -20,20 +21,23 @@ namespace System.Threading
         private static short s_maxThreads = short.MaxValue;
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
 
-        [Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineAligned
         {
-            [Runtime.InteropServices.FieldOffset(0)]
+            private const int CacheLineSize = 64;
+            [FieldOffset(CacheLineSize * 1)]
             public ThreadCounts counts;
-            [Runtime.InteropServices.FieldOffset(16)]
+            [FieldOffset(CacheLineSize * 2)]
             public int lastDequeueTime;
-            [Runtime.InteropServices.FieldOffset(24)]
+            [FieldOffset(CacheLineSize * 3)]
             public int priorCompletionCount;
+            [FieldOffset(CacheLineSize * 3 + sizeof(int))]
+            public int priorCompletedWorkRequestsTime;
+            [FieldOffset(CacheLineSize * 3 + sizeof(int) * 2)]
+            public int nextCompletedWorkRequestsTime;
         }
 
         private static CacheLineAligned s_aligned = new CacheLineAligned();
-        private static int s_priorCompletedWorkRequestsTime;
-        private static int s_nextCompletedWorkRequestsTime;
         private static long s_currentSampleStartTime;
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
@@ -209,8 +213,8 @@ namespace System.Threading
                     }
                 }
                 s_aligned.priorCompletionCount = totalNumCompletions;
-                Volatile.Write(ref s_nextCompletedWorkRequestsTime, currentTicks + s_threadAdjustmentInterval);
-                Volatile.Write(ref s_priorCompletedWorkRequestsTime, currentTicks);
+                Volatile.Write(ref s_aligned.nextCompletedWorkRequestsTime, currentTicks + s_threadAdjustmentInterval);
+                Volatile.Write(ref s_aligned.priorCompletedWorkRequestsTime, currentTicks);
                 s_currentSampleStartTime = endTime;
             }
         }
@@ -218,8 +222,8 @@ namespace System.Threading
         private static bool ShouldAdjustMaxWorkersActive()
         {
             // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute times unreliable.
-            int priorTime = Volatile.Read(ref s_priorCompletedWorkRequestsTime);
-            int requiredInterval = Volatile.Read(ref s_nextCompletedWorkRequestsTime) - priorTime;
+            int priorTime = Volatile.Read(ref s_aligned.priorCompletedWorkRequestsTime);
+            int requiredInterval = Volatile.Read(ref s_aligned.nextCompletedWorkRequestsTime) - priorTime;
             int elapsedInterval = Environment.TickCount - priorTime;
             if(elapsedInterval >= requiredInterval)
             {

@@ -13,7 +13,7 @@ namespace System.Threading
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
         /// </summary>
         /// <remarks>The size parameter ensures that we are always on our own cache line.</remarks>
-        [StructLayout(LayoutKind.Explicit, Size = 16)]
+        [StructLayout(LayoutKind.Explicit, Size = 64)]
         struct ThreadCounts
         {
             /// <summary>
