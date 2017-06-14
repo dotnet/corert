@@ -87,8 +87,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             {
                 if (!_markingCompleted)
                 {
-                    _markingCompleted = true;
-                    ComputeMarkedNodes();
+                    throw new InvalidOperationException();
                 }
 
                 return _markedNodesFinal;
@@ -242,8 +241,11 @@ namespace ILCompiler.DependencyAnalysisFramework
             } while (_markStack.Count != 0);
         }
 
-        private void ComputeMarkedNodes()
+        public override void ComputeMarkedNodes()
         {
+            if (_markingCompleted)
+                return;
+
             do
             {
                 // Run mark stack algorithm as much as possible
@@ -265,6 +267,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             _markedNodesFinal = _markedNodes.ToImmutableArray();
             _markedNodes = null;
+            _markingCompleted = true;
         }
 
         private bool AddToMarkStack(DependencyNodeCore<DependencyContextType> node, string reason, DependencyNodeCore<DependencyContextType> reason1, DependencyNodeCore<DependencyContextType> reason2)

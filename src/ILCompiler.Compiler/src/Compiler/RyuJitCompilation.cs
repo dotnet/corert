@@ -42,6 +42,7 @@ namespace ILCompiler
         {
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);
 
+            _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
 
             NodeFactory.SetMarkingComplete();

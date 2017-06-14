@@ -369,6 +369,8 @@ namespace ILCompiler
                 .UseOptimizationMode(_optimizationMode)
                 .UseDebugInfo(_enableDebugInfo);
 
+            // If we have a scanner, feed the vtable analysis results to the compilation.
+            // This could be a command line switch if we really wanted to.
             if (scanResults != null)
                 builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
 
@@ -389,6 +391,11 @@ namespace ILCompiler
                     scanResults.WriteDependencyLog(_scanDgmlLogFileName);
 
                 // If the scanner and compiler don't agree on what to compile, the outputs of the scanner might not actually be usable.
+                // We are going to check this two ways:
+                // 1. The methods and types generated during compilation are a subset of method and types scanned
+                // 2. The methods and types scanned are a subset of methods and types compiled (this has a chance to hold for unoptimized builds only).
+
+                // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
                     "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod));
@@ -399,9 +406,13 @@ namespace ILCompiler
                 // But there's at least some value in checking the scanner doesn't expand the universe too much in debug.
                 if (_optimizationMode == OptimizationMode.None)
                 {
+                    // Check that methods and types scanned are a subset of methods and types compiled
+
+                    // If we find diffs here, they're not critical, but still might be causing a Size on Disk regression.
                     bool dummy = false;
 
-                    // We additionally skip SIMD module because there's just too many intrisics to handle.
+                    // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
+                    // doesn't expand them. They would show up as noisy diffs.
                     DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
                     "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || simdHelper.IsInSimdModule(method.OwningType));
                     DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,

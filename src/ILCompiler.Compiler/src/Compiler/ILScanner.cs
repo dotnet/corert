@@ -77,10 +77,7 @@ namespace ILCompiler
         ILScanResults IILScanner.Scan()
         {
             _nodeFactory.NameMangler.CompilationUnitPrefix = "";
-
-            // Touch the MarkedNodeList to trigger dependency analysis.
-            // This really shouldn't be a property...
-            var m = _dependencyGraph.MarkedNodeList;
+            _dependencyGraph.ComputeMarkedNodes();
 
             return new ILScanResults(_dependencyGraph, _nodeFactory);
         }
