@@ -13,12 +13,13 @@ namespace System.Threading
         private const int CpuUtilizationLow = 80;
         private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
-        private static short s_forcedMinWorkerThreads = 0; // TODO: Config
-        private static short s_forcedMaxWorkerThreads = 0; // TODO: Config
-
         private const short MaxPossibleThreadCount = short.MaxValue;
+
+        private static short s_forcedMinWorkerThreads = 0; // TODO: Config. Treat as unsigned when loading from config. Cap to MaxPossibleThreadCount when loading.
+        private static short s_forcedMaxWorkerThreads = 0; // TODO: Config. Tread as unsigned when loading from config. Cap to MaxPossibleThreadCount when loading.
+
         private static short s_minThreads = (short)ThreadPoolGlobals.processorCount;
-        private static short s_maxThreads = short.MaxValue;
+        private static short s_maxThreads = MaxPossibleThreadCount;
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
 
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
