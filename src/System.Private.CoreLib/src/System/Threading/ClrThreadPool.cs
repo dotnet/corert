@@ -12,8 +12,8 @@ namespace System.Threading
         private const int CpuUtilizationLow = 80;
         private static int s_cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
-        private static int s_forcedMinWorkerThreads = 0; // TODO: Config
-        private static int s_forcedMaxWorkerThreads = 0; // TODO: Config
+        private static short s_forcedMinWorkerThreads = 0; // TODO: Config
+        private static short s_forcedMaxWorkerThreads = 0; // TODO: Config
 
         private const short MaxPossibleThreadCount = short.MaxValue;
         private static short s_minThreads = (short)ThreadPoolGlobals.processorCount;
@@ -37,6 +37,10 @@ namespace System.Threading
         private static long s_currentSampleStartTime;
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
+
+        static ClrThreadPool() {
+            s_aligned.counts.numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads;
+        }
 
         public static bool SetMinThreads(int minThreads)
         {
