@@ -109,5 +109,57 @@ namespace Internal.Runtime.Augments
             else
                 throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
+
+        public static int CurrentManagedThreadId => System.Threading.ManagedThreadId.Current;
+        public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
+
+        internal static void ShutdownCore()
+        {
+            // Here we'll handle AppDomain.ProcessExit, shut down threading etc.
+        }
+
+        private static int s_latchedExitCode;
+        public static int ExitCode
+        {
+            get
+            {
+                return s_latchedExitCode;
+            }
+            set
+            {
+                s_latchedExitCode = value;
+            }
+        }
+
+        public static bool HasShutdownStarted => false; // .NET Core does not have shutdown finalization
+
+        public static string StackTrace
+        {
+            // Disable inlining to have predictable stack frame to skip
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get
+            {
+                // RhGetCurrentThreadStackTrace returns the number of frames(cFrames) added to input buffer.
+                // It returns a negative value, -cFrames which is the required array size, if the buffer is too small.
+                // Initial array length is deliberately chosen to be 0 so that we reallocate to exactly the right size
+                // for StackFrameHelper.FormatStackTrace call. If we want to do this optimistically with one call change
+                // FormatStackTrace to accept an explicit length.
+                IntPtr[] frameIPs = Array.Empty<IntPtr>();
+                int cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
+                if (cFrames < 0)
+                {
+                    frameIPs = new IntPtr[-cFrames];
+                    cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
+                    if (cFrames < 0)
+                    {
+                        return "";
+                    }
+                }
+
+                return Internal.Diagnostics.StackTraceHelper.FormatStackTrace(frameIPs, 1, true);
+            }
+        }
+
+        public static int TickCount => Environment.TickCount;
     }
 }
