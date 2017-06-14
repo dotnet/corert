@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Determine whether this handle has been allocated or not.
-        private bool IsAllocated
+        public bool IsAllocated
         {
             get
             {
