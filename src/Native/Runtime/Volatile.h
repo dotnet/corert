@@ -37,8 +37,22 @@ inline
 T VolatileLoad(T const * pt)
 {
 #ifndef DACCESS_COMPILE
+#if defined(_ARM64_) && defined(__GNUC__)
+    T val;
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if ((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_load((T volatile const*)pt, &val, __ATOMIC_ACQUIRE);
+    }
+    else
+    {
+        val = *(T volatile const*)pt;
+        asm volatile ("dmb ishld" : : : "memory");
+    }
+#else
     T val = *(T volatile const *)pt;
     VOLATILE_MEMORY_BARRIER();
+#endif
 #else
     T val = *pt;
 #endif
@@ -78,8 +92,21 @@ inline
 void VolatileStore(T* pt, T val)
 {
 #ifndef DACCESS_COMPILE
+#if defined(_ARM64_) && defined(__GNUC__)
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if ((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_store((T volatile*)pt, &val, __ATOMIC_RELEASE);
+}
+    else
+    {
+        VOLATILE_MEMORY_BARRIER();
+        *(T volatile*)pt = val;
+    }
+#else
     VOLATILE_MEMORY_BARRIER();
     *(T volatile *)pt = val;
+#endif
 #else
     *pt = val;
 #endif
