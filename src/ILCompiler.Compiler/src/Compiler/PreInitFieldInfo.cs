@@ -8,9 +8,69 @@ using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
+    public abstract class PreInitFixupInfo : IComparable<PreInitFixupInfo>
+    {
+        /// <summary>
+        /// Offset into the blob
+        /// </summary>
+        public int Offset { get; }
+
+        public PreInitFixupInfo(int offset)
+        {
+            Offset = offset;
+        }
+
+        int IComparable<PreInitFixupInfo>.CompareTo(PreInitFixupInfo other)
+        {
+            return this.Offset - other.Offset;
+        }
+
+        /// <summary>
+        /// Writes fixup data into current ObjectDataBuilder. Caller needs to make sure ObjectDataBuilder is
+        /// at correct offset before writing.
+        /// </summary>
+        public abstract void WriteData(ref ObjectDataBuilder builder, NodeFactory factory);
+    }
+
+    public class PreInitTypeFixupInfo : PreInitFixupInfo
+    {
+        public TypeDesc TypeFixup { get; }
+
+        public PreInitTypeFixupInfo(int offset, TypeDesc type)
+            :base(offset)
+        {
+            TypeFixup = type;
+        }
+
+        public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        {
+            builder.EmitPointerReloc(factory.NecessaryTypeSymbol(TypeFixup));
+        }
+    }
+
+    public class PreInitMethodFixupInfo : PreInitFixupInfo
+    {
+        public MethodDesc MethodFixup { get; }
+
+        public PreInitMethodFixupInfo(int offset, MethodDesc method)
+            : base(offset)
+        {
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                throw new BadImageFormatException();
+
+            MethodFixup = method;
+        }
+
+        public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        {
+            builder.EmitPointerReloc(factory.MethodEntrypoint(MethodFixup));
+        }
+    }
+
     public class PreInitFieldInfo
     {
         public FieldDesc Field { get; }
@@ -25,11 +85,55 @@ namespace ILCompiler
         /// </summary>
         public int Length { get; }
 
-        public PreInitFieldInfo(FieldDesc field, byte[] data, int length)
+        /// <summary>
+        /// List of fixup to be apply to the data blob
+        /// This is needed for information that can't be encoded into blob ahead of time before codegen
+        /// </summary>
+        private List<PreInitFixupInfo> FixupInfos;
+
+        public PreInitFieldInfo(FieldDesc field, byte[] data, int length, List<PreInitFixupInfo> fixups)
         {
             Field = field;
             Data = data;
             Length = length;
+            FixupInfos = fixups;
+
+            if (FixupInfos != null)
+                FixupInfos.Sort();
+        }
+
+        public void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        {
+            int offset = 0;
+
+            if (FixupInfos != null)
+            {
+                int startOffset = builder.CountBytes;
+
+                for (int i = 0; i < FixupInfos.Count; ++i)
+                {
+                    var fixupInfo = FixupInfos[i];
+
+                    // do we have overlapping fixups?
+                    if (fixupInfo.Offset < offset)
+                        throw new BadImageFormatException();
+
+                    // emit bytes before fixup
+                    builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
+
+                    // write the fixup
+                    FixupInfos[i].WriteData(ref builder, factory);
+
+                    // move pointer past the fixup
+                    offset = builder.CountBytes - startOffset;
+                }
+            }
+
+            if (offset > Data.Length)
+                throw new BadImageFormatException();
+            
+            // Emit remaining bytes
+            builder.EmitBytes(Data, offset, Data.Length - offset);
         }
 
         public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)
@@ -69,21 +173,25 @@ namespace ILCompiler
 
             var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
             if (decoded == null)
-                return null;
+                return null; 
 
             var decodedValue = decoded.Value;
             if (decodedValue.FixedArguments.Length != 2)
-                return null;
+                throw new BadImageFormatException();
 
             var typeDesc = decodedValue.FixedArguments[0].Value as TypeDesc;
             if (typeDesc == null)
-                return null;
+                throw new BadImageFormatException(); 
 
             if (decodedValue.FixedArguments[1].Type != field.Context.GetWellKnownType(WellKnownType.String))
-                return null;
+                throw new BadImageFormatException(); 
 
             var fieldName = (string)decodedValue.FixedArguments[1].Value;
-            return typeDesc.GetField(fieldName);
+            var dataField = typeDesc.GetField(fieldName);
+            if (dataField== null)
+                throw new BadImageFormatException();
+
+            return dataField;
         }
 
         /// <summary>
@@ -106,11 +214,58 @@ namespace ILCompiler
                 throw new NotSupportedException();
             
             var rvaData = ecmaDataField.GetFieldRvaData();
+
             int elementSize = arrType.ElementType.GetElementSize().AsInt;
             if (rvaData.Length % elementSize != 0)
                 throw new BadImageFormatException();
+            int elementCount = rvaData.Length / elementSize;
 
-            return new PreInitFieldInfo(field, rvaData, rvaData.Length / elementSize);
+            //
+            // Construct fixups
+            //
+            List<PreInitFixupInfo> fixups = null;            
+
+            var typeFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "TypeHandleFixupAttribute");
+            foreach (var typeFixupAttr in typeFixupAttrs)
+            {
+                if (typeFixupAttr.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Int32))
+                    throw new BadImageFormatException();
+
+                int offset = (int)typeFixupAttr.FixedArguments[0].Value;
+                TypeDesc fixupType = typeFixupAttr.FixedArguments[1].Value as TypeDesc;
+                if (fixupType == null)
+                    throw new BadImageFormatException();
+
+                fixups = fixups ?? new List<PreInitFixupInfo>();
+
+                fixups.Add(new PreInitTypeFixupInfo(offset, fixupType));
+            }
+
+            var methodFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "MethodAddrFixupAttribute");
+            foreach (var methodFixupAttr in methodFixupAttrs)
+            {
+                if (methodFixupAttr.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Int32))
+                    throw new BadImageFormatException();
+
+                int offset = (int)methodFixupAttr.FixedArguments[0].Value;
+                TypeDesc fixupType = methodFixupAttr.FixedArguments[1].Value as TypeDesc;
+                if (fixupType == null)
+                    throw new BadImageFormatException();
+
+                string methodName = methodFixupAttr.FixedArguments[2].Value as string;
+                if (methodName == null)
+                    throw new BadImageFormatException();
+
+                var method = fixupType.GetMethod(methodName, signature : null);
+                if (method == null)
+                    throw new BadImageFormatException();
+
+                fixups = fixups ?? new List<PreInitFixupInfo>();
+
+                fixups.Add(new PreInitMethodFixupInfo(offset, method));
+            }
+
+            return new PreInitFieldInfo(field, rvaData, elementCount, fixups);
         }
     }
 }
