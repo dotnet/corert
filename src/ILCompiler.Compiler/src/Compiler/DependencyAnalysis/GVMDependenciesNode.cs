@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
-        private MethodDesc _method;
+        private readonly MethodDesc _method;
 
         public MethodDesc Method => _method;
 
@@ -45,29 +45,31 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
+                MethodDesc instantiatedMethod = _method;
+
                 // Universal canonical instantiations should be entirely universal canon
-                if (_method.IsCanonicalMethod(CanonicalFormKind.Universal))
-                    _method = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
+                if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    instantiatedMethod = instantiatedMethod.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
                 // TODO: verify for invalid instantiations, like List<void>?
                 bool validInstantiation =
-                    _method.IsSharedByGenericInstantiations ||       // Non-exact methods are always valid instantiations (always pass constraints check)
-                    _method.CheckConstraints();                      // Verify that the instantiation does not violate constraints
+                    instantiatedMethod.IsSharedByGenericInstantiations ||       // Non-exact methods are always valid instantiations (always pass constraints check)
+                    instantiatedMethod.CheckConstraints();                      // Verify that the instantiation does not violate constraints
 
                 if (validInstantiation)
                 {
-                    MethodDesc canonMethodTarget = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    MethodDesc canonMethodTarget = instantiatedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                    bool getUnboxingStub = (_method.OwningType.IsValueType || _method.OwningType.IsEnum);
+                    bool getUnboxingStub = instantiatedMethod.OwningType.IsValueType;
                     yield return new DependencyListEntry(context.MethodEntrypoint(canonMethodTarget, getUnboxingStub), "GVM Dependency - Canon method");
 
-                    if (canonMethodTarget != _method)
+                    if (canonMethodTarget != instantiatedMethod)
                     {
                         // Dependency includes the generic method dictionary of the instantiation, and all its dependencies. This is done by adding the 
                         // ShadowConcreteMethod to the list of dynamic dependencies. The generic dictionary will be reported as a dependency of the ShadowConcreteMethod
                         // TODO: detect large recursive generics and fallback to USG templates
-                        Debug.Assert(!_method.IsCanonicalMethod(CanonicalFormKind.Any));
-                        yield return new DependencyListEntry(context.ShadowConcreteMethod(_method), "GVM Dependency - Dictionary");
+                        Debug.Assert(!instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any));
+                        yield return new DependencyListEntry(context.ShadowConcreteMethod(instantiatedMethod), "GVM Dependency - Dictionary");
                     }
                 }
                 else
@@ -127,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (_method.OwningType.HasSameTypeDefinition(potentialOverrideType) && (potentialOverrideType != _method.OwningType))
                     {
-                        if (_method.OwningType.CanCastTo(potentialOverrideType))
+                        if (potentialOverrideType.CanCastTo(_method.OwningType))
                         {
                             // Variance expansion
                             MethodDesc matchingMethodOnRelatedVariantMethod = potentialOverrideType.GetMethod(_method.Name, _method.GetTypicalMethodDefinition().Signature);

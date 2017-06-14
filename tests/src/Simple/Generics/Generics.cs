@@ -1142,6 +1142,11 @@ class Program
             string IMethod1<T>(T t1, T t2);
         }
 
+        interface ICovariant<out T>
+        {
+            string ICovariantGVM<U>();
+        }
+
         public interface IBar<T>
         {
             U IBarGVMethod<U>(Func<T, U> arg);
@@ -1222,6 +1227,11 @@ class Program
         public class YahooDerived : Yahoo<int>
         {
             public override U YahooGVM<U>(Func<int, U> arg) { return arg(456); }
+        }
+
+        public class Covariant<T> : ICovariant<T>
+        {
+            public string ICovariantGVM<U>() { return String.Format("Covariant<{0}>.ICovariantGVM<{1}>", typeof(T).Name, typeof(U).Name); }
         }
 
         static string s_GMethod1;
@@ -1386,6 +1396,9 @@ class Program
 
                 Yahoo<int> y = new YahooDerived();
                 WriteLineWithVerification("YahooDerived:456", y.YahooGVM<string>((i) => "YahooDerived:" + i.ToString()));
+
+                ICovariant<object> cov = new Covariant<string>();
+                WriteLineWithVerification("Covariant<String>.ICovariantGVM<Exception>", cov.ICovariantGVM<Exception>());
             }
 
             if (s_NumErrors != 0)
