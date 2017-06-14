@@ -44,6 +44,7 @@ namespace Internal.IL
             public bool HandlerStart;
         }
 
+        private bool _isPrefixInstruction;
         private TypeDesc _constrained;
 
         private int _currentInstructionOffset;
@@ -160,7 +161,6 @@ namespace Internal.IL
 
         private void MarkInstructionBoundary() { }
         private void EndImportingBasicBlock(BasicBlock basicBlock) { }
-        private void EndImportingInstruction() { }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
@@ -184,6 +184,17 @@ namespace Internal.IL
         {
             _previousInstructionOffset = _currentInstructionOffset;
             _currentInstructionOffset = _currentOffset;
+            _isPrefixInstruction = false;
+        }
+
+        private void EndImportingInstruction()
+        {
+            // If we have any pending prefixes and the instruction we just processed is not a prefix instruction,
+            // it consumed the prefix. Clear the state.
+            if (!_isPrefixInstruction)
+            {
+                _constrained = null;
+            }
         }
 
         private void ImportJmp(int token)
@@ -375,6 +386,11 @@ namespace Internal.IL
 
                     return;
                 }
+
+                if (method.OwningType.IsByReferenceOfT && (method.IsConstructor || method.Name == "get_Value"))
+                {
+                    return;
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -391,12 +407,16 @@ namespace Internal.IL
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = _constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
-                if (directMethod == null && _constrained.IsEnum)
+                TypeDesc constrained = _constrained;
+                if (constrained.IsRuntimeDeterminedSubtype)
+                    constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                if (directMethod == null && constrained.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
                     // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(_constrained, method);
+                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrained, method);
                 }
                 
                 if (directMethod != null)
@@ -411,15 +431,13 @@ namespace Internal.IL
                     Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
                     resolvedConstraint = true;
 
-                    exactType = _constrained;
+                    exactType = constrained;
                 }
-                else if (_constrained.IsValueType)
+                else if (constrained.IsValueType)
                 {
                     // We'll need to box `this`.
-                    AddBoxingDependencies(_constrained, reason);
+                    AddBoxingDependencies(constrained, reason);
                 }
-
-                _constrained = null;
             }
 
             MethodDesc targetMethod = methodAfterConstraintResolution;
@@ -535,6 +553,17 @@ namespace Internal.IL
                     {
                         Debug.Assert(!forceUseRuntimeLookup);
                         _dependencies.Add(_factory.MethodEntrypoint(targetMethod), reason);
+
+                        // Compensate for an issue where we use the wrong typehandle as the generic context
+                        // https://github.com/dotnet/corert/issues/3608
+                        if (resolvedConstraint)
+                        {
+                            if (runtimeDeterminedMethod.OwningType.IsRuntimeDeterminedSubtype)
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
+                            else
+                                _dependencies.Add(_factory.ConstructedTypeSymbol(runtimeDeterminedMethod.OwningType), reason);
+                        }
+                            
                     }
                 }
                 else
@@ -786,10 +815,33 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
-            // We convert to canon, because that's what ryujit would see.
+            _isPrefixInstruction = true;
             _constrained = (TypeDesc)_methodIL.GetObject(token);
-            if (_constrained.IsRuntimeDeterminedSubtype)
-                _constrained = _constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
+        }
+
+        private void ImportUnalignedPrefix(byte alignment)
+        {
+            _isPrefixInstruction = true;
+        }
+
+        private void ImportVolatilePrefix()
+        {
+            _isPrefixInstruction = true;
+        }
+
+        private void ImportTailPrefix()
+        {
+            _isPrefixInstruction = true;
+        }
+
+        private void ImportNoPrefix(byte mask)
+        {
+            _isPrefixInstruction = true;
+        }
+
+        private void ImportReadOnlyPrefix()
+        {
+            _isPrefixInstruction = true;
         }
 
         private void ImportFieldAccess(int token, bool isStatic, string reason)
@@ -853,6 +905,11 @@ namespace Internal.IL
 
         private void AddBoxingDependencies(TypeDesc type, string reason)
         {
+            // Generic code will have BOX instructions when referring to T - the instruction is a no-op
+            // if the substitution wasn't a value type.
+            if (!type.IsValueType)
+                return;
+
             if (type.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
@@ -1019,11 +1076,6 @@ namespace Internal.IL
         private void ImportInitBlk() { }
         private void ImportRethrow() { }
         private void ImportSizeOf(int token) { }
-        private void ImportUnalignedPrefix(byte alignment) { }
-        private void ImportVolatilePrefix() { }
-        private void ImportTailPrefix() { }
-        private void ImportNoPrefix(byte mask) { }
-        private void ImportReadOnlyPrefix() { }
         private void ImportThrow() { }
         private void ImportInitObj(int token) { }
         private void ImportLoadLength() { }
