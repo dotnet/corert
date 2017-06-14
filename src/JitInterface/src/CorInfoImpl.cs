@@ -2745,8 +2745,20 @@ namespace Internal.JitInterface
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
+
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+        {
+            MethodDesc md = HandleToObject(method);
+
+            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
+            Debug.Assert(externName != null);
+
+            CORINFO_CONST_LOOKUP pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
+            ppIndirection = null;
+            Debug.Assert(pLookup.addr != null);
+
+            return pLookup.addr;
+        }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
