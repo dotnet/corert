@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -314,6 +314,7 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\SerializableAttribute.cs" />
@@ -833,9 +834,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs">
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
-      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
       <Link>Runtime.Base\src\RhBaseName.cs</Link>

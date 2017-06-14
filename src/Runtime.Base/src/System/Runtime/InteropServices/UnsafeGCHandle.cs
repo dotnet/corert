@@ -33,12 +33,17 @@ namespace System.Runtime.InteropServices
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public Object Target
+        public unsafe Object Target
         {
             get
             {
                 Debug.Assert(IsAllocated, "handle isn't initialized");
+#if DEBUG
+                // The runtime performs additional checks in debug builds
                 return InternalCalls.RhHandleGet(_handle);
+#else
+                return Unsafe.As<IntPtr, Object>(ref *(IntPtr*)_handle);
+#endif
             }
 
             set
