@@ -866,7 +866,7 @@ namespace Internal.Runtime.CallConverter
                     case CallingConvention.ManagedStatic:
                     case CallingConvention.ManagedInstance:
                         _numRegistersUsed = numRegistersUsed;
-                        // DESKTOP BEHAVIOR     m_curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
+                        // DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
                         _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
                         break;
 
@@ -875,16 +875,16 @@ namespace Internal.Runtime.CallConverter
                         break;
                 }
 #else
-                        m_numRegistersUsed = numRegistersUsed;
-// DESKTOP BEHAVIOR     m_curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
-                        m_curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
+                        _numRegistersUsed = numRegistersUsed;
+// DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
+                        _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
 #endif
 
 #elif _TARGET_AMD64_
 #if UNIX_AMD64_ABI
-                m_idxGenReg = numRegistersUsed;
-                m_idxStack = 0;
-                m_idxFPReg = 0;
+                _idxGenReg = numRegistersUsed;
+                _idxStack = 0;
+                _idxFPReg = 0;
 #else
                 _curOfs = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * IntPtr.Size;
 #endif
@@ -942,8 +942,8 @@ namespace Internal.Runtime.CallConverter
                 return TransitionBlock.GetOffsetOfArgumentRegisters() + (ArchitectureConstants.NUM_ARGUMENT_REGISTERS - _numRegistersUsed) * IntPtr.Size;
             }
 
-            // DESKTOP BEHAVIOR m_curOfs -= ArchitectureConstants.StackElemSize(argSize);
-            // DESKTOP BEHAVIOR return m_curOfs;
+            // DESKTOP BEHAVIOR _curOfs -= ArchitectureConstants.StackElemSize(argSize);
+            // DESKTOP BEHAVIOR return _curOfs;
             argOfs = _curOfs;
             _curOfs += ArchitectureConstants.StackElemSize(argSize);
             Debug.Assert(argOfs >= TransitionBlock.GetOffsetOfArgs());
@@ -1588,9 +1588,9 @@ namespace Internal.Runtime.CallConverter
 
 #if _TARGET_AMD64_
 #if UNIX_AMD64_ABI
-        int m_idxGenReg;
-        int m_idxStack;
-        int m_idxFPReg;
+        int _idxGenReg;
+        int _idxStack;
+        int _idxFPReg;
 #else
         private int _curOfs;           // Current position of the stack iterator
 #endif
