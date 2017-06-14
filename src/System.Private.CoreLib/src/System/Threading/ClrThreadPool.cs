@@ -46,7 +46,8 @@ namespace System.Threading
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
-        static ClrThreadPool() {
+        static ClrThreadPool()
+        {
             s_separated.counts.numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads;
         }
 
@@ -227,7 +228,7 @@ namespace System.Threading
         {
             // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute times unreliable.
             int priorTime = Volatile.Read(ref s_separated.priorCompletedWorkRequestsTime);
-            int requiredInterval = Volatile.Read(ref s_separated.nextCompletedWorkRequestsTime) - priorTime;
+            int requiredInterval = s_separated.nextCompletedWorkRequestsTime - priorTime;
             int elapsedInterval = Environment.TickCount - priorTime;
             if(elapsedInterval >= requiredInterval)
             {
