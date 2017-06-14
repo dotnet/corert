@@ -586,21 +586,19 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
-    /// Generic lookup result that points to a virtual dispatch stub.
+    /// Generic lookup result that points to a dispatch cell.
     /// </summary>
-    internal sealed class VirtualDispatchGenericLookupResult : GenericLookupResult
+    internal sealed class VirtualDispatchCellGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
         protected override int ClassCode => 643566930;
 
-        public VirtualDispatchGenericLookupResult(MethodDesc method)
+        public VirtualDispatchCellGenericLookupResult(MethodDesc method)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(method.IsVirtual);
-
-            // Normal virtual methods don't need a generic lookup.
-            Debug.Assert(method.OwningType.IsInterface || method.HasInstantiation);
+            Debug.Assert(method.OwningType.IsInterface);
 
             _method = method;
         }
@@ -621,11 +619,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("VirtualCall_");
+            sb.Append("DispatchCell_");
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public override string ToString() => $"VirtualCall: {_method}";
+        public override string ToString() => $"DispatchCell: {_method}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
@@ -639,7 +637,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
-            return comparer.Compare(_method, ((VirtualDispatchGenericLookupResult)other)._method);
+            return comparer.Compare(_method, ((VirtualDispatchCellGenericLookupResult)other)._method);
         }
     }
 

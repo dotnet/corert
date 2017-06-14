@@ -684,7 +684,7 @@ namespace Internal.Runtime.TypeLoader
                             if (paramLookupType == InvokeUtils.DynamicInvokeParamLookupType.ValuetypeObjectReturned)
                             {
                                 CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = invokeParam;
-                                argPtr = RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle) + IntPtr.Size;
+                                argPtr = CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.GetRawTargetAddress() + IntPtr.Size;
                             }
                             else
                             {
@@ -692,7 +692,7 @@ namespace Internal.Runtime.TypeLoader
                                 Debug.Assert((invokeParam is object[]) && index < ((object[])invokeParam).Length);
 
                                 CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = ((object[])invokeParam)[index];
-                                pinnedResultObject = RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle);
+                                pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.GetRawTargetAddress();
 
                                 if (conversionParams._calleeArgs.IsArgPassedByRef())
                                 {
@@ -709,16 +709,15 @@ namespace Internal.Runtime.TypeLoader
                                     {
                                         // Input byref parameter has a null value
                                         conversionParams._dynamicInvokeByRefObjectArgs[index] = new DynamicInvokeByRefArgObjectWrapper();
-                                        CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = conversionParams._dynamicInvokeByRefObjectArgs[index];
-                                        argPtr = RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle) + IntPtr.Size;
                                     }
                                     else
                                     {
                                         // Input byref parameter has a non-null value
                                         conversionParams._dynamicInvokeByRefObjectArgs[index] = new DynamicInvokeByRefArgObjectWrapper { _object = conversionParams._dynamicInvokeParams[index] };
-                                        CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = conversionParams._dynamicInvokeByRefObjectArgs[index];
-                                        argPtr = RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle) + IntPtr.Size;
                                     }
+
+                                    CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = conversionParams._dynamicInvokeByRefObjectArgs[index];
+                                    argPtr = CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.GetRawTargetAddress() + IntPtr.Size;
                                 }
                                 else
                                 {
@@ -843,7 +842,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         // The calleeTransitionBlock is GC-protected, so we can now safely unpin the return value of DynamicInvokeParamHelperCore,
                         // since we just copied it to the callee TB.
-                        CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = "";
+                        CallConversionParameters.s_pinnedGCHandles._dynamicInvokeArgHandle.Target = null;
                     }
 
                     arg++;
@@ -1111,7 +1110,7 @@ namespace Internal.Runtime.TypeLoader
                     // Need to box value type before returning it
                     object returnValue = RuntimeAugments.Box(thValueType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
                     CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
-                    pinnedResultObject = RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)CallConversionParameters.s_pinnedGCHandles._returnObjectHandle);
+                    pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
                     returnValueToCopy = (void*)&pinnedResultObject;
 
 #if _TARGET_X86_

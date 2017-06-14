@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodDictionary:
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
                 case ReadyToRunHelperId.VirtualDispatchCell:
-                    return factory.GenericLookup.VirtualCall((MethodDesc)target);
+                    return factory.GenericLookup.VirtualDispatchCell((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
