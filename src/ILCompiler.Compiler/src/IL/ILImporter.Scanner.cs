@@ -44,7 +44,6 @@ namespace Internal.IL
             public bool HandlerStart;
         }
 
-        private bool _isPrefixInstruction;
         private TypeDesc _constrained;
 
         private int _currentInstructionOffset;
@@ -184,17 +183,12 @@ namespace Internal.IL
         {
             _previousInstructionOffset = _currentInstructionOffset;
             _currentInstructionOffset = _currentOffset;
-            _isPrefixInstruction = false;
         }
 
         private void EndImportingInstruction()
         {
-            // If we have any pending prefixes and the instruction we just processed is not a prefix instruction,
-            // it consumed the prefix. Clear the state.
-            if (!_isPrefixInstruction)
-            {
-                _constrained = null;
-            }
+            // The instruction should have consumed any prefixes.
+            _constrained = null;
         }
 
         private void ImportJmp(int token)
@@ -815,33 +809,7 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
-            _isPrefixInstruction = true;
             _constrained = (TypeDesc)_methodIL.GetObject(token);
-        }
-
-        private void ImportUnalignedPrefix(byte alignment)
-        {
-            _isPrefixInstruction = true;
-        }
-
-        private void ImportVolatilePrefix()
-        {
-            _isPrefixInstruction = true;
-        }
-
-        private void ImportTailPrefix()
-        {
-            _isPrefixInstruction = true;
-        }
-
-        private void ImportNoPrefix(byte mask)
-        {
-            _isPrefixInstruction = true;
-        }
-
-        private void ImportReadOnlyPrefix()
-        {
-            _isPrefixInstruction = true;
         }
 
         private void ImportFieldAccess(int token, bool isStatic, string reason)
@@ -1076,6 +1044,11 @@ namespace Internal.IL
         private void ImportInitBlk() { }
         private void ImportRethrow() { }
         private void ImportSizeOf(int token) { }
+        private void ImportUnalignedPrefix(byte alignment) { }
+        private void ImportVolatilePrefix() { }
+        private void ImportTailPrefix() { }
+        private void ImportNoPrefix(byte mask) { }
+        private void ImportReadOnlyPrefix() { }
         private void ImportThrow() { }
         private void ImportInitObj(int token) { }
         private void ImportLoadLength() { }
