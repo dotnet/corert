@@ -3453,11 +3453,14 @@ namespace Internal.JitInterface
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
-#if !ARM
-            // TODO: Arbitrary relocs
             if (locationBlock != BlockType.Code)
-                throw new NotImplementedException("Arbitrary relocs");
-#endif // ARM
+            {
+                // TODO: https://github.com/dotnet/corert/issues/3877
+                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+                if (targetArchitecture == TargetArchitecture.ARM || targetArchitecture == TargetArchitecture.ARMEL)
+                    return;
+                throw new NotImplementedException("Arbitrary relocs"); 
+            }
 
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
