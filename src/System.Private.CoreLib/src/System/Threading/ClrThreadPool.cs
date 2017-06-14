@@ -168,7 +168,7 @@ namespace System.Threading
         {
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = Volatile.Read(ref s_completionCount);
-            int numCompletions = totalNumCompletions - Volatile.Read(ref s_separated.priorCompletionCount);
+            int numCompletions = totalNumCompletions - s_separated.priorCompletionCount;
             long startTime = s_currentSampleStartTime;
             long endTime = 0; // TODO: PAL High Performance Counter
             long freq = 0;
@@ -214,7 +214,7 @@ namespace System.Threading
                     }
                 }
                 s_separated.priorCompletionCount = totalNumCompletions;
-                Volatile.Write(ref s_separated.nextCompletedWorkRequestsTime, currentTicks + s_threadAdjustmentInterval);
+                s_separated.nextCompletedWorkRequestsTime = currentTicks + s_threadAdjustmentInterval;
                 Volatile.Write(ref s_separated.priorCompletedWorkRequestsTime, currentTicks);
                 s_currentSampleStartTime = endTime;
             }
