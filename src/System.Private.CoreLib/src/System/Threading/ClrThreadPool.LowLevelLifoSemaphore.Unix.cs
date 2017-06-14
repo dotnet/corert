@@ -8,14 +8,15 @@ namespace System.Threading
     {
         /// <summary>
         /// A LIFO semaphore (used by the thread pool to keep hot threads hot and cold threads cold).
+        /// Waits on this semaphore are uninterruptible.
         /// </summary>
         private class LowLevelLifoSemaphore
         {
             private WaitSubsystem.WaitableObject _semaphore;
 
-            public LowLevelLifoSemaphore(int initialCount, int maxSignalCount)
+            public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
             {
-                _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(initialCount, maxSignalCount);
+                _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(initialSignalCount, maximumSignalCount);
             }
 
             public bool Wait(int timeoutMs)
