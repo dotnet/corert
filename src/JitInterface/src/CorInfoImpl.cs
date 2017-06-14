@@ -2390,11 +2390,8 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
-
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        {
-            throw new NotImplementedException("getAddrOfCaptureThreadGlobal");
-        }
+        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
