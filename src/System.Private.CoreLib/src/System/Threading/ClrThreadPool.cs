@@ -16,8 +16,8 @@ namespace System.Threading
         private static int s_forcedMaxWorkerThreads = 0; // TODO: Config
 
         private const short MaxPossibleThreadCount = short.MaxValue;
-        private static short s_minThreads; // TODO: Initialize
-        private static short s_maxThreads; // TODO: Initialize
+        private static short s_minThreads = (short)ThreadPoolGlobals.processorCount;
+        private static short s_maxThreads = short.MaxValue;
         private static readonly LowLevelLock s_maxMinThreadLock = new LowLevelLock();
 
         [Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Explicit)]
@@ -130,6 +130,12 @@ namespace System.Threading
         }
 
         public static int GetMaxThreads() => s_maxThreads;
+
+        public static int GetAvailableThreads()
+        {
+            ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_aligned.counts);
+            return counts.numExistingThreads - counts.numProcessingWork;
+        }
 
         internal static bool NotifyWorkItemComplete()
         {
