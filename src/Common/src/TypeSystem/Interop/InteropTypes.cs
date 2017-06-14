@@ -20,6 +20,11 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
         }
 
+        public static MetadataType GetMissingMemberException(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System", "MissingMemberException");
+        }
+
         public static MetadataType GetPInvokeMarshal(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
