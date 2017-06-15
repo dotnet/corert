@@ -14,6 +14,7 @@ namespace System
     // Data Contract: Single field of type void *
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value). 

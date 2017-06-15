@@ -9,6 +9,7 @@ using System.Collections;
 namespace System.Collections.Generic
 {
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         protected EqualityComparer()

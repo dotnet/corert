@@ -22,6 +22,7 @@ namespace System
     [CLSCompliant(false)]
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct UInt64 : IComparable, IFormattable, IComparable<UInt64>, IEquatable<UInt64>, IConvertible
     {
         private ulong m_value; // Do not rename (binary serialization)
