@@ -51,10 +51,11 @@ namespace ILCompiler.DependencyAnalysis
                 if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
                     instantiatedMethod = instantiatedMethod.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
-                // TODO: verify for invalid instantiations, like List<void>?
                 bool validInstantiation =
-                    instantiatedMethod.IsSharedByGenericInstantiations ||       // Non-exact methods are always valid instantiations (always pass constraints check)
-                    instantiatedMethod.CheckConstraints();                      // Verify that the instantiation does not violate constraints
+                    instantiatedMethod.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)
+                        instantiatedMethod.Instantiation.CheckValidInstantiationArguments() &&
+                        instantiatedMethod.OwningType.Instantiation.CheckValidInstantiationArguments() &&
+                        instantiatedMethod.CheckConstraints());
 
                 if (validInstantiation)
                 {
