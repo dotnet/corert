@@ -13,7 +13,7 @@ namespace System.Threading
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        internal static class WorkerThread
+        private static class WorkerThread
         {
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
@@ -32,32 +32,35 @@ namespace System.Threading
                     while (s_semaphore.Wait(TimeoutMs))
                     {
                         Volatile.Write(ref s_separated.lastDequeueTime, Environment.TickCount);
-                        if (ThreadPoolWorkQueue.Dispatch())
+                        if (TakeActiveRequest())
                         {
-                            // If we ran out of work, we need to update s_aligned.counts that we are done working for now
-                            // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
-                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
-                            while (true)
+                            if (ThreadPoolWorkQueue.Dispatch())
                             {
-                                ThreadCounts newCounts = currentCounts;
-                                newCounts.numProcessingWork--;
-
-                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, currentCounts);
-
-                                if (oldCounts == currentCounts)
+                                // If we ran out of work, we need to update s_separated.counts that we are done working for now
+                                // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
+                                ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                                while (true)
                                 {
-                                    break;
+                                    ThreadCounts newCounts = currentCounts;
+                                    newCounts.numProcessingWork--;
+                                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, currentCounts);
+
+                                    if (oldCounts == currentCounts)
+                                    {
+                                        ThreadCounts updatedCounts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                                        break;
+                                    }
+                                    currentCounts = oldCounts;
                                 }
-                                currentCounts = oldCounts;
-                            }
-                            
-                            // It's possible that we decided we had no work just before some work came in, 
-                            // but reduced the worker count *after* the work came in.  In this case, we might
-                            // miss the notification of available work.  So we wake up a thread (maybe this one!)
-                            // if there is work to do.
-                            if (ThreadPool.GetQueuedWorkItems().Any())
-                            {
-                                MaybeAddWorkingWorker();
+                                
+                                // It's possible that we decided we had no work just before some work came in, 
+                                // but reduced the worker count *after* the work came in.  In this case, we might
+                                // miss the notification of available work.  So we wake up a thread (maybe this one!)
+                                // if there is work to do.
+                                if (s_numRequestedWorkers > 0)
+                                {
+                                    MaybeAddWorkingWorker();
+                                }
                             }
                         }
 
@@ -165,6 +168,21 @@ namespace System.Threading
                     }
                     counts = oldCounts;
                 }
+            }
+
+            private static bool TakeActiveRequest()
+            {
+                int count = s_numRequestedWorkers;
+                while (count > 0)
+                {
+                    int prevCount = Interlocked.CompareExchange(ref s_numRequestedWorkers, count - 1, count);
+                    if (prevCount == count)
+                    {
+                        return true;
+                    }
+                    count = prevCount;
+                }
+                return false;
             }
 
             private static void CreateWorkerThread()

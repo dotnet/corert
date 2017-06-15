@@ -46,8 +46,9 @@ namespace System.Threading
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
-        static ClrThreadPool()
-        {
+        private static volatile int s_numRequestedWorkers = 0;
+
+        static ClrThreadPool() {
             s_separated.counts.numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads;
         }
 
@@ -78,7 +79,7 @@ namespace System.Threading
                             {
                                 counts = newCounts;
 
-                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && ThreadPool.GetQueuedWorkItems().Any())
+                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && s_numRequestedWorkers > 0)
                                 {
                                     WorkerThread.MaybeAddWorkingWorker();
                                 }
@@ -241,6 +242,13 @@ namespace System.Threading
                 return counts.numExistingThreads >= counts.numThreadsGoal;
             }
             return false;
+        }
+
+        internal static void RequestWorker()
+        {
+            Interlocked.Increment(ref s_numRequestedWorkers);
+            WorkerThread.MaybeAddWorkingWorker();
+            // TODO: Ensure gate thread is running here.
         }
     }
 }
