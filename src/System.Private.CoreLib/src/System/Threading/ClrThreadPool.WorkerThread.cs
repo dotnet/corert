@@ -25,7 +25,7 @@ namespace System.Threading
             private static void WorkerThreadStart()
             {
                 // TODO: Event: Worker Thread Start event
-
+                RuntimeThread currentThread = RuntimeThread.CurrentThread;
                 while (true)
                 {
                     // TODO: Event:  Worker thread wait event
@@ -62,7 +62,11 @@ namespace System.Threading
                         }
 
                         // Reset thread-local state that we control.
-                        RuntimeThread.CurrentThread.Priority = ThreadPriority.Normal;
+                        if (currentThread.Priority != ThreadPriority.Normal)
+                        {
+                            currentThread.Priority = ThreadPriority.Normal;
+                        }
+
                         CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
                         CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
                     }
@@ -165,6 +169,13 @@ namespace System.Threading
 
             private static void CreateWorkerThread()
             {
+                // TODO: Replace RuntimeThread.Create with a more perfomant thread creation
+                // Note: Thread local data is created lazily on CoreRT, so we might get an OOM exception
+                // if we run out of memory when starting this thread.
+                // If we use RuntimeThread.Create, we get the exception on this thread.
+                // If we don't, we will get the exception on our worker thread.
+                // Goal: Figure out how to safely manage the OOM possibility of a worker thread
+                // without perf issues.
                 RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
                 workerThread.IsThreadPoolThread = true;
                 workerThread.IsBackground = true;

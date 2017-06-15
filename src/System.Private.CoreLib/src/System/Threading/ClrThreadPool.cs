@@ -147,7 +147,12 @@ namespace System.Threading
         public static int GetAvailableThreads()
         {
             ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
-            return counts.numExistingThreads - counts.numProcessingWork;
+            int count = s_maxThreads - counts.numExistingThreads;
+            if (count < 0)
+            {
+                return 0;
+            }
+            return count;
         }
 
         internal static bool NotifyWorkItemComplete()
