@@ -47,7 +47,6 @@ namespace System.Threading
 
                                     if (oldCounts == currentCounts)
                                     {
-                                        ThreadCounts updatedCounts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
                                         break;
                                     }
                                     currentCounts = oldCounts;
@@ -62,16 +61,16 @@ namespace System.Threading
                                     MaybeAddWorkingWorker();
                                 }
                             }
-                        }
 
-                        // Reset thread-local state that we control.
-                        if (currentThread.Priority != ThreadPriority.Normal)
-                        {
-                            currentThread.Priority = ThreadPriority.Normal;
-                        }
+                            // Reset thread-local state that we control.
+                            if (currentThread.Priority != ThreadPriority.Normal)
+                            {
+                                currentThread.Priority = ThreadPriority.Normal;
+                            }
 
-                        CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
-                        CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+                            CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
+                            CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+                        }
                     }
 
                     // At this point, the thread's wait timed out. We are shutting down this thread.
