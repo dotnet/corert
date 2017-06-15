@@ -950,7 +950,7 @@ void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
 {
-    return (void*)GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, type);
+    return (void*)GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, (HandleType)type);
 }
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
