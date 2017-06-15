@@ -25,6 +25,7 @@ namespace Internal.IL.Stubs
         private readonly Marshaller[] _marshallers;
         private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
         private readonly PInvokeMetadata _importMetadata;
+        private readonly PInvokeFlags _flags;
         private readonly InteropStateManager _interopStateManager;
 
         private PInvokeILEmitter(MethodDesc targetMethod, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration, InteropStateManager interopStateManager)
@@ -35,21 +36,23 @@ namespace Internal.IL.Stubs
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
             _interopStateManager = interopStateManager;
 
-            PInvokeFlags flags = new PInvokeFlags();
-            if (targetMethod.IsPInvoke)
+            //
+            // targetMethod could be either a PInvoke or a DelegateMarshallingMethodThunk
+            // ForwardNativeFunctionWrapper method thunks are marked as PInvokes, so it is
+            // important to check them first here so that we get the right flags.
+            // 
+            DelegateMarshallingMethodThunk delegateThunk = _targetMethod as DelegateMarshallingMethodThunk;
+
+            if (delegateThunk != null)
             {
-                flags = _importMetadata.Flags;
+                _flags = ((EcmaType)delegateThunk.DelegateType).GetDelegatePInvokeFlags();
             }
-            else 
+            else
             {
-                var delegateType = ((DelegateMarshallingMethodThunk)_targetMethod).DelegateType as EcmaType;
-                if (delegateType != null)
-                {
-                    flags = delegateType.GetDelegatePInvokeFlags();
-                }
+                Debug.Assert(_targetMethod.IsPInvoke);
+                _flags = _importMetadata.Flags;
             }
-            
-            _marshallers = InitializeMarshallers(targetMethod, interopStateManager, flags);
+            _marshallers = InitializeMarshallers(targetMethod, interopStateManager, _flags);
         }
 
         private static Marshaller[] InitializeMarshallers(MethodDesc targetMethod, InteropStateManager interopStateManager, PInvokeFlags flags)
@@ -159,6 +162,13 @@ namespace Internal.IL.Stubs
             else if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind
                 .ForwardNativeFunctionWrapper)
             {
+                // if the SetLastError flag is set in UnmanagedFunctionPointerAttribute, clear the error code before doing P/Invoke 
+                if (_flags.SetLastError)
+                {
+                    callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastWin32Error", null)));
+                }
+
                 //
                 // For NativeFunctionWrapper we need to load the native function and call it
                 //
@@ -181,17 +191,20 @@ namespace Internal.IL.Stubs
                     nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
                 }
 
-                MethodSignatureFlags flags = MethodSignatureFlags.Static;
-                var delegateType = ((DelegateMarshallingMethodThunk)_targetMethod).DelegateType as EcmaType;
-                if (delegateType != null)
-                {
-                    flags |= delegateType.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
-                }
-
                 MethodSignature nativeSig = new MethodSignature(
-                    flags, 0, nativeReturnType, nativeParameterTypes);
+                    MethodSignatureFlags.Static | _flags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes);
 
                 callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
+
+                // if the SetLastError flag is set in UnmanagedFunctionPointerAttribute, call the PInvokeMarshal.
+                // SaveLastWin32Error so that last error can be used later by calling 
+                // PInvokeMarshal.GetLastWin32Error
+                if (_flags.SetLastError)
+                {
+                    callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                InteropTypes.GetPInvokeMarshal(context)
+                                .GetKnownMethod("SaveLastWin32Error", null)));
+                }
             }
             else
             {
@@ -199,14 +212,80 @@ namespace Internal.IL.Stubs
             }
         }
 
+        private void EmitPInvokeCall(PInvokeILCodeStreams ilCodeStreams)
+        {
+            ILEmitter emitter = ilCodeStreams.Emitter;
+            ILCodeStream fnptrLoadStream = ilCodeStreams.FunctionPointerLoadStream;
+            ILCodeStream callsiteSetupCodeStream = ilCodeStreams.CallsiteSetupCodeStream;
+            TypeSystemContext context = _targetMethod.Context;
+
+            TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
+            TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
+
+            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
+            if (_flags.SetLastError)
+            {
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                            InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastWin32Error", null)));
+            }
+
+            for (int i = 1; i < _marshallers.Length; i++)
+            {
+                nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
+            }
+
+            if (MarshalHelpers.UseLazyResolution(_targetMethod,
+                _importMetadata.Module,
+                _pInvokeILEmitterConfiguration))
+            {
+                MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
+                FieldDesc lazyDispatchCell = new PInvokeLazyFixupField(_targetMethod);
+
+                fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
+                fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
+                    .GetKnownMethod("ResolvePInvoke", null)));
+
+                MethodSignatureFlags unmanagedCallConv = _flags.UnmanagedCallingConvention;
+
+                MethodSignature nativeSig = new MethodSignature(
+                    _targetMethod.Signature.Flags | unmanagedCallConv, 0, nativeReturnType,
+                    nativeParameterTypes);
+
+                ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(_targetMethod.Context
+                    .GetWellKnownType(WellKnownType.IntPtr));
+
+                fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);
+                callsiteSetupCodeStream.EmitLdLoc(vNativeFunctionPointer);
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
+            }
+            else
+            {
+                // Eager call
+                MethodSignature nativeSig = new MethodSignature(
+                    _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
+
+                MethodDesc nativeMethod =
+                    new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
+
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(nativeMethod));
+            }
+
+            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.
+            // SaveLastWin32Error so that last error can be used later by calling 
+            // PInvokeMarshal.GetLastWin32Error
+            if (_flags.SetLastError)
+            {
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                            InteropTypes.GetPInvokeMarshal(context)
+                            .GetKnownMethod("SaveLastWin32Error", null)));
+            }
+        }
+
         private MethodIL EmitIL()
         {
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
-            ILCodeStream fnptrLoadStream = pInvokeILCodeStreams.FunctionPointerLoadStream;
-            ILCodeStream callsiteSetupCodeStream = pInvokeILCodeStreams.CallsiteSetupCodeStream;
             ILCodeStream unmarshallingCodestream = pInvokeILCodeStreams.UnmarshallingCodestream;
-            TypeSystemContext context = _targetMethod.Context;
 
             // Marshal the arguments
             for (int i = 0; i < _marshallers.Length; i++)
@@ -214,16 +293,7 @@ namespace Internal.IL.Stubs
                 _marshallers[i].EmitMarshallingIL(pInvokeILCodeStreams);
             }
 
-
-            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
-            if (_importMetadata.Flags.SetLastError)
-            {
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastWin32Error", null)));
-            }
-
             // make the call
-
             DelegateMarshallingMethodThunk delegateMethod = _targetMethod as DelegateMarshallingMethodThunk;
             if (delegateMethod != null)
             {
@@ -231,59 +301,7 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
-                TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
-
-                for (int i = 1; i < _marshallers.Length; i++)
-                {
-                    nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
-                }
-
-                if (MarshalHelpers.UseLazyResolution(_targetMethod,
-                    _importMetadata.Module,
-                    _pInvokeILEmitterConfiguration))
-                {
-                    MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
-                    FieldDesc lazyDispatchCell = new PInvokeLazyFixupField(_targetMethod);
-
-                    fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
-                    fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
-                        .GetKnownMethod("ResolvePInvoke", null)));
-
-                    MethodSignatureFlags unmanagedCallConv = _importMetadata.Flags.UnmanagedCallingConvention;
-
-                    MethodSignature nativeSig = new MethodSignature(
-                        _targetMethod.Signature.Flags | unmanagedCallConv, 0, nativeReturnType,
-                        nativeParameterTypes);
-
-                    ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(_targetMethod.Context
-                        .GetWellKnownType(WellKnownType.IntPtr));
-
-                    fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);
-                    callsiteSetupCodeStream.EmitLdLoc(vNativeFunctionPointer);
-                    callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
-                }
-                else
-                {
-                    // Eager call
-                    MethodSignature nativeSig = new MethodSignature(
-                        _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
-
-                    MethodDesc nativeMethod =
-                        new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
-
-                    callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(nativeMethod));
-                }
-            }
-
-            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.
-            // SaveLastWin32Error so that last error can be used later by calling 
-            // PInvokeMarshal.GetLastWin32Error
-            if (_importMetadata.Flags.SetLastError)
-            {
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            InteropTypes.GetPInvokeMarshal(context)
-                            .GetKnownMethod("SaveLastWin32Error", null)));
+                EmitPInvokeCall(pInvokeILCodeStreams);
             }
 
             unmarshallingCodestream.Emit(ILOpcode.ret);
@@ -328,7 +346,7 @@ namespace Internal.IL.Stubs
             {
                 return true;
             }
-            if (_importMetadata.Flags.SetLastError)
+            if (_flags.SetLastError)
             {
                 return true;
             }
