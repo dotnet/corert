@@ -95,30 +95,36 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCount()
     return GetHighPrecisionCount(false);
 }
 
+#if HAVE_MACH_ABSOLUTE_TIME
 static uint64_t s_highPrecisionCounterFrequency = 0;
+#endif
 extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 {
+#if HAVE_MACH_ABSOLUTE_TIME
     if (s_highPrecisionCounterFrequency != 0)
     {
         return s_highPrecisionCounterFrequency;
     }
-
-#if HAVE_MACH_ABSOLUTE_TIME
     {
         mach_timebase_info_data_t *machTimebaseInfo = GetMachTimebaseInfo();
-        frequency = NanosecondsPerSecond * static_cast<uint64_t>(machTimebaseInfo->denom) / machTimebaseInfo->numer;
+        s_highPrecisionCounterFrequency = NanosecondsPerSecond * static_cast<uint64_t>(machTimebaseInfo->denom) / machTimebaseInfo->numer;
     }
+    return s_highPrecisionCounterFrequency;
 #elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {
-        frequency = NanosecondsPerSecond;
+        return NanosecondsPerSecond;
     }
 #else
     {
-        s_highPrecisionCounterFrequency = MicrosecondsPerSecond;
+        return MicrosecondsPerSecond;
     }
 #endif
-    return s_highPrecisionCounterFrequency;
+    return 0;
 }
+
+#define SECONDS_TO_MILLISECONDS 1000
+#define MILLISECONDS_TO_MICROSECONDS 1000
+#define MILLISECONDS_TO_NANOSECONDS 1000000 // 10^6
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
 // to return monotonically increasing counts and avoid being affected by changes
@@ -126,7 +132,41 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 // time).
 extern "C" uint64_t CoreLibNative_GetTickCount64()
 {
-    return GetHighPrecisionCount(true) * MillisecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency();
+    uint64_t retval = 0;
+
+#if HAVE_MACH_ABSOLUTE_TIME
+    {
+        mach_timebase_info_data_t *machTimebaseInfo = GetMachTimebaseInfo();
+        retval = (mach_absolute_time() * machTimebaseInfo->numer / machTimebaseInfo->denom) / MILLISECONDS_TO_NANOSECONDS;
+    }
+#elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+    {
+        clockid_t clockType =
+#if HAVE_CLOCK_MONOTONIC_COARSE
+            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+#else
+            CLOCK_MONOTONIC;
+#endif
+        struct timespec ts;
+        if (clock_gettime(clockType, &ts) != 0)
+        {
+            assert(false);
+            return retval;
+        }
+        retval = (ts.tv_sec * SECONDS_TO_MILLISECONDS) + (ts.tv_nsec / MILLISECONDS_TO_NANOSECONDS);
+    }
+#else
+    {
+        struct timeval tv;
+        if (gettimeofday(&tv, NULL) == -1)
+        {
+            assert(false);
+            return retval;
+        }
+        retval = (tv.tv_sec * SECONDS_TO_MILLISECONDS) + (tv.tv_usec / MILLISECONDS_TO_MICROSECONDS);
+    }
+#endif
+    return retval;
 }
 
 
