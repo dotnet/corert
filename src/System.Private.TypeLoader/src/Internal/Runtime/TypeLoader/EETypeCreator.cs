@@ -338,6 +338,24 @@ namespace Internal.Runtime.TypeLoader
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
 
+                    if (isNullable)
+                    {
+                        rareFlags |= (uint)EETypeRareFlags.IsNullableFlag;
+                        uint nullableValueOffset = state.NullableValueOffset;
+
+                        // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid). 
+                        // If the real offset is one, then the field isn't set. Otherwise the offset is encoded - 1 to save space.
+                        if (nullableValueOffset == 1)
+                            optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
+                        else
+                            optionalFields.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, checked(nullableValueOffset - 1));
+                    }
+                    else
+                    {
+                        rareFlags &= ~(uint)EETypeRareFlags.IsNullableFlag;
+                        optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
+                    }
+
                     rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
 
                     optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);

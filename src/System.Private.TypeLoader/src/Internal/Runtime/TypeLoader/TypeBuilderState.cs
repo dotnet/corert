@@ -1010,6 +1010,45 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public uint NullableValueOffset
+        {
+            get
+            {
+                if (!TypeBeingBuilt.IsNullable)
+                    return 0;
+
+                if (TypeBeingBuilt.IsTemplateCanonical())
+                {
+                    // Pull the GC Desc from the canonical instantiation
+                    TypeDesc templateType = TypeBeingBuilt.ComputeTemplate();
+                    bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
+                    Debug.Assert(success);
+                    unsafe
+                    {
+                        return templateType.RuntimeTypeHandle.ToEETypePtr()->NullableValueOffset;
+                    }
+                }
+                else
+                {
+                    int fieldCount = 0;
+                    uint nullableValueOffset = 0;
+
+                    foreach (FieldDesc f in GetFieldsForGCLayout())
+                    {
+                        if (fieldCount == 1)
+                        {
+                            nullableValueOffset = checked((uint)f.Offset.AsInt);
+                        }
+                        fieldCount++;
+                    }
+
+                    // Nullable<T> only has two fields. HasValue and Value
+                    Debug.Assert(fieldCount == 2);
+                    return nullableValueOffset;
+                }
+            }
+        }
+
         public bool IsHFA
         {
             get
