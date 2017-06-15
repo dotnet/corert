@@ -170,12 +170,12 @@ extern "C" uint64_t CoreLibNative_GetTickCount64()
 }
 
 
-typedef struct _PROCESS_CPU_INFORMATION
+struct ProcessCpuInformation
 {
     uint64_t lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime;
     uint64_t lastRecordedUserTime;
-} PROCESS_CPU_INFORMATION;
+};
 
 
 /*
@@ -189,10 +189,10 @@ from a user process, getrusage and gettimeofday are used to
 compute the current process's CPU utilization instead.
 
 */
-extern "C" int32_t CoreLibNative_GetCpuUtilization(PROCESS_CPU_INFORMATION* previousCpuInfo)
-{
-    static long numProcessors = 0;
 
+static long numProcessors = 0;
+extern "C" int32_t CoreLibNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
+{
     if (numProcessors <= 0)
     {
         numProcessors = sysconf(_SC_NPROCESSORS_ONLN);
