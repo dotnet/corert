@@ -194,6 +194,21 @@ namespace Internal.Runtime.Augments
                 }
                 return GetThreadStateBit(ThreadPoolThread);
             }
+            internal set
+            {
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                if (value)
+                {
+                    SetThreadStateBit(ThreadPoolThread);
+                }
+                else
+                {
+                    ClearThreadStateBit(ThreadPoolThread);
+                }
+            }
         }
 
         public int ManagedThreadId => _managedThreadId.Id;
