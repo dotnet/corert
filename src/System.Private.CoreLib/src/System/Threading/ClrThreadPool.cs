@@ -41,17 +41,18 @@ namespace System.Threading
             public int nextCompletedWorkRequestsTime;
         }
 
-        private static CacheLineSeparated s_separated = new CacheLineSeparated();
+        private static CacheLineSeparated s_separated = new CacheLineSeparated
+        {
+            counts = new ThreadCounts
+            {
+                numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads
+            }
+        };
         private static long s_currentSampleStartTime;
         private static int s_completionCount = 0;
         private static int s_threadAdjustmentInterval;
 
         private static volatile int s_numRequestedWorkers = 0;
-
-        static ClrThreadPool()
-        {
-            s_separated.counts.numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads;
-        }
 
         public static bool SetMinThreads(int minThreads)
         {
