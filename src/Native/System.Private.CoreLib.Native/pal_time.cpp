@@ -95,12 +95,12 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCount()
     return GetHighPrecisionCount(false);
 }
 
+static uint64_t s_highPrecisionCounterFrequency = 0;
 extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 {
-    static uint64_t frequency = 0;
-    if (frequency != 0)
+    if (s_highPrecisionCounterFrequency != 0)
     {
-        return frequency;
+        return s_highPrecisionCounterFrequency;
     }
 
 #if HAVE_MACH_ABSOLUTE_TIME
@@ -114,10 +114,10 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
     }
 #else
     {
-        frequency = MicrosecondsPerSecond;
+        s_highPrecisionCounterFrequency = MicrosecondsPerSecond;
     }
 #endif
-    return frequency;
+    return s_highPrecisionCounterFrequency;
 }
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
