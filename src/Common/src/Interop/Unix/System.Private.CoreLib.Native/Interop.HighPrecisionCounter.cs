@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetHighPrecisionCounts")]
-        internal static extern ulong GetHighPrecisionCounts();
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetHighPrecisionCount")]
+        internal static extern ulong GetHighPrecisionCount();
 
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetHighPrecisionCounterFrequency")]
         internal static extern ulong GetHighPrecisionCounterFrequency();

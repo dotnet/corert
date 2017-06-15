@@ -35,7 +35,29 @@ mach_timebase_info_data_t *InitializeTimebaseInfo()
 }
 #endif
 
-extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
+#if HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+clockid_t GetMonotonicClockType(bool preferCoarseIfAvailable)
+{
+    clockid_t clockType;
+#if HAVE_CLOCK_MONOTONIC_COARSE && HAVE_CLOCK_MONOTONIC
+    if (preferCoarseIfAvailable)
+    {
+        clockType = CLOCK_MONOTONIC_COARSE;
+    }
+    else
+    {
+        clockType = CLOCK_MONOTONIC;
+    }
+#elif HAVE_CLOCK_MONOTONIC_COARSE
+    clockType = CLOCK_MONOTONIC_COARSE;
+#elif HAVE_CLOCK_MONOTONIC
+    clockType = CLOCK_MONOTONIC;
+#endif
+    return clockType;
+}
+#endif
+
+uint64_t GetHighPrecisionCount(bool preferCoarseIfAvailable)
 {
     uint64_t counts = 0;
 
@@ -45,12 +67,7 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
     }
 #elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {
-        clockid_t clockType =
-#if HAVE_CLOCK_MONOTONIC_COARSE
-            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-            CLOCK_MONOTONIC;
-#endif
+        clockid_t clockType = GetMonotonicClockType(preferCoarseIfAvailable);
         struct timespec ts;
         if (clock_gettime(clockType, &ts) != 0)
         {
@@ -71,6 +88,11 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounts()
     }
 #endif
     return counts;
+}
+
+extern "C" uint64_t CoreLibNative_GetHighPrecisionCount()
+{
+    return GetHighPrecisionCount(false);
 }
 
 extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
@@ -104,7 +126,7 @@ extern "C" uint64_t CoreLibNative_GetHighPrecisionCounterFrequency()
 // time).
 extern "C" uint64_t CoreLibNative_GetTickCount64()
 {
-    return CoreLibNative_GetHighPrecisionCounts() * MillisecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency();
+    return GetHighPrecisionCount(true) * MillisecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency();
 }
 
 
@@ -155,7 +177,7 @@ extern "C" int32_t CoreLibNative_GetCpuUtilization(PROCESS_CPU_INFORMATION* prev
         userTime = TimeValToNanoseconds(resUsage.ru_utime);
     }
 
-    uint64_t currentTime = CoreLibNative_GetHighPrecisionCounts() * NanosecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency();
+    uint64_t currentTime = CoreLibNative_GetHighPrecisionCount() * NanosecondsPerSecond / CoreLibNative_GetHighPrecisionCounterFrequency();
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;
