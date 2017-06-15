@@ -16,8 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     {       
         protected sealed override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
-            var NYI_Assert = new ExternSymbolNode("NYI_Assert");
-            encoder.EmitJMP(NYI_Assert);
+            encoder.EmitJMP(factory.ExternSymbol("NYI_Assert"));
         }
     }
 }
