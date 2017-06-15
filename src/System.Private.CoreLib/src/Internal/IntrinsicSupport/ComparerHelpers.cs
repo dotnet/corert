@@ -156,7 +156,8 @@ namespace System.Collections.Generic
     // Because these are serializable, they must not be renamed
     //-----------------------------------------------------------------------
     [Serializable]
-    internal sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
         public sealed override int Compare(T x, T y)
         {
@@ -181,7 +182,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
     {
         public sealed override int Compare(Nullable<T> x, Nullable<T> y)
         {
@@ -206,7 +208,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class ObjectComparer<T> : Comparer<T>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class ObjectComparer<T> : Comparer<T>
     {
         public sealed override int Compare(T x, T y)
         {

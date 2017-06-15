@@ -11,6 +11,7 @@ namespace System
     // Represents a Globally Unique Identifier.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
     {
         public static readonly Guid Empty = new Guid();

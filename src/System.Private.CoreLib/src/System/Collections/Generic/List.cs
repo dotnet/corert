@@ -20,6 +20,7 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class List<T> : IList<T>, System.Collections.IList, IReadOnlyList<T>
     {
         private const int _defaultCapacity = 4;

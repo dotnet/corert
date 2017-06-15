@@ -21,6 +21,7 @@ namespace System
 {
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Int16 : IComparable, IFormattable, IComparable<Int16>, IEquatable<Int16>, IConvertible
     {
         private short m_value; // Do not rename (binary serialization)
