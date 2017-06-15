@@ -10,14 +10,13 @@
 #include "DebuggerHook.h"
 #include "DebugEventSource.h"
 
-
 GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 #ifndef DACCESS_COMPILE
 
-/* static */ DebuggerProtectedBufferList* DebuggerHook::s_debuggerProtectedBuffers = nullptr;
+/* static */ DebuggerProtectedBufferListNode* DebuggerHook::s_debuggerProtectedBuffers = nullptr;
 
-/* static */ DebuggerOwnedHandleList* DebuggerHook::s_debuggerOwnedHandleList = nullptr;
+/* static */ DebuggerOwnedHandleListNode* DebuggerHook::s_debuggerOwnedHandles = nullptr;
 
 /* static */ UInt32 DebuggerHook::s_debuggeeInitiatedHandleIdentifier = 2;
 
@@ -67,6 +66,10 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
             {
                 RemoveConservativeReporting(requests + i);
             }
+            else if (requests[i].kind == DebuggerGcProtectionRequestKind::EnsureHandle)
+            {
+                EnsureHandle(requests + i);
+            }
             else if (requests[i].kind == DebuggerGcProtectionRequestKind::RemoveHandle)
             {
                 RemoveHandle(requests + i);
@@ -79,7 +82,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 /* static */ UInt32 DebuggerHook::RecordDebuggeeInitiatedHandle(void* objectHandle)
 {
-    DebuggerOwnedHandleList* head = new (nothrow) DebuggerOwnedHandleList();
+    DebuggerOwnedHandleListNode* head = new (nothrow) DebuggerOwnedHandleListNode();
     if (head == nullptr)
     {
         return 0;
@@ -87,8 +90,8 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
     head->handle = objectHandle;
     head->identifier = DebuggerHook::s_debuggeeInitiatedHandleIdentifier;
-    head->next = s_debuggerOwnedHandleList;
-    s_debuggerOwnedHandleList = head;
+    head->next = s_debuggerOwnedHandles;
+    s_debuggerOwnedHandles = head;
 
     s_debuggeeInitiatedHandleIdentifier += 2;
 
@@ -97,10 +100,11 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 /* static */ void DebuggerHook::EnsureConservativeReporting(GcProtectionRequest* request)
 {
-    DebuggerProtectedBufferList* tail = DebuggerHook::s_debuggerProtectedBuffers;
-    s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferList();
+    DebuggerProtectedBufferListNode* tail = DebuggerHook::s_debuggerProtectedBuffers;
+    s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferListNode();
     if (s_debuggerProtectedBuffers == nullptr)
     {
+        s_debuggerProtectedBuffers = tail;
         // TODO, FuncEval, we cannot handle the debugger request to protect a buffer (we have to break our promise)
         // TODO, FuncEval, we need to figure out how to communicate this broken promise to the debugger
     }
@@ -115,8 +119,8 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
 /* static */ void DebuggerHook::RemoveConservativeReporting(GcProtectionRequest* request)
 {
-    DebuggerProtectedBufferList* prev = nullptr;
-    DebuggerProtectedBufferList* curr = DebuggerHook::s_debuggerProtectedBuffers;
+    DebuggerProtectedBufferListNode* prev = nullptr;
+    DebuggerProtectedBufferListNode* curr = DebuggerHook::s_debuggerProtectedBuffers;
     while (true)
     {
         if (curr == nullptr)
@@ -126,7 +130,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         }
         if (curr->identifier == request->identifier)
         {
-            DebuggerProtectedBufferList* toDelete = curr;
+            DebuggerProtectedBufferListNode* toDelete = curr;
             if (prev == nullptr)
             {
                 // We are trying to remove the head of the linked list
@@ -148,10 +152,38 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     }
 }
 
+/* static */ void DebuggerHook::EnsureHandle(GcProtectionRequest* request)
+{
+    DebuggerOwnedHandleListNode* tail = DebuggerHook::s_debuggerOwnedHandles;
+    s_debuggerOwnedHandles = new (std::nothrow) DebuggerOwnedHandleListNode();
+    if (s_debuggerOwnedHandles == nullptr)
+    {
+        s_debuggerOwnedHandles = tail;
+        // TODO, FuncEval, we cannot handle the debugger request to protect a buffer (we have to break our promise)
+        // TODO, FuncEval, we need to figure out how to communicate this broken promise to the debugger
+    }
+    else
+    {
+        int handleType;
+        switch (request->type)
+        {
+            case 1: handleType = 2 /* == HNDTYPE_STRONG */; break;
+            case 2: handleType = 1 /* == HNDTYPE_WEAK_LONG */; break;
+            default:
+                assert("Debugger is passing in a wrong handle type" && false);
+                handleType = 2 /* == HNDTYPE_STRONG */;
+        }
+        void* handle = RedhawkGCInterface::CreateTypedHandle((void*)request->address, handleType);
+        s_debuggerOwnedHandles->handle = handle;
+        s_debuggerOwnedHandles->identifier = request->identifier;
+        s_debuggerOwnedHandles->next = tail;
+    }
+}
+
 /* static */ void DebuggerHook::RemoveHandle(GcProtectionRequest* request)
 {
-    DebuggerOwnedHandleList* prev = nullptr;
-    DebuggerOwnedHandleList* curr = DebuggerHook::s_debuggerOwnedHandleList;
+    DebuggerOwnedHandleListNode* prev = nullptr;
+    DebuggerOwnedHandleListNode* curr = DebuggerHook::s_debuggerOwnedHandles;
     while (true)
     {
         if (curr == nullptr)
@@ -161,13 +193,13 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         }
         if (curr->identifier == request->identifier)
         {
-            DebuggerOwnedHandleList* toDelete = curr;
+            DebuggerOwnedHandleListNode* toDelete = curr;
             RedhawkGCInterface::DestroyTypedHandle(toDelete->handle);
 
             if (prev == nullptr)
             {
                 // We are trying to remove the head of the linked list
-                DebuggerHook::s_debuggerOwnedHandleList = curr->next;
+                DebuggerHook::s_debuggerOwnedHandles = curr->next;
             }
             else
             {
@@ -192,7 +224,7 @@ EXTERN_C REDHAWK_API UInt32 __cdecl RhpRecordDebuggeeInitiatedHandle(void* objec
 
 EXTERN_C REDHAWK_API void __cdecl RhpVerifyDebuggerCleanup()
 {
-    assert(DebuggerHook::s_debuggerOwnedHandleList == nullptr);
+    assert(DebuggerHook::s_debuggerOwnedHandles == nullptr);
     assert(DebuggerHook::s_debuggerProtectedBuffers == nullptr);
 }
 

@@ -49,7 +49,7 @@ void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
  
 void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
-    DebuggerProtectedBufferList* cursor = DebuggerHook::s_debuggerProtectedBuffers;
+    DebuggerProtectedBufferListNode* cursor = DebuggerHook::s_debuggerProtectedBuffers;
     while (cursor != nullptr)
     {
         GcEnumObjectsConservatively((PTR_PTR_Object)cursor->address, (PTR_PTR_Object)(cursor->address + cursor->size), fn, sc);
