@@ -894,6 +894,11 @@ void RedhawkGCInterface::DestroyTypedHandle(void * handle)
     ::DestroyTypedHandle((OBJECTHANDLE)handle);
 }
 
+void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
+{
+    return (void*)::CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], (Object*)pObject, type);
+}
+
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
 #ifdef FEATURE_EVENT_TRACE
