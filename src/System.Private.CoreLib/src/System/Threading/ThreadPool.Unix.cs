@@ -78,7 +78,7 @@ namespace System.Threading
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
         }
-        
+
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
