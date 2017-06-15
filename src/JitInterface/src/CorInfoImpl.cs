@@ -2290,6 +2290,14 @@ namespace Internal.JitInterface
             int pointerSize = this.PointerSize;
 
             pEEInfoOut.inlinedCallFrameInfo.size = this.SizeOfPInvokeTransitionFrame;
+            // offsets from struct InlinedCallFrame in CoreCLR
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfGSCookie = (uint)0;
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfFrameVptr = (uint)pointerSize;
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfFrameLink = (uint)(2 * pointerSize);
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfCallSiteSP = (uint)(4 * pointerSize);
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (uint)(6 * pointerSize);
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfCallTarget = (uint)(3 * pointerSize);
+            pEEInfoOut.inlinedCallFrameInfo.offsetOfReturnAddress = (uint)(5 * pointerSize);
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
