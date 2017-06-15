@@ -144,13 +144,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\HugeArray1\HugeArray1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cse\hugeexpr1\hugeexpr1.*" />
 
-    <!-- Generic virtual methods -->
-    <!-- https://github.com/dotnet/corert/issues/3454 -->
-    <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b210352\csharptester\csharptester.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\dev10_432038\dev10_432038\dev10_432038.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\dev10_398410\dev10_398410\dev10_398410.*" />
-
     <!-- Reflection enabling a virtual method methodimpl'd by other virtual method -->
     <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\methodoverriding\regressions\576621\VSW576621\VSW576621.*" />
 
