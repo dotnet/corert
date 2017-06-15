@@ -16,10 +16,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     partial class ReadyToRunHelperNode
     {
-        private ExternSymbolNode NYI_Assert;
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
-            NYI_Assert = new ExternSymbolNode("NYI_Assert");
+            ISymbolNode NYI_Assert = factory.ExternSymbol("NYI_Assert");
 
             switch (Id)
             {
