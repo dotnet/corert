@@ -1001,7 +1001,14 @@ namespace Internal.JitInterface
 
             if (pCookieVal != null)
             {
-                *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                }
                 *ppCookieVal = null;
             }
             else

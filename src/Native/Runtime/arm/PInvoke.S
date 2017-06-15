@@ -4,4 +4,25 @@
 
 #include <unixasmmacros.inc>
 
+.syntax unified
+.thumb
+
 // TODO: Implement Arm support
+
+//
+// RhpPInvoke
+//
+NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
+#ifdef _DEBUG
+        bl C_FUNC(NYI_Assert)
+#endif
+NESTED_END RhpPInvoke, _TEXT
+
+//
+// RhpPInvokeReturn
+//
+LEAF_ENTRY RhpPInvokeReturn, _TEXT
+#ifdef _DEBUG
+        bl C_FUNC(NYI_Assert)
+#endif
+LEAF_END RhpPInvokeReturn, _TEXT

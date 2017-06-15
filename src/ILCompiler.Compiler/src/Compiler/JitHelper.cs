@@ -146,6 +146,19 @@ namespace ILCompiler
                     mangledName = "RhpFltRem";
                     break;
 
+                case ReadyToRunHelper.Mod:
+                    mangledName = "RhpIMod";
+                    break;
+                case ReadyToRunHelper.UMod:
+                    mangledName = "RhpUMod";
+                    break;
+                case ReadyToRunHelper.Div:
+                    mangledName = "RhpIDiv";
+                    break;
+                case ReadyToRunHelper.UDiv:
+                    mangledName = "RhpUDiv";
+                    break;
+
                 case ReadyToRunHelper.PInvokeBegin:
                     mangledName = "RhpPInvoke";
                     break;
