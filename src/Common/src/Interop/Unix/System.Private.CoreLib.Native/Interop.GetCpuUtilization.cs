@@ -19,6 +19,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetCpuUtilization")]
-        internal static extern unsafe IntPtr GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
+        internal static extern unsafe int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
     }
 }

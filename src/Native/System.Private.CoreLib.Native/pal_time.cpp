@@ -35,29 +35,7 @@ mach_timebase_info_data_t *InitializeTimebaseInfo()
 }
 #endif
 
-#if HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
-clockid_t GetMonotonicClockType(bool preferCoarseIfAvailable)
-{
-    clockid_t clockType;
-#if HAVE_CLOCK_MONOTONIC_COARSE && HAVE_CLOCK_MONOTONIC
-    if (preferCoarseIfAvailable)
-    {
-        clockType = CLOCK_MONOTONIC_COARSE;
-    }
-    else
-    {
-        clockType = CLOCK_MONOTONIC;
-    }
-#elif HAVE_CLOCK_MONOTONIC_COARSE
-    clockType = CLOCK_MONOTONIC_COARSE;
-#elif HAVE_CLOCK_MONOTONIC
-    clockType = CLOCK_MONOTONIC;
-#endif
-    return clockType;
-}
-#endif
-
-uint64_t GetHighPrecisionCount(bool preferCoarseIfAvailable)
+extern "C" uint64_t CoreLibNative_GetHighPrecisionCount()
 {
     uint64_t counts = 0;
 
@@ -65,9 +43,9 @@ uint64_t GetHighPrecisionCount(bool preferCoarseIfAvailable)
     {
         counts = mach_absolute_time();
     }
-#elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+#elif HAVE_CLOCK_MONOTONIC
     {
-        clockid_t clockType = GetMonotonicClockType(preferCoarseIfAvailable);
+        clockid_t clockType = CLOCK_MONOTONIC;
         struct timespec ts;
         if (clock_gettime(clockType, &ts) != 0)
         {
@@ -88,11 +66,6 @@ uint64_t GetHighPrecisionCount(bool preferCoarseIfAvailable)
     }
 #endif
     return counts;
-}
-
-extern "C" uint64_t CoreLibNative_GetHighPrecisionCount()
-{
-    return GetHighPrecisionCount(false);
 }
 
 #if HAVE_MACH_ABSOLUTE_TIME
