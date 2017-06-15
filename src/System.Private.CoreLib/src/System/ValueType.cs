@@ -18,6 +18,7 @@ namespace System
     // CONTRACT with Runtime
     // Place holder type for type hierarchy, Compiler/Runtime requires this class
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class ValueType
     {
         public override String ToString()

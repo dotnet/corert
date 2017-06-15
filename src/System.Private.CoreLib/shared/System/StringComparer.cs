@@ -172,7 +172,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class CultureAwareComparer : StringComparer
+    public sealed class CultureAwareComparer : StringComparer
     {
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
@@ -228,7 +228,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class OrdinalComparer : StringComparer 
+    public sealed class OrdinalComparer : StringComparer 
     {
         public override int Compare(string x, string y) => string.CompareOrdinal(x, y);
 
@@ -254,7 +254,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class OrdinalIgnoreCaseComparer : StringComparer
+    public sealed class OrdinalIgnoreCaseComparer : StringComparer
     {
         public override int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
 
