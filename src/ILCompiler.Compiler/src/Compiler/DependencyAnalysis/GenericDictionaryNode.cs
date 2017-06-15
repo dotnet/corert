@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected abstract TypeSystemContext Context { get; }
 
+        public abstract TypeSystemEntity OwningEntity { get; }
+
         public abstract Instantiation TypeInstantiation { get; }
 
         public abstract Instantiation MethodInstantiation { get; }
@@ -94,6 +96,7 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
+        public override TypeSystemEntity OwningEntity => _owningType;
 
         public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
 
@@ -194,6 +197,7 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation TypeInstantiation => _owningMethod.OwningType.Instantiation;
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
+        public override TypeSystemEntity OwningEntity => _owningMethod;
 
         public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethodDictionary(OwningMethod);
 

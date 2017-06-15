@@ -82,6 +82,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             ArrayBuilder<DependencyListEntry> result = new ArrayBuilder<DependencyListEntry>();
 
+            var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
+
             switch (_id)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
@@ -93,13 +95,9 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
                         {
-                            // TODO: Make _dictionaryOwner a RuntimeDetermined type/method and make a substitution with 
-                            // typeInstantiation/methodInstantiation to get a concrete type. Then pass the generic dictionary
-                            // node of the concrete type to the GetTarget call. Also change the signature of GetTarget to 
-                            // take only the factory and dictionary as input.
                             result.Add(
                                 new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, lookupContext),
                                     "Dictionary dependency"));
                         }
                     }
@@ -131,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // All generic lookups depend on the thing they point to
             result.Add(new DependencyListEntry(
-                        _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                        _lookupSignature.GetTarget(factory, lookupContext),
                         "Dictionary dependency"));
 
             return result.ToArray();
