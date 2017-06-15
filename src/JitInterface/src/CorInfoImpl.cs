@@ -3109,7 +3109,12 @@ namespace Internal.JitInterface
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                     pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
-                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.InterfaceDispatchCell(targetMethod));
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+#if !SUPPORT_JIT
+                        , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
+#endif
+                        ));
                 }
             }
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0

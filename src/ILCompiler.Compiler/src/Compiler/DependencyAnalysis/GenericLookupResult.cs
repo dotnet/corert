@@ -655,23 +655,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext context)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT)
-            {
-                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(context.TypeInstantiation, context.MethodInstantiation);
-                return factory.InterfaceDispatchCell(instantiatedMethod);
-            }
-            else
-            {
-                MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(context.TypeInstantiation, context.MethodInstantiation);
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(context.TypeInstantiation, context.MethodInstantiation);
 
-                TypeSystemEntity contextOwner = context.Context;
-                GenericDictionaryNode dictionary =
-                    contextOwner is TypeDesc ?
-                    (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
-                    (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+            TypeSystemEntity contextOwner = context.Context;
+            GenericDictionaryNode dictionary =
+                contextOwner is TypeDesc ?
+                (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
+                (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
 
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
-            }
+            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
