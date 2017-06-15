@@ -20,16 +20,17 @@ namespace System.Runtime
             string[] commandLine = InternalCreateCommandLine();
             return RawCalliHelper.Call<int>(pfnUserMain, commandLine);
         }
-        
-        [RuntimeExport("CreateCommandLine")]
-        public static unsafe string[] InternalCreateCommandLine()
-        {
-            char * pCmdLine = Interop.mincore.GetCommandLine();
 
-            int nArgs = SegmentCommandLine(pCmdLine, null);
+        [RuntimeExport("CreateCommandLine")]
+        public static string[] InternalCreateCommandLine() => InternalCreateCommandLine(includeArg0: false);
+
+        internal static unsafe string[] InternalCreateCommandLine(bool includeArg0)
+        {
+            char* pCmdLine = Interop.mincore.GetCommandLine();
+            int nArgs = SegmentCommandLine(pCmdLine, null, includeArg0);
 
             string[] argArray = new string[nArgs];
-            SegmentCommandLine(pCmdLine, argArray);
+            SegmentCommandLine(pCmdLine, argArray, includeArg0);
             return argArray;
         }
 
@@ -40,37 +41,32 @@ namespace System.Runtime
         //
         // This functions interface mimics the CommandLineToArgvW api.
         //
-        private static unsafe int SegmentCommandLine(char * pCmdLine, string[] argArray)
+        private static unsafe int SegmentCommandLine(char * pCmdLine, string[] argArray, bool includeArg0)
         {
             int nArgs = 0;
-            char c;
-            bool inquote;
-
-            // First, parse the program name (argv[0]). Argv[0] is parsed under special rules. Anything up to 
-            // the first whitespace outside a quoted subtring is accepted. Backslashes are treated as normal 
-            // characters.
 
             char* psrc = pCmdLine;
 
-            inquote = false;
-            do
             {
-                if (*psrc == '"')
+                // First, parse the program name (argv[0]). Argv[0] is parsed under special rules. Anything up to 
+                // the first whitespace outside a quoted subtring is accepted. Backslashes are treated as normal 
+                // characters.
+                char* psrcOrig = psrc;
+
+                int arg0Len = ScanArgument0(ref psrc, null);
+                if (includeArg0)
                 {
-                    inquote = !inquote;
-                    c = *psrc++;
-                    continue;
+                    if (argArray != null)
+                    {
+                        char[] arg0 = new char[arg0Len];
+                        ScanArgument0(ref psrcOrig, arg0);
+                        argArray[nArgs] = new string(arg0);
+                    }
+                    nArgs++;
                 }
-
-                c = *psrc++;
-            } while ((c != '\0' && (inquote || (c != ' ' && c != '\t'))));
-
-            if (c == '\0')
-            {
-                psrc--;
             }
 
-            inquote = false;
+            bool inquote = false;
 
             // loop on each argument
             for (;;)
@@ -104,6 +100,38 @@ namespace System.Runtime
             }
 
             return nArgs;
+        }
+
+        private static unsafe int ScanArgument0(ref char* psrc, char[] arg)
+        {
+            // Argv[0] is parsed under special rules. Anything up to 
+            // the first whitespace outside a quoted subtring is accepted. Backslashes are treated as normal 
+            // characters.
+            int charIdx = 0;
+            bool inquote = false;
+            for (;;)
+            {
+                char c = *psrc++;
+                if (c == '"')
+                {
+                    inquote = !inquote;
+                    continue;
+                }
+
+                if (c == '\0' || (!inquote && (c == ' ' || c == '\t')))
+                {
+                    psrc--;
+                    break;
+                }
+
+                if (arg != null)
+                {
+                    arg[charIdx] = c;
+                }
+                charIdx++;
+            }
+
+            return charIdx;
         }
 
         private static unsafe int ScanArgument(ref char* psrc, ref bool inquote, char[] arg)
