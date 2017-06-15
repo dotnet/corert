@@ -48,7 +48,8 @@ namespace System.Threading
 
         private static volatile int s_numRequestedWorkers = 0;
 
-        static ClrThreadPool() {
+        static ClrThreadPool()
+        {
             s_separated.counts.numThreadsGoal = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : s_minThreads;
         }
 
