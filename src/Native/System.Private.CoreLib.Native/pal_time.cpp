@@ -169,7 +169,7 @@ extern "C" int32_t CoreLibNative_GetCpuUtilization(ProcessCpuInformation* previo
     if (numProcessors <= 0)
     {
         numProcessors = sysconf(_SC_NPROCESSORS_ONLN);
-        if (numProcessors < 0)
+        if (numProcessors <= 0)
         {
             return 0;
         }
