@@ -180,7 +180,7 @@ namespace System.Collections.Generic
     // The methods in this class look identical to the inherited methods, but the calls
     // to Equal bind to IEquatable<T>.Equals(T) instead of Object.Equals(Object)
     [Serializable]
-    internal sealed class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+    public sealed class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
         public sealed override bool Equals(T x, T y)
         {
@@ -212,7 +212,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class NullableEqualityComparer<T> : EqualityComparer<Nullable<T>> where T : struct, IEquatable<T>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class NullableEqualityComparer<T> : EqualityComparer<Nullable<T>> where T : struct, IEquatable<T>
     {
         public sealed override bool Equals(Nullable<T> x, Nullable<T> y)
         {
@@ -242,7 +243,8 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    public sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         public sealed override bool Equals(T x, T y)
         {
@@ -268,13 +270,14 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public sealed override bool Equals(Object obj) => obj is EnumEqualityComparer<T>;
+        public override bool Equals(Object obj) => obj is EnumEqualityComparer<T>;
 
-        public sealed override int GetHashCode() => typeof(EnumEqualityComparer<T>).GetHashCode();
+        public override int GetHashCode() => typeof(EnumEqualityComparer<T>).GetHashCode();
     }
 
     [Serializable]
-    internal sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
         public sealed override bool Equals(T x, T y)
         {

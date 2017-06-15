@@ -11,7 +11,8 @@ namespace System.Collections.Generic
     // keep the performance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing.
     [Serializable]
-    internal sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>
     {
         private static volatile IEqualityComparer<string> s_nonRandomizedComparer;
 
