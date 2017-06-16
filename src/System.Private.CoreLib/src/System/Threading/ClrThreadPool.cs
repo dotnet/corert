@@ -52,7 +52,7 @@ namespace System.Threading
 
         private volatile int _numRequestedWorkers = 0;
 
-        public ClrThreadPool()
+        private ClrThreadPool()
         {
             _separated = new CacheLineSeparated
             {
