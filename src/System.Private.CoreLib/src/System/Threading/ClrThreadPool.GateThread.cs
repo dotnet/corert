@@ -20,37 +20,34 @@ namespace System.Threading
 
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThreshold = GateThreadDelayMs * 2;
-
-            private static bool s_enableWorkerTracking; // TODO: Config
+            
             private static bool s_disableStarvationDetection = true; // TODO: Config
             private static bool s_debuggerBreakOnWorkStarvation; // TODO: Config
 
             private static int s_status; // This needs to be an int instead of Status so we can use Interlocked.CompareExchange with it
 
+            // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                // TODO: Do we need to do this? (comment pulled from CoreCLR. Comment older than CoreCLR)
-                RuntimeThread.Sleep(GateThreadDelayMs);
+                Debug.Assert(s_status == (int)Status.Requested);
+
+                RuntimeThread.Sleep(GateThreadDelayMs); // delay getting initial CPU reading so we don't accidentally detect starvation from the Thread Pool doing its work.
                 Interop.Sys.ProcessCpuInformation cpuInfo = new Interop.Sys.ProcessCpuInformation();
                 Interop.Sys.GetCpuUtilization(ref cpuInfo); // ignore return value the first time. The first time populates the cpuInfo structure to calculate in future calls.
 
                 do
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
-                    if (s_enableWorkerTracking)
-                    {
-                        // TODO: Event: Working Thread Count event
-                    }
 
-                    s_cpuUtilization = Interop.Sys.GetCpuUtilization(ref cpuInfo); // updates cpuInfo as side effect
+                    ThreadPoolInstance._cpuUtilization = Interop.Sys.GetCpuUtilization(ref cpuInfo); // updates cpuInfo as side effect
 
                     if (!s_disableStarvationDetection)
                     {
-                        if (/* s_numRequestedWorkers > 0 && */ SufficientDelaySinceLastDequeue())
+                        if (ThreadPoolInstance._numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
                         {
-                            ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                            ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                             // don't add a thread if we're at max or if we are already in the process of adding threads
-                            while (counts.numExistingThreads < s_maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
+                            while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
                             {
                                 if (s_debuggerBreakOnWorkStarvation)
                                 {
@@ -60,7 +57,7 @@ namespace System.Threading
 
                                 ThreadCounts newCounts = counts;
                                 newCounts.numThreadsGoal = (short)(newCounts.numExistingThreads + 1);
-                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, counts);
+                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
                                 if (oldCounts == counts)
                                 {
                                     HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.Starvation);
@@ -79,17 +76,17 @@ namespace System.Threading
             // in deciding "too long"
             private static bool SufficientDelaySinceLastDequeue()
             {
-                int delay = Environment.TickCount - Volatile.Read(ref s_separated.lastDequeueTime);
+                int delay = Environment.TickCount - Volatile.Read(ref ThreadPoolInstance._separated.lastDequeueTime);
 
                 int minimumDelay;
 
-                if(s_cpuUtilization < CpuUtilizationLow)
+                if(ThreadPoolInstance._cpuUtilization < CpuUtilizationLow)
                 {
                     minimumDelay = GateThreadDelayMs;
                 }
                 else
                 {
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                     int numThreads = counts.numThreadsGoal;
                     minimumDelay = numThreads * DequeueDelayThreshold;
                 }
@@ -111,14 +108,11 @@ namespace System.Threading
 
                     //
                     // Are there any work requests in any worker queue?  If so, we need a gate thread.
-                    // This imples that whenever a work queue goes from empty to non-empty, we need to call EnsureGateThreadRunning().
+                    // This imples that whenever a work queue goes from empty to non-empty, we need to call EnsureRunning().
                     //
-                    bool needGateThreadForWorkerThreads = false;
-                    /* = s_numWorkerRequests > 0 */
+                    bool needGateThreadForWorkerThreads = ThreadPoolInstance._numRequestedWorkers > 0;
 
-                    bool needGateThreadForWorkerTracking = s_enableWorkerTracking;
-
-                    if(!(needGateThreadForWorkerThreads || needGateThreadForWorkerTracking))
+                    if(!needGateThreadForWorkerThreads)
                     {
                         previousStatus = (Status)Interlocked.CompareExchange(ref s_status, (int)Status.NotRunning, (int)Status.WaitingForRequest);
                         if (previousStatus == Status.WaitingForRequest)
@@ -133,13 +127,13 @@ namespace System.Threading
                 return true;
             }
 
-            internal static void CreateGateThread()
+            private static void CreateGateThread()
             {
                 RuntimeThread.Create(GateThreadStart);
             }
 
             // This is called by a worker thread
-            private static void EnsureRunning()
+            internal static void EnsureRunning()
             {
                 while (true)
                 {
