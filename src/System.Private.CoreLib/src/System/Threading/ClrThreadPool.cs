@@ -179,8 +179,8 @@ namespace System.Threading
             int totalNumCompletions = Volatile.Read(ref s_completionCount);
             int numCompletions = totalNumCompletions - s_separated.priorCompletionCount;
             ulong startTime = s_currentSampleStartTime;
-            ulong endTime = Interop.Sys.GetHighPrecisionCount();
-            ulong freq = Interop.Sys.GetHighPrecisionCounterFrequency();
+            ulong endTime = HighPerformanceCounter.TickCount;
+            ulong freq = HighPerformanceCounter.Frequency;
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 

@@ -658,6 +658,7 @@
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
+    <Compile Include="System\Threading\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
