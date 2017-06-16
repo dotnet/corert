@@ -8,12 +8,12 @@ using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        internal static class WorkerThread
+        private static class WorkerThread
         {
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
@@ -31,51 +31,53 @@ namespace System.Threading
                     // TODO: Event:  Worker thread wait event
                     while (s_semaphore.Wait(TimeoutMs))
                     {
-                        Volatile.Write(ref s_separated.lastDequeueTime, Environment.TickCount);
-                        if (ThreadPoolWorkQueue.Dispatch())
+                        Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
+                        if (TakeActiveRequest())
                         {
-                            // If we ran out of work, we need to update s_aligned.counts that we are done working for now
-                            // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
-                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
-                            while (true)
+                            if (ThreadPoolWorkQueue.Dispatch())
                             {
-                                ThreadCounts newCounts = currentCounts;
-                                newCounts.numProcessingWork--;
-
-                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, currentCounts);
-
-                                if (oldCounts == currentCounts)
+                                // If we ran out of work, we need to update s_separated.counts that we are done working for now
+                                // (this is already done for us if we are forced to stop working early in ShouldStopProcessingWorkNow)
+                                ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                                while (true)
                                 {
-                                    break;
+                                    ThreadCounts newCounts = currentCounts;
+                                    newCounts.numProcessingWork--;
+                                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, currentCounts);
+
+                                    if (oldCounts == currentCounts)
+                                    {
+                                        break;
+                                    }
+                                    currentCounts = oldCounts;
                                 }
-                                currentCounts = oldCounts;
+                                
+                                // It's possible that we decided we had no work just before some work came in, 
+                                // but reduced the worker count *after* the work came in.  In this case, we might
+                                // miss the notification of available work.  So we wake up a thread (maybe this one!)
+                                // if there is work to do.
+                                if (ThreadPoolInstance._numRequestedWorkers > 0)
+                                {
+                                    MaybeAddWorkingWorker();
+                                }
                             }
-                            
-                            // It's possible that we decided we had no work just before some work came in, 
-                            // but reduced the worker count *after* the work came in.  In this case, we might
-                            // miss the notification of available work.  So we wake up a thread (maybe this one!)
-                            // if there is work to do.
-                            if (ThreadPool.GetQueuedWorkItems().Any())
+
+                            // Reset thread-local state that we control.
+                            if (currentThread.Priority != ThreadPriority.Normal)
                             {
-                                MaybeAddWorkingWorker();
+                                currentThread.Priority = ThreadPriority.Normal;
                             }
-                        }
 
-                        // Reset thread-local state that we control.
-                        if (currentThread.Priority != ThreadPriority.Normal)
-                        {
-                            currentThread.Priority = ThreadPriority.Normal;
+                            CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
+                            CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
                         }
-
-                        CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
-                        CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
                     }
 
                     // At this point, the thread's wait timed out. We are shutting down this thread.
                     // We are going to decrement the number of exisiting threads to no longer include this one
                     // and then change the max number of threads in the thread pool to reflect that we don't need as many
                     // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                     while (true)
                     {
                         if (counts.numExistingThreads == counts.numProcessingWork)
@@ -86,8 +88,8 @@ namespace System.Threading
 
                         ThreadCounts newCounts = counts;
                         newCounts.numExistingThreads--;
-                        newCounts.numThreadsGoal = Math.Max(s_minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
-                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, counts);
+                        newCounts.numThreadsGoal = Math.Max(ThreadPoolInstance._minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
+                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
                         if (oldCounts == counts)
                         {
                             HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
@@ -101,7 +103,7 @@ namespace System.Threading
 
             internal static void MaybeAddWorkingWorker()
             {
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                 ThreadCounts newCounts;
                 while (true)
                 {
@@ -114,7 +116,7 @@ namespace System.Threading
                         return;
                     }
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, counts);
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
 
                     if(oldCounts == counts)
                     {
@@ -146,7 +148,7 @@ namespace System.Threading
             /// <returns>Whether or not this thread should stop processing work even if there is still work in the queue.</returns>
             internal static bool ShouldStopProcessingWorkNow()
             {
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref s_separated.counts);
+                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                 while (true)
                 {
                     if (counts.numExistingThreads <= counts.numThreadsGoal)
@@ -157,7 +159,7 @@ namespace System.Threading
                     ThreadCounts newCounts = counts;
                     newCounts.numProcessingWork--;
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref s_separated.counts, newCounts, counts);
+                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
 
                     if (oldCounts == counts)
                     {
@@ -165,6 +167,21 @@ namespace System.Threading
                     }
                     counts = oldCounts;
                 }
+            }
+
+            private static bool TakeActiveRequest()
+            {
+                int count = ThreadPoolInstance._numRequestedWorkers;
+                while (count > 0)
+                {
+                    int prevCount = Interlocked.CompareExchange(ref ThreadPoolInstance._numRequestedWorkers, count - 1, count);
+                    if (prevCount == count)
+                    {
+                        return true;
+                    }
+                    count = prevCount;
+                }
+                return false;
             }
 
             private static void CreateWorkerThread()
