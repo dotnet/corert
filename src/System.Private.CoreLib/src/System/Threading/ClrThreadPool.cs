@@ -12,7 +12,9 @@ namespace System.Threading
     /// </summary>
     internal partial class ClrThreadPool
     {
-        public static ClrThreadPool s_threadPoolInstance = new ClrThreadPool();
+#pragma warning disable IDE1006 // Naming Styles
+        public static readonly ClrThreadPool ThreadPoolInstance = new ClrThreadPool();
+#pragma warning restore IDE1006 // Naming Styles
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;

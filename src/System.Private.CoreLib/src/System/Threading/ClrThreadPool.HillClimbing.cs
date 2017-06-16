@@ -272,7 +272,7 @@ namespace System.Threading
                 //
                 // If the result was positive, and CPU is > 95%, refuse the move.
                 //
-                if (move > 0.0 && s_threadPoolInstance._cpuUtilization > CpuUtilizationHigh)
+                if (move > 0.0 && ThreadPoolInstance._cpuUtilization > CpuUtilizationHigh)
                     move = 0.0;
 
                 //
@@ -291,8 +291,8 @@ namespace System.Threading
                 //
                 // Make sure our control setting is within the ThreadPool's limits
                 // 
-                int maxThreads = s_threadPoolInstance._maxThreads;
-                int minThreads = s_threadPoolInstance._minThreads;
+                int maxThreads = ThreadPoolInstance._maxThreads;
+                int minThreads = ThreadPoolInstance._minThreads;
 
                 _currentControlSetting = Math.Min(maxThreads - newThreadWaveMagnitude, _currentControlSetting);
                 _currentControlSetting = Math.Max(minThreads, _currentControlSetting);
