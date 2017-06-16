@@ -5,9 +5,8 @@
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
-        
         private partial class HillClimbing
         {
             private struct Complex
