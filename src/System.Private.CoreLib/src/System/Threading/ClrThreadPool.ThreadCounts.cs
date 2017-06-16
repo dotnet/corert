@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
         /// <summary>
         /// Tracks information on the number of threads we want/have in different states in our thread pool.

@@ -4,7 +4,7 @@
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
         /// <summary>
         /// A LIFO semaphore (used by the thread pool to keep hot threads hot and cold threads cold).
