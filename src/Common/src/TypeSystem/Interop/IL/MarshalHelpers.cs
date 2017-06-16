@@ -105,6 +105,16 @@ namespace Internal.TypeSystem.Interop
                 return true;
             }
 
+            //
+            // https://github.com/dotnet/corert/issues/730
+            // P/Invoke to FormatMessage doesn't specify A/W form and we don't currently perform the lookup
+            // on the user's behalf at compile time.
+            //
+            if (assemblySimpleName == "System.Diagnostics.Tracing")
+            {
+                return true;
+            }
+
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
             if (importModule == "[MRT]" || importModule == "*")
