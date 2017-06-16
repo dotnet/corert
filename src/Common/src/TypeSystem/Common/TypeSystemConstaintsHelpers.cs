@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
         {
             foreach(var arg in instantiation)
             {
-                if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsRuntimeDeterminedSubtype || arg.IsVoid)
+                if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsVoid)
                     return false;
 
                 if (arg.HasInstantiation)
