@@ -26,8 +26,7 @@ namespace System.Threading
             private static void GateThreadStart()
             {
                 RuntimeThread.Sleep(GateThreadDelayMs); // delay getting initial CPU reading so we don't accidentally detect starvation from the Thread Pool doing its work.
-                Interop.Sys.ProcessCpuInformation cpuInfo = new Interop.Sys.ProcessCpuInformation();
-                Interop.Sys.GetCpuUtilization(ref cpuInfo); // ignore return value the first time. The first time populates the cpuInfo structure to calculate in future calls.
+                CpuUtilizationReader cpu = new CpuUtilizationReader();
 
                 while (true)
                 {
@@ -43,7 +42,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    ThreadPoolInstance._cpuUtilization = Interop.Sys.GetCpuUtilization(ref cpuInfo); // updates cpuInfo as side effect
+                    ThreadPoolInstance._cpuUtilization = cpu.CurrentUtilization;
 
                     if (!s_disableStarvationDetection)
                     {
