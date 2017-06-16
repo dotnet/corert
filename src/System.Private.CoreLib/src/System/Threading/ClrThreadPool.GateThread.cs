@@ -11,33 +11,37 @@ namespace System.Threading
     {
         private static class GateThread
         {
-            enum Status
-            {
-                NotRunning = 0,
-                Requested = 1,
-                WaitingForRequest = 2
-            }
-
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThreshold = GateThreadDelayMs * 2;
             
             private static bool s_disableStarvationDetection = true; // TODO: Config
             private static bool s_debuggerBreakOnWorkStarvation; // TODO: Config
+            
+            private static volatile bool s_requested;
 
-            private static int s_status; // This needs to be an int instead of Status so we can use Interlocked.CompareExchange with it
+            private static bool s_created;
+            private static LowLevelLock s_createdLock;
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                Debug.Assert(s_status == (int)Status.Requested);
-
                 RuntimeThread.Sleep(GateThreadDelayMs); // delay getting initial CPU reading so we don't accidentally detect starvation from the Thread Pool doing its work.
                 Interop.Sys.ProcessCpuInformation cpuInfo = new Interop.Sys.ProcessCpuInformation();
                 Interop.Sys.GetCpuUtilization(ref cpuInfo); // ignore return value the first time. The first time populates the cpuInfo structure to calculate in future calls.
 
-                do
+                while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
+
+                    if(ThreadPoolInstance._numRequestedWorkers > 0)
+                    {
+                        WorkerThread.MaybeAddWorkingWorker();
+                    }
+
+                    if (!s_requested)
+                    {
+                        continue;
+                    }
 
                     ThreadPoolInstance._cpuUtilization = Interop.Sys.GetCpuUtilization(ref cpuInfo); // updates cpuInfo as side effect
 
@@ -68,7 +72,7 @@ namespace System.Threading
                             }
                         }
                     }
-                } while (ShouldGateThreadKeepRunning());
+                }
             }
 
             // called by logic to spawn new worker threads, return true if it's been too long
@@ -94,79 +98,31 @@ namespace System.Threading
                 return delay > minimumDelay;
             }
 
-            private static bool ShouldGateThreadKeepRunning()
-            {
-                Debug.Assert(s_status == (int)Status.WaitingForRequest || s_status == (int)Status.Requested);
-
-                // Switch to WaitingForRequest and see if we had a request since the last check.
-                Status previousStatus = (Status)Interlocked.Exchange(ref s_status, (int)Status.WaitingForRequest);
-                if(previousStatus == Status.WaitingForRequest)
-                {
-                    //
-                    // No recent requests for the gate thread.  Check to see if we're still needed.
-                    //
-
-                    //
-                    // Are there any work requests in any worker queue?  If so, we need a gate thread.
-                    // This imples that whenever a work queue goes from empty to non-empty, we need to call EnsureRunning().
-                    //
-                    bool needGateThreadForWorkerThreads = ThreadPoolInstance._numRequestedWorkers > 0;
-
-                    if(!needGateThreadForWorkerThreads)
-                    {
-                        previousStatus = (Status)Interlocked.CompareExchange(ref s_status, (int)Status.NotRunning, (int)Status.WaitingForRequest);
-                        if (previousStatus == Status.WaitingForRequest)
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                Debug.Assert(s_status == (int)Status.WaitingForRequest || s_status == (int)Status.Requested);
-
-                return true;
-            }
-
             private static void CreateGateThread()
             {
-                RuntimeThread.Create(GateThreadStart);
+                if (!s_created)
+                {
+                    try
+                    {
+                        s_createdLock.Acquire();
+                        if (!s_created)
+                        {
+                            RuntimeThread.Create(GateThreadStart);
+                            s_created = true;
+                        }
+                    }
+                    finally
+                    {
+                        s_createdLock.Release();
+                    }
+                }
             }
 
             // This is called by a worker thread
             internal static void EnsureRunning()
             {
-                while (true)
-                {
-                    switch ((Status)s_status)
-                    {
-                        case Status.Requested:
-                            //
-                            // No action needed; the gate thread is running, and someone else has already registered a request
-                            // for it to stay.
-                            //
-                            return;
-                        case Status.WaitingForRequest:
-                            //
-                            // Prevent the gate thread from exiting, if it hasn't already done so.  If it has, we'll create it on the next iteration of
-                            // this loop.
-                            //
-                            Interlocked.CompareExchange(ref s_status, (int)Status.Requested, (int)Status.WaitingForRequest);
-                            break;
-                        case Status.NotRunning:
-                            //
-                            // We need to create a new gate thread
-                            //
-                            if ((Status)Interlocked.CompareExchange(ref s_status, (int)Status.Requested, (int)Status.NotRunning) == Status.NotRunning)
-                            {
-                                CreateGateThread();
-                                return;
-                            }
-                            break;
-                        default:
-                            Debug.Assert(false, "Invalid value of ClrThreadPool.GateThread.Status");
-                            break;
-                    }
-                }
+                s_requested = true;
+                CreateGateThread();
             }
         }
     }
