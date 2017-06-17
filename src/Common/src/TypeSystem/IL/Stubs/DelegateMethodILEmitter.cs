@@ -29,7 +29,7 @@ namespace Internal.IL.Stubs
             if (method.Name == ".ctor")
             {
                 // We only support delegate creation if the IL follows the delegate creation verifiability requirements
-                // described in ECMA-335 III.4.21 (newobj – create a new object). The codegen is expected to
+                // described in ECMA-335 III.4.21 (newobj - create a new object). The codegen is expected to
                 // intrinsically expand the pattern.
                 // If the delegate creation doesn't follow the pattern, we generate code that throws at runtime.
                 // We could potentially implement this (unreliably) through the use of reflection metadata,

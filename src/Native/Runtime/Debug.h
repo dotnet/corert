@@ -25,6 +25,9 @@ struct GcProtectionMessage
     uint64_t bufferAddress;
 };
 
+/**
+ * This structure represents a request from the debugger to perform a GC protection related work.
+ */
 struct GcProtectionRequest
 {
     DebuggerGcProtectionRequestKind kind;

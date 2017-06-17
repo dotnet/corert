@@ -13,6 +13,7 @@ namespace System.Runtime.Loader
         public static Assembly[] GetLoadedAssemblies() => ReflectionAugments.ReflectionCoreCallbacks.GetLoadedAssemblies(); 
 
         // These events are never called
+#pragma warning disable 0067
         public static event AssemblyLoadEventHandler AssemblyLoad;
         public static event ResolveEventHandler TypeResolve;
         public static event ResolveEventHandler ResourceResolve;
@@ -20,6 +21,7 @@ namespace System.Runtime.Loader
 
         public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
         public event Action<AssemblyLoadContext> Unloading;
+#pragma warning restore 0067
 
         public static AssemblyLoadContext Default { get; } = new DefaultAssemblyLoadContext();
 
