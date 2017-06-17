@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="BuildNuGetPackages" AfterTargets="Build">
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
@@ -282,8 +281,7 @@
 }]]>
                 </RuntimeJsonLines>
                 <RedirFile>$(ProductPackageDir)/%(RedirPackage).nuspec</RedirFile>
-                <RedirLines><![CDATA[<?xml version="1.0"?>
-<package>
+                <RedirLines><![CDATA[<package>
   <metadata>
     <id>%(RedirPackage)</id>
     %(NuSpecPackageMetadata)
@@ -295,8 +293,7 @@
 ]]>
                 </RedirLines>
                 <PlatformFile>$(ProductPackageDir)/%(PlatformPackage).nuspec</PlatformFile>
-                <PlatformLines><![CDATA[<?xml version="1.0"?>
-<package>
+                <PlatformLines><![CDATA[<package>
   <metadata>
     <id>%(PlatformPackage)</id>
     %(NuSpecPackageMetadata)
