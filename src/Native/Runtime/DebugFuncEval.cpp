@@ -6,6 +6,7 @@
 #include "CommonTypes.h"
 #include "DebugFuncEval.h"
 
+GVAL_IMPL_INIT(UInt32, g_FuncEvalMode, 0);
 GVAL_IMPL_INIT(UInt64, g_FuncEvalTarget, 0);
 GVAL_IMPL_INIT(UInt32, g_FuncEvalParameterBufferSize, 0);
 
@@ -19,6 +20,11 @@ void* DebugFuncEval::GetFuncEvalTarget()
 UInt32 DebugFuncEval::GetFuncEvalParameterBufferSize()
 {
     return g_FuncEvalParameterBufferSize;
+}
+
+UInt32 DebugFuncEval::GetFuncEvalMode()
+{
+    return g_FuncEvalMode;
 }
 
 /// <summary>
@@ -43,12 +49,26 @@ EXTERN_C REDHAWK_API void* __cdecl RhpGetFuncEvalTargetAddress()
 /// During debugging, if a FuncEval is requested, 
 /// the func eval infrastructure needs to know how much buffer to allocate for the debugger to 
 /// write the parameter information in. The C# supporting code will call this API to obtain the 
-/// buffer size. By that time, the value should have been set through the UpdateFuncEvalParameterSize() 
+/// buffer size. By that time, the value should have been set through the UpdateFuncEvalParameterBufferSize() 
 /// method on the ISosRedhawk7 interface.
 /// </remarks>
 EXTERN_C REDHAWK_API UInt32 __cdecl RhpGetFuncEvalParameterBufferSize()
 {
     return DebugFuncEval::GetFuncEvalParameterBufferSize();
+}
+
+/// <summary>
+/// Retrieve the global FuncEval mode.
+/// </summary>
+/// <remarks>
+/// During debugging, if a FuncEval is requested, 
+/// the func eval infrastructure needs to know what mode to execute the FuncEval request 
+/// The C# supporting code will call this API to obtain the mode. By that time, the value 
+/// should have been set through the UpdateFuncEvalMode() method on the ISosRedhawk7 interface.
+/// </remarks>
+EXTERN_C REDHAWK_API UInt32 __cdecl RhpGetFuncEvalMode()
+{
+    return DebugFuncEval::GetFuncEvalMode();
 }
 
 #endif //!DACCESS_COMPILE

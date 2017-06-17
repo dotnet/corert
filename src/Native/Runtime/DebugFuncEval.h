@@ -42,6 +42,17 @@ public:
     /// method on the ISosRedhawk7 interface.
     /// </remarks>
     static UInt32 GetFuncEvalParameterBufferSize();
+
+    /// <summary>
+    /// Retrieve the global FuncEval mode.
+    /// </summary>
+    /// <remarks>
+    /// During debugging, if a FuncEval is requested, 
+    /// the func eval infrastructure needs to know what mode to execute the FuncEval request 
+    /// The C# supporting code will call this API to obtain the mode. By that time, the value 
+    /// should have been set through the UpdateFuncEvalMode() method on the ISosRedhawk7 interface.
+    /// </remarks>
+    static UInt32 GetFuncEvalMode();
 };
 
 #endif //!DACCESS_COMPILE

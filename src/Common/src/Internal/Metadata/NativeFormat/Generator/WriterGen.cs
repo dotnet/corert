@@ -61,14 +61,7 @@ class WriterGen : CsWriter
             if ((member.Flags & MemberDefFlags.RecordRef) == 0)
                 continue;
 
-            if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.Sequence)) != 0)
-            {
-                WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
-            }
-            else
-            {
-                WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
-            }
+            WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
         }
         CloseScope("Visit");
 
@@ -94,17 +87,20 @@ class WriterGen : CsWriter
 
             if ((member.Flags & MemberDefFlags.Sequence) != 0)
             {
-                WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name})) return false;");
+                if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
+                    WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name}, {member.TypeName}Comparer.Instance)) return false;");
+                else
+                    WriteLine($"if (!{member.Name}.SequenceEqual(other.{member.Name})) return false;");
             }
             else
-            if ((member.Flags & (MemberDefFlags.List | MemberDefFlags.Map)) != 0)
+            if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.RecordRef)) != 0)
             {
                 WriteLine($"if (!Object.Equals({member.Name}, other.{member.Name})) return false;");
             }
             else
-            if ((member.Flags & MemberDefFlags.RecordRef) != 0)
+            if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
             {
-                WriteLine($"if (!Object.Equals({member.Name}, other.{member.Name})) return false;");
+                WriteLine($"if (!CustomComparer.Equals({member.Name}, other.{member.Name})) return false;");
             }
             else
             {

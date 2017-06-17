@@ -58,21 +58,27 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
         for (uint32_t i = 0; i < g_numGcProtectionRequests; i++)
         {
-            if (requests[i].kind == DebuggerGcProtectionRequestKind::EnsureConservativeReporting)
+            GcProtectionRequest* request = requests + i;
+            switch(request->kind)
             {
-                EnsureConservativeReporting(requests + i);
-            }
-            else if (requests[i].kind == DebuggerGcProtectionRequestKind::RemoveConservativeReporting)
-            {
-                RemoveConservativeReporting(requests + i);
-            }
-            else if (requests[i].kind == DebuggerGcProtectionRequestKind::EnsureHandle)
-            {
-                EnsureHandle(requests + i);
-            }
-            else if (requests[i].kind == DebuggerGcProtectionRequestKind::RemoveHandle)
-            {
-                RemoveHandle(requests + i);
+            case DebuggerGcProtectionRequestKind::EnsureConservativeReporting: 
+                EnsureConservativeReporting(request); 
+                break;
+
+            case DebuggerGcProtectionRequestKind::RemoveConservativeReporting:
+                RemoveConservativeReporting(request);
+                break;
+
+            case DebuggerGcProtectionRequestKind::EnsureHandle:
+                EnsureHandle(request);
+                break;
+
+            case DebuggerGcProtectionRequestKind::RemoveHandle:
+                RemoveHandle(request);
+                break;
+
+            default:
+                assert("Debugger is providing an invalid request kind." && false);
             }
         }
 
@@ -164,15 +170,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     }
     else
     {
-        int handleType;
-        switch (request->type)
-        {
-            case 1: handleType = 2 /* == HNDTYPE_STRONG */; break;
-            case 2: handleType = 1 /* == HNDTYPE_WEAK_LONG */; break;
-            default:
-                assert("Debugger is passing in a wrong handle type" && false);
-                handleType = 2 /* == HNDTYPE_STRONG */;
-        }
+        int handleType = (int)request->type;
         void* handle = RedhawkGCInterface::CreateTypedHandle((void*)request->address, handleType);
         s_debuggerOwnedHandles->handle = handle;
         s_debuggerOwnedHandles->identifier = request->identifier;

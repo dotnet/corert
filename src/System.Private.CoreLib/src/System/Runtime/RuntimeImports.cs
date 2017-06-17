@@ -44,6 +44,9 @@ namespace System.Runtime
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern uint RhpGetFuncEvalMode();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern unsafe uint RhpRecordDebuggeeInitiatedHandle(void* objectHandle);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
