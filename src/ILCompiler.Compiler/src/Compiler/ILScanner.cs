@@ -77,7 +77,9 @@ namespace ILCompiler
         ILScanResults IILScanner.Scan()
         {
             _nodeFactory.NameMangler.CompilationUnitPrefix = "";
-            return new ILScanResults(_dependencyGraph.MarkedNodeList);
+            _dependencyGraph.ComputeMarkedNodes();
+
+            return new ILScanResults(_dependencyGraph, _nodeFactory);
         }
     }
 
@@ -86,18 +88,16 @@ namespace ILCompiler
         ILScanResults Scan();
     }
 
-    public class ILScanResults
+    public class ILScanResults : CompilationResults
     {
-        private readonly ImmutableArray<DependencyNodeCore<NodeFactory>> _markedNodes;
-
-        internal ILScanResults(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+        internal ILScanResults(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            : base(graph, factory)
         {
-            _markedNodes = markedNodes;
         }
 
         public VTableSliceProvider GetVTableLayoutInfo()
         {
-            return new ScannedVTableProvider(_markedNodes);
+            return new ScannedVTableProvider(MarkedNodes);
         }
 
         private class ScannedVTableProvider : VTableSliceProvider
@@ -118,7 +118,12 @@ namespace ILCompiler
 
             internal override VTableSliceNode GetSlice(TypeDesc type)
             {
-                return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
+                // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
+                // https://github.com/dotnet/corert/issues/3873
+                if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                    return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
+                else
+                    return new LazilyBuiltVTableSliceNode(type);
             }
         }
     }

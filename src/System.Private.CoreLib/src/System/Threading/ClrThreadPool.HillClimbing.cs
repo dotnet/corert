@@ -6,9 +6,11 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
-        // The Hill Climbing algorithm is described at http://mattwarren.org/2017/04/13/The-CLR-Thread-Pool-Thread-Injection-Algorithm/
+        /// <summary>
+        /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
+        /// </summary>
         private partial class HillClimbing
         {
             // Config values pulled from CoreCLR
@@ -23,8 +25,8 @@ namespace System.Threading
                 ClimbingMove,
                 ChangePoint,
                 Stabilizing,
-                Starvation,
-                ThreadTimedOut,
+                Starvation, // Used as a message from the thread pool for a forced transition
+                ThreadTimedOut, // Usage as a message from the thread pool for a forced transition
             }
             
             private readonly int _wavePeriod;
@@ -270,7 +272,7 @@ namespace System.Threading
                 //
                 // If the result was positive, and CPU is > 95%, refuse the move.
                 //
-                if (move > 0.0 && s_cpuUtilization > CpuUtilizationHigh)
+                if (move > 0.0 && ThreadPoolInstance._cpuUtilization > CpuUtilizationHigh)
                     move = 0.0;
 
                 //
@@ -289,8 +291,8 @@ namespace System.Threading
                 //
                 // Make sure our control setting is within the ThreadPool's limits
                 // 
-                int maxThreads = s_maxThreads;
-                int minThreads = s_minThreads;
+                int maxThreads = ThreadPoolInstance._maxThreads;
+                int minThreads = ThreadPoolInstance._minThreads;
 
                 _currentControlSetting = Math.Min(maxThreads - newThreadWaveMagnitude, _currentControlSetting);
                 _currentControlSetting = Math.Max(minThreads, _currentControlSetting);

@@ -27,6 +27,11 @@ ALTERNATE_ENTRY RhpThrowHwEx2
 	bl C_FUNC(NYI_Assert)
 #endif
 
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+
+        // no return
+        bkpt
+
 NESTED_END RhpThrowHwEx
 
 
@@ -46,6 +51,11 @@ ALTERNATE_ENTRY RhpThrowEx2
 #ifdef _DEBUG
 	bl C_FUNC(NYI_Assert)
 #endif
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+
+        // no return
+        bkpt
 
 NESTED_END RhpThrowEx, _TEXT
 
@@ -68,6 +78,11 @@ ALTERNATE_ENTRY RhpRethrow2
 #ifdef _DEBUG
 	bl C_FUNC(NYI_Assert)
 #endif
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+
+        // no return
+        bkpt
 
 NESTED_END RhpRethrow, _TEXT
 
@@ -102,6 +117,8 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
 	bl C_FUNC(NYI_Assert)
 #endif
 
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+
 NESTED_END RhpCallCatchFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,6 +138,8 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
 #ifdef _DEBUG
 	bl C_FUNC(NYI_Assert)
 #endif
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
 
 NESTED_END RhpCallFinallyFunclet, _TEXT
 
@@ -142,5 +161,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 #ifdef _DEBUG
 	bl C_FUNC(NYI_Assert)
 #endif
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
 NESTED_END RhpCallFilterFunclet, _TEXT

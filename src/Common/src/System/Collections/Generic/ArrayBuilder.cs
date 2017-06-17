@@ -32,11 +32,20 @@ namespace System.Collections.Generic
 
         public void Append(T[] newItems)
         {
-            if (newItems.Length == 0)
+            Append(newItems, 0, newItems.Length);
+        }
+
+        public void Append(T[] newItems, int offset, int length)
+        {
+            if (length == 0)
                 return;
-            EnsureCapacity(_count + newItems.Length);
-            Array.Copy(newItems, 0, _items, _count, newItems.Length);
-            _count += newItems.Length;
+
+            Debug.Assert(length > 0);
+            Debug.Assert(newItems.Length >= offset + length);
+
+            EnsureCapacity(_count + length);
+            Array.Copy(newItems, offset, _items, _count, length);
+            _count += length; 
         }
 
         public void ZeroExtend(int numItems)

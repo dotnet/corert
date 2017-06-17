@@ -1001,7 +1001,14 @@ namespace Internal.JitInterface
 
             if (pCookieVal != null)
             {
-                *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                }
                 *ppCookieVal = null;
             }
             else
@@ -2745,8 +2752,18 @@ namespace Internal.JitInterface
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
+
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+        {
+            CORINFO_CONST_LOOKUP pLookup = new CORINFO_CONST_LOOKUP();
+
+            getAddressOfPInvokeTarget(method, ref pLookup);
+            Debug.Assert(pLookup.addr != null);
+            Debug.Assert(pLookup.accessType == InfoAccessType.IAT_VALUE);
+            ppIndirection = null;
+
+            return pLookup.addr;
+        }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
@@ -3447,9 +3464,14 @@ namespace Internal.JitInterface
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
-            // TODO: Arbitrary relocs
             if (locationBlock != BlockType.Code)
-                throw new NotImplementedException("Arbitrary relocs");
+            {
+                // TODO: https://github.com/dotnet/corert/issues/3877
+                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+                if (targetArchitecture == TargetArchitecture.ARM || targetArchitecture == TargetArchitecture.ARMEL)
+                    return;
+                throw new NotImplementedException("Arbitrary relocs"); 
+            }
 
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
@@ -3463,7 +3485,7 @@ namespace Internal.JitInterface
 
                 case BlockType.ColdCode:
                     // TODO: Arbitrary relocs
-                    throw new NotImplementedException("Arbitrary relocs");
+                    throw new NotImplementedException("ColdCode relocs");
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;

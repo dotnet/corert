@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // byte contents
-            dataBuilder.EmitBytes(_preInitFieldInfo.Data);
+            _preInitFieldInfo.WriteData(ref dataBuilder, factory);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

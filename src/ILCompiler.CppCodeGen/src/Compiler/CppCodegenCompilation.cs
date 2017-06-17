@@ -50,6 +50,8 @@ namespace ILCompiler
         {
             _cppWriter = new CppWriter(this, outputFile);
 
+            _dependencyGraph.ComputeMarkedNodes();
+
             var nodes = _dependencyGraph.MarkedNodeList;
 
             _cppWriter.OutputCode(nodes, NodeFactory);

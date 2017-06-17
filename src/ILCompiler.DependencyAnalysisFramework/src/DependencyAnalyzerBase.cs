@@ -40,11 +40,18 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         /// <summary>
         /// Return the marked node list. Do not modify this list, as it will cause unexpected behavior.
+        /// Call <see cref="ComputeMarkedNodes"/> to compute the list first.
         /// </summary>
         public abstract ImmutableArray<DependencyNodeCore<DependencyContextType>> MarkedNodeList
         {
             get;
         }
+
+        /// <summary>
+        /// Computes the list of marked nodes. This is a no-op if the marked nodes are already computed.
+        /// The list is available as <see cref="MarkedNodeList"/>.
+        /// </summary>
+        public abstract void ComputeMarkedNodes();
 
         /// <summary>
         /// This event is triggered when a node is added to the graph.

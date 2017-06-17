@@ -209,6 +209,8 @@ namespace Internal.TypeSystem
 
             // Step 4, name/sig match virtual function resolve
             MethodDesc resolutionTarget = FindNameSigOverrideForVirtualMethod(group.DefiningMethod, uninstantiatedType);
+            if (resolutionTarget == null)
+                return null;
 
             // Step 5, convert resolution target from uninstantiated form target to objecttype target,
             // and instantiate as appropriate

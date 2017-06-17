@@ -164,6 +164,11 @@ namespace ILCompiler.DependencyAnalysis
             _data.Append(bytes);
         }
 
+        public void EmitBytes(byte[] bytes, int offset, int length)
+        {
+            _data.Append(bytes, offset, length);
+        }
+
         public void EmitZeroPointer()
         {
             _data.ZeroExtend(_target.PointerSize);

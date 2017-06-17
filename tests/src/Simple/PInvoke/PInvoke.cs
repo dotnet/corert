@@ -181,6 +181,12 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool InlineArrayTest(ref InlineArrayStruct ias, ref InlineUnicodeStruct ius);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true)]
+        public unsafe delegate void SetLastErrorFuncDelegate(int errorCode);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        internal static extern IntPtr GetFunctionPointer();
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -460,6 +466,12 @@ namespace PInvokeTests
 
             Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
             ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
+
+            IntPtr procAddress = GetFunctionPointer();
+            SetLastErrorFuncDelegate funcDelegate =
+                Marshal.GetDelegateForFunctionPointer<SetLastErrorFuncDelegate>(procAddress);
+            funcDelegate(0x204);
+            ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
         }
 
         static int Sum(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)

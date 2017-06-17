@@ -47,6 +47,22 @@ namespace Internal.TypeSystem
             return true;
         }
 
+        public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
+        {
+            foreach(var arg in instantiation)
+            {
+                if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsVoid)
+                    return false;
+
+                if (arg.HasInstantiation)
+                {
+                    if (!CheckValidInstantiationArguments(arg.Instantiation))
+                        return false;
+                }
+            }
+            return true;
+        }
+
         public static bool CheckConstraints(this TypeDesc type)
         {
             TypeDesc uninstantiatedType = type.GetTypeDefinition();

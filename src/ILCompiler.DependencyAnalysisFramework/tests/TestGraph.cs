@@ -163,6 +163,9 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
             get
             {
                 List<string> liveNodes = new List<string>();
+
+                _analyzer.ComputeMarkedNodes();
+
                 foreach (var node in _analyzer.MarkedNodeList)
                 {
                     liveNodes.Add(((TestNode)node).Data);

@@ -118,6 +118,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />

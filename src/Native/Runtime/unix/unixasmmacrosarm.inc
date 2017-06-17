@@ -148,3 +148,16 @@ C_FUNC(\Name):
 0:
 #endif
 .endm
+
+.macro EXPORT_POINTER_TO_ADDRESS Name
+
+1:
+
+        .data
+        .align      4
+C_FUNC(\Name):
+        .word       1b
+        .global     C_FUNC(\Name)
+        .text
+
+.endm

@@ -259,6 +259,27 @@ namespace TypeSystemTests
                 instantiatedType = _multipleConstraintsType.MakeInstantiatedType(_classArgWithDefaultCtorType, _context.GetWellKnownType(WellKnownType.Object));
                 Assert.True(instantiatedType.CheckConstraints());
             }
+
+            // InvalidInstantiationArgs
+            {
+                var pointer = _context.GetWellKnownType(WellKnownType.Int16).MakePointerType();
+                var byref = _context.GetWellKnownType(WellKnownType.Int16).MakeByRefType();
+
+                Assert.False(_iGenType.Instantiation.CheckValidInstantiationArguments());
+
+                instantiatedType = _iGenType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Void));
+                Assert.False(instantiatedType.Instantiation.CheckValidInstantiationArguments());
+
+                instantiatedType = _iGenType.MakeInstantiatedType(pointer);
+                Assert.False(instantiatedType.Instantiation.CheckValidInstantiationArguments());
+
+                instantiatedType = _iGenType.MakeInstantiatedType(byref);
+                Assert.False(instantiatedType.Instantiation.CheckValidInstantiationArguments());
+
+                instantiatedType = _iGenType.MakeInstantiatedType(byref);
+                instantiatedType = _iGenType.MakeInstantiatedType(instantiatedType);
+                Assert.False(instantiatedType.Instantiation.CheckValidInstantiationArguments());
+            }
         }
     }
 }

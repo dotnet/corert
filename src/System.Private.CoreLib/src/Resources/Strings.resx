@@ -393,11 +393,11 @@
   <data name="Arg_ParamName_Name" xml:space="preserve">
     <value>Parameter name: {0}</value>
   </data>
-  <data name="Arg_PathIllegal" xml:space="preserve">
-    <value>The path is not of a legal form.</value>
+  <data name="Arg_PathEmpty" xml:space="preserve">
+    <value>The path is empty.</value>
   </data>
-  <data name="Arg_PathIllegalUNC" xml:space="preserve">
-    <value>The UNC path should be of the form \\\\server\\share.</value>
+  <data name="Arg_PathIllegalUNC_Path" xml:space="preserve">
+    <value>The UNC path '{0}' should be of the form \\\\server\\share.</value>
   </data>
   <data name="Arg_RankException" xml:space="preserve">
     <value>Attempted to operate on an array with the incorrect number of dimensions.</value>
@@ -714,8 +714,8 @@
   <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
-  <data name="Argument_PathFormatNotSupported" xml:space="preserve">
-    <value>The given path's format is not supported.</value>
+  <data name="Argument_PathFormatNotSupported_Path" xml:space="preserve">
+    <value>The format of the path '{0}' is not supported.</value>
   </data>
   <data name="Argument_RecursiveFallback" xml:space="preserve">
     <value>Recursive fallback not allowed for character \\u{0:X4}.</value>
@@ -1201,7 +1201,10 @@
     <value>Could not find a part of the path '{0}'.</value>
   </data>
   <data name="IO_PathTooLong" xml:space="preserve">
-    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
   <data name="IO_SharingViolation_File" xml:space="preserve">
     <value>The process cannot access the file '{0}' because it is being used by another process.</value>
@@ -1970,7 +1973,7 @@
     <value>Cannot access a closed file.</value>
   </data>
   <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern cannot contain \"..\" to move up directories and can be contained only internally in file/directory names, as in \"a..b\".</value>
+    <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
   </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
