@@ -2452,7 +2452,4 @@
   <data name="Arg_OpenType" xml:space="preserve">
     <value>Cannot create an instance of {0} as it is an open type.</value>
   </data>
-  <data name="PlatformNotSupported_GetCommandLineArgs" xml:space="preserve">
-    <value>Environment.GetCommandLineArgs() is not supported on this platform.</value>
-  </data>
 </root>

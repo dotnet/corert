@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
 
 namespace Internal.Runtime.Augments
 {
@@ -15,9 +16,6 @@ namespace Internal.Runtime.Augments
             throw new PlatformNotSupportedException();
         }
 
-        public static string[] GetCommandLineArgs()
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_GetCommandLineArgs);
-        }
+        public static string[] GetCommandLineArgs() => CommandLine.InternalCreateCommandLine(includeArg0: true);
     }
 }

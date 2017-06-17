@@ -18,19 +18,19 @@
 
 #ifndef DACCESS_COMPILE
 
-struct DebuggerProtectedBufferList
+struct DebuggerProtectedBufferListNode
 {
     UInt64 address;
     UInt16 size;
     UInt32 identifier;
-    struct DebuggerProtectedBufferList* next;
+    struct DebuggerProtectedBufferListNode* next;
 };
 
-struct DebuggerOwnedHandleList
+struct DebuggerOwnedHandleListNode
 {
     void* handle;
     UInt32 identifier;
-    struct DebuggerOwnedHandleList* next;
+    struct DebuggerOwnedHandleListNode* next;
 };
 
 class DebuggerHook
@@ -38,11 +38,12 @@ class DebuggerHook
 public:
     static void OnBeforeGcCollection();
     static UInt32 RecordDebuggeeInitiatedHandle(void* handle);
-    static DebuggerProtectedBufferList* s_debuggerProtectedBuffers;
-    static DebuggerOwnedHandleList* s_debuggerOwnedHandleList;
+    static DebuggerProtectedBufferListNode* s_debuggerProtectedBuffers;
+    static DebuggerOwnedHandleListNode* s_debuggerOwnedHandles;
 private:
     static void EnsureConservativeReporting(GcProtectionRequest* request);
     static void RemoveConservativeReporting(GcProtectionRequest* request);
+    static void EnsureHandle(GcProtectionRequest* request);
     static void RemoveHandle(GcProtectionRequest* request);
     static UInt32 s_debuggeeInitiatedHandleIdentifier;
 };
