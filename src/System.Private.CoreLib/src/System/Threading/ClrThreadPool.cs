@@ -46,7 +46,7 @@ namespace System.Threading
         }
 
         private CacheLineSeparated _separated;
-        private long _currentSampleStartTime;
+        private ulong _currentSampleStartTime;
         private int _completionCount = 0;
         private int _threadAdjustmentInterval;
 
@@ -190,9 +190,9 @@ namespace System.Threading
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = Volatile.Read(ref _completionCount);
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
-            long startTime = _currentSampleStartTime;
-            long endTime = Environment.TickCount64; // TODO: PAL High Performance Counter
-            long freq = 1000;
+            ulong startTime = _currentSampleStartTime;
+            ulong endTime = HighPerformanceCounter.TickCount;
+            ulong freq = HighPerformanceCounter.Frequency;
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 
