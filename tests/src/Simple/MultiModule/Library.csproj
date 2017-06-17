@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build;IlcCompile" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build;IlcCompile" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <IlcMultiModule>true</IlcMultiModule>
