@@ -21,8 +21,10 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <CoreFxPackageVersion>4.4.0-preview1-25218-01</CoreFxPackageVersion>
+            <CoreFxPackageVersion>4.5.0-preview1-25417-02</CoreFxPackageVersion>
+            <CoreFxNuPkgRid Condition="'$(OSGroup)'=='Windows_NT'">win-x64</CoreFxNuPkgRid>
             <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
+            <CoreFxNuPkgRid Condition="'$(OSGroup)'=='Linux'">linux-x64</CoreFxNuPkgRid> 
             <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
             <JitPackageVersion>2.1.0-preview1-25412-03</JitPackageVersion>
