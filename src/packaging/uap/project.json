@@ -2,7 +2,7 @@
   "frameworks": {
     "uap10.1": {
       "dependencies": {
-        "runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP": "4.4.0-preview1-25218-01"
+        "runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP": "4.5.0-preview1-25417-02"
       }
     }
   },

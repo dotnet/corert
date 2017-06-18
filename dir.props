@@ -105,7 +105,7 @@
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
     <AotPackageReferencePath Condition="'$(AotPackageReferencePath)'==''">$(IntermediateOutputRootPath)\CoreRTRef</AotPackageReferencePath>
-    <EcmaMetadataDllPath Condition="'$(EcmaMetadataDllPath)'==''">$(PackagesDir)/runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP/4.4.0-preview1-25218-01/runtimes/win10-x64-aot/lib/uap10.1</EcmaMetadataDllPath>
+    <EcmaMetadataDllPath Condition="'$(EcmaMetadataDllPath)'==''">$(PackagesDir)/runtime.win10-x64-aot.Microsoft.Private.CoreFx.UAP/4.5.0-preview1-25417-02/runtimes/win10-x64-aot/lib/uap10.1</EcmaMetadataDllPath>
 
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
 
