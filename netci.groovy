@@ -9,7 +9,7 @@ def project = GithubProject
 def branch = GithubBranchName
 
 def imageVersionMap = ['Windows_NT':'latest-or-auto',
-                       'OSX':'latest-or-auto',
+                       'OSX10.12':'latest-or-auto',
                        'Ubuntu':'20170118']
  
 // Innerloop build OS's
