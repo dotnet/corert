@@ -628,6 +628,18 @@ DLL_EXPORT void* __stdcall GetFunctionPointer()
 {
     return (void*)&SetLastErrorFunc;
 }
+
+typedef struct {
+    int c;
+    char inlineString[260];
+} inlineString;
+
+DLL_EXPORT  bool __stdcall InlineStringTest(inlineString* p)
+{
+    CopyAnsiString(p->inlineString, "Hello World!");
+    return true;
+}
+
 #if (_MSC_VER >= 1400)         // Check MSC version
 #pragma warning(pop)           // Renable previous depreciations
 #endif
