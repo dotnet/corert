@@ -118,13 +118,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
         {
+            var context = new GenericLookupResultContext(dictionary.OwningEntity, dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
             foreach (GenericLookupResult lookupResult in Entries)
             {
 #if DEBUG
                 int offsetBefore = builder.CountBytes;
 #endif
 
-                lookupResult.EmitDictionaryEntry(ref builder, factory, dictionary.TypeInstantiation, dictionary.MethodInstantiation, dictionary);
+                lookupResult.EmitDictionaryEntry(ref builder, factory, context);
 
 #if DEBUG
                 Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
