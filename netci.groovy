@@ -13,7 +13,7 @@ def imageVersionMap = ['Windows_NT':'latest-or-auto',
                        'Ubuntu':'20170118']
  
 // Innerloop build OS's
-def osList = ['Ubuntu', 'OSX', 'Windows_NT']
+def osList = ['Ubuntu', 'OSX10.12', 'Windows_NT']
 
 // Generate the builds for debug and release, commit and PRJob
 [true, false].each { isPR -> // Defines a closure over true and false, value assigned to isPR
