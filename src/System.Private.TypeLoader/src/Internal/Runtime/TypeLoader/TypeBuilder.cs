@@ -786,9 +786,6 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(currentTemplateType != null && !currentTemplateType.RuntimeTypeHandle.IsNull());
 
                     IntPtr* pTemplateVtable = (IntPtr*)((byte*)(currentTemplateType.RuntimeTypeHandle.ToEETypePtr()) + sizeof(EEType));
-                    Debug.Assert(
-                        (pTemplateVtable[currentVtableIndex] == IntPtr.Zero && currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Any)) ||
-                        (pTemplateVtable[currentVtableIndex] != IntPtr.Zero && !currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Any)));
                     dictionarySlotInVtable = pTemplateVtable[currentVtableIndex];
                 }
             }
