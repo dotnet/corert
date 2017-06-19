@@ -26,13 +26,13 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     {
         // The debugger has some requests with respect to GC protection.
         // Here we are allocating a buffer to store them
-        GcProtectionRequest* requests = new (nothrow) GcProtectionRequest[g_numGcProtectionRequests];
+        DebuggerGcProtectionRequest* requests = new (nothrow) DebuggerGcProtectionRequest[g_numGcProtectionRequests];
 
         // Notifying the debugger the buffer is ready to use
-        GcProtectionMessage command;
-        command.commandCode = DebuggerGcProtectionMessage::RequestBufferReady;
-        command.bufferAddress = (uint64_t)requests;
-        DebugEventSource::SendCustomEvent((void*)&command, sizeof(command));
+        DebuggerGcProtectionResponse response;
+        response.kind = DebuggerGcProtectionResponseKind::RequestBufferReady;
+        response.bufferAddress = (uint64_t)requests;
+        DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
 
         // ... debugger magic happen here ...
 
@@ -51,14 +51,14 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         // TODO, FuncEval, consider an optimization to eliminate this message when they is nothing required from the
         // debugger side to fill
 
-        command.commandCode = DebuggerGcProtectionMessage::ConservativeReportingBufferReady;
-        DebugEventSource::SendCustomEvent((void*)&command, sizeof(command));
+        response.kind = DebuggerGcProtectionResponseKind::ConservativeReportingBufferReady;
+        DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
 
         // ... debugger magic happen here again ...
 
         for (uint32_t i = 0; i < g_numGcProtectionRequests; i++)
         {
-            GcProtectionRequest* request = requests + i;
+            DebuggerGcProtectionRequest* request = requests + i;
             switch(request->kind)
             {
             case DebuggerGcProtectionRequestKind::EnsureConservativeReporting: 
@@ -104,7 +104,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     return head->identifier;
 }
 
-/* static */ void DebuggerHook::EnsureConservativeReporting(GcProtectionRequest* request)
+/* static */ void DebuggerHook::EnsureConservativeReporting(DebuggerGcProtectionRequest* request)
 {
     DebuggerProtectedBufferListNode* tail = DebuggerHook::s_debuggerProtectedBuffers;
     s_debuggerProtectedBuffers = new (std::nothrow) DebuggerProtectedBufferListNode();
@@ -123,7 +123,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     }
 }
 
-/* static */ void DebuggerHook::RemoveConservativeReporting(GcProtectionRequest* request)
+/* static */ void DebuggerHook::RemoveConservativeReporting(DebuggerGcProtectionRequest* request)
 {
     DebuggerProtectedBufferListNode* prev = nullptr;
     DebuggerProtectedBufferListNode* curr = DebuggerHook::s_debuggerProtectedBuffers;
@@ -158,7 +158,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     }
 }
 
-/* static */ void DebuggerHook::EnsureHandle(GcProtectionRequest* request)
+/* static */ void DebuggerHook::EnsureHandle(DebuggerGcProtectionRequest* request)
 {
     DebuggerOwnedHandleListNode* tail = DebuggerHook::s_debuggerOwnedHandles;
     s_debuggerOwnedHandles = new (std::nothrow) DebuggerOwnedHandleListNode();
@@ -178,7 +178,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     }
 }
 
-/* static */ void DebuggerHook::RemoveHandle(GcProtectionRequest* request)
+/* static */ void DebuggerHook::RemoveHandle(DebuggerGcProtectionRequest* request)
 {
     DebuggerOwnedHandleListNode* prev = nullptr;
     DebuggerOwnedHandleListNode* curr = DebuggerHook::s_debuggerOwnedHandles;
