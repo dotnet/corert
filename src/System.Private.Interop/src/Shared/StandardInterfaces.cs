@@ -545,21 +545,22 @@ namespace System.Runtime.InteropServices
                     HSTRING unsafe_name,
                     IntPtr __IntPtr__unsafe_customProperty)
         {
-
             void** unsafe_customProperty = (void**)__IntPtr__unsafe_customProperty;
+            // Initialize [out] parameters
+            *unsafe_customProperty = default(void*);
 
             object target = ComCallableObject.FromThisPointer(pComThis).TargetObject;
             string propertyName = McgMarshal.HStringToString(unsafe_name);
             try
             {
                 global::Windows.UI.Xaml.Data.ICustomProperty property = ManagedGetCustomProperty(target, propertyName);
-                *unsafe_customProperty = (void*)McgComHelpers.ManagedObjectToComInterface(
-                    property,
-                    typeof(global::Windows.UI.Xaml.Data.ICustomProperty).TypeHandle);
+                    *unsafe_customProperty = (void*)McgComHelpers.ManagedObjectToComInterface(
+                        property,
+                        typeof(global::Windows.UI.Xaml.Data.ICustomProperty).TypeHandle);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return McgMarshal.GetHRForExceptionWinRT(ex);
+                // Don't fail if property can't be found
             }
             return Interop.COM.S_OK;
         }
@@ -608,9 +609,10 @@ namespace System.Runtime.InteropServices
                     TypeName unsafe_type,
                     IntPtr __IntPtr__unsafe_customProperty)
         {
-            //__com_Windows_UI_Xaml_Data__ICustomProperty** unsafe_customProperty = (__com_Windows_UI_Xaml_Data__ICustomProperty**)__IntPtr__unsafe_customProperty;
             void** unsafe_customProperty = (void**)__IntPtr__unsafe_customProperty;
-
+            
+            // Initialize [out] parameters
+            *unsafe_customProperty = default(void*);
             try
             {
                 object target = ComCallableObject.FromThisPointer(pComThis).TargetObject;
@@ -622,9 +624,9 @@ namespace System.Runtime.InteropServices
                     property,
                     typeof(global::Windows.UI.Xaml.Data.ICustomProperty).TypeHandle);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return McgMarshal.GetHRForExceptionWinRT(ex);
+                // Don't fail if property can't be found - just return S_OK and NULL property
             }
 
             return Interop.COM.S_OK;
@@ -712,7 +714,6 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-
         [NativeCallable]
         static int GetStringRepresentation__STUB(
                     System.IntPtr pComThis,
@@ -768,7 +769,7 @@ namespace System.Runtime.InteropServices
         {
 
             TypeName* unsafe_value = (TypeName*)__IntPtr__unsafe_value;
-
+            *unsafe_value = default(TypeName);
             int kind;
             try
             {
@@ -784,9 +785,9 @@ namespace System.Runtime.InteropServices
 
                 unsafe_value->Kind = (TypeKind)kind;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return McgMarshal.GetHRForExceptionWinRT(ex);
+                // Don't fail---Align with desktop behavior
             }
             return Interop.COM.S_OK;
         }
