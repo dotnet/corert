@@ -102,6 +102,7 @@ namespace System.Threading
                     }
                     currentCounts = oldCounts;
                 }
+
                 // It's possible that we decided we had thread requests just before a request came in, 
                 // but reduced the worker count *after* the request came in.  In this case, we might
                 // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
