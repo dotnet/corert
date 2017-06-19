@@ -4,12 +4,6 @@
 
 #pragma once
 
-enum DebuggerGcProtectionMessage : uint32_t
-{
-    RequestBufferReady               = 2,
-    ConservativeReportingBufferReady = 3,
-};
-
 enum DebuggerGcProtectionRequestKind : uint16_t
 {
     EnsureConservativeReporting = 1,
@@ -18,17 +12,10 @@ enum DebuggerGcProtectionRequestKind : uint16_t
     RemoveHandle = 4
 };
 
-struct GcProtectionMessage
-{
-    DebuggerGcProtectionMessage commandCode;
-    uint32_t unused; /* To make the data structure 64 bit aligned */
-    uint64_t bufferAddress;
-};
-
 /**
  * This structure represents a request from the debugger to perform a GC protection related work.
  */
-struct GcProtectionRequest
+struct DebuggerGcProtectionRequest
 {
     DebuggerGcProtectionRequestKind kind;
     union
@@ -39,3 +26,17 @@ struct GcProtectionRequest
     uint32_t identifier;
     uint64_t address;
 };
+
+enum DebuggerGcProtectionResponseKind : uint32_t
+{
+    RequestBufferReady               = 2,
+    ConservativeReportingBufferReady = 3,
+};
+
+struct DebuggerGcProtectionResponse
+{
+    DebuggerGcProtectionResponseKind kind;
+    uint32_t unused; /* To make the data structure 64 bit aligned */
+    uint64_t bufferAddress;
+};
+

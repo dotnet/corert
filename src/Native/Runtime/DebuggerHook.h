@@ -41,10 +41,10 @@ public:
     static DebuggerProtectedBufferListNode* s_debuggerProtectedBuffers;
     static DebuggerOwnedHandleListNode* s_debuggerOwnedHandles;
 private:
-    static void EnsureConservativeReporting(GcProtectionRequest* request);
-    static void RemoveConservativeReporting(GcProtectionRequest* request);
-    static void EnsureHandle(GcProtectionRequest* request);
-    static void RemoveHandle(GcProtectionRequest* request);
+    static void EnsureConservativeReporting(DebuggerGcProtectionRequest* request);
+    static void RemoveConservativeReporting(DebuggerGcProtectionRequest* request);
+    static void EnsureHandle(DebuggerGcProtectionRequest* request);
+    static void RemoveHandle(DebuggerGcProtectionRequest* request);
     static UInt32 s_debuggeeInitiatedHandleIdentifier;
 };
 
