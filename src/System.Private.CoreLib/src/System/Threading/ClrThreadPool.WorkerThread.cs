@@ -37,7 +37,7 @@ namespace System.Threading
                             if (ThreadPoolWorkQueue.Dispatch())
                             {
                                 // If the queue runs out of work for us, we need to update the number of working workers to reflect that we are done working for now
-                                MaybeRemoveWorkingWorker();
+                                RemoveWorkingWorker();
                             }
 
                             // Reset thread-local state that we control.
@@ -52,7 +52,7 @@ namespace System.Threading
                         else
                         {
                             // If we woke up but couldn't find a request, we need to update the number of working workers to reflect that we are done working for now
-                            MaybeRemoveWorkingWorker();
+                            RemoveWorkingWorker();
                         }
                     }
 
@@ -85,9 +85,9 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Reduce the number of working workers by one, but maybe add back a worker if a thread request comes in while we are marking this thread as not working.
+            /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.
             /// </summary>
-            private static void MaybeRemoveWorkingWorker()
+            private static void RemoveWorkingWorker()
             {
                 ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                 while (true)
