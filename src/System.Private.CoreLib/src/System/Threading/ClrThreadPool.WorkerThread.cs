@@ -31,9 +31,9 @@ namespace System.Threading
                     // TODO: Event:  Worker thread wait event
                     while (s_semaphore.Wait(TimeoutMs))
                     {
-                        Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
                         if (TakeActiveRequest())
                         {
+                            Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
                             if (ThreadPoolWorkQueue.Dispatch())
                             {
                                 // If we ran out of work, we need to update s_separated.counts that we are done working for now
@@ -70,6 +70,31 @@ namespace System.Threading
 
                             CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
                             CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+                        }
+                        else
+                        {
+                            // If we woke up but couldn't find a request, we need to update s_separated.counts that we are done working for now
+                            ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                            while (true)
+                            {
+                                ThreadCounts newCounts = currentCounts;
+                                newCounts.numProcessingWork--;
+                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, currentCounts);
+
+                                if (oldCounts == currentCounts)
+                                {
+                                    break;
+                                }
+                                currentCounts = oldCounts;
+                            }
+                            // It's possible that we decided we had thread requests just before a request came in, 
+                            // but reduced the worker count *after* the request came in.  In this case, we might
+                            // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
+                            // if there is work to do.
+                            if (ThreadPoolInstance._numRequestedWorkers > 0)
+                            {
+                                MaybeAddWorkingWorker();
+                            }
                         }
                     }
 
