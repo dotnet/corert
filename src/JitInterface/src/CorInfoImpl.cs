@@ -849,6 +849,10 @@ namespace Internal.JitInterface
                 }
 
                 impl = implType.ResolveInterfaceMethodTarget(decl);
+                if (impl != null)
+                {
+                    impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(impl);
+                }
             }
             else
             {
