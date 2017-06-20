@@ -172,6 +172,13 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
     {
         int handleType = (int)request->type;
         void* handle = RedhawkGCInterface::CreateTypedHandle((void*)request->address, handleType);
+
+        DebuggerGcProtectionHandleReadyResponse response;
+        response.kind = DebuggerGcProtectionResponseKind::HandleReady;
+        response.payload = request->payload;
+        response.handle = (uint64_t)handle;
+        DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
+
         s_debuggerOwnedHandles->handle = handle;
         s_debuggerOwnedHandles->identifier = request->identifier;
         s_debuggerOwnedHandles->next = tail;
