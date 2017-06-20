@@ -6,7 +6,7 @@ using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-    internal static partial class ClrThreadPool
+    internal partial class ClrThreadPool
     {
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.
