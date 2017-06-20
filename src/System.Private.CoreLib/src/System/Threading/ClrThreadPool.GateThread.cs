@@ -12,7 +12,7 @@ namespace System.Threading
         private static class GateThread
         {
             private const int GateThreadDelayMs = 500;
-            private const int DequeueDelayThreshold = GateThreadDelayMs * 2;
+            private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             
             private static bool s_disableStarvationDetection = true; // TODO: Config
             private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
@@ -21,13 +21,11 @@ namespace System.Threading
 
             private static bool s_created = false;
             private static LowLevelLock s_createdLock = new LowLevelLock();
+            private static CpuUtilizationReader s_cpu = new CpuUtilizationReader();
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                RuntimeThread.Sleep(GateThreadDelayMs); // delay getting initial CPU reading so we don't accidentally detect starvation from the Thread Pool doing its work.
-                CpuUtilizationReader cpu = new CpuUtilizationReader();
-
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
@@ -41,8 +39,9 @@ namespace System.Threading
                     {
                         continue;
                     }
+                    s_requested = false;
 
-                    ThreadPoolInstance._cpuUtilization = cpu.CurrentUtilization;
+                    ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
                     if (!s_disableStarvationDetection)
                     {
@@ -91,7 +90,7 @@ namespace System.Threading
                 {
                     ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
                     int numThreads = counts.numThreadsGoal;
-                    minimumDelay = numThreads * DequeueDelayThreshold;
+                    minimumDelay = numThreads * DequeueDelayThresholdMs;
                 }
 
                 return delay > minimumDelay;
@@ -99,6 +98,16 @@ namespace System.Threading
 
             private static void CreateGateThread()
             {
+                RuntimeThread gateThread = RuntimeThread.Create(GateThreadStart);
+                gateThread.IsBackground = true;
+                gateThread.Start();
+                s_created = true;
+            }
+
+            // This is called by a worker thread
+            internal static void EnsureRunning()
+            {
+                s_requested = true;
                 if (!s_created)
                 {
                     try
@@ -106,8 +115,7 @@ namespace System.Threading
                         s_createdLock.Acquire();
                         if (!s_created)
                         {
-                            RuntimeThread.Create(GateThreadStart);
-                            s_created = true;
+                            CreateGateThread();
                         }
                     }
                     finally
@@ -115,13 +123,6 @@ namespace System.Threading
                         s_createdLock.Release();
                     }
                 }
-            }
-
-            // This is called by a worker thread
-            internal static void EnsureRunning()
-            {
-                s_requested = true;
-                CreateGateThread();
             }
         }
     }
