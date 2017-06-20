@@ -174,23 +174,24 @@ namespace System.Threading
             // TODO: Check perf. Might need to make this thread-local.
             Interlocked.Increment(ref _completionCount);
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
-
-            bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
-            bool acquiredLock = _hillClimbingThreadAdjustmentLock.TryAcquire();
-
-            try
+            
+            if (ShouldAdjustMaxWorkersActive())
             {
-                if (shouldAdjustWorkers && acquiredLock)
+                bool acquiredLock = _hillClimbingThreadAdjustmentLock.TryAcquire();
+                try
                 {
-                    AdjustMaxWorkersActive();
+                    if (acquiredLock)
+                    {
+                        AdjustMaxWorkersActive();
+                    }
                 }
-            }
-            finally
-            {
-                if (acquiredLock)
+                finally
                 {
-                    _hillClimbingThreadAdjustmentLock.Release();
-                }
+                    if (acquiredLock)
+                    {
+                        _hillClimbingThreadAdjustmentLock.Release();
+                    }
+                } 
             }
 
             return !WorkerThread.ShouldStopProcessingWorkNow();
