@@ -175,28 +175,25 @@ namespace System.Threading
             Interlocked.Increment(ref _completionCount);
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
 
+            bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
             bool acquiredLock = _hillClimbingThreadAdjustmentLock.TryAcquire();
-            try
+
+            if (shouldAdjustWorkers && acquiredLock)
             {
-                bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive() && acquiredLock;
-                if (shouldAdjustWorkers)
-                {
-                    AdjustMaxWorkersActive();
-                }
-                return !WorkerThread.ShouldStopProcessingWorkNow();
+                AdjustMaxWorkersActive();
             }
-            finally
+
+            if (acquiredLock)
             {
-                if(acquiredLock)
-                {
-                    _hillClimbingThreadAdjustmentLock.Release();
-                }
+                _hillClimbingThreadAdjustmentLock.Release(); 
             }
+
+            return !WorkerThread.ShouldStopProcessingWorkNow();
         }
 
         //
         // This method must only be called if ShouldAdjustMaxWorkersActive has returned true, *and*
-        // s_hillClimbingThreadAdjustmentLock is held.
+        // _hillClimbingThreadAdjustmentLock is held.
         //
         private void AdjustMaxWorkersActive()
         {
