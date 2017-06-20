@@ -219,11 +219,11 @@ namespace System.Threading
 
             private static bool TryCreateWorkerThread()
             {
-                RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
-                workerThread.IsThreadPoolThread = true;
-                workerThread.IsBackground = true;
                 try
                 {
+                    RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
+                    workerThread.IsThreadPoolThread = true;
+                    workerThread.IsBackground = true;
                     workerThread.Start();
                 }
                 catch (ThreadStartException)
