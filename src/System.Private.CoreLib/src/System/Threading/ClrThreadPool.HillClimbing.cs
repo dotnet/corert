@@ -186,7 +186,8 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-                // TODO: Event: Worker Thread Adjustment Sample
+
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
                 _samples[sampleIndex] = throughput;
@@ -355,8 +356,9 @@ namespace System.Threading
                 //
                 // Record these numbers for posterity
                 //
-                
-                // TODO: Event: Worker Thread Adjustment stats
+
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                    throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
 
 
                 //
@@ -412,6 +414,8 @@ namespace System.Threading
                 entry.lastHistoryMean = throughput;
 
                 _logSize++;
+
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, stateOrTransition);
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)
