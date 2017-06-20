@@ -20,7 +20,7 @@ namespace System.Threading
             private static volatile bool s_requested;
 
             private static bool s_created;
-            private static LowLevelLock s_createdLock;
+            private static LowLevelLock s_createdLock = new LowLevelLock();
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
