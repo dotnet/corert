@@ -25,7 +25,7 @@ struct DebuggerGcProtectionRequest
     };
     uint32_t identifier;
     uint64_t address;
-    uint64_t payload; /* TOD, FuncEval, what would be a better name for this? */
+    uint64_t payload; /* TODO, FuncEval, what would be a better name for this? */
 };
 
 enum DebuggerGcProtectionResponseKind : uint32_t
