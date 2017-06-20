@@ -148,7 +148,7 @@ namespace System.Threading
 
                 while(toCreate > 0)
                 {
-                    if(CreateWorkerThread())
+                    if(TryCreateWorkerThread())
                     {
                         toCreate--;
                     }
@@ -217,7 +217,7 @@ namespace System.Threading
                 return false;
             }
 
-            private static bool CreateWorkerThread()
+            private static bool TryCreateWorkerThread()
             {
                 RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
                 workerThread.IsThreadPoolThread = true;
