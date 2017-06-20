@@ -15,11 +15,11 @@ namespace System.Threading
             private const int DequeueDelayThreshold = GateThreadDelayMs * 2;
             
             private static bool s_disableStarvationDetection = true; // TODO: Config
-            private static bool s_debuggerBreakOnWorkStarvation; // TODO: Config
+            private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
             
-            private static volatile bool s_requested;
+            private static volatile bool s_requested = false;
 
-            private static bool s_created;
+            private static bool s_created = false;
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
