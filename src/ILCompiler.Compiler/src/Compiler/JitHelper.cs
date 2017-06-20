@@ -125,6 +125,12 @@ namespace ILCompiler
                 case ReadyToRunHelper.Dbl2ULng:
                     mangledName = "RhpDbl2ULng";
                     break;
+                case ReadyToRunHelper.Dbl2Int:
+                    mangledName = "RhpDbl2Int";
+                    break;
+                case ReadyToRunHelper.Dbl2UInt:
+                    mangledName = "RhpDbl2UInt";
+                    break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
@@ -144,6 +150,58 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.FltRem:
                     mangledName = "RhpFltRem";
+                    break;
+                case ReadyToRunHelper.DblRound:
+                    mangledName = "RhpDblRound";
+                    break;
+                case ReadyToRunHelper.FltRound:
+                    mangledName = "RhpFltRound";
+                    break;
+
+                case ReadyToRunHelper.LMul:
+                    mangledName = "RhpLMul";
+                    break;
+                case ReadyToRunHelper.LMulOfv:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMulOvf");
+                    break;
+                case ReadyToRunHelper.ULMulOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMulOvf");
+                    break;
+
+                case ReadyToRunHelper.Mod:
+                    mangledName = "RhpIMod";
+                    break;
+                case ReadyToRunHelper.UMod:
+                    mangledName = "RhpUMod";
+                    break;
+                case ReadyToRunHelper.ULMod:
+                    mangledName = "RhpULMod";
+                    break;
+                case ReadyToRunHelper.LMod:
+                    mangledName = "RhpLMod";
+                    break;
+
+                case ReadyToRunHelper.Div:
+                    mangledName = "RhpIDiv";
+                    break;
+                case ReadyToRunHelper.UDiv:
+                    mangledName = "RhpUDiv";
+                    break;
+                case ReadyToRunHelper.ULDiv:
+                    mangledName = "RhpULDiv";
+                    break;
+                case ReadyToRunHelper.LDiv:
+                    mangledName = "RhpLDiv";
+                    break;
+
+                case ReadyToRunHelper.LRsz:
+                    mangledName = "RhpLRsz";
+                    break;
+                case ReadyToRunHelper.LRsh:
+                    mangledName = "RhpLRsh";
+                    break;
+                case ReadyToRunHelper.LLsh:
+                    mangledName = "RhpLLsh";
                     break;
 
                 case ReadyToRunHelper.PInvokeBegin:

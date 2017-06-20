@@ -14,8 +14,11 @@
 #include <mach/mach_time.h>
 #endif
 
-const int32_t MillisecondsToNanoseconds = 1000 * 1000;
-const int32_t SecondsToNanoseconds = 1000 * 1000 * 1000;
+const uint64_t MillisecondsPerSecond = 1000;
+const uint64_t NanosecondsPerSecond = 1000 * 1000 * 1000;
+const uint64_t MicrosecondsPerSecond = 1000 * 1000;
+const uint64_t NanosecondsPerMicrosecond = 1000;
+const uint64_t NanosecondsPerMillisecond = 1000 * 1000;
 
 inline void MillisecondsToTimeSpec(uint32_t milliseconds, timespec *t)
 {
@@ -26,9 +29,9 @@ inline void MillisecondsToTimeSpec(uint32_t milliseconds, timespec *t)
         return;
     }
 
-    uint64_t nanoseconds = milliseconds * static_cast<uint64_t>(MillisecondsToNanoseconds);
-    t->tv_sec = static_cast<time_t>(nanoseconds / SecondsToNanoseconds);
-    t->tv_nsec = static_cast<int32_t>(nanoseconds % SecondsToNanoseconds);
+    uint64_t nanoseconds = milliseconds * NanosecondsPerMillisecond;
+    t->tv_sec = static_cast<time_t>(nanoseconds / NanosecondsPerSecond);
+    t->tv_nsec = static_cast<int32_t>(nanoseconds % NanosecondsPerSecond);
 }
 
 inline void AddMillisecondsToTimeSpec(uint32_t milliseconds, timespec *t)
@@ -38,13 +41,18 @@ inline void AddMillisecondsToTimeSpec(uint32_t milliseconds, timespec *t)
         return;
     }
 
-    uint64_t nanoseconds = milliseconds * static_cast<uint64_t>(MillisecondsToNanoseconds) + t->tv_nsec;
-    if (nanoseconds >= SecondsToNanoseconds)
+    uint64_t nanoseconds = milliseconds * NanosecondsPerMillisecond + t->tv_nsec;
+    if (nanoseconds >= NanosecondsPerSecond)
     {
-        t->tv_sec += static_cast<time_t>(nanoseconds / SecondsToNanoseconds);
-        nanoseconds %= SecondsToNanoseconds;
+        t->tv_sec += static_cast<time_t>(nanoseconds / NanosecondsPerSecond);
+        nanoseconds %= NanosecondsPerSecond;
     }
     t->tv_nsec = static_cast<int32_t>(nanoseconds);
+}
+
+inline uint64_t TimeValToNanoseconds(const struct timeval& t)
+{
+    return t.tv_sec * NanosecondsPerSecond + t.tv_usec * NanosecondsPerMicrosecond;
 }
 
 #if HAVE_MACH_ABSOLUTE_TIME

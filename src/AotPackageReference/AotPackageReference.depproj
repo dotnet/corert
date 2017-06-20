@@ -1,10 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
 <!--
   This project is servicing the purpose of restoring some nuget packages which has the implementation assemblies 
-  like System.Collections, System.Resources.ResourceManager…etc. 
+  like System.Collections, System.Runtime.Extensions, etc.
   The restored implementation assemblies will be used as references for compiling some of the System.Private.* 
-  projects like System.Private.Threading. 
+  projects like System.Private.Interop.
 -->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>

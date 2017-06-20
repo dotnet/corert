@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 
 using ILCompiler.DependencyAnalysis;
@@ -176,7 +177,12 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
-        void ICompilation.Compile(string outputFile, ObjectDumper dumper)
+        public bool HasFixedSlotVTable(TypeDesc type)
+        {
+            return NodeFactory.VTable(type).HasFixedSlots;
+        }
+
+        CompilationResults ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
             if (dumper != null)
             {
@@ -191,15 +197,8 @@ namespace ILCompiler
             {
                 dumper.End();
             }
-        }
 
-        void ICompilation.WriteDependencyLog(string fileName)
-        {
-            using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
-            {
-                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph, _nodeFactory);
-                dgmlOutput.Flush();
-            }
+            return new CompilationResults(_dependencyGraph, _nodeFactory);
         }
 
         private class RootingServiceProvider : IRootingServiceProvider
@@ -276,7 +275,61 @@ namespace ILCompiler
     // Interface under which Compilation is exposed externally.
     public interface ICompilation
     {
-        void Compile(string outputFileName, ObjectDumper dumper);
-        void WriteDependencyLog(string outputFileName);
+        CompilationResults Compile(string outputFileName, ObjectDumper dumper);
+    }
+
+    public class CompilationResults
+    {
+        private readonly DependencyAnalyzerBase<NodeFactory> _graph;
+        private readonly NodeFactory _factory;
+
+        protected ImmutableArray<DependencyNodeCore<NodeFactory>> MarkedNodes
+        {
+            get
+            {
+                return _graph.MarkedNodeList;
+            }
+        }
+
+        internal CompilationResults(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+        {
+            _graph = graph;
+            _factory = factory;
+        }
+
+        public void WriteDependencyLog(string fileName)
+        {
+            using (FileStream dgmlOutput = new FileStream(fileName, FileMode.Create))
+            {
+                DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _graph, _factory);
+                dgmlOutput.Flush();
+            }
+        }
+
+        public IEnumerable<MethodDesc> CompiledMethodBodies
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is IMethodBodyNode)
+                        yield return ((IMethodBodyNode)node).Method;
+                }
+            }
+        }
+
+        public IEnumerable<TypeDesc> ConstructedEETypes
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    {
+                        yield return ((IEETypeNode)node).Type;
+                    }
+                }
+            }
+        }
     }
 }

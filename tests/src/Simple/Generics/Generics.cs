@@ -30,6 +30,7 @@ class Program
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestFieldAccess.Run();
+        TestNativeLayoutGeneration.Run();
 
         return 100;
     }
@@ -819,7 +820,8 @@ class Program
                 new DerivedClass2<string>().GVMethod2<string>("string", "string2");
                 new DerivedClass2<string>().GVMethod3<string>("string", "string2");
                 new DerivedClass2<string>().GVMethod4<string>("string", "string2");
-                ((IFace<string>)new BaseClass<string>()).IFaceMethod1("string");
+                Func<IFace<string>> f = () => new BaseClass<string>(); // Hack to prevent devirtualization
+                f().IFaceMethod1("string");
                 ((IFace<string>)new BaseClass<string>()).IFaceGVMethod1<string>("string1", "string2");
 
                 MethodInfo m1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method1");
@@ -1140,6 +1142,21 @@ class Program
             string IMethod1<T>(T t1, T t2);
         }
 
+        interface ICovariant<out T>
+        {
+            string ICovariantGVM<U>();
+        }
+
+        public interface IBar<T>
+        {
+            U IBarGVMethod<U>(Func<T, U> arg);
+        }
+
+        public interface IFace<T>
+        {
+            string IFaceGVMethod1<U>(T t, U u);
+        }
+
         class Base : IFoo<string>, IFoo<int>
         {
             public virtual string GMethod1<T>(T t1, T t2) { return "Base.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
@@ -1185,6 +1202,36 @@ class Program
         {
             string IFoo<int>.IMethod1<T>(T t1, T t2) { return "MyStruct3.IFoo<int>.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
             public string IMethod1<T>(T t1, T t2) { return "MyStruct3.IMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+        }
+
+        public class AnotherBaseClass<T>
+        {
+            public virtual string IFaceMethod1(T t) { return "AnotherBaseClass.IFaceMethod1"; }
+            public virtual string IFaceGVMethod1<U>(T t, U u) { return "AnotherBaseClass.IFaceGVMethod1"; }
+        }
+
+        public class AnotherDerivedClass<T> : AnotherBaseClass<T>, IFace<T>
+        {
+        }
+
+        public class BarImplementor : IBar<int>
+        {
+            public virtual U IBarGVMethod<U>(Func<int, U> arg) { return arg(123); }
+        }
+
+        public class Yahoo<T>
+        {
+            public virtual U YahooGVM<U>(Func<T, U> arg) { return default(U); }
+        }
+
+        public class YahooDerived : Yahoo<int>
+        {
+            public override U YahooGVM<U>(Func<int, U> arg) { return arg(456); }
+        }
+
+        public class Covariant<T> : ICovariant<T>
+        {
+            public string ICovariantGVM<U>() { return String.Format("Covariant<{0}>.ICovariantGVM<{1}>", typeof(T).Name, typeof(U).Name); }
         }
 
         static string s_GMethod1;
@@ -1338,6 +1385,20 @@ class Program
                 s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
                 TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
                 Console.WriteLine("====================");
+            }
+
+            {
+                string res = ((IFace<string>)new AnotherDerivedClass<string>()).IFaceGVMethod1<string>("string1", "string2");
+                WriteLineWithVerification("AnotherBaseClass.IFaceGVMethod1", res);
+
+                res = ((IBar<int>)new BarImplementor()).IBarGVMethod<string>((i) => "BarImplementor:" + i.ToString());
+                WriteLineWithVerification("BarImplementor:123", res);
+
+                Yahoo<int> y = new YahooDerived();
+                WriteLineWithVerification("YahooDerived:456", y.YahooGVM<string>((i) => "YahooDerived:" + i.ToString()));
+
+                ICovariant<object> cov = new Covariant<string>();
+                WriteLineWithVerification("Covariant<String>.ICovariantGVM<Exception>", cov.ICovariantGVM<Exception>());
             }
 
             if (s_NumErrors != 0)
@@ -1962,6 +2023,55 @@ class Program
 
             if (s_NumErrors != 0)
                 throw new Exception(s_NumErrors + " errors!");
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/corert/issues/3659
+    class TestNativeLayoutGeneration
+    {
+#pragma warning disable 649 // s_ref was never assigned
+        private static object s_ref;
+#pragma warning restore 649
+
+        class Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual string DoStuff()
+            {
+                return "Used";
+            }
+        }
+
+        class Unused<T> : Used
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override string DoStuff()
+            {
+                return "Unused " + typeof(T).ToString();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Blagh()
+            {
+            }
+        }
+
+        public static void Run()
+        {
+            new Used().DoStuff();
+
+            try
+            {
+                // Call an instance method on something we never allocated, but overrides a used virtual.
+                // This asserted the compiler when trying to build a template for Unused<__Canon>.
+                ((Unused<object>)s_ref).Blagh();
+            }
+            catch (NullReferenceException)
+            {
+                return;
+            }
+
+            throw new Exception();
         }
     }
 }

@@ -124,9 +124,7 @@
         add         r0, sp, #DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK  ;; First parameter to target function is a pointer to the return block
         blx         r12
 
-ReturnFrom$FunctionName
-
-        rout
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom$FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export an auxiliary variable
@@ -148,14 +146,6 @@ ReturnFrom$FunctionName
         EPILOG_BRANCH_REG r12
 
         NESTED_END Rhp$FunctionName
-
-        AREA        |.rdata|, ALIGN=4, DATA, READONLY
-
-PointerToReturnFrom$FunctionName
-
-        DCD         ReturnFrom$FunctionName
-
-        EXPORT      PointerToReturnFrom$FunctionName
 
         MEND
 

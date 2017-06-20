@@ -616,6 +616,18 @@ DLL_EXPORT bool __stdcall IsNULL(void *a)
     return a == NULL;
 }
 
+DLL_EXPORT void __cdecl SetLastErrorFunc(int errorCode)
+{
+#ifdef Windows_NT
+    SetLastError(errorCode);
+#else
+    errno = errorCode;
+#endif
+}
+DLL_EXPORT void* __stdcall GetFunctionPointer()
+{
+    return (void*)&SetLastErrorFunc;
+}
 #if (_MSC_VER >= 1400)         // Check MSC version
 #pragma warning(pop)           // Renable previous depreciations
 #endif

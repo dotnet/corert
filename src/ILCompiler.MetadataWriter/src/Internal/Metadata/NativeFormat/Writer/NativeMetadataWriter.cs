@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 649
-
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -567,7 +565,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     /// </summary>
     public partial class ConstantStringValue
     {
-        public static explicit operator string (ConstantStringValue value)
+        public static explicit operator string(ConstantStringValue value)
         {
             if (value == null)
                 return null;
@@ -929,7 +927,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 ReturnType.ToString(false),
                 name
                     + (GenericParameterCount == 0 ? "" : "`" + GenericParameterCount.ToString())
-                    + "(" + String.Join(", ", Parameters.Select(p => p.ToString(false))) + 
+                    + "(" + String.Join(", ", Parameters.Select(p => p.ToString(false))) +
                     String.Join(", ", VarArgParameters.Select(p => p.ToString(false))) + ")"}.Where(e => !String.IsNullOrWhiteSpace(e)));
         }
     }
@@ -1120,5 +1118,34 @@ namespace Internal.Metadata.NativeFormat.Writer
             return true;
         }
     }
-}
 
+    // Distinguishes positive and negative zeros for float and double values
+    public static class CustomComparer
+    {
+        public static unsafe bool Equals(float x, float y)
+        {
+            return *(int*)&x == *(int*)&y;
+        }
+
+        public static bool Equals(double x, double y)
+        {
+            return BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y);
+        }
+    }
+
+    public sealed class SingleComparer : IEqualityComparer<float>
+    {
+        public static readonly SingleComparer Instance = new SingleComparer();
+
+        public bool Equals(float x, float y) => CustomComparer.Equals(x, y);
+        public int GetHashCode(float obj) => obj.GetHashCode();
+    }
+
+    public sealed class DoubleComparer : IEqualityComparer<double>
+    {
+        public static readonly DoubleComparer Instance = new DoubleComparer();
+
+        public bool Equals(double x, double y) => CustomComparer.Equals(x, y);
+        public int GetHashCode(double obj) => obj.GetHashCode();
+    }
+}

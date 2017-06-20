@@ -125,7 +125,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         lea  rdi, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
 
-LOCAL_LABEL(ReturnFrom\FunctionName):
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom\FunctionName
 
         // restore fp argument registers
         movdqa          xmm0, [rsp + DISTANCE_FROM_CHILDSP_TO_FP_REGS + 0x00]
@@ -151,15 +151,6 @@ LOCAL_LABEL(ReturnFrom\FunctionName):
         jmp             rax
 
 NESTED_END Rhp\FunctionName, _TEXT
-
-        .text
-
-        .align          8
-
-C_FUNC(PointerToReturnFrom\FunctionName):
-        .quad           LOCAL_LABEL(ReturnFrom\FunctionName)
-
-        .global         C_FUNC(PointerToReturnFrom\FunctionName)
 
 .endm // UNIVERSAL_TRANSITION
 

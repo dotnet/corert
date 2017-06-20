@@ -39,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override ObjectNodeSection Section => _externalReferences.Section;
         public override bool StaticDependenciesAreComputed => true;
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.SupportsReflection;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         /// <summary>
@@ -51,7 +52,10 @@ namespace ILCompiler.DependencyAnalysis
         public static void GetGenericVirtualMethodImplementationDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc callingMethod, TypeDesc implementationType, MethodDesc implementationMethod)
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
-            
+
+            if (!factory.MetadataManager.SupportsReflection)
+                return;
+
             // Compute the open method signatures
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();

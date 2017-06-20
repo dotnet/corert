@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -51,6 +52,25 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+        }
+
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaField This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetFieldDefinition(This.Handle).GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                StringHandle namespaceHandle, nameHandle;
+                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                    continue;
+
+                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
+                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+                }
+            }
         }
 
         public static CustomAttributeHandle GetCustomAttributeHandle(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,

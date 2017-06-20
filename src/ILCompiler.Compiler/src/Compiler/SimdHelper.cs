@@ -13,7 +13,7 @@ namespace ILCompiler
     /// <summary>
     /// Helper type that deals with System.Numerics.Vectors intrinsics.
     /// </summary>
-    internal struct SimdHelper
+    public struct SimdHelper
     {
         private ModuleDesc[] _simdModulesCached;
 

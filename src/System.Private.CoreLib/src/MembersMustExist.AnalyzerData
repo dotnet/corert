@@ -125,7 +125,7 @@ internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocDepende
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocVariable(object value, uint type)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleCompareExchangeVariableType(System.IntPtr handle, uint oldType, uint newType)
 internal static extern void System.Runtime.RuntimeImports.RhHandleFree(System.IntPtr handle)
-internal static extern object System.Runtime.RuntimeImports.RhHandleGet(System.IntPtr handle)
+internal static object System.Runtime.RuntimeImports.RhHandleGet(System.IntPtr handle)
 internal static extern object System.Runtime.RuntimeImports.RhHandleGetDependent(System.IntPtr handle, out object secondary)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleGetVariableType(System.IntPtr handle)
 internal static extern void System.Runtime.RuntimeImports.RhHandleSet(System.IntPtr handle, object value)

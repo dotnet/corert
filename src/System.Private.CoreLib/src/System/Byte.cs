@@ -24,6 +24,7 @@ namespace System
     // 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Byte : IComparable, IFormattable, IComparable<Byte>, IEquatable<Byte>, IConvertible
     {
         private byte m_value; // Do not rename (binary serialization)

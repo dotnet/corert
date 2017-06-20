@@ -926,22 +926,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetThunkSize();
         }
 
-        public static unsafe IntPtr GetRawAddrOfPinnedObject(IntPtr gcHandleAsIntPtr)
-        {
-            GCHandle gcHandle = (GCHandle)gcHandleAsIntPtr;
-            Debug.Assert(gcHandle.IsPinned());
-
-            Object target = gcHandle.Target;
-
-            if (target == null)
-                return IntPtr.Zero;
-
-            fixed (IntPtr* pTargetEEType = &target.m_pEEType)
-            {
-                return (IntPtr)pTargetEEType;
-            }
-        }
-
         [DebuggerStepThrough]
         /* TEMP workaround due to bug 149078 */
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1093,6 +1077,12 @@ namespace Internal.Runtime.Augments
         public static uint RhpGetFuncEvalParameterBufferSize()
         {
             return RuntimeImports.RhpGetFuncEvalParameterBufferSize();
+        }
+
+        [CLSCompliant(false)]
+        public static uint RhpGetFuncEvalMode()
+        {
+            return RuntimeImports.RhpGetFuncEvalMode();
         }
 
         [CLSCompliant(false)]

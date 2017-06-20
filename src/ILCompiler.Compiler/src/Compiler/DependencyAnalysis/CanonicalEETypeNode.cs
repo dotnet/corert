@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => IsTypeNodeShareable(_type);
-        public override bool HasConditionalStaticDependencies => false;
         protected override bool EmitVirtualSlotsAndInterfaces => true;
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
@@ -49,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.RuntimeInterfaces.Length > 0)
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Canonical interface dispatch map");
 
-            dependencyList.Add(factory.VTable(_type), "VTable");
+            dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");

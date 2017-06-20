@@ -70,13 +70,13 @@
         ;; r0: exception code
         ;; r1: ExInfo*
         bl          RhThrowHwEx
-    LABELED_RETURN_ADDRESS RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
         ;; no return
         __debugbreak
 
     NESTED_END RhpThrowHwEx
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -172,13 +172,13 @@ NotHijacked
         ;; r0: exception object
         ;; r1: ExInfo*
         bl          RhThrowEx
-    LABELED_RETURN_ADDRESS RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
         ;; no return
         __debugbreak
 
     NESTED_END RhpThrowEx
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -229,7 +229,8 @@ NotHijacked
         ;; r0 contains the currently active ExInfo
         ;; r1 contains the address of the new ExInfo
         bl          RhRethrow
-    LABELED_RETURN_ADDRESS RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 
         ;; no return
         __debugbreak
@@ -323,7 +324,8 @@ ClearSuccess_Catch
         ;; 
         ;; r0 still contains the exception object
         blx         r1
-    LABELED_RETURN_ADDRESS RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
 
         ;; r0 contains resume IP
 
@@ -354,7 +356,6 @@ DonePopping
         bx          r0
 
     NESTED_END RhpCallCatchFunclet
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -446,7 +447,8 @@ ClearSuccess
         ;; call the funclet
         ;; 
         blx         r0
-    LABELED_RETURN_ADDRESS RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
 
         ldr         r1, [sp, #rsp_offset_r1]        ;; reload REGDISPLAY pointer
 
@@ -495,7 +497,6 @@ SetSuccess
 
         INLINE_GETTHREAD_CONSTANT_POOL
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
@@ -520,13 +521,12 @@ SetSuccess
         ;; 
         ;; r0 still contains the exception object
         blx         r1
-    LABELED_RETURN_ADDRESS RhpCallFilterFunclet2
 
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
         EPILOG_VPOP {d8-d15}
         EPILOG_POP {r4-r11,pc}
 
     NESTED_END RhpCallFilterFunclet
-
 
         end

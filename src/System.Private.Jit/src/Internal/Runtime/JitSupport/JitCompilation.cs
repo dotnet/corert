@@ -97,6 +97,11 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
+        public bool HasFixedSlotVTable(TypeDesc type)
+        {
+            return true;
+        }
+
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);

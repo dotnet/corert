@@ -296,12 +296,9 @@ namespace Internal.Runtime.TypeLoader
                     UInt32 rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeFlag;          // Set the IsDynamicTypeFlag
                     rareFlags &= ~(uint)EETypeRareFlags.NullableTypeViaIATFlag;    // Remove the NullableTypeViaIATFlag flag
-                    rareFlags &= ~(uint)EETypeRareFlags.HasSealedVTableEntriesFlag;// Remove the HasSealedVTableEntriesFlag
-                                                                                   // we'll set IsDynamicTypeWithSealedVTableEntriesFlag instead
 
-                    // Set the IsDynamicTypeWithSealedVTableEntriesFlag if needed
                     if (state.NumSealedVTableEntries > 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag;
+                        rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
 
                     if (requiresDynamicDispatchMap)
                         rareFlags |= (uint)EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag;
@@ -340,6 +337,24 @@ namespace Internal.Runtime.TypeLoader
                         rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
+
+                    if (isNullable)
+                    {
+                        rareFlags |= (uint)EETypeRareFlags.IsNullableFlag;
+                        uint nullableValueOffset = state.NullableValueOffset;
+
+                        // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid). 
+                        // If the real offset is one, then the field isn't set. Otherwise the offset is encoded - 1 to save space.
+                        if (nullableValueOffset == 1)
+                            optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
+                        else
+                            optionalFields.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, checked(nullableValueOffset - 1));
+                    }
+                    else
+                    {
+                        rareFlags &= ~(uint)EETypeRareFlags.IsNullableFlag;
+                        optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
+                    }
 
                     rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
 

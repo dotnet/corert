@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -116,7 +115,8 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
-    <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.ProjectN.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
@@ -188,6 +188,7 @@
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
+    <Compile Include="System\Collections\Generic\CompatibilityEqualityComparers.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
@@ -196,6 +197,7 @@
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
+    <Compile Include="System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
@@ -217,9 +219,9 @@
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="System\IO\File.cs" />
-    <Compile Include="System\IO\File.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\IO\File.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
+    <Compile Include="System\IO\InternalFile.cs" />
+    <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
@@ -314,6 +316,7 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
     <Compile Include="System\SerializableAttribute.cs" />
@@ -644,13 +647,17 @@
     <Compile Include="System\AppContext.Unix.cs" />
     <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
-    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
+    <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
+    <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
@@ -675,11 +682,17 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Exit.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetCpuUtilization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetEnv.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetExecutableAbsolutePath.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.HighPrecisionCounter.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.HighPrecisionCounter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
@@ -834,9 +847,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs">
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
-      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
       <Link>Runtime.Base\src\RhBaseName.cs</Link>

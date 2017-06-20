@@ -186,6 +186,15 @@ namespace System.Threading
             // Release one thread to handle the new request
             s_semaphore.Release(1);
         }
+        
+        internal static void NotifyWorkItemProgress()
+        {
+        }
+
+        internal static bool NotifyWorkItemComplete()
+        {
+            return true;
+        }
 
         /// <summary>
         /// This method is an entry point of a thread pool worker thread.

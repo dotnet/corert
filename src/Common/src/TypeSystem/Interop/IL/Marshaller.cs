@@ -1610,6 +1610,28 @@ namespace Internal.TypeSystem.Interop
 
     class SafeHandleMarshaller : ReferenceMarshaller
     {
+        protected override void AllocNativeToManaged(ILCodeStream codeStream)
+        {
+            var ctor = ManagedType.GetParameterlessConstructor();
+            if (ctor == null)
+            {
+                var emitter = _ilCodeStreams.Emitter;
+
+                MethodSignature ctorSignature = new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                      new TypeDesc[] { Context.GetWellKnownType(WellKnownType.String) });
+                MethodDesc exceptionCtor = InteropTypes.GetMissingMemberException(Context).GetKnownMethod(".ctor", ctorSignature);
+
+                string name = ((MetadataType)ManagedType).Name;
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(String.Format("'{0}' does not have a default constructor. Subclasses of SafeHandle must have a default constructor to support marshaling a Windows HANDLE into managed code.", name)));
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
+                codeStream.Emit(ILOpcode.throw_);
+            }
+            else
+            {
+                base.AllocNativeToManaged(codeStream);
+            }
+        }
+
         protected override void EmitMarshalArgumentManagedToNative()
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;

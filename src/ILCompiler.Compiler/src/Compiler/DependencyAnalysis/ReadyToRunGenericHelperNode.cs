@@ -47,10 +47,8 @@ namespace ILCompiler.DependencyAnalysis
                     return factory.GenericLookup.TypeThreadStaticBaseIndex((TypeDesc)target);
                 case ReadyToRunHelperId.MethodDictionary:
                     return factory.GenericLookup.MethodDictionary((MethodDesc)target);
-                case ReadyToRunHelperId.VirtualCall:
-                    return factory.GenericLookup.VirtualCall((MethodDesc)target);
-                case ReadyToRunHelperId.ResolveVirtualFunction:
-                    return factory.GenericLookup.VirtualMethodAddress((MethodDesc)target);
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                    return factory.GenericLookup.VirtualDispatchCell((MethodDesc)target);
                 case ReadyToRunHelperId.MethodEntry:
                     return factory.GenericLookup.MethodEntry((MethodDesc)target);
                 case ReadyToRunHelperId.DelegateCtor:
@@ -84,6 +82,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             ArrayBuilder<DependencyListEntry> result = new ArrayBuilder<DependencyListEntry>();
 
+            var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
+
             switch (_id)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
@@ -95,13 +95,9 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
                         {
-                            // TODO: Make _dictionaryOwner a RuntimeDetermined type/method and make a substitution with 
-                            // typeInstantiation/methodInstantiation to get a concrete type. Then pass the generic dictionary
-                            // node of the concrete type to the GetTarget call. Also change the signature of GetTarget to 
-                            // take only the factory and dictionary as input.
                             result.Add(
                                 new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, lookupContext),
                                     "Dictionary dependency"));
                         }
                     }
@@ -129,30 +125,11 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
-
-                case ReadyToRunHelperId.ResolveVirtualFunction:
-                    {
-                        MethodDesc instantiatedTarget = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                        if (!factory.VTable(instantiatedTarget.OwningType).HasFixedSlots)
-                        {
-                            result.Add(
-                                new DependencyListEntry(
-                                    factory.VirtualMethodUse(instantiatedTarget),
-                                    "Dictionary dependency"));
-                        }
-
-                        // TODO: https://github.com/dotnet/corert/issues/3224 
-                        if (instantiatedTarget.IsAbstract)
-                        {
-                            result.Add(new DependencyListEntry(factory.ReflectableMethod(instantiatedTarget), "Abstract reflectable method"));
-                        }
-                    }
-                    break;
             }
 
             // All generic lookups depend on the thing they point to
             result.Add(new DependencyListEntry(
-                        _lookupSignature.GetTarget(factory, typeInstantiation, methodInstantiation, null),
+                        _lookupSignature.GetTarget(factory, lookupContext),
                         "Dictionary dependency"));
 
             return result.ToArray();

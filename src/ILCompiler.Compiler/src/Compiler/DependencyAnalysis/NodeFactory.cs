@@ -23,14 +23,16 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
+        private VTableSliceProvider _vtableSliceProvider;
         private bool _markingComplete;
 
         public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy)
+            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy, VTableSliceProvider vtableSliceProvider)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
+            _vtableSliceProvider = vtableSliceProvider;
             NameMangler = nameMangler;
             InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
             CreateNodeCaches();
@@ -401,13 +403,18 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(TypeSystemContext.HasEagerStaticConstructor((MetadataType)method.OwningType));
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
-            
+
+            _namedJumpStubNodes = new NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode>((Tuple<string, ISymbolNode> id) =>
+            {
+                return new NamedJumpStubNode(id.Item1, id.Item2);
+            });
+
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
                 if (CompilationModuleGroup.ShouldProduceFullVTable(type))
                     return new EagerlyBuiltVTableSliceNode(type);
                 else
-                    return new LazilyBuiltVTableSliceNode(type);
+                    return _vtableSliceProvider.GetSlice(type);
             });
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>
@@ -934,6 +941,13 @@ namespace ILCompiler.DependencyAnalysis
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
 
+        private NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode> _namedJumpStubNodes;
+
+        public ISymbolNode NamedJumpStub(string name, ISymbolNode target)
+        {
+            return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
+        }
+        
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

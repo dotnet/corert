@@ -1583,12 +1583,25 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.InterfaceCall;
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[1] { new DependencyListEntry(_signature, "TypeSignature") };
+            yield return new DependencyListEntry(_signature, "TypeSignature");
+
+            MethodDesc method = _method;
+            if (method.IsRuntimeDeterminedExactMethod)
+                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            {
+                yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
+            }
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _method);
+            MethodDesc method = _method;
+            if (method.IsRuntimeDeterminedExactMethod)
+                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, method);
 
             return writer.GetMethodSlotSignature(_signature.WriteVertex(factory), checked((uint)slot));
         }

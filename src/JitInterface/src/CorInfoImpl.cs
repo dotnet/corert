@@ -534,6 +534,11 @@ namespace Internal.JitInterface
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
         {
             sig.callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+
+            // Varargs are not supported in .NET Core
+            if (sig.callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
+                throw new TypeSystemException.BadImageFormatException();
+
             if (!signature.IsStatic) sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
 
             TypeDesc returnType = signature.ReturnType;
@@ -792,10 +797,70 @@ namespace Internal.JitInterface
 
         private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("getMethodModule"); }
+
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
-        { throw new NotImplementedException("getMethodVTableOffset"); }
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType)
-        { throw new NotImplementedException("resolveVirtualMethod"); }
+        {
+            MethodDesc methodDesc = HandleToObject(method);
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
+            offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
+
+            // Normalize to the slot defining method. We don't have slot information for the overrides.
+            methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc);
+            Debug.Assert(slot != -1);
+
+            offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
+        }
+
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, CORINFO_CONTEXT_STRUCT* ownerType)
+        {
+            TypeDesc implType = HandleToObject(derivedClass);
+
+            // __Canon cannot be devirtualized
+            if (implType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return null;
+            }
+
+            implType = implType.GetClosestDefType();
+
+            MethodDesc decl = HandleToObject(baseMethod);
+            Debug.Assert(decl.IsVirtual);
+            Debug.Assert(!decl.HasInstantiation);
+
+            MethodDesc impl;
+
+            TypeDesc declOwningType = decl.OwningType;
+            if (declOwningType.IsInterface)
+            {
+                // Interface call devirtualization.
+
+                if (implType.IsValueType)
+                {
+                    // TODO: this ends up asserting RyuJIT - why?
+                    return null;
+                }
+
+                if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // TODO: attempt to devirtualize methods on canonical interfaces
+                    return null;
+                }
+
+                impl = implType.ResolveInterfaceMethodTarget(decl);
+                if (impl != null)
+                {
+                    impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(impl);
+                }
+            }
+            else
+            {
+                impl = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(decl);
+            }
+
+            return impl != null ? ObjectToHandle(impl) : null;
+        }
 
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
@@ -940,7 +1005,14 @@ namespace Internal.JitInterface
 
             if (pCookieVal != null)
             {
-                *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                }
                 *ppCookieVal = null;
             }
             else
@@ -2684,8 +2756,18 @@ namespace Internal.JitInterface
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
+
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+        {
+            CORINFO_CONST_LOOKUP pLookup = new CORINFO_CONST_LOOKUP();
+
+            getAddressOfPInvokeTarget(method, ref pLookup);
+            Debug.Assert(pLookup.addr != null);
+            Debug.Assert(pLookup.accessType == InfoAccessType.IAT_VALUE);
+            ppIndirection = null;
+
+            return pLookup.addr;
+        }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
@@ -3014,6 +3096,44 @@ namespace Internal.JitInterface
                 // move that assert to some place later though.
                 targetIsFatFunctionPointer = true;
             }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                && targetMethod.OwningType.IsInterface)
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+
+                if (pResult.exactContextNeedsRuntimeLookup)
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                    // to abort the inlining attempt anyway.
+                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                    if (contextMethod == MethodBeingCompiled)
+                    {
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
+                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    }
+                }
+                else
+                {
+                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+#if !SUPPORT_JIT
+                        , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
+#endif
+                        ));
+                }
+            }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
+                && _compilation.HasFixedSlotVTable(targetMethod.OwningType))
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
+                pResult.nullInstanceCheck = true;
+            }
             else
             {
                 ReadyToRunHelperId helperId;
@@ -3036,18 +3156,12 @@ namespace Internal.JitInterface
                 // Foo<string>.GetHashCode is needed too.
                 if (pResult.exactContextNeedsRuntimeLookup && targetMethod.OwningType.IsInterface)
                 {
-                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
+                    // We need JitInterface changes to fully support this.
+                    // If this is LDVIRTFTN of an interface method that is part of a verifiable delegate creation sequence,
+                    // RyuJIT is not going to use this value.
+                    Debug.Assert(helperId == ReadyToRunHelperId.ResolveVirtualFunction);
+                    pResult.exactContextNeedsRuntimeLookup = false;
+                    pResult.codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("NYI_LDVIRTFTN"));
                 }
                 else
                 {
@@ -3359,9 +3473,14 @@ namespace Internal.JitInterface
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
-            // TODO: Arbitrary relocs
             if (locationBlock != BlockType.Code)
-                throw new NotImplementedException("Arbitrary relocs");
+            {
+                // TODO: https://github.com/dotnet/corert/issues/3877
+                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+                if (targetArchitecture == TargetArchitecture.ARM || targetArchitecture == TargetArchitecture.ARMEL)
+                    return;
+                throw new NotImplementedException("Arbitrary relocs"); 
+            }
 
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
@@ -3375,7 +3494,7 @@ namespace Internal.JitInterface
 
                 case BlockType.ColdCode:
                     // TODO: Arbitrary relocs
-                    throw new NotImplementedException("Arbitrary relocs");
+                    throw new NotImplementedException("ColdCode relocs");
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;

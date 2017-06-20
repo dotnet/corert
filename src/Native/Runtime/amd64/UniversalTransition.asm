@@ -127,7 +127,7 @@ endif ; TRASH_SAVED_ARGUMENT_REGISTERS
         lea  rcx, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
 
-ReturnFrom&FunctionName label proc
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom&FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export the address
@@ -154,18 +154,6 @@ ReturnFrom&FunctionName label proc
         TAILJMP_RAX
 
 NESTED_END Rhp&FunctionName, _TEXT
-
-        .const
-
-        align           8
-
-PointerToReturnFrom&FunctionName label qword
-
-        dq              offset ReturnFrom&FunctionName
-
-        public          PointerToReturnFrom&FunctionName
-
-        .code
 
         endm
 

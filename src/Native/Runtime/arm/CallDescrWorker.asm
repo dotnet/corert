@@ -59,8 +59,7 @@ LNoFloatingPoint
         ldr     r4, [r5,#OFFSETOF__CallDescrData__pTarget]
         blx     r4
 
-ReturnFromCallDescrThunk
-        rout
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFromCallDescrThunk
 
         ;; Symbol used to identify thunk call to managed function so the special
         ;; case unwinder can unwind through this function. Sadly we cannot directly
@@ -126,13 +125,5 @@ LReturnDone
         EPILOG_POP              {r4,r5,r7,pc}
 
         NESTED_END RhCallDescrWorker
-
-        AREA        |.rdata|, ALIGN=4, DATA, READONLY
-
-PointerToReturnFromCallDescrThunk
-
-        DCD         ReturnFromCallDescrThunk
-
-        EXPORT      PointerToReturnFromCallDescrThunk
 
         END

@@ -17,33 +17,32 @@ namespace Internal.Runtime.TypeLoader
         private IntPtr _elements;
         private uint _elementsCount;
         private TypeManagerHandle _moduleHandle;
-        private bool isDebuggerPrepared;
+        private ulong[] debuggerPreparedExternalReferences;
 
-        public bool IsInitialized() { return isDebuggerPrepared || !_moduleHandle.IsNull; }
+        public bool IsInitialized() { return (debuggerPreparedExternalReferences != null) || !_moduleHandle.IsNull; }
 
         private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
-            if (module == null)
-            {
-                isDebuggerPrepared = true;
-            }
-            else
-            {
-                _moduleHandle = module.Handle;
+            _moduleHandle = module.Handle;
 
-                byte* pBlob;
-                uint cbBlob;
-                if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
-                {
-                    _elements = IntPtr.Zero;
-                    _elementsCount = 0;
-                    return false;
-                }
-
-                _elements = (IntPtr)pBlob;
-                _elementsCount = (uint)(cbBlob / sizeof(TableElement));
+            byte* pBlob;
+            uint cbBlob;
+            if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
+            {
+                _elements = IntPtr.Zero;
+                _elementsCount = 0;
+                return false;
             }
+
+            _elements = (IntPtr)pBlob;
+            _elementsCount = (uint)(cbBlob / sizeof(TableElement));
+
             return true;
+        }
+
+        public void InitializeDebuggerReference(ulong[] debuggerPreparedExternalReferences)
+        {
+            this.debuggerPreparedExternalReferences = debuggerPreparedExternalReferences;
         }
 
         /// <summary>
@@ -140,12 +139,14 @@ namespace Internal.Runtime.TypeLoader
 
         public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)
         {
-            if (isDebuggerPrepared)
+            if (this.debuggerPreparedExternalReferences == null)
             {
-                return typeof(int).TypeHandle;
+                return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
             }
-
-            return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
+            else
+            {
+                return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)this.debuggerPreparedExternalReferences[index]);
+            }            
         }
 
         public IntPtr GetGenericDictionaryFromIndex(uint index)

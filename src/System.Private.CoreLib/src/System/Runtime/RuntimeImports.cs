@@ -44,6 +44,9 @@ namespace System.Runtime
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern uint RhpGetFuncEvalMode();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern unsafe uint RhpRecordDebuggeeInitiatedHandle(void* objectHandle);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -234,7 +237,17 @@ namespace System.Runtime
         // Get object reference from handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleGet")]
-        internal static extern Object RhHandleGet(IntPtr handle);
+        private static extern Object _RhHandleGet(IntPtr handle);
+
+        internal static unsafe Object RhHandleGet(IntPtr handle)
+        {
+#if DEBUG
+            // The runtime performs additional checks in debug builds
+            return _RhHandleGet(handle);
+#else
+            return Unsafe.As<IntPtr, Object>(ref *(IntPtr*)handle);
+#endif
+        }
 
         // Get primary and secondary object references from dependent handle.
         [MethodImpl(MethodImplOptions.InternalCall)]

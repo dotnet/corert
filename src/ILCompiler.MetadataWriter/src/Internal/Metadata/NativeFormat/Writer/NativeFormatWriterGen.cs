@@ -676,7 +676,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantDoubleArray;
             if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
+            if (!Value.SequenceEqual(other.Value, DoubleComparer.Instance)) return false;
             return true;
         } // Equals
 
@@ -745,7 +745,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantDoubleValue;
             if (other == null) return false;
-            if (Value != other.Value) return false;
+            if (!CustomComparer.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 
@@ -1527,7 +1527,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSingleArray;
             if (other == null) return false;
-            if (!Value.SequenceEqual(other.Value)) return false;
+            if (!Value.SequenceEqual(other.Value, SingleComparer.Instance)) return false;
             return true;
         } // Equals
 
@@ -1596,7 +1596,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSingleValue;
             if (other == null) return false;
-            if (Value != other.Value) return false;
+            if (!CustomComparer.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 

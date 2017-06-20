@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Target Name="BuildNuGetPackages" AfterTargets="Build">
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
@@ -22,11 +21,13 @@
             <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
             <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
 
-            <CoreFxPackageVersion>4.4.0-preview1-25218-01</CoreFxPackageVersion>
+            <CoreFxPackageVersion>4.5.0-preview1-25417-02</CoreFxPackageVersion>
+            <CoreFxNuPkgRid Condition="'$(OSGroup)'=='Windows_NT'">win-x64</CoreFxNuPkgRid>
             <CoreFxNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</CoreFxNuPkgRid>
+            <CoreFxNuPkgRid Condition="'$(OSGroup)'=='Linux'">linux-x64</CoreFxNuPkgRid> 
             <CoreFxNuPkgRid Condition="'$(CoreFxNuPkgRid)'==''">$(NuPkgRid)</CoreFxNuPkgRid>
 
-            <JitPackageVersion>2.1.0-preview1-25406-04</JitPackageVersion>
+            <JitPackageVersion>2.1.0-preview1-25412-03</JitPackageVersion>
             <JitNuPkgRid Condition="'$(OSGroup)'=='Windows_NT'">win-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(OSGroup)'=='OSX'">osx-x64</JitNuPkgRid>
             <JitNuPkgRid Condition="'$(OSGroup)'=='Linux'">linux-x64</JitNuPkgRid>
@@ -282,8 +283,7 @@
 }]]>
                 </RuntimeJsonLines>
                 <RedirFile>$(ProductPackageDir)/%(RedirPackage).nuspec</RedirFile>
-                <RedirLines><![CDATA[<?xml version="1.0"?>
-<package>
+                <RedirLines><![CDATA[<package>
   <metadata>
     <id>%(RedirPackage)</id>
     %(NuSpecPackageMetadata)
@@ -295,8 +295,7 @@
 ]]>
                 </RedirLines>
                 <PlatformFile>$(ProductPackageDir)/%(PlatformPackage).nuspec</PlatformFile>
-                <PlatformLines><![CDATA[<?xml version="1.0"?>
-<package>
+                <PlatformLines><![CDATA[<package>
   <metadata>
     <id>%(PlatformPackage)</id>
     %(NuSpecPackageMetadata)

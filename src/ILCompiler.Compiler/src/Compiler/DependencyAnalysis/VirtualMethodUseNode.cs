@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public VirtualMethodUseNode(MethodDesc decl)
         {
+            Debug.Assert(!decl.IsRuntimeDeterminedExactMethod);
             Debug.Assert(decl.IsVirtual);
 
             // Virtual method use always represents the slot defining method of the virtual.
@@ -66,6 +67,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(canonDecl), "Canonical method"));
 
             dependencies.Add(new DependencyListEntry(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse"));
+
+            // TODO: https://github.com/dotnet/corert/issues/3224
+            if (_decl.IsAbstract)
+            {
+                dependencies.Add(factory.ReflectableMethod(_decl), "Abstract reflectable method");
+            }
 
             return dependencies;
         }

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -119,6 +118,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
@@ -234,6 +234,8 @@
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IExportableSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NamedJumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
@@ -258,6 +260,7 @@
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\AddrMode.cs" />
@@ -265,12 +268,14 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMUnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMJumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\ExportedMethodsRootProvider.cs" />
@@ -304,6 +309,7 @@
     <Compile Include="Compiler\SimdHelper.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
+    <Compile Include="Compiler\VTableSliceProvider.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />

@@ -26,25 +26,23 @@ public enum RecordDefFlags
 [Flags]
 public enum MemberDefFlags
 {
-    Map = 0x0001, // => Dictionary<string, RecordType> for MetadataWriter
-                  // => List<RecordType> for MetadataReader
-    List = 0x0002, // => List<RecordType>
-    Array = 0x0004, // => RecordType[]
+    Map = 0x0001,   // => List<RecordType> for writer
+    List = 0x0002,  // => List<RecordType> for writer
+    Array = 0x0004, // => RecordType[] for writer
 
     Collection = MemberDefFlags.Map | MemberDefFlags.List | MemberDefFlags.Array,
     Sequence = MemberDefFlags.List | MemberDefFlags.Array,
 
-    RecordRef = 0x0008, // => RecordTypeHandle
-
-    Ref = MemberDefFlags.RecordRef,
+    RecordRef = 0x0008,
 
     Child = 0x0010, // Member instance is logically defined and owned by record;
                     // otherwise instance may be shared (such as a TypeRef).
-    Name = 0x0020, // May be used as the member"s simple name for diagnostics.
+    Name = 0x0020, // May be used as the member's simple name for diagnostics.
     NotPersisted = 0x0040, // Indicates member is not written to or read from metadata.
     Compare = 0x0080, // Indicates member should be used for equality functionality.
     EnumerateForHashCode = 0x0100, // Indicates that the collection is safe to be enumerated in GetHashCode
                                    // without causing reentrancy
+    CustomCompare = 0x0200, // Indicates that this member uses a custom comparer
 }
 
 public enum MemberTypeKind
@@ -86,14 +84,14 @@ public class MemberDef
             else
             {
                 typeName = (kind == MemberTypeKind.WriterField) ? 
-                    (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{ TypeName}Handle";
+                    (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{TypeName}Handle";
             }
         }
         else
         {
             typeName = (string)TypeName;
         }
-        if ((Flags & (MemberDefFlags.Array | MemberDefFlags.List | MemberDefFlags.Map)) != 0)
+        if ((Flags & MemberDefFlags.Collection) != 0)
         {
             if (kind == MemberTypeKind.WriterField)
             {
@@ -119,10 +117,7 @@ public class MemberDef
         if (typeSet == null)
             return null;
 
-        string result = "One of: " + typeSet[0];
-        for (int i = 1; i < typeSet.Length; i++)
-            result += ", " + typeSet[i];
-        return result;
+        return "One of: " + String.Join(", ", typeSet);
     }
 }
 
@@ -161,14 +156,16 @@ public class EnumType
 
 public class PrimitiveType
 {
-    public PrimitiveType(string name, string typeName)
+    public PrimitiveType(string name, string typeName, bool customCompare = false)
     {
         Name = name;
         TypeName = typeName;
+        CustomCompare = customCompare;
     }
 
     readonly public string Name;
     readonly public string TypeName;
+    readonly public bool CustomCompare;
 }
 
 /// <summary>
@@ -208,8 +205,8 @@ class SchemaDef
         new PrimitiveType("uint", "UInt32"),
         new PrimitiveType("long", "Int64"),
         new PrimitiveType("ulong", "UInt64"),
-        new PrimitiveType("float", "Single"),
-        new PrimitiveType("double", "Double"),
+        new PrimitiveType("float", "Single", customCompare: true),
+        new PrimitiveType("double", "Double", customCompare: true),
     };
 
     // These enums supplement those defined by System.Reflection.Primitives.
@@ -292,7 +289,8 @@ class SchemaDef
                 new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Value",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.Name)
+                        new MemberDef(name: "Value", typeName: primitiveType.Name,
+                            flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
                     }
                 )
         )
@@ -326,7 +324,8 @@ class SchemaDef
                 new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Array",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", flags: MemberDefFlags.Array, typeName: primitiveType.TypeName)
+                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
+                            flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
                     }
                 )
         )
@@ -782,9 +781,7 @@ class SchemaDef
             from member in r.Members
             let memberTypeName = member.TypeName as string
             where memberTypeName != null &&
-                ((member.Flags & MemberDefFlags.Array) != 0 ||
-                (member.Flags & MemberDefFlags.List) != 0 ||
-                (member.Flags & MemberDefFlags.Map) != 0) &&
+                (member.Flags & MemberDefFlags.Collection) != 0 &&
                 !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
             select memberTypeName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();

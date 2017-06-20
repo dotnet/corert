@@ -1005,6 +1005,7 @@ namespace Internal.Runtime
         internal IntPtr GetSealedVirtualSlot(UInt16 slotNumber)
         {
             Debug.Assert(!IsNullable);
+            Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
 
             fixed (EEType* pThis = &this)
             {
@@ -1315,19 +1316,21 @@ namespace Internal.Runtime
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
 
-            if (IsNullable || (RareFlags & EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag) != 0)
+            if (IsNullable)
                 cbOffset += (UInt32)IntPtr.Size;
 
+            EETypeRareFlags rareFlags = RareFlags;
+
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
-            if ((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
-                cbOffset += 4;
+            if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+                cbOffset += (IsDynamicType ? (UInt32)IntPtr.Size : 4);
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
                 Debug.Assert(IsDynamicType);
                 return cbOffset;
             }
-            if ((RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
+            if ((rareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_GenericDefinition)
@@ -1351,7 +1354,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
 
-            if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
+            if ((rareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicTemplateType)
@@ -1364,26 +1367,26 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_DynamicGcStatics)
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
                 return cbOffset;
             }
-            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicNonGcStatics)
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
                 return cbOffset;
             }
-            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicThreadStaticOffset)
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
                 return cbOffset;
             }
-            if ((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
+            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
                 cbOffset += 4;
 
             Debug.Assert(false, "Unknown EEType field type");

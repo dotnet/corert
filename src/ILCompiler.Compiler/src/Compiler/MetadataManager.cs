@@ -49,6 +49,7 @@ namespace ILCompiler
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
+        public virtual bool SupportsReflection => true;
 
         public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
         {

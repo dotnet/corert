@@ -46,30 +46,21 @@ inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
 inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 {
     ASSERT(!IsNullable());
+    ASSERT((get_RareFlags() & HasSealedVTableEntriesFlag) != 0);
 
     if (IsDynamicType())
     {
-        if ((get_RareFlags() & IsDynamicTypeWithSealedVTableEntriesFlag) != 0)
-        {
-            UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
-
-            PTR_PTR_Code pSealedVirtualsSlotTable = *(PTR_PTR_Code*)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset);
-
-            return pSealedVirtualsSlotTable[slotNumber];
-        }
-        else
-        {
-            return get_DynamicTemplateType()->get_SealedVirtualSlot(slotNumber);
-        }
+        UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
+        PTR_PTR_Code pSealedVirtualsSlotTable = *(PTR_PTR_Code*)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset);
+        return pSealedVirtualsSlotTable[slotNumber];
     }
-
-    UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
-
-    PTR_Int32 pSealedVirtualsSlotTable = (PTR_Int32)FollowRelativePointer((PTR_Int32)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset));
-
-    PTR_Code result = FollowRelativePointer(&pSealedVirtualsSlotTable[slotNumber]);
-
-    return result;
+    else
+    {
+        UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
+        PTR_Int32 pSealedVirtualsSlotTable = (PTR_Int32)FollowRelativePointer((PTR_Int32)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset));
+        PTR_Code result = FollowRelativePointer(&pSealedVirtualsSlotTable[slotNumber]);
+        return result;
+    }
 }
 #endif // !BINDER && !DACCESS_COMPILE
 
@@ -565,7 +556,9 @@ inline DynamicModule * EEType::get_DynamicModule()
         ((ArrayClass*)pMT->GetClass())->GetApproxArrayElementTypeHandle().AsMethodTable() :
         NULL;
 
-    bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
+    bool isMdArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetRank() > 0;
+    bool fHasSealedVirtuals = !isMdArray && (pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots()));
+
     return
         // Do we need a padding size for value types or unsealed classes? that could be unboxed?
         (!pMT->IsArray() && 
@@ -581,7 +574,7 @@ inline DynamicModule * EEType::get_DynamicModule()
         (pMT->IsHFA()) ||
 #endif
         // Do we need a DispatchMap?
-        (pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
+        (!isMdArray && pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
         // Do we need to cache ICastable method vtable slots?
         (pMT->IsICastable()) ||
         // Is the class a Nullable<T> instantiation (need to store the flag and possibly a field offset)?
@@ -714,13 +707,14 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 
     // Binder does not use DynamicTemplateType
 #ifndef BINDER
-    UInt32 rareFlags = get_RareFlags();
-    if (IsNullable() || ((rareFlags & IsDynamicTypeWithSealedVTableEntriesFlag) != 0))
+    if (IsNullable())
         cbOffset += sizeof(UIntTarget);
+
+    UInt32 rareFlags = get_RareFlags();
 
     // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
     if (rareFlags & HasSealedVTableEntriesFlag)
-        cbOffset += sizeof(UInt32);
+        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
 
     if (eField == ETF_DynamicDispatchMap)
     {
@@ -748,11 +742,11 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 
     if (eField == ETF_DynamicModule)
     {
-        ASSERT((get_RareFlags() & HasDynamicModuleFlag) != 0);
+        ASSERT((rareFlags & HasDynamicModuleFlag) != 0);
         return cbOffset;
     }
 
-    if ((get_RareFlags() & HasDynamicModuleFlag) != 0)
+    if ((rareFlags & HasDynamicModuleFlag) != 0)
         cbOffset += sizeof(UIntTarget);
 
     if (eField == ETF_DynamicTemplateType)
