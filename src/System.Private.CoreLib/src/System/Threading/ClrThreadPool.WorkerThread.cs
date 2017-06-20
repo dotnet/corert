@@ -146,9 +146,30 @@ namespace System.Threading
                     s_semaphore.Release(toRelease);
                 }
 
-                for (int i = 0; i < toCreate; i++)
+                while(toCreate > 0)
                 {
-                    CreateWorkerThread();
+                    if(CreateWorkerThread())
+                    {
+                        toCreate--;
+                    }
+                    else
+                    {
+                        counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                        while(true)
+                        {
+                            newCounts = counts;
+                            newCounts.numProcessingWork -= (short)toCreate;
+                            newCounts.numExistingThreads -= (short)toCreate;
+
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
+                            if(oldCounts == counts)
+                            {
+                                break;
+                            }
+                            counts = oldCounts;
+                        }
+                        toCreate = 0;
+                    }
                 }
             }
 
@@ -196,19 +217,24 @@ namespace System.Threading
                 return false;
             }
 
-            private static void CreateWorkerThread()
+            private static bool CreateWorkerThread()
             {
-                // TODO: Replace RuntimeThread.Create with a more perfomant thread creation
-                // Note: Thread local data is created lazily on CoreRT, so we might get an OOM exception
-                // if we run out of memory when starting this thread.
-                // If we use RuntimeThread.Create, we get the exception on this thread.
-                // If we don't, we will get the exception on our worker thread.
-                // Goal: Figure out how to safely manage the OOM possibility of a worker thread
-                // without perf issues.
                 RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
                 workerThread.IsThreadPoolThread = true;
                 workerThread.IsBackground = true;
-                workerThread.Start();
+                try
+                {
+                    workerThread.Start();
+                }
+                catch (ThreadStartException)
+                {
+                    return false;
+                }
+                catch (OutOfMemoryException)
+                {
+                    return false;
+                }
+                return true;
             }
         }
     }
