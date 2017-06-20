@@ -8,14 +8,14 @@ namespace System.Threading
     {
         private class CpuUtilizationReader
         {
-            private Interop.Sys.ProcessCpuInformation cpuInfo;
+            private Interop.Sys.ProcessCpuInformation _cpuInfo;
             public CpuUtilizationReader()
             {
-                cpuInfo = new Interop.Sys.ProcessCpuInformation();
-                Interop.Sys.GetCpuUtilization(ref cpuInfo); // Initialize the cpuInfo structure so future calls with it get correct readings
+                _cpuInfo = new Interop.Sys.ProcessCpuInformation();
+                Interop.Sys.GetCpuUtilization(ref _cpuInfo); // Initialize the cpuInfo structure so future calls with it get correct readings
             }
 
-            public int CurrentUtilization => Interop.Sys.GetCpuUtilization(ref cpuInfo); // Updates cpuInfo as a side effect for the next call
+            public int CurrentUtilization => Interop.Sys.GetCpuUtilization(ref _cpuInfo); // Updates cpuInfo as a side effect for the next call
         }
     }
 }
