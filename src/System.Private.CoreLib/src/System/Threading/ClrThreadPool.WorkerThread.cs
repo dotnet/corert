@@ -123,14 +123,14 @@ namespace System.Threading
                     newCounts.numProcessingWork = Math.Max(counts.numProcessingWork, Math.Min((short)(counts.numProcessingWork + 1), counts.numThreadsGoal));
                     newCounts.numExistingThreads = Math.Max(counts.numExistingThreads, newCounts.numProcessingWork);
                     
-                    if(newCounts == counts)
+                    if (newCounts == counts)
                     {
                         return;
                     }
 
                     ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
 
-                    if(oldCounts == counts)
+                    if (oldCounts == counts)
                     {
                         break;
                     }
@@ -141,21 +141,21 @@ namespace System.Threading
                 int toCreate = newCounts.numExistingThreads - counts.numExistingThreads;
                 int toRelease = newCounts.numProcessingWork - counts.numProcessingWork;
 
-                if(toRelease > 0)
+                if (toRelease > 0)
                 {
                     s_semaphore.Release(toRelease);
                 }
 
-                while(toCreate > 0)
+                while (toCreate > 0)
                 {
-                    if(TryCreateWorkerThread())
+                    if (TryCreateWorkerThread())
                     {
                         toCreate--;
                     }
                     else
                     {
                         counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
-                        while(true)
+                        while (true)
                         {
                             newCounts = counts;
                             newCounts.numProcessingWork -= (short)toCreate;
