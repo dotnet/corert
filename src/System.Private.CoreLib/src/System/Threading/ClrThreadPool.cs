@@ -178,14 +178,19 @@ namespace System.Threading
             bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
             bool acquiredLock = _hillClimbingThreadAdjustmentLock.TryAcquire();
 
-            if (shouldAdjustWorkers && acquiredLock)
+            try
             {
-                AdjustMaxWorkersActive();
+                if (shouldAdjustWorkers && acquiredLock)
+                {
+                    AdjustMaxWorkersActive();
+                }
             }
-
-            if (acquiredLock)
+            finally
             {
-                _hillClimbingThreadAdjustmentLock.Release(); 
+                if (acquiredLock)
+                {
+                    _hillClimbingThreadAdjustmentLock.Release();
+                }
             }
 
             return !WorkerThread.ShouldStopProcessingWorkNow();
