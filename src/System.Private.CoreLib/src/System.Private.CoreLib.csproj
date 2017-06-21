@@ -120,6 +120,8 @@
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.ProjectN.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.Win32.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true' or '$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.WithoutRegistry.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
@@ -447,8 +449,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\Registry.cs" />
@@ -494,9 +494,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
@@ -509,6 +506,9 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="System\Runtime\MemoryFailPoint.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
+      <Link>Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.Memory.cs">
       <Link>Interop\Windows\kernel32\Interop.Memory.cs</Link>
     </Compile>
