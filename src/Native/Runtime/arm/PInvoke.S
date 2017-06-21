@@ -7,6 +7,19 @@
 .syntax unified
 .thumb
 
+#ifdef _DEBUG
+.rodata
+AssertMsg:                              .asciz "__FILE__:%s: %s is not implemented\n"
+FileName:                               .asciz "PInvoke.S"
+RhpPInvokeName:                         .asciz "RhpPInvoke"
+RhpPInvokeReturnName:                   .asciz "RhpPInvokeReturn"
+
+.text
+.macro GEN_ASSERT_FUNC func
+        GEN_ASSERT AssertMsg, FileName, \func
+.endm
+#endif
+
 // TODO: Implement Arm support
 
 //
@@ -14,7 +27,7 @@
 //
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 #ifdef _DEBUG
-        bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpPInvokeName
 #endif
 NESTED_END RhpPInvoke, _TEXT
 
@@ -23,6 +36,6 @@ NESTED_END RhpPInvoke, _TEXT
 //
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
 #ifdef _DEBUG
-        bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpPInvokeReturnName
 #endif
 LEAF_END RhpPInvokeReturn, _TEXT

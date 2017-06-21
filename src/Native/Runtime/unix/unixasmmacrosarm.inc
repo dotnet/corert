@@ -161,3 +161,12 @@ C_FUNC(\Name):
         .text
 
 .endm
+
+#ifdef _DEBUG
+.macro GEN_ASSERT message, fileName, funcName
+        ldr r0, =\message
+        ldr r1, =\fileName
+        ldr r2, =\funcName
+        bl C_FUNC(NYI_Assert)
+.endm
+#endif

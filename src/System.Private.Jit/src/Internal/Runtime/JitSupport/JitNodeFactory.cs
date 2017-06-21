@@ -111,6 +111,7 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false) { throw new NotImplementedException(); }
         internal IMethodNode StringAllocator(MethodDesc stringConstructor) { throw new NotImplementedException(); }
         public ISymbolNode ExternSymbol(string name) { throw new NotImplementedException(); }
+        public ISymbolNode ConstantUtf8String(string str) { throw new NotImplementedException(); }
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type) { return ConstructedTypeSymbol(type); }
         internal JitInterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method) { throw new NotImplementedException(); }
         public ISymbolNode RuntimeMethodHandle(MethodDesc method) { throw new NotImplementedException(); }

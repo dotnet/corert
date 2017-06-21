@@ -7,6 +7,21 @@
 .syntax unified
 .thumb
 
+#ifdef _DEBUG
+.rodata
+AssertMsg:                                                      .asciz "__FILE__:%s: %s is not implemented\n"
+FileName:                                                       .asciz "UniversalTransition.S"
+RhpUniversalTransitionName:                                     .asciz "RhpUniversalTransition"
+PointerToReturnFromUniversalTransitionName:                     .asciz "PointerToReturnFromUniversalTransition"
+RhpUniversalTransition_DebugStepTailCallName:                   .asciz "RhpUniversalTransition_DebugStepTailCall"
+PointerToReturnFromUniversalTransition_DebugStepTailCallName:   .asciz "PointerToReturnFromUniversalTransition_DebugStepTailCall"
+
+.text
+.macro GEN_ASSERT_FUNC func
+        GEN_ASSERT AssertMsg, FileName, \func
+.endm
+#endif
+
 // TODO: Implement Arm support
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +69,7 @@ NESTED_ENTRY RhpUniversalTransition, _TEXT, NoHandler
 LOCAL_LABEL(ReturnFromUniversalTransition):
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpUniversalTransitionName
 #endif
 
 NESTED_END RhpUniversalTransition
@@ -62,7 +77,7 @@ NESTED_END RhpUniversalTransition
 NESTED_ENTRY PointerToReturnFromUniversalTransition, _TEXT, NoHandler
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC PointerToReturnFromUniversalTransitionName
 #endif
 
 NESTED_END PointerToReturnFromUniversalTransition
@@ -73,7 +88,7 @@ NESTED_ENTRY RhpUniversalTransition_DebugStepTailCall, _TEXT, NoHandler
 LOCAL_LABEL(ReturnFromUniversalTransition_DebugStepTailCall):
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpUniversalTransition_DebugStepTailCallName
 #endif
 
 NESTED_END RhpUniversalTransition_DebugStepTailCall
@@ -81,7 +96,7 @@ NESTED_END RhpUniversalTransition_DebugStepTailCall
 NESTED_ENTRY PointerToReturnFromUniversalTransition_DebugStepTailCall, _TEXT, NoHandler
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC PointerToReturnFromUniversalTransition_DebugStepTailCallName
 #endif
 
 NESTED_END PointerToReturnFromUniversalTransition_DebugStepTailCall
