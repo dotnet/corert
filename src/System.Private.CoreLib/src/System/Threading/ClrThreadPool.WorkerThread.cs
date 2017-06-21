@@ -56,31 +56,39 @@ namespace System.Threading
                         }
                     }
 
-                    // At this point, the thread's wait timed out. We are shutting down this thread.
-                    // We are going to decrement the number of exisiting threads to no longer include this one
-                    // and then change the max number of threads in the thread pool to reflect that we don't need as many
-                    // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
-                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
-                    while (true)
+                    ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
+                    try
                     {
-                        if (counts.numExistingThreads == counts.numProcessingWork)
+                        // At this point, the thread's wait timed out. We are shutting down this thread.
+                        // We are going to decrement the number of exisiting threads to no longer include this one
+                        // and then change the max number of threads in the thread pool to reflect that we don't need as many
+                        // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
+                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                        while (true)
                         {
-                            // In this case, enough work came in that this thread should not time out and should go back to work.
-                            break;
-                        }
+                            if (counts.numExistingThreads == counts.numProcessingWork)
+                            {
+                                // In this case, enough work came in that this thread should not time out and should go back to work.
+                                break;
+                            }
 
-                        ThreadCounts newCounts = counts;
-                        newCounts.numExistingThreads--;
-                        newCounts.numThreadsGoal = Math.Max(ThreadPoolInstance._minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
-                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                        if (oldCounts == counts)
-                        {
-                            HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-                            // TODO: Event:  Worker Thread stop event
-                            return;
+                            ThreadCounts newCounts = counts;
+                            newCounts.numExistingThreads--;
+                            newCounts.numThreadsGoal = Math.Max(ThreadPoolInstance._minThreads, Math.Min(newCounts.numExistingThreads, newCounts.numThreadsGoal));
+                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
+                            if (oldCounts == counts)
+                            {
+                                HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
+                                // TODO: Event:  Worker Thread stop event
+                                return;
+                            }
+                            counts = oldCounts;
                         }
-                        counts = oldCounts;
-                    } 
+                    }
+                    finally
+                    {
+                        ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
+                    }
                 }
             }
 
