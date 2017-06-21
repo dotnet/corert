@@ -572,6 +572,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
         internal static unsafe extern bool RhSetThreadStaticStorageForModule(Array storage, Int32 moduleIndex);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
+        internal static unsafe extern IntPtr RhCurrentNativeThreadId();
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
