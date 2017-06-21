@@ -62,9 +62,16 @@ namespace Internal.Runtime.TypeLoader
                 // Box the return
                 IntPtr input = arguments.GetAddressOfVarData(0);
                 object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
-                GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
-                IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
-                uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                IntPtr returnValueHandlePointer = IntPtr.Zero;
+                uint returnHandleIdentifier = 0;
+
+                // The return value could be null if the target function returned null
+                if (returnValue != null)
+                {
+                    GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                    returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                    returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                }
 
                 // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
