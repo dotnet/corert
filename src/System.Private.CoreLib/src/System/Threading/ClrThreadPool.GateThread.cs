@@ -47,26 +47,34 @@ namespace System.Threading
                     {
                         if (ThreadPoolInstance._numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
                         {
-                            ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
-                            // don't add a thread if we're at max or if we are already in the process of adding threads
-                            while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
+                            try
                             {
-                                if (s_debuggerBreakOnWorkStarvation)
+                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
+                                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                                // don't add a thread if we're at max or if we are already in the process of adding threads
+                                while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
                                 {
-                                    Debug.WriteLine("The CLR ThreadPool detected work starvation!");
-                                    Debugger.Break();
-                                }
+                                    if (s_debuggerBreakOnWorkStarvation)
+                                    {
+                                        Debug.WriteLine("The CLR ThreadPool detected work starvation!");
+                                        Debugger.Break();
+                                    }
 
-                                ThreadCounts newCounts = counts;
-                                newCounts.numThreadsGoal = (short)(newCounts.numExistingThreads + 1);
-                                ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                                if (oldCounts == counts)
-                                {
-                                    HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.Starvation);
-                                    WorkerThread.MaybeAddWorkingWorker();
-                                    break;
+                                    ThreadCounts newCounts = counts;
+                                    newCounts.numThreadsGoal = (short)(newCounts.numExistingThreads + 1);
+                                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
+                                    if (oldCounts == counts)
+                                    {
+                                        HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.Starvation);
+                                        WorkerThread.MaybeAddWorkingWorker();
+                                        break;
+                                    }
+                                    counts = oldCounts;
                                 }
-                                counts = oldCounts;
+                            }
+                            finally
+                            {
+                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
                             }
                         }
                     }
