@@ -653,6 +653,8 @@
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />

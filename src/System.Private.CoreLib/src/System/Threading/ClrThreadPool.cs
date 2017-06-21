@@ -275,7 +275,7 @@ namespace System.Threading
         {
             Interlocked.Increment(ref _numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker();
-            // TODO: Ensure gate thread is running here.
+            GateThread.EnsureRunning();
         }
     }
 }
