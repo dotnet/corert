@@ -6,6 +6,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
@@ -62,9 +63,16 @@ namespace Internal.Runtime.TypeLoader
                 // Box the return
                 IntPtr input = arguments.GetAddressOfVarData(0);
                 object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
-                GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
-                IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
-                uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                IntPtr returnValueHandlePointer = IntPtr.Zero;
+                uint returnHandleIdentifier = 0;
+
+                // The return value could be null if the target function returned null
+                if (returnValue != null)
+                {
+                    GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                    returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                    returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+                }
 
                 // Signal to the debugger the func eval completes
                 FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
@@ -128,6 +136,32 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeAugments.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
 
                 // .. debugger magic ... the debuggerBuffer will be filled with parameter data
+
+                uint mode = RuntimeAugments.RhpGetFuncEvalMode();
+
+                // TODO, FuncEval, centralize magic numbers
+                // TODO, FuncEval, refactor to switch and avoid duplicated code
+                if (mode == 2)
+                {
+                    unsafe
+                    {
+                        IntPtr returnValueHandlePointer = IntPtr.Zero;
+                        uint returnHandleIdentifier = 0;
+
+                        string returnValue = Encoding.Unicode.GetString(debuggerBufferRawPointer, (int)parameterBufferSize);
+
+                        GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                        returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                        returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+
+                        FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
+                        funcEvalCompleteCommand->commandCode = 0;
+                        funcEvalCompleteCommand->returnHandleIdentifier = returnHandleIdentifier;
+                        funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
+                        IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
+                        RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+                    }
+                }
 
                 TypesAndValues typesAndValues = new TypesAndValues();
 

@@ -135,6 +135,16 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 
+        public sealed override string ImageRuntimeVersion
+        {
+            get
+            {
+                // Needed to make RuntimeEnvironment.GetSystemVersion() work. Will not be correct always but anticipating most callers are not making
+                // actual decisions based on the value.
+                return "v4.0.30319";
+            }
+        }
+
         public sealed override Module ManifestModule
         {
             get

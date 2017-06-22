@@ -232,6 +232,14 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
         }
 
+        public sealed override string ImageRuntimeVersion
+        {
+            get
+            {
+                return MetadataReader.MetadataVersion;
+            }
+        }
+
         public sealed override Module ManifestModule
         {
             get

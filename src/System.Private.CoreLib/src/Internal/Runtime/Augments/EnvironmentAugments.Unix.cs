@@ -32,22 +32,5 @@ namespace Internal.Runtime.Augments
 
             return Array.Empty<KeyValuePair<string,string>>();
         }
-
-        private static string GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
-        {
-            Debug.Assert(variable != null);
-            return null; // Unix systems pretend that the registry environment subkeys are empty lists.
-        }
-
-        private static void SetEnvironmentVariableFromRegistry(string variable, string value, bool fromMachine)
-        {
-            Debug.Assert(variable != null);
-            return;  // Unix systems pretend that the registry environment subkeys are empty lists that throw all write requests into a black hole.
-        }
-
-        private static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(bool fromMachine)
-        {
-            return Array.Empty<KeyValuePair<string, string>>();  // Unix systems pretend that the registry environment subkeys are empty lists.
-        }
     }
 }

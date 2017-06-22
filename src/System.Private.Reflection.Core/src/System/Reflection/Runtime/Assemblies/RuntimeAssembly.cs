@@ -148,6 +148,7 @@ namespace System.Reflection.Runtime.Assemblies
         public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
         public abstract override String[] GetManifestResourceNames();
         public abstract override Stream GetManifestResourceStream(String name);
+        public abstract override string ImageRuntimeVersion { get; }
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
 
