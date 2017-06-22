@@ -1132,6 +1132,10 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP fieldLookup;
+
+        // Used by inline expansion of Ready-to-Run statics helpers
+        public CORINFO_CONST_LOOKUP typeGCStatics;
+        public CORINFO_CONST_LOOKUP typeNonGCStatics;
     };
 
     // System V struct passing

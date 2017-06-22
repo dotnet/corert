@@ -1878,6 +1878,9 @@ namespace Internal.JitInterface
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
+                pResult.typeGCStatics = default(CORINFO_CONST_LOOKUP);
+                pResult.typeNonGCStatics = default(CORINFO_CONST_LOOKUP);
+
                 if (field.HasRva)
                 {
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
@@ -1951,7 +1954,12 @@ namespace Internal.JitInterface
                     }
                     else if (field.HasGCStaticBase)
                     {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
+                        pResult.typeGCStatics = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType));
+                        if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        {
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
+                            pResult.typeNonGCStatics = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType));
+                        }
                     }
                     else
                     {
@@ -1964,10 +1972,13 @@ namespace Internal.JitInterface
                         }
                         else
                         {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                            pResult.typeNonGCStatics = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType));
+                            if (true/*_compilation.HasLazyStaticConstructor(field.OwningType)*/)
+                                helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                         }
                     }
 
+                    pResult.fieldLookup = default(CORINFO_CONST_LOOKUP);
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
                         pResult.fieldLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
