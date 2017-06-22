@@ -6,6 +6,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
@@ -135,6 +136,32 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeAugments.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
 
                 // .. debugger magic ... the debuggerBuffer will be filled with parameter data
+
+                uint mode = RuntimeAugments.RhpGetFuncEvalMode();
+
+                // TODO, FuncEval, centralize magic numbers
+                // TODO, FuncEval, refactor to switch and avoid duplicated code
+                if (mode == 2)
+                {
+                    unsafe
+                    {
+                        IntPtr returnValueHandlePointer = IntPtr.Zero;
+                        uint returnHandleIdentifier = 0;
+
+                        string returnValue = Encoding.Unicode.GetString(debuggerBufferRawPointer, (int)parameterBufferSize);
+
+                        GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                        returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                        returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+
+                        FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
+                        funcEvalCompleteCommand->commandCode = 0;
+                        funcEvalCompleteCommand->returnHandleIdentifier = returnHandleIdentifier;
+                        funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
+                        IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
+                        RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+                    }
+                }
 
                 TypesAndValues typesAndValues = new TypesAndValues();
 
