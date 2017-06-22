@@ -380,10 +380,11 @@ namespace System.Collections.Generic
         private static void SwapIfGreaterWithItems(TKey[] keys, TValue[] values, IComparer<TKey> comparer, int a, int b)
         {
             Debug.Assert(keys != null);
-            Debug.Assert(values == null || values.Length >= keys.Length);
             Debug.Assert(comparer != null);
             Debug.Assert(0 <= a && a < keys.Length);
             Debug.Assert(0 <= b && b < keys.Length);
+            Debug.Assert(values == null || (0 <= a && a < values.Length));
+            Debug.Assert(values == null || (0 <= b && b < values.Length));
 
             if (a != b)
             {
