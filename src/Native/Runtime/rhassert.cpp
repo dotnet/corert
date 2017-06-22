@@ -95,10 +95,15 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 #endif //!DACCESS_COMPILE
 }
 
-extern "C" void NYI_Assert()
+extern "C" void NYI_Assert(const char *message, ...)
 {
 #if !defined(DACCESS_COMPILE)
+    va_list args;
+    va_start(args, message);
+    vprintf(message, args);
+    va_end(args);
     ASSERT_UNCONDITIONALLY("NYI");
 #endif
 }
+
 #endif // _DEBUG

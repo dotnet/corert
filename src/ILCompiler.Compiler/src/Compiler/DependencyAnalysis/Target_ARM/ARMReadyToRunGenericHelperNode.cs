@@ -13,10 +13,10 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     partial class ReadyToRunGenericHelperNode
-    {       
+    {
         protected sealed override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
-            encoder.EmitJMP(factory.ExternSymbol("NYI_Assert"));
+            ARMDebug.EmitNYIAssert(factory, ref encoder, "EmitCode is not implemented");
         }
     }
 }

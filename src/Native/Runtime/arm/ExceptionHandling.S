@@ -7,6 +7,23 @@
 .syntax unified
 .thumb
 
+#ifdef _DEBUG
+.rodata
+AssertMsg:                              .asciz "__FILE__:%s: %s is not implemented\n"
+FileName:                               .asciz "ExceptionHandling.S"
+RhpThrowHwExName:                       .asciz "RhpThrowHwEx"
+RhpThrowExName:                         .asciz "RhpThrowEx"
+RhpRethrowName:                         .asciz "RhpRethrow"
+RhpCallCatchFuncletName:                .asciz "RhpCallCatchFunclet"
+RhpCallFinallyFuncletName:              .asciz "RhpCallFinallyFunclet"
+RhpCallFilterFuncletName:               .asciz "RhpCallFilterFunclet"
+
+.text
+.macro GEN_ASSERT_FUNC func
+        GEN_ASSERT AssertMsg, FileName, \func
+.endm
+#endif
+
 // TODO: Implement Arm support
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,7 +41,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 ALTERNATE_ENTRY RhpThrowHwEx2
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpThrowHwExName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
@@ -49,7 +66,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 ALTERNATE_ENTRY RhpThrowEx2
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpThrowExName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
@@ -76,7 +93,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 ALTERNATE_ENTRY RhpRethrow2
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpRethrowName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
@@ -114,7 +131,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
 
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpCallCatchFuncletName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
@@ -136,7 +153,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpCallFinallyFuncletName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
@@ -159,7 +176,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
 ALTERNATE_ENTRY RhpCallFilterFunclet2
 
 #ifdef _DEBUG
-	bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhpCallFilterFuncletName
 #endif
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
