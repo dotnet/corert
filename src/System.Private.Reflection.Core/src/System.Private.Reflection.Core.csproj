@@ -124,6 +124,7 @@
     <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeForwardInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
