@@ -96,6 +96,30 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
         }
 
+        protected sealed override IEnumerable<TypeForwardInfo> TypeForwardInfos
+        {
+            get
+            {
+                MetadataReader reader = MetadataReader;
+                foreach (ExportedTypeHandle exportedTypeHandle in reader.ExportedTypes)
+                {
+                    ExportedType exportedType = reader.GetExportedType(exportedTypeHandle);
+                    if (!exportedType.IsForwarder)
+                        continue;
+
+                    EntityHandle implementation = exportedType.Implementation;
+                    if (implementation.Kind != HandleKind.AssemblyReference) // This check also weeds out nested types. This is intentional.
+                        continue;
+                    RuntimeAssemblyName redirectedAssemblyName = ((AssemblyReferenceHandle)implementation).ToRuntimeAssemblyName(reader);
+
+                    string typeName = exportedType.Name.GetString(reader);
+                    string namespaceName = exportedType.Namespace.GetString(reader);
+
+                    yield return new TypeForwardInfo(redirectedAssemblyName, namespaceName, typeName);
+                }
+            }
+        }
+
         private unsafe struct InternalManifestResourceInfo
         {
             public bool Found;
