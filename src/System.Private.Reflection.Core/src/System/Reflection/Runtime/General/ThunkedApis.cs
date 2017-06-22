@@ -63,7 +63,6 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override string CodeBase { get { throw new PlatformNotSupportedException(); } }
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture) { throw new PlatformNotSupportedException(); }
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw new PlatformNotSupportedException(); }
-        public sealed override string ImageRuntimeVersion { get { throw new PlatformNotSupportedException(); } }
         public sealed override AssemblyName[] GetReferencedAssemblies() { throw new PlatformNotSupportedException(); }
         public sealed override Module GetModule(string name) { throw new PlatformNotSupportedException(); }
     }
