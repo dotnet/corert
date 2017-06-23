@@ -557,7 +557,9 @@ inline DynamicModule * EEType::get_DynamicModule()
         NULL;
 
     bool isMdArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetRank() > 0;
-    bool fHasSealedVirtuals = !isMdArray && (pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots()));
+    bool isPointerArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetPointerRank() > 0;
+    bool isSpecialArray = isMdArray || isPointerArray;
+    bool fHasSealedVirtuals = !isSpecialArray && (pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots()));
 
     return
         // Do we need a padding size for value types or unsealed classes? that could be unboxed?
@@ -574,7 +576,7 @@ inline DynamicModule * EEType::get_DynamicModule()
         (pMT->IsHFA()) ||
 #endif
         // Do we need a DispatchMap?
-        (!isMdArray && pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
+        (!isSpecialArray && pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
         // Do we need to cache ICastable method vtable slots?
         (pMT->IsICastable()) ||
         // Is the class a Nullable<T> instantiation (need to store the flag and possibly a field offset)?

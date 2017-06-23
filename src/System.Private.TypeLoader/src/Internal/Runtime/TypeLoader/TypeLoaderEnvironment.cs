@@ -76,6 +76,16 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(unboxingFunctionPointer, declaringType);
         }
 
+        public override bool TryGetPointerTypeForTargetType(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            return TypeLoaderEnvironment.Instance.TryGetPointerTypeForTargetType(pointeeTypeHandle, out pointerTypeHandle);
+        }
+
+        public override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
+        {
+            return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
+        }
+
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>
