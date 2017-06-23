@@ -3,17 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AssemblyName>ILMetadataAssembly</AssemblyName>
-    <ProjectGuid>{347E2A5A-54E5-4482-9723-ED460DE79CE8}</ProjectGuid>
-  </PropertyGroup>
-
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <RunTestsForProject>false</RunTestsForProject>
   </PropertyGroup>
 
   <ItemGroup>

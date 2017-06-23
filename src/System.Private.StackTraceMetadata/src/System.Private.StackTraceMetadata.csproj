@@ -1,17 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.StackTraceMetadata</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{4a4e72b2-143c-4fee-9bdb-43797d6b7963}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />

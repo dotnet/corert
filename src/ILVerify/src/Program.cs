@@ -29,8 +29,8 @@ namespace ILVerify
         private const string SystemModuleSimpleName = "mscorlib";
         private bool _help;
 
-        private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-        private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+        private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
         private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
 
@@ -45,7 +45,7 @@ namespace ILVerify
 
         private void Help(string helpText)
         {
-            Console.WriteLine("ILVerify version " + typeof(Program).Assembly.GetName().Version.ToString());
+            Console.WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
             Console.WriteLine();
             Console.WriteLine("--help          Display this usage message (Short form: -?)");
             Console.WriteLine("--reference     Reference metadata from the specified assembly (Short form: -r)");

@@ -1,4 +1,4 @@
-@echo off
+@if not defined _echo @echo off
 
 :Arg_Loop
 if "%1" == "" goto :ArgsDone
@@ -16,7 +16,7 @@ if /i "%1" == "release" (set CoreRT_BuildType=Release&shift&goto Arg_Loop)
 
 set CoreRT_BuildOS=Windows_NT
 
-set CoreRT_ToolchainDir=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\packaging\publish1
+set CoreRT_ToolchainDir=%~dp0\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
 exit /b 0
 

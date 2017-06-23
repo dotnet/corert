@@ -1,0 +1,58 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/framework</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="$(NuPkgRid.StartsWith('osx.'))">osx-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="$(NuPkgRid.StartsWith('ubuntu.'))">linux-x64</RuntimeIdentifiers>
+    <RidSpecificAssets>true</RidSpecificAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Framework-uapaot.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
+      <Version>$(CoreFxVersion)</Version>
+    </PackageReference>
+
+    <!-- TODO: These packages should be comming via regular references -->
+    <PackageReference Include="System.Memory">
+      <Version>$(CoreFxVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>$(CoreFxVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToExclude Include="System.Linq.Expressions" />
+    <FileToExclude Include="System.Reflection.Primitives" />
+    <FileToExclude Include="System.Runtime.InteropServices" />
+
+    <!-- TODO: Upstack framework -->
+    <FileToExclude Include="System.Private.DataContractSerialization" />
+    <FileToExclude Include="System.Private.Xml" />
+    <FileToExclude Include="System.Reflection.DispatchProxy" />
+    <FileToExclude Include="System.Private.Xml.Linq" />
+    <FileToExclude Include="System.Data.Common" />
+    <FileToExclude Include="System.Diagnostics.StackTrace" />
+
+    <!-- TODO: Unmanaged -->
+    <FileToExclude Include="clrcompression" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

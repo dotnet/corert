@@ -24,4 +24,4 @@ endif ()
 
 include(configure.cmake)
 
-install (TARGETS System.Private.CoreLib.Native DESTINATION lib)
+install (TARGETS System.Private.CoreLib.Native DESTINATION sdk)

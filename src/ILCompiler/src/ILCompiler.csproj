@@ -1,34 +1,28 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>ILCompiler</RootNamespace>
-    <!-- This is needed for VS Code debugging for ILC - it only likes DLL extension -->
-    <!-- This also aligns with .NET Core applications model -->
-    <!-- Note that we can't change the OutputType to be library - there is no entry point -->
-    <TargetExt>.dll</TargetExt>
-    <AssemblyName>ilc</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <DefineConstants>$(DefineConstants);FXCORE</DefineConstants>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
-    <CopyNugetImplementations>false</CopyNugetImplementations>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ilc</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <CopyNugetImplementations>false</CopyNugetImplementations>
   </PropertyGroup>
   <ItemGroup>
-    <PackageDestination Include="Tools">
-      <InProject>false</InProject>
-      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
-    </PackageDestination>
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.CppCodeGen\src\ILCompiler.CppCodeGen.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine">
+      <Version>0.1.0-e160909-1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -43,25 +37,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-    <!-- This is needed for VS Code debugging for ILC -->
     <Content Include="ilc.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj">
-      <Project>{13bb3788-c3eb-4046-8105-a95f8ae49404}</Project>
-      <Name>ILCompiler.Compiler</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.CppCodeGen\src\ILCompiler.CppCodeGen.csproj">
-      <Project>{971AE7E7-08C6-48B4-902A-63851E6DAC66}</Project>
-      <Name>ILCompiler.Compiler.Cpp</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
-      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
-      <Name>ILCompiler.TypeSystem</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <PropertyGroup>
+    <RunCommand Condition="'$(OS)' == 'Windows_NT'">$(TargetDir)$(AssemblyName).exe</RunCommand>
+    <RunCommand Condition="'$(OS)' != 'Windows_NT'">$(TargetDir)$(AssemblyName)</RunCommand>
+    <RunArguments>$(StartArguments)</RunArguments>
+  </PropertyGroup>
 </Project>

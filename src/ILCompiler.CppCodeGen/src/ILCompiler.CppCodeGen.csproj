@@ -1,39 +1,18 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{971AE7E7-08C6-48B4-902A-63851E6DAC66}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ILCompiler.CppCodeGen</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <TargetFramework>netstandard1.3</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageDestination Include="Tools">
-      <InProject>false</InProject>
-      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
-    </PackageDestination>
-  </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj">
-      <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
-      <Name>ILCompiler.DependencyAnalysisFramework</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
-      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
-      <Name>ILCompiler.TypeSystem</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj">
-      <Project>{13BB3788-C3EB-4046-8105-A95F8AE49404}</Project>
-      <Name>ILCompiler.Compiler</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
@@ -59,9 +38,6 @@
     <Compile Include="CppCodeGen\CppWriter.cs" />
     <Compile Include="CppCodeGen\NodeDataSection.cs" />
     <Compile Include="CppCodeGen\ILToCppImporter.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>

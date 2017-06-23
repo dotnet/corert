@@ -1,4 +1,4 @@
-@echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 set ThisScript=%0
@@ -125,6 +125,7 @@ if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrt.lib
 )
 
+if not exist "!__CoreRTTestBinDir!" (mkdir !__CoreRTTestBinDir!)
 echo. > %__CoreRTTestBinDir%\testResults.tmp
 
 set /a __CppTotalTests=0
@@ -163,8 +164,7 @@ set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
 set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
 set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
 
-echo ^<?xml version="1.0" encoding="utf-8"?^> > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
-echo ^<assemblies^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
+echo ^<assemblies^>  > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 type %__CoreRTTestBinDir%\testResults.tmp >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
@@ -233,9 +233,9 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
+    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
     echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
+    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -320,18 +320,16 @@ goto :eof
         set IlcMultiModule=true
         REM Pre-compile shared framework assembly
         echo Compiling framework library
-        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
-        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
+        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
+        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
     )
 
     echo.
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo!
-    set CORE_ROOT=%CoreRT_TestRoot%\..\Tools\dotnetcli\shared\Microsoft.NETCore.App\1.0.0
-    echo CORE_ROOT IS NOW %CORE_ROOT%
     pushd %CoreRT_TestRoot%\CoreCLR\runtest
-    
-    msbuild "/p:RepoLocalBuild=true" src\TestWrappersConfig\XUnitTooling.depproj
+
+    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true src\TestWrappersConfig\XUnitTooling.depproj
     if errorlevel 1 (
         exit /b 1
     )

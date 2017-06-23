@@ -1,20 +1,15 @@
 <Project DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
-  <!-- The following properties are in place to keep the behavior of build.cmd while we work on the dev workflow steps. -->
+  <!-- required to build the projects in their specified order -->
   <PropertyGroup>
-    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
-    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
-  </PropertyGroup>
-  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <ItemGroup>
+    <Project Include="src\Common\test-runtime\XUnit.Runtime.depproj" />
     <Project Include="src\dirs.proj" />
   </ItemGroup>
 
@@ -22,32 +17,6 @@
 
   <Import Project="dir.traversal.targets" />
 
-  <PropertyGroup Condition="'$(RestoreDuringBuild)'=='true'">
-    <TraversalBuildDependsOn>
-      BatchRestorePackages;
-      $(TraversalBuildDependsOn);
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-
-  <Target Name="BatchRestorePackages">
-    <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
-
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-
-    <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
-          ContinueOnError="ErrorAndContinue" />
-
-    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
-  </Target>
-
-  <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
-  <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
-
-  <!-- Override clean from dir.traversal.targets and just remove the full BinDir unless build.[cmd|sh] has already done the cleaning -->
-  <Target Name="Clean">
-    <RemoveDir Condition="'$(CleanedTheBuild)' != '1'" Directories="$(ObjDir)" />
-  </Target>
+  <Import Project="$(ToolsDir)clean.targets" />
 
 </Project>

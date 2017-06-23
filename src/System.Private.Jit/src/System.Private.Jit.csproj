@@ -1,11 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.Jit</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{82CAE34B-8C3B-4D47-A809-CB2E22E0D36B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
@@ -13,9 +11,6 @@
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <JitSupport>true</JitSupport>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(JitSupport)' == 'true'">
     <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -29,7 +24,7 @@
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-    <ReferencePath Include="$(EcmaMetadataDllPath)\System.Private.Reflection.Metadata.Ecma335.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />

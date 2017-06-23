@@ -26,17 +26,39 @@ build_managed_corert()
     __buildproj=$__ProjectRoot/build.proj
     __buildlog=$__ProjectRoot/msbuild.$__BuildArch.log
 
-    if [ -z "${ToolchainMilestone}" ]; then
-        ToolchainMilestone=testing
-    fi
-
     __buildarch="$__BuildArch"
     if [ "$__buildarch" = "armel" ]; then
         __buildarch=arm
         __ExtraMsBuildArgs="$__ExtraMsBuildArgs /p:BinDirPlatform=armel"
     fi
 
-    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:TestNugetRuntimeId=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs $__ExtraMsBuildArgs
+    $__dotnetclipath/dotnet msbuild "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Restore /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
+    export BUILDERRORLEVEL=$?
+
+    echo
+
+    # Pull the build summary from the log file
+    tail -n 4 "$__buildlog"
+    echo Build Exit Code = $BUILDERRORLEVEL
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
+
+    # Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
+    # the standalone app that the build injects actual binaries into later.
+    $__dotnetclipath/dotnet restore $__sourceroot/ILCompiler/netcoreapp/ilc.csproj -r $__NugetRuntimeId
+    export BUILDERRORLEVEL=$?
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
+    $__dotnetclipath/dotnet publish $__sourceroot/ILCompiler/netcoreapp/ilc.csproj -r $__NugetRuntimeId -o $__ProductBinDir/tools
+    export BUILDERRORLEVEL=$?
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
+    chmod +x $__ProductBinDir/tools/ilc
+
+    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
     export BUILDERRORLEVEL=$?
 
     echo
@@ -87,7 +109,7 @@ get_official_cross_builds()
                 exit $BUILDERRORLEVEL
             fi
             tar xvf ./build.tar.gz ./System.Native.a
-            mv ./System.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/packaging/publish1/framework
+            mv ./System.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
             rm -rf ./build.tar.gz
         fi
         if [ -n ${__coreclrsource} ]; then
@@ -96,7 +118,7 @@ get_official_cross_builds()
             if [ $BUILDERRORLEVEL != 0 ]; then
                 exit $BUILDERRORLEVEL
             fi
-            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/packaging/publish1/framework
+            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
         fi
      fi
 }
