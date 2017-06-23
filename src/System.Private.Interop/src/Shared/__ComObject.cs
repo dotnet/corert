@@ -1689,11 +1689,7 @@ namespace System
             castError = null;
             IntPtr pComPtr = IntPtr.Zero;
 
-            if (!McgModuleManager.UseDynamicInterop)
-                return null;
-
             // CastableObject support used for generics *only* for now
-
             if (!interfaceType.IsGenericType())
             {
                 RuntimeTypeHandle genericInterfaceType = FindCastableGenericInterfaceInCache(interfaceType, out pComPtr);
@@ -1846,9 +1842,7 @@ namespace System
             bool hasValidDispatcher = true;
 
 #if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
-            hasValidDispatcher = McgModuleManager.UseDynamicInterop && interfaceType.IsGenericType() ? 
-                !interfaceType.GetDispatchClassType().IsInvalid() : 
-                true;
+            hasValidDispatcher = interfaceType.IsGenericType() ? !interfaceType.GetDispatchClassType().IsInvalid() : true;
 #endif
 
             try
