@@ -1438,11 +1438,8 @@ namespace System.Runtime.InteropServices
         {
             if (arr == null)
                 throw new ArgumentNullException(nameof(arr));
-
-            if (index < 0 || index >= arr.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            
             Contract.EndContractBlock();
-
             int offset = checked(index * arr.GetElementSize());
 
             return arr.GetAddrOfPinnedArrayFromEETypeField() + offset;
