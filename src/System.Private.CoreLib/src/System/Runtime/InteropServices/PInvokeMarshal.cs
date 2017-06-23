@@ -375,7 +375,7 @@ namespace System.Runtime.InteropServices
         [McgIntrinsics]
         private static unsafe class CalliIntrinsics
         {
-            internal static T Call<T>(IntPtr pfn, IntPtr arg0) { throw new NotImplementedException(); }
+            internal static T Call<T>(IntPtr pfn, IntPtr arg0) { throw new NotSupportedException(); }
         }
         #endregion
 
