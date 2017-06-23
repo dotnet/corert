@@ -120,6 +120,37 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
+        protected sealed override IEnumerable<TypeForwardInfo> TypeForwardInfos
+        {
+            get
+            {
+                foreach (QScopeDefinition scope in AllScopes)
+                {
+                    MetadataReader reader = scope.Reader;
+                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
+                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
+                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
+                    foreach (NamespaceDefinitionHandle namespaceHandle in allNamespaceHandles)
+                    {
+                        string namespaceName = null;
+                        foreach (TypeForwarderHandle typeForwarderHandle in namespaceHandle.GetNamespaceDefinition(reader).TypeForwarders)
+                        {
+                            if (namespaceName == null)
+                            {
+                                namespaceName = namespaceHandle.ToNamespaceName(reader);
+                            }
+
+                            TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
+                            string typeName = typeForwarder.Name.GetString(reader);
+                            RuntimeAssemblyName redirectedAssemblyName = typeForwarder.Scope.ToRuntimeAssemblyName(reader);
+
+                            yield return new TypeForwardInfo(redirectedAssemblyName, namespaceName, typeName);
+                        }
+                    }
+                }
+            }
+        }
+
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);

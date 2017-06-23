@@ -125,6 +125,69 @@ namespace System.Reflection.Runtime.Assemblies
             return RuntimeAssemblyName.ToAssemblyName();
         }
 
+        public sealed override Type[] GetForwardedTypes()
+        {
+            List<Type> types = new List<Type>();
+            List<Exception> exceptions = null;
+
+            foreach (TypeForwardInfo typeForwardInfo in TypeForwardInfos)
+            {
+                string fullTypeName = typeForwardInfo.NamespaceName.Length == 0 ? typeForwardInfo.TypeName : typeForwardInfo.NamespaceName + "." + typeForwardInfo.TypeName;
+                RuntimeAssemblyName redirectedAssemblyName = typeForwardInfo.RedirectedAssemblyName;
+
+                Type type = null;
+                RuntimeAssembly redirectedAssembly;
+                Exception exception = RuntimeAssembly.TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
+                if (exception == null)
+                {
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
+                    if (type == null)
+                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                }
+
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+
+                if (type != null)
+                {
+                    types.Add(type);
+                    AddPublicNestedTypes(type, types);
+                }
+                else
+                {
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(exception);
+                }
+            }
+
+            if (exceptions != null)
+            {
+                int numTypes = types.Count;
+                int numExceptions = exceptions.Count;
+                types.AddRange(new Type[numExceptions]); // add one null Type for each exception.
+                exceptions.InsertRange(0, new Exception[numTypes]); // align the Exceptions with the null Types.
+                throw new ReflectionTypeLoadException(types.ToArray(), exceptions.ToArray());
+            }
+
+            return types.ToArray();
+        }
+
+        /// <summary>
+        /// Intentionally excludes forwards to nested types.
+        /// </summary>
+        protected abstract IEnumerable<TypeForwardInfo> TypeForwardInfos { get; }
+
+        private static void AddPublicNestedTypes(Type type, List<Type> types)
+        {
+            foreach (Type nestedType in type.GetNestedTypes(BindingFlags.Public))
+            {
+                types.Add(nestedType);
+                AddPublicNestedTypes(nestedType, types);
+            }
+        }
+
         /// <summary>
         /// Helper routine for the more general Type.GetType() family of apis.
         ///
