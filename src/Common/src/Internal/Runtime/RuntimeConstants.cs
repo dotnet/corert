@@ -45,4 +45,12 @@ namespace Internal.Runtime
 
         public const int Mask = Uninitialized | HasPreInitializedData;
     }
+
+    internal static class ArrayTypesConstants
+    {
+        /// <summary>
+        /// Maximum allowable size for array element types.
+        /// </summary>
+        public const int MaxSizeForValueClassInArray = 0xFFFF;
+    }
 }
