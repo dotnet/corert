@@ -103,6 +103,8 @@ extern "C" void NYI_Assert(const char *message, ...)
     vprintf(message, args);
     va_end(args);
     ASSERT_UNCONDITIONALLY("NYI");
+#else
+    UNREFERENCED_PARAMETER(message);
 #endif
 }
 
