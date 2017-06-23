@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.ObjectWriter": "1.0.18-prerelease-00002"
+    "Microsoft.DotNet.ObjectWriter": "1.0.19-prerelease-00001"
   },
   "frameworks": {
     "dnxcore50": { }

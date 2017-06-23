@@ -67,26 +67,65 @@ EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double d
     // else...
     return(fmod(dividend,divisor));
 }
+
+EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRound(double value)
+{
+    return round(value);
+}
+
+EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRound(float value)
+{
+    return roundf(value);
+}
+
 #endif // CORERT
 
 #ifdef _ARM_
 EXTERN_C REDHAWK_API Int32 REDHAWK_CALLCONV RhpIDiv(Int32 i, Int32 j)
 {
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+
+EXTERN_C REDHAWK_API UInt32 REDHAWK_CALLCONV RhpUDiv(UInt32 i, UInt32 j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+
+EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLDiv(Int64 i, Int64 j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i / j;
+}
+
+EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpULDiv(UInt64 i, UInt64 j)
+{
+    ASSERT(j && "Divide by zero!");
     return i / j;
 }
 
 EXTERN_C REDHAWK_API Int32 REDHAWK_CALLCONV RhpIMod(Int32 i, Int32 j)
 {
+    ASSERT(j && "Divide by zero!");
     return i % j;
-}
-
-EXTERN_C REDHAWK_API UInt32 REDHAWK_CALLCONV RhpUDiv(UInt32 i, UInt32 j)
-{
-    return i / j;
 }
 
 EXTERN_C REDHAWK_API UInt32 REDHAWK_CALLCONV RhpUMod(UInt32 i, UInt32 j)
 {
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+
+EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLMod(Int64 i, Int64 j)
+{
+    ASSERT(j && "Divide by zero!");
+    return i % j;
+}
+
+EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpULMod(UInt64 i, UInt64 j)
+{
+    ASSERT(j && "Divide by zero!");
     return i % j;
 }
 
@@ -95,34 +134,39 @@ EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLMul(Int64 i, Int64 j)
     return i * j;
 }
 
-EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLDiv(Int64 i, Int64 j)
-{
-    return i / j;
-}
-
-EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLMod(Int64 i, Int64 j)
-{
-    return i % j;
-}
-
 EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpULMul(UInt64 i, UInt64 j)
 {
     return i * j;
 }
 
-EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpULDiv(UInt64 i, UInt64 j)
+EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpLRsz(UInt64 i, Int32 j)
 {
-    return i / j;
+    return i >> j;
 }
 
-EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpULMod(UInt64 i, UInt64 j)
+EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLRsh(Int64 i, Int32 j)
 {
-    return i % j;
+    return i >> j;
+}
+
+EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpLLsh(Int64 i, Int32 j)
+{
+    return i << j;
 }
 
 EXTERN_C REDHAWK_API Int64 REDHAWK_CALLCONV RhpDbl2Lng(double val)
 {
     return (Int64)val;
+}
+
+EXTERN_C REDHAWK_API Int32 REDHAWK_CALLCONV RhpDbl2Int(double val)
+{
+    return (Int32)val;
+}
+
+EXTERN_C REDHAWK_API UInt32 REDHAWK_CALLCONV RhpDbl2UInt(double val)
+{
+    return (UInt32)val;
 }
 
 EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpLng2Dbl(Int64 val)

@@ -1223,6 +1223,16 @@ COOP_PINVOKE_HELPER(Boolean, RhSetThreadStaticStorageForModule, (Array * pStorag
     Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->SetThreadStaticStorageForModule((Object*)pStorage, moduleIndex);
 }
+
+// This is function is used to quickly query a value that can uniquely identify a thread
+COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
+{
+#ifndef PLATFORM_UNIX
+    return PalNtCurrentTeb();
+#else
+    return (UInt8*)ThreadStore::RawGetCurrentThread();
+#endif // PLATFORM_UNIX
+}
 #endif // CORERT
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread

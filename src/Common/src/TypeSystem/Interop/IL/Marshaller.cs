@@ -1902,11 +1902,18 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(_managedField));
 
+                var lNullCheck = emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(_managedField));
+
                 codeStream.Emit(ILOpcode.ldlen);
                 codeStream.Emit(ILOpcode.conv_i4);
                 codeStream.EmitStLoc(vLength);
 
-                
+                codeStream.EmitLabel(lNullCheck);
+
                 Debug.Assert(MarshalAsDescriptor.SizeConst.HasValue);
                 int sizeConst = (int)MarshalAsDescriptor.SizeConst.Value;
 
@@ -1969,8 +1976,6 @@ namespace Internal.TypeSystem.Interop
             // check if ManagedType == null, then return
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(_managedField));
-            codeStream.Emit(ILOpcode.ldnull);
-            codeStream.Emit(ILOpcode.cgt_un);
             codeStream.Emit(ILOpcode.brfalse, lDone);
 
             codeStream.EmitLdArg(1);

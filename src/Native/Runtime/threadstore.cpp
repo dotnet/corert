@@ -61,7 +61,7 @@ PTR_Thread ThreadStore::Iterator::GetNext()
 
 ThreadStore::ThreadStore() : 
     m_ThreadList(),
-    m_Lock()
+    m_Lock(true /* writers (i.e. attaching/detaching threads) should wait on GC event */)
 {
     SaveCurrentThreadOffsetForDAC();
 }
@@ -128,13 +128,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     //
     pAttachingThread->Construct();
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
-
-    // The runtime holds the thread store lock for the duration of thread suspension for GC, so let's check to 
-    // see if that's going on and, if so, use a proper wait instead of the RWL's spinning.  NOTE: when we are 
-    // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to 
-    // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
-    if (fAcquireThreadStoreLock && (RhpTrapThreads != 0))
-        RedhawkGCInterface::WaitForGCCompletion();
 
     ThreadStore* pTS = GetThreadStore();
     ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);

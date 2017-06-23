@@ -13,6 +13,10 @@ namespace ILCompiler
     // 
     public class WindowsNodeMangler : NodeMangler
     {
+        public const string NonGCStaticMemberName = "__NONGCSTATICS";
+        public const string GCStaticMemberName = "__GCSTATICS";
+        public const string ThreadStaticMemberName = "__THREADSTATICS";
+
         // Mangled name of boxed version of a type
         public sealed override string MangledBoxedTypeName(TypeDesc type)
         {
@@ -33,17 +37,17 @@ namespace ILCompiler
 
         public sealed override string GCStatics(TypeDesc type)
         {
-            return NameMangler.GetMangledTypeName(type) + "::__GCSTATICS";
+            return NameMangler.GetMangledTypeName(type) + "::" + GCStaticMemberName;
         }
 
         public sealed override string NonGCStatics(TypeDesc type)
         {
-            return NameMangler.GetMangledTypeName(type) + "::__NONGCSTATICS";
+            return NameMangler.GetMangledTypeName(type) + "::" + NonGCStaticMemberName;
         }
 
         public sealed override string ThreadStatics(TypeDesc type)
         {
-            return NameMangler.CompilationUnitPrefix + NameMangler.GetMangledTypeName(type) + "::__THREADSTATICS";
+            return NameMangler.CompilationUnitPrefix + NameMangler.GetMangledTypeName(type) + "::" + ThreadStaticMemberName;
         }
 
         public sealed override string TypeGenericDictionary(TypeDesc type)

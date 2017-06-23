@@ -6,6 +6,8 @@ class ReaderWriterLock
 {
     volatile Int32  m_RWLock;       // lock used for R/W synchronization
     Int32           m_spinCount;    // spin count for a reader waiting for a writer to release the lock
+    bool            m_fBlockOnGc;   // True if the spinning writers should block when GC is in progress
+
 
 #if 0
     // used to prevent writers from being starved by readers
@@ -36,7 +38,7 @@ public:
         ~WriteHolder();
     };
 
-    ReaderWriterLock();
+    ReaderWriterLock(bool fBlockOnGc = false);
 
     void AcquireReadLock();
     void ReleaseReadLock();

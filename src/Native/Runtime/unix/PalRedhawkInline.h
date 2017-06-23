@@ -90,7 +90,7 @@ FORCEINLINE void PalMemoryBarrier()
     __sync_synchronize();
 }
 
-#define PalDebugBreak() __builtin_trap()
+#define PalDebugBreak() abort()
 
 FORCEINLINE Int32 PalGetLastError()
 {

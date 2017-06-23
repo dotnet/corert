@@ -18,77 +18,75 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
-            ISymbolNode NYI_Assert = factory.ExternSymbol("NYI_Assert");
-
             switch (Id)
             {
                 case ReadyToRunHelperId.NewHelper:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.NewHelper);
                     }
                     break;
 
                 case ReadyToRunHelperId.VirtualCall:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.VirtualCall);
                     }
                     break;
 
                 case ReadyToRunHelperId.IsInstanceOf:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.IsInstanceOf);
                     }
                     break;
 
                 case ReadyToRunHelperId.CastClass:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.CastClass);
                     }
                     break;
 
                 case ReadyToRunHelperId.NewArr1:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.NewArr1);
                     }
                     break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.GetNonGCStaticBase);
                     }
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.GetThreadStaticBase);
                     }
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.GetGCStaticBase);
                     }
                     break;
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.DelegateCtor);
                     }
                     break;
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
-                        encoder.EmitJMP(NYI_Assert);
+                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.ResolveVirtualFunction);
                     }
                     break;
 
