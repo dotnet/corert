@@ -165,6 +165,7 @@ namespace ILCompiler
 
         private string EnterNameScopeSequence => _mangleForCplusPlus ? "_A_" : "<";
         private string ExitNameScopeSequence => _mangleForCplusPlus ? "_V_" : ">";
+        private string DelimitNameScopeSequence => _mangleForCplusPlus? "_C_" : ",";
 
         protected string NestMangledName(string name)
         {
@@ -275,17 +276,15 @@ namespace ILCompiler
             switch (type.Category)
             {
                 case TypeFlags.Array:
+                    mangledName = "__MDArray" + 
+                                  EnterNameScopeSequence + 
+                                  GetMangledTypeName(((ArrayType)type).ElementType) + 
+                                  DelimitNameScopeSequence + 
+                                  ((ArrayType)type).Rank.ToStringInvariant() + 
+                                  ExitNameScopeSequence;
+                    break;
                 case TypeFlags.SzArray:
-                    mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__";
-
-                    if (type.IsMdArray)
-                    {
-                        mangledName += NestMangledName("ArrayRank" + ((ArrayType)type).Rank.ToStringInvariant());
-                    }
-                    else
-                    {
-                        mangledName += NestMangledName("Array");
-                    }
+                    mangledName = "__Array" + NestMangledName(GetMangledTypeName(((ArrayType)type).ElementType));
                     break;
                 case TypeFlags.ByRef:
                     mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + NestMangledName("ByRef");

@@ -226,6 +226,11 @@ namespace Internal.JitInterface
                 if (!signature.IsStatic)
                 {
                     TypeDesc type = MethodBeingCompiled.OwningType;
+
+                    // This pointer for value types is a byref
+                    if (MethodBeingCompiled.OwningType.IsValueType)
+                        type = type.MakeByRefType();
+
                     variableToTypeDesc.Add(type);
                 }
 

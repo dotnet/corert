@@ -198,7 +198,6 @@ namespace Internal.TypeSystem
 
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            Debug.Assert(kind == CanonicalFormKind.Universal);
             return this;
         }
 
