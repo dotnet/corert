@@ -226,6 +226,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(EnableWinRT)'=='true'">
     <Compile Include="InteropCallbacks.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>      
     <Compile Include="WinRT\ExceptionHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />

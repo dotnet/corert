@@ -375,11 +375,36 @@ namespace System.Runtime.InteropServices
         [McgIntrinsics]
         private static unsafe class CalliIntrinsics
         {
-            internal static T Call<T>(IntPtr pfn, IntPtr arg0) { throw new NotImplementedException(); }
+            internal static T Call<T>(IntPtr pfn, IntPtr arg0) { throw new NotSupportedException(); }
         }
         #endregion
 
         #region String marshalling
+        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
+        {
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
+            if (len < 0)
+                throw new ArgumentException(nameof(len));
+
+            return new String((char*)ptr, 0, len);
+        }
+
+        public static unsafe String PtrToStringUni(IntPtr ptr)
+        {
+            if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else if (IsWin32Atom(ptr))
+            {
+                return null;
+            }
+            else
+            {
+                return new String((char*)ptr);
+            }
+        }
 
         public static unsafe void StringBuilderToUnicodeString(System.Text.StringBuilder stringBuilder, ushort* destination)
         {

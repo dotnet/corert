@@ -564,7 +564,7 @@ namespace System.Runtime.InteropServices
                     exception = new System.Security.VerificationException();
                     break;
                 case __HResults.E_NOTIMPL:
-                    exception = new NotImplementedException();
+                    exception = NotImplemented.ByDesign;
                     break;
                 case __HResults.E_OUTOFMEMORY:
                 case __HResults.CTL_E_OUTOFMEMORY:

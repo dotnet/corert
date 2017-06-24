@@ -996,7 +996,12 @@ namespace Internal.Runtime.TypeLoader
                 {
                     if (arrayType.ElementType is DefType)
                     {
-                        return checked((ushort)((DefType)arrayType.ElementType).InstanceFieldSize.AsInt);
+                        uint size = (uint)((DefType)arrayType.ElementType).InstanceFieldSize.AsInt;
+
+                        if (size > ArrayTypesConstants.MaxSizeForValueClassInArray && arrayType.ElementType.IsValueType)
+                            throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, arrayType.ElementType);
+
+                        return checked((ushort)size);
                     }
                     else
                     {

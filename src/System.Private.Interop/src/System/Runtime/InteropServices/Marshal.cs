@@ -99,28 +99,12 @@ namespace System.Runtime.InteropServices
 
         public static unsafe String PtrToStringUni(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-            if (len < 0)
-                throw new ArgumentException(nameof(len));
-
-            return new String((char*)ptr, 0, len);
+            return PInvokeMarshal.PtrToStringUni(ptr, len);
         }
 
         public static unsafe String PtrToStringUni(IntPtr ptr)
         {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-            else if (IsWin32Atom(ptr))
-            {
-                return null;
-            }
-            else
-            {
-                return new String((char*)ptr);
-            }
+            return PInvokeMarshal.PtrToStringUni(ptr);
         }
 
         public static String PtrToStringAuto(IntPtr ptr, int len)
@@ -1438,11 +1422,8 @@ namespace System.Runtime.InteropServices
         {
             if (arr == null)
                 throw new ArgumentNullException(nameof(arr));
-
-            if (index < 0 || index >= arr.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            
             Contract.EndContractBlock();
-
             int offset = checked(index * arr.GetElementSize());
 
             return arr.GetAddrOfPinnedArrayFromEETypeField() + offset;

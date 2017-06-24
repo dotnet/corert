@@ -193,6 +193,10 @@ namespace Internal.TypeSystem
 
             public static string OwningModule(TypeDesc type)
             {
+#if TYPE_LOADER_IMPLEMENTATION
+                if (type is NoMetadata.NoMetadataType)
+                    return ((NoMetadata.NoMetadataType)type).ModuleName;
+#endif
                 return Module((type as MetadataType)?.Module);
             }
 

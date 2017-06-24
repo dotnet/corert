@@ -4,13 +4,16 @@
 
 
 using System;
+using System.Text;
+using System.Reflection.Runtime.General;
+using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
-using System.Text;
+using Internal.Metadata.NativeFormat;
+
 using Debug = System.Diagnostics.Debug;
-using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.NoMetadata
 {
@@ -277,6 +280,69 @@ namespace Internal.TypeSystem.NoMetadata
 
                     return Context.GetTypeFromCorElementType(corElementType);
                 }
+            }
+        }
+
+        private void GetTypeNameHelper(out string name, out string nsName, out string assemblyName)
+        {
+            TypeReferenceHandle typeRefHandle;
+            QTypeDefinition qTypeDefinition;
+            MetadataReader reader;
+
+            RuntimeTypeHandle genericDefinitionHandle = GetTypeDefinition().GetRuntimeTypeHandle();
+            Debug.Assert(!genericDefinitionHandle.IsNull());
+
+            // NOTE: We're ignoring the containing type for compatiblity with SigFormat.cpp
+            string enclosingDummy;
+
+            // Try to get the name from metadata
+            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(genericDefinitionHandle, out qTypeDefinition))
+            {
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
+                typeDefHandle.GetFullName(qTypeDefinition.NativeFormatReader, out name, out enclosingDummy, out nsName);
+                assemblyName = typeDefHandle.GetContainingModuleName(qTypeDefinition.NativeFormatReader);
+            }
+            // Try to get the name from diagnostic metadata
+            else if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(genericDefinitionHandle, out reader, out typeRefHandle))
+            {
+                typeRefHandle.GetFullName(reader, out name, out enclosingDummy, out nsName);
+                assemblyName = typeRefHandle.GetContainingModuleName(reader);
+            }
+            else
+            {
+                name = genericDefinitionHandle.LowLevelToStringRawEETypeAddress();
+                nsName = "";
+                assemblyName = "?";
+            }
+        }
+
+        public override string Namespace
+        {
+            get
+            {
+                string name, nsName, assemblyName;
+                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                return nsName;
+            }
+        }
+
+        public override string Name
+        {
+            get
+            {
+                string name, nsName, assemblyName;
+                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                return name;
+            }
+        }
+
+        public string ModuleName
+        {
+            get
+            {
+                string name, nsName, assemblyName;
+                GetTypeNameHelper(out name, out nsName, out assemblyName);
+                return assemblyName;
             }
         }
 
