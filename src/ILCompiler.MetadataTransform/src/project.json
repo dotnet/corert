@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "NETStandard.Library": "1.6.1",
-    "System.Reflection.Metadata": "1.4.2"
-  },
-  "frameworks": {
-    "netstandard1.3": { }
-  }
-}

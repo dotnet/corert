@@ -8,7 +8,7 @@ set(SOURCES
 add_library(bootstrapper STATIC ${SOURCES})
 
 # Install the static bootstrapper library
-install (TARGETS bootstrapper DESTINATION lib)
+install (TARGETS bootstrapper DESTINATION sdk)
 if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bootstrapper.dir/$<CONFIG>/bootstrapper.pdb DESTINATION lib)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/bootstrapper.dir/$<CONFIG>/bootstrapper.pdb DESTINATION sdk)
 endif()

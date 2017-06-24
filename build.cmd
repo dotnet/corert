@@ -36,6 +36,14 @@ exit /b %ERRORLEVEL%
 
 :AfterNativeBuild
 
+call %~dp0buildscripts\build-restore.cmd %*
+
+IF NOT ERRORLEVEL 1 goto AfterRestoreBuild
+echo Managed component build failed. Refer !__BuildLog! for details.
+exit /b %ERRORLEVEL%
+
+:AfterRestoreBuild
+
 call %~dp0buildscripts\build-managed.cmd %*
 
 IF NOT ERRORLEVEL 1 goto AfterManagedBuild

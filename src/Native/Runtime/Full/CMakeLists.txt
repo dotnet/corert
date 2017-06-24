@@ -72,7 +72,7 @@ foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
 endforeach()
 
 # Install the static Runtime library
-install (TARGETS Runtime DESTINATION lib)
+install (TARGETS Runtime DESTINATION sdk)
 if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION lib)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION sdk)
 endif()

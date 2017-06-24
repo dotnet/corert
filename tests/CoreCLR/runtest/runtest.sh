@@ -209,8 +209,7 @@ function xunit_output_end {
         ((errorCount = 1))
     fi
 
-    echo '<?xml version="1.0" encoding="utf-8"?>' >>"$xunitOutputPath"
-    echo '<assemblies>' >>"$xunitOutputPath"
+    echo '<assemblies>' >"$xunitOutputPath"
 
     local line
 

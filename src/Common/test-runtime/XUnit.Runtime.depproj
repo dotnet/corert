@@ -1,0 +1,34 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
+         This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
+    -->
+    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <RidSpecificAssets>true</RidSpecificAssets>
+    <OutputPath>$(RuntimePath)</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.console.netcore">
+      <Version>1.0.3-prerelease-00921-01</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
+      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.xunit.netcore.extensions">
+      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageToInclude Include="xunit.abstractions"/>
+    <PackageToInclude Include="xunit.assert"/>
+    <PackageToInclude Include="xunit.extensibility.core"/>
+    <PackageToInclude Include="xunit.extensibility.execution"/>
+    <PackageToInclude Include="xunit.runner.utility"/>
+    <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
+    <PackageToInclude Include="xunit.console.netcore" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
