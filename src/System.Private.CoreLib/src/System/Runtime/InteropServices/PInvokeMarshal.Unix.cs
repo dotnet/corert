@@ -23,6 +23,11 @@ namespace System.Runtime.InteropServices
             Interop.Sys.ClearErrNo();
         }
 
+        private static bool IsWin32Atom(IntPtr ptr)
+        {
+            return false;
+        }
+
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
