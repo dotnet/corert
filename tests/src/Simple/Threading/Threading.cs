@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
+using System.Threading.Tasks;
 
 // TODO: Move these tests to CoreFX once they can be run on CoreRT
 
@@ -35,6 +37,28 @@ internal static class Runner
         // This test takes a long time to run in release and especially in debug builds. Enable for manual testing.
         //Console.WriteLine("    WaitSubsystemTests.MutexMaximumReacquireCountTest");
         //WaitSubsystemTests.MutexMaximumReacquireCountTest();
+
+        Console.WriteLine("    ThreadPoolTests.RunProcessorCountItemsInParallel");
+        ThreadPoolTests.RunProcessorCountItemsInParallel();
+       
+        Console.WriteLine("    ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForOthers");
+        ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForOthers();
+
+        Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable");
+        ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable();
+
+        Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable");
+        ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable();
+
+        // This test takes a long time to run (min 42 seconds sleeping). Enable for manual testing.
+        // Console.WriteLine("    ThreadPoolTests.RunJobsAfterThreadTimeout");
+        // ThreadPoolTests.RunJobsAfterThreadTimeout();
+
+        Console.WriteLine("    ThreadPoolTests.ThreadLocalWorkQueueDepletionTest");
+        ThreadPoolTests.ThreadLocalWorkQueueDepletionTest();
+
+        Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
+        ThreadPoolTests.WorkerThreadStateReset();
 
         return Pass;
     }
@@ -755,6 +779,240 @@ internal static class WaitSubsystemTests
         verify(true, true, true, true);
 
         m.Dispose();
+    }
+}
+
+internal static class ThreadPoolTests
+{
+    [Fact]
+    public static void RunProcessorCountItemsInParallel()
+    {
+        int count = 0;
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        // Run the test again to make sure we can reuse the threads.
+        count = 0;
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void RunMoreThanMaxJobsMakesOneJobWaitForOthers()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        int count = 0;
+        AutoResetEvent e1 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                Console.WriteLine("Executing");
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    Console.WriteLine("All jobs queued");
+                    jobsQueued.Set();
+                }
+                Console.WriteLine("Waiting");
+                e0.WaitOne();
+                Console.WriteLine("Completed Job");
+            });
+        }
+        jobsQueued.WaitOne();
+        Task.Factory.StartNew(() => e1.Set());
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Console.WriteLine("Signaling");
+        e0.Set();
+        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void ThreadPoolCanPickUpOneJobWhenThreadIsAvailable()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                Console.WriteLine("Executing");
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                Console.WriteLine("Waiting");
+                e0.WaitOne();
+            });
+        }
+        jobsQueued.WaitOne();
+        Console.WriteLine("Queuing last job");
+        Task.Factory.StartNew(() => testJobCompleted.Set());
+        Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        e0.Set();
+    }
+
+    [Fact]
+    public static void ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.WaitOne();
+            });
+        }
+        jobsQueued.WaitOne();
+        int testJobsCount = 0;
+        int maxCount = 5;
+        void Job()
+        {
+            if(Interlocked.Increment(ref testJobsCount) != maxCount)
+            {
+                Task.Factory.StartNew(Job);
+            }
+            else
+            {
+                testJobCompleted.Set();
+            }
+        }
+        Task.Factory.StartNew(Job);
+        Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        e0.Set();
+    }
+
+    private static Action CreateRecursiveJob(int jobCount, int targetJobCount, AutoResetEvent testJobCompleted)
+    {
+        return () =>
+        {
+            if (jobCount == targetJobCount)
+            {
+                testJobCompleted.Set();
+            }
+            else
+            {
+                Task.Factory.StartNew(CreateRecursiveJob(jobCount + 1, targetJobCount, testJobCompleted));
+            }
+        };
+    }
+
+    [Fact]
+    [OuterLoop]
+    public static void RunJobsAfterThreadTimeout()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.WaitOne();
+            });
+        }
+        jobsQueued.WaitOne();
+        Task.Factory.StartNew(() => testJobCompleted.Set());
+        Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Console.Write("Sleeping to time out thread\n");
+        Thread.Sleep(21000);
+        Task.Factory.StartNew(() => testJobCompleted.Set());
+        Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        e0.Set();
+        Console.Write("Sleeping to time out all threads\n");
+        Thread.Sleep(21000);
+        Task.Factory.StartNew(() => testJobCompleted.Set());
+        Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void ThreadLocalWorkQueueDepletionTest()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        int count = 0;
+        int maxCount = Environment.ProcessorCount * 64;
+        object syncRoot = new object();
+        void Job()
+        {
+            if(Interlocked.Increment(ref count) >= maxCount)
+            {
+                e0.Set();
+            }
+            else
+            {
+                Task.Factory.StartNew(Job);
+                Task.Factory.StartNew(Job);
+            }
+        }
+        Task.Factory.StartNew(Job);
+        e0.WaitOne();
+    }
+
+    [Fact]
+    public static void WorkerThreadStateReset()
+    {
+        var cultureInfo = new CultureInfo("pt-BR");
+        var expectedCultureInfo = CultureInfo.CurrentCulture;
+        var expectedUICultureInfo = CultureInfo.CurrentUICulture;
+        int count = 0;
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            Task.Factory.StartNew(() => {
+                CultureInfo.CurrentCulture = cultureInfo;
+                CultureInfo.CurrentUICulture = cultureInfo;
+                //Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        // Run the test again to make sure we can reuse the threads.
+        count = 0;
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            Assert.Equal(expectedCultureInfo, CultureInfo.CurrentCulture);
+            Assert.Equal(expectedUICultureInfo, CultureInfo.CurrentUICulture);
+            //Assert.Equal(ThreadPriority.Normal, Thread.CurrentThread.Priority);
+            Task.Factory.StartNew(() => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 }
 
