@@ -232,6 +232,7 @@ namespace System.Threading
                     RuntimeThread workerThread = RuntimeThread.Create(WorkerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
+                    workerThread.Name = $"Worker Thread {workerThread.ManagedThreadId}";
                     workerThread.Start();
                 }
                 catch (ThreadStartException)

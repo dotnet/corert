@@ -266,7 +266,7 @@ namespace System.Threading
             if(elapsedInterval >= requiredInterval)
             {
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                return counts.numExistingThreads >= counts.numThreadsGoal;
+                //return counts.numExistingThreads >= counts.numThreadsGoal;
             }
             return false;
         }
@@ -275,7 +275,14 @@ namespace System.Threading
         {
             Interlocked.Increment(ref _numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker();
-            GateThread.EnsureRunning();
+            //GateThread.EnsureRunning();
         }
+
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
+        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format, int param1);
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
+        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format, int param1, int param2);
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
+        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format);
     }
 }

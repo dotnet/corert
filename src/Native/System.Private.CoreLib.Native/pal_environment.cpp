@@ -30,3 +30,13 @@ extern "C" void CoreLibNative_Exit(int32_t exitCode)
 {
     exit(exitCode);
 }
+
+#include <stdio.h>
+
+extern "C" void CoreLibNative_Printf(char const* const format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
