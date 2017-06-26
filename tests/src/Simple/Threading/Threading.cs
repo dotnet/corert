@@ -990,7 +990,7 @@ internal static class ThreadPoolTests
             Task.Factory.StartNew(() => {
                 CultureInfo.CurrentCulture = cultureInfo;
                 CultureInfo.CurrentUICulture = cultureInfo;
-                //Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
                 if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
                 {
                     e0.Set();
@@ -1004,7 +1004,7 @@ internal static class ThreadPoolTests
         {
             Assert.Equal(expectedCultureInfo, CultureInfo.CurrentCulture);
             Assert.Equal(expectedUICultureInfo, CultureInfo.CurrentUICulture);
-            //Assert.Equal(ThreadPriority.Normal, Thread.CurrentThread.Priority);
+            Assert.Equal(ThreadPriority.Normal, Thread.CurrentThread.Priority);
             Task.Factory.StartNew(() => {
                 if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
                 {
