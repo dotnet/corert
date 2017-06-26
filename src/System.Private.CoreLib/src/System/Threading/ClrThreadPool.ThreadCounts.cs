@@ -75,10 +75,10 @@ namespace System.Threading
 
             private void Validate()
             {
-                Debug.Assert(numThreadsGoal > 0);
-                Debug.Assert(numExistingThreads >= 0);
-                Debug.Assert(numProcessingWork >= 0);
-                Debug.Assert(numProcessingWork <= numExistingThreads);
+                Debug.Assert(numThreadsGoal > 0, "Goal must be positive");
+                Debug.Assert(numExistingThreads >= 0, "Number of existing threads must be non-zero");
+                Debug.Assert(numProcessingWork >= 0, "Number of threads processing work must be non-zero");
+                Debug.Assert(numProcessingWork <= numExistingThreads, $"Num processing work ({numProcessingWork}) must be less than or equal to Num existing threads ({numExistingThreads})");
             }
         }
     }
