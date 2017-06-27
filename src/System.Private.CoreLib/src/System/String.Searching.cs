@@ -230,10 +230,16 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return FormatProvider.IndexOf(this, value, startIndex, count);
+                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.None);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return FormatProvider.IndexOfIgnoreCase(this, value, startIndex, count);
+                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
+
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     return FormatProvider.OrdinalIndexOf(this, value, startIndex, count);
@@ -429,16 +435,23 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return FormatProvider.LastIndexOf(this, value, startIndex, count);
+                    return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.None);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return FormatProvider.LastIndexOfIgnoreCase(this, value, startIndex, count);
+                    return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
+
+                case StringComparison.InvariantCulture:
+                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
                     return FormatProvider.OrdinalLastIndexOf(this, value, startIndex, count);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.OrdinalLastIndexOfIgnoreCase(this, value, startIndex, count);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
