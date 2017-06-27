@@ -136,13 +136,14 @@ namespace System.Threading
                     int timeout = Timeout.Infinite;
                     for (int i = 0; i < numUserWaits; i++)
                     {
+                        int handleRemaining = _registeredWaitHandles[i].TimeoutTime - preWaitTicks;
                         if (timeout == Timeout.Infinite)
                         {
-                            timeout = _registeredWaitHandles[i].TimeoutTime - preWaitTicks;
+                            timeout = handleRemaining > 0 ? handleRemaining : 0;
                         }
                         else
                         {
-                            timeout = Math.Min(_registeredWaitHandles[i].TimeoutTime - preWaitTicks, timeout);
+                            timeout = Math.Min(handleRemaining > 0 ? handleRemaining : 0, timeout);
                         }
                     }
 
@@ -156,12 +157,12 @@ namespace System.Threading
                     }
                     else
                     {
-                        int elapsedTimeoutTime = Environment.TickCount - preWaitTicks; // Calculate using relative time to ensure we don't have issues with overflow wraparound
+                        int elapsedTicks = Environment.TickCount - preWaitTicks; // Calculate using relative time to ensure we don't have issues with overflow wraparound
                         for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
-                            int remainingTimeoutTime = registeredHandle.TimeoutTime - preWaitTicks;
-                            if (elapsedTimeoutTime > remainingTimeoutTime)
+                            int timeoutRemainingTicks = registeredHandle.TimeoutTime - preWaitTicks;
+                            if (elapsedTicks > timeoutRemainingTicks)
                             {
                                 QueueWaitCompletion(registeredHandle, true);
                             }
