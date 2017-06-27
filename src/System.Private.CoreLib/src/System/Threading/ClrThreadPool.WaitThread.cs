@@ -141,7 +141,8 @@ namespace System.Threading
                     // until we are not directly using the wait handles to allow user code to dispose of the WaitHandle.
                     _safeToDisposeHandleEvent.Reset();
                     ProcessRemovals();
-                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, _numUserWaits + 1, _currentTimeout);
+                    int numUserWaits = _numUserWaits;
+                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, _currentTimeout);
                     RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaitHandles[signaledHandleIndex] : null;
                     _safeToDisposeHandleEvent.Set();
 
@@ -153,7 +154,7 @@ namespace System.Threading
                     }
                     else
                     {
-                        for (int i = 0; i < _numUserWaits; i++)
+                        for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
                             if (registeredHandle.Timeout == _currentTimeout)
@@ -173,71 +174,75 @@ namespace System.Threading
             {
                 _removesLock.Acquire();
                 _registeredHandlesLock.Acquire();
-                if(_numPendingRemoves == 0)
+                try
                 {
-                    _registeredHandlesLock.Release();
-                    _removesLock.Release();
-                    return;
-                }
-
-                // This is O(N^2), but max(N) = 63 and N will usually be very low
-                for (int i = 0; i < _numPendingRemoves; i++)
-                {
-                    for (int j = 0; j < _numUserWaits; j++)
+                    if (_numPendingRemoves == 0)
                     {
-                        if (_pendingRemoves[i] == _registeredWaitHandles[j])
-                        {
-                            _registeredWaitHandles[j] = null;
-                            _waitHandles[j + 1] = null;
-                            break;
-                        }
+                        return;
                     }
-                    _pendingRemoves[i] = null;
-                }
-                _numPendingRemoves = 0;
 
-                // Fill in nulls
-                // This is O(1), Goes through each of the 63 possible handles once.
-                for (int i = 0; i < _numUserWaits; i++)
-                {
-                    if (_registeredWaitHandles[i] == null)
+                    // This is O(N^2), but max(N) = 63 and N will usually be very low
+                    for (int i = 0; i < _numPendingRemoves; i++)
                     {
-                        for (int j = _numUserWaits - 1; j > i; j--)
+                        for (int j = 0; j < _numUserWaits; j++)
                         {
-                            if(_registeredWaitHandles[j] != null)
+                            if (_pendingRemoves[i] == _registeredWaitHandles[j])
                             {
-                                _registeredWaitHandles[i] = _registeredWaitHandles[j];
                                 _registeredWaitHandles[j] = null;
-                                _waitHandles[i + 1] = _waitHandles[j + 1];
                                 _waitHandles[j + 1] = null;
-                                _numUserWaits = j;
                                 break;
                             }
                         }
+                        _pendingRemoves[i] = null;
+                    }
+                    _numPendingRemoves = 0;
+
+                    // Fill in nulls
+                    // This is O(1), Goes through each of the 63 possible handles once.
+                    for (int i = 0; i < _numUserWaits; i++)
+                    {
                         if (_registeredWaitHandles[i] == null)
                         {
-                            _numUserWaits = i - 1;
-                            break;
+                            for (int j = _numUserWaits - 1; j > i; j--)
+                            {
+                                if (_registeredWaitHandles[j] != null)
+                                {
+                                    _registeredWaitHandles[i] = _registeredWaitHandles[j];
+                                    _registeredWaitHandles[j] = null;
+                                    _waitHandles[i + 1] = _waitHandles[j + 1];
+                                    _waitHandles[j + 1] = null;
+                                    _numUserWaits = j;
+                                    break;
+                                }
+                            }
+                            if (_registeredWaitHandles[i] == null)
+                            {
+                                _numUserWaits = i - 1;
+                                break;
+                            }
                         }
                     }
-                }
 
-                // Recalculate Timeout
-                int timeout = Timeout.Infinite;
-                for (int i = 0; i < _numUserWaits; i++)
-                {
-                    if (timeout == Timeout.Infinite)
+                    // Recalculate Timeout
+                    int timeout = Timeout.Infinite;
+                    for (int i = 0; i < _numUserWaits; i++)
                     {
-                        timeout = _registeredWaitHandles[i].Timeout;
+                        if (timeout == Timeout.Infinite)
+                        {
+                            timeout = _registeredWaitHandles[i].Timeout;
+                        }
+                        else
+                        {
+                            timeout = Math.Min(_registeredWaitHandles[i].Timeout, timeout);
+                        }
                     }
-                    else
-                    {
-                        timeout = Math.Min(_registeredWaitHandles[i].Timeout, timeout);
-                    }
+                    _currentTimeout = timeout;
                 }
-                _currentTimeout = timeout;
-                _registeredHandlesLock.Release();
-                _removesLock.Release();
+                finally
+                {
+                    _registeredHandlesLock.Release();
+                    _removesLock.Release();
+                }
             }
             
             /// <summary>
