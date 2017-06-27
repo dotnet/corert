@@ -11,10 +11,7 @@ namespace System.Threading
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.
         /// </summary>
-        private static WaitThreadNode s_waitThreadsHead = new WaitThreadNode
-        {
-            Thread = new WaitThread()
-        };
+        private static WaitThreadNode s_waitThreadsHead;
 
         private static LowLevelLock s_waitThreadListLock = new LowLevelLock();
 
@@ -25,27 +22,41 @@ namespace System.Threading
         internal static void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
             s_waitThreadListLock.Acquire();
-            // Register the wait handle on the first wait thread that is not at capacity.
-            WaitThreadNode prev;
-            WaitThreadNode current = s_waitThreadsHead;
-            do
-            {
-                if(current.Thread.RegisterWaitHandle(handle))
-                {
-                    s_waitThreadListLock.Release();
-                    return;
-                }
-                prev = current;
-                current = current.Next;
-            } while (current != null);
 
-            // If all wait threads are full, create a new one.
-            prev.Next = new WaitThreadNode
+            try
             {
-                Thread = new WaitThread()
-            };
-            prev.Next.Thread.RegisterWaitHandle(handle);
-            s_waitThreadListLock.Release();
+                if (s_waitThreadsHead == null) // Lazily create the first wait thread.
+                {
+                    s_waitThreadsHead = new WaitThreadNode
+                    {
+                        Thread = new WaitThread()
+                    };
+                }
+
+                // Register the wait handle on the first wait thread that is not at capacity.
+                WaitThreadNode prev;
+                WaitThreadNode current = s_waitThreadsHead;
+                do
+                {
+                    if (current.Thread.RegisterWaitHandle(handle))
+                    {
+                        return;
+                    }
+                    prev = current;
+                    current = current.Next;
+                } while (current != null);
+
+                // If all wait threads are full, create a new one.
+                prev.Next = new WaitThreadNode
+                {
+                    Thread = new WaitThread()
+                };
+                prev.Next.Thread.RegisterWaitHandle(handle);
+            }
+            finally
+            {
+                s_waitThreadListLock.Release();
+            }
         }
 
         private class WaitThreadNode
