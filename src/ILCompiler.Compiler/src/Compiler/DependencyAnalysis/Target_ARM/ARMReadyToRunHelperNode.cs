@@ -23,7 +23,8 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.NewHelper:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.NewHelper);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(target)));
                     }
                     break;
 
@@ -37,21 +38,25 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.IsInstanceOf:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.IsInstanceOf);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, false)));
                     }
                     break;
 
                 case ReadyToRunHelperId.CastClass:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.CastClass);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, true)));
                     }
                     break;
 
                 case ReadyToRunHelperId.NewArr1:
                     {
                         TypeDesc target = (TypeDesc)Target;
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.NewArr1);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(target)));
                     }
                     break;
 
