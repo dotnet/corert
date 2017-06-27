@@ -30,6 +30,9 @@ exit /b %ERRORLEVEL%
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
 
+:: Restore the Tools directory
+call  "%__ProjectDir%\init-tools.cmd"
+
 rem Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
 rem argument, but there are a few commands in publish and tests that do not.
 set "NUGET_PACKAGES=%__PackagesDir%"
@@ -37,8 +40,17 @@ set "NUGET_PACKAGES=%__PackagesDir%"
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
 
+"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=win7-x64 /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+
+rem Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
+rem the standalone app that the build injects actual binaries into later.
+"%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r win7-x64
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r win7-x64 -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
+
 :: Set the environment for the managed build
-:SetupManagedBuild
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.

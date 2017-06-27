@@ -54,7 +54,7 @@
     <NugetRuntimeIdentifier Condition="'$(NugetRuntimeIdentifier)' == ''">$(RuntimeIdentifiers)</NugetRuntimeIdentifier>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)/Build.Common.targets" />
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
 
   <!-- Override corefx multi targeting support -->
   <Target Name="ConvertCommonMetadataToAdditionalProperties" BeforeTargets="AssignProjectConfiguration" />
