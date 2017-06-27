@@ -82,12 +82,18 @@ namespace System.Threading
         internal void SignalUserWaitHandle()
         {
             SignalAndCallbackLock.Acquire();
-            if(!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
+            try
             {
-                SignaledUserWaitHandle = true;
-                WaitSubsystem.SetEvent(UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle());
+                if (!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
+                {
+                    SignaledUserWaitHandle = true;
+                    WaitHandle.Set(UserUnregisterWaitHandle.SafeWaitHandle);
+                }
             }
-            SignalAndCallbackLock.Release();
+            finally
+            {
+                SignalAndCallbackLock.Release();
+            }
         }
 
         /// <summary>

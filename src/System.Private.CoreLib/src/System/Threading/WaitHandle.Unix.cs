@@ -35,5 +35,10 @@ namespace System.Threading
         {
             return WaitSubsystem.SignalAndWait(handleToSignal, handleToWaitOn, millisecondsTimeout);
         }
+
+        internal static void Set(SafeWaitHandle handle)
+        {
+            WaitSubsystem.SetEvent(handle.DangerousGetHandle());
+        }
     }
 }
