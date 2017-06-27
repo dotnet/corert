@@ -163,15 +163,15 @@ namespace System.Threading
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= waitHandles.Length);
+            Debug.Assert(safeWaitHandles.Length >= numWaitHandles);
             Debug.Assert(waitHandles != null);
-            Debug.Assert(waitHandles.Length > 0);
-            Debug.Assert(waitHandles.Length <= MaxWaitHandles);
+            Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= MaxWaitHandles);
             Debug.Assert(millisecondsTimeout >= -1);
 
             int ret = WaitMultiple(currentThread, safeWaitHandles, numWaitHandles, millisecondsTimeout, false /* waitany*/ );
 
-            if ((WaitAbandoned <= ret) && (WaitAbandoned + waitHandles.Length > ret))
+            if ((WaitAbandoned <= ret) && (WaitAbandoned + numWaitHandles > ret))
             {
                 int mutexIndex = ret - WaitAbandoned;
                 if (0 <= mutexIndex && mutexIndex < waitHandles.Length)
