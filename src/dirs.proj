@@ -10,33 +10,26 @@
     <ExcludeProjects Include="**\ILVerify.csproj" />
     <ExcludeProjects Include="**\ILVerify.Tests.csproj" />
 
+    <Project Include="AotPackageReference\AotPackageReference.depproj" />
+
+    <Project Include="Framework\Framework.depproj" />
+    <Project Include="Framework\Framework-uapaot.depproj" />
+    <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix)" />
+
+    <Project Include="ILCompiler\**\*.depproj" />
+
     <Project Include="*\src\*.csproj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\src\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
     <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
+
+    <Project Include="BuildIntegration\BuildIntegration.proj" />
+
+    <Project Include="ILCompiler\repro\repro.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
 
   <Import Project="..\dir.traversal.targets" />
-
-  <Import Project="packaging\packages.targets" />
-
-  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
-  <Import Project="$(ToolsDir)UpdateBuildValues.targets" Condition="Exists('$(ToolsDir)UpdateBuildValues.targets')" />
-
-  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
-    <TraversalBuildDependsOn>
-      $(TraversalBuildDependsOn);
-      BuildPackages;
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="Exists('$(ToolsDir)toolruntime.targets')">
-    <TraversalBuildDependsOn>
-      EnsureBuildToolsRuntime;
-      $(TraversalBuildDependsOn)
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
 
 </Project>

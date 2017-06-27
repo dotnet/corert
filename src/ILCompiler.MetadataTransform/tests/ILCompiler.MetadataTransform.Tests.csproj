@@ -1,33 +1,20 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.MetadataTransform.Tests</AssemblyName>
     <RootNamespace>MetadataTransformTests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-    <TestTFM>netcoreapp1.1</TestTFM>
-  </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <TargetFramework>netstandard1.3</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
-      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
-      <Name>ILCompiler.TypeSystem</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\src\ILCompiler.MetadataTransform.csproj">
-      <Project>{a965ea82-219d-48f7-ad51-bc030c16cc6f}</Project>
-      <Name>ILCompiler.MetadataTransform</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
-      <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
-      <Name>ILCompiler.MetadataWriter</Name>
-    </ProjectReference>
+    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
+      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
     <ProjectReference Include="PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
@@ -58,9 +45,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExplicitScopeTests.cs" />

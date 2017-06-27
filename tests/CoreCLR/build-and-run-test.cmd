@@ -21,13 +21,6 @@ set TestFileName=%~n2
 copy /Y %~dp0\Test.csproj %TestFolder%
 
 ::
-:: Clear Core_Root before invoking MSBuild. This is important, because we need it set to the CoreCLR
-:: test payload's CoreCLR folder while running the test infrastructure, but when msbuild launches
-:: the CoreRT CoreCLR to run ILC.exe, Core_Root affects the binder and we probe for assemblies in
-:: the wrong place.
-set CORE_ROOT=
-
-::
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::

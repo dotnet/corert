@@ -23,8 +23,8 @@ add_library(jitinterface
     ${NATIVE_SOURCES}
 )
 
-install (TARGETS jitinterface DESTINATION .)
+install (TARGETS jitinterface DESTINATION tools)
 if(WIN32)
     target_link_libraries(jitinterface ntdll.lib) 
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/jitinterface.pdb DESTINATION .)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/jitinterface.pdb DESTINATION tools)
 endif(WIN32)

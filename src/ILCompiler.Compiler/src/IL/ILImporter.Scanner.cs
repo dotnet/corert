@@ -677,7 +677,14 @@ namespace Internal.IL
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
             if (!type.IsValueType)
+            {
+                if (opCode == ILOpcode.unbox_any)
+                {
+                    // When applied to a reference type, unbox_any has the same effect as castclass.
+                    ImportCasting(ILOpcode.castclass, token);
+                }
                 return;
+            }
 
             if (type.IsRuntimeDeterminedSubtype)
             {
@@ -720,7 +727,19 @@ namespace Internal.IL
             {
                 var type = (TypeDesc)obj;
 
-                // First check if this is a ldtoken Type / GetValueInternal sequence.
+                if (type.IsRuntimeDeterminedSubtype)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
+                }
+                else
+                {
+                    if (ConstructedEETypeNode.CreationAllowed(type))
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
+                    else
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
+                }
+
+                // If this is a ldtoken Type / GetValueInternal sequence, we're done.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock == null)
                 {
@@ -734,18 +753,6 @@ namespace Internal.IL
                             return;
                         }
                     }
-                }
-
-                if (type.IsRuntimeDeterminedSubtype)
-                {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
-                }
-                else
-                {
-                    if (ConstructedEETypeNode.CreationAllowed(type))
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
-                    else
-                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");

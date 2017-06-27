@@ -1,25 +1,22 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>
     <AssemblyName>ILCompiler.TypeSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <TargetFramework>netstandard1.3</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageDestination Include="Tools">
-      <InProject>false</InProject>
-      <TargetFramework>.NetCoreApp,Version=2.0</TargetFramework>
-    </PackageDestination>
+    <PackageReference Include="System.IO.MemoryMappedFiles">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>1.4.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DiaSymReader">
+      <Version>1.0.8</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\ArrayType.Canon.cs">
@@ -595,9 +592,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>

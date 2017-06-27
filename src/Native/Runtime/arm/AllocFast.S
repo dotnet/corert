@@ -32,19 +32,23 @@ RhpNewArrayAlign8Name:        .asciz "RhpNewArrayAlign8"
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  r0 == EEType
-    LEAF_ENTRY RhpNewFast, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpNewFastName
-#endif
-    LEAF_END RhpNewFast, _TEXT
+//
+//    LEAF_ENTRY RhpNewFast, _TEXT
+//#ifdef _DEBUG
+//        GEN_ASSERT_FUNC RhpNewFastName
+//#endif
+//    LEAF_END RhpNewFast, _TEXT
+//
 
 // Allocate non-array object with finalizer.
 //  r0 == EEType
-    LEAF_ENTRY RhpNewFinalizable, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpNewFinalizableName
-#endif
-    LEAF_END RhpNewFinalizable, _TEXT
+//
+//    LEAF_ENTRY RhpNewFinalizable, _TEXT
+//#ifdef _DEBUG
+//        GEN_ASSERT_FUNC RhpNewFinalizableName
+//#endif
+//    LEAF_END RhpNewFinalizable, _TEXT
+//
 
 // Allocate non-array object.
 //  r0 == EEType
@@ -58,11 +62,13 @@ RhpNewArrayAlign8Name:        .asciz "RhpNewArrayAlign8"
 // Allocate one dimensional, zero based array (SZARRAY).
 //  r0 == EEType
 //  r1 == element count
-    LEAF_ENTRY RhpNewArray, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpNewArrayName
-#endif
-    LEAF_END RhpNewArray, _TEXT
+//
+//    LEAF_ENTRY RhpNewArray, _TEXT
+//#ifdef _DEBUG
+//        GEN_ASSERT_FUNC RhpNewArrayName
+//#endif
+//    LEAF_END RhpNewArray, _TEXT
+//
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  r0 == EEType

@@ -41,15 +41,15 @@ You should now be able to use the `dotnet` commands of the CLI tools.
   </PropertyGroup>
 
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
-  <Import Project="$(IlcPath)\Microsoft.NETCore.Native.targets" />
+  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
 </Project>
 ```
 
-* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1` argument to all dotnet commands below.
+* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug` argument to all dotnet commands below.
 
-    * Unix: `export IlcPath=<repo_root>/bin/Product/Linux.x64.Debug/packaging/publish1`
+    * Unix: `export IlcPath=<repo_root>/bin/Product/Linux.x64.Debug`
 
-    * Windows: `set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1`
+    * Windows: `set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug`
 
 * Run `dotnet restore`. This will download nuget packages required for compilation.
 
