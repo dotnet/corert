@@ -56,7 +56,7 @@ run_test_dir()
     local __msbuild_dir=${CoreRT_TestRoot}/../Tools
 
     echo ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
-    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
+    ${__msbuild_dir}/dotnetcli/dotnet ${__msbuild_dir}/MSBuild.dll /ds /m /p:IlcPath=${CoreRT_ToolchainDir} /p:Configuration=${CoreRT_BuildType} /p:Platform=${CoreRT_BuildArch} /p:OSGroup=${CoreRT_BuildOS} /p:RepoLocalBuild=true "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" ${__extra_args} "${__extra_cxxflags}" "${__extra_linkflags}" ${__dir_path}/${__filename}.csproj
 
     local __exitcode=$?
 
