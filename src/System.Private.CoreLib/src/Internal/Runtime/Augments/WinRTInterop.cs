@@ -105,8 +105,8 @@ namespace Internal.Runtime.Augments
         public abstract string GetRegionDisplayName(string isoCountryCode);
         public abstract Object GetUserDefaultCulture();
         public abstract void SetGlobalDefaultCulture(Object culture);
-        public abstract Object GetCurrentCoreDispatcher();
-        public abstract void PostToCoreDispatcher(Object dispatcher, Action<object> action, object state);
+        public abstract Object GetCurrentWinRTDispatcher();
+        public abstract void PostToWinRTDispatcher(Object dispatcher, Action<object> action, object state);
         public abstract Object GetResourceMap(string subtreeName);
         public abstract string GetResourceString(object resourceMap, string resourceName, string languageName);
         public abstract string GetResourceString(object resourceMap, string resourceName, string languageName, string neutralResourcesCulture);
