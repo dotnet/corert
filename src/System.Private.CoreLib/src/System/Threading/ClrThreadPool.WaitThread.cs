@@ -142,22 +142,14 @@ namespace System.Threading
                     _safeToDisposeHandleEvent.Reset();
                     ProcessRemovals();
                     int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, _numUserWaits + 1, _currentTimeout);
-                    WaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _waitHandles[signaledHandleIndex] : null;
-                    ProcessRemovals();
+                    RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaitHandles[signaledHandleIndex] : null;
                     _safeToDisposeHandleEvent.Set();
 
                     // Indices may have changed when processing removals and the signalled handle may have already been unregistered
                     // so we do a linear search over the active user waits to see if the signaled handle is still registered
-                    if (signaledHandleIndex != WaitHandle.WaitTimeout)
+                    if (signaledHandle != null)
                     {
-                        for (int i = 0; i < _numUserWaits; i++)
-                        {
-                            RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
-                            if (registeredHandle.Handle == signaledHandle)
-                            {
-                                QueueWaitCompletion(registeredHandle, false);
-                            }
-                        }
+                        QueueWaitCompletion(signaledHandle, false);
                     }
                     else
                     {
