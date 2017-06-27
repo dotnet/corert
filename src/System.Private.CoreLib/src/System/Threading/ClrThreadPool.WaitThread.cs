@@ -193,40 +193,24 @@ namespace System.Threading
                         {
                             if (_pendingRemoves[i] == _registeredWaitHandles[j])
                             {
-                                _registeredWaitHandles[j] = null;
-                                _waitHandles[j + 1] = null;
+                                _registeredWaitHandles[j] = _registeredWaitHandles[_numUserWaits - 1];
+                                _waitHandles[j + 1] = _waitHandles[_numUserWaits];
+                                _registeredWaitHandles[_numUserWaits - 1] = null;
+                                _waitHandles[_numUserWaits] = null;
+                                for (int k = _numUserWaits - 1; k >= 0; k--)
+                                {
+                                    if (_registeredWaitHandles[k - 1] != null)
+                                    {
+                                        _numUserWaits = k;
+                                        break;
+                                    }
+                                }
                                 break;
                             }
                         }
                         _pendingRemoves[i] = null;
                     }
                     _numPendingRemoves = 0;
-
-                    // Fill in nulls
-                    // This is O(1), Goes through each of the 63 possible handles once.
-                    for (int i = 0; i < _numUserWaits; i++)
-                    {
-                        if (_registeredWaitHandles[i] == null)
-                        {
-                            for (int j = _numUserWaits - 1; j > i; j--)
-                            {
-                                if (_registeredWaitHandles[j] != null)
-                                {
-                                    _registeredWaitHandles[i] = _registeredWaitHandles[j];
-                                    _registeredWaitHandles[j] = null;
-                                    _waitHandles[i + 1] = _waitHandles[j + 1];
-                                    _waitHandles[j + 1] = null;
-                                    _numUserWaits = j;
-                                    break;
-                                }
-                            }
-                            if (_registeredWaitHandles[i] == null)
-                            {
-                                _numUserWaits = i - 1;
-                                break;
-                            }
-                        }
-                    }
                 }
                 finally
                 {
