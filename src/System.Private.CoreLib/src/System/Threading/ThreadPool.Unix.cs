@@ -69,11 +69,17 @@ namespace System.Threading
         /// </summary>
         internal ClrThreadPool.WaitThread WaitThread { get; set; }
 
+        private int _unregisterCalled;
+
         public bool Unregister(WaitHandle waitObject)
         {
-            UserUnregisterWaitHandle = waitObject;
-            WaitThread.QueueOrExecuteUnregisterWait(this);
-            return true;
+            if(Interlocked.CompareExchange(ref _unregisterCalled, 1, 0) == 0)
+            {
+                UserUnregisterWaitHandle = waitObject;
+                WaitThread.QueueOrExecuteUnregisterWait(this);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -103,11 +109,17 @@ namespace System.Threading
         internal void PerformCallback(bool timedOut)
         {
             SignalAndCallbackLock.Acquire();
-            if(!SignaledUserWaitHandle)
+            try
             {
-                _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
+                if (!SignaledUserWaitHandle)
+                {
+                    _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
+                }
             }
-            SignalAndCallbackLock.Release();
+            finally
+            {
+                SignalAndCallbackLock.Release();
+            }
         }
     }
 
