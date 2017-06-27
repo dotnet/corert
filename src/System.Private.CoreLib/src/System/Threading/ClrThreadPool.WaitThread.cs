@@ -90,10 +90,6 @@ namespace System.Threading
             /// </summary>
             private int _numUserWaits = 0;
             /// <summary>
-            /// The current calculated timeout of this wait thread.
-            /// </summary>
-            private int _currentTimeout = Timeout.Infinite;
-            /// <summary>
             /// A lock for editing any handle registration (i.e. the fields above).
             /// </summary>
             private readonly LowLevelLock _registeredHandlesLock = new LowLevelLock();
@@ -134,9 +130,24 @@ namespace System.Threading
                 {
                     ProcessRemovals();
                     int numUserWaits = _numUserWaits;
-                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, _currentTimeout);
-                    RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaitHandles[signaledHandleIndex] : null;
+                    int preWaitTicks = Environment.TickCount;
 
+                    // Recalculate Timeout
+                    int timeout = Timeout.Infinite;
+                    for (int i = 0; i < numUserWaits; i++)
+                    {
+                        if (timeout == Timeout.Infinite)
+                        {
+                            timeout = _registeredWaitHandles[i].TimeoutTime - preWaitTicks;
+                        }
+                        else
+                        {
+                            timeout = Math.Min(_registeredWaitHandles[i].TimeoutTime - preWaitTicks, timeout);
+                        }
+                    }
+
+                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeout);
+                    RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaitHandles[signaledHandleIndex] : null;
                     // Indices may have changed when processing removals and the signalled handle may have already been unregistered
                     // so we do a linear search over the active user waits to see if the signaled handle is still registered
                     if (signaledHandle != null)
@@ -145,10 +156,12 @@ namespace System.Threading
                     }
                     else
                     {
+                        int elapsedTimeoutTime = Environment.TickCount - preWaitTicks; // Calculate using relative time to ensure we don't have issues with overflow wraparound
                         for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = _registeredWaitHandles[i];
-                            if (registeredHandle.Timeout == _currentTimeout)
+                            int remainingTimeoutTime = registeredHandle.TimeoutTime - preWaitTicks;
+                            if (elapsedTimeoutTime > remainingTimeoutTime)
                             {
                                 QueueWaitCompletion(registeredHandle, true);
                             }
@@ -213,21 +226,6 @@ namespace System.Threading
                             }
                         }
                     }
-
-                    // Recalculate Timeout
-                    int timeout = Timeout.Infinite;
-                    for (int i = 0; i < _numUserWaits; i++)
-                    {
-                        if (timeout == Timeout.Infinite)
-                        {
-                            timeout = _registeredWaitHandles[i].Timeout;
-                        }
-                        else
-                        {
-                            timeout = Math.Min(_registeredWaitHandles[i].Timeout, timeout);
-                        }
-                    }
-                    _currentTimeout = timeout;
                 }
                 finally
                 {
@@ -282,26 +280,24 @@ namespace System.Threading
             private bool AddWaitHandleForNextWait(RegisteredWaitHandle handle)
             {
                 _registeredHandlesLock.Acquire();
-                if(_numUserWaits == WaitHandle.MaxWaitHandles - 1)
+                try
+                {
+                    if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
+                    {
+                        return false;
+                    }
+
+                    _registeredWaitHandles[_numUserWaits] = handle;
+                    _waitHandles[_numUserWaits + 1] = handle.Handle;
+                    _numUserWaits++;
+
+                    handle.WaitThread = this;
+                }
+                finally
                 {
                     _registeredHandlesLock.Release();
-                    return false;
                 }
 
-                _registeredWaitHandles[_numUserWaits] = handle;
-                _waitHandles[_numUserWaits + 1] = handle.Handle;
-                if (_currentTimeout == Timeout.Infinite)
-                {
-                    _currentTimeout = handle.Timeout;
-                }
-                else
-                {
-                    _currentTimeout = Math.Min(_currentTimeout, handle.Timeout);
-                }
-                _numUserWaits++;
-                _registeredHandlesLock.Release();
-                
-                handle.WaitThread = this;
                 _changeHandlesEvent.Set();
                 return true;
             }

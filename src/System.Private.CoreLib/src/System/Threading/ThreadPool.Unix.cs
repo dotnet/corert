@@ -18,11 +18,11 @@ namespace System.Threading
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
-            uint millisecondsTimeout, bool repeating)
+            int millisecondsTimeout, bool repeating)
         {
             Handle = waitHandle;
             Callback = callbackHelper;
-            Timeout = (int)millisecondsTimeout;
+            TimeoutTime = millisecondsTimeout;
             Repeating = repeating;
         }
 
@@ -37,9 +37,9 @@ namespace System.Threading
         internal WaitHandle Handle { get; }
 
         /// <summary>
-        /// The timeout the handle was registered with.
+        /// The time this handle times out at in ticks.
         /// </summary>
-        internal int Timeout { get; }
+        internal int TimeoutTime { get; }
 
         /// <summary>
         /// Whether or not the wait is a repeating wait.
@@ -244,7 +244,7 @@ namespace System.Threading
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
-                millisecondsTimeOutInterval,
+                Environment.TickCount + (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
             ClrThreadPool.RegisterWaitHandle(registeredHandle);
             return registeredHandle;
