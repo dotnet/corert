@@ -117,11 +117,6 @@ namespace System.Threading
             private readonly AutoResetEvent _changeHandlesEvent = new AutoResetEvent(false);
 
             /// <summary>
-            /// An event that is signaled when it is safe to dispose any handles that were queued to be removed previously.
-            /// </summary>
-            private readonly AutoResetEvent _safeToDisposeHandleEvent = new AutoResetEvent(false);
-
-            /// <summary>
             /// Whether or not the wait thread has started.
             /// </summary>
             private bool _waitThreadStarted = false;
@@ -137,14 +132,10 @@ namespace System.Threading
             {
                 while (true)
                 {
-                    // We are going to be modifying the removals array and waiting on the remaining wait handles, so client code should wait
-                    // until we are not directly using the wait handles to allow user code to dispose of the WaitHandle.
-                    _safeToDisposeHandleEvent.Reset();
                     ProcessRemovals();
                     int numUserWaits = _numUserWaits;
                     int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, _currentTimeout);
                     RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaitHandles[signaledHandleIndex] : null;
-                    _safeToDisposeHandleEvent.Set();
 
                     // Indices may have changed when processing removals and the signalled handle may have already been unregistered
                     // so we do a linear search over the active user waits to see if the signaled handle is still registered
@@ -356,8 +347,6 @@ namespace System.Threading
                 {
                     ThreadPool.QueueUserWorkItem(UnregisterWait, handle);
                 }
-                // Wait until it is safe for the user to dispose the wait handle they just unregistered before returning.
-                _safeToDisposeHandleEvent.WaitOne();
             }
 
             /// <summary>
@@ -379,7 +368,7 @@ namespace System.Threading
                 _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
                 if (handle.UserUnregisterWaitHandle != null)
                 {
-                    WaitHandle.WaitAll(new WaitHandle[] { _safeToDisposeHandleEvent, handle.CanUnregister });
+                    handle.CanUnregister.WaitOne();
 
                     if (handle.UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
                     {
