@@ -304,7 +304,17 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            uint typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
+            uint typeIndex;
+
+            try
+            {
+                typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
+            }
+            catch (TypeSystemException)
+            {
+                typeIndex = 0; // T_NOTYPE
+            }
+
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
