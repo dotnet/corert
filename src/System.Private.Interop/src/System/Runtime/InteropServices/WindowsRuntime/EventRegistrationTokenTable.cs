@@ -24,12 +24,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             // T must be a delegate type, but we cannot constrain on being a delegate.  Therefore, we'll do a
             // static check at construction time
-            /*
             if (!typeof(Delegate).IsAssignableFrom(typeof(T)))
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EventTokenTableRequiresDelegate", typeof(T)));
+            {   
+                throw new InvalidOperationException(SR.Format(SR.TypeNotDelegate,typeof(T)));
             }
-             */
         }
 
         // The InvocationList property provides access to a delegate which will invoke every registered event handler
