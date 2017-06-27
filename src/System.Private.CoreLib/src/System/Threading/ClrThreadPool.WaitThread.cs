@@ -356,16 +356,22 @@ namespace System.Threading
             private void UnregisterWait(object state)
             {
                 RegisteredWaitHandle handle = (RegisteredWaitHandle)state;
-                
+
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
                 _removesLock.Acquire();
-                if(Array.IndexOf(_pendingRemoves, handle) == -1) // If this handle is not already pending removal
+                try
                 {
-                    _pendingRemoves[_numPendingRemoves++] = handle;
+                    if (Array.IndexOf(_pendingRemoves, handle) == -1) // If this handle is not already pending removal
+                    {
+                        _pendingRemoves[_numPendingRemoves++] = handle;
+                        _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
+                    }
                 }
-                _removesLock.Release();
+                finally
+                {
+                    _removesLock.Release();
+                }
 
-                _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
                 if (handle.UserUnregisterWaitHandle != null)
                 {
                     handle.CanUnregister.WaitOne();
