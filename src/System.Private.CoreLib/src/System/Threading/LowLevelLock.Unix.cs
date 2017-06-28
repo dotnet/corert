@@ -36,7 +36,6 @@ namespace System.Threading
         /// </summary>
         private bool _isAnyWaitingThreadSignaled;
 
-        private FirstLevelSpinWaiter _spinWaiter;
         private readonly Func<bool> _spinWaitTryAcquireCallback;
         private readonly LowLevelMonitor _monitor;
 
@@ -46,8 +45,6 @@ namespace System.Threading
             _ownerThread = null;
 #endif
 
-            _spinWaiter = new FirstLevelSpinWaiter();
-            _spinWaiter.Initialize();
             _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor = new LowLevelMonitor();
         }
@@ -159,7 +156,7 @@ namespace System.Threading
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
-            if (_spinWaiter.SpinWaitForCondition(_spinWaitTryAcquireCallback))
+            if (FirstLevelSpinWaiter.SpinWaitForCondition(_spinWaitTryAcquireCallback))
             {
                 Debug.Assert((_state & LockedMask) != 0);
                 SetOwnerThreadToCurrent();
