@@ -187,6 +187,18 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         internal static extern IntPtr GetFunctionPointer();
 
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        internal unsafe struct InlineString
+        {
+            internal uint size;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            internal string name;
+        }
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool InlineStringTest(ref InlineString ias);
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -590,6 +602,10 @@ namespace PInvokeTests
                 ssa[i].f3 = i.LowLevelToString(); 
             }
             ThrowIfNotEquals(true, StructTest_Array(ssa, ssa.Length), "Array of struct marshalling failed");
+
+            InlineString ils = new InlineString();
+            InlineStringTest(ref ils);
+            ThrowIfNotEquals("Hello World!", ils.name, "Inline string marshalling failed");
 
             InlineArrayStruct ias = new InlineArrayStruct();
             ias.inlineArray = new short[128];

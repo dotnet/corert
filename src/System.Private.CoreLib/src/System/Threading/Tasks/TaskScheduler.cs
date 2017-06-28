@@ -5,14 +5,10 @@
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
 //
-
 //
 // This file contains the primary interface and management of tasks and queues.  
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -251,8 +247,8 @@ namespace System.Threading.Tasks
         // Member variables
         //
 
-        // The global container that keeps track of TaskScheduler instances. s_activeTaskSchedulers must be initialized before s_defaultTaskScheduler.
-        private static readonly ConditionalWeakTable<TaskScheduler, object> s_activeTaskSchedulers = new ConditionalWeakTable<TaskScheduler, object>();
+        // The global container that keeps track of TaskScheduler instances for debugging purposes.
+        private static ConditionalWeakTable<TaskScheduler, object> s_activeTaskSchedulers;
 
         // An AppDomain-wide default manager.
         private static readonly TaskScheduler s_defaultTaskScheduler = new ThreadPoolTaskScheduler();
@@ -275,10 +271,28 @@ namespace System.Threading.Tasks
         /// </summary>
         protected TaskScheduler()
         {
-            // Protected constructor. It's here to ensure all user implemented TaskSchedulers will be 
-            // registered in the active schedulers list.
-            Debug.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
-            s_activeTaskSchedulers.Add(this, null);
+#if false // Debugger support
+            // Register the scheduler in the active scheduler list.  This is only relevant when debugging, 
+            // so we only pay the cost if the debugger is attached when the scheduler is created.  This
+            // means that the internal TaskScheduler.GetTaskSchedulersForDebugger() will only include
+            // schedulers created while the debugger is attached.
+            if (Debugger.IsAttached)
+            {
+                AddToActiveTaskSchedulers();
+            }
+#endif
+        }
+
+        /// <summary>Adds this scheduler ot the active schedulers tracking collection for debugging purposes.</summary>
+        private void AddToActiveTaskSchedulers()
+        {
+            ConditionalWeakTable<TaskScheduler, object> activeTaskSchedulers = s_activeTaskSchedulers;
+            if (activeTaskSchedulers == null)
+            {
+                Interlocked.CompareExchange(ref s_activeTaskSchedulers, new ConditionalWeakTable<TaskScheduler, object>(), null);
+                activeTaskSchedulers = s_activeTaskSchedulers;
+            }
+            activeTaskSchedulers.Add(this, null);
         }
 
         /// <summary>
@@ -524,20 +538,31 @@ namespace System.Threading.Tasks
         /// It should not be called by any other codepaths.
         /// </remarks>
         /// <returns>An array of <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instances.</returns> 
-        //internal static TaskScheduler[] GetTaskSchedulersForDebugger()
-        //{
-        //    Debug.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
+        internal static TaskScheduler[] GetTaskSchedulersForDebugger()
+        {
+            if (s_activeTaskSchedulers == null)
+            {
+                // No schedulers were tracked.  Just give back the default.
+                return new TaskScheduler[] { s_defaultTaskScheduler };
+            }
 
-        //    ICollection<TaskScheduler> schedulers = s_activeTaskSchedulers.Keys;
-        //    var arr = new TaskScheduler[schedulers.Count];
-        //    schedulers.CopyTo(arr, 0);
-        //    foreach (var scheduler in arr)
-        //    {
-        //        Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
-        //        int tmp = scheduler.Id; // force Ids for debugger
-        //    }
-        //    return arr;
-        //}
+            ICollection<TaskScheduler> schedulers = s_activeTaskSchedulers.Keys;
+            if (!schedulers.Contains(s_defaultTaskScheduler))
+            {
+                // Make sure the default is included, in case the debugger attached
+                // after it was created.
+                schedulers.Add(s_defaultTaskScheduler);
+            }
+
+            var arr = new TaskScheduler[schedulers.Count];
+            schedulers.CopyTo(arr, 0);
+            foreach (var scheduler in arr)
+            {
+                Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");
+                int tmp = scheduler.Id; // force Ids for debugger
+            }
+            return arr;
+        }
 
         /// <summary>
         /// Nested class that provides debugger view for TaskScheduler
@@ -550,17 +575,16 @@ namespace System.Threading.Tasks
                 m_taskScheduler = scheduler;
             }
 
-            // returns the scheduler’s Id
+            // returns the scheduler's Id
             public Int32 Id
             {
                 get { return m_taskScheduler.Id; }
             }
 
-            // returns the scheduler’s GetScheduledTasks
+            // returns the scheduler's GetScheduledTasks
             public IEnumerable<Task> ScheduledTasks
             {
-                get
-                { return m_taskScheduler.GetScheduledTasks(); }
+                get { return m_taskScheduler.GetScheduledTasks(); }
             }
         }
     }
@@ -645,16 +669,7 @@ namespace System.Threading.Tasks
         }
 
         // preallocated SendOrPostCallback delegate
-        private static SendOrPostCallback s_postCallback = new SendOrPostCallback(PostCallback);
-
-        // this is where the actual task invocation occures
-        private static void PostCallback(object obj)
-        {
-            Task task = (Task)obj;
-
-            // calling ExecuteEntry with double execute check enabled because a user implemented SynchronizationContext could be buggy
-            task.ExecuteEntry(true);
-        }
+        private static readonly SendOrPostCallback s_postCallback = s => ((Task)s).ExecuteEntry(true); // with double-execute check because SC could be buggy
     }
 
     /// <summary>

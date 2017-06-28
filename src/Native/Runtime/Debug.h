@@ -25,12 +25,14 @@ struct DebuggerGcProtectionRequest
     };
     uint32_t identifier;
     uint64_t address;
+    uint64_t payload; /* TODO, FuncEval, what would be a better name for this? */
 };
 
 enum DebuggerGcProtectionResponseKind : uint32_t
 {
     RequestBufferReady               = 2,
     ConservativeReportingBufferReady = 3,
+    HandleReady                      = 4,
 };
 
 struct DebuggerGcProtectionResponse
@@ -40,3 +42,10 @@ struct DebuggerGcProtectionResponse
     uint64_t bufferAddress;
 };
 
+struct DebuggerGcProtectionHandleReadyResponse
+{
+    DebuggerGcProtectionResponseKind kind;
+    uint32_t unused; /* To make the data structure 64 bit aligned */
+    uint64_t payload;
+    uint64_t handle;
+};

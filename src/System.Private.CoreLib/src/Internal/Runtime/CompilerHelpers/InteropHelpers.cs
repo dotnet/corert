@@ -42,6 +42,12 @@ namespace Internal.Runtime.CompilerHelpers
             if (buffer == null)
                 return;
 
+            if (str == null)
+            {
+                buffer[0] = '\0';
+                return;
+            }
+
             Debug.Assert(str.Length >= length);
 
             fixed (char* pStr = str)

@@ -1,7 +1,6 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <AssemblyName>System.Private.TypeLoader.Experimental</AssemblyName>
-    <ProjectGuid>{9D3328F2-6D2E-4064-82AE-57EED73872B2}</ProjectGuid>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <JitSupport>true</JitSupport>
   </PropertyGroup>

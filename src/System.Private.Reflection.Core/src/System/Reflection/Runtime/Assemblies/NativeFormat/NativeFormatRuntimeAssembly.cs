@@ -120,6 +120,37 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
+        protected sealed override IEnumerable<TypeForwardInfo> TypeForwardInfos
+        {
+            get
+            {
+                foreach (QScopeDefinition scope in AllScopes)
+                {
+                    MetadataReader reader = scope.Reader;
+                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
+                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
+                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
+                    foreach (NamespaceDefinitionHandle namespaceHandle in allNamespaceHandles)
+                    {
+                        string namespaceName = null;
+                        foreach (TypeForwarderHandle typeForwarderHandle in namespaceHandle.GetNamespaceDefinition(reader).TypeForwarders)
+                        {
+                            if (namespaceName == null)
+                            {
+                                namespaceName = namespaceHandle.ToNamespaceName(reader);
+                            }
+
+                            TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
+                            string typeName = typeForwarder.Name.GetString(reader);
+                            RuntimeAssemblyName redirectedAssemblyName = typeForwarder.Scope.ToRuntimeAssemblyName(reader);
+
+                            yield return new TypeForwardInfo(redirectedAssemblyName, namespaceName, typeName);
+                        }
+                    }
+                }
+            }
+        }
+
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
@@ -133,6 +164,16 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         public sealed override Stream GetManifestResourceStream(String name)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
+        }
+
+        public sealed override string ImageRuntimeVersion
+        {
+            get
+            {
+                // Needed to make RuntimeEnvironment.GetSystemVersion() work. Will not be correct always but anticipating most callers are not making
+                // actual decisions based on the value.
+                return "v4.0.30319";
+            }
         }
 
         public sealed override Module ManifestModule

@@ -192,11 +192,6 @@ if  defined __GenerateLayoutOnly (
     exit /b 1
 )
 
-if not exist %CORE_ROOT%\coreclr.dll (
-    echo %__MsgPrefix%Error: Ensure you have done a successful build of the Product and %CORE_ROOT% contains runtime binaries.
-    exit /b 1
-)
-
 ::Check if the test Binaries are built
 if not exist %XunitTestBinBase% (
     echo %__MsgPrefix%Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%.

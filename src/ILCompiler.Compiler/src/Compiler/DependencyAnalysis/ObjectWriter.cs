@@ -304,7 +304,7 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            uint typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type, true);
+            uint typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
@@ -769,7 +769,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
-            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this);
+            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, _targetPlatform.PointerSize == 8, factory.Target.Abi);
         }
 
         public void Dispose()
@@ -1049,6 +1049,30 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetPointerTypeIndex(IntPtr objWriter, PointerTypeDescriptor pointerDescriptor);
+
+        uint ITypesDebugInfoWriter.GetPointerTypeIndex(PointerTypeDescriptor pointerDescriptor)
+        {
+            return GetPointerTypeIndex(_nativeObjectWriter, pointerDescriptor);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetMemberFunctionTypeIndex(IntPtr objWriter, MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes);
+
+        uint ITypesDebugInfoWriter.GetMemberFunctionTypeIndex(MemberFunctionTypeDescriptor memberDescriptor, uint[] argumentTypes)
+        {
+            return GetMemberFunctionTypeIndex(_nativeObjectWriter, memberDescriptor, argumentTypes);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern uint GetMemberFunctionIdTypeIndex(IntPtr objWriter, MemberFunctionIdTypeDescriptor memberIdDescriptor);
+
+        uint ITypesDebugInfoWriter.GetMemberFunctionId(MemberFunctionIdTypeDescriptor memberIdDescriptor)
+        {
+            return GetMemberFunctionIdTypeIndex(_nativeObjectWriter, memberIdDescriptor);
         }
     }
 }

@@ -10,7 +10,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{58D6B7AE-0A12-49F0-BCF7-200ED8BA445A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>GCSample</RootNamespace>
   </PropertyGroup>

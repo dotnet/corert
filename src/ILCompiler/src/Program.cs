@@ -69,7 +69,6 @@ namespace ILCompiler
 
         private void InitializeDefaultOptions()
         {
-#if FXCORE
             // We could offer this as a command line option, but then we also need to
             // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -98,10 +97,6 @@ namespace ILCompiler
             default:
                 throw new NotImplementedException();
             }
-#else
-            _targetOS = TargetOS.Windows;
-            _targetArchitecture = TargetArchitecture.X64;
-#endif
         }
 
         private ArgumentSyntax ParseCommandLine(string[] args)

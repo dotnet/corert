@@ -24,17 +24,17 @@ namespace System.Threading
 
         //
         // It's important that we always return the same SynchronizationContext object for any particular ICoreDispatcher
-        // object, as long as any existing instance is still reachable.  This allows reference equality checks against the 
-        // SynchronizationContext to determine if two instances represent the same dispatcher.  Async frameworks rely on this.
-        // To accomplish this, we use a ConditionalWeakTable to track which instances of WinRTSynchronizationContext are bound
-        // to each ICoreDispatcher instance.
+        // or IDispatcherQueue object, as long as any existing instance is still reachable. This allows reference equality
+        // checks against the SynchronizationContext to determine if two instances represent the same dispatcher. Async
+        // frameworks rely on this. To accomplish this, we use a ConditionalWeakTable to track which instance of
+        // SynchronizationContext is bound to each ICoreDispatcher/IDispatcherQueue instance.
         //
         private static readonly ConditionalWeakTable<Object, WinRTSynchronizationContext> s_winRTContextCache =
             new ConditionalWeakTable<Object, WinRTSynchronizationContext>();
 
         private static SynchronizationContext GetWinRTContext()
         {
-            var dispatcher = WinRTInterop.Callbacks.GetCurrentCoreDispatcher();
+            object dispatcher = WinRTInterop.Callbacks.GetCurrentWinRTDispatcher();
             if (dispatcher == null)
                 return null;
 
@@ -102,7 +102,7 @@ namespace System.Threading
             Contract.EndContractBlock();
 
             var invoker = new Invoker(d, state);
-            WinRTInterop.Callbacks.PostToCoreDispatcher(m_dispatcher, Invoker.InvokeDelegate, invoker);
+            WinRTInterop.Callbacks.PostToWinRTDispatcher(m_dispatcher, Invoker.InvokeDelegate, invoker);
         }
 
         public override void Send(SendOrPostCallback d, object state)

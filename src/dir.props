@@ -1,3 +1,9 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
+
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('System.Private.')) and $(MSBuildProjectDirectory.EndsWith('src'))">
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/sdk</OutputPath>
+    <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+  </PropertyGroup>
+
 </Project>

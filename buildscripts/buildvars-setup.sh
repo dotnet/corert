@@ -251,11 +251,10 @@ export __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__
 if [ $__CrossBuild = 1 ]; then
     export __IntermediatesHostDir="$__rootbinpath/obj/Native/$__BuildOS.$__HostArch.$__BuildType"
 fi
-export __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
+export __ProductBinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType"
 if [ $__CrossBuild = 1 ]; then
-    export __ProductHostBinDir="$__rootbinpath/Product/$__BuildOS.$__HostArch.$__BuildType"
+    export __ProductHostBinDir="$__rootbinpath/$__BuildOS.$__HostArch.$__BuildType"
 fi
-export __RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
 # This is needed by CLI to function.

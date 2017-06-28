@@ -61,7 +61,11 @@ namespace System.Threading
         {
             VerifyIsNotLockedByAnyThread();
 
-            _monitor.Dispose();
+            if (_monitor != null)
+            {
+                _monitor.Dispose();
+            }
+
             GC.SuppressFinalize(this);
         }
 

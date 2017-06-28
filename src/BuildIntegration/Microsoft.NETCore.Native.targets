@@ -108,14 +108,7 @@ See the LICENSE file in the project root for more information.
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeObject)))" />
 
-    <PropertyGroup>
-      <TestHost Condition="'$(OS)' == 'Windows_NT'">CoreRun.exe</TestHost>
-      <TestHost Condition="'$(OS)' != 'Windows_NT'">corerun</TestHost>
-    </PropertyGroup>
-
-    <Exec Command="&quot;$(IlcPath)\$(TestHost)&quot; &quot;$(IlcPath)\ilc.dll&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;">
-    </Exec>
-
+    <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
   </Target>
 
   <Import Project="Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
@@ -168,7 +161,11 @@ See the LICENSE file in the project root for more information.
       <CustomLibArg Include="@(LibInputs->'%(Identity)')" />
     </ItemGroup>
 
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(SharedLibrary)))" />
+
     <Exec Command="$(CppLibCreator) @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>

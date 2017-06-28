@@ -29,12 +29,12 @@ namespace System
 
         public static string ToStringInvariant(this byte arg)
         {
-            return ((uint)arg).LowLevelToString();
+            return arg.LowLevelToString();
         }
 
         public static string ToStringInvariant(this ushort arg)
         {
-            return ((uint)arg).LowLevelToString();
+            return arg.LowLevelToString();
         }
 
         public static string ToStringInvariant(this ulong arg)
@@ -65,9 +65,16 @@ namespace Internal.Runtime.TypeLoader
     {
         private const string HexDigits = "0123456789ABCDEF";
 
-        public static string LowLevelToString(this int arg)
+        private static string LowLevelToString(ulong arg, int shift)
         {
-            return ((uint)arg).LowLevelToString();
+            StringBuilder sb = new StringBuilder(16);
+            while (shift > 0)
+            {
+                shift -= 4;
+                int digit = (int)((arg >> shift) & 0xF);
+                sb.Append(HexDigits[digit]);
+            }
+            return sb.ToString();
         }
 
         public static string LowLevelToString(this LayoutInt arg)
@@ -78,48 +85,34 @@ namespace Internal.Runtime.TypeLoader
                 return ((uint)arg.AsInt).LowLevelToString();
         }
 
+        public static string LowLevelToString(this byte arg)
+        {
+            return LowLevelToString((ulong)arg, 4 * 2);
+        }
+
+        public static string LowLevelToString(this ushort arg)
+        {
+            return LowLevelToString((ulong)arg, 4 * 4);
+        }
+
+        public static string LowLevelToString(this int arg)
+        {
+            return ((uint)arg).LowLevelToString();
+        }
+
         public static string LowLevelToString(this uint arg)
         {
-            StringBuilder sb = new StringBuilder(8);
-            int shift = 4 * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((arg >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+            return LowLevelToString((ulong)arg, 4 * 8);
         }
 
         public static string LowLevelToString(this ulong arg)
         {
-            StringBuilder sb = new StringBuilder(16);
-            int shift = 4 * 16;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((arg >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+            return LowLevelToString((ulong)arg, 4 * 16);
         }
 
         public static string LowLevelToString(this IntPtr arg)
         {
-            StringBuilder sb = new StringBuilder(IntPtr.Size * 4);
-            ulong num = (ulong)arg;
-
-            int shift = IntPtr.Size * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+            return LowLevelToString((ulong)arg, IntPtr.Size * 8);
         }
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
@@ -149,20 +142,12 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Fallback implementation when no metadata available
-            string prefix = "EEType:0x";
+            return LowLevelToStringRawEETypeAddress(rtth);
+        }
 
-            StringBuilder sb = new StringBuilder(prefix.Length + IntPtr.Size * 4);
-            ulong num = (ulong)rtth.ToIntPtr();
-
-            int shift = IntPtr.Size * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+        public static string LowLevelToStringRawEETypeAddress(this RuntimeTypeHandle rtth)
+        {
+            return "EEType:0x" + LowLevelToString(rtth.ToIntPtr());
         }
     }
 }

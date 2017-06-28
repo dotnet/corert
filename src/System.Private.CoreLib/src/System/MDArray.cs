@@ -6,6 +6,8 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime.Augments;
+
 namespace System
 {
     // This file contains wrapper classes that allow ProjectN to support
@@ -23,6 +25,71 @@ namespace System
     //
     // The desktop CLR supports arrays of up to 32 dimensions so that provides
     // an upper limit on how much this needs to be built out.
+
+    internal static class MDPointerArrayHelper
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        private class MDArrayShape
+        {
+            public IntPtr _count;
+            public int _upperBound1;
+            // Followed by rank-1 upperbounds
+            // Then rank lobounds
+        }
+ 
+        public static object GetMDPointerArray(EETypePtr pointerDepthType, EETypePtr elementType, params int[] lengths)
+        {
+            // pointerDepthType is used to encode the pointer rank of the mdarray. This is exceedingly odd and inefficient
+            // but it works, and will allow the parameters to the various helpers to be consistent. This is only 
+            // acceptable as the feature is exceedingly rarely used in practice.
+            int pointerRank = 1;
+            while (pointerDepthType.IsGeneric)
+            {
+                pointerRank++;
+                pointerDepthType = pointerDepthType.Instantiation[0];
+            }
+            
+            int rank = lengths.Length;
+
+            // thPointerType will be the element type of the array once the iPointerRank loop below
+            // finishes.
+            RuntimeTypeHandle thPointerType = new RuntimeTypeHandle(elementType);
+            for (int iPointerRank = 0; iPointerRank < pointerRank; iPointerRank++)
+            {
+                bool pointerTypeConstructionSuccess = RuntimeAugments.TypeLoaderCallbacks.TryGetPointerTypeForTargetType(thPointerType, out thPointerType);
+                if (!pointerTypeConstructionSuccess)
+                    throw new TypeLoadException();
+            }
+
+            RuntimeTypeHandle mdArrayType;
+            bool mdArrayTypeConstruction = RuntimeAugments.TypeLoaderCallbacks.TryGetArrayTypeForElementType(thPointerType, true, rank, out mdArrayType);
+            if (!mdArrayTypeConstruction)
+                throw new TypeLoadException();
+
+            int totalLength = 1;
+            foreach (int length in lengths)
+            {
+                if (length < 0)
+                    throw new OverflowException();
+                totalLength = checked(totalLength * length);
+            }
+
+            MDArrayShape newArray = Unsafe.As<MDArrayShape>(RuntimeImports.RhNewArray(mdArrayType.ToEETypePtr(), totalLength));
+
+            // Assign upper bounds
+            unsafe
+            {
+                fixed(int *pUpperBound = &newArray._upperBound1)
+                {
+                    for (int iRank = 0; iRank < lengths.Length; iRank++)
+                    {
+                        pUpperBound[iRank] = lengths[iRank];
+                    }
+                }
+            }
+            return newArray;
+        }
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public class MDArrayRank2<T>
@@ -43,6 +110,14 @@ namespace System
             newArray._upperBound1 = length1;
             newArray._upperBound2 = length2;
             return Unsafe.As<T[,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -112,6 +187,14 @@ namespace System
             newArray._upperBound2 = length2;
             newArray._upperBound3 = length3;
             return Unsafe.As<T[,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -186,6 +269,14 @@ namespace System
             newArray._upperBound3 = length3;
             newArray._upperBound4 = length4;
             return Unsafe.As<T[,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -265,6 +356,14 @@ namespace System
             newArray._upperBound4 = length4;
             newArray._upperBound5 = length5;
             return Unsafe.As<T[,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -349,6 +448,14 @@ namespace System
             newArray._upperBound5 = length5;
             newArray._upperBound6 = length6;
             return Unsafe.As<T[,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -438,6 +545,14 @@ namespace System
             newArray._upperBound6 = length6;
             newArray._upperBound7 = length7;
             return Unsafe.As<T[,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -532,6 +647,14 @@ namespace System
             newArray._upperBound7 = length7;
             newArray._upperBound8 = length8;
             return Unsafe.As<T[,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -631,6 +754,14 @@ namespace System
             newArray._upperBound8 = length8;
             newArray._upperBound9 = length9;
             return Unsafe.As<T[,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -735,6 +866,14 @@ namespace System
             newArray._upperBound9 = length9;
             newArray._upperBound10 = length10;
             return Unsafe.As<T[,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -844,6 +983,14 @@ namespace System
             newArray._upperBound10 = length10;
             newArray._upperBound11 = length11;
             return Unsafe.As<T[,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -958,6 +1105,14 @@ namespace System
             newArray._upperBound11 = length11;
             newArray._upperBound12 = length12;
             return Unsafe.As<T[,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1077,6 +1232,14 @@ namespace System
             newArray._upperBound12 = length12;
             newArray._upperBound13 = length13;
             return Unsafe.As<T[,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1201,6 +1364,14 @@ namespace System
             newArray._upperBound13 = length13;
             newArray._upperBound14 = length14;
             return Unsafe.As<T[,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1330,6 +1501,14 @@ namespace System
             newArray._upperBound14 = length14;
             newArray._upperBound15 = length15;
             return Unsafe.As<T[,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1464,6 +1643,14 @@ namespace System
             newArray._upperBound15 = length15;
             newArray._upperBound16 = length16;
             return Unsafe.As<T[,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1603,6 +1790,14 @@ namespace System
             newArray._upperBound16 = length16;
             newArray._upperBound17 = length17;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1747,6 +1942,14 @@ namespace System
             newArray._upperBound17 = length17;
             newArray._upperBound18 = length18;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1896,6 +2099,14 @@ namespace System
             newArray._upperBound18 = length18;
             newArray._upperBound19 = length19;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2050,6 +2261,14 @@ namespace System
             newArray._upperBound19 = length19;
             newArray._upperBound20 = length20;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2209,6 +2428,14 @@ namespace System
             newArray._upperBound20 = length20;
             newArray._upperBound21 = length21;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2373,6 +2600,14 @@ namespace System
             newArray._upperBound21 = length21;
             newArray._upperBound22 = length22;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2542,6 +2777,14 @@ namespace System
             newArray._upperBound22 = length22;
             newArray._upperBound23 = length23;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2716,6 +2959,14 @@ namespace System
             newArray._upperBound23 = length23;
             newArray._upperBound24 = length24;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -2895,6 +3146,14 @@ namespace System
             newArray._upperBound24 = length24;
             newArray._upperBound25 = length25;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3079,6 +3338,14 @@ namespace System
             newArray._upperBound25 = length25;
             newArray._upperBound26 = length26;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3268,6 +3535,14 @@ namespace System
             newArray._upperBound26 = length26;
             newArray._upperBound27 = length27;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3462,6 +3737,14 @@ namespace System
             newArray._upperBound27 = length27;
             newArray._upperBound28 = length28;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27, int length28)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27, length28);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3661,6 +3944,14 @@ namespace System
             newArray._upperBound28 = length28;
             newArray._upperBound29 = length29;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27, int length28, int length29)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27, length28, length29);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3865,6 +4156,14 @@ namespace System
             newArray._upperBound29 = length29;
             newArray._upperBound30 = length30;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27, int length28, int length29, int length30)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27, length28, length29, length30);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -4074,6 +4373,14 @@ namespace System
             newArray._upperBound30 = length30;
             newArray._upperBound31 = length31;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27, int length28, int length29, int length30, int length31)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27, length28, length29, length30, length31);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -4288,6 +4595,14 @@ namespace System
             newArray._upperBound31 = length31;
             newArray._upperBound32 = length32;
             return Unsafe.As<T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>(newArray);
+        }
+
+        // Since all multidimensional array handling is done via generics, and generics cannot be used with pointers
+        // in C#, use TPointerDepthType to indicate the pointer rank of the array. This is *highly* inefficient, but
+        // use of this feature is exceedingly rare.
+        public static object PointerArrayCtor<TPointerDepthType>(int length1, int length2, int length3, int length4, int length5, int length6, int length7, int length8, int length9, int length10, int length11, int length12, int length13, int length14, int length15, int length16, int length17, int length18, int length19, int length20, int length21, int length22, int length23, int length24, int length25, int length26, int length27, int length28, int length29, int length30, int length31, int length32)
+        {
+            return MDPointerArrayHelper.GetMDPointerArray(EETypePtr.EETypePtrOf<TPointerDepthType>(), EETypePtr.EETypePtrOf<T>(), length1, length2, length3, length4, length5, length6, length7, length8, length9, length10, length11, length12, length13, length14, length15, length16, length17, length18, length19, length20, length21, length22, length23, length24, length25, length26, length27, length28, length29, length30, length31, length32);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

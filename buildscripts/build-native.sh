@@ -119,7 +119,6 @@ build_host_native_corert()
     build_native_corert
 
     cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}
-    cp ${__ProductHostBinDir}/jitinterface.so ${__ProductBinDir}/packaging/publish1
 
     export __BuildArch=$__SavedBuildArch
     export __IntermediatesDir=$__SavedIntermediatesDir

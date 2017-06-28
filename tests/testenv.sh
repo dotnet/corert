@@ -87,4 +87,4 @@ export CoreRT_BuildOS
 
 __ScriptDir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-export CoreRT_ToolchainDir=${__ScriptDir}/../bin/Product/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/packaging/publish1
+export CoreRT_ToolchainDir=${__ScriptDir}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}

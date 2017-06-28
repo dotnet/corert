@@ -1,22 +1,23 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="..\..\..\..\..\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <OutputType>Library</OutputType>
-    <OutputPath>$(AotPackageReferencePath)</OutputPath>
-    <ResolvePackages>true</ResolvePackages>
-    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-    <ProjectJson>project.json</ProjectJson>
-    <ProjectLockJson>project.lock.json</ProjectLockJson>
+    <TargetFramework>net45</TargetFramework>
+    <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <PackageReference Include="xunit">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.assert">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.core">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.msbuild">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
-  <PropertyGroup>
-    <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
-    <NuGetRuntimeIdentifier>win8-aot</NuGetRuntimeIdentifier>
-  </PropertyGroup>
 </Project>

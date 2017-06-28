@@ -52,6 +52,8 @@ namespace System.Threading
         private int _completionCount = 0;
         private int _threadAdjustmentInterval;
 
+        private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
+
         private volatile int _numRequestedWorkers = 0;
 
         private ClrThreadPool()
@@ -174,18 +176,32 @@ namespace System.Threading
             // TODO: Check perf. Might need to make this thread-local.
             Interlocked.Increment(ref _completionCount);
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
-
-            bool shouldAdjustWorkers = ShouldAdjustMaxWorkersActive();
-            if(shouldAdjustWorkers)
+            
+            if (ShouldAdjustMaxWorkersActive())
             {
-                AdjustMaxWorkersActive();
+                bool acquiredLock = _hillClimbingThreadAdjustmentLock.TryAcquire();
+                try
+                {
+                    if (acquiredLock)
+                    {
+                        AdjustMaxWorkersActive();
+                    }
+                }
+                finally
+                {
+                    if (acquiredLock)
+                    {
+                        _hillClimbingThreadAdjustmentLock.Release();
+                    }
+                } 
             }
+
             return !WorkerThread.ShouldStopProcessingWorkNow();
         }
 
         //
         // This method must only be called if ShouldAdjustMaxWorkersActive has returned true, *and*
-        // s_threadAdjustmentLock is held.
+        // _hillClimbingThreadAdjustmentLock is held.
         //
         private void AdjustMaxWorkersActive()
         {
@@ -261,7 +277,7 @@ namespace System.Threading
         {
             Interlocked.Increment(ref _numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker();
-            // TODO: Ensure gate thread is running here.
+            GateThread.EnsureRunning();
         }
     }
 }

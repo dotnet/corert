@@ -23,6 +23,7 @@
 #include "event.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
 
 // Configurable constants used across our spin locks
@@ -81,7 +82,7 @@ ReaderWriterLock::WriteHolder::~WriteHolder()
 #endif // !DACCESS_COMPILE
 }
 
-ReaderWriterLock::ReaderWriterLock() : 
+ReaderWriterLock::ReaderWriterLock(bool fBlockOnGc) :
     m_RWLock(0)
 #if 0
     , m_WriterWaiting(false)
@@ -92,6 +93,7 @@ ReaderWriterLock::ReaderWriterLock() :
         (PalGetProcessCpuCount() == 1) ? 0 : 
 #endif
         4000);
+    m_fBlockOnGc = fBlockOnGc;
 }
 
 
@@ -246,6 +248,13 @@ void ReaderWriterLock::AcquireWriteLock()
         {
             if (TryAcquireWriteLock())
                 return;
+
+            // Do not spin if GC is in progress because the lock will not
+            // be released until GC is finished.
+            if (m_fBlockOnGc && ThreadStore::IsTrapThreadsRequested())
+            {
+                RedhawkGCInterface::WaitForGCCompletion();
+            }
 
             if (g_SystemInfo.dwNumberOfProcessors <= 1)
             {

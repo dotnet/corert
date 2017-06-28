@@ -462,6 +462,11 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
             }
 
+            if (this is ClonedConstructedEETypeNode)
+            {
+                flags |= (UInt16)EETypeKind.ClonedEEType;
+            }
+
             objData.EmitShort((short)flags);
         }
 

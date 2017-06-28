@@ -12,7 +12,7 @@ add_definitions(-DUSE_PORTABLE_HELPERS)
 add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
 
 # Install the static Runtime library
-install (TARGETS PortableRuntime DESTINATION lib)
+install (TARGETS PortableRuntime DESTINATION sdk)
 if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION lib)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION sdk)
 endif()

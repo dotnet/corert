@@ -7,6 +7,20 @@
 .syntax unified
 .thumb
 
+#ifdef _DEBUG
+.rodata
+AssertMsg:                              .asciz "__FILE__:%s: %s is not implemented\n"
+FileName:                               .asciz "InteropThunksHelpers.S"
+RhCommonStubName:                       .asciz "RhCommonStub"
+RhGetCommonStubAddressName:             .asciz "RhGetCommonStubAddress"
+RhGetCurrentThunkContextName:           .asciz "RhGetCurrentThunkContext"
+
+.text
+.macro GEN_ASSERT_FUNC func
+        GEN_ASSERT AssertMsg, FileName, \func
+.endm
+#endif
+
 // TODO: Implement Arm support
 
 //
@@ -14,7 +28,7 @@
 //
 NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 #ifdef _DEBUG
-    bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhCommonStubName
 #endif
 NESTED_END RhCommonStub, _TEXT
 
@@ -23,7 +37,7 @@ NESTED_END RhCommonStub, _TEXT
 //
 LEAF_ENTRY RhGetCommonStubAddress, _TEXT
 #ifdef _DEBUG
-    bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhGetCommonStubAddressName
 #endif
 LEAF_END RhGetCommonStubAddress, _TEXT
 
@@ -32,6 +46,6 @@ LEAF_END RhGetCommonStubAddress, _TEXT
 //
 LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 #ifdef _DEBUG
-    bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhGetCurrentThunkContextName
 #endif
 LEAF_END RhGetCurrentThunkContext, _TEXT

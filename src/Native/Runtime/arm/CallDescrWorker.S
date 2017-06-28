@@ -7,6 +7,19 @@
 .syntax unified
 .thumb
 
+#ifdef _DEBUG
+.rodata
+AssertMsg:                              .asciz "__FILE__:%s: %s is not implemented\n"
+FileName:                               .asciz "CallDescrWorker.S"
+RhCallDescrWorkerName:                  .asciz "RhCallDescrWorker"
+PointerToReturnFromCallDescrThunkName:  .asciz "PointerToReturnFromCallDescrThunk"
+
+.text
+.macro GEN_ASSERT_FUNC func
+        GEN_ASSERT AssertMsg, FileName, \func
+.endm
+#endif
+
 // TODO: Implement Arm support
 
 NESTED_ENTRY RhCallDescrWorker, _TEXT, NoHandler
@@ -15,7 +28,7 @@ LOCAL_LABEL(ReturnFromCallDescrThunk):
     // UNIXTODO: Implement this function
 	  // int 3
 #ifdef _DEBUG
-    bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC RhCallDescrWorkerName
 #endif
 NESTED_END RhCallDescrWorker, _TEXT
 
@@ -27,6 +40,6 @@ NESTED_END RhCallDescrWorker, _TEXT
 
 LEAF_ENTRY PointerToReturnFromCallDescrThunk, _TEXT
 #ifdef _DEBUG
-    bl C_FUNC(NYI_Assert)
+        GEN_ASSERT_FUNC PointerToReturnFromCallDescrThunk
 #endif
 LEAF_END PointerToReturnFromCallDescrThunk, _TEXT
