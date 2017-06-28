@@ -353,13 +353,13 @@ namespace System.Threading
             /// </summary>
             /// <param name="handle">The handle to unregister.</param>
             /// <remarks>
-            /// As per CoreCLR's behavior, if the user passes in a <see cref="WaitHandle"/> that is equal to <c>-1</c>
+            /// As per CoreCLR's behavior, if the user passes in an invalid <see cref="WaitHandle"/>
             /// into <see cref="RegisteredWait.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
             /// Otherwise, the unregistration of the wait handle is queued on the thread pool.
             /// </remarks>
             public void QueueOrExecuteUnregisterWait(RegisteredWait handle)
             {
-                if (handle.UserUnregisterWaitHandle?.SafeWaitHandle.DangerousGetHandle() == (IntPtr)(-1))
+                if (handle.UserUnregisterWaitHandle != null && handle.UserUnregisterWaitHandle.IsInvalid)
                 {
                     UnregisterWait(handle);
                 }
@@ -396,7 +396,7 @@ namespace System.Threading
                 {
                     handle.CanUnregister.WaitOne();
 
-                    if (handle.UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
+                    if (!handle.UserUnregisterWaitHandle.IsInvalid)
                     {
                         handle.SignalUserWaitHandle();
                     }

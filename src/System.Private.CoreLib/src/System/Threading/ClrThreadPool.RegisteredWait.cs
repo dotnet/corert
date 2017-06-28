@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Internal.Runtime.Augments;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -46,7 +47,7 @@ namespace System.Threading
             /// <summary>
             /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
             /// </summary>
-            internal WaitHandle UserUnregisterWaitHandle { get; private set; }
+            internal SafeWaitHandle UserUnregisterWaitHandle { get; private set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
             /// <summary>
             /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
             /// </summary>
@@ -72,7 +73,7 @@ namespace System.Threading
             {
                 if (Interlocked.CompareExchange(ref _unregisterCalled, 1, 0) == 0)
                 {
-                    UserUnregisterWaitHandle = waitObject;
+                    UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                     WaitThread.QueueOrExecuteUnregisterWait(this);
                     return true;
                 }
@@ -87,10 +88,10 @@ namespace System.Threading
                 SignalAndCallbackLock.Acquire();
                 try
                 {
-                    if (!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
+                    if (!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
                     {
                         SignaledUserWaitHandle = true;
-                        WaitHandle.Set(UserUnregisterWaitHandle.SafeWaitHandle);
+                        WaitHandle.Set(UserUnregisterWaitHandle);
                     }
                 }
                 finally
