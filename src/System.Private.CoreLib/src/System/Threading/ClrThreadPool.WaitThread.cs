@@ -125,7 +125,7 @@ namespace System.Threading
         /// <summary>
         /// A thread pool wait thread.
         /// </summary>
-        private class WaitThread
+        internal class WaitThread
         {
             /// <summary>
             /// The info for a completed wait on a specific <see cref="RegisteredWait"/>.
