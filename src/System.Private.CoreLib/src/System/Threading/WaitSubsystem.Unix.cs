@@ -291,9 +291,9 @@ namespace System.Threading
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= waitHandles.Length);
-            Debug.Assert(waitHandles.Length > 0);
-            Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
+            Debug.Assert(safeWaitHandles.Length >= numWaitHandles);
+            Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = currentThread.WaitInfo;
