@@ -222,7 +222,6 @@
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
-    <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
     <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />

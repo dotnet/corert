@@ -422,7 +422,25 @@ namespace System.IO
                 }
 
                 Debug.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
-                charsRead = _decoder.GetChars(byteBuffer, position, numBytes, buffer, index, flush: false);
+                checked
+                {
+                    if (position < 0 || numBytes < 0 || position > byteBuffer.Length - numBytes)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(numBytes));
+                    }
+                    if (index < 0 || charsRemaining < 0 || index > buffer.Length - charsRemaining)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(charsRemaining));
+                    }
+                    unsafe
+                    {
+                        fixed (byte* pBytes = byteBuffer)
+                        fixed (char* pChars = buffer)
+                        {
+                            charsRead = _decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, flush: false);
+                        }
+                    }
+                }
 
                 charsRemaining -= charsRead;
                 index += charsRead;
