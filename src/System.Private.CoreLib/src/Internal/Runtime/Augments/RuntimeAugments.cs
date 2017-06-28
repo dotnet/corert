@@ -277,9 +277,22 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhUnbox(fieldValue, *(void**)&address, fieldType.ToEETypePtr());
         }
 
+        public static unsafe ref byte GetRawData(object obj)
+        {
+            return ref obj.GetRawData();
+        }
+
         public static unsafe Object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
             return RuntimeImports.RhBox(fieldType.ToEETypePtr(), *(void**)&address);
+        }
+
+        public static unsafe void StoreValueTypeField(ref byte address, Object fieldValue, RuntimeTypeHandle fieldType)
+        {
+            fixed (byte* pData = &address)
+            {
+                RuntimeImports.RhUnbox(fieldValue, (void*)pData, fieldType.ToEETypePtr());
+            }
         }
 
         public static unsafe void StoreValueTypeField(Object obj, int fieldOffset, Object fieldValue, RuntimeTypeHandle fieldType)
