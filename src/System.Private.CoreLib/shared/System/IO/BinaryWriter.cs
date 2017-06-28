@@ -10,6 +10,7 @@ namespace System.IO
     // This abstract base class represents a writer that can write
     // primitives to an arbitrary stream. A subclass can override methods to
     // give unique encodings.
+    //
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();
@@ -48,17 +49,11 @@ namespace System.IO
         public BinaryWriter(Stream output, Encoding encoding, bool leaveOpen)
         {
             if (output == null)
-            {
                 throw new ArgumentNullException(nameof(output));
-            }
             if (encoding == null)
-            {
                 throw new ArgumentNullException(nameof(encoding));
-            }
             if (!output.CanWrite)
-            {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
-            }
 
             OutStream = output;
             _buffer = new byte[16];
@@ -67,18 +62,22 @@ namespace System.IO
             _leaveOpen = leaveOpen;
         }
 
+        // Closes this writer and releases any system resources associated with the
+        // writer. Following a call to Close, any operations on the writer
+        // may raise exceptions. 
+        public virtual void Close()
+        {
+            Dispose(true);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
                 if (_leaveOpen)
-                {
                     OutStream.Flush();
-                }
                 else
-                {
-                    OutStream.Dispose();
-                }
+                    OutStream.Close();
             }
         }
 
@@ -87,19 +86,9 @@ namespace System.IO
             Dispose(true);
         }
 
-        /// <remarks>
-        /// Override Dispose(bool) instead of Close(). This API exists for compatibility purposes.
-        /// </remarks>
-        public virtual void Close()
-        {
-            Dispose(true);
-        }
-
-        /// <summary>
-        /// Returns the stream associated with the writer. It flushes all pending
-        /// writes before returning. All subclasses should override Flush to
-        /// ensure that all buffered data is sent to the stream.
-        /// </summary>
+        // Returns the stream associated with the writer. It flushes all pending
+        // writes before returning. All subclasses should override Flush to
+        // ensure that all buffered data is sent to the stream.
         public virtual Stream BaseStream
         {
             get
@@ -155,10 +144,7 @@ namespace System.IO
         public virtual void Write(byte[] buffer)
         {
             if (buffer == null)
-            {
                 throw new ArgumentNullException(nameof(buffer));
-            }
-
             OutStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -177,17 +163,17 @@ namespace System.IO
         // advanced by two.
         // Note this method cannot handle surrogates properly in UTF-8.
         // 
-        public virtual void Write(char ch)
+        public unsafe virtual void Write(char ch)
         {
-            if (char.IsSurrogate(ch))
-            {
+            if (Char.IsSurrogate(ch))
                 throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
-            }
 
             Debug.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
             int numBytes = 0;
-            char[] chBuf = new char[] { ch };
-            numBytes = _encoder.GetBytes(chBuf, 0, 1, _buffer, 0, true);
+            fixed (byte* pBytes = &_buffer[0])
+            {
+                numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, flush: true);
+            }
             OutStream.Write(_buffer, 0, numBytes);
         }
 
@@ -199,9 +185,7 @@ namespace System.IO
         public virtual void Write(char[] chars)
         {
             if (chars == null)
-            {
                 throw new ArgumentNullException(nameof(chars));
-            }
 
             byte[] bytes = _encoding.GetBytes(chars, 0, chars.Length);
             OutStream.Write(bytes, 0, bytes.Length);
@@ -238,33 +222,7 @@ namespace System.IO
 
         public virtual void Write(decimal value)
         {
-            int[] bits = decimal.GetBits(value);
-            Debug.Assert(bits.Length == 4);
-
-            int lo = bits[0];
-            _buffer[0] = (byte)lo;
-            _buffer[1] = (byte)(lo >> 8);
-            _buffer[2] = (byte)(lo >> 16);
-            _buffer[3] = (byte)(lo >> 24);
-
-            int mid = bits[1];
-            _buffer[4] = (byte)mid;
-            _buffer[5] = (byte)(mid >> 8);
-            _buffer[6] = (byte)(mid >> 16);
-            _buffer[7] = (byte)(mid >> 24);
-
-            int hi = bits[2];
-            _buffer[8] = (byte)hi;
-            _buffer[9] = (byte)(hi >> 8);
-            _buffer[10] = (byte)(hi >> 16);
-            _buffer[11] = (byte)(hi >> 24);
-
-            int flags = bits[3];
-            _buffer[12] = (byte)flags;
-            _buffer[13] = (byte)(flags >> 8);
-            _buffer[14] = (byte)(flags >> 16);
-            _buffer[15] = (byte)(flags >> 24);
-
+            Decimal.GetBytes(value, _buffer);
             OutStream.Write(_buffer, 0, 16);
         }
 
@@ -366,12 +324,10 @@ namespace System.IO
         // a four-byte unsigned integer, and then writes that many characters 
         // to the stream.
         // 
-        public virtual void Write(string value)
+        public unsafe virtual void Write(String value)
         {
             if (value == null)
-            {
                 throw new ArgumentNullException(nameof(value));
-            }
 
             int len = _encoding.GetByteCount(value);
             Write7BitEncodedInt(len);
@@ -379,11 +335,12 @@ namespace System.IO
             if (_largeByteBuffer == null)
             {
                 _largeByteBuffer = new byte[LargeByteBufferSize];
-                _maxChars = LargeByteBufferSize / _encoding.GetMaxByteCount(1);
+                _maxChars = _largeByteBuffer.Length / _encoding.GetMaxByteCount(1);
             }
 
-            if (len <= LargeByteBufferSize)
+            if (len <= _largeByteBuffer.Length)
             {
+                //Debug.Assert(len == _encoding.GetBytes(chars, 0, chars.Length, _largeByteBuffer, 0), "encoding's GetByteCount & GetBytes gave different answers!  encoding type: "+_encoding.GetType().Name);
                 _encoding.GetBytes(value, 0, value.Length, _largeByteBuffer, 0);
                 OutStream.Write(_largeByteBuffer, 0, len);
             }
@@ -403,10 +360,24 @@ namespace System.IO
                     // Figure out how many chars to process this round.
                     int charCount = (numLeft > _maxChars) ? _maxChars : numLeft;
                     int byteLen;
-                    byteLen = _encoder.GetBytes(value.ToCharArray(), charStart, charCount, _largeByteBuffer, 0, charCount == numLeft);
+
+                    checked
+                    {
+                        if (charStart < 0 || charCount < 0 || charStart > value.Length - charCount)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(charCount));
+                        }
+                        fixed (char* pChars = value)
+                        {
+                            fixed (byte* pBytes = &_largeByteBuffer[0])
+                            {
+                                byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, _largeByteBuffer.Length, charCount == numLeft);
+                            }
+                        }
+                    }
 #if DEBUG
                     totalBytes += byteLen;
-                    Debug.Assert(totalBytes <= len && byteLen <= LargeByteBufferSize, "BinaryWriter::Write(String) - More bytes encoded than expected!");
+                    Debug.Assert(totalBytes <= len && byteLen <= _largeByteBuffer.Length, "BinaryWriter::Write(String) - More bytes encoded than expected!");
 #endif
                     OutStream.Write(_largeByteBuffer, 0, byteLen);
                     charStart += charCount;
