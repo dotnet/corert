@@ -1026,7 +1026,7 @@ namespace System
             return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, Marvin.DefaultSeed);
         }
 
-        // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such
+        // Gets a hash code for this string and this comparison. If strings A and B and comparison C are such
         // that String.Equals(A, B, C), then they will return the same hash code with this comparison C.
         public int GetHashCode(StringComparison comparisonType) => StringComparer.FromComparison(comparisonType).GetHashCode(this);
 
