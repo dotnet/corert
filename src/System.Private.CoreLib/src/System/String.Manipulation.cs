@@ -877,6 +877,91 @@ namespace System
             return Substring(0, startIndex);
         }
 
+        public string Replace(string oldValue, string newValue, bool ignoreCase, CultureInfo culture)
+        {
+            return ReplaceCore(oldValue, newValue, culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+        }
+
+        public string Replace(string oldValue, string newValue, StringComparison comparisonType)
+        {
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture, CompareOptions.None);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
+
+                case StringComparison.InvariantCulture:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
+
+                case StringComparison.Ordinal:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.Ordinal);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.OrdinalIgnoreCase);
+
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+            }
+        }
+
+        private unsafe String ReplaceCore(string oldValue, string newValue, CultureInfo culture, CompareOptions options)
+        {
+            if (oldValue == null)
+                throw new ArgumentNullException(nameof(oldValue));
+            if (oldValue.Length == 0)
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
+
+            // If they asked to replace oldValue with a null, replace all occurrences
+            // with the empty string.
+            if (newValue == null)
+                newValue = string.Empty;
+
+            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
+            StringBuilder result = StringBuilderCache.Acquire();
+
+            int startIndex = 0;
+            int index = 0;
+
+            int matchLength = 0;
+
+            bool hasDoneAnyReplacements = false;
+            CompareInfo ci = referenceCulture.CompareInfo;
+
+            do
+            {
+                index = ci.IndexOf(this, oldValue, startIndex, _stringLength - startIndex, options, &matchLength);
+                if (index >= 0)
+                {
+                    // append the unmodified portion of string
+                    result.Append(this, startIndex, index - startIndex);
+
+                    // append the replacement
+                    result.Append(newValue);
+
+                    startIndex = index + matchLength;
+                    hasDoneAnyReplacements = true;
+                }
+                else if (!hasDoneAnyReplacements)
+                {
+                    // small optimization,
+                    // if we have not done any replacements,
+                    // we will return the original string
+                    return this;
+                }
+                else
+                {
+                    result.Append(this, startIndex, _stringLength - startIndex);
+                }
+            } while (index >= 0);
+
+            return StringBuilderCache.GetStringAndRelease(result);
+        }
+
         // Replaces all instances of oldChar with newChar.
         //
         public String Replace(char oldChar, char newChar)
