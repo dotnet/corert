@@ -52,7 +52,7 @@ namespace System.Threading
             /// <summary>
             /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
             /// </summary>
-            private int _unregisterSignaled;
+            private volatile int _unregisterSignaled;
 
             /// <summary>
             /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
@@ -68,7 +68,7 @@ namespace System.Threading
 
             internal bool Unregister(WaitHandle waitObject)
             {
-                if (Interlocked.CompareExchange(ref _unregisterCalled, 1, 0) == 0)
+                if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
                 {
                     UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                     WaitThread.QueueOrExecuteUnregisterWait(this);
@@ -82,7 +82,7 @@ namespace System.Threading
             /// </summary>
             internal void SignalUserWaitHandle()
             {
-                if (Interlocked.CompareExchange(ref _unregisterSignaled, 1, 0) == 0 && UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
+                if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0 && UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
                 {
                     WaitHandle.Set(UserUnregisterWaitHandle);
                 }
@@ -94,7 +94,7 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             internal void PerformCallback(bool timedOut)
             {
-                if (Interlocked.CompareExchange(ref _unregisterSignaled, 0, 0) == 0)
+                if (_unregisterSignaled == 0)
                 {
                     _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
                 }
