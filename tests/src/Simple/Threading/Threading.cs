@@ -63,6 +63,9 @@ internal static class Runner
         Console.WriteLine("    ThreadPoolTests.GlobalWorkQueueDepletionTest");
         ThreadPoolTests.GlobalWorkQueueDepletionTest();
 
+        Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
+        ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum();
+
         return Pass;
     }
 }
@@ -837,7 +840,7 @@ internal static class ThreadPoolTests
                 Console.WriteLine("Completed Job");
             });
         }
-        jobsQueued.WaitOne();
+        Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Task.Factory.StartNew(() => e1.Set());
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
         Console.WriteLine("Signaling");
@@ -865,7 +868,7 @@ internal static class ThreadPoolTests
                 e0.WaitOne();
             });
         }
-        jobsQueued.WaitOne();
+        Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Console.WriteLine("Queuing last job");
         Task.Factory.StartNew(() => testJobCompleted.Set());
         Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
@@ -890,7 +893,7 @@ internal static class ThreadPoolTests
                 e0.WaitOne();
             });
         }
-        jobsQueued.WaitOne();
+        Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         int testJobsCount = 0;
         int maxCount = 5;
         void Job()
@@ -943,7 +946,7 @@ internal static class ThreadPoolTests
                 e0.WaitOne();
             });
         }
-        jobsQueued.WaitOne();
+        Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Task.Factory.StartNew(() => testJobCompleted.Set());
         Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
         Console.Write("Sleeping to time out thread\n");
@@ -1039,6 +1042,33 @@ internal static class ThreadPoolTests
         }
         ThreadPool.QueueUserWorkItem(Job);
         e0.WaitOne();
+    }
+
+    [Fact]
+    public static void SettingMinThreadsWillCreateThreadsUpToMinimum()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        int count = 0;
+        ThreadPool.GetMinThreads(out int minThreads, out int unused);
+        ThreadPool.SetMaxThreads(minThreads, unused);
+        for(int i = 0; i < minThreads + 1; ++i)
+        {
+            ThreadPool.QueueUserWorkItem(_ => {
+                if(Interlocked.Increment(ref count) == minThreads + 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.WaitOne();
+            });
+        }
+        Assert.False(jobsQueued.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Assert.True(ThreadPool.SetMaxThreads(minThreads + 1, unused));
+        Assert.True(ThreadPool.SetMinThreads(minThreads + 1, unused));
+
+        Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+
+        e0.Set();
     }
 }
 
