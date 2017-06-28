@@ -304,7 +304,7 @@ namespace System.Threading
             }
             finally
             {
-                for (int i = 0; i < waitHandles.Length; ++i)
+                for (int i = 0; i < numWaitHandles; ++i)
                 {
                     safeWaitHandles[i].DangerousRelease();
                     safeWaitHandles[i] = null;
