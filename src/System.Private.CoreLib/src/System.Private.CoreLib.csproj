@@ -375,7 +375,6 @@
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
     <Compile Include="System\Threading\PinnableBufferCache.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
