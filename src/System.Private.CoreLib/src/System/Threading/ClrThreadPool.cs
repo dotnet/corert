@@ -16,6 +16,8 @@ namespace System.Threading
         public static readonly ClrThreadPool ThreadPoolInstance = new ClrThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
+        private const int ThreadPoolThreadTimeoutMs = 20 * 1000;
+
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization

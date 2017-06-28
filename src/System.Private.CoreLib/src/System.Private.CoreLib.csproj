@@ -654,7 +654,9 @@
     <Compile Include="System\Threading\ClrThreadPool.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.RegisteredWait.cs" />
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
@@ -669,7 +671,6 @@
     <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

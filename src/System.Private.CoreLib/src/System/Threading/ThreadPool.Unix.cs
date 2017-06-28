@@ -15,111 +15,18 @@ namespace System.Threading
     /// <summary>
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
-    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    public sealed class RegisteredWaitHandle : MarshalByRefObject // TODO: Move implementation to new ClrThreadPool.RegisteredWaitHandle class
     {
-        internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
-            int millisecondsTimeout, bool repeating)
+        internal RegisteredWaitHandle(ClrThreadPool.RegisteredWait registeredWait)
         {
-            Handle = waitHandle;
-            Callback = callbackHelper;
-            TimeoutTime = millisecondsTimeout;
-            Repeating = repeating;
+            RegisteredWait = registeredWait;
         }
 
-        /// <summary>
-        /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
-        /// </summary>
-        internal _ThreadPoolWaitOrTimerCallback Callback { get; }
-
-        /// <summary>
-        /// The <see cref="WaitHandle"/> that was registered.
-        /// </summary>
-        internal WaitHandle Handle { get; }
-
-        /// <summary>
-        /// The time this handle times out at in ticks.
-        /// </summary>
-        internal int TimeoutTime { get; }
-
-        /// <summary>
-        /// Whether or not the wait is a repeating wait.
-        /// </summary>
-        internal bool Repeating { get; }
-
-        /// <summary>
-        /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
-        /// </summary>
-        internal WaitHandle UserUnregisterWaitHandle { get; private set; }
-        /// <summary>
-        /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
-        /// </summary>
-        private bool SignaledUserWaitHandle { get; set; } = false;
-        /// <summary>
-        /// A lock around accesses to <see cref="SignaledUserWaitHandle"/>.
-        /// </summary>
-        private LowLevelLock SignalAndCallbackLock { get; } = new LowLevelLock();
-
-        /// <summary>
-        /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
-        /// </summary>
-        internal ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
-
-        /// <summary>
-        /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
-        /// </summary>
-        internal ClrThreadPool.WaitThread WaitThread { get; set; }
-
-        private int _unregisterCalled;
+        private ClrThreadPool.RegisteredWait RegisteredWait { get; }
 
         public bool Unregister(WaitHandle waitObject)
         {
-            if(Interlocked.CompareExchange(ref _unregisterCalled, 1, 0) == 0)
-            {
-                UserUnregisterWaitHandle = waitObject;
-                WaitThread.QueueOrExecuteUnregisterWait(this);
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Signal <see cref="UserUnregisterWaitHandle"/> if it has not been signaled yet and is a valid handle.
-        /// </summary>
-        internal void SignalUserWaitHandle()
-        {
-            SignalAndCallbackLock.Acquire();
-            try
-            {
-                if (!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.SafeWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
-                {
-                    SignaledUserWaitHandle = true;
-                    WaitHandle.Set(UserUnregisterWaitHandle.SafeWaitHandle);
-                }
-            }
-            finally
-            {
-                SignalAndCallbackLock.Release();
-            }
-        }
-
-        /// <summary>
-        /// Perform the registered callback if the <see cref="UserUnregisterWaitHandle"/> has not been signaled.
-        /// </summary>
-        /// <param name="timedOut">Whether or not the wait timed out.</param>
-        internal void PerformCallback(bool timedOut)
-        {
-            SignalAndCallbackLock.Acquire();
-            try
-            {
-                if (!SignaledUserWaitHandle)
-                {
-                    _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
-                }
-            }
-            finally
-            {
-                SignalAndCallbackLock.Release();
-            }
+            return RegisteredWait.Unregister(waitObject);
         }
     }
 
@@ -241,13 +148,13 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
+            ClrThreadPool.RegisteredWait registeredHandle = new ClrThreadPool.RegisteredWait(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
                 Environment.TickCount + (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
-            ClrThreadPool.RegisterWaitHandle(registeredHandle);
-            return registeredHandle;
+            ClrThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
+            return new RegisteredWaitHandle(registeredHandle);
         }
     }
 }
