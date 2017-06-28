@@ -48,14 +48,11 @@ namespace System.Threading
             /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
             /// </summary>
             internal SafeWaitHandle UserUnregisterWaitHandle { get; private set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
+
             /// <summary>
             /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
             /// </summary>
-            private bool SignaledUserWaitHandle { get; set; } = false;
-            /// <summary>
-            /// A lock around accesses to <see cref="SignaledUserWaitHandle"/>.
-            /// </summary>
-            private LowLevelLock SignalAndCallbackLock { get; } = new LowLevelLock();
+            private int _unregisterSignaled;
 
             /// <summary>
             /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
@@ -85,18 +82,9 @@ namespace System.Threading
             /// </summary>
             internal void SignalUserWaitHandle()
             {
-                SignalAndCallbackLock.Acquire();
-                try
+                if (Interlocked.CompareExchange(ref _unregisterSignaled, 1, 0) == 0 && UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
                 {
-                    if (!SignaledUserWaitHandle && UserUnregisterWaitHandle != null && UserUnregisterWaitHandle.DangerousGetHandle() != (IntPtr)(-1))
-                    {
-                        SignaledUserWaitHandle = true;
-                        WaitHandle.Set(UserUnregisterWaitHandle);
-                    }
-                }
-                finally
-                {
-                    SignalAndCallbackLock.Release();
+                    WaitHandle.Set(UserUnregisterWaitHandle);
                 }
             }
 
@@ -106,17 +94,9 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             internal void PerformCallback(bool timedOut)
             {
-                SignalAndCallbackLock.Acquire();
-                try
+                if (Interlocked.CompareExchange(ref _unregisterSignaled, 0, 0) == 0)
                 {
-                    if (!SignaledUserWaitHandle)
-                    {
-                        _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
-                    }
-                }
-                finally
-                {
-                    SignalAndCallbackLock.Release();
+                    _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
                 }
             }
         }
