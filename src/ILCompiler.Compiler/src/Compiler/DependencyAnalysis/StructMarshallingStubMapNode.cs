@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var structEntry in factory.InteropStubManager.GetStructMarshallingTypes())
+            foreach (var structEntry in ((CompilerGeneratedInteropStubManager)factory.InteropStubManager).GetStructMarshallingTypes())
             {
                 // the order of data written is as follows:
                 //  0. managed struct type

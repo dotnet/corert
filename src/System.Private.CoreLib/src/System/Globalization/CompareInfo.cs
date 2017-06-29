@@ -751,6 +751,43 @@ namespace System.Globalization
             return IndexOfCore(source, value, startIndex, count, options, null);
         }
 
+        // The following IndexOf overload is mainly used by String.Replace. This overload assumes the parameters are already validated
+        // and the caller is passing a valid matchLengthPtr pointer.
+        internal unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(matchLengthPtr != null);
+            *matchLengthPtr = 0;
+
+            if (source.Length == 0)
+            {
+                if (value.Length == 0)
+                {
+                    return 0;
+                }
+                return -1;
+            }
+
+            if (startIndex >= source.Length)
+            {
+                return -1;
+            }
+
+            if (options == CompareOptions.OrdinalIgnoreCase)
+            {
+                int res = IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+                if (res >= 0)
+                {
+                    *matchLengthPtr = value.Length;
+                }
+                return res;
+            }
+
+            return IndexOfCore(source, value, startIndex, count, options, matchLengthPtr);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  LastIndexOf
