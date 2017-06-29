@@ -183,7 +183,10 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public static AssemblyName GetAssemblyName(string assemblyFile) { throw new NotImplementedException(); } // TODO: https://github.com/dotnet/corert/issues/3253
+        public static AssemblyName GetAssemblyName(string assemblyFile)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported_AssemblyName_GetAssemblyName);
+        }
 
         /// <summary>
         /// Compares the simple names disregarding Version, Culture and PKT. While this clearly does not

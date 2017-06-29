@@ -2452,4 +2452,7 @@
   <data name="Arg_OpenType" xml:space="preserve">
     <value>Cannot create an instance of {0} as it is an open type.</value>
   </data>
+  <data name="Arg_PlatformNotSupported_AssemblyName_GetAssemblyName" xml:space="preserve">
+    <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
+  </data>
 </root>
