@@ -749,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
-        internal ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        public ReflectableMethodNode ReflectableMethod(MethodDesc method)
         {
             return _reflectableMethods.GetOrAdd(method);
         }

@@ -1680,11 +1680,14 @@ namespace Internal.Runtime.TypeLoader
                     return true;
                 }
 
-                // Generic non-shareable method: check the method instantiation arguments
+                // Generic non-shareable method or abstract methods: check for the canonical equivalency of the method 
+                // instantiation arguments that we read from the entry
                 if (((_flags & InvokeTableFlags.RequiresInstArg) == 0) || !_hasEntryPoint)
-                    return _lookupMethodInfo.CompareMethodInstantiation(_methodInstantiation);
+                    return _lookupMethodInfo.CanInstantiationsShareCode(_methodInstantiation, _canonFormKind);
 
-                // Generic shareable method: check for canonical equivalency of the method instantiation arguments
+                // Generic shareable method: check for canonical equivalency of the method instantiation arguments.
+                // The method instantiation arguments are extracted from the generic dictionary pointer that we read from the entry.
+                Debug.Assert(_entryDictionary != IntPtr.Zero);
                 return GetNameAndSignatureAndMethodInstantiation() && _lookupMethodInfo.CanInstantiationsShareCode(_entryMethodInstantiation, _canonFormKind);
             }
 

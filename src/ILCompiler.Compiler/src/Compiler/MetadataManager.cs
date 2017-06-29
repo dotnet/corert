@@ -24,7 +24,7 @@ namespace ILCompiler
     /// module. It also helps facilitate mappings between generated runtime structures or code,
     /// and the native metadata.
     /// </summary>
-    public abstract class MetadataManager
+    public abstract class MetadataManager : ICompilationRootProvider
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
@@ -489,6 +489,12 @@ namespace ILCompiler
                 return;
 
             ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings);
+        }
+
+        void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
+        {
+            // MetadataManagers can override this to provide metadata compilation roots that need to be added to the graph ahead of time.
+            // (E.g. reflection roots computed by IL analyzers, or non-compilation-based roots)
         }
 
         protected abstract void ComputeMetadata(NodeFactory factory,
