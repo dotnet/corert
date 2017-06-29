@@ -362,8 +362,7 @@ namespace Internal.IL
                         case StackValueKind.ObjRef:
                             return op == ILOpcode.beq || op == ILOpcode.beq_s ||
                                    op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
-                                   op == ILOpcode.ceq || 
-                                   op == ILOpcode.cgt_un;
+                                   op == ILOpcode.ceq || op == ILOpcode.cgt_un;
                         default:
                             return false;
                     }
