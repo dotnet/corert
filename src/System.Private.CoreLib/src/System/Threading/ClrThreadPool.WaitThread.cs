@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Internal.Runtime.Augments;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -203,7 +204,13 @@ namespace System.Threading
                     }
 
                     int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeout);
-                    RegisteredWait signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex] : null;
+
+                    if (signaledHandleIndex == 0) // If we were woken up for a change in our handles, continue.
+                    {
+                        continue;
+                    }
+
+                    RegisteredWait signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
 
                     if (signaledHandle != null)
                     {
@@ -243,10 +250,18 @@ namespace System.Threading
                 _registeredHandlesLock.Acquire();
                 try
                 {
-                    if (_numPendingRemoves == 0)
+                    Debug.Assert(_numPendingRemoves >= 0);
+                    Debug.Assert(_numPendingRemoves <= _pendingRemoves.Length);
+                    Debug.Assert(_numUserWaits >= 0);
+                    Debug.Assert(_numUserWaits <= _registeredWaits.Length);
+                    Debug.Assert(_numPendingRemoves <= _numUserWaits, $"Num removals {_numPendingRemoves} should be less than or equal to num user waits {_numUserWaits}");
+                    
+                    if (_numPendingRemoves == 0 || _numUserWaits == 0)
                     {
                         return;
                     }
+                    int originalNumUserWaits = _numUserWaits;
+                    int originalNumPendingRemoves = _numPendingRemoves;
 
                     // This is O(N^2), but max(N) = 63 and N will usually be very low
                     for (int i = 0; i < _numPendingRemoves; i++)
@@ -259,7 +274,7 @@ namespace System.Threading
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
                                 _registeredWaits[_numUserWaits - 1] = null;
                                 _waitHandles[_numUserWaits] = null;
-                                for (int k = _numUserWaits - 1; k >= 0; k--)
+                                for (int k = _numUserWaits - 1; k > 0; k--)
                                 {
                                     if (_registeredWaits[k - 1] != null)
                                     {
@@ -267,12 +282,21 @@ namespace System.Threading
                                         break;
                                     }
                                 }
+
+                                if(_registeredWaits[0] == null)
+                                {
+                                    _numUserWaits = 0;
+                                }
+
                                 break;
                             }
                         }
                         _pendingRemoves[i] = null;
                     }
                     _numPendingRemoves = 0;
+
+                    Debug.Assert(originalNumUserWaits - originalNumPendingRemoves == _numUserWaits,
+                        $"{originalNumUserWaits} - {originalNumPendingRemoves} == {_numUserWaits}");
                 }
                 finally
                 {
@@ -359,7 +383,7 @@ namespace System.Threading
             /// </remarks>
             public void QueueOrExecuteUnregisterWait(RegisteredWait handle)
             {
-                if (handle.UserUnregisterWaitHandle != null && handle.UserUnregisterWaitHandle.IsInvalid)
+                if (handle.IsBlocking)
                 {
                     UnregisterWait(handle);
                 }
@@ -381,7 +405,9 @@ namespace System.Threading
                 _removesLock.Acquire();
                 try
                 {
-                    if (Array.IndexOf(_pendingRemoves, handle) == -1) // If this handle is not already pending removal
+                    Debug.Assert(Array.IndexOf(_registeredWaits, handle) != -1 || handle.IsUnregistered);
+                    // If this handle is not already pending removal and hasn't already been removed
+                    if (Array.IndexOf(_pendingRemoves, handle) == -1 && !handle.IsUnregistered)
                     {
                         _pendingRemoves[_numPendingRemoves++] = handle;
                         _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
@@ -392,15 +418,7 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
-                if (handle.UserUnregisterWaitHandle != null)
-                {
-                    handle.CanUnregister.WaitOne();
-
-                    if (!handle.UserUnregisterWaitHandle.IsInvalid)
-                    {
-                        handle.SignalUserWaitHandle();
-                    }
-                }
+                handle.SignalUserWaitHandle();
             }
         }
     }

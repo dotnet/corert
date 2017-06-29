@@ -47,12 +47,16 @@ namespace System.Threading
             /// <summary>
             /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
             /// </summary>
-            internal SafeWaitHandle UserUnregisterWaitHandle { get; private set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
+            private SafeWaitHandle UserUnregisterWaitHandle { get; set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
 
             /// <summary>
             /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
             /// </summary>
             private volatile int _unregisterSignaled;
+
+            public bool IsUnregistered => _unregisterSignaled != 0;
+
+            public bool IsBlocking => UserUnregisterWaitHandle?.IsInvalid ?? false;
 
             /// <summary>
             /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
@@ -82,9 +86,17 @@ namespace System.Threading
             /// </summary>
             internal void SignalUserWaitHandle()
             {
-                if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0 && UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
+                if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
                 {
-                    WaitHandle.Set(UserUnregisterWaitHandle);
+                    CanUnregister.WaitOne();
+
+                    if (UserUnregisterWaitHandle != null)
+                    {
+                        if (!UserUnregisterWaitHandle.IsInvalid)
+                        {
+                            WaitHandle.Set(UserUnregisterWaitHandle);
+                        }
+                    }
                 }
             }
 

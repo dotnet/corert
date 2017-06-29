@@ -36,6 +36,29 @@ internal static class Runner
         //Console.WriteLine("    WaitSubsystemTests.MutexMaximumReacquireCountTest");
         //WaitSubsystemTests.MutexMaximumReacquireCountTest();
 
+        Console.WriteLine("    WaitThreadTests.SignalingRegisteredHandleCallsCalback");
+        WaitThreadTests.SignalingRegisteredHandleCallsCalback();
+
+        Console.WriteLine("    WaitThreadTests.TimingOutRegisteredHandleCallsCallback");
+        WaitThreadTests.TimingOutRegisteredHandleCallsCallback();
+
+        Console.WriteLine("    WaitThreadTests.UnregisteringBeforeSignalingDoesNotCallCallback");
+        WaitThreadTests.UnregisteringBeforeSignalingDoesNotCallCallback();
+
+        Console.WriteLine("    WaitThreadTests.RepeatingWaitFiresUntilUnregistered");
+        WaitThreadTests.RepeatingWaitFiresUntilUnregistered();
+
+        Console.WriteLine("    WaitThreadTests.UnregisterEventSignaledWhenUnregistered");
+        WaitThreadTests.UnregisterEventSignaledWhenUnregistered();
+
+        // Manual Test for CLR Thread Pool
+        // Add in a busy loop at the top of ClrThreadPool.WaitThread.CompleteWait to replicate the race condition
+        // this test is testing
+        // Console.WriteLine("    WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed");
+        // WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed();
+
+        Console.WriteLine("    WaitThreadTests.CanRegisterMoreThan64Waits");
+        WaitThreadTests.CanRegisterMoreThan64Waits();
         return Pass;
     }
 }
@@ -394,7 +417,7 @@ internal static class WaitSubsystemTests
     }
 
     // There is a race condition between a timed out WaitOne and a Set call not clearing the waiters list
-    // in the wait subsystem (Unix only). More information can be found at 
+    // in the wait subsystem (Unix only). More information can be found at
     // https://github.com/dotnet/corert/issues/3616 and https://github.com/dotnet/corert/pull/3782.
     [Fact]
     public static void DoubleSetOnEventWithTimedOutWaiterShouldNotStayInWaitersList()
@@ -758,11 +781,113 @@ internal static class WaitSubsystemTests
     }
 }
 
+internal static class WaitThreadTests
+{
+    [Fact]
+    public static void SignalingRegisteredHandleCallsCalback()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) => {
+            if(!timedOut)
+            {
+                e1.Set();
+            }
+        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
+        e0.Set();
+        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void TimingOutRegisteredHandleCallsCallback()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) => {
+            if(timedOut)
+            {
+                e1.Set();
+            }
+        }, null, ThreadTestHelpers.ExpectedTimeoutMilliseconds, true);
+        Thread.Sleep(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds);
+        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void UnregisteringBeforeSignalingDoesNotCallCallback()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        var registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+            e1.Set();
+        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
+        registeredWaitHandle.Unregister(null);
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void RepeatingWaitFiresUntilUnregistered()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+            e1.Set();
+        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, false);
+        for (int i = 0; i < 4; ++i)
+        {
+            e0.Set();
+            Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        }
+        var invalidWaitHandle = new InvalidWaitHandle();
+        registered.Unregister(invalidWaitHandle);
+        e0.Set();
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void UnregisterEventSignaledWhenUnregistered()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
+        registered.Unregister(e1);
+        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void UnregisterCallbackRaceNoCallbackWhenCallbackDelayed()
+    {
+        var e0 = new AutoResetEvent(false);
+        var e1 = new AutoResetEvent(false);
+        var e2 = new ManualResetEvent(true);
+        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+            e2.Reset();
+        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
+        e0.Set();
+        registered.Unregister(e1);
+        Assert.True(WaitHandle.WaitAll(new WaitHandle[]{e1, e2}, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void CanRegisterMoreThan64Waits()
+    {
+        for(int i = 0; i < 65; ++i) {
+            ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => {}, null, 0, true);
+        }
+    }
+}
+
 internal static class ThreadTestHelpers
 {
     public const int ExpectedTimeoutMilliseconds = 50;
     public const int ExpectedMeasurableTimeoutMilliseconds = 500;
     public const int UnexpectedTimeoutMilliseconds = 1000 * 30;
+}
+
+
+
+internal sealed class InvalidWaitHandle : WaitHandle
+{
 }
 
 internal sealed class Stopwatch
