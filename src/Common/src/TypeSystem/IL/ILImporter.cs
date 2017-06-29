@@ -403,7 +403,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.jmp:
                         ImportJmp(ReadILToken());
-                        break;
+                        return;
                     case ILOpcode.call:
                         ImportCall(opCode, ReadILToken());
                         break;
