@@ -1021,6 +1021,23 @@ namespace Internal.Reflection.Execution
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
+
+                // Add resolved stub targets to the reverse LdFtn lookup map for the purpose of reflection-based
+                // stack trace resolution - the reverse LdFtn lookup internally used by the reflection
+                // method resolution will work off an IP address on the stack which is an address
+                // within the actual method, not the stub.
+                IntPtr targetAddress = RuntimeAugments.GetCodeTarget(entryMethodEntrypoint);
+                if (targetAddress != IntPtr.Zero && targetAddress != entryMethodEntrypoint)
+                {
+                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress, parserOffset));
+                }
+                IntPtr targetAddress2;
+                if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress2) &&
+                    targetAddress2 != entryMethodEntrypoint &&
+                    targetAddress2 != targetAddress)
+                {
+                    functionPointers.Add(new FunctionPointerOffsetPair(targetAddress2, parserOffset));
+                }
             }
 
             functionPointerToOffsetInInvokeMap.Data = functionPointers.ToArray();
@@ -1064,7 +1081,13 @@ namespace Internal.Reflection.Execution
             if ((entryFlags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 entryParser.GetUnsigned(); // skip dynamic invoke cookie
 
-            Debug.Assert(entryMethodEntrypoint == canonOriginalLdFtnResult);
+#if DEBUG
+            IntPtr targetAddress;
+            Debug.Assert(entryMethodEntrypoint == canonOriginalLdFtnResult ||
+                RuntimeAugments.GetCodeTarget(entryMethodEntrypoint) == canonOriginalLdFtnResult ||
+                TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(entryMethodEntrypoint, out targetAddress) &&
+                    targetAddress == canonOriginalLdFtnResult);
+#endif
 
             if ((entryFlags & InvokeTableFlags.RequiresInstArg) == 0 && declaringTypeHandle.IsNull())
                 declaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryDeclaringTypeRaw);
