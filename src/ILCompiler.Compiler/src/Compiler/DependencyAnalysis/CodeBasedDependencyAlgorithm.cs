@@ -99,11 +99,7 @@ namespace ILCompiler.DependencyAnalysis
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
             }
 
-            // On Project N, the compiler doesn't generate the interop code on the fly
-            if (method.Context.Target.Abi != TargetAbi.ProjectN)
-            {
-                factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
-            }
+            factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
         }
     }
 }

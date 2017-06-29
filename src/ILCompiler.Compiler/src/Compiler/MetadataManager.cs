@@ -6,9 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
 
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
@@ -63,19 +61,18 @@ namespace ILCompiler
             graph.NewMarkedNode += Graph_NewMarkedNode;
         }
 
-        private static ReadyToRunSectionType BlobIdToReadyToRunSection(ReflectionMapBlob blobId)
+        internal static ReadyToRunSectionType BlobIdToReadyToRunSection(ReflectionMapBlob blobId)
         {
             var result = (ReadyToRunSectionType)((int)blobId + (int)ReadyToRunSectionType.ReadonlyBlobRegionStart);
             Debug.Assert(result <= ReadyToRunSectionType.ReadonlyBlobRegionEnd);
             return result;
         }
 
-        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory)
+        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
             var metadataNode = new MetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
 
-            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", nodeFactory);
             var nativeReferencesTableNode = new ExternalReferencesTableNode("NativeReferences", nodeFactory);
             var nativeStaticsTableNode = new ExternalReferencesTableNode("NativeStatics", nodeFactory);
 
@@ -97,12 +94,6 @@ namespace ILCompiler
             
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
-
-            var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
-
-            var structMapNode = new StructMarshallingStubMapNode(commonFixupsTableNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode, structMapNode, structMapNode.EndSymbol);
 
             var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);

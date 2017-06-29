@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.TypeSystem;
+
 namespace ILCompiler
 {
     public sealed class ILScannerBuilder
@@ -45,8 +47,8 @@ namespace ILCompiler
         {
             // TODO: we will want different metadata managers depending on whether we're doing reflection analysis
             var metadataManager = new CompilerGeneratedMetadataManager(_compilationGroup, _context, null);
-
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, _nameMangler);
+            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_compilationGroup.GeneratedAssembly));
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
             return new ILScanner(graph, nodeFactory, _compilationRoots, _logger);
