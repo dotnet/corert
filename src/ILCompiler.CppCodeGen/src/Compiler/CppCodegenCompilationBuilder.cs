@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.TypeSystem;
+
 namespace ILCompiler
 {
     public sealed class CppCodegenCompilationBuilder : CompilationBuilder
@@ -29,7 +31,8 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, _nameMangler, _vtableSliceProvider);
+            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_compilationGroup.GeneratedAssembly));
+            CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
             return new CppCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);
