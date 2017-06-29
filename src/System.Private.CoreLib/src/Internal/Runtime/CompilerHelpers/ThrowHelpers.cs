@@ -80,7 +80,12 @@ namespace Internal.Runtime.CompilerHelpers
             throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
         }
 
-        public static void ThrowInvalidProgramException(ExceptionStringID id, string methodName)
+        public static void ThrowInvalidProgramException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id);
+        }
+
+        public static void ThrowInvalidProgramExceptionWithArgument(ExceptionStringID id, string methodName)
         {
             throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
         }

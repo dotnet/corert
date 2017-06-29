@@ -879,6 +879,10 @@ namespace Internal.IL
                         throw new BadImageFormatException("Invalid opcode");
                 }
 
+                // Check if control falls through the end of method.
+                if (_currentOffset >= _basicBlocks.Length)
+                    throw new TypeSystemException.InvalidProgramException();
+
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock != null)
                 {
