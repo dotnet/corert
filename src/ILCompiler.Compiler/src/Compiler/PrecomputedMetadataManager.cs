@@ -20,7 +20,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    class PrecomputedMetadataManager : MetadataManager
+    class PrecomputedMetadataManager : MetadataManager, ICompilationRootProvider
     {
         private const string MetadataMappingTypeName = "_$ILCT$+$ILT$ReflectionMapping$";
 
@@ -34,6 +34,9 @@ namespace ILCompiler
             public Dictionary<MethodDesc, int> MethodMappings = new Dictionary<MethodDesc, int>();
             public Dictionary<FieldDesc, int> FieldMappings = new Dictionary<FieldDesc, int>();
             public HashSet<MethodDesc> DynamicInvokeCompiledMethods = new HashSet<MethodDesc>();
+            public HashSet<TypeDesc> RequiredGenericTypes = new HashSet<TypeDesc>();
+            public HashSet<MethodDesc> RequiredGenericMethods = new HashSet<MethodDesc>();
+            public HashSet<FieldDesc> RequiredGenericFields = new HashSet<FieldDesc>();
         }
 
         private readonly ModuleDesc _metadataDescribingModule;
@@ -110,6 +113,62 @@ namespace ILCompiler
             }
         }
 
+        private IEnumerable<TypeSystemEntity> ReadRequiredGenericsEntities(MethodIL method)
+        {
+            ILStreamReader il = new ILStreamReader(method);
+            // structure is 
+            // REPEAT N TIMES    
+            //ldtoken generic type/method/field
+            //pop
+            while (true)
+            {
+                if (il.TryReadRet()) // ret
+                    yield break;
+
+                TypeSystemEntity tse;
+                il.TryReadLdtokenAsTypeSystemEntity(out tse);
+                il.ReadPop();
+
+                if (tse == null)
+                    throw new BadImageFormatException();
+
+                if (tse is TypeDesc)
+                {
+                    if (tse is DefType)
+                    {
+                        if (((TypeDesc)tse).Instantiation.CheckValidInstantiationArguments() && ((TypeDesc)tse).CheckConstraints())
+                            yield return tse;
+                    }
+                    else if (tse is ByRefType)
+                    {
+                        // Skip by ref types.
+                    }
+                    else
+                        throw new BadImageFormatException();
+                }
+                else if (tse is FieldDesc)
+                {
+                    TypeDesc owningType = ((FieldDesc)tse).OwningType;
+
+                    if (owningType.Instantiation.CheckValidInstantiationArguments() && owningType.CheckConstraints())
+                        yield return tse;
+                }
+                else if (tse is MethodDesc)
+                {
+                    MethodDesc genericMethod = (MethodDesc)tse;
+
+                    if(genericMethod.Instantiation.CheckValidInstantiationArguments() &&
+                       genericMethod.OwningType.Instantiation.CheckValidInstantiationArguments() &&
+                       genericMethod.CheckConstraints())
+                    {
+                        // TODO: Detect large number of instantiations of the same method and collapse to using dynamic 
+                        // USG instantiations at runtime, to avoid infinite generic expansion and large compilation times.
+                        yield return tse;
+                    }
+                }
+            }
+        }
+
         public static bool ModuleHasMetadataMappings(ModuleDesc metadataDescribingModule)
         {
             return metadataDescribingModule.GetTypeByCustomAttributeTypeName(MetadataMappingTypeName, throwIfNotFound: false) != null;
@@ -122,6 +181,9 @@ namespace ILCompiler
 
             MethodDesc fullMetadataMethod = typeWithMetadataMappings.GetMethod("Metadata", null);
             MethodDesc weakMetadataMethod = typeWithMetadataMappings.GetMethod("WeakMetadata", null);
+            MethodDesc requiredGenericTypesMethod = typeWithMetadataMappings.GetMethod("RequiredGenericTypes", null);
+            MethodDesc requiredGenericMethodsMethod = typeWithMetadataMappings.GetMethod("RequiredGenericMethods", null);
+            MethodDesc requiredGenericFieldsMethod = typeWithMetadataMappings.GetMethod("RequiredGenericFields", null);
 
             ILProvider ilProvider = new ILProvider(null);
 
@@ -150,6 +212,27 @@ namespace ILCompiler
                 }
             }
 
+            if (requiredGenericTypesMethod != null)
+            {
+                foreach (var type in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericTypesMethod)))
+                {
+                    Debug.Assert(type is DefType);
+                    result.RequiredGenericTypes.Add((TypeDesc)type);
+                }
+            }
+
+            if (requiredGenericMethodsMethod != null)
+            {
+                foreach (var method in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericMethodsMethod)))
+                    result.RequiredGenericMethods.Add((MethodDesc)method);
+            }
+
+            if (requiredGenericFieldsMethod != null)
+            {
+                foreach (var field in ReadRequiredGenericsEntities(ilProvider.GetMethodIL(requiredGenericFieldsMethod)))
+                    result.RequiredGenericFields.Add((FieldDesc)field);
+            }
+
             result.MetadataModules = ImmutableArray.CreateRange(metadataModules);
 
             ImmutableArray<ModuleDesc>.Builder externalMetadataModulesBuilder = ImmutableArray.CreateBuilder<ModuleDesc>();
@@ -164,8 +247,6 @@ namespace ILCompiler
             result.ExternalMetadataModules = externalMetadataModulesBuilder.ToImmutable();
             result.LocalMetadataModules = localMetadataModulesBuilder.ToImmutable();
 
-            // TODO! Replace with something more complete that capture the generic instantiations that the pre-analysis
-            // indicates should have been present
             foreach (var pair in result.MethodMappings)
             {
                 MethodDesc reflectableMethod = pair.Key;
@@ -178,6 +259,16 @@ namespace ILCompiler
 
                 MethodDesc typicalDynamicInvokeStub;
                 if (!_dynamicInvokeStubs.Value.TryGetValue(reflectableMethod, out typicalDynamicInvokeStub))
+                    continue;
+
+                MethodDesc instantiatiatedDynamicInvokeStub = InstantiateCanonicalDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, reflectableMethod);
+                result.DynamicInvokeCompiledMethods.Add(instantiatiatedDynamicInvokeStub);
+            }
+
+            foreach (var reflectableMethod in result.RequiredGenericMethods)
+            {
+                MethodDesc typicalDynamicInvokeStub;
+                if (!_dynamicInvokeStubs.Value.TryGetValue(reflectableMethod.GetTypicalMethodDefinition(), out typicalDynamicInvokeStub))
                     continue;
 
                 MethodDesc instantiatiatedDynamicInvokeStub = InstantiateCanonicalDynamicInvokeMethodForMethod(typicalDynamicInvokeStub, reflectableMethod);
@@ -220,6 +311,43 @@ namespace ILCompiler
             return MetadataCategory.RuntimeMapping;
         }
 
+        void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
+        {
+            MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
+
+            // Add all non-generic reflectable methods as roots.
+            // Virtual methods need special handling (e.g. with dependency tracking) since they can be abstract.
+            foreach (var method in loadedMetadata.MethodMappings.Keys)
+            {
+                if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    continue;
+
+                if (method.IsVirtual)
+                    rootProvider.RootVirtualMethodForReflection(method, "Reflection root");
+                else
+                    rootProvider.AddCompilationRoot(method, "Reflection root");
+            }
+
+            // Root all the generic type instantiations from the pre-computed metadata
+            foreach (var type in loadedMetadata.RequiredGenericTypes)
+            {
+                rootProvider.AddCompilationRoot(type, "Required instantiation");
+            }
+
+            // Root all the generic methods (either non-generic methods on generic types, or generic methods) from 
+            // the pre-computed metadata.
+            // Virtual methods need special handling (e.g. with dependency tracking) since they can be abstract.
+            foreach (var method in loadedMetadata.RequiredGenericMethods)
+            {
+                if (method.IsVirtual)
+                    rootProvider.RootVirtualMethodForReflection(method, "Required instantiation");
+                else
+                    rootProvider.AddCompilationRoot(method, "Required instantiation");
+            }
+
+            // TODO: required generic fields. Root containing type, and add field to list in ComputeMetadata()
+        }
+
         protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
@@ -228,6 +356,8 @@ namespace ILCompiler
             typeMappings = new List<MetadataMapping<MetadataType>>();
             methodMappings = new List<MetadataMapping<MethodDesc>>();
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
+
+            MetadataMapping<MethodDesc> newMapping;
 
             Dictionary<MethodDesc, MethodDesc> canonicalToSpecificMethods = new Dictionary<MethodDesc, MethodDesc>();
             // The handling of generic methods which are implemented by canonical code is interesting, the invoke map
@@ -253,7 +383,7 @@ namespace ILCompiler
             }
 
             // Generate type definition mappings
-            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
+            foreach (var type in GetTypesWithEETypes())
             {
                 MetadataType definition = type.IsTypeDefinition ? type as MetadataType : null;
                 if (definition == null)
@@ -266,38 +396,40 @@ namespace ILCompiler
                 }
             }
 
+            // Mappings for all compiled methods
             foreach (var method in GetCompiledMethods())
             {
-                if (!MethodCanBeInvokedViaReflection(factory, method))
+                if (GetMethodMappingIfExists(factory, method, canonicalToSpecificMethods, out newMapping))
+                    methodMappings.Add(newMapping);
+            }
+
+            // Mappings for reflectable abstract non-generic methods (methods with compiled bodies are handled above)
+            foreach (var method in loadedMetadata.MethodMappings.Keys)
+            {
+                if (!method.IsAbstract)
+                    continue;
+
+                if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    continue;
+
+                if (GetMethodMappingIfExists(factory, method, canonicalToSpecificMethods, out newMapping))
+                    methodMappings.Add(newMapping);
+            }
+
+            // Mappings for reflectable abstract generic methods (methods with compiled bodies are handled above)
+            foreach (var method in loadedMetadata.RequiredGenericMethods)
+            {
+                if (!method.IsAbstract)
                     continue;
 
                 // If there is a possible canonical method, use that instead of a specific method (folds canonically equivalent methods away)
-                if (method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                    continue;
+                MethodDesc canonicalMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                if (!IsReflectionInvokable(method))
-                    continue;
+                if (!canonicalToSpecificMethods.ContainsKey(canonicalMethod))
+                    canonicalToSpecificMethods.Add(canonicalMethod, method);
 
-                int token;
-                if (loadedMetadata.MethodMappings.TryGetValue(method.GetTypicalMethodDefinition(), out token))
-                {
-                    MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
-
-                    if (invokeMapMethod != null)
-                        methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, token));
-                }
-                else if (!WillUseMetadataTokenToReferenceMethod(method) && 
-                    _compilationModuleGroup.ContainsMethodBody(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))
-                {
-                    MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
-
-                    // For methods on types that are not in the current module, assume they must be reflectable
-                    // and generate a non-metadata backed invoke table entry
-                    // TODO, the above computation is overly generous with the set of methods that are placed into the method invoke map
-                    // It includes methods which are not reflectable at all.
-                    if (invokeMapMethod != null)
-                        methodMappings.Add(new MetadataMapping<MethodDesc>(invokeMapMethod, 0));
-                }
+                if (GetMethodMappingIfExists(factory, canonicalMethod, canonicalToSpecificMethods, out newMapping))
+                    methodMappings.Add(newMapping);
             }
 
             foreach (var eetypeGenerated in GetTypesWithEETypes())
@@ -331,6 +463,50 @@ namespace ILCompiler
                     }
                 }
             }
+        }
+
+        private bool GetMethodMappingIfExists(NodeFactory factory, MethodDesc method, Dictionary<MethodDesc, MethodDesc> canonicalToSpecificMethods, out MetadataMapping<MethodDesc> mapping)
+        {
+            mapping = default(MetadataMapping<MethodDesc>);
+
+            if (!MethodCanBeInvokedViaReflection(factory, method))
+                return false;
+
+            // If there is a possible canonical method, use that instead of a specific method (folds canonically equivalent methods away)
+            if (method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
+                return false;
+
+            if (!IsReflectionInvokable(method))
+                return false;
+
+            int token;
+            if (_loadedMetadata.Value.MethodMappings.TryGetValue(method.GetTypicalMethodDefinition(), out token))
+            {
+                MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
+
+                if (invokeMapMethod != null)
+                {
+                    mapping = new MetadataMapping<MethodDesc>(invokeMapMethod, token);
+                    return true;
+                }
+            }
+            else if (!WillUseMetadataTokenToReferenceMethod(method) &&
+                _compilationModuleGroup.ContainsMethodBody(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))
+            {
+                MethodDesc invokeMapMethod = GetInvokeMapMethodForMethod(canonicalToSpecificMethods, method);
+
+                // For methods on types that are not in the current module, assume they must be reflectable
+                // and generate a non-metadata backed invoke table entry
+                // TODO, the above computation is overly generous with the set of methods that are placed into the method invoke map
+                // It includes methods which are not reflectable at all.
+                if (invokeMapMethod != null)
+                {
+                    mapping = new MetadataMapping<MethodDesc>(invokeMapMethod, 0);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool MethodCanBeInvokedViaReflection(NodeFactory factory, MethodDesc method)
