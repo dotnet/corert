@@ -25,11 +25,11 @@ namespace System.Collections.Generic
     {
         private const int _defaultCapacity = 4;
 
-        private T[] _items;
-        [ContractPublicPropertyName("Count")]
-        private int _size;
-        private int _version;
-        [NonSerialized]
+        private T[] _items; // Do not rename (binary serialization)
+		[ContractPublicPropertyName("Count")]
+        private int _size; // Do not rename (binary serialization)
+		private int _version; // Do not rename (binary serialization)
+		[NonSerialized]
         private object _syncRoot;
 
         private static readonly T[] s_emptyArray = new T[0];

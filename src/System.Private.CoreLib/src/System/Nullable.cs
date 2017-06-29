@@ -17,8 +17,8 @@ namespace System
     public struct Nullable<T> where T : struct
     {
         // Changing the name of this field will break MDbg and Debugger tests
-        private bool hasValue;
-        internal T value;
+        private bool hasValue; // Do not rename (binary serialization)
+		internal T value; // Do not rename (binary serialization)
 
         public Nullable(T value)
         {

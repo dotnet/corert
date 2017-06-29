@@ -21,9 +21,9 @@ namespace System
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
         // Get in touch with the diagnostics team if you have questions.
-        unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
+        unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior. Do not rename (binary serialization)
 
-        [Intrinsic]
+		[Intrinsic]
         public static readonly IntPtr Zero;
 
         [Intrinsic]
