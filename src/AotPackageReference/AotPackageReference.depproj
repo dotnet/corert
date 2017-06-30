@@ -28,6 +28,7 @@
     <FileToInclude Include="System.Runtime.Extensions" />
     <FileToInclude Include="System.Collections" />
     <FileToInclude Include="System.Console" />
+    <FileToInclude Include="System.IO" />
     <FileToInclude Include="System.Private.Reflection.Metadata.Ecma335" />
   </ItemGroup>
 

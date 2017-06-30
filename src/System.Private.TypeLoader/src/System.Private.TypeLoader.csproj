@@ -3,6 +3,15 @@
   <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.TypeLoader</AssemblyName>
   </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm64'" />
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>

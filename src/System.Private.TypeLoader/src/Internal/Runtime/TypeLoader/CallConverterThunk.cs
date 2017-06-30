@@ -63,7 +63,7 @@ namespace Internal.Runtime.TypeLoader
     {
         private static LowLevelList<IntPtr> s_allocatedThunks = new LowLevelList<IntPtr>();
 
-        private static object s_thunkPoolHeap;
+        private static volatile object s_thunkPoolHeap;
 
         internal static IntPtr CommonInputThunkStub = IntPtr.Zero;
 #if CALLDESCR_FPARGREGSARERETURNREGS
@@ -311,7 +311,8 @@ namespace Internal.Runtime.TypeLoader
         {
             IntPtr callConversionId;
             IntPtr commonStubDataPtr;
-            if (!RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            object thunkPoolHeap = s_thunkPoolHeap;
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
             {
                 // This isn't a call conversion stub
                 nonUnboxingMethod = IntPtr.Zero;
