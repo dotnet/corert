@@ -13,9 +13,39 @@ namespace System.Threading
         /// </summary>
         private partial class HillClimbing
         {
-            // Config values pulled from CoreCLR
-            // TODO: Move to runtime configuration variables.
-            public static HillClimbing ThreadPoolHillClimber { get; } = new HillClimbing(4, 20, 100 / 100.0, 8, 15 / 100.0, 300 / 100.0, 4, 20, 10, 200, 1 / 100.0, 200 / 100.0, 15 / 100.0);
+            private static Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
+            public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
+
+            private static HillClimbing CreateHillClimber()
+            {
+                // Default values pulled from CoreCLR
+                int wavePeriod = (int?)AppContext.GetData("HillClimbing_WavePeriod") ?? 4;
+                int maxWaveMagnitude = (int?)AppContext.GetData("HillClimbing_MaxWaveMagnitude") ?? 20;
+                double waveMagnitudeMultiplier = ((int?)AppContext.GetData("HillClimbing_WaveMagnitudeMultiplier") ?? 100) / 100.0;
+                int waveHistorySize = (int?)AppContext.GetData("HillClimbing_WaveHistorySize") ?? 8;
+                double targetThroughputRatio = ((int?)AppContext.GetData("HillClimbing_Bias") ?? 15) / 100.0;
+                double targetSignalToNoiseRatio = ((int?)AppContext.GetData("HillClimbing_TargetSignalToNoiseRatio") ?? 300) / 100.0;
+                int maxChangePerSecond = (int?)AppContext.GetData("HillClimbing_MaxChangePerSecond") ?? 4;
+                int maxChangePerSample = (int?)AppContext.GetData("HillClimbing_MaxChangePerSample") ?? 20;
+                int sampleIntervalLow = (int?)AppContext.GetData("HillClimbing_SampleIntervalLow") ?? 10;
+                int sampleIntervalHigh = (int?)AppContext.GetData("HillClimbing_SampleIntervalHigh") ?? 200;
+                double errorSmoothingFactor = ((int?)AppContext.GetData("HillClimbing_ErrorSmoothingFactor") ?? 1) / 100.0;
+                double gainExponent = ((int?)AppContext.GetData("HillClimbing_GainExponent") ?? 200) / 100.0;
+                double maxSampleError = ((int?)AppContext.GetData("HillClimbing_MaxSampleErrorPercent") ?? 15) / 100.0;
+                return new HillClimbing(wavePeriod,
+                    maxWaveMagnitude,
+                    waveMagnitudeMultiplier,
+                    waveHistorySize,
+                    targetThroughputRatio,
+                    targetSignalToNoiseRatio,
+                    maxChangePerSecond,
+                    maxChangePerSample,
+                    sampleIntervalLow,
+                    sampleIntervalHigh,
+                    errorSmoothingFactor,
+                    gainExponent,
+                    maxSampleError);
+            }
 
             public enum StateOrTransition
             {
@@ -36,9 +66,9 @@ namespace System.Threading
             private readonly double _maxChangePerSecond;
             private readonly double _maxChangePerSample;
             private readonly int _maxThreadWaveMagnitude;
-            private readonly int _sampleIntervalLow;
+            private readonly int _sampleMsLow;
             private readonly double _threadMagnitudeMultiplier;
-            private readonly int _sampleIntervalHigh;
+            private readonly int _sampleMsHigh;
             private readonly double _throughputErrorSmoothingFactor;
             private readonly double _gainExponent;
             private readonly double _maxSampleError;
@@ -53,12 +83,12 @@ namespace System.Threading
             private double _accumulatedSampleDurationSeconds;
             private double[] _samples;
             private double[] _threadCounts;
-            private int _currentSampleInterval;
+            private int _currentSampleMs;
             
             private Random _randomIntervalGenerator = new Random();
 
             public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
-                double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalLow, int sampleIntervalHigh,
+                double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleMsLow, int sampleMsHigh,
                 double errorSmoothingFactor, double gainExponent, double maxSampleError)
             {
                 _wavePeriod = wavePeriod;
@@ -69,8 +99,8 @@ namespace System.Threading
                 _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
                 _maxChangePerSecond = maxChangePerSecond;
                 _maxChangePerSample = maxChangePerSample;
-                _sampleIntervalLow = sampleIntervalLow;
-                _sampleIntervalHigh = sampleIntervalHigh;
+                _sampleMsLow = sampleMsLow;
+                _sampleMsHigh = sampleMsHigh;
                 _throughputErrorSmoothingFactor = errorSmoothingFactor;
                 _gainExponent = gainExponent;
                 _maxSampleError = maxSampleError;
@@ -78,10 +108,10 @@ namespace System.Threading
                 _samples = new double[_samplesToMeasure];
                 _threadCounts = new double[_samplesToMeasure];
 
-                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh + 1);
+                _currentSampleMs = _randomIntervalGenerator.Next(_sampleMsLow, _sampleMsHigh + 1);
             }
 
-            public (int newThreadCount, int newSampleInterval) Update(int currentThreadCount, double sampleDurationSeconds, int numCompletions)
+            public (int newThreadCount, int newSampleMs) Update(int currentThreadCount, double sampleDurationSeconds, int numCompletions)
             {
 
                 //
@@ -331,9 +361,9 @@ namespace System.Threading
                 //
                 int newSampleInterval;
                 if (ratio.Real < 0.0 && newThreadCount == minThreads)
-                    newSampleInterval = (int)(0.5 + _currentSampleInterval * (10.0 * Math.Max(-ratio.Real, 1.0)));
+                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Max(-ratio.Real, 1.0)));
                 else
-                    newSampleInterval = _currentSampleInterval;
+                    newSampleInterval = _currentSampleMs;
 
                 return (newThreadCount, newSampleInterval);
             }
@@ -341,7 +371,7 @@ namespace System.Threading
             private void ChangeThreadCount(int newThreadCount, StateOrTransition state)
             {
                 _lastThreadCount = newThreadCount;
-                _currentSampleInterval = _randomIntervalGenerator.Next(_sampleIntervalLow, _sampleIntervalHigh + 1);
+                _currentSampleMs = _randomIntervalGenerator.Next(_sampleMsLow, _sampleMsHigh + 1);
                 double throughput = _secondsElapsedSinceLastChange > 0 ? _completionsSinceLastChange / _secondsElapsedSinceLastChange : 0;
                 LogTransition(newThreadCount, throughput, state);
                 _secondsElapsedSinceLastChange = 0;
