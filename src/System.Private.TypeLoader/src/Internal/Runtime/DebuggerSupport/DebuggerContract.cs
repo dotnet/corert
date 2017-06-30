@@ -19,10 +19,11 @@ namespace Internal.Runtime.DebuggerSupport
     internal enum DebuggerResponseKind : uint
     {
         FuncEvalCompleteWithReturn = 0,
-        FuncEvalParameterBufferReady = 1,
-        RequestBufferReady = 2,
-        ConservativeReportingBufferReady = 3,
-        HandleReady = 4,
+        FuncEvalCompleteWithException = 1,
+        FuncEvalParameterBufferReady = 2,
+        RequestBufferReady = 3,
+        ConservativeReportingBufferReady = 4,
+        HandleReady = 5,
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 16)]
