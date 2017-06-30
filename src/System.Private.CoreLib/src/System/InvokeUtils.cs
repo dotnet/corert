@@ -132,7 +132,7 @@ namespace System
             if (dstEEType.IsPointer)
             {
                 dstObject = null;
-                return new NotImplementedException(); //TODO: https://github.com/dotnet/corert/issues/2113
+                return NotImplemented.ActiveIssue("TFS 457960 - Passing Pointers through Reflection Invoke");
             }
 
             RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;

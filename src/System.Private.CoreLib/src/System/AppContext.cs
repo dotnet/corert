@@ -5,8 +5,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System
@@ -31,13 +33,7 @@ namespace System
             AppContextDefaultValues.PopulateDefaultValues();
         }
 
-        public static string TargetFrameworkName
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public static string TargetFrameworkName => Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
 
         public static string BaseDirectory
         {

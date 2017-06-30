@@ -1715,7 +1715,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            return factory.NativeLayout.FieldLdTokenVertex(_field).WriteVertex(factory);
+            Vertex ldToken = factory.NativeLayout.FieldLdTokenVertex(_field).WriteVertex(factory);
+            return GetNativeWriter(factory).GetRelativeOffsetSignature(ldToken);
         }
     }
 
@@ -1774,7 +1775,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
-            return factory.NativeLayout.MethodLdTokenVertex(_method).WriteVertex(factory);
+            Vertex ldToken = factory.NativeLayout.MethodLdTokenVertex(_method).WriteVertex(factory);
+            return GetNativeWriter(factory).GetRelativeOffsetSignature(ldToken);
         }
     }
 

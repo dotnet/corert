@@ -222,7 +222,6 @@
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
-    <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
     <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
@@ -385,7 +384,6 @@
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
     <Compile Include="System\Threading\PinnableBufferCache.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />

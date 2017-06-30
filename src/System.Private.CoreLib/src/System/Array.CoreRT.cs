@@ -869,73 +869,6 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Copy the contents of a native buffer into a managed array.  This requires that the type of the
-        /// destination array be blittable.
-        /// </summary>
-        /// <param name="source">Unmanaged memory to copy from.</param>
-        /// <param name="destination">Array to copy into.  The type of the elements of the array must be blittable</param>
-        /// <param name="startIndex">First index in the destination array to begin copying into</param>
-        /// <param name="length">Number of elements to copy</param>
-        internal static unsafe void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
-        {
-            if (source == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (!destination.IsElementTypeBlittable)
-                throw new ArgumentException(nameof(destination), SR.Arg_CopyNonBlittableArray);
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
-            if ((uint)startIndex + (uint)length > (uint)destination.Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
-
-            nuint bytesToCopy = (nuint)length * destination.ElementSize;
-            nuint startOffset = (nuint)startIndex * destination.ElementSize;
-
-            fixed (byte* pDestination = &destination.GetRawArrayData())
-            {
-                byte* destinationData = pDestination + startOffset;
-                Buffer.Memmove(destinationData, (byte*)source, bytesToCopy);
-            }
-        }
-
-        /// <summary>
-        /// Copy the contents of the source array into unmanaged memory.  This requires that the type of
-        /// the source array be blittable.
-        /// </summary>
-        /// <param name="source">Array to copy from.  This must be non-null and have blittable elements</param>
-        /// <param name="startIndex">First index in the source array to begin copying</param>
-        /// <param name="destination">Pointer to the unmanaged memory to blit the memory into</param>
-        /// <param name="length">Number of elements to copy</param>
-        internal static unsafe void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (!source.IsElementTypeBlittable)
-                throw new ArgumentException(nameof(source), SR.Arg_CopyNonBlittableArray);
-            if (destination == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(destination));
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
-            if ((uint)startIndex + (uint)length > (uint)source.Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
-            Contract.EndContractBlock();
-
-            nuint bytesToCopy = (nuint)length * source.ElementSize;
-            nuint startOffset = (nuint)startIndex * source.ElementSize;
-
-            fixed (byte* pSource = &source.GetRawArrayData())
-            {
-                byte* sourceData = pSource + startOffset;
-                Buffer.Memmove((byte*)destination, sourceData, bytesToCopy);
-            }
-        }
-
         public static void Clear(Array array, int index, int length)
         {
             if (!RuntimeImports.TryArrayClear(array, index, length))
@@ -1398,23 +1331,6 @@ namespace System
             get
             {
                 return EETypePtr.ComponentSize;
-            }
-        }
-
-        internal bool IsElementTypeBlittable
-        {
-            get
-            {
-                if (ElementEEType.IsPrimitive)
-                    return true;
-
-                if (ElementEEType.IsValueType && !ElementEEType.HasPointers)
-                    return true;
-
-                if (ElementEEType.IsPointer)
-                    return true;
-
-                return false;
             }
         }
 

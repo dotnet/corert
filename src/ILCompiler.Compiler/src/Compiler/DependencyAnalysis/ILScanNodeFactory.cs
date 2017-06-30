@@ -15,8 +15,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class ILScanNodeFactory : NodeFactory
     {
-        public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, NameMangler nameMangler)
-            : base(context, compilationModuleGroup, metadataManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider())
+        public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler)
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider())
         {
         }
 

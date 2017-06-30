@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -574,6 +575,30 @@ namespace System
         public static int[] GetBits(Decimal d)
         {
             return new int[] { d.lo, d.mid, d.hi, d.flags };
+        }
+
+        internal static void GetBytes(Decimal d, byte[] buffer)
+        {
+            Debug.Assert((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
+            buffer[0] = (byte)d.lo;
+            buffer[1] = (byte)(d.lo >> 8);
+            buffer[2] = (byte)(d.lo >> 16);
+            buffer[3] = (byte)(d.lo >> 24);
+
+            buffer[4] = (byte)d.mid;
+            buffer[5] = (byte)(d.mid >> 8);
+            buffer[6] = (byte)(d.mid >> 16);
+            buffer[7] = (byte)(d.mid >> 24);
+
+            buffer[8] = (byte)d.hi;
+            buffer[9] = (byte)(d.hi >> 8);
+            buffer[10] = (byte)(d.hi >> 16);
+            buffer[11] = (byte)(d.hi >> 24);
+
+            buffer[12] = (byte)d.flags;
+            buffer[13] = (byte)(d.flags >> 8);
+            buffer[14] = (byte)(d.flags >> 16);
+            buffer[15] = (byte)(d.flags >> 24);
         }
 
         // Returns the larger of two Decimal values.

@@ -177,7 +177,7 @@ namespace Internal.JitInterface
                 }
                 if (result == CorJitResult.CORJIT_BADCODE)
                 {
-                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                    throw new TypeSystemException.InvalidProgramException();
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
@@ -2671,14 +2671,16 @@ namespace Internal.JitInterface
 
                 if (!runtimeLookup)
                 {
-                    // We could use pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
-                    // to distinguish between "necessary" and "constructed" symbols, but reflection and various
-                    // uses of "RhNewObject"/"RuntimeHelpers.RunClassConstructor" with the returned type handle
-                    // really give us no chance but to consider this a constructed type.
-                    if (ConstructedEETypeNode.CreationAllowed(td))
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
+                        || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
+                    {
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                    }
                     else
+                    {
                         pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                    }
                 }
                 else
                 {
@@ -2688,6 +2690,8 @@ namespace Internal.JitInterface
                     TypeDesc type = obj as TypeDesc;
                     if (type == null)
                     {
+                        Debug.Assert(fEmbedParent);
+
                         if (obj is MethodDesc)
                         {
                             type = ((MethodDesc)obj).OwningType;

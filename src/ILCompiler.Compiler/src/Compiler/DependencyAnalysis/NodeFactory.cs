@@ -27,14 +27,14 @@ namespace ILCompiler.DependencyAnalysis
         private bool _markingComplete;
 
         public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy, VTableSliceProvider vtableSliceProvider)
+            MetadataManager metadataManager, InteropStubManager interoptStubManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy, VTableSliceProvider vtableSliceProvider)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
             NameMangler = nameMangler;
-            InteropStubManager = new InteropStubManager(compilationModuleGroup, context, new InteropStateManager(compilationModuleGroup.GeneratedAssembly));
+            InteropStubManager = interoptStubManager;
             CreateNodeCaches();
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
@@ -749,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
-        internal ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        public ReflectableMethodNode ReflectableMethod(MethodDesc method)
         {
             return _reflectableMethods.GetOrAdd(method);
         }
@@ -1012,7 +1012,9 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
+            InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 
