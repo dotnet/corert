@@ -123,6 +123,22 @@ namespace Internal.IL
                 }
             }
 
+            if (_canonMethod.IsSynchronized)
+            {
+                const string reason = "Synchronized method";
+                if (_canonMethod.Signature.IsStatic)
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnterStatic), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExitStatic), reason);
+                }
+                else
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnter), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
+                }
+                
+            }
+
             FindBasicBlocks();
             ImportBasicBlocks();
 
@@ -193,7 +209,8 @@ namespace Internal.IL
 
         private void ImportJmp(int token)
         {
-            // TODO
+            // JMP is kind of like a tail call (with no arguments pushed on the stack).
+            ImportCall(ILOpcode.call, token);
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -711,12 +728,12 @@ namespace Internal.IL
 
         private void ImportRefAnyVal(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRefAny), "refanyval");
         }
 
         private void ImportMkRefAny(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
         }
 
         private void ImportLdToken(int token)

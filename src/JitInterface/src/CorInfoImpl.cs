@@ -177,7 +177,7 @@ namespace Internal.JitInterface
                 }
                 if (result == CorJitResult.CORJIT_BADCODE)
                 {
-                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                    throw new TypeSystemException.InvalidProgramException();
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
