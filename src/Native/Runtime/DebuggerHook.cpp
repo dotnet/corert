@@ -30,7 +30,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
 
         // Notifying the debugger the buffer is ready to use
         DebuggerGcProtectionResponse response;
-        response.kind = DebuggerGcProtectionResponseKind::RequestBufferReady;
+        response.kind = DebuggerResponseKind::RequestBufferReady;
         response.bufferAddress = (uint64_t)requests;
         DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
 
@@ -51,7 +51,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         // TODO, FuncEval, consider an optimization to eliminate this message when they is nothing required from the
         // debugger side to fill
 
-        response.kind = DebuggerGcProtectionResponseKind::ConservativeReportingBufferReady;
+        response.kind = DebuggerResponseKind::ConservativeReportingBufferReady;
         DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
 
         // ... debugger magic happen here again ...
@@ -174,7 +174,7 @@ GVAL_IMPL_INIT(UInt32, g_numGcProtectionRequests, 0);
         void* handle = RedhawkGCInterface::CreateTypedHandle((void*)request->address, handleType);
 
         DebuggerGcProtectionHandleReadyResponse response;
-        response.kind = DebuggerGcProtectionResponseKind::HandleReady;
+        response.kind = DebuggerResponseKind::HandleReady;
         response.payload = request->payload;
         response.handle = (uint64_t)handle;
         DebugEventSource::SendCustomEvent((void*)&response, sizeof(response));
