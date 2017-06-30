@@ -23,7 +23,7 @@ namespace System
         // Get in touch with the diagnostics team if you have questions.
         unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior. Do not rename (binary serialization)
 
-		[Intrinsic]
+        [Intrinsic]
         public static readonly IntPtr Zero;
 
         [Intrinsic]

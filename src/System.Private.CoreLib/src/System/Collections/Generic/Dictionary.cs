@@ -61,11 +61,11 @@ namespace System.Collections.Generic
 
         // constants for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
-		private const string HashSizeName = "HashSize";  // Do not rename (binary serialization). Must save buckets.Length
-		private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
-		private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const string HashSizeName = "HashSize";  // Do not rename (binary serialization). Must save buckets.Length
+        private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
+        private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 
-		public Dictionary() : this(0, null) { }
+        public Dictionary() : this(0, null) { }
 
         public Dictionary(int capacity) : this(capacity, null) { }
 

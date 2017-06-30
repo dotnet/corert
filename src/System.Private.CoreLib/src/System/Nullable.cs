@@ -18,7 +18,7 @@ namespace System
     {
         // Changing the name of this field will break MDbg and Debugger tests
         private bool hasValue; // Do not rename (binary serialization)
-		internal T value; // Do not rename (binary serialization)
+        internal T value; // Do not rename (binary serialization)
 
         public Nullable(T value)
         {
