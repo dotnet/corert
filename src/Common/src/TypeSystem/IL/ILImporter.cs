@@ -914,6 +914,8 @@ namespace Internal.IL
                 else
                 {
                     ReportFallthrough();
+                    EndImportingInstruction();
+                    return;
                 }
 
                 EndImportingInstruction();
