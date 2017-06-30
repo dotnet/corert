@@ -16,14 +16,42 @@ namespace System.Threading
         public static readonly ClrThreadPool ThreadPoolInstance = new ClrThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
+        private const short MaxPossibleThreadCount = short.MaxValue;
+
+        private static short GetThreadCountConfig(string configName)
+        {
+            var value = AppContext.GetData(configName);
+            ushort numThreads = 0;
+            switch (value)
+            {
+                case string str:
+                    ushort.TryParse(str, out numThreads);
+                    break;
+                case short val:
+                    numThreads = (ushort)val;
+                    break;
+                case int val:
+                    numThreads = (ushort)val;
+                    break;
+                case ushort val:
+                    numThreads = val;
+                    break;
+                case uint val:
+                    numThreads = (ushort)val;
+                    break;
+                default:
+                    break;
+            }
+            return (short)Math.Min(numThreads, MaxPossibleThreadCount);
+        }
+
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
-        private const short MaxPossibleThreadCount = short.MaxValue;
 
-        private static short s_forcedMinWorkerThreads = (short)Math.Min((ushort?)AppContext.GetData("ThreadPool_ForceMinWorkerThreads") ?? 0, MaxPossibleThreadCount);
-        private static short s_forcedMaxWorkerThreads = (short)Math.Min((ushort?)AppContext.GetData("ThreadPool_ForceMaxWorkerThreads") ?? 0, MaxPossibleThreadCount);
+        private static short s_forcedMinWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMinWorkerThreads");
+        private static short s_forcedMaxWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMaxWorkerThreads");
 
         private short _minThreads = (short)ThreadPoolGlobals.processorCount;
         private short _maxThreads = MaxPossibleThreadCount;
