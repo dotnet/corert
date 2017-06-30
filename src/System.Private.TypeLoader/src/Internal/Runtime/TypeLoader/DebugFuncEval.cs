@@ -80,30 +80,8 @@ namespace Internal.Runtime.TypeLoader
                     returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
                 }
 
-                ReturnToDebugger(returnHandleIdentifier, returnValueHandlePointer);
+                ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer);
             }            
-        }
-
-        [StructLayout(LayoutKind.Explicit, Size = 16)]
-        struct WriteParameterCommand
-        {
-            [FieldOffset(0)]
-            public int commandCode;
-            [FieldOffset(4)]
-            public int unused;
-            [FieldOffset(8)]
-            public long bufferAddress;
-        }
-
-        [StructLayout(LayoutKind.Explicit, Size = 16)]
-        struct FuncEvalCompleteCommand
-        {
-            [FieldOffset(0)]
-            public int commandCode;
-            [FieldOffset(4)]
-            public uint returnHandleIdentifier;
-            [FieldOffset(8)]
-            public long returnAddress;
         }
 
         struct TypesAndValues
@@ -112,33 +90,27 @@ namespace Internal.Runtime.TypeLoader
             public byte[][] parameterValues;
         }
 
-        enum FuncEvalMode : uint
-        {
-            RegularFuncEval = 1,
-            NewStringWithLength = 2,
-        }
-
         private unsafe static void HighLevelDebugFuncEvalHelper()
         {
             uint parameterBufferSize = RuntimeAugments.RhpGetFuncEvalParameterBufferSize();
 
-            IntPtr writeParameterCommandPointer;
+            IntPtr debuggerFuncEvalParameterBufferReadyResponsePointer;
             IntPtr parameterBufferPointer;
 
             byte* parameterBuffer = stackalloc byte[(int)parameterBufferSize];
             parameterBufferPointer = new IntPtr(parameterBuffer);
 
-            WriteParameterCommand writeParameterCommand = new WriteParameterCommand
+            DebuggerFuncEvalParameterBufferReadyResponse debuggerFuncEvalParameterBufferReadyResponse = new DebuggerFuncEvalParameterBufferReadyResponse
             {
-                commandCode = 1,
+                kind = DebuggerResponseKind.FuncEvalParameterBufferReady,
                 bufferAddress = parameterBufferPointer.ToInt64()
             };
 
-            writeParameterCommandPointer = new IntPtr(&writeParameterCommand);
+            debuggerFuncEvalParameterBufferReadyResponsePointer = new IntPtr(&debuggerFuncEvalParameterBufferReadyResponse);
 
-            RuntimeAugments.RhpSendCustomEventToDebugger(writeParameterCommandPointer, Unsafe.SizeOf<WriteParameterCommand>());
+            RuntimeAugments.RhpSendCustomEventToDebugger(debuggerFuncEvalParameterBufferReadyResponsePointer, Unsafe.SizeOf<DebuggerFuncEvalParameterBufferReadyResponse>());
 
-            // .. debugger magic ... the debuggerBuffer will be filled with parameter data
+            // .. debugger magic ... the parameterBuffer will be filled with parameter data
 
             FuncEvalMode mode = (FuncEvalMode)RuntimeAugments.RhpGetFuncEvalMode();
 
@@ -256,19 +228,19 @@ namespace Internal.Runtime.TypeLoader
             returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
             returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
 
-            ReturnToDebugger(returnHandleIdentifier, returnValueHandlePointer);
+            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer);
         }
 
-        private unsafe static void ReturnToDebugger(uint returnHandleIdentifier, IntPtr returnValueHandlePointer)
+        private unsafe static void ReturnToDebuggerWithReturn(uint returnHandleIdentifier, IntPtr returnValueHandlePointer)
         {
             // Signal to the debugger the func eval completes
 
-            FuncEvalCompleteCommand* funcEvalCompleteCommand = stackalloc FuncEvalCompleteCommand[1];
-            funcEvalCompleteCommand->commandCode = 0;
-            funcEvalCompleteCommand->returnHandleIdentifier = returnHandleIdentifier;
-            funcEvalCompleteCommand->returnAddress = (long)returnValueHandlePointer;
-            IntPtr funcEvalCompleteCommandPointer = new IntPtr(funcEvalCompleteCommand);
-            RuntimeAugments.RhpSendCustomEventToDebugger(funcEvalCompleteCommandPointer, Unsafe.SizeOf<FuncEvalCompleteCommand>());
+            DebuggerFuncEvalCompleteWithReturnResponse* debuggerFuncEvalCompleteWithReturnResponse = stackalloc DebuggerFuncEvalCompleteWithReturnResponse[1];
+            debuggerFuncEvalCompleteWithReturnResponse->kind = DebuggerResponseKind.FuncEvalCompleteWithReturn;
+            debuggerFuncEvalCompleteWithReturnResponse->returnHandleIdentifier = returnHandleIdentifier;
+            debuggerFuncEvalCompleteWithReturnResponse->returnAddress = (long)returnValueHandlePointer;
+            IntPtr debuggerFuncEvalCompleteWithReturnResponsePointer = new IntPtr(debuggerFuncEvalCompleteWithReturnResponse);
+            RuntimeAugments.RhpSendCustomEventToDebugger(debuggerFuncEvalCompleteWithReturnResponsePointer, Unsafe.SizeOf<DebuggerFuncEvalCompleteWithReturnResponse>());
 
             // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
         }
