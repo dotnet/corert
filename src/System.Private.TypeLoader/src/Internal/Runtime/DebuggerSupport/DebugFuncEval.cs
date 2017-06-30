@@ -58,7 +58,15 @@ namespace Internal.Runtime.DebuggerSupport
             DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(Internal.Runtime.CallConverter.CallingConvention.ManagedStatic, returnAndArgumentTypes, returnAndArgumentTypes.Length);
 
             // Invoke the target method
-            Internal.Runtime.CallInterceptor.CallInterceptor.MakeDynamicCall(targetAddress, dynamicCallSignature, arguments);
+            Exception ex = null;
+            try
+            {
+                Internal.Runtime.CallInterceptor.CallInterceptor.MakeDynamicCall(targetAddress, dynamicCallSignature, arguments);
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
 
             unsafe
             {
@@ -67,7 +75,11 @@ namespace Internal.Runtime.DebuggerSupport
                 object returnValue = null;
                 IntPtr returnValueHandlePointer = IntPtr.Zero;
                 uint returnHandleIdentifier = 0;
-                if (!isVoid)
+                if (ex != null)
+                {
+                    returnValue = ex;
+                }
+                else if (!isVoid)
                 {
                     IntPtr input = arguments.GetAddressOfVarData(0);
                     returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
@@ -81,8 +93,8 @@ namespace Internal.Runtime.DebuggerSupport
                     returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
                 }
 
-                ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer);
-            }            
+                ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, ex != null);
+            }
         }
 
         struct TypesAndValues
@@ -229,15 +241,16 @@ namespace Internal.Runtime.DebuggerSupport
             returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
             returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
 
-            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer);
+            // TODO, FuncEval, what if we don't have sufficient memory to create the string?
+            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
         }
 
-        private unsafe static void ReturnToDebuggerWithReturn(uint returnHandleIdentifier, IntPtr returnValueHandlePointer)
+        private unsafe static void ReturnToDebuggerWithReturn(uint returnHandleIdentifier, IntPtr returnValueHandlePointer, bool isException)
         {
             // Signal to the debugger the func eval completes
 
             DebuggerFuncEvalCompleteWithReturnResponse* debuggerFuncEvalCompleteWithReturnResponse = stackalloc DebuggerFuncEvalCompleteWithReturnResponse[1];
-            debuggerFuncEvalCompleteWithReturnResponse->kind = DebuggerResponseKind.FuncEvalCompleteWithReturn;
+            debuggerFuncEvalCompleteWithReturnResponse->kind = isException ? DebuggerResponseKind.FuncEvalCompleteWithException : DebuggerResponseKind.FuncEvalCompleteWithReturn;
             debuggerFuncEvalCompleteWithReturnResponse->returnHandleIdentifier = returnHandleIdentifier;
             debuggerFuncEvalCompleteWithReturnResponse->returnAddress = (long)returnValueHandlePointer;
             IntPtr debuggerFuncEvalCompleteWithReturnResponsePointer = new IntPtr(debuggerFuncEvalCompleteWithReturnResponse);
