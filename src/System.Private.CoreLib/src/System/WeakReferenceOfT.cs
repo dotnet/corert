@@ -60,8 +60,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            T target = (T)info.GetValue("TrackedObject", typeof(T));
-            bool trackResurrection = info.GetBoolean("TrackResurrection");
+            T target = (T)info.GetValue("TrackedObject", typeof(T)); // Do not rename (binary serialization)
+            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
 
@@ -191,8 +191,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("TrackedObject", this.GetTarget(), typeof(T));
-            info.AddValue("TrackResurrection", m_trackResurrection);
+            info.AddValue("TrackedObject", this.GetTarget(), typeof(T)); // Do not rename (binary serialization)
+            info.AddValue("TrackResurrection", m_trackResurrection); // Do not rename (binary serialization)
         }
     }
 }
