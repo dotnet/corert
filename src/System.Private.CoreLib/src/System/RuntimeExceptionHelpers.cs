@@ -341,7 +341,7 @@ namespace System
                         pMetadata->NestingLevel = ExceptionMetadata.NestingLevel;
                         pMetadata->ExceptionCCWPtr = ExceptionMetadata.ExceptionCCWPtr;
 
-                        Array.CopyToNative(SerializedExceptionData, 0, (IntPtr)(pSerializedData + sizeof(ExceptionMetadataStruct)), SerializedExceptionData.Length);
+                        PInvokeMarshal.CopyToNative(SerializedExceptionData, 0, (IntPtr)(pSerializedData + sizeof(ExceptionMetadataStruct)), SerializedExceptionData.Length);
                     }
                     return serializedData;
                 }
@@ -560,7 +560,7 @@ namespace System
                     for (int i = 0; i < serializedExceptions.Count; i++)
                     {
                         int cbChunk = serializedExceptions[i].Length;
-                        Array.CopyToNative(serializedExceptions[i], 0, (IntPtr)pCursor, cbChunk);
+                        PInvokeMarshal.CopyToNative(serializedExceptions[i], 0, (IntPtr)pCursor, cbChunk);
                         cbRemaining -= cbChunk;
                         pCursor += cbChunk;
                     }
@@ -568,7 +568,7 @@ namespace System
                     // copy the module-handle array to report buffer
                     IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
                     RuntimeAugments.GetLoadedOSModules(loadedModuleHandles);
-                    Array.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
+                    PInvokeMarshal.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
                     cbRemaining -= cbModuleHandles;
                     pCursor += cbModuleHandles;
 
