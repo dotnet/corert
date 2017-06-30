@@ -226,7 +226,7 @@ namespace System.Globalization
             {
                 // From whidbey, didn't have a name
                 CultureInfo ci = CultureInfo.GetCultureInfo(this.culture);
-                m_name = ci._name;
+                m_name = ci.m_name;
             }
             else
             {
