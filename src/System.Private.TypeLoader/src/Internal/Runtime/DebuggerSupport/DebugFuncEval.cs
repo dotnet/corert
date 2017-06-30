@@ -13,9 +13,10 @@ using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-namespace Internal.Runtime.TypeLoader
+namespace Internal.Runtime.DebuggerSupport
 {
     [McgIntrinsics]
     internal static class AddrofIntrinsics
