@@ -63,8 +63,9 @@ internal static class Runner
         Console.WriteLine("    ThreadPoolTests.GlobalWorkQueueDepletionTest");
         ThreadPoolTests.GlobalWorkQueueDepletionTest();
 
-        Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
-        ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum();
+        // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
+        // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
+        // ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum();
 
         return Pass;
     }
@@ -839,7 +840,7 @@ internal static class ThreadPoolTests
         Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Task.Factory.StartNew(() => e1.Set());
         Thread.Sleep(500); // Sleep for the gate thread delay to wait for starvation
-        Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         e0.Set();
     }
 
@@ -1055,11 +1056,8 @@ internal static class ThreadPoolTests
             });
         }
         Assert.False(jobsQueued.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
-        // TODO: Needs to be disabled on CoreRT on Windows (SetMin/MaxThreads is not supported when using the built-in Windows Thread Pool)
-        // Assert.True(ThreadPool.SetMaxThreads(minThreads + 1, unused));
-        // Assert.True(ThreadPool.SetMinThreads(minThreads + 1, unused));
-        ThreadPool.SetMaxThreads(minThreads + 1, unused);
-        ThreadPool.SetMinThreads(minThreads + 1, unused);
+        Assert.True(ThreadPool.SetMaxThreads(minThreads + 1, unused));
+        Assert.True(ThreadPool.SetMinThreads(minThreads + 1, unused));
 
         Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
 
