@@ -112,42 +112,6 @@ namespace System.Runtime.InteropServices
             return genericTypeDefinitionHandle.ToEETypePtr().ToPointer()->GenericArgumentCount;
         }
 
-        public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table,
-            TKey key,
-            out TValue value
-            )
-            where TKey : class
-            where TValue : class
-        {
-            return table.FindEquivalentKeyUnsafe(key, out value);
-        }
-
-        public static System.Collections.Generic.ICollection<TValue> GetValues<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table
-            )
-            where TKey : class
-            where TValue : class
-        {
-            return table.Values;
-        }
-
-        public static System.Collections.Generic.ICollection<TKey> GetKeys<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table
-            )
-            where TKey : class
-            where TValue : class
-        {
-            return table.Keys;
-        }
-
-        public static void Clear<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table)
-        where TKey : class
-        where TValue : class
-        {
-            table.Clear();
-        }
         //TODO:Remove Delegate.GetNativeFunctionPointer
         public static IntPtr GetNativeFunctionPointer(this Delegate del)
         {

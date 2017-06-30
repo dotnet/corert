@@ -277,14 +277,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             where TKey : class
             where TValue : class
         {
-            TValue value;
-            TKey foundKey = table.FindEquivalentKeyUnsafe(key, out value);
-            if (foundKey == default(TKey))
+            foreach (KeyValuePair<TKey, TValue> item in table)
             {
-                value = callback(key);
-                table.Add(key, value);
+                if (Object.Equals(item.Key, key))
+                    return item.Value;
+
             }
 
+            TValue value = callback(key);
+            table.Add(key, value);
             return value;
         }
     }

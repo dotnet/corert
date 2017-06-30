@@ -405,8 +405,9 @@ namespace System
             uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
 
             // Reset nesting levels for exceptions on this thread that might not be currently in flight
-            foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
+            foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
             {
+                ExceptionData exceptionData = item.Value;
                 if (exceptionData.ExceptionMetadata.ThreadId == currentThreadId)
                 {
                     exceptionData.ExceptionMetadata.NestingLevel = -1;
@@ -505,8 +506,10 @@ namespace System
 
             checked
             {
-                foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
+                foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
                 {
+                    ExceptionData exceptionData = item.Value;
+
                     // Already serialized currentException
                     if (currentExceptionData != null && exceptionData.ExceptionMetadata.ExceptionId == currentExceptionData.ExceptionMetadata.ExceptionId)
                     {
