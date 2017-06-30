@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 // Prior to making any changes to these, please reach out to the VS Debugger 
 // team to make sure that your changes are not going to prevent the debugger
 // from working.
-namespace Internal.Runtime.TypeLoader
+namespace Internal.Runtime.DebuggerSupport
 {
     internal enum FuncEvalMode : uint
     {
