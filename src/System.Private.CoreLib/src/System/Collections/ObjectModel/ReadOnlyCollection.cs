@@ -16,8 +16,9 @@ namespace System.Collections.ObjectModel
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>
     {
-        private IList<T> list;      // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
-        private Object _syncRoot;   // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private IList<T> list; // Do not rename (binary serialization)
+        [NonSerialized]
+        private Object _syncRoot;
 
         public ReadOnlyCollection(IList<T> list)
         {
