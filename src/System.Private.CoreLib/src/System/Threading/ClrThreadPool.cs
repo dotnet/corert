@@ -275,7 +275,7 @@ namespace System.Threading
         {
             Interlocked.Increment(ref _numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker();
-            //GateThread.EnsureRunning();
+            GateThread.EnsureRunning();
         }
 
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]

@@ -41,8 +41,8 @@ internal static class Runner
         Console.WriteLine("    ThreadPoolTests.RunProcessorCountItemsInParallel");
         ThreadPoolTests.RunProcessorCountItemsInParallel();
        
-        Console.WriteLine("    ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForOthers");
-        ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForOthers();
+        Console.WriteLine("    ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection");
+        ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection();
 
         Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable");
         ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable();
@@ -820,7 +820,7 @@ internal static class ThreadPoolTests
     }
 
     [Fact]
-    public static void RunMoreThanMaxJobsMakesOneJobWaitForOthers()
+    public static void RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
         AutoResetEvent jobsQueued = new AutoResetEvent(false);
@@ -829,23 +829,19 @@ internal static class ThreadPoolTests
         for(int i = 0; i < Environment.ProcessorCount; ++i)
         {
             Task.Factory.StartNew(() => {
-                Console.WriteLine("Executing");
                 if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
                 {
-                    Console.WriteLine("All jobs queued");
                     jobsQueued.Set();
                 }
-                Console.WriteLine("Waiting");
                 e0.WaitOne();
-                Console.WriteLine("Completed Job");
             });
         }
         Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Task.Factory.StartNew(() => e1.Set());
-        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
-        Console.WriteLine("Signaling");
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        Thread.Sleep(500); // Sleep for the gate thread delay to wait for starvation
+        Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
         e0.Set();
-        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 
     [Fact]
@@ -859,17 +855,14 @@ internal static class ThreadPoolTests
         for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
         {
             Task.Factory.StartNew(() => {
-                Console.WriteLine("Executing");
                 if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
                 {
                     jobsQueued.Set();
                 }
-                Console.WriteLine("Waiting");
                 e0.WaitOne();
             });
         }
         Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
-        Console.WriteLine("Queuing last job");
         Task.Factory.StartNew(() => testJobCompleted.Set());
         Assert.True(testJobCompleted.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
         e0.Set();
