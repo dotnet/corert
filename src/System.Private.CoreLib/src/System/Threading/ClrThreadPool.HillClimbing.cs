@@ -19,32 +19,20 @@ namespace System.Threading
             private static HillClimbing CreateHillClimber()
             {
                 // Default values pulled from CoreCLR
-                int wavePeriod = (int?)AppContext.GetData("HillClimbing_WavePeriod") ?? 4;
-                int maxWaveMagnitude = (int?)AppContext.GetData("HillClimbing_MaxWaveMagnitude") ?? 20;
-                double waveMagnitudeMultiplier = ((int?)AppContext.GetData("HillClimbing_WaveMagnitudeMultiplier") ?? 100) / 100.0;
-                int waveHistorySize = (int?)AppContext.GetData("HillClimbing_WaveHistorySize") ?? 8;
-                double targetThroughputRatio = ((int?)AppContext.GetData("HillClimbing_Bias") ?? 15) / 100.0;
-                double targetSignalToNoiseRatio = ((int?)AppContext.GetData("HillClimbing_TargetSignalToNoiseRatio") ?? 300) / 100.0;
-                int maxChangePerSecond = (int?)AppContext.GetData("HillClimbing_MaxChangePerSecond") ?? 4;
-                int maxChangePerSample = (int?)AppContext.GetData("HillClimbing_MaxChangePerSample") ?? 20;
-                int sampleIntervalLow = (int?)AppContext.GetData("HillClimbing_SampleIntervalLow") ?? 10;
-                int sampleIntervalHigh = (int?)AppContext.GetData("HillClimbing_SampleIntervalHigh") ?? 200;
-                double errorSmoothingFactor = ((int?)AppContext.GetData("HillClimbing_ErrorSmoothingFactor") ?? 1) / 100.0;
-                double gainExponent = ((int?)AppContext.GetData("HillClimbing_GainExponent") ?? 200) / 100.0;
-                double maxSampleError = ((int?)AppContext.GetData("HillClimbing_MaxSampleErrorPercent") ?? 15) / 100.0;
-                return new HillClimbing(wavePeriod,
-                    maxWaveMagnitude,
-                    waveMagnitudeMultiplier,
-                    waveHistorySize,
-                    targetThroughputRatio,
-                    targetSignalToNoiseRatio,
-                    maxChangePerSecond,
-                    maxChangePerSample,
-                    sampleIntervalLow,
-                    sampleIntervalHigh,
-                    errorSmoothingFactor,
-                    gainExponent,
-                    maxSampleError);
+                return new HillClimbing(wavePeriod: (int?)AppContext.GetData("HillClimbing_WavePeriod") ?? 4,
+                    maxWaveMagnitude: (int?)AppContext.GetData("HillClimbing_MaxWaveMagnitude") ?? 20,
+                    waveMagnitudeMultiplier: ((int?)AppContext.GetData("HillClimbing_WaveMagnitudeMultiplier") ?? 100) / 100.0,
+                    waveHistorySize: (int?)AppContext.GetData("HillClimbing_WaveHistorySize") ?? 8,
+                    targetThroughputRatio: ((int?)AppContext.GetData("HillClimbing_Bias") ?? 15) / 100.0,
+                    targetSignalToNoiseRatio: ((int?)AppContext.GetData("HillClimbing_TargetSignalToNoiseRatio") ?? 300) / 100.0,
+                    maxChangePerSecond: (int?)AppContext.GetData("HillClimbing_MaxChangePerSecond") ?? 4,
+                    maxChangePerSample: (int?)AppContext.GetData("HillClimbing_MaxChangePerSample") ?? 20,
+                    sampleMsLow: (int?)AppContext.GetData("HillClimbing_SampleIntervalLow") ?? 10,
+                    sampleMsHigh: (int?)AppContext.GetData("HillClimbing_SampleIntervalHigh") ?? 200,
+                    errorSmoothingFactor: ((int?)AppContext.GetData("HillClimbing_ErrorSmoothingFactor") ?? 1) / 100.0,
+                    gainExponent: ((int?)AppContext.GetData("HillClimbing_GainExponent") ?? 200) / 100.0,
+                    maxSampleError: ((int?)AppContext.GetData("HillClimbing_MaxSampleErrorPercent") ?? 15) / 100.0
+                );
             }
 
             public enum StateOrTransition
