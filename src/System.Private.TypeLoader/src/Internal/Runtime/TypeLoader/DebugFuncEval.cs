@@ -61,11 +61,16 @@ namespace Internal.Runtime.TypeLoader
 
             unsafe
             {
-                // Box the return
-                IntPtr input = arguments.GetAddressOfVarData(0);
-                object returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
+                bool isVoid = (RuntimeTypeHandle.Equals(param.types[0], typeof(void).TypeHandle));
+
+                object returnValue = null;
                 IntPtr returnValueHandlePointer = IntPtr.Zero;
                 uint returnHandleIdentifier = 0;
+                if (!isVoid)
+                {
+                    IntPtr input = arguments.GetAddressOfVarData(0);
+                    returnValue = RuntimeAugments.RhBoxAny(input, (IntPtr)param.types[0].ToEETypePtr());
+                }
 
                 // The return value could be null if the target function returned null
                 if (returnValue != null)
