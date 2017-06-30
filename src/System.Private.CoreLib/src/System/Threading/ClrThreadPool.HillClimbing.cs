@@ -39,17 +39,17 @@ namespace System.Threading
                 // Default values pulled from CoreCLR
                 return new HillClimbing(wavePeriod: GetConfig("HillClimbing_WavePeriod", 4),
                     maxWaveMagnitude: GetConfig("HillClimbing_MaxWaveMagnitude", 20),
-                    waveMagnitudeMultiplier: (GetConfig("HillClimbing_WaveMagnitudeMultiplier", 100)) / 100.0,
+                    waveMagnitudeMultiplier: GetConfig("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
                     waveHistorySize: GetConfig("HillClimbing_WaveHistorySize", 8),
-                    targetThroughputRatio: (GetConfig("HillClimbing_Bias", 15)) / 100.0,
-                    targetSignalToNoiseRatio: (GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300)) / 100.0,
+                    targetThroughputRatio: GetConfig("HillClimbing_Bias", 15) / 100.0,
+                    targetSignalToNoiseRatio: GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
                     maxChangePerSecond: GetConfig("HillClimbing_MaxChangePerSecond", 4),
                     maxChangePerSample: GetConfig("HillClimbing_MaxChangePerSample", 20),
                     sampleMsLow: GetConfig("HillClimbing_SampleIntervalLow", 10),
                     sampleMsHigh: GetConfig("HillClimbing_SampleIntervalHigh", 200),
-                    errorSmoothingFactor: (GetConfig("HillClimbing_ErrorSmoothingFactor", 1)) / 100.0,
-                    gainExponent: (GetConfig("HillClimbing_GainExponent", 200)) / 100.0,
-                    maxSampleError: (GetConfig("HillClimbing_MaxSampleErrorPercent", 15)) / 100.0
+                    errorSmoothingFactor: GetConfig("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
+                    gainExponent: GetConfig("HillClimbing_GainExponent", 200) / 100.0,
+                    maxSampleError: GetConfig("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
                 );
             }
 
