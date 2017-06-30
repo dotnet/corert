@@ -341,7 +341,7 @@ namespace System
                         pMetadata->NestingLevel = ExceptionMetadata.NestingLevel;
                         pMetadata->ExceptionCCWPtr = ExceptionMetadata.ExceptionCCWPtr;
 
-                        Array.CopyToNative(SerializedExceptionData, 0, (IntPtr)(pSerializedData + sizeof(ExceptionMetadataStruct)), SerializedExceptionData.Length);
+                        PInvokeMarshal.CopyToNative(SerializedExceptionData, 0, (IntPtr)(pSerializedData + sizeof(ExceptionMetadataStruct)), SerializedExceptionData.Length);
                     }
                     return serializedData;
                 }
@@ -405,8 +405,9 @@ namespace System
             uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
 
             // Reset nesting levels for exceptions on this thread that might not be currently in flight
-            foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
+            foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
             {
+                ExceptionData exceptionData = item.Value;
                 if (exceptionData.ExceptionMetadata.ThreadId == currentThreadId)
                 {
                     exceptionData.ExceptionMetadata.NestingLevel = -1;
@@ -505,8 +506,10 @@ namespace System
 
             checked
             {
-                foreach (ExceptionData exceptionData in s_exceptionDataTable.GetValues())
+                foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
                 {
+                    ExceptionData exceptionData = item.Value;
+
                     // Already serialized currentException
                     if (currentExceptionData != null && exceptionData.ExceptionMetadata.ExceptionId == currentExceptionData.ExceptionMetadata.ExceptionId)
                     {
@@ -557,7 +560,7 @@ namespace System
                     for (int i = 0; i < serializedExceptions.Count; i++)
                     {
                         int cbChunk = serializedExceptions[i].Length;
-                        Array.CopyToNative(serializedExceptions[i], 0, (IntPtr)pCursor, cbChunk);
+                        PInvokeMarshal.CopyToNative(serializedExceptions[i], 0, (IntPtr)pCursor, cbChunk);
                         cbRemaining -= cbChunk;
                         pCursor += cbChunk;
                     }
@@ -565,7 +568,7 @@ namespace System
                     // copy the module-handle array to report buffer
                     IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
                     RuntimeAugments.GetLoadedOSModules(loadedModuleHandles);
-                    Array.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
+                    PInvokeMarshal.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
                     cbRemaining -= cbModuleHandles;
                     pCursor += cbModuleHandles;
 
