@@ -24,7 +24,7 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
 
 1. Open c:\corert\src\ILCompiler\ILCompiler.sln in VS
 
-  - Set "desktop" project in solution explorer as your startup project
+  - Set "ILCompiler" project in solution explorer as your startup project
 
   - Set startup command line to:
 `@c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
@@ -47,7 +47,7 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
 
 1. Open `c:\corert\src\ILCompiler\ILCompiler.sln` in VS
 
-  - Set "desktop" project in solution explorer as your startup project
+  - Set "ILCompiler" project in solution explorer as your startup project
 
   - Set startup command line to:
 `@c:\corert\bin\obj\Windows_NT.x64.Debug\cpp.rsp`

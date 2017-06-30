@@ -11,6 +11,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -105,6 +111,66 @@ namespace System.Runtime.InteropServices
             Contract.EndContractBlock();
 
             return s.MarshalToString(globalAlloc: false, unicode: true);
+        }
+
+        public static unsafe void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
+        {
+            if (source == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(source));
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+            if (!destination.IsBlittable())
+                throw new ArgumentException(nameof(destination), SR.Arg_CopyNonBlittableArray);
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
+            if ((uint)startIndex + (uint)length > (uint)destination.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
+
+            nuint bytesToCopy = (nuint)length * destination.ElementSize;
+            nuint startOffset = (nuint)startIndex * destination.ElementSize;
+
+            fixed (byte* pDestination = &destination.GetRawArrayData())
+            {
+                byte* destinationData = pDestination + startOffset;
+                Buffer.Memmove(destinationData, (byte*)source, bytesToCopy);
+            }
+        }
+
+        public static unsafe void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (!source.IsBlittable())
+                throw new ArgumentException(nameof(source), SR.Arg_CopyNonBlittableArray);
+            if (destination == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(destination));
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
+            if ((uint)startIndex + (uint)length > (uint)source.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
+            Contract.EndContractBlock();
+
+            nuint bytesToCopy = (nuint)length * source.ElementSize;
+            nuint startOffset = (nuint)startIndex * source.ElementSize;
+
+            fixed (byte* pSource = &source.GetRawArrayData())
+            {
+                byte* sourceData = pSource + startOffset;
+                Buffer.Memmove((byte*)destination, sourceData, bytesToCopy);
+            }
+        }
+
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
+        {
+            if (arr == null)
+                throw new ArgumentNullException(nameof(arr));
+
+            byte* p = (byte*)Unsafe.AsPointer(ref arr.GetRawArrayData()) + (nuint)index * arr.ElementSize;
+            return (IntPtr)p;
         }
 
         #region Delegate marshalling

@@ -4,6 +4,17 @@
 
 #pragma once
 
+// The following definitions are required for interop with the VS Debugger
+// Prior to making any changes to these, please reach out to the VS Debugger 
+// team to make sure that your changes are not going to prevent the debugger
+// from working.
+
+enum FuncEvalMode : uint32_t
+{
+    RegularFuncEval = 1,
+    NewStringWithLength = 2,
+};
+
 enum DebuggerGcProtectionRequestKind : uint16_t
 {
     EnsureConservativeReporting = 1,
@@ -28,8 +39,15 @@ struct DebuggerGcProtectionRequest
     uint64_t payload; /* TODO, FuncEval, what would be a better name for this? */
 };
 
-enum DebuggerGcProtectionResponseKind : uint32_t
+struct DebuggerResponse
 {
+    int kind;
+};
+
+enum DebuggerResponseKind : uint32_t
+{
+    FuncEvalCompleteWithReturn       = 0,
+    FuncEvalParameterBufferReady     = 1,
     RequestBufferReady               = 2,
     ConservativeReportingBufferReady = 3,
     HandleReady                      = 4,
@@ -37,15 +55,29 @@ enum DebuggerGcProtectionResponseKind : uint32_t
 
 struct DebuggerGcProtectionResponse
 {
-    DebuggerGcProtectionResponseKind kind;
-    uint32_t unused; /* To make the data structure 64 bit aligned */
+    DebuggerResponseKind kind;
+    uint32_t padding;
     uint64_t bufferAddress;
 };
 
 struct DebuggerGcProtectionHandleReadyResponse
 {
-    DebuggerGcProtectionResponseKind kind;
-    uint32_t unused; /* To make the data structure 64 bit aligned */
+    DebuggerResponseKind kind;
+    uint32_t padding;
     uint64_t payload;
     uint64_t handle;
+};
+
+struct DebuggerFuncEvalCompleteWithReturnResponse
+{
+    DebuggerResponseKind kind;
+    uint32_t returnHandleIdentifier;
+    uint64_t returnAddress;
+};
+
+struct DebuggerFuncEvalParameterBufferReadyResponse
+{
+    DebuggerResponseKind kind;
+    uint32_t padding;
+    uint64_t bufferAddress;
 };

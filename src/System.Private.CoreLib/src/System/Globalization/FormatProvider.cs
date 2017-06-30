@@ -52,14 +52,6 @@ namespace System.Globalization
         {
             return CompareInfo.CompareOrdinalIgnoreCase(string1, offset1, length1, string2, offset2, length2);
         }
-        public static int IndexOf(String source, String value, int startIndex, int count)
-        {
-            return CultureInfo.CurrentCulture.CompareInfo.IndexOf(source, value, startIndex, count, CompareOptions.None);
-        }
-        public static int IndexOfIgnoreCase(String source, String value, int startIndex, int count)
-        {
-            return CultureInfo.CurrentCulture.CompareInfo.IndexOf(source, value, startIndex, count, CompareOptions.IgnoreCase);
-        }
         public static bool IsPrefix(String source, String prefix)
         {
             return CultureInfo.CurrentCulture.CompareInfo.IsPrefix(source, prefix, CompareOptions.None);
@@ -75,14 +67,6 @@ namespace System.Globalization
         public static bool IsSuffixIgnoreCase(String source, String suffix)
         {
             return CultureInfo.CurrentCulture.CompareInfo.IsSuffix(source, suffix, CompareOptions.IgnoreCase);
-        }
-        public static int LastIndexOf(String source, String value, int startIndex, int count)
-        {
-            return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(source, value, startIndex, count, CompareOptions.None);
-        }
-        public static int LastIndexOfIgnoreCase(String source, String value, int startIndex, int count)
-        {
-            return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(source, value, startIndex, count, CompareOptions.IgnoreCase);
         }
         public static int OrdinalIndexOf(String source, String value, int startIndex, int count)
         {

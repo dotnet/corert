@@ -227,47 +227,42 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(char[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(short[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(long[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(float[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(double[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(byte[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(IntPtr[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        private static void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
-        {
-            InteropExtensions.CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         //====================================================================
@@ -275,49 +270,43 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, char[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, short[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, long[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, float[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, double[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, IntPtr[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
-
-        private static void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
-        {
-            InteropExtensions.CopyToManaged(source, destination, startIndex, length);
-        }
-
 
         //====================================================================
         // Read from memory
@@ -1420,18 +1409,12 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
-            if (arr == null)
-                throw new ArgumentNullException(nameof(arr));
-            
-            Contract.EndContractBlock();
-            int offset = checked(index * arr.GetElementSize());
-
-            return arr.GetAddrOfPinnedArrayFromEETypeField() + offset;
+            return PInvokeMarshal.UnsafeAddrOfPinnedArrayElement(arr, index);
         }
 
         public static IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
-            return UnsafeAddrOfPinnedArrayElement((Array)arr, index);
+            return PInvokeMarshal.UnsafeAddrOfPinnedArrayElement(arr, index);
         }
 
         //====================================================================

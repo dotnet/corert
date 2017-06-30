@@ -304,7 +304,17 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugVar(DebugVarInfo debugVar)
         {
             int rangeCount = debugVar.Ranges.Count;
-            uint typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
+            uint typeIndex;
+
+            try
+            {
+                typeIndex = _userDefinedTypeDescriptor.GetVariableTypeIndex(debugVar.Type);
+            }
+            catch (TypeSystemException)
+            {
+                typeIndex = 0; // T_NOTYPE
+            }
+
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
@@ -967,6 +977,19 @@ namespace ILCompiler.DependencyAnalysis
                                 }
                             }
                             int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
+
+                            // Emit a copy of original Thumb2 instruction that came from RyuJIT
+                            if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_MOV32 ||
+                                reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_BRANCH24)
+                            {
+                                unsafe
+                                {
+                                    fixed (void* location = &nodeContents.Data[i])
+                                    {
+                                        objectWriter.EmitBytes((IntPtr)location, size);
+                                    }
+                                }
+                            }
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)

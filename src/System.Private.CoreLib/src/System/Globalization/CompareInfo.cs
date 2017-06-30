@@ -69,7 +69,9 @@ namespace System.Globalization
         private String _sortName; // The name that defines our behavior
 
         [OptionalField(VersionAdded = 3)]
-        private SortVersion m_sortVersion; // Do not rename (binary serialization)
+        private SortVersion m_SortVersion; // Do not rename (binary serialization)
+
+        private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
         internal CompareInfo(CultureInfo culture)
         {
@@ -219,7 +221,14 @@ namespace System.Globalization
 
         private void OnDeserialized()
         {
-            if (m_name != null)
+            // If we didn't have a name, use the LCID
+            if (m_name == null)
+            {
+                // From whidbey, didn't have a name
+                CultureInfo ci = CultureInfo.GetCultureInfo(this.culture);
+                m_name = ci.m_name;
+            }
+            else
             {
                 InitSort(CultureInfo.GetCultureInfo(m_name));
             }
@@ -228,6 +237,9 @@ namespace System.Globalization
         [OnSerializing]
         private void OnSerializing(StreamingContext ctx)
         {
+            // This is merely for serialization compatibility with Whidbey/Orcas, it can go away when we don't want that compat any more.
+            culture = CultureInfo.GetCultureInfo(this.Name).LCID; // This is the lcid of the constructing culture (still have to dereference to get target sort) 
+            Contract.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
         }
 
         ///////////////////////////----- Name -----/////////////////////////////////
@@ -751,6 +763,43 @@ namespace System.Globalization
             return IndexOfCore(source, value, startIndex, count, options, null);
         }
 
+        // The following IndexOf overload is mainly used by String.Replace. This overload assumes the parameters are already validated
+        // and the caller is passing a valid matchLengthPtr pointer.
+        internal unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(matchLengthPtr != null);
+            *matchLengthPtr = 0;
+
+            if (source.Length == 0)
+            {
+                if (value.Length == 0)
+                {
+                    return 0;
+                }
+                return -1;
+            }
+
+            if (startIndex >= source.Length)
+            {
+                return -1;
+            }
+
+            if (options == CompareOptions.OrdinalIgnoreCase)
+            {
+                int res = IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+                if (res >= 0)
+                {
+                    *matchLengthPtr = value.Length;
+                }
+                return res;
+            }
+
+            return IndexOfCore(source, value, startIndex, count, options, matchLengthPtr);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  LastIndexOf
@@ -1081,12 +1130,12 @@ namespace System.Globalization
         {
             get
             {
-                if (m_sortVersion == null)
+                if (m_SortVersion == null)
                 {
-                    m_sortVersion = GetSortVersion();
+                    m_SortVersion = GetSortVersion();
                 }
 
-                return m_sortVersion;
+                return m_SortVersion;
             }
         }
 
