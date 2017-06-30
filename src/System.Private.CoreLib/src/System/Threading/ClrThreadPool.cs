@@ -277,12 +277,5 @@ namespace System.Threading
             WorkerThread.MaybeAddWorkingWorker();
             GateThread.EnsureRunning();
         }
-
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
-        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format, int param1);
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
-        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format, int param1, int param2);
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint="CoreLibNative_Printf")]
-        public static extern void printf([MarshalAs(UnmanagedType.LPStr)] string format);
     }
 }
