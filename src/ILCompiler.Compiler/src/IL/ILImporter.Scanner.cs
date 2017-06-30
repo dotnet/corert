@@ -446,8 +446,8 @@ namespace Internal.IL
                 }
                 else if (constrained.IsValueType)
                 {
-                    // We'll need to box `this`.
-                    AddBoxingDependencies(constrained, reason);
+                    // We'll need to box `this`. Note we use _constrained here, because the other one is canonical.
+                    AddBoxingDependencies(_constrained, reason);
                 }
             }
 
@@ -838,9 +838,24 @@ namespace Internal.IL
 
         private void ImportFieldAccess(int token, bool isStatic, string reason)
         {
+            var field = (FieldDesc)_methodIL.GetObject(token);
+
             if (isStatic)
             {
-                var field = (FieldDesc)_methodIL.GetObject(token);
+                if (!field.IsStatic)
+                    throw new TypeSystemException.InvalidProgramException();
+
+                // References to literal fields from IL body should never resolve.
+                // The CLR would throw a MissingFieldException while jitting and so should we.
+                if (field.IsLiteral)
+                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+
+                if (field.HasRva)
+                {
+                    // We could add a dependency to the data node, but we don't really need it.
+                    // TODO: lazy cctor dependency
+                    return;
+                }
 
                 ReadyToRunHelperId helperId;
                 if (field.IsThreadStatic)
@@ -853,7 +868,6 @@ namespace Internal.IL
                 }
                 else
                 {
-                    Debug.Assert(field.IsStatic);
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
@@ -866,6 +880,11 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
                 }
+            }
+            else
+            {
+                if (field.IsStatic)
+                    throw new TypeSystemException.InvalidProgramException();
             }
         }
 
@@ -897,6 +916,8 @@ namespace Internal.IL
 
         private void AddBoxingDependencies(TypeDesc type, string reason)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
             // Generic code will have BOX instructions when referring to T - the instruction is a no-op
             // if the substitution wasn't a value type.
             if (!type.IsValueType)
@@ -991,6 +1012,21 @@ namespace Internal.IL
                 + (_ilBytes[ilOffset + 1] << 8)
                 + (_ilBytes[ilOffset + 2] << 16)
                 + (_ilBytes[ilOffset + 3] << 24));
+        }
+
+        private void ReportOutOfRangeBranchTarget(int targetOffset)
+        {
+            throw new TypeSystemException.InvalidProgramException();
+        }
+
+        private void ReportFallthrough()
+        {
+            throw new TypeSystemException.InvalidProgramException();
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            throw new TypeSystemException.InvalidProgramException();
         }
 
         private bool IsRuntimeHelpersInitializeArray(MethodDesc method)
