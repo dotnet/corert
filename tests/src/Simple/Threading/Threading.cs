@@ -838,7 +838,6 @@ internal static class ThreadPoolTests
         }
         Assert.True(jobsQueued.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         Task.Factory.StartNew(() => e1.Set());
-        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         Thread.Sleep(500); // Sleep for the gate thread delay to wait for starvation
         Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
         e0.Set();
