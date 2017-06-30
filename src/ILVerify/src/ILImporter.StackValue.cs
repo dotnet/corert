@@ -360,6 +360,10 @@ namespace Internal.IL
                     switch (dst.Kind)
                     {
                         case StackValueKind.ObjRef:
+                            // ECMA-335 III.1.5 Operand type table, P. 303:
+                            // __cgt.un__ is allowed and verifiable on ObjectRefs (O). This is commonly used when 
+                            // comparing an ObjectRef with null(there is no "compare - not - equal" instruction, which 
+                            // would otherwise be a more obvious solution)
                             return op == ILOpcode.beq || op == ILOpcode.beq_s ||
                                    op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||
                                    op == ILOpcode.ceq || op == ILOpcode.cgt_un;
