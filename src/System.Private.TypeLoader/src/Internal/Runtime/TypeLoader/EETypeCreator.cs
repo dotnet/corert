@@ -120,12 +120,12 @@ namespace Internal.Runtime.TypeLoader
 
         public static IntPtr AllocateMemory(int cbBytes)
         {
-            return InteropExtensions.MemAlloc(new UIntPtr((uint)cbBytes));
+            return PInvokeMarshal.MemAlloc(new IntPtr(cbBytes));
         }
 
         public static void FreeMemory(IntPtr memoryPtrToFree)
         {
-            InteropExtensions.MemFree(memoryPtrToFree);
+            PInvokeMarshal.MemFree(memoryPtrToFree);
         }
     }
 

@@ -1700,7 +1700,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = (uint)count;
 
-                InteropExtensions.CopyToNative(data, 0, pDest, count);
+                PInvokeMarshal.CopyToNative(data, 0, pDest, count);
             }
             catch (System.Exception hrExcep)
             {
