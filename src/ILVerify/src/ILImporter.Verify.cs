@@ -1741,12 +1741,12 @@ namespace Internal.IL
             throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
         }
 
-        private void ReportOutOfRangeBranchTarget(int targetOffset)
+        private void ReportInvalidBranchTarget(int targetOffset)
         {
             throw new NotImplementedException();
         }
 
-        private void ReportFallthrough()
+        private void ReportFallthroughAtEndOfMethod()
         {
             throw new NotImplementedException();
         }

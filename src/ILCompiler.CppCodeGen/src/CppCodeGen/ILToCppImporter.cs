@@ -2640,12 +2640,12 @@ namespace Internal.IL
             return _writer.GetCppSignatureTypeName(type);
         }
 
-        private void ReportOutOfRangeBranchTarget(int targetOffset)
+        private void ReportInvalidBranchTarget(int targetOffset)
         {
             throw new TypeSystemException.InvalidProgramException();
         }
 
-        private void ReportFallthrough()
+        private void ReportFallthroughAtEndOfMethod()
         {
             throw new TypeSystemException.InvalidProgramException();
         }

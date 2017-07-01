@@ -204,7 +204,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportOutOfRangeBranchTarget(target);
+                                ReportInvalidBranchTarget(target);
                         }
                         break;
                     case ILOpcode.brfalse_s:
@@ -225,7 +225,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportOutOfRangeBranchTarget(target);
+                                ReportInvalidBranchTarget(target);
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -237,7 +237,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportOutOfRangeBranchTarget(target);
+                                ReportInvalidBranchTarget(target);
                         }
                         break;
                     case ILOpcode.brfalse:
@@ -258,7 +258,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportOutOfRangeBranchTarget(target);
+                                ReportInvalidBranchTarget(target);
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -273,7 +273,7 @@ namespace Internal.IL
                                 if ((uint)target < (uint)_basicBlocks.Length)
                                     CreateBasicBlock(target);
                                 else
-                                    ReportOutOfRangeBranchTarget(target);
+                                    ReportInvalidBranchTarget(target);
                             }
                             CreateBasicBlock(_currentOffset);
                         }
@@ -901,24 +901,21 @@ namespace Internal.IL
                         return;
                 }
 
+                EndImportingInstruction();
+
                 // Check if control falls through the end of method.
-                if (_currentOffset < _basicBlocks.Length)
+                if (_currentOffset >= _basicBlocks.Length)
                 {
-                    BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
-                    if (nextBasicBlock != null)
-                    {
-                        ImportFallthrough(nextBasicBlock);
-                        return;
-                    }
-                }
-                else
-                {
-                    ReportFallthrough();
-                    EndImportingInstruction();
+                    ReportFallthroughAtEndOfMethod();
                     return;
                 }
 
-                EndImportingInstruction();
+                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
+                if (nextBasicBlock != null)
+                {
+                    ImportFallthrough(nextBasicBlock);
+                    return;
+                }
             }
         }
 
