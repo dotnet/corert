@@ -546,7 +546,12 @@ namespace System.Threading.Tasks
                 return new TaskScheduler[] { s_defaultTaskScheduler };
             }
 
-            ICollection<TaskScheduler> schedulers = s_activeTaskSchedulers.Keys;
+            LowLevelList<TaskScheduler> schedulers = new LowLevelList<TaskScheduler>();
+            foreach (var item in s_activeTaskSchedulers)
+            {
+                schedulers.Add(item.Key);
+            }
+
             if (!schedulers.Contains(s_defaultTaskScheduler))
             {
                 // Make sure the default is included, in case the debugger attached
@@ -554,8 +559,7 @@ namespace System.Threading.Tasks
                 schedulers.Add(s_defaultTaskScheduler);
             }
 
-            var arr = new TaskScheduler[schedulers.Count];
-            schedulers.CopyTo(arr, 0);
+            var arr = schedulers.ToArray();
             foreach (var scheduler in arr)
             {
                 Debug.Assert(scheduler != null, "Table returned an incorrect Count or CopyTo failed");

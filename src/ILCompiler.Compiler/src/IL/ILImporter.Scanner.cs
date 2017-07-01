@@ -123,6 +123,22 @@ namespace Internal.IL
                 }
             }
 
+            if (_canonMethod.IsSynchronized)
+            {
+                const string reason = "Synchronized method";
+                if (_canonMethod.Signature.IsStatic)
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnterStatic), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExitStatic), reason);
+                }
+                else
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnter), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
+                }
+                
+            }
+
             FindBasicBlocks();
             ImportBasicBlocks();
 
@@ -193,7 +209,8 @@ namespace Internal.IL
 
         private void ImportJmp(int token)
         {
-            // TODO
+            // JMP is kind of like a tail call (with no arguments pushed on the stack).
+            ImportCall(ILOpcode.call, token);
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -677,7 +694,14 @@ namespace Internal.IL
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
             if (!type.IsValueType)
+            {
+                if (opCode == ILOpcode.unbox_any)
+                {
+                    // When applied to a reference type, unbox_any has the same effect as castclass.
+                    ImportCasting(ILOpcode.castclass, token);
+                }
                 return;
+            }
 
             if (type.IsRuntimeDeterminedSubtype)
             {
@@ -704,12 +728,12 @@ namespace Internal.IL
 
         private void ImportRefAnyVal(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRefAny), "refanyval");
         }
 
         private void ImportMkRefAny(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
         }
 
         private void ImportLdToken(int token)
@@ -720,7 +744,19 @@ namespace Internal.IL
             {
                 var type = (TypeDesc)obj;
 
-                // First check if this is a ldtoken Type / GetValueInternal sequence.
+                if (type.IsRuntimeDeterminedSubtype)
+                {
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
+                }
+                else
+                {
+                    if (ConstructedEETypeNode.CreationAllowed(type))
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
+                    else
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
+                }
+
+                // If this is a ldtoken Type / GetValueInternal sequence, we're done.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock == null)
                 {
@@ -734,18 +770,6 @@ namespace Internal.IL
                             return;
                         }
                     }
-                }
-
-                if (type.IsRuntimeDeterminedSubtype)
-                {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
-                }
-                else
-                {
-                    if (ConstructedEETypeNode.CreationAllowed(type))
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
-                    else
-                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");

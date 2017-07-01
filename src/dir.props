@@ -1,6 +1,12 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
 
+  <!-- Workaround for https://github.com/dotnet/project-system/issues/2454 that is causing our solutions not to load -->
+  <PropertyGroup>
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU;x64;x86;arm;arm64</Platforms>
+  </PropertyGroup>
+
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('System.Private.')) and $(MSBuildProjectDirectory.EndsWith('src'))">
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/sdk</OutputPath>
     <UseCommonOutputDirectory>true</UseCommonOutputDirectory>

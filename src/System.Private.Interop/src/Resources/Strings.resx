@@ -363,4 +363,7 @@
   <data name="PInvoke_GetProcAddress" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
   </data>
+  <data name="TypeNotDelegate" xml:space="preserve">
+    <value>'Type '{0}' is not a delegate type.  EventTokenTable may only be used with delegate types.'</value>
+  </data>
 </root>

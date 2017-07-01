@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a method that doesn't have a body, but we need to track it because it's reflectable.
     /// </summary>
-    internal class ReflectableMethodNode : DependencyNodeCore<NodeFactory>
+    public class ReflectableMethodNode : DependencyNodeCore<NodeFactory>
     {
         private MethodDesc _method;
 

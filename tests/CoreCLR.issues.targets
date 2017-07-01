@@ -11,6 +11,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\pow\pow1\pow1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\NaN\intrinsic_cs_r\intrinsic_cs_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\Samples\gc\gc.*" />
+    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
 
     <!-- Infinite generic expansion -->
     <!-- https://github.com/dotnet/corert/issues/363 -->
@@ -488,10 +489,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalNStruct\finalnstructresur\finalnstructresur.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakGen\leakgen\leakgen.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.*" />
-
-    <!-- InteropExtensions.MightBeBlittable is only an approximation -->
-    <!-- https://github.com/dotnet/corert/issues/2355 -->
-    <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
 
     <!-- Pay for play reflection -->
     <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\system\delegate\miscellaneous\ClosedStatic\ClosedStatic.*" />

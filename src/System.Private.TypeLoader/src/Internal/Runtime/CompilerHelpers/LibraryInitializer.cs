@@ -4,6 +4,7 @@
 
 using System;
 
+using Internal.Runtime.DebuggerSupport;
 using Internal.Runtime.TypeLoader;
 
 namespace Internal.Runtime.CompilerHelpers

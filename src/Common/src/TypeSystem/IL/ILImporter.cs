@@ -403,7 +403,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.jmp:
                         ImportJmp(ReadILToken());
-                        break;
+                        return;
                     case ILOpcode.call:
                         ImportCall(opCode, ReadILToken());
                         break;
@@ -878,6 +878,10 @@ namespace Internal.IL
                     default:
                         throw new BadImageFormatException("Invalid opcode");
                 }
+
+                // Check if control falls through the end of method.
+                if (_currentOffset >= _basicBlocks.Length)
+                    throw new TypeSystemException.InvalidProgramException();
 
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock != null)

@@ -51,7 +51,17 @@ namespace Internal.IL.Stubs
             }
             else if (exceptionType == typeof(TypeSystemException.InvalidProgramException))
             {
+                //
+                // There are two ThrowInvalidProgramException helpers. Find the one which matches the number of
+                // arguments "exception" was initialized with.
+                //
+
                 helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+
+                if (helper.Signature.Length != exception.Arguments.Count + 1)
+                {
+                    helper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramExceptionWithArgument");
+                }
             }
             else if (exceptionType == typeof(TypeSystemException.BadImageFormatException))
             {

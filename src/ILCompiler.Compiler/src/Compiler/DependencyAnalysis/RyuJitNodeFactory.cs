@@ -13,8 +13,8 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class RyuJitNodeFactory : NodeFactory
     {
         public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
-            NameMangler nameMangler, VTableSliceProvider vtableSliceProvider)
-            : base(context, compilationModuleGroup, metadataManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider)
+            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider)
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider)
         {
         }
 

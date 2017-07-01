@@ -629,7 +629,28 @@ namespace Internal.Runtime.TypeLoader
             Func<object[], object> targetDelegate = _delegateData._helperObject as Func<object[], object>;
             Debug.Assert(targetDelegate != null);
 
-            s_pinnedGCHandles._returnObjectHandle.Target = targetDelegate(arguments ?? Array.Empty<object>());
+            object result = targetDelegate(arguments ?? Array.Empty<object>());
+            TypeHandle thValueType;
+            bool forceByRefUnused;
+
+            _calleeArgs.GetReturnType(out thValueType, out forceByRefUnused);
+
+            unsafe
+            {
+                if (!thValueType.IsNull() && thValueType.GetRuntimeTypeHandle().ToEETypePtr()->IsNullable)
+                {
+                    object nullableObj = RuntimeAugments.RawNewObject(thValueType.GetRuntimeTypeHandle());
+                    s_pinnedGCHandles._returnObjectHandle.Target = nullableObj;
+                    if (result != null)
+                    {
+                        RuntimeAugments.StoreValueTypeField(ref RuntimeAugments.GetRawData(nullableObj), result, thValueType.GetRuntimeTypeHandle());
+                    }
+                }
+                else
+                {
+                    s_pinnedGCHandles._returnObjectHandle.Target = result;
+                }
+            }
 
             return s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
         }

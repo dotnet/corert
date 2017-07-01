@@ -70,8 +70,14 @@ namespace ILCompiler
             }
         }
 
+        private static InteropStubManager NewEmptyInteropStubManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
+        {
+            // On Project N, the compiler doesn't generate the interop code on the fly
+            return new EmptyInteropStubManager(compilationModuleGroup, context, null);
+        }
+
         public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null)
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -169,7 +175,9 @@ namespace ILCompiler
                 ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticIndex, ThreadStaticsIndex, ThreadStaticsIndex);
             }
 
-            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this);
+            var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
+            InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             MetadataManager.AttachToDependencyGraph(graph);
         }
 

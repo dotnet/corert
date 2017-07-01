@@ -62,6 +62,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             var result = new DependencyList();
             result.Add(factory.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
+
+            // VTable slots of implemented interfaces are consulted during emission
+            foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)
+            {
+                result.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
+            }
+
             return result;
         }
 

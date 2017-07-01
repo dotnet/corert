@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
                     throw new ArgumentException(SR.Arg_NotIsomorphic);
                 }
 
-                if (!arrayObj.IsElementTypeBlittable())
+                if (!arrayObj.IsBlittable())
                 {
                     throw new ArgumentException(SR.Arg_NotIsomorphic);
                 }

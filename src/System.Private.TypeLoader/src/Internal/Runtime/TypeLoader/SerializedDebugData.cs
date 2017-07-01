@@ -236,7 +236,7 @@ namespace Internal.Runtime.TypeLoader
                     if (availableSize < requiredSize)
                         throw new OutOfMemoryException();
                 }
-                InteropExtensions.CopyToNative(src, 0, dst, src.Length);
+                PInvokeMarshal.CopyToNative(src, 0, dst, src.Length);
                 UpdatePhysicalBufferUsedSize();    // make sure that used physical buffer size is updated
             }
         }

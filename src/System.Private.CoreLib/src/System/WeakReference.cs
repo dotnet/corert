@@ -58,8 +58,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            Object target = info.GetValue("TrackedObject", typeof(Object));
-            bool trackResurrection = info.GetBoolean("TrackResurrection");
+            Object target = info.GetValue("TrackedObject", typeof(Object)); // Do not rename (binary serialization)
+            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             m_IsLongReference = trackResurrection;
             m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
@@ -231,8 +231,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue("TrackedObject", Target, typeof(Object));
-            info.AddValue("TrackResurrection", m_IsLongReference);
+            info.AddValue("TrackedObject", Target, typeof(Object)); // Do not rename (binary serialization)
+            info.AddValue("TrackResurrection", m_IsLongReference); // Do not rename (binary serialization)
         }
 
         // Free all system resources associated with this reference.
