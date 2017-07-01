@@ -1740,5 +1740,20 @@ namespace Internal.IL
         {
             throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
         }
+
+        private void ReportInvalidBranchTarget(int targetOffset)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ReportFallthroughAtEndOfMethod()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
