@@ -22,7 +22,56 @@ namespace ILCompiler.DependencyAnalysis
     /// are runtime-determined - the concrete dependency depends on the generic context the canonical
     /// entity is instantiated with.
     /// </remarks>
-    public class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
+    public abstract class DictionaryLayoutNode : DependencyNodeCore<NodeFactory>
+    {
+        private readonly TypeSystemEntity _owningMethodOrType;
+
+        public DictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
+        {
+            _owningMethodOrType = owningMethodOrType;
+            Validate();
+        }
+
+        [Conditional("DEBUG")]
+        private void Validate()
+        {
+            TypeDesc type = _owningMethodOrType as TypeDesc;
+            if (type != null)
+            {
+                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                Debug.Assert(type.IsDefType);
+            }
+            else
+            {
+                MethodDesc method = _owningMethodOrType as MethodDesc;
+                Debug.Assert(method != null && method.IsSharedByGenericInstantiations);
+            }
+        }
+
+        public abstract int GetSlotForEntry(GenericLookupResult entry);
+
+        public abstract IEnumerable<GenericLookupResult> Entries
+        {
+            get;
+        }
+
+        public abstract ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory);
+
+        public abstract void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary);
+
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
+
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+    }
+
+    public sealed class LazilyBuiltDictionaryLayoutNode : DictionaryLayoutNode
     {
         class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
@@ -33,14 +82,12 @@ namespace ILCompiler.DependencyAnalysis
             protected override int GetValueHashCode(GenericLookupResult value) => value.GetHashCode();
         }
 
-        private TypeSystemEntity _owningMethodOrType;
         private EntryHashTable _entries = new EntryHashTable();
         private volatile GenericLookupResult[] _layout;
 
-        public DictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
+        public LazilyBuiltDictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
+            : base(owningMethodOrType)
         {
-            _owningMethodOrType = owningMethodOrType;
-            Validate();
         }
 
         public void EnsureEntry(GenericLookupResult entry)
@@ -65,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public virtual int GetSlotForEntry(GenericLookupResult entry)
+        public override int GetSlotForEntry(GenericLookupResult entry)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -75,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public virtual IEnumerable<GenericLookupResult> Entries
+        public override IEnumerable<GenericLookupResult> Entries
         {
             get
             {
@@ -86,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
+        public override ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
         {
             if (_layout == null)
                 ComputeLayout();
@@ -100,23 +147,7 @@ namespace ILCompiler.DependencyAnalysis
             return templateEntries.ToArray();
         }
 
-        [Conditional("DEBUG")]
-        private void Validate()
-        {
-            TypeDesc type = _owningMethodOrType as TypeDesc;
-            if (type != null)
-            {
-                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
-                Debug.Assert(type.IsDefType);
-            }
-            else
-            {
-                MethodDesc method = _owningMethodOrType as MethodDesc;
-                Debug.Assert(method != null && method.IsSharedByGenericInstantiations);
-            }
-        }
-
-        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        public override void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
         {
             var context = new GenericLookupResultContext(dictionary.OwningEntity, dictionary.TypeInstantiation, dictionary.MethodInstantiation);
 
@@ -133,16 +164,5 @@ namespace ILCompiler.DependencyAnalysis
 #endif
             }
         }
-
-        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
-
-        public override bool HasConditionalStaticDependencies => false;
-        public override bool HasDynamicDependencies => false;
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-        public override bool StaticDependenciesAreComputed => true;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
     }
 }
