@@ -67,14 +67,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             // When the helper call gets marked, ensure the generic layout for the associated dictionaries
             // includes the signature.
-            factory.GenericDictionaryLayout(_dictionaryOwner).EnsureEntry(_lookupSignature);
+            ((LazilyBuiltDictionaryLayoutNode)factory.GenericDictionaryLayout(_dictionaryOwner)).EnsureEntry(_lookupSignature);
 
             if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
                 factory.TypeSystemContext.HasLazyStaticConstructor((TypeDesc)_target))
             {
                 // If the type has a lazy static constructor, we also need the non-GC static base
                 // because that's where the class constructor context is.
-                factory.GenericDictionaryLayout(_dictionaryOwner).EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
+                ((LazilyBuiltDictionaryLayoutNode)factory.GenericDictionaryLayout(_dictionaryOwner)).EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
             }
         }
 

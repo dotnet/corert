@@ -445,7 +445,7 @@ namespace System.Runtime
             InstructionFaultFlag = 0x10
         }
 
-        [StackOnly]
+        [IsByRefLike]
         [StructLayout(LayoutKind.Explicit)]
         public struct ExInfo
         {
