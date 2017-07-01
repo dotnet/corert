@@ -31,7 +31,7 @@
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Runtime\CachedInterfaceDispatch.cs" />
-    <Compile Include="System\Runtime\CompilerServices\StackOnlyAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
     <Compile Include="System\Runtime\DispatchResolve.cs" />
     <Compile Include="System\Runtime\GCStress.cs" />
   </ItemGroup>
