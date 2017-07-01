@@ -18,7 +18,4 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
     public sealed class BoundsCheckingAttribute : Attribute { }
 #endif
-
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class StackOnlyAttribute : Attribute { }
 }

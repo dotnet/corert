@@ -7,5 +7,7 @@ using System;
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Struct)]
-    internal sealed class StackOnlyAttribute : Attribute { }
+    internal sealed class IsByRefLikeAttribute : Attribute
+    {
+    }
 }
