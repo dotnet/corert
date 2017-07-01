@@ -464,7 +464,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
             {
-                return new DictionaryLayoutNode(methodOrType);
+                return new LazilyBuiltDictionaryLayoutNode(methodOrType);
             });
 
             _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
