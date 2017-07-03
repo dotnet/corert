@@ -139,7 +139,8 @@
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
+    <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
+    <Compile Include="Internal\Runtime\Augments\AsyncCausalityTracer.cs" />
     <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
