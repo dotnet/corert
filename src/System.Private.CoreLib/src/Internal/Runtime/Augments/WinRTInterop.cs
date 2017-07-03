@@ -57,44 +57,6 @@ namespace Internal.Runtime.Augments
         private const string c_EarlyCallingExceptionMessage = "WinRT Interop has not been initialized yet. If trying to access something in a static variable initialization or static constructor try to do this work lazily on first use instead.";
     }
 
-    public enum CausalityRelation
-    {
-        AssignDelegate = 0,
-        Join = 1,
-        Choice = 2,
-        Cancel = 3,
-        Error = 4,
-    }
-
-    public enum CausalitySource
-    {
-        Application = 0,
-        Library = 1,
-        System = 2,
-    }
-
-    public enum CausalityTraceLevel
-    {
-        Required = 0,
-        Important = 1,
-        Verbose = 2,
-    }
-
-    public enum AsyncStatus
-    {
-        Started = 0,
-        Completed = 1,
-        Canceled = 2,
-        Error = 3,
-    }
-
-    public enum CausalitySynchronousWork
-    {
-        CompletionNotification = 0,
-        ProgressNotification = 1,
-        Execution = 2,
-    }
-
     [CLSCompliant(false)]
     public abstract class WinRTInteropCallbacks
     {
