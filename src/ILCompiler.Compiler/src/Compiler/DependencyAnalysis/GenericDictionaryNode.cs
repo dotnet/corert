@@ -59,12 +59,15 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
             builder.RequireInitialPointerAlignment();
 
+            DictionaryLayoutNode layout = GetDictionaryLayout(factory);
+
             // Node representing the generic dictionary doesn't have any dependencies for
             // dependency analysis purposes. The dependencies are tracked as dependencies of the
             // concrete method bodies. When we reach the object data emission phase, the dependencies
             // should all already have been marked.
-            if (!relocsOnly)
+            if (layout.HasFixedSlots || !relocsOnly)
             {
+                // TODO: pass the layout we already have to EmitDataInternal
                 EmitDataInternal(ref builder, factory);
             }
 
@@ -206,6 +209,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
+
+            dependencies.Add(GetDictionaryLayout(factory), "Layout");
+
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);

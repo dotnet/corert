@@ -13,6 +13,8 @@ using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     /// <summary>
@@ -100,6 +102,11 @@ namespace ILCompiler
             return new ScannedVTableProvider(MarkedNodes);
         }
 
+        public DictionaryLayoutProvider GetDictionaryLayoutInfo()
+        {
+            return new ScannedDictionaryLayoutProvider(MarkedNodes);
+        }
+
         private class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -124,6 +131,49 @@ namespace ILCompiler
                     return new PrecomputedVTableSliceNode(type, _vtableSlices[type]);
                 else
                     return new LazilyBuiltVTableSliceNode(type);
+            }
+        }
+
+        private class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
+        {
+            private Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>> _layouts = new Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>>();
+
+            public ScannedDictionaryLayoutProvider(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var node in markedNodes)
+                {
+                    var layoutNode = node as DictionaryLayoutNode;
+                    if (layoutNode != null)
+                    {
+                        TypeSystemEntity owningMethodOrType = layoutNode.OwningMethodOrType;
+                        _layouts.Add(owningMethodOrType, layoutNode.Entries);
+                    }
+                }
+            }
+
+            internal override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
+            {
+                if (methodOrType is TypeDesc type)
+                {
+                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
+                    // https://github.com/dotnet/corert/issues/3873
+                    if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                        return new PrecomputedDictionaryLayoutNode(type, _layouts[type]);
+                    else
+                        return new LazilyBuiltDictionaryLayoutNode(type);
+                }
+                else
+                {
+                    Debug.Assert(methodOrType is MethodDesc);
+                    MethodDesc method = (MethodDesc)methodOrType;
+
+                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
+                    // https://github.com/dotnet/corert/issues/3873
+                    if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod)
+                        return new PrecomputedDictionaryLayoutNode(method, _layouts[method]);
+                    else
+                        return new LazilyBuiltDictionaryLayoutNode(method);
+                }
             }
         }
     }

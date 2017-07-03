@@ -77,7 +77,7 @@ namespace ILCompiler
         }
 
         public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null)
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, new UtcDictionaryLayoutProvider())
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -120,11 +120,6 @@ namespace ILCompiler
             _importedThreadStaticsIndices = new NodeCache<MetadataType, ImportedThreadStaticsIndexNode>((MetadataType type) =>
             {
                 return new ImportedThreadStaticsIndexNode(this);
-            });
-
-            _hostedGenericDictionaryLayouts = new NodeCache<TypeSystemEntity, UtcDictionaryLayoutNode>((TypeSystemEntity methodOrType) =>
-            {
-                return new UtcDictionaryLayoutNode(methodOrType);
             });
 
             _nonExternMethodSymbols = new NodeCache<MethodKey, NonExternMethodSymbolNode>((MethodKey method) =>
@@ -302,13 +297,6 @@ namespace ILCompiler
             }
         }
 
-        private NodeCache<TypeSystemEntity, UtcDictionaryLayoutNode> _hostedGenericDictionaryLayouts;
-
-        public override DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
-        {
-            return _hostedGenericDictionaryLayouts.GetOrAdd(methodOrType);
-        }
-
         private NodeCache<MethodKey, NonExternMethodSymbolNode> _nonExternMethodSymbols;
 
         public NonExternMethodSymbolNode NonExternMethodSymbol(MethodDesc method, bool isUnboxingStub)
@@ -321,6 +309,14 @@ namespace ILCompiler
         public StandaloneGCStaticDescRegionNode StandaloneGCStaticDescRegion(GCStaticDescNode staticDesc)
         {
             return _standaloneGCStaticDescs.GetOrAdd(staticDesc);
+        }
+
+        private class UtcDictionaryLayoutProvider : DictionaryLayoutProvider
+        {
+            internal override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
+            {
+                return new UtcDictionaryLayoutNode(methodOrType);
+            }
         }
     }
 }
