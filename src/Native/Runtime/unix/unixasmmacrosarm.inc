@@ -170,3 +170,18 @@ C_FUNC(\Name):
         bl C_FUNC(NYI_Assert)
 .endm
 #endif
+
+// thumb with PIC version
+.macro INLINE_GET_TLS_VAR Var
+        ldr     r0, 2f
+1:
+        add     r0, pc, r0
+        bl      __tls_get_addr(PLT)
+2:
+        .4byte  \Var(TLSGD) + (. - 1b - 4)
+.endm
+
+.macro INLINE_GETTHREAD
+        // Inlined version of call C_FUNC(RhpGetThread)
+        INLINE_GET_TLS_VAR tls_CurrentThread
+.endm
