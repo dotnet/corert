@@ -38,18 +38,18 @@ namespace Internal.IL
 
     partial class ILImporter
     {
-        MethodDesc _method;
-        MethodSignature _methodSignature;
-        TypeSystemContext _typeSystemContext;
+        readonly MethodDesc _method;
+        readonly MethodSignature _methodSignature;
+        readonly TypeSystemContext _typeSystemContext;
 
-        TypeDesc _thisType;
+        readonly TypeDesc _thisType;
 
-        MethodIL _methodIL;
-        byte[] _ilBytes;
-        LocalVariableDefinition[] _locals;
+        readonly MethodIL _methodIL;
+        readonly byte[] _ilBytes;
+        readonly LocalVariableDefinition[] _locals;
 
-        bool _initLocals;
-        int _maxStack;
+        readonly bool _initLocals;
+        readonly int _maxStack;
 
         bool[] _instructionBoundaries; // For IL verification
 
@@ -123,13 +123,17 @@ namespace Internal.IL
             _typeSystemContext = method.Context;
 
             if (!_methodSignature.IsStatic)
-                _thisType = method.OwningType.InstantiateAsOpen();
+            {
+                var thisType = method.OwningType.InstantiateAsOpen();
 
-            // ECMA-335 II.13.3 Methods of value types, P. 164:
-            // ... By contrast, instance and virtual methods of value types shall be coded to expect a
-            // managed pointer(see Partition I) to an unboxed instance of the value type. ...
-            if (_thisType != null && _thisType.IsValueType)
-                _thisType = _thisType.MakeByRefType();
+                // ECMA-335 II.13.3 Methods of value types, P. 164:
+                // ... By contrast, instance and virtual methods of value types shall be coded to expect a
+                // managed pointer(see Partition I) to an unboxed instance of the value type. ...
+                if (thisType.IsValueType)
+                    thisType = thisType.MakeByRefType();
+
+                _thisType = thisType;
+            }
 
             _methodIL = methodIL;
 
