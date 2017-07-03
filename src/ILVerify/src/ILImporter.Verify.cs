@@ -170,7 +170,7 @@ namespace Internal.IL
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
                     var r = _exceptionRegions[j].ILRegion;
-                    // Check whether offset is within [TryOffset, TryOffset + TryLength[
+                    // Check if offset is within the range [TryOffset, TryOffset + TryLength[
                     if (r.TryOffset <= offset && offset < r.TryOffset + r.TryLength)
                     {
                         if (!basicBlock.TryIndex.HasValue)
@@ -189,7 +189,7 @@ namespace Internal.IL
                             }
                         }
                     }
-                    // Check whether offset within [HandlerOffset, HandlerOffset + HandlerLength[
+                    // Check if offset is within the range [HandlerOffset, HandlerOffset + HandlerLength[
                     if (r.HandlerOffset <= offset && offset < r.HandlerOffset + r.HandlerLength)
                     {
                         if (!basicBlock.HandlerIndex.HasValue)
@@ -208,7 +208,7 @@ namespace Internal.IL
                             }
                         }
                     }
-                    // Check whether offset within [FilterOffset, HandlerOffset[
+                    // Check if offset is within the range [FilterOffset, HandlerOffset[
                     if (r.FilterOffset != -1 && r.FilterOffset <= offset && offset < r.HandlerOffset )
                     {
                         if(!basicBlock.FilterIndex.HasValue)
