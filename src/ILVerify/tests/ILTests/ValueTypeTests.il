@@ -13,7 +13,7 @@
 .class public sequential ansi sealed beforefieldinit ValueTypeTests
        extends [System.Runtime]System.ValueType
 {
-    .field public int32 counter
+    .size 1
     .method public instance void CallThis() cil managed
     {
         ret
