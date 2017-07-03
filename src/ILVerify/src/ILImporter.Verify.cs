@@ -125,6 +125,12 @@ namespace Internal.IL
             if (!_methodSignature.IsStatic)
                 _thisType = method.OwningType.InstantiateAsOpen();
 
+            // ECMA-335 II.13.3 Methods of value types, P. 164:
+            // ... By contrast, instance and virtual methods of value types shall be coded to expect a
+            // managed pointer(see Partition I) to an unboxed instance of the value type. ...
+            if (_thisType != null && _thisType.IsValueType)
+                _thisType = _thisType.MakeByRefType();
+
             _methodIL = methodIL;
 
             _initLocals = _methodIL.IsInitLocals;
