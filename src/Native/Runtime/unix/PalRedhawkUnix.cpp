@@ -120,6 +120,12 @@ typedef union _LARGE_INTEGER {
     int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
 
+struct FILETIME
+{
+    uint32_t dwLowDateTime;
+    uint32_t dwHighDateTime;
+};
+
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void* PCONTEXT;
 typedef void* PEXCEPTION_RECORD;
@@ -1015,12 +1021,6 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
     pthread_mutex_unlock(&lpCriticalSection->mutex);
 }
 
-extern "C" unsigned __int64  __readgsqword(unsigned long Offset)
-{
-    // UNIXTODO: The TLS stuff needs to be better abstracted.
-    return 0;
-}
-
 extern "C" UInt32_BOOL IsDebuggerPresent()
 {
     // UNIXTODO: Implement this function
@@ -1077,24 +1077,6 @@ extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3,
 {
     // UNIXTODO: Implement this function
     return 0;
-}
-
-extern "C" HANDLE GetProcessHeap()
-{
-    // UNIXTODO: Consider using some special value?
-    return (HANDLE)1;
-}
-
-extern "C" void* HeapAlloc(HANDLE heap, UInt32 flags, UIntNative bytes)
-{
-    return malloc(bytes);
-}
-
-extern "C" UInt32_BOOL HeapFree(HANDLE heap, UInt32 flags, void * mem)
-{
-    free(mem);
-
-    return UInt32_TRUE;
 }
 
 typedef UInt32 (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
@@ -1328,6 +1310,21 @@ extern "C" void FlushProcessWriteBuffers()
 
     status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
     FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
+}
+
+static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
+
+extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
+{
+    struct timeval time = { 0 };
+    gettimeofday(&time, NULL);
+
+    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
+        (time.tv_usec * 10);
+
+    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
+    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)

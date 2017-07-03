@@ -20,7 +20,6 @@ class RuntimeInstance
     friend struct DefaultSListTraits<RuntimeInstance>;
     friend class Thread;
 
-    PTR_RuntimeInstance         m_pNext;
     PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
     SList<Module>               m_ModuleList;
@@ -164,7 +163,7 @@ public:
     Module * FindModuleByReadOnlyDataAddress(PTR_VOID Data);
     Module * FindModuleByOsHandle(HANDLE hOsHandle);
     PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
-    bool EnableConservativeStackReporting();
+    void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
 #ifdef FEATURE_DYNAMIC_CODE
@@ -184,7 +183,7 @@ public:
     typedef void (* EnumerateModulesCallbackPFN)(Module *pModule, void *pvContext);
     void EnumerateModulesUnderLock(EnumerateModulesCallbackPFN pCallback, void *pvContext);
 
-    static  RuntimeInstance *   Create(HANDLE hPalInstance);
+    static bool Initialize(HANDLE hPalInstance);
     void Destroy();
 
     void EnumStaticGCRefDescs(void * pfnCallback, void * pvCallbackData);

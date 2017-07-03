@@ -52,8 +52,6 @@ ASM_SIZEOF(   14,    20, EHEnum)
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
 ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
-ASM_OFFSET(    4,     8, RuntimeInstance, m_pThreadStore)
-
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
 #ifndef BIT64
