@@ -170,8 +170,8 @@ namespace Internal.IL
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
                     var r = _exceptionRegions[j].ILRegion;
-
-                    if (r.TryOffset <= offset && r.TryOffset + r.TryLength >= offset)
+                    // Check whether offset is within [TryOffset, TryOffset + TryLength[
+                    if (r.TryOffset <= offset && offset < r.TryOffset + r.TryLength)
                     {
                         if (!basicBlock.TryIndex.HasValue)
                         {
@@ -189,7 +189,8 @@ namespace Internal.IL
                             }
                         }
                     }
-                    if (r.HandlerOffset <= offset && r.HandlerOffset + r.HandlerLength >= offset)
+                    // Check whether offset within [HandlerOffset, HandlerOffset + HandlerLength[
+                    if (r.HandlerOffset <= offset && offset < r.HandlerOffset + r.HandlerLength)
                     {
                         if (!basicBlock.HandlerIndex.HasValue)
                         {
@@ -207,7 +208,8 @@ namespace Internal.IL
                             }
                         }
                     }
-                    if(r.FilterOffset != -1 && r.FilterOffset <= offset && r.HandlerOffset - 1 >= offset)
+                    // Check whether offset within [FilterOffset, HandlerOffset[
+                    if (r.FilterOffset != -1 && r.FilterOffset <= offset && offset < r.HandlerOffset )
                     {
                         if(!basicBlock.FilterIndex.HasValue)
                         {
@@ -547,6 +549,8 @@ namespace Internal.IL
 
             if (basicBlock.EntryStack?.Length > 0)
             {
+                if (_stack == null || _stack.Length < basicBlock.EntryStack.Length)
+                    Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
                 _stackTop = basicBlock.EntryStack.Length;
             }
