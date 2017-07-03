@@ -32,7 +32,8 @@ build_managed_corert()
         __ExtraMsBuildArgs="$__ExtraMsBuildArgs /p:BinDirPlatform=armel"
     fi
 
-    $__dotnetclipath/dotnet msbuild "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Restore /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
+    # Workaround https://github.com/dotnet/corert/issues/4014 : !!!
+    $__dotnetclipath/dotnet msbuild "$__buildproj" /m:1 /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Restore /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:CleanedTheBuild=$__CleanBuild /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
     export BUILDERRORLEVEL=$?
 
     echo

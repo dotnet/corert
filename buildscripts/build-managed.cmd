@@ -40,7 +40,7 @@ set "NUGET_PACKAGES=%__PackagesDir%"
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
 
-"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=win7-x64 /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=win7-x64 /m:1 /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
 rem Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
