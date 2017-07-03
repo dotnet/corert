@@ -409,7 +409,9 @@ namespace System.Runtime.InteropServices
 
         #region "SizeOf Helpers"
         /// <summary>
-        /// Returns the aligned size of an instance of a value type.
+        /// Returns the size that SafeBuffer (and hence, UnmanagedMemoryAccessor) reserves in the unmanaged buffer for each element of an array of T. This is not the same
+        /// value that sizeof(T) returns! Since the primary use case is to parse memory mapped files, we cannot change this algorithm as this defines a de-facto serialization format.
+        /// Throws if T is not blittable.
         /// </summary>
         internal static uint AlignedSizeOf<T>() where T : struct
         {
@@ -418,15 +420,14 @@ namespace System.Runtime.InteropServices
             {
                 return size;
             }
-            if (IntPtr.Size == 8 && size == 4)
-            {
-                return size;
-            }
 
             return (uint)(((size + 3) & (~3)));
         }
 
-        private static uint SizeOf<T>() where T : struct
+        /// <summary>
+        /// Returns same value as sizeof(T) but throws if T is not blittable.
+        /// </summary>
+        internal static uint SizeOf<T>() where T : struct
         {
             RuntimeTypeHandle structureTypeHandle = typeof(T).TypeHandle;
             if (!structureTypeHandle.IsBlittable())
