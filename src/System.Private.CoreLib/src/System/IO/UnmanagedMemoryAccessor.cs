@@ -490,8 +490,32 @@ namespace System.IO
         /// </summary>
         public void Read<T>(Int64 position, out T structure) where T : struct
         {
-            int sizeOfType = Unsafe.SizeOf<T>();
-            EnsureSafeToRead(position, sizeOfType);
+            if (position < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+            }
+            if (!CanRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_Reading);
+            }
+
+            uint sizeOfT = SafeBuffer.SizeOf<T>();
+            if (position > _capacity - sizeOfT)
+            {
+                if (position >= _capacity)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToRead, typeof(T)), nameof(position));
+                }
+            }
 
             structure = _buffer.Read<T>((UInt64)(_offset + position));
         }
@@ -519,13 +543,29 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-            Contract.EndContractBlock();
+            if (!CanRead)
+            {
+                if (!_isOpen)
+                {
+                    throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.NotSupported_Reading);
+                }
+            }
+            if (position < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
 
-            EnsureSafeToRead(position, 0);
+            uint sizeOfT = SafeBuffer.AlignedSizeOf<T>();
 
-            // ask for fewer Ts if count is too big
-
-            UInt32 sizeOfT = SafeBuffer.AlignedSizeOf<T>();
+            // only check position and ask for fewer Ts if count is too big
+            if (position >= _capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+            }
 
             int n = count;
             long spaceLeft = _capacity - position;
@@ -865,8 +905,31 @@ namespace System.IO
         /// </summary>
         public void Write<T>(Int64 position, ref T structure) where T : struct
         {
-            int sizeOfType = Unsafe.SizeOf<T>();
-            EnsureSafeToWrite(position, sizeOfType);
+            if (position < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+            }
+            if (!CanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_Writing);
+            }
+
+            uint sizeOfT = SafeBuffer.SizeOf<T>();
+            if (position > _capacity - sizeOfT)
+            {
+                if (position >= _capacity)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToWrite, typeof(T)), nameof(position));
+                }
+            }
 
             _buffer.Write<T>((UInt64)(_offset + position), structure);
         }
@@ -892,17 +955,22 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-            Contract.EndContractBlock();
-
-            EnsureSafeToWrite(position, 0);
-
-            UInt32 sizeOfT = SafeBuffer.AlignedSizeOf<T>();
-
-            long spaceLeft = _capacity - position;
-            ulong spaceNeeded = (ulong)(sizeOfT * count);
-            if ((ulong)spaceLeft < spaceNeeded)
+            if (position < 0)
             {
-                throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (position >= Capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+            }
+
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+            }
+            if (!CanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_Writing);
             }
 
             _buffer.WriteArray<T>((UInt64)(_offset + position), array, offset, count);

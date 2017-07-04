@@ -268,7 +268,7 @@ namespace System.Runtime
             EEType* pTargetType = (EEType*)pvTargetType;
             EEType* pObjType = obj.EEType;
 
-            if (CastCache.AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource))
+            if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType))
                 return obj;
 
             // If object type implements ICastable then there's one more way to check whether it implements
@@ -744,7 +744,7 @@ namespace System.Runtime
             EEType* pTargetType = (EEType*)pvTargetEEType;
             EEType* pObjType = obj.EEType;
 
-            if (CastCache.AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource))
+            if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType))
                 return obj;
 
             Exception castError = null;
@@ -1109,6 +1109,24 @@ namespace System.Runtime
                     return true;
 
                 Key key = new Key(pSourceType, pTargetType, variation);
+                Entry entry = LookupInCache(s_cache, ref key);
+                if (entry == null)
+                    return CacheMiss(ref key);
+
+                return entry.Result;
+            }
+
+            // This method is an optimized and customized version of AreTypesAssignable that achieves better performance
+            // than AreTypesAssignableInternal through 2 significant changes
+            // 1. Removal of sourceType to targetType check (This propery must be known before calling this function. At time
+            //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
+            // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
+            //    high in performance impact.)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe bool AreTypesAssignableInternal_SourceNotTarget_BoxedSource(EEType* pSourceType, EEType* pTargetType)
+            {
+                Debug.Assert(pSourceType != pTargetType, "target is source");
+                Key key = new Key(pSourceType, pTargetType, AssignmentVariation.BoxedSource);
                 Entry entry = LookupInCache(s_cache, ref key);
                 if (entry == null)
                     return CacheMiss(ref key);
