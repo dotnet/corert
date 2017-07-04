@@ -1294,7 +1294,7 @@ namespace Internal.IL
 
             CheckIsByRef(address);
             if (!value.IsNullReference)
-                CheckIsAssignable(type, address.Type);
+                CheckIsAssignable(StackValue.CreateFromType(type), StackValue.CreateFromType(address.Type));
 
             CheckIsAssignable(value, StackValue.CreateFromType(type));
         }

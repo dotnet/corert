@@ -82,6 +82,14 @@
         ret
     }
 
+    .method static public hidebysig void StoreIndirect.AssignByteToBoolRef_Valid(bool&) cil managed
+    {
+        ldarg.0
+        ldc.i4.0
+        stind.i1
+        ret
+    }
+
     .method static public hidebysig void StoreObject.ValidTypeToken_Valid() cil managed
     {
         .locals init (object V_0)
