@@ -155,6 +155,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
+
+            dependencies.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
+
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));

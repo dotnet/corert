@@ -37,14 +37,6 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolNode.Offset => 0;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            return new DependencyList
-            {
-                new DependencyListEntry(GetDictionaryLayout(factory), "Dictionary layout"),
-            };
-        }
-
         public abstract bool IsExported(NodeFactory factory);
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
@@ -135,12 +127,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList result = null;
+            DependencyList result = result = new DependencyList();
+
+            result.Add(GetDictionaryLayout(factory), "Layout");
 
             if (factory.CompilationModuleGroup.ShouldPromoteToFullType(_owningType))
             {
-                result = new DependencyList();
-
                 // If the compilation group wants this type to be fully promoted, it means the EEType is going to be
                 // COMDAT folded with other EETypes generated in a different object file. This means their generic
                 // dictionaries need to have identical contents. The only way to achieve that is by generating

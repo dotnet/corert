@@ -797,7 +797,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            return Array.Empty<DependencyListEntry>();
+            return new DependencyListEntry[]
+            {
+                new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout"),
+            };
         }
 
         private int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
@@ -905,6 +908,8 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             yield return new DependencyListEntry(context.ConstructedTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Template EEType");
+
+            yield return new DependencyListEntry(context.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType()), "Dictionary layout");
 
             foreach (TypeDesc iface in _type.RuntimeInterfaces)
             {
