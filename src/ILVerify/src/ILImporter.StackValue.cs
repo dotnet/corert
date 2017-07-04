@@ -214,7 +214,9 @@ namespace Internal.IL
                 return false;
             }
 
-            return CastingHelper.CanCastTo(src, dst);
+            return CastingHelper.CanCastTo(
+                    src.ResolveSignatureVariable(_method),
+                    dst.ResolveSignatureVariable(_method));
         }
 
         bool IsAssignable(StackValue src, StackValue dst)
