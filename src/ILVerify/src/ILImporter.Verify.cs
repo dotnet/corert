@@ -1267,7 +1267,7 @@ namespace Internal.IL
             var address = Pop();
 
             if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
+                type = address.Type;
 
             CheckIsByRef(address);
             CheckIsAssignable(address.Type, type);

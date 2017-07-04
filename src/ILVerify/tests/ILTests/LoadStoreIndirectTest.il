@@ -34,6 +34,16 @@
         ret
     }
 
+    .method static public hidebysig void LoadIndirect.AssignRefStringToString_Valid(string&) cil managed
+    {
+        .locals init (
+            string V_0)
+        ldarg.0
+        ldind.ref
+        stloc.0
+        ret
+    }
+
     .method static public hidebysig void StoreIndirect.AssignToInt_Valid(int32&) cil managed
     {
         // arg = 0;
