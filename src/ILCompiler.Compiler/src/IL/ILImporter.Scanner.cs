@@ -44,6 +44,7 @@ namespace Internal.IL
             public bool HandlerStart;
         }
 
+        private bool _isReadOnly;
         private TypeDesc _constrained;
 
         private int _currentInstructionOffset;
@@ -205,6 +206,7 @@ namespace Internal.IL
         {
             // The instruction should have consumed any prefixes.
             _constrained = null;
+            _isReadOnly = false;
         }
 
         private void ImportJmp(int token)
@@ -275,7 +277,7 @@ namespace Internal.IL
 
             // If we're scanning the fallback body because scanning the real body failed, don't trigger cctor.
             // Accessing the cctor could have been a reason why we failed.
-            if (!_isFallbackBodyCompilation)
+            if (!_isFallbackBodyCompilation && !method.Signature.IsStatic)
             {
                 // Do we need to run the cctor?
                 TypeDesc owningType = runtimeDeterminedMethod.OwningType;
@@ -574,7 +576,12 @@ namespace Internal.IL
                             else
                                 _dependencies.Add(_factory.ConstructedTypeSymbol(runtimeDeterminedMethod.OwningType), reason);
                         }
-                            
+                        
+                        if (referencingArrayAddressMethod && !_isReadOnly)
+                        {
+                            // Address method is special - it expects an instantiation argument, unless a readonly prefix was applied.
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
+                        }
                     }
                 }
                 else
@@ -585,7 +592,7 @@ namespace Internal.IL
                     {
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
-                    else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
+                    else if (targetMethod.RequiresInstMethodTableArg() || (referencingArrayAddressMethod && !_isReadOnly))
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
@@ -836,6 +843,11 @@ namespace Internal.IL
             _constrained = (TypeDesc)_methodIL.GetObject(token);
         }
 
+        private void ImportReadOnlyPrefix()
+        {
+            _isReadOnly = true;
+        }
+
         private void ImportFieldAccess(int token, bool isStatic, string reason)
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
@@ -983,6 +995,15 @@ namespace Internal.IL
 
         private void ImportAddressOfElement(int token)
         {
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            if (elementType.IsGCPointer && !_isReadOnly)
+            {
+                if (elementType.IsRuntimeDeterminedSubtype)
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
+                else
+                    _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
+            }
+
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelema");
         }
 
@@ -1108,7 +1129,6 @@ namespace Internal.IL
         private void ImportVolatilePrefix() { }
         private void ImportTailPrefix() { }
         private void ImportNoPrefix(byte mask) { }
-        private void ImportReadOnlyPrefix() { }
         private void ImportThrow() { }
         private void ImportInitObj(int token) { }
         private void ImportLoadLength() { }
