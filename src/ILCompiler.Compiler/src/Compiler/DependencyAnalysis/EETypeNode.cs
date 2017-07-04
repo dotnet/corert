@@ -447,6 +447,18 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
+            if (!(this is CanonicalDefinitionEETypeNode))
+            {
+                foreach (DefType itf in _type.RuntimeInterfaces)
+                {
+                    if (itf == factory.ICastableInterface)
+                    {
+                        flags |= (UInt16)EETypeFlags.ICastableFlag;
+                        break;
+                    }
+                }
+            }
+
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
@@ -752,15 +764,6 @@ namespace ILCompiler.DependencyAnalysis
             if (metadataType != null && metadataType.IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
-            }
-
-            foreach (DefType itf in _type.RuntimeInterfaces)
-            {
-                if (itf == factory.ICastableInterface)
-                {
-                    flags |= (uint)EETypeRareFlags.ICastableFlag;
-                    break;
-                }
             }
 
             if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
