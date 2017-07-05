@@ -40,9 +40,9 @@ LEAF_ENTRY RhpNewFast, _TEXT
         EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(RhpNewFast_RarePath):
+        EPILOG_POP  "{r4,lr}"
         mov         r0, r1            // restore EEType
         mov         r1, #0
-        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
 
 LEAF_END RhpNewFast, _TEXT
@@ -51,8 +51,8 @@ LEAF_END RhpNewFast, _TEXT
 //  r0 == EEType
 //
 LEAF_ENTRY RhpNewFinalizable, _TEXT
-        mov	        r1, #GC_ALLOC_FINALIZE
-        b	          C_FUNC(RhpNewObject)
+        mov         r1, #GC_ALLOC_FINALIZE
+        b           C_FUNC(RhpNewObject)
 LEAF_END RhpNewFinalizable, _TEXT
 
 
@@ -76,7 +76,7 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         blx         C_FUNC(RhpGcAlloc)
 
         // Set the new object's EEType pointer on success.
-        cbz         r0, NewOutOfMemory
+        cbz         r0, LOCAL_LABEL(NewOutOfMemory)
         str         r5, [r0, #OFFSETOF__Object__m_pEEType]
 
         // If the object is bigger than RH_LARGE_OBJECT_SIZE, we must publish it to the BGC
@@ -184,7 +184,7 @@ LOCAL_LABEL(ArraySizeBig):
         // NOT an overflow exception
         // we already have the component size in r2
         umull       r2, r3, r2, r1
-        cbnz        r3, ArrayOutOfMemoryFinal
+        cbnz        r3, LOCAL_LABEL(ArrayOutOfMemoryFinal)
         ldr         r3, [r0, #OFFSETOF__EEType__m_uBaseSize]
         adds        r2, r3
         bcs         LOCAL_LABEL(ArrayOutOfMemoryFinal)
@@ -329,7 +329,7 @@ LEAF_END RhpNewFastAlign8, _TEXT
 //  r0 == EEType
 LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
         mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
-        b           RhpNewObject
+        b           C_FUNC(RhpNewObject)
 LEAF_END RhpNewFinalizableAlign8, _TEXT
 
 // Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
