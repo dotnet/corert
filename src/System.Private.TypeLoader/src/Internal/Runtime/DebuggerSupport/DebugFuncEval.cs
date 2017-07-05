@@ -151,8 +151,6 @@ namespace Internal.Runtime.DebuggerSupport
             uint offset = 0;
 
             NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
-            uint trash;
-            offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
             uint parameterCount;
             offset = reader.DecodeUnsigned(offset, out parameterCount);
             typesAndValues.parameterValues = new byte[parameterCount][];
@@ -229,8 +227,6 @@ namespace Internal.Runtime.DebuggerSupport
         {
             uint offset = 0;
             NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
-            uint trash;
-            offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
             ulong[] debuggerPreparedExternalReferences;
             offset = BuildDebuggerPreparedExternalReferences(reader, offset, out debuggerPreparedExternalReferences);
 
