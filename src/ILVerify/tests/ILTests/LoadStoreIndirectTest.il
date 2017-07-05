@@ -13,7 +13,7 @@
 .class public auto ansi beforefieldinit LoadStoreIndirectTestsType
        extends [System.Runtime]System.Object
 {
-    .method static public hidebysig void LoadIndirect.FromStringRef_Valid(string&) cil managed
+    .method static public hidebysig void LoadIndirectRef.FromStringRef_Valid(string&) cil managed
     {
         ldarg.0
         ldind.ref
@@ -34,7 +34,14 @@
         ret
     }
 
-    .method static public hidebysig void LoadIndirect.AssignRefStringToString_Valid(string&) cil managed
+    .method static public hidebysig void LoadIndirectRef.FromInt64Ref_Invalid_StackUnexpected(int64&) cil managed
+    {
+        ldarg.0
+        ldind.ref
+        ret
+    }
+
+    .method static public hidebysig void LoadIndirectRef.AssignRefStringToString_Valid(string&) cil managed
     {
         .locals init (
             string V_0)
