@@ -13,6 +13,7 @@ enum FuncEvalMode : uint32_t
 {
     RegularFuncEval = 1,
     NewStringWithLength = 2,
+    NewArray = 3,
 };
 
 enum DebuggerGcProtectionRequestKind : uint16_t
