@@ -16,7 +16,7 @@ namespace System.Threading
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
         {
             Debug.Assert(initialSignalCount >= 0, "Windows LowLevelLifoSemaphore does not support a negative signal count"); // TODO: Track actual signal count to enable this
-            _completionPort = Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, 0, 1);
+            _completionPort = Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, 1);
             Release(initialSignalCount);
         }
 
@@ -29,7 +29,7 @@ namespace System.Threading
         {
             for (int i = 0; i < count; i++)
             {
-                Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, 0, IntPtr.Zero);
+                Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero);
             }
             return 0; // TODO: Track actual signal count to calculate this
         }

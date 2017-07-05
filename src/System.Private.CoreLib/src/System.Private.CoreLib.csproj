@@ -528,6 +528,12 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QuerySystemInformation.cs">
+      <Link>Interop\Windows\kernel32\Interop.QuerySystemInformation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
@@ -582,6 +588,7 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
