@@ -103,10 +103,13 @@ namespace Internal.IL
 
         public DependencyList Import()
         {
-            if (_canonMethod.Signature.IsStatic)
+            TypeDesc owningType = _canonMethod.OwningType;
+            if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
             {
-                TypeDesc owningType = _canonMethod.OwningType;
-                if (!_isFallbackBodyCompilation && _factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
+                // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
+                // Otherwise follow the rules from ECMA-335 I.8.9.5.
+                if (!_isFallbackBodyCompilation &&
+                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
                 {
                     // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
@@ -273,30 +276,6 @@ namespace Internal.IL
                     reason = "ldvirtftn"; break;
                 default:
                     Debug.Assert(false); break;
-            }
-
-            // If we're scanning the fallback body because scanning the real body failed, don't trigger cctor.
-            // Accessing the cctor could have been a reason why we failed.
-            if (!_isFallbackBodyCompilation && !method.Signature.IsStatic)
-            {
-                // Do we need to run the cctor?
-                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
-                {
-                    // For beforefieldinit, we can wait for field access.
-                    if (!((MetadataType)owningType).IsBeforeFieldInit)
-                    {
-                        // Accessing the static base will trigger the cctor.
-                        if (owningType.IsRuntimeDeterminedSubtype)
-                        {
-                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
-                        }
-                        else
-                        {
-                            _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
-                        }
-                    }
-                }
             }
 
             if (opcode == ILOpcode.newobj)
