@@ -2455,4 +2455,10 @@
   <data name="Arg_PlatformNotSupported_AssemblyName_GetAssemblyName" xml:space="preserve">
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
+  <data name="NotSupported_OpenType" xml:space="preserve">
+    <value>Cannot create arrays of open type.</value>
+  </data>
+  <data name="NotSupported_ByRefLikeArray" xml:space="preserve">
+    <value>Cannot create arrays of ByRef-like values.</value>
+  </data>
 </root>
