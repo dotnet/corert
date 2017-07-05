@@ -1265,12 +1265,17 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var address = Pop();
+            CheckIsByRef(address);
 
             if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
-
-            CheckIsByRef(address);
-            CheckIsAssignable(address.Type, type);
+            {
+                CheckIsObjRef(address.Type);
+                type = address.Type;
+            }
+            else
+            {
+                CheckIsAssignable(address.Type, type);
+            }
             Push(StackValue.CreateFromType(type));
         }
 
@@ -1293,10 +1298,13 @@ namespace Internal.IL
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
             CheckIsByRef(address);
-            if (!value.IsNullReference)
-                CheckIsAssignable(type, address.Type);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(type));
+            var typeVal = StackValue.CreateFromType(type);
+            var addressVal = StackValue.CreateFromType(address.Type);
+            if (!value.IsNullReference)
+                CheckIsAssignable(typeVal, addressVal);
+
+            CheckIsAssignable(value, typeVal);
         }
 
         void ImportThrow()
