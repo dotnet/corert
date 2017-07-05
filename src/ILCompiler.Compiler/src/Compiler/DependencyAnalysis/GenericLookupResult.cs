@@ -50,7 +50,9 @@ namespace ILCompiler.DependencyAnalysis
         CheckArrayElementType, // check the array element type
         TypeSize,           // size of the type
         FieldOffset,        // field offset
-        CallingConvention,  // CallingConventionConverterThunk
+        CallingConvention_NoInstParam,      // CallingConventionConverterThunk NO_INSTANTIATING_PARAM
+        CallingConvention_HasInstParam,     // CallingConventionConverterThunk HAS_INSTANTIATING_PARAM
+        CallingConvention_MaybeInstParam,   // CallingConventionConverterThunk MAYBE_INSTANTIATING_PARAM
         VtableOffset,       // Offset of a virtual method into the type's vtable
         Constrained,        // ConstrainedCallDesc
     }

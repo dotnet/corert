@@ -1795,7 +1795,7 @@ namespace ILCompiler.DependencyAnalysis
             "NativeLayoutCallingConventionConverterGenericDictionarySlotNode" + _converterKind.ToString() +
              _signature.GetName();
 
-        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodLdToken;
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.CallingConventionConverter;
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
