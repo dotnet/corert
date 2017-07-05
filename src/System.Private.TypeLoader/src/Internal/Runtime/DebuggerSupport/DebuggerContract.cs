@@ -15,6 +15,7 @@ namespace Internal.Runtime.DebuggerSupport
         RegularFuncEval = 1,
         NewStringWithLength = 2,
         NewArray = 3,
+        NewParameterizedObjectNoConstructor = 4,
     }
 
     internal enum DebuggerResponseKind : uint

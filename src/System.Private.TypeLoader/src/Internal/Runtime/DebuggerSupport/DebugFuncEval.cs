@@ -138,6 +138,9 @@ namespace Internal.Runtime.DebuggerSupport
                 case FuncEvalMode.NewArray:
                     CreateNewArray(parameterBuffer, parameterBufferSize);
                     break;
+                case FuncEvalMode.NewParameterizedObjectNoConstructor:
+                    NewParameterizedObjectNoConstructor(parameterBuffer, parameterBufferSize);
+                    break;
 
                 default:
                     Debug.Assert(false, "Debugger provided an unexpected func eval mode.");
@@ -221,6 +224,33 @@ namespace Internal.Runtime.DebuggerSupport
             }
 
             LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
+        }
+
+        private unsafe static void NewParameterizedObjectNoConstructor(byte* parameterBuffer, uint parameterBufferSize)
+        {
+            uint offset = 0;
+            NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
+            ulong[] debuggerPreparedExternalReferences;
+            offset = BuildDebuggerPreparedExternalReferences(reader, offset, out debuggerPreparedExternalReferences);
+
+            NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
+            TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
+            nativeLayoutContext._module = null;
+            nativeLayoutContext._typeSystemContext = typeSystemContext;
+            nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
+            nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
+            nativeLayoutContext._debuggerPreparedExternalReferences = debuggerPreparedExternalReferences;
+
+            NativeParser parser = new NativeParser(reader, offset);
+            TypeDesc objectTypeDesc = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+
+            RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
+            object returnValue = RuntimeAugments.NewObject(objectTypeHandle);
+
+            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+            IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+            uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
         }
 
         private unsafe static void CreateNewArray(byte* parameterBuffer, uint parameterBufferSize)
