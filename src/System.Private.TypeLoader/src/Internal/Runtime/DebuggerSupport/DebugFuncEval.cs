@@ -243,6 +243,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             NativeParser parser = new NativeParser(reader, offset);
             TypeDesc objectTypeDesc = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+            TypeSystemContextFactory.Recycle(typeSystemContext);
 
             RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
             object returnValue = RuntimeAugments.NewObject(objectTypeHandle);
@@ -270,6 +271,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             NativeParser parser = new NativeParser(reader, offset);
             TypeDesc arrElementType = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+            TypeSystemContextFactory.Recycle(typeSystemContext);
 
             uint rank = parser.GetUnsigned();
             int[] dims = new int[rank];
@@ -285,11 +287,40 @@ namespace Internal.Runtime.DebuggerSupport
                 lowerBounds[i] = (int)parser.GetUnsigned();
             }
 
-            // Get type from typedesc and CreateInstance
             RuntimeTypeHandle typeHandle = arrElementType.GetRuntimeTypeHandle();
-            Type elmType = Type.GetTypeFromHandle(typeHandle);
+            RuntimeTypeHandle arrayTypeHandle = default(RuntimeTypeHandle);
+            Array returnValue;
+            // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank.
+            // Pass false for isMdArray, and rank == -1 for SzArrays
+            bool succeed = false;
+            if (rank == 1 && lowerBounds[0] == 0)
+            {
+                succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
+                    typeHandle,
+                    false,
+                    -1,
+                    out arrayTypeHandle);
+                Debug.Assert(succeed);
 
-            Array returnValue = Array.CreateInstance(elmType, dims, lowerBounds);
+                returnValue = Internal.Runtime.Augments.RuntimeAugments.NewArray(
+                              arrayTypeHandle,
+                              dims[0]);
+            }
+            else
+            {
+                succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
+                               typeHandle,
+                               true,
+                               (int)rank,
+                               out arrayTypeHandle
+                               );
+                Debug.Assert(succeed);
+                returnValue = Internal.Runtime.Augments.RuntimeAugments.NewMultiDimArray(
+                               arrayTypeHandle,
+                               dims,
+                               lowerBounds
+                               );
+            }
             GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
             IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
             uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
