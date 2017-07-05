@@ -13,11 +13,12 @@
 //  r0 == EEType
 LEAF_ENTRY RhpNewFast, _TEXT
         PROLOG_PUSH "{r4,lr}"
-        mov	        r1, r0
+        mov	        r4, r0 // save EEType
 
         // r0 = GetThread()
         INLINE_GETTHREAD
 
+        mov         r1, r4 // restore EEType
         // r1 contains EEType pointer
         ldr         r2, [r1, #OFFSETOF__EEType__m_uBaseSize]
 
@@ -113,6 +114,7 @@ NESTED_END RhpNewObject, _TEXT
 //  r0 == EEType
 //  r1 == element count
 LEAF_ENTRY RhpNewArray, _TEXT
+        PROLOG_PUSH "{r4,lr}"
         // we want to limit the element count to the non-negative 32-bit int range
         movw        r12, 0xffff
         movt        r12, (0x7fff >> 16)
@@ -136,15 +138,13 @@ LEAF_ENTRY RhpNewArray, _TEXT
 LOCAL_LABEL(ArrayAlignSize):
         bic         r2, r2, #3
 
-        mov         r3, r0
+        mov         r4, r0 // save EEType
 
         // r0 = GetThread()
         INLINE_GETTHREAD
 
-        // exchange r0 & r3
-        mov         r12, r3
-        mov         r3,  r0
-        mov         r0, r12
+        mov         r3, r0
+        mov         r0, r4 // restore EEType
 
         // r0 == EEType
         // r1 == element count
@@ -175,7 +175,7 @@ LOCAL_LABEL(ArrayAlignSize):
 
         // Return the object allocated in r0.
         mov         r0, r12
-        bx          lr
+        EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(ArraySizeBig):
 
@@ -194,6 +194,7 @@ LOCAL_LABEL(ArraySizeBig):
 
 LOCAL_LABEL(ArrayOutOfMemoryFinal):
 
+        EPILOG_POP  "{r4,lr}"
         // r0 holds EEType pointer already
         mov         r1, #0                  // Indicate that we should throw OOM.
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
@@ -203,6 +204,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         // 32-bit value. We're going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
+        EPILOG_POP  "{r4,lr}"
         // r0 holds EEType pointer already
         mov         r1, #1                  // Indicate that we should throw OverflowException
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
@@ -271,8 +273,9 @@ NESTED_END RhpNewArrayRare, _TEXT
 // Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
 //  r0 == EEType
 LEAF_ENTRY RhpNewFastAlign8, _TEXT
+        PROLOG_PUSH "{r4,lr}"
 
-        mov         r3, r0 // save EEType
+        mov         r4, r0 // save EEType
 
         // r0 = GetThread()
         INLINE_GETTHREAD
@@ -281,7 +284,7 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
 
         mov         r1, r0
-        mov         r0, r3
+        mov         r0, r4 // restore EEType
         // r0: EEType pointer
         // r1: Thread pointer
         // r2: base size
@@ -311,11 +314,12 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         // Return the object allocated in r0.
         mov         r0, r12
 
-        bx          lr
+        EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(Alloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8-byte alignment and no
         // finalization.
+        EPILOG_POP  "{r4,lr}"
         mov         r1, #GC_ALLOC_ALIGN8
         b           C_FUNC(RhpNewObject)
 
@@ -324,16 +328,17 @@ LEAF_END RhpNewFastAlign8, _TEXT
 // Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
 //  r0 == EEType
 LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
-        mov	     r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
-        b	       RhpNewObject
+        mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
+        b           RhpNewObject
 LEAF_END RhpNewFinalizableAlign8, _TEXT
 
 // Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
 // itself is 8 byte aligned).
 //  r0 == EEType
 LEAF_ENTRY RhpNewFastMisalign, _TEXT
+        PROLOG_PUSH "{r4,lr}"
 
-        mov         r3, r0 // save EEType
+        mov         r4, r0 // save EEType
 
         // r0 = GetThread()
         INLINE_GETTHREAD
@@ -342,7 +347,7 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
 
         mov         r1, r0
-        mov         r0, r3
+        mov         r0, r4 // restore EEType
         // r0: EEType pointer
         // r1: Thread pointer
         // r2: base size
@@ -373,11 +378,12 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         // Return the object allocated in r0.
         mov         r0, r12
 
-        bx          lr
+        EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(BoxAlloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8+4 byte alignment and no
         // finalization.
+        EPILOG_POP  "{r4,pc}"
         mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
         b           C_FUNC(RhpNewObject)
 
