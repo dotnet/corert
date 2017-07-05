@@ -38,6 +38,10 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeaturePortableThreadPool Condition="'$(FeaturePortableThreadPool)' == ''">false</FeaturePortableThreadPool>
+    <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
@@ -326,6 +330,8 @@
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
+    <Compile Include="System\Threading\LowLevelLock.cs" />
+    <Compile Include="System\Threading\LowLevelMonitor.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
@@ -457,8 +463,23 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
+      <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CriticalSection.cs">
+      <Link>Interop\Windows\kernel32\Interop.CriticalSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ConditionVariable.cs">
+      <Link>Interop\Windows\kernel32\Interop.ConditionVariable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetSystemTimes.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetSystemTimes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QueryPerformance.cs">
+      <Link>Interop\Windows\kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
@@ -514,10 +535,13 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="System\HighPerformanceCounter.Windows.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
+    <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
+    <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
-    <Compile Include="System\Threading\ThreadPool.Windows.cs" />
+    <Compile Include="System\Threading\ThreadPool.Windows.cs" Condition="'$(FeaturePortableThreadPool)' != 'true'" />
     <Compile Include="System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
@@ -542,6 +566,19 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Normalization.cs">
       <Link>Interop\Windows\mincore\Interop.Normalization.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
+    <Compile Include="System\Threading\ThreadPool.Portable.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolEventSource.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
@@ -600,22 +637,11 @@
     <Compile Include="System\Number.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPoolEventSource.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
-    <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
-    <Compile Include="System\Threading\ThreadPool.Unix.cs" />
     <Compile Include="System\Threading\Timer.Unix.cs" />
     <Compile Include="System\Threading\WaitHandle.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />
