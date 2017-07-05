@@ -376,6 +376,7 @@
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
     <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
+    <Compile Include="System\Threading\LowLevelLock.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
@@ -518,6 +519,12 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CompletionPort.cs">
+      <Link>Interop\Windows\kernel32\Interop.CompletionPort.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CriticalSection.cs">
+      <Link>Interop\Windows\kernel32\Interop.CriticalSection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
@@ -576,6 +583,8 @@
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
+    <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
+    <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
     <Compile Include="System\Threading\Mutex.Windows.cs" />
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
     <Compile Include="System\Threading\ThreadPool.Windows.cs" />
@@ -670,7 +679,6 @@
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
-    <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />

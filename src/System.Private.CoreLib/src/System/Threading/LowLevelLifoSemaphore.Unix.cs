@@ -8,13 +8,13 @@ namespace System.Threading
     /// A LIFO semaphore.
     /// Waits on this semaphore are uninterruptible.
     /// </summary>
-    internal sealed class LowLevelLifoSemaphore
+    internal sealed class LowLevelLifoSemaphore : IDisposable
     {
         private WaitSubsystem.WaitableObject _semaphore;
 
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
         {
-            _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(initialSignalCount, maximumSignalCount);
+            _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, maximumSignalCount);
         }
 
         public bool Wait(int timeoutMs)
@@ -25,6 +25,10 @@ namespace System.Threading
         public int Release(int count)
         {
             return WaitSubsystem.ReleaseSemaphore(_semaphore, count);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }
