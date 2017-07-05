@@ -27,7 +27,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed partial class MethodSignature
+    public sealed partial class MethodSignature : TypeSystemEntity
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
@@ -132,6 +132,8 @@ namespace Internal.TypeSystem
         {
             return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(_returnType.GetHashCode(), _parameters);
         }
+
+        public override TypeSystemContext Context => _returnType.Context;
     }
 
     /// <summary>
