@@ -447,14 +447,17 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
-            foreach (DefType itf in _type.RuntimeInterfaces)
+            if (!(this is CanonicalDefinitionEETypeNode))
             {
-                if (itf == factory.ICastableInterface)
+                foreach (DefType itf in _type.RuntimeInterfaces)
                 {
-                    flags |= (UInt16)EETypeFlags.ICastableFlag;
-                    break;
+                    if (itf == factory.ICastableInterface)
+                    {
+                        flags |= (UInt16)EETypeFlags.ICastableFlag;
+                        break;
+                    }
                 }
-            }
+            }               
 
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
