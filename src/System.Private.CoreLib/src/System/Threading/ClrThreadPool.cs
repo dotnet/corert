@@ -21,7 +21,7 @@ namespace System.Threading
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
-        private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
+        private int _cpuUtilization = 0;
 
 
         private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0);
@@ -88,7 +88,7 @@ namespace System.Threading
                         _minThreads = threads;
 
                         ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal < minThreads)
+                        while (counts.numThreadsGoal < _minThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = _minThreads;
@@ -137,7 +137,7 @@ namespace System.Threading
                         _maxThreads = threads;
 
                         ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal > maxThreads)
+                        while (counts.numThreadsGoal > _maxThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = _maxThreads;
