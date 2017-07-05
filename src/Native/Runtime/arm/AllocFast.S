@@ -68,9 +68,9 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         // r3: transition frame
 
         // Preserve the EEType in r5.
-        mov	        r5, r0
+        mov         r5, r0
 
-        ldr	        r2, [r0, #OFFSETOF__EEType__m_uBaseSize]    // cbSize
+        ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]    // cbSize
 
         // void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
         blx         C_FUNC(RhpGcAlloc)
@@ -101,8 +101,8 @@ LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mov	        r0, r5            // EEType pointer
-        mov	        r1, #0            // Indicate that we should throw OOM.
+        mov         r0, r5            // EEType pointer
+        mov         r1, #0            // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
 
