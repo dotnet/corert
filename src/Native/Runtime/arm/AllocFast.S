@@ -72,7 +72,7 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         ldr	        r2, [r0, #OFFSETOF__EEType__m_uBaseSize]    // cbSize
 
         // void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
-	      blx         C_FUNC(RhpGcAlloc)
+        blx         C_FUNC(RhpGcAlloc)
 
         // Set the new object's EEType pointer on success.
         cbz         r0, NewOutOfMemory
@@ -138,8 +138,8 @@ LOCAL_LABEL(ArrayAlignSize):
 
         mov         r3, r0
 
-	      // r0 = GetThread()
-	      INLINE_GETTHREAD
+        // r0 = GetThread()
+        INLINE_GETTHREAD
 
         // exchange r0 & r3
         mov         r12, r3
@@ -160,8 +160,8 @@ LOCAL_LABEL(ArrayAlignSize):
         bcs         C_FUNC(RhpNewArrayRare) // if we get a carry here, the array is too large to fit below 4 GB
 
         ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
-	      cmp         r2, r12
-	      bhi         C_FUNC(RhpNewArrayRare)
+        cmp         r2, r12
+        bhi         C_FUNC(RhpNewArrayRare)
 
         // Reload new object address into r12.
         ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -274,8 +274,8 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
 
         mov         r3, r0 // save EEType
 
-	      // r0 = GetThread()
-	      INLINE_GETTHREAD
+        // r0 = GetThread()
+        INLINE_GETTHREAD
 
         // Fetch object size into r2.
         ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
@@ -335,8 +335,8 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
 
         mov         r3, r0 // save EEType
 
-	      // r0 = GetThread()
-	      INLINE_GETTHREAD
+        // r0 = GetThread()
+        INLINE_GETTHREAD
 
         // Fetch object size into r2.
         ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
