@@ -135,6 +135,10 @@ namespace Internal.Runtime.DebuggerSupport
                 case FuncEvalMode.NewStringWithLength:
                     NewStringWithLength(parameterBuffer, parameterBufferSize);
                     break;
+                case FuncEvalMode.NewArray:
+                    CreateNewArray(parameterBuffer, parameterBufferSize);
+                    break;
+
                 default:
                     Debug.Assert(false, "Debugger provided an unexpected func eval mode.");
                     break;
@@ -144,21 +148,15 @@ namespace Internal.Runtime.DebuggerSupport
         private unsafe static void RegularFuncEval(byte* parameterBuffer, uint parameterBufferSize)
         {
             TypesAndValues typesAndValues = new TypesAndValues();
-
-            uint trash;
-            uint parameterCount;
-            uint parameterValueSize;
-            uint eeTypeCount;
-            ulong eeType;
             uint offset = 0;
 
             NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
-            offset = reader.DecodeUnsigned(offset, out trash); // The VertexSequence always generate a length, I don't really need it.
+            uint parameterCount;
             offset = reader.DecodeUnsigned(offset, out parameterCount);
-
             typesAndValues.parameterValues = new byte[parameterCount][];
             for (int i = 0; i < parameterCount; i++)
             {
+                uint parameterValueSize;
                 offset = reader.DecodeUnsigned(offset, out parameterValueSize);
                 byte[] parameterValue = new byte[parameterValueSize];
                 for (int j = 0; j < parameterValueSize; j++)
@@ -169,13 +167,8 @@ namespace Internal.Runtime.DebuggerSupport
                 }
                 typesAndValues.parameterValues[i] = parameterValue;
             }
-            offset = reader.DecodeUnsigned(offset, out eeTypeCount);
-            ulong[] debuggerPreparedExternalReferences = new ulong[eeTypeCount];
-            for (int i = 0; i < eeTypeCount; i++)
-            {
-                offset = reader.DecodeUnsignedLong(offset, out eeType);
-                debuggerPreparedExternalReferences[i] = eeType;
-            }
+            ulong[] debuggerPreparedExternalReferences;
+            offset = BuildDebuggerPreparedExternalReferences(reader, offset, out debuggerPreparedExternalReferences);
 
             TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
             bool hasThis;
@@ -228,6 +221,64 @@ namespace Internal.Runtime.DebuggerSupport
             }
 
             LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
+        }
+
+        private unsafe static void CreateNewArray(byte* parameterBuffer, uint parameterBufferSize)
+        {
+            uint offset = 0;
+            NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
+            ulong[] debuggerPreparedExternalReferences;
+            offset = BuildDebuggerPreparedExternalReferences(reader, offset, out debuggerPreparedExternalReferences);
+
+            NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
+            TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
+            nativeLayoutContext._module = null;
+            nativeLayoutContext._typeSystemContext = typeSystemContext;
+            nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
+            nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
+            nativeLayoutContext._debuggerPreparedExternalReferences = debuggerPreparedExternalReferences;
+
+            NativeParser parser = new NativeParser(reader, offset);
+            TypeDesc arrElementType = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+
+            uint rank = parser.GetUnsigned();
+            int[] dims = new int[rank];
+            int[] lowerBounds = new int[rank];
+
+            for (uint i = 0; i < rank; ++i)
+            {
+                dims[i] = (int)parser.GetUnsigned();
+            }
+
+            for (uint i = 0; i < rank; ++i)
+            {
+                lowerBounds[i] = (int)parser.GetUnsigned();
+            }
+
+            // Get type from typedesc and CreateInstance
+            RuntimeTypeHandle typeHandle = arrElementType.GetRuntimeTypeHandle();
+            Type elmType = Type.GetTypeFromHandle(typeHandle);
+
+            Array returnValue = Array.CreateInstance(elmType, dims, lowerBounds);
+            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+            IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+            uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
+            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
+        }
+
+        private unsafe static uint BuildDebuggerPreparedExternalReferences(NativeReader reader, uint offset, out ulong[] debuggerPreparedExternalReferences)
+        {
+            uint eeTypeCount;
+            offset = reader.DecodeUnsigned(offset, out eeTypeCount);
+            debuggerPreparedExternalReferences = new ulong[eeTypeCount];
+            for (int i = 0; i < eeTypeCount; i++)
+            {
+                ulong eeType;
+                offset = reader.DecodeUnsignedLong(offset, out eeType);
+                debuggerPreparedExternalReferences[i] = eeType;
+            }
+
+            return offset;
         }
 
         private unsafe static void NewStringWithLength(byte* parameterBuffer, uint parameterBufferSize)

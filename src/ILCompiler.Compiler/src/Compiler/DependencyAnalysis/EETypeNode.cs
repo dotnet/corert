@@ -457,7 +457,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
                     }
                 }
-            }
+            }               
 
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 

@@ -215,7 +215,7 @@ namespace Internal.Runtime.TypeLoader
             return !type.RuntimeTypeHandle.IsNull();
         }
 
-        private TypeDesc GetConstructedTypeFromParserAndNativeLayoutContext(ref NativeParser parser, NativeLayoutInfoLoadContext nativeLayoutContext)
+        internal TypeDesc GetConstructedTypeFromParserAndNativeLayoutContext(ref NativeParser parser, NativeLayoutInfoLoadContext nativeLayoutContext)
         {
             TypeDesc parsedType = nativeLayoutContext.GetType(ref parser);
             if (parsedType == null)
