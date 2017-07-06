@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -56,14 +55,14 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
-            RuntimeThread.InitializeThreadPoolThread();
-
+            var wrapper = ThreadPoolCallbackWrapper.Enter();
             GCHandle handle = (GCHandle)context;
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Constants.WaitTimeout);
             registeredWaitHandle.PerformCallback(timedOut);
+            wrapper.Exit();
         }
 
         private void PerformCallback(bool timedOut)
@@ -289,9 +288,11 @@ namespace System.Threading
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
-            RuntimeThread.InitializeThreadPoolThread();
+            var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
             ThreadPoolWorkQueue.Dispatch();
+            // We reset the thread after executing each callback
+            wrapper.Exit(resetThread: false);
         }
 
         internal static void QueueDispatch()

@@ -510,6 +510,12 @@ namespace System.Globalization
             }
         }
 
+        internal static void ResetThreadCulture()
+        {
+            s_currentThreadCulture = null;
+            s_currentThreadUICulture = null;
+        }
+
         public static CultureInfo InstalledUICulture
         {
             get
