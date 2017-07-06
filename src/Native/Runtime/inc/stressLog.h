@@ -494,20 +494,6 @@ struct StressLogChunk
     UInt32 dwSig2;         
 
 #ifndef DACCESS_COMPILE
-    static HANDLE s_LogChunkHeap; 
-
-    void * operator new (size_t)
-    {
-        _ASSERTE (s_LogChunkHeap != NULL);
-        //no need to zero memory because we could handle garbage contents
-        return PalHeapAlloc (s_LogChunkHeap, 0, sizeof (StressLogChunk));
-    }
-
-    void operator delete (void * chunk)
-    {
-        _ASSERTE (s_LogChunkHeap != NULL);
-        PalHeapFree (s_LogChunkHeap, 0, chunk);
-    }
 
     StressLogChunk (PTR_StressLogChunk p = NULL, PTR_StressLogChunk n = NULL)
         :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)    
@@ -701,7 +687,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
 inline ThreadStressLog::ThreadStressLog()
 {
     chunkListHead = chunkListTail = curWriteChunk = NULL;
-    StressLogChunk * newChunk =new StressLogChunk;        
+    StressLogChunk * newChunk = new (nothrow) StressLogChunk;        
     //OOM or in cantalloc region
     if (newChunk == NULL)
     {
@@ -754,7 +740,7 @@ FORCEINLINE bool ThreadStressLog::GrowChunkList ()
     {
         return FALSE;
     }
-    StressLogChunk * newChunk = new StressLogChunk (chunkListTail, chunkListHead);
+    StressLogChunk * newChunk = new (nothrow) StressLogChunk (chunkListTail, chunkListHead);
     if (newChunk == NULL)
     {
         return FALSE;
