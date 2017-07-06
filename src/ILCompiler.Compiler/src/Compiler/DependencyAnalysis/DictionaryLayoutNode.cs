@@ -94,16 +94,67 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            // Root the template for the type. In the future, we may want to control this via type reflectability instead.
+            if (_owningMethodOrType is MethodDesc)
+            {
+                yield return new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_owningMethodOrType), "Type loader template");
+            }
+            else
+            {
+                yield return new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout((TypeDesc) _owningMethodOrType), "Type loader template");
+            }
+
+            if (HasFixedSlots)
+            {
+                foreach (GenericLookupResult lookupResult in Entries)
+                {
+                    foreach (DependencyNodeCore<NodeFactory> dependency in lookupResult.NonRelocDependenciesFromUsage(factory))
+                    {
+                        yield return new DependencyListEntry(dependency, "GenericLookupResultDependency");
+                    }
+                }
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            Debug.Assert(HasFixedSlots);
+
+            NativeLayoutSavedVertexNode templateLayout;
+            if (_owningMethodOrType is MethodDesc)
+            {
+                templateLayout = factory.NativeLayout.TemplateMethodLayout((MethodDesc)_owningMethodOrType);
+            }
+            else
+            {
+                templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_owningMethodOrType);
+            }
+
+            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
+
+            foreach (var lookupSignature in Entries)
+            {
+                conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
+                                                                templateLayout,
+                                                                "Type loader template"));
+
+                // TODO: if the dictionary entry is a GC static base or thread static base, we also need the non-GC static
+                // base because the cctor context is there.
+            }
+
+            return conditionalDependencies;
+        }
+
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
 
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => HasFixedSlots;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
     }
 
     public sealed class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode

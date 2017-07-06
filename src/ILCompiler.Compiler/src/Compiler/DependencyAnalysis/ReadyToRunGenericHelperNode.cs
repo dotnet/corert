@@ -163,17 +163,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
-            // Root the template for the type while we're hitting its dictionary cells. In the future, we may
-            // want to control this via type reflectability instead.
-            if (_dictionaryOwner is MethodDesc)
-            {
-                dependencies.Add(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner), "Type loader template");
-            }
-            else
-            {
-                dependencies.Add(factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner), "Type loader template");
-            }
-
             return dependencies;
         }
 
