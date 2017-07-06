@@ -29,11 +29,13 @@ namespace Internal.Runtime.DebuggerSupport
     {
         private static void HighLevelDebugFuncEvalHelperWithVariables(ref TypesAndValues param, ref LocalVariableSet arguments)
         {
+            // Offset begins with 1 because we always skip setting the return value before we call the function
             int offset = 1;
             if (param.thisObj != null)
             {
+                // For constructors - caller does not pass the this pointer, instead, we constructed param.thisObj and pass it as the first argument
+                arguments.SetVar<object>(offset, param.thisObj);
                 offset++;
-                arguments.SetVar<object>(1, param.thisObj);
             }
             for (int i = 0; i < param.parameterValues.Length; i++)
             {
@@ -87,6 +89,7 @@ namespace Internal.Runtime.DebuggerSupport
                 }
                 else if (param.thisObj != null)
                 {
+                    // For constructors - the debugger would like to get 'this' back
                     returnValue = param.thisObj;
                 }
                 else if (!isVoid)
