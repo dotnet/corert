@@ -18,18 +18,17 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // r0 = GetThread()
         INLINE_GETTHREAD
 
-        mov         r1, r4 // restore EEType
-        // r1 contains EEType pointer
-        ldr         r2, [r1, #OFFSETOF__EEType__m_uBaseSize]
+        // r4 contains EEType pointer
+        ldr         r2, [r4, #OFFSETOF__EEType__m_uBaseSize]
 
         // r0: Thread pointer
-        // r1: EEType pointer
+        // r4: EEType pointer
         // r2: base size
 
         ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         add         r2, r3
-        ldr         r4, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
-        cmp         r2, r4
+        ldr         r1, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         r2, r1
         bhi         LOCAL_LABEL(RhpNewFast_RarePath)
 
         // set the new alloc pointer
@@ -40,7 +39,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(RhpNewFast_RarePath):
-        mov         r0, r1            // restore EEType
+        mov         r0, r4            // restore EEType
         mov         r1, #0
         EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
@@ -143,34 +142,31 @@ LOCAL_LABEL(ArrayAlignSize):
         // r0 = GetThread()
         INLINE_GETTHREAD
 
-        mov         r3, r0
-        mov         r0, r4 // restore EEType
-
-        // r0 == EEType
+        // r4 == EEType
         // r1 == element count
         // r2 == array size
-        // r3 == Thread*
+        // r0 == Thread*
 
         // Load potential new object address into r12.
-        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         adds        r2, r12
-        bcs         C_FUNC(RhpNewArrayRare) // if we get a carry here, the array is too large to fit below 4 GB
+        bcs         LOCAL_LABEL(RhpNewArray_RarePath) // if we get a carry here, the array is too large to fit below 4 GB
 
-        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         r2, r12
-        bhi         C_FUNC(RhpNewArrayRare)
+        bhi         LOCAL_LABEL(RhpNewArray_RarePath)
 
         // Reload new object address into r12.
-        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Update the alloc pointer to account for the allocation.
-        str         r2, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         r2, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new object's EEType pointer and element count.
-        str         r0, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
         str         r1, [r12, #OFFSETOF__Array__m_Length]
 
         // Return the object allocated in r0.
@@ -185,7 +181,7 @@ LOCAL_LABEL(ArraySizeBig):
         // we already have the component size in r2
         umull       r2, r3, r2, r1
         cbnz        r3, LOCAL_LABEL(ArrayOutOfMemoryFinal)
-        ldr         r3, [r0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         r3, [r4, #OFFSETOF__EEType__m_uBaseSize]
         adds        r2, r3
         bcs         LOCAL_LABEL(ArrayOutOfMemoryFinal)
         adds        r2, #3
@@ -194,7 +190,7 @@ LOCAL_LABEL(ArraySizeBig):
 
 LOCAL_LABEL(ArrayOutOfMemoryFinal):
 
-        // r0 holds EEType pointer already
+        mov         r0, r4 // restore EEType
         mov         r1, #0                  // Indicate that we should throw OOM.
         EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
@@ -204,10 +200,16 @@ LOCAL_LABEL(ArraySizeOverflow):
         // 32-bit value. We're going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
-        // r0 holds EEType pointer already
+        mov         r0, r4 // restore EEType
         mov         r1, #1                  // Indicate that we should throw OverflowException
         EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
+
+LOCAL_LABEL(RhpNewArray_RarePath):
+        mov         r0, r4            // restore EEType
+        mov         r1, #0
+        EPILOG_POP  "{r4,lr}"
+        b           C_FUNC(RhpNewArrayRare)
 
 LEAF_END RhpNewArray, _TEXT
 
@@ -281,17 +283,15 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         INLINE_GETTHREAD
 
         // Fetch object size into r2.
-        ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         r2, [r4, #OFFSETOF__EEType__m_uBaseSize]
 
-        mov         r1, r0
-        mov         r0, r4 // restore EEType
-        // r0: EEType pointer
-        // r1: Thread pointer
+        // r4: EEType pointer
+        // r0: Thread pointer
         // r2: base size
 
         // Load potential new object address into r3. Cache this result in r12 as well for the common case
         // where the allocation succeeds (r3 will be overwritten in the following bounds check).
-        ldr         r3, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         mov         r12, r3
 
         // Check whether the current allocation context is already aligned for us.
@@ -301,15 +301,15 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         r2, r3
-        ldr         r3, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         r2, r3
         bhi         LOCAL_LABEL(Alloc8Failed)
 
         // Update the alloc pointer to account for the allocation.
-        str         r2, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         r2, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new object's EEType pointer.
-        str         r0, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
 
         // Return the object allocated in r0.
         mov         r0, r12
@@ -319,6 +319,7 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
 LOCAL_LABEL(Alloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8-byte alignment and no
         // finalization.
+        mov         r0, r4 // restore EEType
         mov         r1, #GC_ALLOC_ALIGN8
         EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
@@ -344,17 +345,15 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         INLINE_GETTHREAD
 
         // Fetch object size into r2.
-        ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         r2, [r4, #OFFSETOF__EEType__m_uBaseSize]
 
-        mov         r1, r0
-        mov         r0, r4 // restore EEType
-        // r0: EEType pointer
-        // r1: Thread pointer
+        // r4: EEType pointer
+        // r0: Thread pointer
         // r2: base size
 
         // Load potential new object address into r3. Cache this result in r12 as well for the common case
         // where the allocation succeeds (r3 will be overwritten in the following bounds check).
-        ldr         r3, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         mov         r12, r3
 
         // Check whether the current allocation context is already aligned for us (for boxing that means the
@@ -365,15 +364,15 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         r2, r3
-        ldr         r3, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         r2, r3
         bhi         LOCAL_LABEL(BoxAlloc8Failed)
 
         // Update the alloc pointer to account for the allocation.
-        str         r2, [r1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         r2, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new object's EEType pointer.
-        str         r0, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
 
         // Return the object allocated in r0.
         mov         r0, r12
@@ -383,6 +382,7 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
 LOCAL_LABEL(BoxAlloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8+4 byte alignment and no
         // finalization.
+        mov         r0, r4 // restore EEType
         mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
         EPILOG_POP  "{r4,pc}"
         b           C_FUNC(RhpNewObject)
