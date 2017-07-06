@@ -29,11 +29,19 @@ namespace Internal.Runtime.DebuggerSupport
     {
         private static void HighLevelDebugFuncEvalHelperWithVariables(ref TypesAndValues param, ref LocalVariableSet arguments)
         {
+            // Offset begins with 1 because we always skip setting the return value before we call the function
+            int offset = 1;
+            if (param.thisObj != null)
+            {
+                // For constructors - caller does not pass the this pointer, instead, we constructed param.thisObj and pass it as the first argument
+                arguments.SetVar<object>(offset, param.thisObj);
+                offset++;
+            }
             for (int i = 0; i < param.parameterValues.Length; i++)
             {
                 unsafe
                 {
-                    IntPtr input = arguments.GetAddressOfVarData(i + 1);
+                    IntPtr input = arguments.GetAddressOfVarData(i + offset);
                     byte* pInput = (byte*)input;
                     fixed (byte* pParam = param.parameterValues[i])
                     {
@@ -79,6 +87,11 @@ namespace Internal.Runtime.DebuggerSupport
                 {
                     returnValue = ex;
                 }
+                else if (param.thisObj != null)
+                {
+                    // For constructors - the debugger would like to get 'this' back
+                    returnValue = param.thisObj;
+                }
                 else if (!isVoid)
                 {
                     IntPtr input = arguments.GetAddressOfVarData(0);
@@ -99,6 +112,7 @@ namespace Internal.Runtime.DebuggerSupport
 
         struct TypesAndValues
         {
+            public object thisObj;
             public RuntimeTypeHandle[] types;
             public byte[][] parameterValues;
         }
@@ -129,26 +143,38 @@ namespace Internal.Runtime.DebuggerSupport
 
             switch (mode)
             {
-                case FuncEvalMode.RegularFuncEval:
-                    RegularFuncEval(parameterBuffer, parameterBufferSize);
+                case FuncEvalMode.CallParameterizedFunction:
+                    CallParameterizedFunction(parameterBuffer, parameterBufferSize);
                     break;
                 case FuncEvalMode.NewStringWithLength:
                     NewStringWithLength(parameterBuffer, parameterBufferSize);
                     break;
-                case FuncEvalMode.NewArray:
-                    CreateNewArray(parameterBuffer, parameterBufferSize);
+                case FuncEvalMode.NewParameterizedArray:
+                    NewParameterizedArray(parameterBuffer, parameterBufferSize);
                     break;
                 case FuncEvalMode.NewParameterizedObjectNoConstructor:
                     NewParameterizedObjectNoConstructor(parameterBuffer, parameterBufferSize);
                     break;
-
+                case FuncEvalMode.NewParameterizedObject:
+                    NewParameterizedObject(parameterBuffer, parameterBufferSize);
+                    break;
                 default:
                     Debug.Assert(false, "Debugger provided an unexpected func eval mode.");
                     break;
             }
         }
 
-        private unsafe static void RegularFuncEval(byte* parameterBuffer, uint parameterBufferSize)
+        private unsafe static void CallParameterizedFunction(byte* parameterBuffer, uint parameterBufferSize)
+        {
+            CallParameterizedFunctionOrNewParameterizedObject(parameterBuffer, parameterBufferSize, isConstructor: false);
+        }
+
+        private unsafe static void NewParameterizedObject(byte* parameterBuffer, uint parameterBufferSize)
+        {
+            CallParameterizedFunctionOrNewParameterizedObject(parameterBuffer, parameterBufferSize, isConstructor: true);
+        }
+
+        private unsafe static void CallParameterizedFunctionOrNewParameterizedObject(byte* parameterBuffer, uint parameterBufferSize, bool isConstructor)
         {
             TypesAndValues typesAndValues = new TypesAndValues();
             uint offset = 0;
@@ -181,37 +207,9 @@ namespace Internal.Runtime.DebuggerSupport
 
             typesAndValues.types = new RuntimeTypeHandle[parameters.Length];
 
-            bool needToDynamicallyLoadTypes = false;
             for (int i = 0; i < typesAndValues.types.Length; i++)
             {
-                if (!parameters[i].RetrieveRuntimeTypeHandleIfPossible())
-                {
-                    needToDynamicallyLoadTypes = true;
-                    break;
-                }
-
                 typesAndValues.types[i] = parameters[i].GetRuntimeTypeHandle();
-            }
-
-            if (needToDynamicallyLoadTypes)
-            {
-                TypeLoaderEnvironment.Instance.RunUnderTypeLoaderLock(() =>
-                {
-                    typeSystemContext.FlushTypeBuilderStates();
-
-                    GenericDictionaryCell[] cells = new GenericDictionaryCell[parameters.Length];
-                    for (int i = 0; i < cells.Length; i++)
-                    {
-                        cells[i] = GenericDictionaryCell.CreateTypeHandleCell(parameters[i]);
-                    }
-                    IntPtr[] eetypePointers;
-                    TypeBuilder.ResolveMultipleCells(cells, out eetypePointers);
-
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        typesAndValues.types[i] = ((EEType*)eetypePointers[i])->ToRuntimeTypeHandle();
-                    }
-                });
             }
 
             TypeSystemContextFactory.Recycle(typeSystemContext);
@@ -221,6 +219,11 @@ namespace Internal.Runtime.DebuggerSupport
             {
                 // TODO, FuncEval, what these false really means? Need to make sure our format contains those information
                 argumentTypes[i] = new LocalVariableType(typesAndValues.types[i], false, false);
+            }
+
+            if (isConstructor)
+            {
+                typesAndValues.thisObj = RuntimeAugments.NewObject(typesAndValues.types[1]);
             }
 
             LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
@@ -243,6 +246,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             NativeParser parser = new NativeParser(reader, offset);
             TypeDesc objectTypeDesc = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+            TypeSystemContextFactory.Recycle(typeSystemContext);
 
             RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
             object returnValue = RuntimeAugments.NewObject(objectTypeHandle);
@@ -253,7 +257,7 @@ namespace Internal.Runtime.DebuggerSupport
             ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
         }
 
-        private unsafe static void CreateNewArray(byte* parameterBuffer, uint parameterBufferSize)
+        private unsafe static void NewParameterizedArray(byte* parameterBuffer, uint parameterBufferSize)
         {
             uint offset = 0;
             NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
@@ -270,6 +274,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             NativeParser parser = new NativeParser(reader, offset);
             TypeDesc arrElementType = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(ref parser, nativeLayoutContext);
+            TypeSystemContextFactory.Recycle(typeSystemContext);
 
             uint rank = parser.GetUnsigned();
             int[] dims = new int[rank];
@@ -285,11 +290,40 @@ namespace Internal.Runtime.DebuggerSupport
                 lowerBounds[i] = (int)parser.GetUnsigned();
             }
 
-            // Get type from typedesc and CreateInstance
             RuntimeTypeHandle typeHandle = arrElementType.GetRuntimeTypeHandle();
-            Type elmType = Type.GetTypeFromHandle(typeHandle);
+            RuntimeTypeHandle arrayTypeHandle = default(RuntimeTypeHandle);
+            Array returnValue;
+            // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank.
+            // Pass false for isMdArray, and rank == -1 for SzArrays
+            bool succeed = false;
+            if (rank == 1 && lowerBounds[0] == 0)
+            {
+                succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
+                    typeHandle,
+                    false,
+                    -1,
+                    out arrayTypeHandle);
+                Debug.Assert(succeed);
 
-            Array returnValue = Array.CreateInstance(elmType, dims, lowerBounds);
+                returnValue = Internal.Runtime.Augments.RuntimeAugments.NewArray(
+                              arrayTypeHandle,
+                              dims[0]);
+            }
+            else
+            {
+                succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
+                               typeHandle,
+                               true,
+                               (int)rank,
+                               out arrayTypeHandle
+                               );
+                Debug.Assert(succeed);
+                returnValue = Internal.Runtime.Augments.RuntimeAugments.NewMultiDimArray(
+                               arrayTypeHandle,
+                               dims,
+                               lowerBounds
+                               );
+            }
             GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
             IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
             uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);

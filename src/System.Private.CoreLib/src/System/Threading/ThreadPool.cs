@@ -739,7 +739,9 @@ namespace System.Threading
                         SynchronizationContext.SetSynchronizationContext(null);
                     }
 
-                    if(!ThreadPool.NotifyWorkItemComplete())
+                    RuntimeThread.CurrentThread.ResetThreadPoolThread();
+
+                    if (!ThreadPool.NotifyWorkItemComplete())
                     {
                         return false;
                     }

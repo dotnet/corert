@@ -1,4 +1,4 @@
-﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -406,6 +406,7 @@
     <Compile Include="System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
+    <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
