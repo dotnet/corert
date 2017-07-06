@@ -82,7 +82,7 @@ namespace System.Threading
                         _minThreads = threads;
 
                         ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal < minThreads)
+                        while (counts.numThreadsGoal < _minThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = _minThreads;
@@ -131,7 +131,7 @@ namespace System.Threading
                         _maxThreads = threads;
 
                         ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal > maxThreads)
+                        while (counts.numThreadsGoal > _maxThreads)
                         {
                             ThreadCounts newCounts = counts;
                             newCounts.numThreadsGoal = _maxThreads;
@@ -266,7 +266,7 @@ namespace System.Threading
             if(elapsedInterval >= requiredInterval)
             {
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                return counts.numExistingThreads >= counts.numThreadsGoal;
+                //return counts.numExistingThreads >= counts.numThreadsGoal;
             }
             return false;
         }
