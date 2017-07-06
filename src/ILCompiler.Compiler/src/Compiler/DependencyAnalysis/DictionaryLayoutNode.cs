@@ -139,9 +139,6 @@ namespace ILCompiler.DependencyAnalysis
                 conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
-
-                // TODO: if the dictionary entry is a GC static base or thread static base, we also need the non-GC static
-                // base because the cctor context is there.
             }
 
             return conditionalDependencies;
