@@ -206,7 +206,7 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle:
-                    pMustExpand = method.Name == "DefaultConstructorOf";
+                    pMustExpand = true;
                     break;
 
                 default:

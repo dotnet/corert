@@ -242,8 +242,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Disable built-in recursive restore from NuGet.targets. It collides with dir.traversal.targets. -->
-    <RestoreRecursive>false</RestoreRecursive>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
     <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>

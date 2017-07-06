@@ -25,6 +25,7 @@ namespace ILCompiler
         protected bool _generateDebugInfo = false;
         protected MetadataManager _metadataManager;
         protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
+        protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -67,6 +68,12 @@ namespace ILCompiler
         public CompilationBuilder UseVTableSliceProvider(VTableSliceProvider provider)
         {
             _vtableSliceProvider = provider;
+            return this;
+        }
+
+        public CompilationBuilder UseGenericDictionaryLayoutProvider(DictionaryLayoutProvider provider)
+        {
+            _dictionaryLayoutProvider = provider;
             return this;
         }
 

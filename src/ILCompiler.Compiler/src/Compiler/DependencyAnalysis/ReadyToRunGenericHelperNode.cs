@@ -65,16 +65,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override void OnMarked(NodeFactory factory)
         {
-            // When the helper call gets marked, ensure the generic layout for the associated dictionaries
-            // includes the signature.
-            ((LazilyBuiltDictionaryLayoutNode)factory.GenericDictionaryLayout(_dictionaryOwner)).EnsureEntry(_lookupSignature);
+            DictionaryLayoutNode layout = factory.GenericDictionaryLayout(_dictionaryOwner);
 
-            if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
-                factory.TypeSystemContext.HasLazyStaticConstructor((TypeDesc)_target))
+            if (!layout.HasFixedSlots)
             {
-                // If the type has a lazy static constructor, we also need the non-GC static base
-                // because that's where the class constructor context is.
-                ((LazilyBuiltDictionaryLayoutNode)factory.GenericDictionaryLayout(_dictionaryOwner)).EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
+                // When the helper call gets marked, ensure the generic layout for the associated dictionaries
+                // includes the signature.
+                ((LazilyBuiltDictionaryLayoutNode)layout).EnsureEntry(_lookupSignature);
+
+                if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
+                    factory.TypeSystemContext.HasLazyStaticConstructor((TypeDesc)_target))
+                {
+                    // If the type has a lazy static constructor, we also need the non-GC static base
+                    // because that's where the class constructor context is.
+                    ((LazilyBuiltDictionaryLayoutNode)layout).EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
+                }
             }
         }
 
@@ -150,20 +155,12 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
+
+            dependencies.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
+
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
-            }
-
-            // Root the template for the type while we're hitting its dictionary cells. In the future, we may
-            // want to control this via type reflectability instead.
-            if (_dictionaryOwner is MethodDesc)
-            {
-                dependencies.Add(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner), "Type loader template");
-            }
-            else
-            {
-                dependencies.Add(factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner), "Type loader template");
             }
 
             return dependencies;

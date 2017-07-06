@@ -44,6 +44,7 @@ namespace Internal.IL
             public bool HandlerStart;
         }
 
+        private bool _isReadOnly;
         private TypeDesc _constrained;
 
         private int _currentInstructionOffset;
@@ -102,10 +103,13 @@ namespace Internal.IL
 
         public DependencyList Import()
         {
-            if (_canonMethod.Signature.IsStatic)
+            TypeDesc owningType = _canonMethod.OwningType;
+            if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
             {
-                TypeDesc owningType = _canonMethod.OwningType;
-                if (!_isFallbackBodyCompilation && _factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
+                // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
+                // Otherwise follow the rules from ECMA-335 I.8.9.5.
+                if (!_isFallbackBodyCompilation &&
+                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
                 {
                     // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
@@ -121,6 +125,22 @@ namespace Internal.IL
                         }
                     }
                 }
+            }
+
+            if (_canonMethod.IsSynchronized)
+            {
+                const string reason = "Synchronized method";
+                if (_canonMethod.Signature.IsStatic)
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnterStatic), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExitStatic), reason);
+                }
+                else
+                {
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnter), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
+                }
+                
             }
 
             FindBasicBlocks();
@@ -189,11 +209,13 @@ namespace Internal.IL
         {
             // The instruction should have consumed any prefixes.
             _constrained = null;
+            _isReadOnly = false;
         }
 
         private void ImportJmp(int token)
         {
-            // TODO
+            // JMP is kind of like a tail call (with no arguments pushed on the stack).
+            ImportCall(ILOpcode.call, token);
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -254,30 +276,6 @@ namespace Internal.IL
                     reason = "ldvirtftn"; break;
                 default:
                     Debug.Assert(false); break;
-            }
-
-            // If we're scanning the fallback body because scanning the real body failed, don't trigger cctor.
-            // Accessing the cctor could have been a reason why we failed.
-            if (!_isFallbackBodyCompilation)
-            {
-                // Do we need to run the cctor?
-                TypeDesc owningType = runtimeDeterminedMethod.OwningType;
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
-                {
-                    // For beforefieldinit, we can wait for field access.
-                    if (!((MetadataType)owningType).IsBeforeFieldInit)
-                    {
-                        // Accessing the static base will trigger the cctor.
-                        if (owningType.IsRuntimeDeterminedSubtype)
-                        {
-                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
-                        }
-                        else
-                        {
-                            _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, owningType), reason);
-                        }
-                    }
-                }
             }
 
             if (opcode == ILOpcode.newobj)
@@ -385,6 +383,19 @@ namespace Internal.IL
                 {
                     return;
                 }
+
+                if (IsEETypePtrOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
+                    }
+                    return;
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -429,8 +440,8 @@ namespace Internal.IL
                 }
                 else if (constrained.IsValueType)
                 {
-                    // We'll need to box `this`.
-                    AddBoxingDependencies(constrained, reason);
+                    // We'll need to box `this`. Note we use _constrained here, because the other one is canonical.
+                    AddBoxingDependencies(_constrained, reason);
                 }
             }
 
@@ -557,7 +568,12 @@ namespace Internal.IL
                             else
                                 _dependencies.Add(_factory.ConstructedTypeSymbol(runtimeDeterminedMethod.OwningType), reason);
                         }
-                            
+                        
+                        if (referencingArrayAddressMethod && !_isReadOnly)
+                        {
+                            // Address method is special - it expects an instantiation argument, unless a readonly prefix was applied.
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
+                        }
                     }
                 }
                 else
@@ -568,7 +584,7 @@ namespace Internal.IL
                     {
                         instParam = _compilation.NodeFactory.MethodGenericDictionary(concreteMethod);
                     }
-                    else if (targetMethod.RequiresInstMethodTableArg() || referencingArrayAddressMethod)
+                    else if (targetMethod.RequiresInstMethodTableArg() || (referencingArrayAddressMethod && !_isReadOnly))
                     {
                         // Ask for a constructed type symbol because we need the vtable to get to the dictionary
                         instParam = _compilation.NodeFactory.ConstructedTypeSymbol(concreteMethod.OwningType);
@@ -711,12 +727,12 @@ namespace Internal.IL
 
         private void ImportRefAnyVal(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRefAny), "refanyval");
         }
 
         private void ImportMkRefAny(int token)
         {
-            // TODO
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
         }
 
         private void ImportLdToken(int token)
@@ -819,11 +835,31 @@ namespace Internal.IL
             _constrained = (TypeDesc)_methodIL.GetObject(token);
         }
 
+        private void ImportReadOnlyPrefix()
+        {
+            _isReadOnly = true;
+        }
+
         private void ImportFieldAccess(int token, bool isStatic, string reason)
         {
+            var field = (FieldDesc)_methodIL.GetObject(token);
+
             if (isStatic)
             {
-                var field = (FieldDesc)_methodIL.GetObject(token);
+                if (!field.IsStatic)
+                    throw new TypeSystemException.InvalidProgramException();
+
+                // References to literal fields from IL body should never resolve.
+                // The CLR would throw a MissingFieldException while jitting and so should we.
+                if (field.IsLiteral)
+                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+
+                if (field.HasRva)
+                {
+                    // We could add a dependency to the data node, but we don't really need it.
+                    // TODO: lazy cctor dependency
+                    return;
+                }
 
                 ReadyToRunHelperId helperId;
                 if (field.IsThreadStatic)
@@ -836,7 +872,6 @@ namespace Internal.IL
                 }
                 else
                 {
-                    Debug.Assert(field.IsStatic);
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
@@ -849,6 +884,11 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
                 }
+            }
+            else
+            {
+                if (field.IsStatic)
+                    throw new TypeSystemException.InvalidProgramException();
             }
         }
 
@@ -880,6 +920,8 @@ namespace Internal.IL
 
         private void AddBoxingDependencies(TypeDesc type, string reason)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
             // Generic code will have BOX instructions when referring to T - the instruction is a no-op
             // if the substitution wasn't a value type.
             if (!type.IsValueType)
@@ -945,6 +987,15 @@ namespace Internal.IL
 
         private void ImportAddressOfElement(int token)
         {
+            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
+            if (elementType.IsGCPointer && !_isReadOnly)
+            {
+                if (elementType.IsRuntimeDeterminedSubtype)
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
+                else
+                    _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
+            }
+
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelema");
         }
 
@@ -974,6 +1025,21 @@ namespace Internal.IL
                 + (_ilBytes[ilOffset + 1] << 8)
                 + (_ilBytes[ilOffset + 2] << 16)
                 + (_ilBytes[ilOffset + 3] << 24));
+        }
+
+        private void ReportInvalidBranchTarget(int targetOffset)
+        {
+            throw new TypeSystemException.InvalidProgramException();
+        }
+
+        private void ReportFallthroughAtEndOfMethod()
+        {
+            throw new TypeSystemException.InvalidProgramException();
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            throw new TypeSystemException.InvalidProgramException();
         }
 
         private bool IsRuntimeHelpersInitializeArray(MethodDesc method)
@@ -1018,6 +1084,20 @@ namespace Internal.IL
             return false;
         }
 
+        private bool IsEETypePtrOf(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "EETypePtrOf" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "EETypePtr" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
         {
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
@@ -1055,7 +1135,6 @@ namespace Internal.IL
         private void ImportVolatilePrefix() { }
         private void ImportTailPrefix() { }
         private void ImportNoPrefix(byte mask) { }
-        private void ImportReadOnlyPrefix() { }
         private void ImportThrow() { }
         private void ImportInitObj(int token) { }
         private void ImportLoadLength() { }

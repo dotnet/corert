@@ -358,9 +358,9 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
-bool RhpRegisterUnixModule(void * pModule, 
-                           void * pvStartRange, UInt32 cbRange,
-                           void ** pClasslibFunctions, UInt32 nClasslibFunctions)
+bool RhRegisterOSModule(void * pModule,
+                        void * pvStartRange, UInt32 cbRange,
+                        void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     UnixNativeCodeManager * pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
         pClasslibFunctions, nClasslibFunctions);

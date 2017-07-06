@@ -172,6 +172,11 @@ namespace Internal.TypeSystem
                 : base(id, Format.Method(method))
             {
             }
+
+            public InvalidProgramException()
+                : base(ExceptionStringID.InvalidProgramDefault)
+            {
+            }
         }
 
         public class BadImageFormatException : TypeSystemException

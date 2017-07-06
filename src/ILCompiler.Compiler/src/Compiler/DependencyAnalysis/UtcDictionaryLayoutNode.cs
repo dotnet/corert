@@ -25,6 +25,14 @@ namespace ILCompiler.DependencyAnalysis
     /// </remarks>
     public partial class UtcDictionaryLayoutNode : DictionaryLayoutNode
     {
+        public override bool HasFixedSlots
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public UtcDictionaryLayoutNode(TypeSystemEntity owningMethodOrType) : base(owningMethodOrType)
         {
 

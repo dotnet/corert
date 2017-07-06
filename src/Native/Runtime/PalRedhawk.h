@@ -102,21 +102,6 @@ struct SYSTEM_INFO
 // defined in gcrhenv.cpp
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
-struct OSVERSIONINFOEXW
-{
-    UInt32 dwOSVersionInfoSize;
-    UInt32 dwMajorVersion;
-    UInt32 dwMinorVersion;
-    UInt32 dwBuildNumber;
-    UInt32 dwPlatformId;
-    WCHAR  szCSDVersion[128];
-    UInt16 wServicePackMajor;
-    UInt16 wServicePackMinor;
-    UInt16 wSuiteMask;
-    UInt8 wProductType;
-    UInt8 wReserved;
-};
-
 struct FILETIME
 {
     UInt32 dwLowDateTime;
