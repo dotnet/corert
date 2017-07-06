@@ -364,10 +364,16 @@ namespace ILCompiler
                 .UseOptimizationMode(_optimizationMode)
                 .UseDebugInfo(_enableDebugInfo);
 
-            // If we have a scanner, feed the vtable analysis results to the compilation.
-            // This could be a command line switch if we really wanted to.
             if (scanResults != null)
+            {
+                // If we have a scanner, feed the vtable analysis results to the compilation.
+                // This could be a command line switch if we really wanted to.
                 builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
+
+                // If we have a scanner, feed the generic dictionary results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+            }
 
             ICompilation compilation = builder.ToCompilation();
 

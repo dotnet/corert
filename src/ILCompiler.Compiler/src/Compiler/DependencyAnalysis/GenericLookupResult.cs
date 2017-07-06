@@ -126,6 +126,22 @@ namespace ILCompiler.DependencyAnalysis
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract override string ToString();
         protected abstract int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer);
+        protected abstract bool EqualsImpl(GenericLookupResult obj);
+        protected abstract int GetHashCodeImpl();
+
+        public sealed override bool Equals(object obj)
+        {
+            GenericLookupResult other = obj as GenericLookupResult;
+            if (obj == null)
+                return false;
+
+            return ClassCode == other.ClassCode && EqualsImpl(other);
+        }
+
+        public sealed override int GetHashCode()
+        {
+            return ClassCode * 31 + GetHashCodeImpl();
+        }
 
         public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
         {
@@ -249,6 +265,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((TypeHandleGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeHandleGenericLookupResult)obj)._type == _type;
+        }
     }
 
 
@@ -313,6 +339,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((UnwrapNullableTypeHandleGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((UnwrapNullableTypeHandleGenericLookupResult)obj)._type == _type;
+        }
     }
 
     /// <summary>
@@ -365,6 +401,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_field, ((FieldOffsetGenericLookupResult)other)._field);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _field.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((FieldOffsetGenericLookupResult)obj)._field == _field;
         }
     }
 
@@ -431,6 +477,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_method, ((VTableOffsetGenericLookupResult)other)._method);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((VTableOffsetGenericLookupResult)obj)._method == _method;
+        }
     }
 
     /// <summary>
@@ -476,6 +532,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_method, ((MethodHandleGenericLookupResult)other)._method);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodHandleGenericLookupResult)obj)._method == _method;
+        }
     }
 
     /// <summary>
@@ -520,6 +586,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_field, ((FieldHandleGenericLookupResult)other)._field);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _field.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((FieldHandleGenericLookupResult)obj)._field == _field;
         }
     }
 
@@ -577,6 +653,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_method, ((MethodDictionaryGenericLookupResult)other)._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodDictionaryGenericLookupResult)obj)._method == _method;
         }
     }
 
@@ -637,6 +723,17 @@ namespace ILCompiler.DependencyAnalysis
 
             return comparer.Compare(_method, otherEntry._method);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodEntryGenericLookupResult)obj)._method == _method &&
+                ((MethodEntryGenericLookupResult)obj)._isUnboxingThunk == _isUnboxingThunk;
+        }
     }
 
     /// <summary>
@@ -692,6 +789,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_method, ((VirtualDispatchCellGenericLookupResult)other)._method);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((VirtualDispatchCellGenericLookupResult)obj)._method == _method;
+        }
     }
 
     /// <summary>
@@ -743,6 +850,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((TypeNonGCStaticBaseGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeNonGCStaticBaseGenericLookupResult)obj)._type == _type;
+        }
     }
 
     /// <summary>
@@ -789,6 +906,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeThreadStaticBaseIndexGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeThreadStaticBaseIndexGenericLookupResult)obj)._type == _type;
         }
     }
 
@@ -841,6 +968,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((TypeGCStaticBaseGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeGCStaticBaseGenericLookupResult)obj)._type == _type;
+        }
     }
 
     /// <summary>
@@ -890,6 +1027,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((ObjectAllocatorGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ObjectAllocatorGenericLookupResult)obj)._type == _type;
         }
     }
 
@@ -942,6 +1089,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((ArrayAllocatorGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ArrayAllocatorGenericLookupResult)obj)._type == _type;
+        }
     }
 
     /// <summary>
@@ -991,6 +1148,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((CastClassGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((CastClassGenericLookupResult)obj)._type == _type;
         }
     }
     
@@ -1042,6 +1209,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((IsInstGenericLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((IsInstGenericLookupResult)obj)._type == _type;
+        }
     }
 
     internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
@@ -1090,6 +1267,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((ThreadStaticIndexLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ThreadStaticIndexLookupResult)obj)._type == _type;
         }
     }
 
@@ -1140,6 +1327,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((ThreadStaticOffsetLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ThreadStaticOffsetLookupResult)obj)._type == _type;
         }
     }
 
@@ -1197,6 +1394,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_type, ((DefaultConstructorLookupResult)other)._type);
         }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((DefaultConstructorLookupResult)obj)._type == _type;
+        }
     }
 
     internal sealed class CallingConventionConverterLookupResult : GenericLookupResult
@@ -1250,6 +1457,16 @@ namespace ILCompiler.DependencyAnalysis
                 return result;
 
             return comparer.Compare(_callingConventionConverter.Signature, otherEntry._callingConventionConverter.Signature);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _callingConventionConverter.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((CallingConventionConverterLookupResult)obj)._callingConventionConverter.Equals(_callingConventionConverter);
         }
     }
 
@@ -1308,6 +1525,16 @@ namespace ILCompiler.DependencyAnalysis
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
             return comparer.Compare(_type, ((TypeSizeLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeSizeLookupResult)obj)._type == _type;
         }
     }
 
@@ -1384,6 +1611,19 @@ namespace ILCompiler.DependencyAnalysis
                 return result;
 
             return comparer.Compare(_constrainedMethod, otherResult._constrainedMethod);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _constrainedMethod.GetHashCode() * 13 + _constraintType.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            var other = (ConstrainedMethodUseLookupResult)obj;
+            return _constrainedMethod == other._constrainedMethod &&
+                _constraintType == other._constraintType &&
+                _directCall == other._directCall;
         }
     }
 }
