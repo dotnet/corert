@@ -832,7 +832,7 @@ respin:
             return TRUE;
         }
 
-        if (Interlocked::Decrement(&join_struct.r_join_lock) != (join_struct.n_threads - 1))
+        if (Interlocked::CompareExchange(&join_struct.r_join_lock, 0, join_struct.n_threads) == 0)
         {
             if (!join_struct.wait_done)
             {
@@ -1086,7 +1086,7 @@ public:
     {
         dprintf (3, ("cm: probing %Ix", obj));
 retry:
-        if (Interlocked::Exchange (&needs_checking, 1) == 0)
+        if (Interlocked::CompareExchange(&needs_checking, 1, 0) == 0)
         {
             // If we spend too much time spending all the allocs,
             // consider adding a high water mark and scan up
@@ -1125,7 +1125,7 @@ retry:
 retry:
         dprintf (3, ("loh alloc: probing %Ix", obj));
 
-        if (Interlocked::Exchange (&needs_checking, 1) == 0)
+        if (Interlocked::CompareExchange(&needs_checking, 1, 0) == 0)
         {
             if (obj == rwp_object)
             {
@@ -1584,7 +1584,7 @@ static void enter_spin_lock_noinstru (RAW_KEYWORD(volatile) int32_t* lock)
 {
 retry:
 
-    if (Interlocked::Exchange (lock, 0) >= 0)
+    if (Interlocked::CompareExchange(lock, 0, -1) >= 0)
     {
         unsigned int i = 0;
         while (VolatileLoad(lock) >= 0)
@@ -1626,7 +1626,7 @@ retry:
 inline
 static BOOL try_enter_spin_lock_noinstru(RAW_KEYWORD(volatile) int32_t* lock)
 {
-    return (Interlocked::Exchange (&*lock, 0) < 0);
+    return (Interlocked::CompareExchange(&*lock, 0, -1) < 0);
 }
 
 inline
@@ -1745,7 +1745,7 @@ static void enter_spin_lock (GCSpinLock* spin_lock)
 {
 retry:
 
-    if (Interlocked::Exchange (&spin_lock->lock, 0) >= 0)
+    if (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) >= 0)
     {
         unsigned int i = 0;
         while (spin_lock->lock >= 0)
@@ -1796,7 +1796,7 @@ retry:
 
 inline BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
 {
-    return (Interlocked::Exchange (&spin_lock->lock, 0) < 0);
+    return (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) < 0);
 }
 
 inline
@@ -10283,7 +10283,7 @@ gc_heap::enter_gc_done_event_lock()
     uint32_t dwSwitchCount = 0;
 retry:
 
-    if (Interlocked::Exchange (&gc_done_event_lock, 0) >= 0)
+    if (Interlocked::CompareExchange(&gc_done_event_lock, 0, -1) >= 0)
     {
         while (gc_done_event_lock >= 0)
         {
@@ -35750,7 +35750,7 @@ void CFinalize::EnterFinalizeLock()
              GCToEEInterface::IsPreemptiveGCDisabled(GCToEEInterface::GetThread()));
 
 retry:
-    if (Interlocked::Exchange (&lock, 0) >= 0)
+    if (Interlocked::CompareExchange(&lock, 0, -1) >= 0)
     {
         unsigned int i = 0;
         while (lock >= 0)
