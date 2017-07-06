@@ -177,7 +177,7 @@ namespace Internal.JitInterface
                 }
                 if (result == CorJitResult.CORJIT_BADCODE)
                 {
-                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                    throw new TypeSystemException.InvalidProgramException();
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
@@ -2765,18 +2765,8 @@ namespace Internal.JitInterface
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
-
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        {
-            CORINFO_CONST_LOOKUP pLookup = new CORINFO_CONST_LOOKUP();
-
-            getAddressOfPInvokeTarget(method, ref pLookup);
-            Debug.Assert(pLookup.addr != null);
-            Debug.Assert(pLookup.accessType == InfoAccessType.IAT_VALUE);
-            ppIndirection = null;
-
-            return pLookup.addr;
-        }
+        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {

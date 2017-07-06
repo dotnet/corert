@@ -153,23 +153,16 @@ namespace System.Text
         private const int CodePageUTF32 = 12000;
         private const int CodePageUTF32BE = 12001;
 
-        internal int m_codePage = 0;
+        internal int _codePage = 0;
 
-        // dataItem should be internal (not private). otherwise it will break during the deserialization
-        // of the data came from Everett
-        internal CodePageDataItem dataItem = null;
-
-        [NonSerialized]
-        internal bool m_deserializedFromEverett = false;
+        internal CodePageDataItem _dataItem = null;
 
         // Because of encoders we may be read only
         [OptionalField(VersionAdded = 2)]
-        private bool m_isReadOnly = true;
+        private bool _isReadOnly = true;
 
         // Encoding (encoder) fallback
-        [OptionalField(VersionAdded = 2)]
         internal EncoderFallback encoderFallback = null;
-        [OptionalField(VersionAdded = 2)]
         internal DecoderFallback decoderFallback = null;
 
         protected Encoding() : this(0)
@@ -187,7 +180,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Remember code page
-            m_codePage = codePage;
+            _codePage = codePage;
 
             // Use default encoder/decoder fallbacks
             this.SetDefaultFallbacks();
@@ -206,10 +199,10 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Remember code page
-            m_codePage = codePage;
+            _codePage = codePage;
 
-            this.encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
-            this.decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
+            encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
+            decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
         }
 
         // Default fallback that we'll use.
@@ -217,116 +210,9 @@ namespace System.Text
         {
             // For UTF-X encodings, we use a replacement fallback with an "\xFFFD" string,
             // For ASCII we use "?" replacement fallback, etc.
-            this.encoderFallback = new InternalEncoderBestFitFallback(this);
-            this.decoderFallback = new InternalDecoderBestFitFallback(this);
+            encoderFallback = new InternalEncoderBestFitFallback(this);
+            decoderFallback = new InternalDecoderBestFitFallback(this);
         }
-
-
-        #region Serialization
-        internal void OnDeserializing()
-        {
-            // intialize the optional Whidbey fields
-            encoderFallback = null;
-            decoderFallback = null;
-            m_isReadOnly = true;
-        }
-
-        internal void OnDeserialized()
-        {
-            if (encoderFallback == null || decoderFallback == null)
-            {
-                m_deserializedFromEverett = true;
-                SetDefaultFallbacks();
-            }
-
-            // dataItem is always recalculated from the code page #
-            dataItem = null;
-        }
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            OnDeserializing();
-        }
-
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            OnDeserialized();
-        }
-
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-            // to be consistent with SerializeEncoding
-            dataItem = null;
-        }
-
-        // the following two methods are used for the inherited classes which implemented ISerializable
-        // Deserialization Helper
-        internal void DeserializeEncoding(SerializationInfo info, StreamingContext context)
-        {
-            // Any info?
-            if (info == null) throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            // All versions have a code page
-            this.m_codePage = (int)info.GetValue("m_codePage", typeof(int));
-
-            // We can get dataItem on the fly if needed, and the index is different between versions
-            // so ignore whatever dataItem data we get from Everett.
-            this.dataItem = null;
-
-            // See if we have a code page
-            try
-            {
-                //
-                // Try Whidbey V2.0 Fields
-                //
-
-                m_isReadOnly = (bool)info.GetValue("m_isReadOnly", typeof(bool));
-
-                this.encoderFallback = (EncoderFallback)info.GetValue("encoderFallback", typeof(EncoderFallback));
-                this.decoderFallback = (DecoderFallback)info.GetValue("decoderFallback", typeof(DecoderFallback));
-            }
-            catch (SerializationException)
-            {
-                //
-                // Didn't have Whidbey things, must be Everett
-                //
-                this.m_deserializedFromEverett = true;
-
-                // May as well be read only
-                m_isReadOnly = true;
-                SetDefaultFallbacks();
-            }
-        }
-
-        // Serialization Helper
-        internal void SerializeEncoding(SerializationInfo info, StreamingContext context)
-        {
-            // Any Info?
-            if (info == null) throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            // These are new V2.0 Whidbey stuff
-            info.AddValue("m_isReadOnly", m_isReadOnly);
-            info.AddValue("encoderFallback", this.EncoderFallback);
-            info.AddValue("decoderFallback", this.DecoderFallback);
-
-            // These were in Everett V1.1 as well
-            info.AddValue("m_codePage", this.m_codePage);
-
-            // This was unique to Everett V1.1
-            info.AddValue("dataItem", null);
-
-            // Everett duplicated these fields, so these are needed for portability
-            info.AddValue("Encoding+m_codePage", this.m_codePage);
-            info.AddValue("Encoding+dataItem", null);
-        }
-
-        #endregion Serialization
 
         // Converts a byte array from one encoding to another. The bytes in the
         // bytes array are converted from srcEncoding to
@@ -497,13 +383,12 @@ namespace System.Text
 
         private void GetDataItem()
         {
-            if (dataItem == null)
+            if (_dataItem == null)
             {
-                dataItem = EncodingTable.GetCodePageDataItem(m_codePage);
-                if (dataItem == null)
+                _dataItem = EncodingTable.GetCodePageDataItem(_codePage);
+                if (_dataItem == null)
                 {
-                    throw new NotSupportedException(
-                        SR.Format(SR.NotSupported_NoCodepageData, m_codePage));
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, _codePage));
                 }
             }
         }
@@ -515,11 +400,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return (dataItem.BodyName);
+                return (_dataItem.BodyName);
             }
         }
 
@@ -572,7 +457,7 @@ namespace System.Text
         {
             get
             {
-                return SR.GetResourceString("Globalization_cp_" + m_codePage.ToString());
+                return SR.GetResourceString("Globalization_cp_" + _codePage.ToString());
             }
         }
 #endif
@@ -583,11 +468,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return (dataItem.HeaderName);
+                return (_dataItem.HeaderName);
             }
         }
 
@@ -596,11 +481,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return (dataItem.WebName);
+                return (_dataItem.WebName);
             }
         }
 
@@ -610,11 +495,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return (dataItem.UIFamilyCodePage);
+                return (_dataItem.UIFamilyCodePage);
             }
         }
 
@@ -625,11 +510,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return ((dataItem.Flags & MIMECONTF_BROWSER) != 0);
+                return ((_dataItem.Flags & MIMECONTF_BROWSER) != 0);
             }
         }
 
@@ -639,11 +524,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return ((dataItem.Flags & MIMECONTF_SAVABLE_BROWSER) != 0);
+                return ((_dataItem.Flags & MIMECONTF_SAVABLE_BROWSER) != 0);
             }
         }
 
@@ -653,11 +538,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return ((dataItem.Flags & MIMECONTF_MAILNEWS) != 0);
+                return ((_dataItem.Flags & MIMECONTF_MAILNEWS) != 0);
             }
         }
 
@@ -669,11 +554,11 @@ namespace System.Text
         {
             get
             {
-                if (dataItem == null)
+                if (_dataItem == null)
                 {
                     GetDataItem();
                 }
-                return ((dataItem.Flags & MIMECONTF_SAVABLE_MAILNEWS) != 0);
+                return ((_dataItem.Flags & MIMECONTF_SAVABLE_MAILNEWS) != 0);
             }
         }
 
@@ -735,7 +620,7 @@ namespace System.Text
             Encoding newEncoding = (Encoding)this.MemberwiseClone();
 
             // New one should be readable
-            newEncoding.m_isReadOnly = false;
+            newEncoding._isReadOnly = false;
             return newEncoding;
         }
 
@@ -744,7 +629,7 @@ namespace System.Text
         {
             get
             {
-                return (m_isReadOnly);
+                return (_isReadOnly);
             }
         }
 
@@ -1216,7 +1101,7 @@ namespace System.Text
         {
             get
             {
-                return m_codePage;
+                return _codePage;
             }
         }
 
@@ -1365,7 +1250,7 @@ namespace System.Text
         {
             Encoding that = value as Encoding;
             if (that != null)
-                return (m_codePage == that.m_codePage) &&
+                return (_codePage == that._codePage) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             return (false);
@@ -1374,7 +1259,7 @@ namespace System.Text
 
         public override int GetHashCode()
         {
-            return m_codePage + this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode();
+            return _codePage + this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode();
         }
 
         internal virtual char[] GetBestFitUnicodeToBytesData()

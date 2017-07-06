@@ -55,20 +55,135 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
-        public abstract ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory);
+        public TypeSystemEntity OwningMethodOrType => _owningMethodOrType;
 
-        public abstract void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary);
+        /// <summary>
+        /// Gets a value indicating whether the slot assignment is determined at the node creation time.
+        /// </summary>
+        public abstract bool HasFixedSlots
+        {
+            get;
+        }
+
+        public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
+        {
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            foreach (var entry in Entries)
+            {
+                templateEntries.Add(entry.TemplateDictionaryNode(factory));
+            }
+
+            return templateEntries.ToArray();
+        }
+
+        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        {
+            var context = new GenericLookupResultContext(dictionary.OwningEntity, dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            foreach (GenericLookupResult lookupResult in Entries)
+            {
+#if DEBUG
+                int offsetBefore = builder.CountBytes;
+#endif
+
+                lookupResult.EmitDictionaryEntry(ref builder, factory, context);
+
+#if DEBUG
+                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
+#endif
+            }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            // Root the template for the type. In the future, we may want to control this via type reflectability instead.
+            if (_owningMethodOrType is MethodDesc)
+            {
+                yield return new DependencyListEntry(factory.NativeLayout.TemplateMethodLayout((MethodDesc)_owningMethodOrType), "Type loader template");
+            }
+            else
+            {
+                yield return new DependencyListEntry(factory.NativeLayout.TemplateTypeLayout((TypeDesc) _owningMethodOrType), "Type loader template");
+            }
+
+            if (HasFixedSlots)
+            {
+                foreach (GenericLookupResult lookupResult in Entries)
+                {
+                    foreach (DependencyNodeCore<NodeFactory> dependency in lookupResult.NonRelocDependenciesFromUsage(factory))
+                    {
+                        yield return new DependencyListEntry(dependency, "GenericLookupResultDependency");
+                    }
+                }
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            Debug.Assert(HasFixedSlots);
+
+            NativeLayoutSavedVertexNode templateLayout;
+            if (_owningMethodOrType is MethodDesc)
+            {
+                templateLayout = factory.NativeLayout.TemplateMethodLayout((MethodDesc)_owningMethodOrType);
+            }
+            else
+            {
+                templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_owningMethodOrType);
+            }
+
+            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
+
+            foreach (var lookupSignature in Entries)
+            {
+                conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
+                                                                templateLayout,
+                                                                "Type loader template"));
+            }
+
+            return conditionalDependencies;
+        }
 
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
 
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => HasFixedSlots;
         public override bool HasDynamicDependencies => false;
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+    }
+
+    public sealed class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
+    {
+        private readonly GenericLookupResult[] _layout;
+
+        public override bool HasFixedSlots => true;
+
+        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, IEnumerable<GenericLookupResult> layout)
+            : base(owningMethodOrType)
+        {
+            ArrayBuilder<GenericLookupResult> l = new ArrayBuilder<GenericLookupResult>();
+            foreach (var entry in layout)
+                l.Add(entry);
+
+            _layout = l.ToArray();
+        }
+
+        public override int GetSlotForEntry(GenericLookupResult entry)
+        {
+            int index = Array.IndexOf(_layout, entry);
+            Debug.Assert(index >= 0);
+            return index;
+        }
+
+        public override IEnumerable<GenericLookupResult> Entries
+        {
+            get
+            {
+                return _layout;
+            }
+        }
     }
 
     public sealed class LazilyBuiltDictionaryLayoutNode : DictionaryLayoutNode
@@ -84,6 +199,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private EntryHashTable _entries = new EntryHashTable();
         private volatile GenericLookupResult[] _layout;
+
+        public override bool HasFixedSlots => false;
 
         public LazilyBuiltDictionaryLayoutNode(TypeSystemEntity owningMethodOrType)
             : base(owningMethodOrType)
@@ -130,38 +247,6 @@ namespace ILCompiler.DependencyAnalysis
                     ComputeLayout();
 
                 return _layout;
-            }
-        }
-
-        public override ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
-        {
-            if (_layout == null)
-                ComputeLayout();
-
-            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
-            for (int i = 0; i < _layout.Length; i++)
-            {
-                templateEntries.Add(_layout[i].TemplateDictionaryNode(factory));
-            }
-
-            return templateEntries.ToArray();
-        }
-
-        public override void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
-        {
-            var context = new GenericLookupResultContext(dictionary.OwningEntity, dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-
-            foreach (GenericLookupResult lookupResult in Entries)
-            {
-#if DEBUG
-                int offsetBefore = builder.CountBytes;
-#endif
-
-                lookupResult.EmitDictionaryEntry(ref builder, factory, context);
-
-#if DEBUG
-                Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
-#endif
             }
         }
     }

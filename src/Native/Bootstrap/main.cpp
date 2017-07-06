@@ -226,30 +226,17 @@ extern "C" void __fail_fast()
     exit(-1);
 }
 
-extern "C" bool REDHAWK_PALAPI PalInit();
-
-#define DLL_PROCESS_ATTACH      1
-extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
-
+extern "C" bool RhInitialize();
+extern "C" void RhpEnableConservativeStackReporting();
 extern "C" void RhpShutdown();
-
-extern "C" int32_t RhpEnableConservativeStackReporting();
 
 #ifndef CPPCODEGEN
 
-extern "C" bool RhpRegisterCoffModule(void * pModule,
+extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvStartRange, uint32_t cbRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-extern "C" bool RhpRegisterUnixModule(void * pModule,
-    void * pvStartRange, uint32_t cbRange,
-    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
-
-#ifdef _WIN32
-extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
-#else
-extern "C" void* WINAPI PalGetModuleHandleFromPointer(void* pointer);
-#endif
+extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
@@ -279,27 +266,17 @@ extern "C" int __managed__Main(int argc, char* argv[]);
 int main(int argc, char* argv[])
 #endif
 {
-    if (!PalInit())
-        return -1;
-
-    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
+    if (!RhInitialize())
         return -1;
 
 #if defined(CPPCODEGEN)
-    if (!RhpEnableConservativeStackReporting())
-        return -1;
+    RhpEnableConservativeStackReporting();
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-    void *osModule;
-
-#if defined(_WIN32)
-    osModule = GetModuleHandleW(NULL);
-    if (!RhpRegisterCoffModule(osModule,
-#else // _WIN32
-    osModule = PalGetModuleHandleFromPointer((void*)&main);
-    if (!RhpRegisterUnixModule(osModule,
-#endif // _WIN32
+    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
+    if (!RhRegisterOSModule(
+        osModule,
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {

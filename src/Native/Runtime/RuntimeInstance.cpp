@@ -181,7 +181,8 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
     return NULL;
 }
 
-GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
+GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
+
 PTR_RuntimeInstance GetRuntimeInstance()
 {
     return g_pTheRuntimeInstance;
@@ -306,10 +307,9 @@ HANDLE  RuntimeInstance::GetPalInstance()
     return m_hPalInstance;
 }
 
-bool RuntimeInstance::EnableConservativeStackReporting()
+void RuntimeInstance::EnableConservativeStackReporting()
 {
     m_conservativeStackReportingEnabled = true;
-    return true;
 }
 
 EXTERN_C void REDHAWK_CALLCONV RhpSetHaveNewClasslibs();
@@ -480,17 +480,19 @@ RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList()
 }
 
 // static 
-RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
+bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 {
     NewHolder<RuntimeInstance> pRuntimeInstance = new (nothrow) RuntimeInstance();
     if (NULL == pRuntimeInstance)
-        return NULL;
+        return false;
 
     CreateHolder<ThreadStore>  pThreadStore = ThreadStore::Create(pRuntimeInstance);
     if (NULL == pThreadStore)
-        return NULL;
+        return false;
 
     pThreadStore.SuppressRelease();
+    pRuntimeInstance.SuppressRelease();
+
     pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
@@ -498,11 +500,11 @@ RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
     pRuntimeInstance->m_fProfileThreadCreated = false;
 #endif
 
-    pRuntimeInstance.SuppressRelease();
+    ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
+    g_pTheRuntimeInstance = pRuntimeInstance;
 
-    return pRuntimeInstance;
+    return true;
 }
-
 
 void RuntimeInstance::Destroy()
 {

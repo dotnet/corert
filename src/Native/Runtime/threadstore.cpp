@@ -55,6 +55,11 @@ PTR_Thread ThreadStore::Iterator::GetNext()
     return pResult;
 }
 
+//static
+PTR_Thread ThreadStore::GetSuspendingThread()
+{
+    return (RhpSuspendingThread);
+}
 
 #ifndef DACCESS_COMPILE
 
@@ -90,17 +95,6 @@ void ThreadStore::Destroy()
 {
     delete this;
 }
-
-#endif //!DACCESS_COMPILE
-
-//static
-PTR_Thread ThreadStore::GetSuspendingThread()
-{
-    return (RhpSuspendingThread);
-}
-#ifndef DACCESS_COMPILE
-
-GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
 
 // static 
 void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)

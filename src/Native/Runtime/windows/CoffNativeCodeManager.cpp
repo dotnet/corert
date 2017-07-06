@@ -571,9 +571,9 @@ void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
-bool RhpRegisterCoffModule(void * pModule, 
-                           void * pvStartRange, UInt32 cbRange,
-                           void ** pClasslibFunctions, UInt32 nClasslibFunctions)
+bool RhRegisterOSModule(void * pModule,
+                        void * pvStartRange, UInt32 cbRange,
+                        void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)pModule;
     PIMAGE_NT_HEADERS pNTHeaders = (PIMAGE_NT_HEADERS)((TADDR)pModule + pDosHeader->e_lfanew);
