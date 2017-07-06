@@ -182,6 +182,10 @@ namespace System.Runtime
         internal static extern ulong RhGetGCSegmentSize();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetAllocatedBytesForCurrentThread")]
+        internal static extern long RhGetAllocatedBytesForCurrentThread();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
         internal extern static bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
 
