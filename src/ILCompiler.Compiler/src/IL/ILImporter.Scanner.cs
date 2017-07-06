@@ -383,6 +383,19 @@ namespace Internal.IL
                 {
                     return;
                 }
+
+                if (IsEETypePtrOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
+                    }
+                    return;
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -1065,6 +1078,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "Activator" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsEETypePtrOf(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "EETypePtrOf" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "EETypePtr" && owningType.Namespace == "System";
                 }
             }
 
