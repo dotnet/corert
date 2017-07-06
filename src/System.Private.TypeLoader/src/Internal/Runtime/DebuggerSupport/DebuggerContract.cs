@@ -12,10 +12,11 @@ namespace Internal.Runtime.DebuggerSupport
 {
     internal enum FuncEvalMode : uint
     {
-        RegularFuncEval = 1,
+        CallParameterizedFunction = 1,
         NewStringWithLength = 2,
         NewParameterizedArray = 3,
         NewParameterizedObjectNoConstructor = 4,
+        NewParameterizedObject = 5,
     }
 
     internal enum DebuggerResponseKind : uint
