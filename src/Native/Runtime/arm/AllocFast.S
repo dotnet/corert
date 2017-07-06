@@ -40,9 +40,9 @@ LEAF_ENTRY RhpNewFast, _TEXT
         EPILOG_POP  "{r4,pc}"
 
 LOCAL_LABEL(RhpNewFast_RarePath):
-        EPILOG_POP  "{r4,lr}"
         mov         r0, r1            // restore EEType
         mov         r1, #0
+        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
 
 LEAF_END RhpNewFast, _TEXT
@@ -194,9 +194,9 @@ LOCAL_LABEL(ArraySizeBig):
 
 LOCAL_LABEL(ArrayOutOfMemoryFinal):
 
-        EPILOG_POP  "{r4,lr}"
         // r0 holds EEType pointer already
         mov         r1, #0                  // Indicate that we should throw OOM.
+        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(ArraySizeOverflow):
@@ -204,9 +204,9 @@ LOCAL_LABEL(ArraySizeOverflow):
         // 32-bit value. We're going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
-        EPILOG_POP  "{r4,lr}"
         // r0 holds EEType pointer already
         mov         r1, #1                  // Indicate that we should throw OverflowException
+        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LEAF_END RhpNewArray, _TEXT
@@ -319,8 +319,8 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
 LOCAL_LABEL(Alloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8-byte alignment and no
         // finalization.
-        EPILOG_POP  "{r4,lr}"
         mov         r1, #GC_ALLOC_ALIGN8
+        EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
 
 LEAF_END RhpNewFastAlign8, _TEXT
@@ -383,8 +383,8 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
 LOCAL_LABEL(BoxAlloc8Failed):
         // Fast allocation failed. Call slow helper with flags set to indicate an 8+4 byte alignment and no
         // finalization.
-        EPILOG_POP  "{r4,pc}"
         mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
+        EPILOG_POP  "{r4,pc}"
         b           C_FUNC(RhpNewObject)
 
 LEAF_END RhpNewFastMisalign, _TEXT
