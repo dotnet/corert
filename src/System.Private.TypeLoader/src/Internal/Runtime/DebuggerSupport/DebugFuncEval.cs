@@ -135,8 +135,8 @@ namespace Internal.Runtime.DebuggerSupport
                 case FuncEvalMode.NewStringWithLength:
                     NewStringWithLength(parameterBuffer, parameterBufferSize);
                     break;
-                case FuncEvalMode.NewArray:
-                    CreateNewArray(parameterBuffer, parameterBufferSize);
+                case FuncEvalMode.NewParameterizedArray:
+                    NewParameterizedArray(parameterBuffer, parameterBufferSize);
                     break;
                 case FuncEvalMode.NewParameterizedObjectNoConstructor:
                     NewParameterizedObjectNoConstructor(parameterBuffer, parameterBufferSize);
@@ -254,7 +254,7 @@ namespace Internal.Runtime.DebuggerSupport
             ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
         }
 
-        private unsafe static void CreateNewArray(byte* parameterBuffer, uint parameterBufferSize)
+        private unsafe static void NewParameterizedArray(byte* parameterBuffer, uint parameterBufferSize)
         {
             uint offset = 0;
             NativeReader reader = new NativeReader(parameterBuffer, parameterBufferSize);
