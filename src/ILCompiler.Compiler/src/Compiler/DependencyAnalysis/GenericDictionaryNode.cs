@@ -53,10 +53,13 @@ namespace ILCompiler.DependencyAnalysis
 
             DictionaryLayoutNode layout = GetDictionaryLayout(factory);
 
-            // Node representing the generic dictionary doesn't have any dependencies for
-            // dependency analysis purposes. The dependencies are tracked as dependencies of the
-            // concrete method bodies. When we reach the object data emission phase, the dependencies
-            // should all already have been marked.
+            // Node representing the generic dictionary layout might be one of two kinds:
+            // With fixed slots, or where slots are added as we're expanding the graph.
+            // If it's the latter, we can't touch the collection of slots before the graph expansion
+            // is complete (relocsOnly == false). It's someone else's responsibility
+            // to make sure the dependencies are properly generated.
+            // If this is a dictionary layout with fixed slots, it's the responsibility of
+            // each dictionary to ensure the targets are marked.
             if (layout.HasFixedSlots || !relocsOnly)
             {
                 // TODO: pass the layout we already have to EmitDataInternal
