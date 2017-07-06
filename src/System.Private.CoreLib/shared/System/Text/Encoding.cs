@@ -5,6 +5,8 @@
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
+using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text
 {
@@ -73,8 +75,16 @@ namespace System.Text
 
     public abstract class Encoding : ICloneable
     {
-        private static Encoding defaultEncoding;
-        
+        // For netcore we use UTF8 as default encoding since ANSI isn't available
+        private static readonly UTF8Encoding.UTF8EncodingSealed s_defaultEncoding  = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
+
+        // Returns an encoding for the system's current ANSI code page.
+        public static Encoding Default => s_defaultEncoding;
+
+        //
+        // The following values are from mlang.idl.  These values
+        // should be in sync with those in mlang.idl.
+        //
         internal const int MIMECONTF_MAILNEWS = 0x00000001;
         internal const int MIMECONTF_BROWSER = 0x00000002;
         internal const int MIMECONTF_SAVABLE_MAILNEWS = 0x00000100;
@@ -144,16 +154,22 @@ namespace System.Text
         private const int CodePageUTF32BE = 12001;
 
         internal int m_codePage = 0;
-        
+
+        // dataItem should be internal (not private). otherwise it will break during the deserialization
+        // of the data came from Everett
         internal CodePageDataItem dataItem = null;
 
-        private string _encodingName = null;
+        [NonSerialized]
+        internal bool m_deserializedFromEverett = false;
 
         // Because of encoders we may be read only
-        private bool _isReadOnly = true;
+        [OptionalField(VersionAdded = 2)]
+        private bool m_isReadOnly = true;
 
         // Encoding (encoder) fallback
+        [OptionalField(VersionAdded = 2)]
         internal EncoderFallback encoderFallback = null;
+        [OptionalField(VersionAdded = 2)]
         internal DecoderFallback decoderFallback = null;
 
         protected Encoding() : this(0)
@@ -204,6 +220,113 @@ namespace System.Text
             this.encoderFallback = new InternalEncoderBestFitFallback(this);
             this.decoderFallback = new InternalDecoderBestFitFallback(this);
         }
+
+
+        #region Serialization
+        internal void OnDeserializing()
+        {
+            // intialize the optional Whidbey fields
+            encoderFallback = null;
+            decoderFallback = null;
+            m_isReadOnly = true;
+        }
+
+        internal void OnDeserialized()
+        {
+            if (encoderFallback == null || decoderFallback == null)
+            {
+                m_deserializedFromEverett = true;
+                SetDefaultFallbacks();
+            }
+
+            // dataItem is always recalculated from the code page #
+            dataItem = null;
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext ctx)
+        {
+            OnDeserializing();
+        }
+
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext ctx)
+        {
+            OnDeserialized();
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx)
+        {
+            // to be consistent with SerializeEncoding
+            dataItem = null;
+        }
+
+        // the following two methods are used for the inherited classes which implemented ISerializable
+        // Deserialization Helper
+        internal void DeserializeEncoding(SerializationInfo info, StreamingContext context)
+        {
+            // Any info?
+            if (info == null) throw new ArgumentNullException(nameof(info));
+            Contract.EndContractBlock();
+
+            // All versions have a code page
+            this.m_codePage = (int)info.GetValue("m_codePage", typeof(int));
+
+            // We can get dataItem on the fly if needed, and the index is different between versions
+            // so ignore whatever dataItem data we get from Everett.
+            this.dataItem = null;
+
+            // See if we have a code page
+            try
+            {
+                //
+                // Try Whidbey V2.0 Fields
+                //
+
+                m_isReadOnly = (bool)info.GetValue("m_isReadOnly", typeof(bool));
+
+                this.encoderFallback = (EncoderFallback)info.GetValue("encoderFallback", typeof(EncoderFallback));
+                this.decoderFallback = (DecoderFallback)info.GetValue("decoderFallback", typeof(DecoderFallback));
+            }
+            catch (SerializationException)
+            {
+                //
+                // Didn't have Whidbey things, must be Everett
+                //
+                this.m_deserializedFromEverett = true;
+
+                // May as well be read only
+                m_isReadOnly = true;
+                SetDefaultFallbacks();
+            }
+        }
+
+        // Serialization Helper
+        internal void SerializeEncoding(SerializationInfo info, StreamingContext context)
+        {
+            // Any Info?
+            if (info == null) throw new ArgumentNullException(nameof(info));
+            Contract.EndContractBlock();
+
+            // These are new V2.0 Whidbey stuff
+            info.AddValue("m_isReadOnly", m_isReadOnly);
+            info.AddValue("encoderFallback", this.EncoderFallback);
+            info.AddValue("decoderFallback", this.DecoderFallback);
+
+            // These were in Everett V1.1 as well
+            info.AddValue("m_codePage", this.m_codePage);
+
+            // This was unique to Everett V1.1
+            info.AddValue("dataItem", null);
+
+            // Everett duplicated these fields, so these are needed for portability
+            info.AddValue("Encoding+m_codePage", this.m_codePage);
+            info.AddValue("Encoding+dataItem", null);
+        }
+
+        #endregion Serialization
 
         // Converts a byte array from one encoding to another. The bytes in the
         // bytes array are converted from srcEncoding to
@@ -262,20 +385,19 @@ namespace System.Text
             // NOTE: If you add a new encoding that can be retrieved by codepage, be sure to
             // add the corresponding item in EncodingTable.
             // Otherwise, the code below will throw exception when trying to call
-            // EncodingTable.GetWebNameFromCodePage().
+            // EncodingTable.GetDataItem().
             //
             if (codepage < 0 || codepage > 65535)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range,
-                        0, 65535));
+                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range, 0, 65535));
             }
 
             Contract.EndContractBlock();
 
             switch (codepage)
             {
-                case CodePageDefault: return UTF8;               // 0
+                case CodePageDefault: return Default;            // 0
                 case CodePageUnicode: return Unicode;            // 1200
                 case CodePageBigEndian: return BigEndianUnicode; // 1201
                 case CodePageUTF32: return UTF32;                // 12000
@@ -290,8 +412,7 @@ namespace System.Text
                 case CodePageNoMac:                              // 2 CP_MACCP
                 case CodePageNoThread:                           // 3 CP_THREAD_ACP
                 case CodePageNoSymbol:                           // 42 CP_SYMBOL
-                    throw new ArgumentException(SR.Format(
-                        SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
+                    throw new ArgumentException(SR.Format(SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
             }
 
             // Is it a valid code page?
@@ -403,36 +524,31 @@ namespace System.Text
         }
 
         // Returns the human-readable description of the encoding ( e.g. Hebrew (DOS)).
-
+#if PROJECTN
         public virtual String EncodingName
         {
             get
             {
-                if (_encodingName == null)
+                string encodingName = GetLocalizedEncodingNameResource(this.CodePage);
+                if (encodingName == null)
                 {
-                    _encodingName = GetLocalizedEncodingNameResource(this.CodePage);
-                    if (_encodingName == null)
-                    {
-                        throw new NotSupportedException(
-                            SR.Format(SR.MissingEncodingNameResource, this.CodePage));
-                    }
+                    throw new NotSupportedException(SR.Format(SR.MissingEncodingNameResource, this.CodePage));
+                }
 
-                    if (_encodingName.StartsWith("Globalization_cp_", StringComparison.Ordinal))
+                if (encodingName.StartsWith("Globalization_cp_", StringComparison.Ordinal))
+                {
+                    // On ProjectN, resource strings are stripped from retail builds and replaced by
+                    // their identifier names. Since this property is meant to be a localized string,
+                    // but we don't localize ProjectN, we specifically need to do something reasonable
+                    // in this case. This currently returns the English name of the encoding from a
+                    // static data table.
+                    encodingName = EncodingTable.GetCodePageDataItem(this.CodePage).EnglishName;
+                    if (encodingName == null)
                     {
-                        // On ProjectN, resource strings are stripped from retail builds and replaced by
-                        // their identifier names. Since this property is meant to be a localized string,
-                        // but we don't localize ProjectN, we specifically need to do something reasonable
-                        // in this case. This currently returns the English name of the encoding from a
-                        // static data table.
-                        _encodingName = EncodingTable.GetCodePageDataItem(this.CodePage).EnglishName;
-                        if (_encodingName == null)
-                        {
-                            throw new NotSupportedException(
-                                SR.Format(SR.MissingEncodingNameResource, this.WebName, this.CodePage));
-                        }
+                        throw new NotSupportedException(SR.Format(SR.MissingEncodingNameResource, this.WebName, this.CodePage));
                     }
                 }
-                return _encodingName;
+                return encodingName;
             }
         }
 
@@ -451,7 +567,15 @@ namespace System.Text
                 default: return null;
             }
         }
-
+#else
+        public virtual String EncodingName
+        {
+            get
+            {
+                return SR.GetResourceString("Globalization_cp_" + m_codePage.ToString());
+            }
+        }
+#endif
         // Returns the name for this encoding that can be used with mail agent header
         // tags.  If the encoding may not be used, the string is empty.
 
@@ -611,7 +735,7 @@ namespace System.Text
             Encoding newEncoding = (Encoding)this.MemberwiseClone();
 
             // New one should be readable
-            newEncoding._isReadOnly = false;
+            newEncoding.m_isReadOnly = false;
             return newEncoding;
         }
 
@@ -620,7 +744,7 @@ namespace System.Text
         {
             get
             {
-                return (_isReadOnly);
+                return (m_isReadOnly);
             }
         }
 
@@ -1130,26 +1254,6 @@ namespace System.Text
             return new DefaultDecoder(this);
         }
 
-        private static Encoding CreateDefaultEncoding()
-        {
-            // defaultEncoding should be null if we get here, but we can't
-            // assert that in case another thread beat us to the initialization
-
-            Encoding enc;
-
-
-            // For silverlight we use UTF8 since ANSI isn't available
-            enc = UTF8;
-
-
-            // This method should only ever return one Encoding instance
-            return Interlocked.CompareExchange(ref defaultEncoding, enc, null) ?? enc;
-        }
-
-        // Returns an encoding for the system's current ANSI code page.
-
-        public static Encoding Default => defaultEncoding ?? CreateDefaultEncoding();
-
         // Returns an Encoder object for this encoding. The returned object
         // can be used to encode a sequence of characters into a sequence of bytes.
         // Contrary to the GetBytes family of methods, an Encoder can
@@ -1290,8 +1394,7 @@ namespace System.Text
             // Special message to include fallback type in case fallback's GetMaxCharCount is broken
             // This happens if user has implimented an encoder fallback with a broken GetMaxCharCount
             throw new ArgumentException(
-                SR.Format(SR.Argument_EncodingConversionOverflowBytes,
-                EncodingName, EncoderFallback.GetType()), "bytes");
+                SR.Format(SR.Argument_EncodingConversionOverflowBytes, EncodingName, EncoderFallback.GetType()), "bytes");
         }
 
         internal void ThrowBytesOverflow(EncoderNLS encoder, bool nothingEncoded)
@@ -1314,8 +1417,7 @@ namespace System.Text
             // Special message to include fallback type in case fallback's GetMaxCharCount is broken
             // This happens if user has implimented a decoder fallback with a broken GetMaxCharCount
             throw new ArgumentException(
-                SR.Format(SR.Argument_EncodingConversionOverflowChars,
-                EncodingName, DecoderFallback.GetType()), "chars");
+                SR.Format(SR.Argument_EncodingConversionOverflowChars, EncodingName, DecoderFallback.GetType()), "chars");
         }
 
         internal void ThrowCharsOverflow(DecoderNLS decoder, bool nothingDecoded)
@@ -1334,13 +1436,24 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
-        internal class DefaultEncoder : Encoder // , IObjectReference
+        internal sealed class DefaultEncoder : Encoder, IObjectReference, ISerializable
         {
-            private Encoding _encoding;
+            private Encoding m_encoding;
 
             public DefaultEncoder(Encoding encoding)
             {
-                _encoding = encoding;
+                m_encoding = encoding;
+            }
+            
+            public Object GetRealObject(StreamingContext context)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // ISerializable implementation, get data for this object
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                throw new PlatformNotSupportedException();
             }
 
             // Returns the number of bytes the next call to GetBytes will
@@ -1353,12 +1466,13 @@ namespace System.Text
 
             public override int GetByteCount(char[] chars, int index, int count, bool flush)
             {
-                return _encoding.GetByteCount(chars, index, count);
+                return m_encoding.GetByteCount(chars, index, count);
             }
 
+            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetByteCount(char* chars, int count, bool flush)
             {
-                return _encoding.GetByteCount(chars, count);
+                return m_encoding.GetByteCount(chars, count);
             }
 
             // Encodes a range of characters in a character array into a range of bytes
@@ -1384,23 +1498,35 @@ namespace System.Text
             public override int GetBytes(char[] chars, int charIndex, int charCount,
                                           byte[] bytes, int byteIndex, bool flush)
             {
-                return _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
+                return m_encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
             }
 
+            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, bool flush)
             {
-                return _encoding.GetBytes(chars, charCount, bytes, byteCount);
+                return m_encoding.GetBytes(chars, charCount, bytes, byteCount);
             }
         }
 
-        internal class DefaultDecoder : Decoder // , IObjectReference
+        internal sealed class DefaultDecoder : Decoder, IObjectReference, ISerializable
         {
-            private Encoding _encoding;
+            private Encoding m_encoding;
 
             public DefaultDecoder(Encoding encoding)
             {
-                _encoding = encoding;
+                m_encoding = encoding;
+            }
+
+            public Object GetRealObject(StreamingContext context)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // ISerializable implementation
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                throw new PlatformNotSupportedException();
             }
 
             // Returns the number of characters the next call to GetChars will
@@ -1417,13 +1543,14 @@ namespace System.Text
 
             public override int GetCharCount(byte[] bytes, int index, int count, bool flush)
             {
-                return _encoding.GetCharCount(bytes, index, count);
+                return m_encoding.GetCharCount(bytes, index, count);
             }
 
+            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
             {
                 // By default just call the encoding version, no flush by default
-                return _encoding.GetCharCount(bytes, count);
+                return m_encoding.GetCharCount(bytes, count);
             }
 
             // Decodes a range of bytes in a byte array into a range of characters
@@ -1452,14 +1579,15 @@ namespace System.Text
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                            char[] chars, int charIndex, bool flush)
             {
-                return _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
+                return m_encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
             }
 
+            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public unsafe override int GetChars(byte* bytes, int byteCount,
                                                   char* chars, int charCount, bool flush)
             {
                 // By default just call the encoding's version
-                return _encoding.GetChars(bytes, byteCount, chars, charCount);
+                return m_encoding.GetChars(bytes, byteCount, chars, charCount);
             }
         }
 

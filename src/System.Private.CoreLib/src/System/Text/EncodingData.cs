@@ -213,9 +213,9 @@ namespace System.Text
         //
         private const string s_webNames =
             "utf-16" + // 1200
-            "utf-16be" + // 1201
+            "utf-16BE" + // 1201
             "utf-32" + // 12000
-            "utf-32be" + // 12001
+            "utf-32BE" + // 12001
             "us-ascii" + // 20127
             "iso-8859-1" + // 28591
             "utf-7" + // 65000
