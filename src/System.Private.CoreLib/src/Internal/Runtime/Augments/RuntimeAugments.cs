@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
@@ -1128,6 +1129,23 @@ namespace Internal.Runtime.Augments
         {
             RuntimeImports.RhpVerifyDebuggerCleanup();
         }
+
+        public static IntPtr RhpGetCurrentThread()
+        {
+            return RuntimeImports.RhpGetCurrentThread();
+        }
+
+        public static void RhpInitiateThreadAbort(IntPtr thread, bool rude)
+        {
+            Exception ex = new ThreadAbortException();
+            RuntimeImports.RhpInitiateThreadAbort(thread, ex, rude);
+        }
+
+        public static void RhpCancelThreadAbort(IntPtr thread)
+        {
+            RuntimeImports.RhpCancelThreadAbort(thread);   
+        }
+
     }
 }
 

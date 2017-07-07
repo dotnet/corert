@@ -252,10 +252,11 @@ NotHijacked
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallCatchFunclet
 
-        PROLOG_PUSH     {r1-r11,lr}     ;; r2 & r3 are saved so we have the REGDISPLAY and ExInfo later, r1 is
-                                        ;; alignment padding, and we save the preserved regs 
+        PROLOG_PUSH     {r0,r2-r11,lr}  ;; r0, r2 & r3 are saved so we have the exception object,
+                                        ;; REGDISPLAY and ExInfo later
         PROLOG_VPUSH    {d8-d15}
 
+#define rsp_offset_is_not_handling_thread_abort (8 * 8) + 0
 #define rsp_offset_r2 (8 * 8) + 4
 #define rsp_offset_r3 (8 * 8) + 8
 
@@ -263,6 +264,11 @@ NotHijacked
         ;; clear the DoNotTriggerGc flag, trashes r4-r6
         ;;
         INLINE_GETTHREAD    r5, r6      ;; r5 <- Thread*, r6 <- trashed
+
+        ldr         r4, [r5, #OFFSETOF__Thread__m_threadAbortException]
+        sub         r4, r0
+        str         r4, [sp, #rsp_offset_is_not_handling_thread_abort] ;; Non-zero if the exception is not ThreadAbortException
+
 ClearRetry_Catch
         ldrex       r4, [r5, #OFFSETOF__Thread__m_ThreadStateFlags]
         bic         r4, #TSF_DoNotTriggerGc
@@ -351,6 +357,23 @@ PopExInfoLoop
 DonePopping
         str         r3, [r1, #OFFSETOF__Thread__m_pExInfoStackHead]     ;; store the new head on the Thread
 
+        ldr         r3, =RhpTrapThreads
+        ldr         r3, [r3]
+        tst         r3, #TrapThreadsFlags_AbortInProgress
+        beq         NoAbort
+
+        ldr         r3, [sp, #rsp_offset_is_not_handling_thread_abort]
+        cmp         r3, #0
+        bne         NoAbort
+
+        ;; It was the ThreadAbortException, so rethrow it
+        ;; reset SP
+        mov         r1, r0                                     ;; r1 <- continuation address as exception PC
+        mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        mov         sp, r2
+        b           RhpThrowHwEx
+
+NoAbort
         ;; reset SP and jump to continuation address
         mov         sp, r2
         bx          r0

@@ -610,5 +610,10 @@ namespace System
 
             return size;
         }
+
+        public static long GetAllocatedBytesForCurrentThread()
+        {
+            return RuntimeImports.RhGetAllocatedBytesForCurrentThread();
+        }
     }
 }

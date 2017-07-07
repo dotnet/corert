@@ -124,14 +124,14 @@ endm
 ;;  All other registers trashed
 ;;
 
-EXTERN RhpWaitForGC : PROC
+EXTERN RhpWaitForGCNoAbort : PROC
 
 WaitForGCCompletion macro
         test        dword ptr [rbx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         @F
 
         mov         rcx, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        call        RhpWaitForGC
+        call        RhpWaitForGCNoAbort
 @@:
 
 endm
@@ -215,9 +215,11 @@ NESTED_END RhpGcStressProbe, _TEXT
 
 endif ;; FEATURE_GC_STRESS
 
+EXTERN RhpThrowHwEx : PROC
+
 NESTED_ENTRY RhpGcProbe, _TEXT
-        cmp         [RhpTrapThreads], 0
-        jne         @f
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @f
         ret
 @@:
         PUSH_PROBE_FRAME rdx, rax, 0, rcx
@@ -226,8 +228,17 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         mov         rbx, rdx
         WaitForGCCompletion
 
+        mov         rax, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        jnz         Abort
         POP_PROBE_FRAME 0
         ret
+Abort:  
+        POP_PROBE_FRAME 0
+        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        pop         rdx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+
 NESTED_END RhpGcProbe, _TEXT
 
 
@@ -483,8 +494,8 @@ ifdef _DEBUG
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
 
-        cmp         [RhpTrapThreads], 0
-        jne         @F
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @F
 
         call        RhDebugBreak
 @@:
@@ -730,7 +741,7 @@ ifdef FEATURE_GC_STRESS
 endif ;; FEATURE_GC_STRESS
 
         lea         rcx, [rsp + sizeof_OutgoingScratchSpace]    ; calculate PInvokeTransitionFrame pointer
-        call        RhpWaitForGC
+        call        RhpWaitForGCNoAbort
 
     DoneWaitingForGc:
         ;; Prepare for our return by stashing a scratch register where we can pop it just before returning
@@ -762,6 +773,8 @@ endif ;; FEATURE_GC_STRESS
 
 DontRestoreXmmAgain:
         add         rsp, sizeof_OutgoingScratchSpace
+        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        test        eax, PTFF_THREAD_ABORT
         pop         rax                     ; m_RIP
         pop         rbp                     ; m_FramePointer
         pop         rax                     ; m_pThread
@@ -793,6 +806,15 @@ DontRestoreXmmAgain:
         ;; The final step is to restore eflags, rcx, and return back to the loop target location.
 
         lea         rsp, [rcx - 20h]
+        jz          @f          ;; result of the test instruction before the pops above
+        popfq                   ;; restore flags
+        pop         rcx         ;; discard ModuleHeader*
+        pop         rcx         ;; restore rcx
+        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        pop         rdx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+
+@@:
         popfq               ;; restore flags
         pop         rcx     ;; discard ModuleHeader*
         pop         rcx     ;; restore rcx

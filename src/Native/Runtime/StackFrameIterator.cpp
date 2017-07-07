@@ -652,7 +652,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP += 2 + 1; // 2 locals and stack alignment
+            SP += 3; // 3 locals
         }
         else
         {
@@ -681,7 +681,14 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    SP++; // local / stack alignment
+    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+    {
+        SP += 2; // 2 locals
+    }
+    else
+    {
+        SP++; // 1 local
+    }
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;

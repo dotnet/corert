@@ -23,5 +23,6 @@ namespace System.Runtime
         NullReference = 8,
         AccessViolation = 9,
         DataMisaligned = 10,
+        ThreadAbort = 11,
     }
 }

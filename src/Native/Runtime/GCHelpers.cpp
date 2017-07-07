@@ -205,3 +205,11 @@ COOP_PINVOKE_HELPER(Int64, RhGetGCSegmentSize, ())
 
     return (first > second) ? first : second;
 }
+
+COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
+{
+    Thread *pThread = GetThread();
+    gc_alloc_context *ac = pThread->GetAllocContext();
+    Int64 currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+    return currentAllocated;
+}

@@ -263,6 +263,12 @@ C_FUNC(\Name):
 #define PTFF_SAVE_ALL_SCRATCH    00007F00h
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
+#define PTFF_THREAD_ABORT        00040000h   // indicates that ThreadAbortException should be thrown when returning from the transition
+
+// These must match the TrapThreadsFlags enum
+#define TrapThreadsFlags_None            0
+#define TrapThreadsFlags_AbortInProgress 1
+#define TrapThreadsFlags_TrapThreads     2
 
 .macro INLINE_GET_TLS_VAR Var
        .att_syntax
