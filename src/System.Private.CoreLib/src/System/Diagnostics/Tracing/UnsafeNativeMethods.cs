@@ -72,7 +72,7 @@ namespace Microsoft.Win32
                         [In] ref Guid providerId,
                         [In]EtwEnableCallback enableCallback,
                         [In]void* callbackContext,
-                        [In] ref long registrationHandle
+                        [In][Out] ref long registrationHandle
                         );
 
             // 
