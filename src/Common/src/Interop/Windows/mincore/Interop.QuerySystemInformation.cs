@@ -29,10 +29,7 @@ internal partial class Interop
             public uint InterruptCount;
 #pragma warning restore CS0649
         }
-
-        //[DllImport("NtDll.dll", EntryPoint = "NtQuerySystemInformation")]
-        //internal static unsafe extern int NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
-
+        
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal unsafe delegate void QuerySystemInformationDelegate(SYSTEM_INFORMATION_CLASS SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
 
