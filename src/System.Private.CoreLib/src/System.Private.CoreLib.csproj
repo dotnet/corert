@@ -367,6 +367,12 @@
     <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
+    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
@@ -531,8 +537,8 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs">
       <Link>Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QuerySystemInformation.cs">
-      <Link>Interop\Windows\kernel32\Interop.QuerySystemInformation.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QueryPerformance.cs">
+      <Link>Interop\Windows\kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\mincore\Interop.GetCurrentThreadId.cs</Link>
@@ -575,6 +581,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QuerySystemInformation.cs">
+      <Link>Interop\Windows\mincore\Interop.QuerySystemInformation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
       <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
     </Compile>
@@ -588,6 +597,7 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="System\HighPerformanceCounter.Windows.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
@@ -677,13 +687,7 @@
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />

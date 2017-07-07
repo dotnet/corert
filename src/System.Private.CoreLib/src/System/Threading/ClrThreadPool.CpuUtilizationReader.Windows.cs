@@ -17,7 +17,7 @@ namespace System.Threading
                 public long userTime;
                 public long affinityMask;
                 public int numberOfProcessors;
-                public Interop.Kernel32.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[] usageBuffer;
+                public Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[] usageBuffer;
             }
 
             private ProcessCpuInformation cpuInfo = new ProcessCpuInformation();
@@ -39,7 +39,7 @@ namespace System.Threading
                     cpuInfo.affinityMask = mask;
                 }
 
-                cpuInfo.usageBuffer = new Interop.Kernel32.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[ThreadPoolGlobals.processorCount];
+                cpuInfo.usageBuffer = new Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[ThreadPoolGlobals.processorCount];
                 GetCpuUtilization(); // Call once to initialize the usage buffer
             }
 
@@ -54,11 +54,11 @@ namespace System.Threading
 
             private unsafe int GetCpuUtilization()
             {
-                fixed (Interop.Kernel32.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION* buffer = cpuInfo.usageBuffer)
+                fixed (Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION* buffer = cpuInfo.usageBuffer)
                 {
-                    Interop.Kernel32.QuerySystemInformation(Interop.Kernel32.SYSTEM_INFORMATION_CLASS.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION,
+                    Interop.mincore.QuerySystemInformation(Interop.mincore.SYSTEM_INFORMATION_CLASS.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION,
                         buffer,
-                        sizeof(Interop.Kernel32.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * cpuInfo.usageBuffer.Length,
+                        sizeof(Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * cpuInfo.usageBuffer.Length,
                         out uint returnLength);
                 }
 
