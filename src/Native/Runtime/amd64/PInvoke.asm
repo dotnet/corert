@@ -35,8 +35,12 @@ NESTED_ENTRY RhpWaitForSuspend, _TEXT
 
         END_PROLOGUE
 
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jz          NoWait
+
         call        RhpWaitForSuspend2
 
+NoWait:
         movdqa      xmm0, [rsp + 20h + 0*10h]
         movdqa      xmm1, [rsp + 20h + 1*10h]
         movdqa      xmm2, [rsp + 20h + 2*10h]
@@ -55,7 +59,7 @@ NESTED_END RhpWaitForSuspend, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGC -- rare path for RhpPInvokeReturn
+;; RhpWaitForGCNoAbort -- rare path for RhpPInvokeReturn
 ;;
 ;;
 ;; INPUT: RCX: transition frame
@@ -63,7 +67,7 @@ NESTED_END RhpWaitForSuspend, _TEXT
 ;; TRASHES: RCX, RDX, R8, R9, R10, R11
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpWaitForGC, _TEXT
+NESTED_ENTRY RhpWaitForGCNoAbort, _TEXT
         push_vol_reg    rax                 ; don't trash the integer return value
         alloc_stack     30h
         movdqa          [rsp + 20h], xmm0   ; don't trash the FP return value
@@ -81,6 +85,45 @@ Done:
         movdqa      xmm0, [rsp + 20h]
         add         rsp, 30h
         pop         rax
+        ret
+
+NESTED_END RhpWaitForGCNoAbort, _TEXT
+
+EXTERN RhpThrowHwEx : PROC
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; RhpWaitForGC -- rare path for RhpPInvokeReturn
+;;
+;;
+;; INPUT: RCX: transition frame
+;;
+;; TRASHES: RCX, RDX, R8, R9, R10, R11
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+NESTED_ENTRY RhpWaitForGC, _TEXT
+        push_nonvol_reg rbx
+        END_PROLOGUE
+
+        mov         rbx, rcx
+
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jz          NoWait
+
+        call        RhpWaitForGCNoAbort
+NoWait:
+        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
+        jz          Done
+        test        dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        jz          Done
+
+        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        pop         rbx
+        pop         rdx                 ; return address as exception RIP
+        jmp         RhpThrowHwEx        ; Throw the ThreadAbortException as a special kind of hardware exception
+
+Done:
+        pop         rbx
         ret
 
 NESTED_END RhpWaitForGC, _TEXT
@@ -125,8 +168,8 @@ LEAF_ENTRY RhpReversePInvoke, _TEXT
         mov         [rax], r11
 
         mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], 0
-        jne         TrapThread
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         TrapThread
 
         ret
 
@@ -221,7 +264,7 @@ LEAF_ENTRY RhpReversePInvokeReturn, _TEXT
         mov         rcx, [rcx + 0]  ; get previous M->U transition frame
 
         mov         [rdx + OFFSETOF__Thread__m_pTransitionFrame], rcx
-        cmp         [RhpTrapThreads], 0
+        cmp         [RhpTrapThreads], TrapThreadsFlags_None
         jne         RhpWaitForSuspend
         ret
 LEAF_END RhpReversePInvokeReturn, _TEXT
@@ -255,7 +298,7 @@ LEAF_ENTRY RhpPInvoke, _TEXT
 
         mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], rcx
 
-        cmp         [RhpTrapThreads], 0 
+        cmp         [RhpTrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
@@ -275,7 +318,7 @@ LEAF_END RhpPInvoke, _TEXT
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         rdx, [rcx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         qword ptr [rdx + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], 0
+        cmp         [RhpTrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
         ret
 @@:

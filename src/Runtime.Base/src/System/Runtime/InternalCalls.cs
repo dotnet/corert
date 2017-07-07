@@ -397,6 +397,10 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static int RhpGetThunkBlockSize();
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern static Exception RhpGetThreadAbortException();
+
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
         //

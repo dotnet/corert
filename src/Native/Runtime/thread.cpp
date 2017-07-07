@@ -320,6 +320,8 @@ void Thread::Construct()
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
+
+    m_threadAbortException = NULL;
 }
 
 bool Thread::IsInitialized()
@@ -529,6 +531,10 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         PTR_RtuObjectRef pExceptionObj = dac_cast<PTR_RtuObjectRef>(&curExInfo->m_exception);
         RedhawkGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
     }
+
+    // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
+    PTR_RtuObjectRef pThreadAbortExceptionObj = dac_cast<PTR_RtuObjectRef>(&m_threadAbortException);
+    RedhawkGCInterface::EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);    
 }
 
 #ifndef DACCESS_COMPILE
@@ -1148,6 +1154,22 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
     {
         RhpWaitForSuspend2();
     }
+}
+
+Object * Thread::GetThreadAbortException()
+{
+    return m_threadAbortException;
+}
+
+void Thread::SetThreadAbortException(Object *exception)
+{
+    m_threadAbortException = exception;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
+{
+    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
+    return pCurThread->GetThreadAbortException();
 }
 
 #if CORERT

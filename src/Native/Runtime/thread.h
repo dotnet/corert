@@ -78,6 +78,7 @@ struct ThreadBuffer
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
     PTR_ExInfo              m_pExInfoStackHead;
+    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -253,6 +254,9 @@ public:
 
     bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+
+    Object * GetThreadAbortException();
+    void SetThreadAbortException(Object *exception);
 
 #if CORERT
     Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
