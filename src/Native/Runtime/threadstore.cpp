@@ -17,6 +17,7 @@
 #include "holder.h"
 #include "Crst.h"
 #include "event.h"
+#include "rhbinder.h"
 #include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
@@ -28,7 +29,7 @@
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
 
-EXTERN_C volatile UInt32 RhpTrapThreads = 0;
+EXTERN_C volatile UInt32 RhpTrapThreads = (UInt32)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
 
@@ -123,6 +124,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pAttachingThread->Construct();
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
 
+    // The runtime holds the thread store lock for the duration of thread suspension for GC, so let's check to 
+    // see if that's going on and, if so, use a proper wait instead of the RWL's spinning.  NOTE: when we are 
+    // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to 
+    // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
+    if (fAcquireThreadStoreLock && (RhpTrapThreads != (UInt32)TrapThreadsFlags::None))
+        RedhawkGCInterface::WaitForGCCompletion();
+
     ThreadStore* pTS = GetThreadStore();
     ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);
 
@@ -202,7 +210,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
-    RhpTrapThreads = 1;
+    RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Decker's algorithm, which requires write ordering.
@@ -266,7 +274,7 @@ void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
     }
     END_FOREACH_THREAD
 
-    RhpTrapThreads = 0;
+    RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::TrapThreads;
     RhpSuspendingThread = NULL;
     pCompletionEvent->Set();
     UnlockThreadStore();
@@ -278,6 +286,85 @@ void ThreadStore::WaitForSuspendComplete()
     if (waitResult == WAIT_FAILED)
         RhFailFast();
 }
+
+#ifndef DACCESS_COMPILE
+
+void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
+{
+    CLREventStatic dummyEvent;
+    SuspendAllThreads(&dummyEvent);
+
+    // TODO: consider enabling multiple thread aborts running in parallel on different threads
+    ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) == 0);
+    RhpTrapThreads |= (UInt32)TrapThreadsFlags::AbortInProgress;
+
+    targetThread->SetThreadAbortException(threadAbortException);
+
+    // TODO: Stage 2: Queue APC to the target thread to break out of possible wait
+
+    bool initiateAbort = false;
+
+    if (!doRudeAbort)
+    {
+        // TODO: Stage 3: protected regions (finally, catch) handling
+        //  If it was in a protected region, set the "throw at protected region end" flag on the native Thread object
+        // TODO: Stage 4: reverse PInvoke handling
+        //  If there was a reverse Pinvoke frame between the current frame and the funceval frame of the target thread, 
+        //  find the outermost reverse Pinvoke frame below the funceval frame and set the thread abort flag in its transition frame.
+        //  If both of these cases happened at once, find out which one of the outermost frame of the protected region
+        //  and the outermost reverse Pinvoke frame is closer to the funceval frame and perform one of the two actions
+        //  described above based on the one that's closer.
+        initiateAbort = true;
+    }
+    else
+    {
+        initiateAbort = true;
+    }
+
+    if (initiateAbort)
+    {
+        PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
+        transitionFrame->m_dwFlags |= PTFF_THREAD_ABORT;
+    }
+
+    ResumeAllThreads(&dummyEvent);
+}
+
+void ThreadStore::CancelThreadAbort(Thread* targetThread)
+{
+    CLREventStatic dummyEvent;
+    SuspendAllThreads(&dummyEvent);
+
+    ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) != 0);
+    RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::AbortInProgress;
+
+    PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
+    if (transitionFrame != nullptr)
+    {
+        transitionFrame->m_dwFlags &= ~PTFF_THREAD_ABORT;
+    }
+
+    targetThread->SetThreadAbortException(nullptr);
+
+    ResumeAllThreads(&dummyEvent);
+}
+
+COOP_PINVOKE_HELPER(void *, RhpGetCurrentThread, ())
+{
+    return ThreadStore::GetCurrentThread();
+}
+
+COOP_PINVOKE_HELPER(void, RhpInitiateThreadAbort, (void* thread, Object * threadAbortException, Boolean doRudeAbort))
+{
+    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
+}
+
+COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
+{
+    GetThreadStore()->CancelThreadAbort((Thread*)thread);
+}
+
+#endif // DACCESS_COMPILE
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 

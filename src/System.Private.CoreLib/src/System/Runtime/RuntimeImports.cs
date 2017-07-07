@@ -52,6 +52,16 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpVerifyDebuggerCleanup();
 
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr RhpGetCurrentThread();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpInitiateThreadAbort")]
+        internal static extern void RhpInitiateThreadAbort(IntPtr thread, Exception exception, bool doRudeAbort);
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpCancelThreadAbort(IntPtr thread);
+
         //
         // calls to GC
         // These methods are needed to implement System.GC like functionality (optional)

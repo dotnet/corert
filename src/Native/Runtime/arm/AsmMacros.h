@@ -38,7 +38,15 @@ PTFF_SAVE_R0            equ 0x00000200  ;; R0 is saved if it contains a GC ref a
 PTFF_SAVE_ALL_SCRATCH   equ 0x00003e00  ;; R0-R3,LR (R12 is trashed by the helpers anyway, but LR is relevant for loop hijacking
 PTFF_R0_IS_GCREF        equ 0x00004000  ;; iff PTFF_SAVE_R0: set -> r0 is Object, clear -> r0 is scalar
 PTFF_R0_IS_BYREF        equ 0x00008000  ;; iff PTFF_SAVE_R0: set -> r0 is ByRef, clear -> r0 is Object or scalar
+PTFF_THREAD_ABORT       equ 0x00010000  ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
+;; These must match the TrapThreadsFlags enum
+TrapThreadsFlags_None            equ 0
+TrapThreadsFlags_AbortInProgress equ 1
+TrapThreadsFlags_TrapThreads     equ 2
+
+;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 
 ;;
 ;; Rename fields of nested structs

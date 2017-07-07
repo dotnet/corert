@@ -33,7 +33,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGC
+;; RhpWaitForGCNoAbort
+;;
+;;
+;; INPUT: r2: transition frame
+;;
+;; OUTPUT: 
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        NESTED_ENTRY RhpWaitForGCNoAbort
+
+        PROLOG_PUSH {r0-r6,lr}  ; Even number of registers to maintain 8-byte stack alignment
+        PROLOG_VPUSH {d0-d3}    ; Save float return value registers as well
+
+        ldr         r5, [r2, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
+
+        ldr         r0, [r5, #OFFSETOF__Thread__m_ThreadStateFlags]
+        tst         r0, #TSF_DoNotTriggerGc
+        bne         Done
+
+        mov         r0, r2      ; passing transition frame in r0
+        bl          RhpWaitForGC2
+
+Done
+        EPILOG_VPOP {d0-d3}
+        EPILOG_POP  {r0-r6,pc}
+
+        NESTED_END RhpWaitForGCNoAbort
+
+        EXTERN RhpThrowHwEx
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; RhpWaitForGCNoAbort
 ;;
 ;;
 ;; INPUT: r2: transition frame
@@ -42,25 +74,25 @@
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         NESTED_ENTRY RhpWaitForGC
+        PROLOG_PUSH  {r0,lr}
 
-        PROLOG_PUSH {r0,r1,r4-r6,lr}  ; Even number of registers to maintain 8-byte stack alignment
-        PROLOG_VPUSH {d0-d3}          ; Save float return value registers as well
-
-        ldr         r5, [r2, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
-
-        ldr         r0, [r5, #OFFSETOF__Thread__m_ThreadStateFlags]
-        tst         r0, #TSF_DoNotTriggerGc
-        bne         Done
-
-        mov         r0, r2                      ; passing transition frame in r0
-        bl          RhpWaitForGC2
-
-Done
-        EPILOG_VPOP {d0-d3}
-        EPILOG_POP  {r0,r1,r4-r6,pc}
-
+        ldr         r0, =RhpTrapThreads
+        ldr         r0, [r0]
+        tst         r0, #TrapThreadsFlags_TrapThreads
+        beq         NoWait
+        bl          RhpWaitForGCNoAbort
+NoWait
+        tst         r0, #TrapThreadsFlags_AbortInProgress
+        beq         NoAbort
+        ldr         r0, [r2, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        tst         r0, #PTFF_THREAD_ABORT
+        beq         NoAbort
+        EPILOG_POP  {r0,r1}         ; hijack target address as exception PC
+        EPILOG_NOP  mov r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_BRANCH RhpThrowHwEx        
+NoAbort
+        EPILOG_POP  {r0,pc}
         NESTED_END RhpWaitForGC
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -106,7 +138,8 @@ ThreadAttached
 
         ldr         r6, =RhpTrapThreads
         ldr         r6, [r6]
-        cbnz        r6, TrapThread
+        tst         r6, #TrapThreadsFlags_TrapThreads
+        bne         TrapThread
 
 AllDone
         EPILOG_POP  {r5-r7,lr}
@@ -192,7 +225,8 @@ BadTransition
 
         ldr         r3, =RhpTrapThreads
         ldr         r3, [r3]
-        cbnz        r3, RareTrapThread
+        tst         r3, #TrapThreadsFlags_TrapThreads
+        bne         RareTrapThread
 
         bx          lr
 

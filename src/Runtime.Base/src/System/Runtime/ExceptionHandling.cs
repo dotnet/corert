@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -400,7 +401,7 @@ namespace System.Runtime
 
                 case ExceptionIDs.InvalidCast:
                     return new InvalidCastException();
-                    
+
                 default:
                     Debug.Assert(false, "unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);
@@ -413,6 +414,7 @@ namespace System.Runtime
         {
             STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
             STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE = 0x00000042u,
+            STATUS_REDHAWK_THREAD_ABORT = 0x00000043u,
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
@@ -542,6 +544,10 @@ namespace System.Runtime
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
+                case (uint)HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT:
+                    exceptionId = ExceptionIDs.ThreadAbort;
+                    break;
+
                 case (uint)HwExceptionCode.STATUS_DATATYPE_MISALIGNMENT:
                     exceptionId = ExceptionIDs.DataMisaligned;
                     break;
@@ -569,7 +575,16 @@ namespace System.Runtime
                     break;
             }
 
-            Exception exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
+            Exception exceptionToThrow;
+
+            if (exceptionId == ExceptionIDs.ThreadAbort)
+            {
+                exceptionToThrow = InternalCalls.RhpGetThreadAbortException();
+            }
+            else
+            {
+                exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
+            }
 
             exInfo.Init(exceptionToThrow, instructionFault);
             DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);

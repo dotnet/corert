@@ -588,6 +588,8 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_R0_IS_GCREF    = 0x00004000,   // used by hijack handler to report return value of hijacked method
     PTFF_R0_IS_BYREF    = 0x00008000,   // used by hijack handler to report return value of hijacked method
+
+    PTFF_THREAD_ABORT   = 0x00010000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
@@ -621,6 +623,8 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,   // used by hijack handler to report return value of hijacked method
+
+    PTFF_THREAD_ABORT   = 0x00040000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 #endif // _TARGET_ARM_
 
