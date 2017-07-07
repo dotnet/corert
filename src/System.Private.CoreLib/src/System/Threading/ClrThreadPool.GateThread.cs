@@ -17,8 +17,6 @@ namespace System.Threading
             private static bool s_disableStarvationDetection = false; // TODO: Config
             private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
             
-            private static volatile bool s_requested = false;
-
             private static bool s_created = false;
             private static LowLevelLock s_createdLock = new LowLevelLock();
             private static CpuUtilizationReader s_cpu = new CpuUtilizationReader();
@@ -26,22 +24,14 @@ namespace System.Threading
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                // We need to run a second iteration to ensure that we can detect starvation even if we just miss the dequeue time check
-                bool shouldRunExtraIteration = false;
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
 
-                    if(ThreadPoolInstance._numRequestedWorkers > 0)
-                    {
-                        WorkerThread.MaybeAddWorkingWorker();
-                    }
-
-                    if (!s_requested && !shouldRunExtraIteration)
+                    if(ThreadPoolInstance._numRequestedWorkers == 0)
                     {
                         continue;
                     }
-                    s_requested = false;
 
                     ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
@@ -79,8 +69,6 @@ namespace System.Threading
                             }
                         }
                     }
-
-                    shouldRunExtraIteration = !shouldRunExtraIteration;
                 }
             }
 
@@ -111,13 +99,11 @@ namespace System.Threading
                 RuntimeThread gateThread = RuntimeThread.Create(GateThreadStart);
                 gateThread.IsBackground = true;
                 gateThread.Start();
-                s_created = true;
             }
 
             // This is called by a worker thread
             internal static void EnsureRunning()
             {
-                s_requested = true;
                 if (!s_created)
                 {
                     try
