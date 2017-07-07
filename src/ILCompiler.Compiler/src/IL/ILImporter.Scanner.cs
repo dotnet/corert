@@ -257,7 +257,12 @@ namespace Internal.IL
 
             if (method.IsRawPInvoke())
             {
-                // Raw P/invokes don't have any dependencies.
+                // Raw P/invokes don't have any dependencies, except for potentially a cctor trigger.
+                if (_factory.TypeSystemContext.HasLazyStaticConstructor(method.OwningType))
+                {
+                    // This cctor runs even if the type is beforefieldinit.
+                    _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, method.OwningType), "Owning type cctor");
+                }
                 return;
             }
 
