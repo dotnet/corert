@@ -59,7 +59,10 @@ endm
 ;;
 POP_PROBE_FRAME macro extraStack
     movdqa      xmm0, [rsp + 20h]
-    add         rsp, 20h + 10h + (extraStack AND (10h-1)) + 4*8
+    add         rsp, 20h + 10h + (extraStack AND (10h-1)) + 8
+    pop         rbp
+    pop         rax     ; discard Thread*
+    pop         rax     ; discard BITMASK
     pop         rbx
     pop         rsi
     pop         rdi

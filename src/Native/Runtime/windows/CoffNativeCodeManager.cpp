@@ -427,13 +427,88 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+// Convert the return kind that was encoded by RyuJIT to the
+// value that CoreRT runtime can understand and support.
+GCRefKind GetGcRefKind(ReturnKind returnKind)
+{
+    static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
+    static_assert((GCRefKind)ReturnKind::RT_Object == GCRK_Object, "ReturnKind::RT_Object does not match GCRK_Object");
+    static_assert((GCRefKind)ReturnKind::RT_ByRef  == GCRK_Byref, "ReturnKind::RT_ByRef does not match GCRK_Byref");
+
+    switch (returnKind)
+    {
+        case ReturnKind::RT_Scalar:
+            return GCRK_Scalar;
+        case ReturnKind::RT_Object:
+            return GCRK_Object;
+        case ReturnKind::RT_ByRef:
+            return GCRK_Byref;
+        default:
+            return GCRK_Unknown;
+    }
+}
+
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 GCRefKind *     pRetValueKind)      // out
 {
-    // @TODO: CORERT: GetReturnAddressHijackInfo
+#if defined(_TARGET_AMD64_)
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    // Check whether this is a funclet
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
+        return false;
+
+    // Skip hijacking a reverse-pinvoke method - it doesn't get us much because we already synchronize
+    // with the GC on the way back to native code.
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+        return false;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to detemine its return type
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_RETURN_KIND),
+        0
+        );
+
+    GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
+    if (gcRefKind == GCRK_Unknown)
+        return false;
+
+    // Unwind the current method context to the caller's context to get its stack pointer
+    // and obtain the location of the return address on the stack
+    SIZE_T  EstablisherFrame;
+    PVOID   HandlerData;
+    CONTEXT context;
+    context.Rsp = pRegisterSet->SP;
+    context.Rip = pRegisterSet->IP;
+
+    RtlVirtualUnwind(NULL,
+                    dac_cast<TADDR>(m_moduleBase),
+                    pRegisterSet->IP,
+                    (PRUNTIME_FUNCTION)pNativeMethodInfo->runtimeFunction,
+                    &context,
+                    &HandlerData,
+                    &EstablisherFrame,
+                    NULL);
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
+    *pRetValueKind = gcRefKind;
+    return true;
+#else
     return false;
+#endif // defined(_TARGET_AMD64_)
 }
 
 void CoffNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
