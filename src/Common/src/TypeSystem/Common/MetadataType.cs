@@ -88,6 +88,10 @@ namespace Internal.TypeSystem
         /// doesn't exist.
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
+
+        public sealed override string DiagnosticNamespace => Namespace;
+
+        public sealed override string DiagnosticName => Name;
     }
 
     public struct ClassLayoutMetadata

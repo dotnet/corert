@@ -200,7 +200,7 @@ namespace Internal.TypeSystem
             {
 #if TYPE_LOADER_IMPLEMENTATION
                 if (type is NoMetadata.NoMetadataType)
-                    return ((NoMetadata.NoMetadataType)type).ModuleName;
+                    return ((NoMetadata.NoMetadataType)type).DiagnosticModuleName;
 #endif
                 return Module((type as MetadataType)?.Module);
             }
@@ -365,20 +365,20 @@ namespace Internal.TypeSystem
                     }
                     else
                     {
-                        string ns = type.Namespace;
+                        string ns = type.DiagnosticNamespace;
                         if (ns.Length > 0)
                         {
                             sb.Append(ns);
                             sb.Append('.');
                         }
-                        sb.Append(type.Name);
+                        sb.Append(type.DiagnosticName);
                     }
                 }
 
                 protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
                 {
                     // NOTE: We're ignoring the containing type for compatiblity with SigFormat.cpp
-                    sb.Append(nestedType.Name);
+                    sb.Append(nestedType.DiagnosticName);
                 }
             }
         }
