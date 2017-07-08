@@ -98,7 +98,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // it would be more confusing and less-performant if we were to merge them together
 #if !RHTESTCL
             object target = removeMethod.Target;
-            if (target != null && target is __ComObject)
+            if (target == null || target is __ComObject)
                 NativeOrStaticEventRegistrationImpl.RemoveAllEventHandlers(removeMethod);
             else
 #endif
