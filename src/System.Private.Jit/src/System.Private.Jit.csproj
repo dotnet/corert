@@ -5,7 +5,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
     <METADATA_TYPE_LOADER>true</METADATA_TYPE_LOADER>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
