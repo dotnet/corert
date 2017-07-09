@@ -15,7 +15,6 @@ set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
-set __MSBCleanBuildArgs=
 set __SkipTestBuild=
 set "__DotNetCliPath=%__ProjectDir%\Tools\dotnetcli"
 
@@ -66,9 +65,6 @@ set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 if not defined __CleanBuild goto MakeDirs
 echo Doing a clean build
 echo.
-
-:: MSBuild projects would need a rebuild
-set __MSBCleanBuildArgs=/t:rebuild /p:CleanedTheBuild=1
 
 :: Cleanup the previous output for the selected configuration
 if exist "%__BinDir%" rd /s /q "%__BinDir%"

@@ -51,7 +51,7 @@ echo Failed to generate native component build project!
 exit /b 1
 
 :BuildNative
-%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% %__ExtraMsBuildParams% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__IntermediatesDir%\install.vcxproj" %__ExtraMsBuildParams% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto AfterNativeBuild
 echo Native component build failed. Refer !__NativeBuildLog! for details.
 exit /b 1
