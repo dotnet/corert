@@ -7,8 +7,8 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
-    <!-- Disable warning about CLSCompliant attributes on members not being needed. -->
-    <NoWarn>$(NoWarn);3021</NoWarn>
+    <!-- CoreLib has to be marked as CLSCompliant to allow building CLSCompliant assemblies against it -->
+    <CLSCompliant>true</CLSCompliant>
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
     <AssemblyKey>MSFT</AssemblyKey>
   </PropertyGroup>
