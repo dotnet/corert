@@ -69,9 +69,6 @@ namespace Internal.Runtime.Augments
         public abstract void SetGlobalDefaultCulture(Object culture);
         public abstract Object GetCurrentWinRTDispatcher();
         public abstract void PostToWinRTDispatcher(Object dispatcher, Action<object> action, object state);
-        public abstract Object GetResourceMap(string subtreeName);
-        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName);
-        public abstract string GetResourceString(object resourceMap, string resourceName, string languageName, string neutralResourcesCulture);
         public abstract bool IsAppxModel();
         public abstract bool ReportUnhandledError(Exception ex);
         public abstract void SetCOMWeakReferenceTarget(object weakReference, object target);
