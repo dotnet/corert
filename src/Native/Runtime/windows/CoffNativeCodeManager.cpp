@@ -434,18 +434,9 @@ GCRefKind GetGcRefKind(ReturnKind returnKind)
     static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
     static_assert((GCRefKind)ReturnKind::RT_Object == GCRK_Object, "ReturnKind::RT_Object does not match GCRK_Object");
     static_assert((GCRefKind)ReturnKind::RT_ByRef  == GCRK_Byref, "ReturnKind::RT_ByRef does not match GCRK_Byref");
+    ASSERT((returnKind == RT_Scalar) || (returnKind == GCRK_Object) || (returnKind == GCRK_Byref));
 
-    switch (returnKind)
-    {
-        case ReturnKind::RT_Scalar:
-            return GCRK_Scalar;
-        case ReturnKind::RT_Object:
-            return GCRK_Object;
-        case ReturnKind::RT_ByRef:
-            return GCRK_Byref;
-        default:
-            return GCRK_Unknown;
-    }
+    return (GCRefKind)returnKind;
 }
 
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
@@ -483,16 +474,15 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         );
 
     GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
-    if (gcRefKind == GCRK_Unknown)
-        return false;
 
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
     SIZE_T  EstablisherFrame;
     PVOID   HandlerData;
     CONTEXT context;
-    context.Rsp = pRegisterSet->SP;
-    context.Rip = pRegisterSet->IP;
+    context.Rsp = pRegisterSet->GetSP();
+    context.Rbp = pRegisterSet->GetFP();
+    context.Rip = pRegisterSet->GetIP();
 
     RtlVirtualUnwind(NULL,
                     dac_cast<TADDR>(m_moduleBase),
