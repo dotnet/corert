@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -441,7 +441,7 @@ namespace System
 
         // Using floating-point arithmetic directly means that infinities can be returned, which is reasonable
         // if we consider TimeSpan.FromHours(1) / TimeSpan.Zero asks how many zero-second intervals there are in
-        // an hour for which ∞ is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
+        // an hour for which infinity is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
         // is perhaps less useful, but no less useful than an exception.
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
