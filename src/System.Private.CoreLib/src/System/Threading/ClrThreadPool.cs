@@ -266,7 +266,7 @@ namespace System.Threading
             if(elapsedInterval >= requiredInterval)
             {
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                //return counts.numExistingThreads >= counts.numThreadsGoal;
+                return counts.numExistingThreads >= counts.numThreadsGoal;
             }
             return false;
         }
