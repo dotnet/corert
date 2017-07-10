@@ -65,17 +65,6 @@ namespace System
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            // SetData should only be used to set values that don't already exist.
-            object currentVal;
-            lock (((ICollection)s_localStore).SyncRoot)
-            {
-                s_localStore.TryGetValue(name, out currentVal);
-            }
-            if (currentVal != null)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_SetData_OnlyOnce);
-            }
-
             lock (((ICollection)s_localStore).SyncRoot)
             {
                 s_localStore[name] = data;
