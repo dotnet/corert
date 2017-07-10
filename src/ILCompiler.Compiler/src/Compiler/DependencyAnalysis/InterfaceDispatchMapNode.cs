@@ -55,7 +55,15 @@ namespace ILCompiler.DependencyAnalysis
         public void SetDispatchMapIndex(NodeFactory factory, int index)
         {
             _dispatchMapTableIndex = index;
-            ((EETypeNode)factory.ConstructedTypeSymbol(_type)).SetDispatchMapIndex(_dispatchMapTableIndex);
+            IEETypeNode eeTypeNode = factory.ConstructedTypeSymbol(_type);
+
+            if (eeTypeNode is ImportedEETypeSymbolNode)
+            {
+                Debug.Assert(_type == factory.TypeSystemContext.GetWellKnownType(WellKnownType.String));
+                eeTypeNode = factory.ConstructedClonedTypeSymbol(_type);
+            }
+
+            ((EETypeNode)eeTypeNode).SetDispatchMapIndex(_dispatchMapTableIndex);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
