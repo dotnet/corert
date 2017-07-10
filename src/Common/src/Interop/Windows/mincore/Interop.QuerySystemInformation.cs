@@ -9,7 +9,6 @@ using System.Text;
 
 internal partial class Interop
 {
-    // TODO: Move to mincore
     internal partial class mincore
     {
         internal enum SYSTEM_INFORMATION_CLASS
