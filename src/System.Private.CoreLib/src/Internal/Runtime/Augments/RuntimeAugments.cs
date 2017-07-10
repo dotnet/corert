@@ -290,10 +290,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe void StoreValueTypeField(ref byte address, Object fieldValue, RuntimeTypeHandle fieldType)
         {
-            fixed (byte* pData = &address)
-            {
-                RuntimeImports.RhUnbox(fieldValue, (void*)pData, fieldType.ToEETypePtr());
-            }
+            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
         }
 
         public static unsafe void StoreValueTypeField(Object obj, int fieldOffset, Object fieldValue, RuntimeTypeHandle fieldType)
