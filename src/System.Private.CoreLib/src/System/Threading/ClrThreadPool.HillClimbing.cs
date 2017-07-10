@@ -13,7 +13,7 @@ namespace System.Threading
         /// </summary>
         private partial class HillClimbing
         {
-            private static Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
+            private static readonly Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
             public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
 
             private static int GetConfig(string configName, int defaultValue)
@@ -22,16 +22,16 @@ namespace System.Threading
                 switch (config)
                 {
                     case string str:
-                        if(int.TryParse(str, out int result))
+                        if (int.TryParse(str, out int result))
                         {
                             return result;
                         }
-                        return defaultValue;
+                        break;
                     case int i:
                         return i;
-                    default:
-                        return defaultValue;
                 }
+
+                return defaultValue;
             }
 
             private static HillClimbing CreateHillClimber()

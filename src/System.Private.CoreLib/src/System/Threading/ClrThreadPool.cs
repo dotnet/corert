@@ -39,8 +39,6 @@ namespace System.Threading
                 case uint val:
                     numThreads = (ushort)val;
                     break;
-                default:
-                    break;
             }
             return (short)Math.Min(numThreads, MaxPossibleThreadCount);
         }
@@ -50,8 +48,8 @@ namespace System.Threading
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
 
-        private static short s_forcedMinWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMinWorkerThreads");
-        private static short s_forcedMaxWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMaxWorkerThreads");
+        private static readonly short s_forcedMinWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMinWorkerThreads");
+        private static readonly short s_forcedMaxWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMaxWorkerThreads");
 
         private short _minThreads = (short)ThreadPoolGlobals.processorCount;
         private short _maxThreads = MaxPossibleThreadCount;

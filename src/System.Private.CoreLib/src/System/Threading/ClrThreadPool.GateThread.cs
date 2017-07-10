@@ -14,8 +14,8 @@ namespace System.Threading
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             
-            private static bool s_disableStarvationDetection = (bool?)AppContext.GetData("ThreadPool_DisableStarvationDetection") ?? true;
-            private static bool s_debuggerBreakOnWorkStarvation = (bool?)AppContext.GetData("ThreadPool_DebugBreakOnWorkerStarvation") ?? false;
+            private static readonly bool s_disableStarvationDetection = (bool?)AppContext.GetData("ThreadPool_DisableStarvationDetection") ?? true;
+            private static readonly bool s_debuggerBreakOnWorkStarvation = (bool?)AppContext.GetData("ThreadPool_DebugBreakOnWorkerStarvation") ?? false;
             
             private static volatile bool s_requested = false;
 
