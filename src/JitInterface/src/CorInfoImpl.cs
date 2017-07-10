@@ -867,64 +867,73 @@ namespace Internal.JitInterface
             return impl != null ? ObjectToHandle(impl) : null;
         }
 
+        private void ComputeLookup(CORINFO_CONTEXT_STRUCT* pContextMethod, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
+        {
+            if (_compilation.NeedsRuntimeLookup(helperId, entity))
+            {
+                lookup.lookupKind.needsRuntimeLookup = true;
+                lookup.runtimeLookup.signature = null;
+
+                MethodDesc contextMethod = methodFromContext(pContextMethod);
+
+                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                // to abort the inlining attempt anyway.
+                if (contextMethod != MethodBeingCompiled)
+                    return;
+
+                GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
+
+                if (genericLookup.UseHelper)
+                {
+                    lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                    lookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
+                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(entity);
+                }
+                else
+                {
+                    if (genericLookup.ContextSource == GenericContextSource.MethodParameter)
+                    {
+                        lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_METHOD;
+                    }
+                    else
+                    {
+                        lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+                    }
+
+                    lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
+                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
+                    if (genericLookup.NumberOfIndirections > 1)
+                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
+                    lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
+                    lookup.runtimeLookup.testForNull = false;
+                    lookup.runtimeLookup.indirectFirstOffset = false;
+                    lookup.lookupKind.runtimeLookupFlags = 0;
+                    lookup.lookupKind.runtimeLookupArgs = null;
+                }
+                
+                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
+            }
+            else
+            {
+                lookup.lookupKind.needsRuntimeLookup = false;
+                ISymbolNode constLookup = _compilation.ComputeConstantLookup(helperId, entity);
+                lookup.constLookup = CreateConstLookupToSymbol(constLookup);
+            }
+        }
+
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             // Resolved token as a potentially RuntimeDetermined object.
             MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
-            if (method.IsRuntimeDeterminedExactMethod)
+            switch (method.Name)
             {
-                pResult.lookup.lookupKind.needsRuntimeLookup = true;
-                pResult.lookup.runtimeLookup.signature = null;
-                pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-
-                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                // to abort the inlining attempt anyway.
-                if (contextMethod == MethodBeingCompiled)
-                {
-                    switch (method.Name)
-                    {
-                        case "EETypePtrOf":
-                            pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
-                            pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
-                            break;
-                        case "DefaultConstructorOf":
-                            pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DefaultConstructor;
-                            pResult.lookup.lookupKind.runtimeLookupArgs = ObjectToHandle(method.Instantiation[0]);
-                            break;
-                        default:
-                            Debug.Assert(false);
-                            break;
-                    }
-
-                    pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                }
-            }
-            else
-            {
-                pResult.lookup.lookupKind.needsRuntimeLookup = false;
-                
-                switch (method.Name)
-                {
-                    case "EETypePtrOf":
-                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(method.Instantiation[0]));
-                        break;
-                    case "DefaultConstructorOf":
-                        MethodDesc ctor = method.Instantiation[0].GetDefaultConstructor();
-                        if (ctor == null)
-                        {
-                            MetadataType activatorType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
-                            MetadataType classWithMissingCtor = activatorType.GetKnownNestedType("ClassWithMissingConstructor");
-                            ctor = classWithMissingCtor.GetParameterlessConstructor();
-                        }
-                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.CanonicalEntrypoint(ctor));
-                        break;
-                    default:
-                        Debug.Assert(false);
-                        break;
-                }
+                case "EETypePtrOf":
+                    ComputeLookup(pResolvedToken.tokenContext, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    break;
+                case "DefaultConstructorOf":
+                    ComputeLookup(pResolvedToken.tokenContext, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    break;
             }
         }
 
@@ -2604,7 +2613,8 @@ namespace Internal.JitInterface
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
-            bool runtimeLookup;
+            ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
+            object target = null;
 
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
@@ -2615,28 +2625,17 @@ namespace Internal.JitInterface
 
                 Debug.Assert(md.OwningType == td);
 
-                runtimeLookup = md.IsSharedByGenericInstantiations;
-
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
 
-                if (!runtimeLookup)
-                {
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
-                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeMethodHandle(md));
-                    else
-                        throw new NotImplementedException();
-                }
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                    helperId = ReadyToRunHelperId.MethodHandle;
                 else
                 {
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
-                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                    else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method)
-                        pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodDictionary;
-                    else
-                        throw new NotImplementedException();
-
-                    pResult.lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    helperId = ReadyToRunHelperId.MethodDictionary;
                 }
+                
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2646,19 +2645,9 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
 
-                runtimeLookup = fd.IsStatic && td.IsCanonicalSubtype(CanonicalFormKind.Any);
-
-                if (!runtimeLookup)
-                {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
-                    pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.RuntimeFieldHandle(fd));
-                }
-                else
-                {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
-                    pResult.lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                }
+                Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken);
+                helperId = ReadyToRunHelperId.FieldHandle;
+                target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
             }
             else
             {
@@ -2667,69 +2656,38 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
-                runtimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any);
-
-                if (!runtimeLookup)
+                object obj = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                target = obj as TypeDesc;
+                if (target == null)
                 {
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
-                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
-                        || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
+                    Debug.Assert(fEmbedParent);
+
+                    if (obj is MethodDesc)
                     {
-                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                        target = ((MethodDesc)obj).OwningType;
                     }
                     else
                     {
-                        pResult.lookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                        Debug.Assert(obj is FieldDesc);
+                        target = ((FieldDesc)obj).OwningType;
                     }
+                }
+
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
+                        || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
+                {
+                    helperId = ReadyToRunHelperId.TypeHandle;
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
-
-                    object obj = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                    TypeDesc type = obj as TypeDesc;
-                    if (type == null)
-                    {
-                        Debug.Assert(fEmbedParent);
-
-                        if (obj is MethodDesc)
-                        {
-                            type = ((MethodDesc)obj).OwningType;
-                        }
-                        else
-                        {
-                            Debug.Assert(obj is FieldDesc);
-                            type = ((FieldDesc)obj).OwningType;
-                        }
-                    }
-
-                    pResult.lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(type);
+                    helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
             }
 
             Debug.Assert(pResult.compileTimeHandle != null);
-
-            if (runtimeLookup)
-            {
-                pResult.lookup.lookupKind.needsRuntimeLookup = true;
-                pResult.lookup.runtimeLookup.signature = null;
-                pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-
-                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                // to abort the inlining attempt anyway.
-                if (contextMethod != MethodBeingCompiled)
-                    return;
-
-                pResult.lookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-            }
-            else
-            {
-                // If the target is not shared then we've already got our result and
-                // can simply do a static look up
-                pResult.lookup.lookupKind.needsRuntimeLookup = false;
-            }
+            
+            ComputeLookup(pResolvedToken.tokenContext, target, helperId, ref pResult.lookup);
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
@@ -2742,6 +2700,20 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(method.AcquiresInstMethodTableFromThis());
                 return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            }
+        }
+
+        private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
+        {
+            switch (contextSource)
+            {
+                case GenericContextSource.MethodParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+                case GenericContextSource.TypeParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+                default:
+                    Debug.Assert(contextSource == GenericContextSource.ThisObject);
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
             }
         }
 
@@ -3077,18 +3049,11 @@ namespace Internal.JitInterface
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
+                    ComputeLookup(pResolvedToken.tokenContext,
+                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
+                        ReadyToRunHelperId.MethodHandle,
+                        ref pResult.codePointerOrStubLookup);
+                    Debug.Assert(pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
                 }
 
                 // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
@@ -3103,18 +3068,11 @@ namespace Internal.JitInterface
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                    // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
-                        pResult.codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                    }
+                    ComputeLookup(pResolvedToken.tokenContext,
+                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
+                        ReadyToRunHelperId.VirtualDispatchCell,
+                        ref pResult.codePointerOrStubLookup);
+                    Debug.Assert(pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
                 }
                 else
                 {

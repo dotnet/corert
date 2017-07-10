@@ -29,11 +29,12 @@ namespace ILCompiler.DependencyAnalysis
             _lookupSignature = GetLookupSignature(factory, helperId, target);
         }
 
-        private static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
+        public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
         {
             switch (id)
             {
                 case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle: // TODO: make a separate dictionary entry?
                     return factory.GenericLookup.Type((TypeDesc)target);
                 case ReadyToRunHelperId.MethodHandle:
                     return factory.GenericLookup.MethodHandle((MethodDesc)target);
