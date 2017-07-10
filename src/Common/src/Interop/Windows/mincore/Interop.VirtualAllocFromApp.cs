@@ -9,7 +9,11 @@ internal static partial class Interop
 {
     internal static partial class mincore
     {
-        [DllImport("api-ms-win-core-memory-l1-1-4.dll")]
+        // @todo: TFS 460497 - Temporary hack to prevent ARM runs from failing until we get a shim in place.
+        [DllImport(Libraries.Kernel32, EntryPoint="VirtualAlloc")]
         internal static extern unsafe void* VirtualAllocFromApp(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
+
+        //[DllImport("api-ms-win-core-memory-l1-1-4.dll")]
+        //internal static extern unsafe void* VirtualAllocFromApp(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
     }
 }
