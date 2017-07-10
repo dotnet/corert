@@ -602,7 +602,11 @@ namespace Internal.StackTraceGenerator
 
         // CoCreateInstance is not in WindowsApp_Downlevel.lib and ExactSpelling = true is required
         // to force MCG to resolve it.
-        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling =true)]
+        //
+        // This api is a WACK violation but it cannot be changed to CoCreateInstanceApp() without breaking the stack generator altogether.
+        // The toolchain will not include this library in the dependency closure as long as (1) the program is being compiled as a store app and not a console .exe
+        // and (2) the /buildType switch passed to ILC is set to the "ret".
+        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling = true)]
         private static extern unsafe int CoCreateInstance(byte* rclsid, IntPtr pUnkOuter, int dwClsContext, byte* riid, out IntPtr ppv);
 
         private const int S_OK = 0;

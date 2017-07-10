@@ -17,7 +17,7 @@ namespace System.Diagnostics
             bool result = DeveloperExperience.Default.OnContractFailure(stackTrace, ContractFailureKind.Assert, fullMessage, null, null, null);
             if (!result)
             {
-                ExitProcess();
+                RuntimeExceptionHelpers.FailFast(fullMessage);
             }
         }
 
@@ -52,11 +52,6 @@ namespace System.Diagnostics
         private static void WriteToDebugger(string message)
         {
             Interop.mincore.OutputDebugString(message ?? string.Empty);
-        }
-
-        private static void ExitProcess()
-        {
-            Interop.mincore.ExitProcess((uint)(Interop.Constants.EFail));
         }
     }
 }

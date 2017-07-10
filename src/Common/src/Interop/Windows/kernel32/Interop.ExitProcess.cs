@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static unsafe partial class mincore
+    internal static unsafe partial class Kernel32
     {
-        [DllImport(Libraries.ProcessEnvironment, CharSet = CharSet.Unicode, EntryPoint = "GetEnvironmentVariableW")]
-        internal static extern unsafe int GetEnvironmentVariable(string lpName, [Out] char[] lpValue, int size);
+        [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
+        internal static extern void ExitProcess(int exitCode);
     }
 }
