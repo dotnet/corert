@@ -109,7 +109,7 @@ get_official_cross_builds()
                 exit $BUILDERRORLEVEL
             fi
             tar xvf ./build.tar.gz ./System.Native.a
-            mv ./System.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
+            mv ./System.Native.a $__ProjectRoot/bin/Linux.${__BuildArch}.${__BuildType}/framework
             rm -rf ./build.tar.gz
         fi
         if [ -n ${__coreclrsource} ]; then
@@ -118,7 +118,7 @@ get_official_cross_builds()
             if [ $BUILDERRORLEVEL != 0 ]; then
                 exit $BUILDERRORLEVEL
             fi
-            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
+            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Linux.${__BuildArch}.${__BuildType}/framework
         fi
      fi
 }
