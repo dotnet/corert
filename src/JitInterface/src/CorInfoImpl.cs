@@ -3078,6 +3078,7 @@ namespace Internal.JitInterface
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
