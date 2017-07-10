@@ -447,7 +447,7 @@ LOCAL_LABEL(Array8SizeOverflow):
 
         // if the element count is non-negative, it's an OOM error
         cmp         r1, #0
-        bge         Array8OutOfMemory1
+        bge         LOCAL_LABEL(Array8OutOfMemory1)
 
         // r0 holds EEType pointer already
         mov         r1, #1              // Indicate that we should throw OverflowException
