@@ -21,7 +21,7 @@ namespace Internal.TypeSystem
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
             if (type.HasInstantiation && type.IsExplicitLayout)
             {
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadExplicitGeneric, type.GetTypeDefinition());
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitGeneric, type.GetTypeDefinition());
             }
 
             // Count the number of instance fields in advance for convenience
@@ -35,13 +35,13 @@ namespace Internal.TypeSystem
 
                 // ByRef instance fields are not allowed.
                 if (fieldType.IsByRef)
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
 
                 // ByRef-like instance fields on reference types are not allowed.
                 if (fieldType.IsValueType && !type.IsValueType)
                 {
                     if (((DefType)fieldType).IsByRefLike)
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 numInstanceFields++;
@@ -52,7 +52,7 @@ namespace Internal.TypeSystem
                 // This is a global type, it must not have instance fields.
                 if (numInstanceFields > 0)
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 // Global types do not do the rest of instance field layout.
@@ -77,14 +77,14 @@ namespace Internal.TypeSystem
                 if (type.IsSequentialLayout != baseType.IsSequentialLayout ||
                     type.IsExplicitLayout != baseType.IsExplicitLayout)
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
             }
 
             // Enum types must have a single instance field
             if (type.IsEnum && numInstanceFields != 1)
             {
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
 
             if (type.IsPrimitive)
@@ -93,7 +93,7 @@ namespace Internal.TypeSystem
                 // as the type itself. They do not do the rest of instance field layout.
                 if (numInstanceFields > 1)
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 SizeAndAlignment instanceByteSizeAndAlignment;
@@ -144,7 +144,7 @@ namespace Internal.TypeSystem
             {
                 if (type.IsEnum)
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
 
                 var layoutMetadata = type.GetClassLayout();
@@ -153,7 +153,7 @@ namespace Internal.TypeSystem
                 int packing = layoutMetadata.PackingSize;
                 if (packing < 0 || packing > 128 || ((packing & (packing - 1)) != 0))
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
 
                 Debug.Assert(layoutMetadata.Offsets == null || layoutMetadata.Offsets.Length == numInstanceFields);
@@ -211,7 +211,7 @@ namespace Internal.TypeSystem
                 TypeDesc fieldType = field.FieldType;
                 if (fieldType.IsByRef || (fieldType.IsValueType && ((DefType)fieldType).IsByRefLike))
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
@@ -309,7 +309,7 @@ namespace Internal.TypeSystem
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
                 if (fieldAndOffset.Offset == FieldAndOffset.InvalidOffset)
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
 
                 LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos;
 
@@ -319,7 +319,7 @@ namespace Internal.TypeSystem
                     if (offsetModulo != 0)
                     {
                         // GC pointers MUST be aligned.
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, fieldAndOffset.Offset.ToStringInvariant());
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, fieldAndOffset.Offset.ToStringInvariant());
                     }
                 }
 

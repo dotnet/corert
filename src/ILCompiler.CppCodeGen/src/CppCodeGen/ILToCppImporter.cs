@@ -2642,17 +2642,17 @@ namespace Internal.IL
 
         private void ReportInvalidBranchTarget(int targetOffset)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportFallthroughAtEndOfMethod()
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportInvalidInstruction(ILOpcode opcode)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
     }
 }

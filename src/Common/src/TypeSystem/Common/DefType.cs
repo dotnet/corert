@@ -24,15 +24,5 @@ namespace Internal.TypeSystem
         /// Gets the containing type of this type or null if the type is not nested.
         /// </summary>
         public virtual DefType ContainingType => null;
-
-        /// <summary>
-        /// Gets the diagnostics namespace of the type (E.g. for exception throwing).
-        /// </summary>
-        public virtual string DiagnosticNamespace => null;
-
-        /// <summary>
-        /// Gets the diagnostics name of the type (E.g. for exception throwing).
-        /// </summary>
-        public virtual string DiagnosticName => null;
     }
 }
