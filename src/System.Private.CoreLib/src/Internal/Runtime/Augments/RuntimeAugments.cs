@@ -22,6 +22,7 @@ using System.Runtime;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -1065,6 +1066,11 @@ namespace Internal.Runtime.Augments
 
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
             }
+        }
+
+        public static bool FileExists(string path)
+        {
+            return InternalFile.Exists(path);
         }
 
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)
