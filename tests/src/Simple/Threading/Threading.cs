@@ -55,10 +55,18 @@ internal static class Runner
         // Add in a busy loop at the top of ClrThreadPool.WaitThread.CompleteWait to replicate the race condition
         // this test is testing
         // Console.WriteLine("    WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed");
-        // WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed();
+        // WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed(); 
 
         Console.WriteLine("    WaitThreadTests.CanRegisterMoreThan64Waits");
         WaitThreadTests.CanRegisterMoreThan64Waits();
+
+        Console.WriteLine("    WaitThreadTests.StateIsPasssedThroughToCallback");
+        WaitThreadTests.StateIsPasssedThroughToCallback();
+
+
+        // This test takes a long time to run. Enable for manual testing.
+        // Console.WriteLine("    WaitThreadTests.WaitWithLongerTimeoutThanWaitThreadCanStillTimeout");
+        // WaitThreadTests.WaitWithLongerTimeoutThanWaitThreadCanStillTimeout();
         return Pass;
     }
 }
@@ -788,7 +796,8 @@ internal static class WaitThreadTests
     {
         var e0 = new AutoResetEvent(false);
         var e1 = new AutoResetEvent(false);
-        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) => {
+        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) =>
+        {
             if(!timedOut)
             {
                 e1.Set();
@@ -803,7 +812,8 @@ internal static class WaitThreadTests
     {
         var e0 = new AutoResetEvent(false);
         var e1 = new AutoResetEvent(false);
-        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) => {
+        ThreadPool.RegisterWaitForSingleObject(e0, (_, timedOut) =>
+        {
             if(timedOut)
             {
                 e1.Set();
@@ -818,7 +828,8 @@ internal static class WaitThreadTests
     {
         var e0 = new AutoResetEvent(false);
         var e1 = new AutoResetEvent(false);
-        var registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+        var registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
+        {
             e1.Set();
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         registeredWaitHandle.Unregister(null);
@@ -830,7 +841,8 @@ internal static class WaitThreadTests
     {
         var e0 = new AutoResetEvent(false);
         var e1 = new AutoResetEvent(false);
-        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
+        {
             e1.Set();
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, false);
         for (int i = 0; i < 4; ++i)
@@ -860,7 +872,8 @@ internal static class WaitThreadTests
         var e0 = new AutoResetEvent(false);
         var e1 = new AutoResetEvent(false);
         var e2 = new ManualResetEvent(true);
-        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
+        {
             e2.Reset();
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         e0.Set();
@@ -871,9 +884,38 @@ internal static class WaitThreadTests
     [Fact]
     public static void CanRegisterMoreThan64Waits()
     {
+        RegisteredWaitHandle[] handles = new RegisteredWaitHandle[65];
         for(int i = 0; i < 65; ++i) {
-            ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => {}, null, 0, true);
+            handles[i] = ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => {}, null, -1, true);
         }
+        for(int i = 0; i < 65; ++i) {
+            handles[i].Unregister(null);
+        }
+    }
+
+    [Fact]
+    public static void StateIsPasssedThroughToCallback()
+    {
+        object state = new object();
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(true), (callbackState, _) =>
+        {
+            if(state == callbackState)
+            {
+                e0.Set();
+            }
+        }, state, 0, true);
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    [OuterLoop]
+    public static void WaitWithLongerTimeoutThanWaitThreadCanStillTimeout()
+    {
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => e0.Set(), null, 21000, true);
+        Thread.Sleep(20000);
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 }
 
