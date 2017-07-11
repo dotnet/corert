@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // On CLR this would throw a SecurityException with "ECall methods must be packaged into a system module."
                 // This is a corner case that nobody is likely to care about.
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             if (CompilationModuleGroup.ContainsMethodBody(method))

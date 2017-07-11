@@ -189,7 +189,7 @@ namespace Internal.TypeSystem.Ecma
         {
             if (!peReader.HasMetadata)
             {
-                throw new TypeSystemException.BadImageFormatException();
+                ThrowHelper.ThrowBadImageFormatException();
             }
 
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
@@ -293,7 +293,7 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw new TypeSystemException.TypeLoadException(nameSpace, name, this);
+                ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);
 
             return null;
         }
@@ -389,7 +389,7 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    throw new TypeSystemException.MissingFieldException(parentTypeDesc, name);
+                    ThrowHelper.ThrowMissingFieldException(parentTypeDesc, name);
                 }
                 else
                 {
@@ -413,12 +413,12 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = typeDescToInspect.BaseType;
                     } while (typeDescToInspect != null);
 
-                    throw new TypeSystemException.MissingMethodException(parentTypeDesc, name, sig);
+                    ThrowHelper.ThrowMissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
             {
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
             }
             else if (parent is ModuleDesc)
             {
@@ -446,7 +446,7 @@ namespace Internal.TypeSystem.Ecma
                 if (result != null)
                     return result;
 
-                throw new TypeSystemException.TypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
+                ThrowHelper.ThrowTypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -496,7 +496,7 @@ namespace Internal.TypeSystem.Ecma
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)
-                    throw new TypeSystemException.TypeLoadException(name, this);
+                    ThrowHelper.ThrowTypeLoadException(name, this);
                 return nestedType;
             }
             else
