@@ -61,7 +61,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         RuntimeTypeHandle declaringTypeHandleIgnored;
                         MethodNameAndSignature nameAndSignatureIgnored;
                         if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out declaringTypeHandleIgnored, out nameAndSignatureIgnored, out genericMethodTypeArgumentHandles))
-                            return null;
+                            throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }
             }
@@ -69,7 +69,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             if (callTryGetMethod)
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
-                    return null;
+                    throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoDynamic);
             }
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
             MethodInfo methodInfo = methodBase as MethodInfo;

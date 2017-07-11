@@ -106,6 +106,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemException.cs">
       <Link>TypeSystem\Common\TypeSystemException.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.cs">
+      <Link>TypeSystem\Common\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.Common.cs">
+      <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
@@ -219,6 +225,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
+      <Link>Utilities\ExceptionTypeNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.Metadata.cs">
+      <Link>Utilities\ExceptionTypeNameFormatter.Metadata.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>Utilities\TypeNameFormatter.cs</Link>

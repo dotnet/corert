@@ -1687,9 +1687,6 @@
   <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
     <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
   </data>
-  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
-    <value>SetData can only be used to set the value of a given name once.</value>
-  </data>
   <data name="SemaphoreSlim_Disposed" xml:space="preserve">
     <value>The semaphore has been disposed.</value>
   </data>

@@ -1477,7 +1477,7 @@ PTR_VOID StackFrameIterator::GetEffectiveSafePointAddress()
     return m_effectiveSafePointAddress;
 }
 
-ICodeManager * StackFrameIterator::GetCodeManager()
+PTR_ICodeManager StackFrameIterator::GetCodeManager()
 {
     ASSERT(IsValid());
     return m_pCodeManager;
@@ -1503,7 +1503,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
-        m_pCodeManager = m_pInstance->FindCodeManagerByAddress(m_ControlPC);
+        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
         FAILFAST_OR_DAC_FAIL(m_pCodeManager);
 
         FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo));
