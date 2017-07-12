@@ -32,5 +32,10 @@ namespace Internal.Runtime.Augments
 
             return Array.Empty<KeyValuePair<string,string>>();
         }
+
+        private static void ExitRaw()
+        {
+            Interop.Sys.Exit(s_latchedExitCode);
+        }
     }
 }
