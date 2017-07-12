@@ -120,6 +120,7 @@
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.ProjectN.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true' and '$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.Win32.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.Win32.cs" />
@@ -493,6 +494,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.RegQueryValueEx.cs">
       <Link>Interop\Windows\mincore\Interop.RegQueryValueEx.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
+      <Link>Interop\Windows\mincore\Interop.ExitProcess.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Windows.cs" />
@@ -522,6 +526,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SetLastError.cs">
       <Link>Interop\Windows\mincore\Interop.SetLastError.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualAllocFromApp.cs">
+      <Link>Interop\Windows\mincore\Interop.VirtualAllocFromApp.cs</Link>
+    </Compile>
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
+      <Link>Interop\Windows\kernel32\Interop.VirtualAlloc.cs</Link>
     </Compile>
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.MUI.cs">
       <Link>Interop\Windows\mincore\Interop.MUI.cs</Link>
@@ -608,7 +618,7 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
       <Link>Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
+    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetSystemDirectory.cs">
       <Link>Interop\Windows\mincore\Interop.GetSystemDirectory.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">

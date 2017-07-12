@@ -3,14 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-internal static partial class Interop
+internal partial class Interop
 {
-    internal unsafe partial class Sys
+    internal partial class Kernel32
     {
-        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_Exit")]
-        internal static extern void Exit(int exitCode);
+        [DllImport(Libraries.Kernel32)]
+        internal static extern unsafe void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
     }
 }

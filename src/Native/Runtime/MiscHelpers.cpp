@@ -522,13 +522,23 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
             unboxingStub = true;
             pCode += 1;
         }
-        // is this movw r12,#imm16; movt r12,#imm16; ldr pc,[r12]?
+        // is this movw r12,#imm16; movt r12,#imm16; ldr pc,[r12]
+        // or movw r12,#imm16; movt r12,#imm16; bx r12
         if  ((pCode[0] & 0xfbf0) == 0xf240 && (pCode[1] & 0x0f00) == 0x0c00
           && (pCode[2] & 0xfbf0) == 0xf2c0 && (pCode[3] & 0x0f00) == 0x0c00
-          && pCode[4] == 0xf8dc && pCode[5] == 0xf000)
+          && ((pCode[4] == 0xf8dc && pCode[5] == 0xf000) || pCode[4] == 0x4760))
         {
-            UInt8 **pIatCell = (UInt8 **)GetThumb2Mov32(pCode);
-            return *pIatCell;
+            if (pCode[4] == 0xf8dc && pCode[5] == 0xf000)
+            {
+                // ldr pc,[r12]
+                UInt8 **pIatCell = (UInt8 **)GetThumb2Mov32(pCode);
+                return *pIatCell;
+            }
+            else if (pCode[4] == 0x4760)
+            {
+                // bx r12
+                return (UInt8 *)GetThumb2Mov32(pCode);
+            }
         }
         // is this an unboxing stub followed by a relative jump?
         else if (unboxingStub && (pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
