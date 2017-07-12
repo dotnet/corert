@@ -17,7 +17,7 @@ namespace System.Threading
             private static bool s_disableStarvationDetection = false; // TODO: Config
             private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
             
-            private static bool s_created = false;
+            private static RuntimeThread s_gateThread;
             private static LowLevelLock s_createdLock = new LowLevelLock();
             private static CpuUtilizationReader s_cpu = new CpuUtilizationReader();
 
@@ -94,29 +94,35 @@ namespace System.Threading
                 return delay > minimumDelay;
             }
 
-            private static void CreateGateThread()
+            private static RuntimeThread CreateGateThread()
             {
                 RuntimeThread gateThread = RuntimeThread.Create(GateThreadStart);
                 gateThread.IsBackground = true;
-                gateThread.Start();
+                return gateThread;
             }
 
             // This is called by a worker thread
             internal static void EnsureRunning()
             {
-                if (!s_created)
+                if (s_gateThread == null)
                 {
+                    bool createdGateThread = false;
                     try
                     {
                         s_createdLock.Acquire();
-                        if (!s_created)
+                        if (s_gateThread == null)
                         {
-                            CreateGateThread();
+                            s_gateThread = CreateGateThread();
+                            createdGateThread = true;
                         }
                     }
                     finally
                     {
                         s_createdLock.Release();
+                    }
+                    if (createdGateThread)
+                    {
+                        s_gateThread.Start();
                     }
                 }
             }
