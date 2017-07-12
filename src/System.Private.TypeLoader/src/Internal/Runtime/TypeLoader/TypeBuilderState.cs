@@ -999,7 +999,7 @@ namespace Internal.Runtime.TypeLoader
                         uint size = (uint)((DefType)arrayType.ElementType).InstanceFieldSize.AsInt;
 
                         if (size > ArrayTypesConstants.MaxSizeForValueClassInArray && arrayType.ElementType.IsValueType)
-                            throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, arrayType.ElementType);
+                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, arrayType.ElementType);
 
                         return checked((ushort)size);
                     }

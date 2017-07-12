@@ -50,10 +50,6 @@ namespace Internal.TypeSystem
                 return _context;
             }
         }
-
-        public override string DiagnosticNamespace => Namespace;
-
-        public override string DiagnosticName => Name;
     }
 
     /// <summary>

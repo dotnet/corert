@@ -499,6 +499,25 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public bool HasKnownTargetPointerAndInstantiatingArgument
+        {
+            get
+            {
+                // If the target method pointer and/or dictionary are passed as arguments to the converter, they are 
+                // considered unknown.
+                // Similarly, delegate thunks and reflection DynamicInvoke thunks do not have any target pointer or 
+                // dictionary pointers stored in their CallConversionInfo structures.
+                if (CallerHasExtraParameterWhichIsFunctionTarget || IsDelegateThunk || IsAnyDynamicInvokerThunk || _targetFunctionPointer == IntPtr.Zero)
+                    return false;
+
+                if (_instantiatingArg != IntPtr.Zero)
+                    return true;
+
+                // Null instantiating arguments are considered known values for non-instantiating stubs.
+                return _thunkKind == ThunkKind.StandardToGeneric || _thunkKind == ThunkKind.GenericToStandard || _thunkKind == ThunkKind.StandardUnboxing;
+            }
+        }
+
         public bool CalleeHasParamType
         {
             get

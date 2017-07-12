@@ -190,7 +190,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void CheckCanGenerateConstructedEEType(NodeFactory factory, TypeDesc type)
         {
             if (!CreationAllowed(type))
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
     }
 }
