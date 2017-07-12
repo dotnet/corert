@@ -15,19 +15,12 @@ namespace System
             }
         }
 
-        // Cache the frequency on the managed side to avoid the cost of P/Invoke on every access to Frequency
-        private static ulong s_frequency;
+        public static ulong Frequency { get; } = GetFrequency();
 
-        public static ulong Frequency
+        private static ulong GetFrequency()
         {
-            get
-            {
-                if (s_frequency == 0)
-                {
-                    Interop.Kernel32.QueryPerformanceFrequency(out s_frequency);
-                }
-                return s_frequency;
-            }
+            Interop.Kernel32.QueryPerformanceFrequency(out ulong frequency);
+            return frequency;
         }
     }
 }

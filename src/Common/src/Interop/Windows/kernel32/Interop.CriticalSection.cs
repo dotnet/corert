@@ -12,14 +12,14 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         public struct CRITICAL_SECTION
         {
-            IntPtr _debugInfo;
-            long _lockCount;
-            long _recursionCount;
-            IntPtr _owningThread;
-            IntPtr _lockSemaphore;
-            ulong _spinCount;
+            IntPtr _debugInfo;
+            int _lockCount;
+            int _recursionCount;
+            IntPtr _owningThread;
+            IntPtr _lockSemaphore;
+            uint _spinCount;
         }
-        
+
         [StructLayout(LayoutKind.Sequential)]
         public struct CONDITION_VARIABLE
         {

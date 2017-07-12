@@ -16,17 +16,15 @@ internal partial class Interop
             SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION = 8
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         internal struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION
         {
-            // These fields are all assigned by the native call.
-#pragma warning disable CS0649
             public long IdleTime;
             public long KernelTime;
             public long UserTime;
             public long DpcTime;
             public long InterruptTime;
             public uint InterruptCount;
-#pragma warning restore CS0649
         }
         
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
