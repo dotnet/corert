@@ -385,6 +385,28 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public static unsafe bool TryGetCallConversionTargetPointerAndInstantiatingArg(IntPtr potentialStub, out IntPtr methodTarget, out IntPtr instantiatingArg)
+        {
+            methodTarget = instantiatingArg = IntPtr.Zero;
+
+            IntPtr callConversionId;
+            IntPtr commonStubDataPtr;
+            object thunkPoolHeap = s_thunkPoolHeap;
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            {
+                // This isn't a call conversion stub
+                return false;
+            }
+
+            CallConversionInfo conversionInfo = CallConversionInfo.GetConverter(callConversionId.ToInt32());
+            if (!conversionInfo.HasKnownTargetPointerAndInstantiatingArgument)
+                return false;
+
+            methodTarget = conversionInfo.TargetFunctionPointer;
+            instantiatingArg = conversionInfo.InstantiatingStubArgument;
+            return true;
+        }
+
         // This struct shares a layout with CallDescrData in the MRT codebase.
         internal unsafe struct CallDescrData
         {
