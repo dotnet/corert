@@ -15,7 +15,7 @@ namespace System.Threading
     /// <summary>
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
-    public sealed class RegisteredWaitHandle : MarshalByRefObject // TODO: Move implementation to new ClrThreadPool.RegisteredWaitHandle class
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(ClrThreadPool.RegisteredWait registeredWait)
         {
