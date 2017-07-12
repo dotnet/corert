@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Threading
 {
     //
-    // Unix-specific implementation of ThreadPool
+    // Portable implementation of ThreadPool
     //
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
