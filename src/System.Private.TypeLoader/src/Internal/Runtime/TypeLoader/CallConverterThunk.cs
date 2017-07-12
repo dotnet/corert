@@ -118,6 +118,9 @@ namespace Internal.Runtime.TypeLoader
 
         static unsafe CallConverterThunk()
         {
+#if PLATFORM_UNIX
+            // TODO
+#else
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
@@ -131,7 +134,9 @@ namespace Internal.Runtime.TypeLoader
             {
                 CallingConventionConverter_SpecifyCommonStubData((IntPtr)commonStubData);
             }
-#endif
+#endif //_TARGET_ARM_
+
+#endif // PLATFORM_UNIX
         }
 
         internal static bool GetByRefIndicatorAtIndex(int index, bool[] lookup)
