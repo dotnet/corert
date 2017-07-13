@@ -312,7 +312,7 @@ namespace System.Runtime
             return e;
         }
 
-        // Given an ExceptionID and an EEtype address, get an exception object of a type that the module containing 
+        // Given an ExceptionID and an EEType address, get an exception object of a type that the module containing 
         // the given address will understand. This finds the classlib-defined GetRuntimeException function and asks 
         // it for the exception object.
         internal static Exception GetClasslibExceptionFromEEType(ExceptionIDs id, IntPtr pEEType)
@@ -322,7 +322,7 @@ namespace System.Runtime
             IntPtr pGetRuntimeExceptionFunction = IntPtr.Zero;
             if (pEEType != IntPtr.Zero)
             {
-                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype(pEEType, ClassLibFunctionId.GetRuntimeException);
+                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(pEEType, ClassLibFunctionId.GetRuntimeException);
             }
 
             // Return the exception object we get from the classlib.
