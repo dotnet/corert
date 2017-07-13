@@ -113,7 +113,7 @@ NESTED_END RhpNewObject, _TEXT
 //  r0 == EEType
 //  r1 == element count
 LEAF_ENTRY RhpNewArray, _TEXT
-        PROLOG_PUSH "{r4,lr}"
+        PROLOG_PUSH "{r4-r6,lr}"
         // we want to limit the element count to the non-negative 32-bit int range
         movw        r12, 0xffff
         movt        r12, (0x7fff >> 16)
@@ -137,11 +137,15 @@ LEAF_ENTRY RhpNewArray, _TEXT
 LOCAL_LABEL(ArrayAlignSize):
         bic         r2, r2, #3
 
-        push        {r0-r2}
+        mov         r4, r0 // Save EEType
+        mov         r5, r1 // Save element count
+        mov         r6, r2 // Save array size
         // r0 = GetThread()
         INLINE_GETTHREAD
         mov         r3, r0
-        pop         {r0-r2}
+        mov         r0, r4
+        mov         r1, r5
+        mov         r2, r6
         // r0 == EEType
         // r1 == element count
         // r2 == array size
@@ -171,7 +175,7 @@ LOCAL_LABEL(ArrayAlignSize):
 
         // Return the object allocated in r0.
         mov         r0, r12
-        EPILOG_POP  "{r4,pc}"
+        EPILOG_POP  "{r4-r6,pc}"
 
 LOCAL_LABEL(ArraySizeBig):
 
@@ -192,7 +196,7 @@ LOCAL_LABEL(ArrayOutOfMemoryFinal):
 
         // EEType is in r0 already
         mov         r1, #0                  // Indicate that we should throw OOM.
-        EPILOG_POP  "{r4,lr}"
+        EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(ArraySizeOverflow):
@@ -202,7 +206,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         // EEType is in r0 already
         mov         r1, #1                  // Indicate that we should throw OverflowException
-        EPILOG_POP  "{r4,lr}"
+        EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 LOCAL_LABEL(RhpNewArray_RarePath):
@@ -210,7 +214,7 @@ LOCAL_LABEL(RhpNewArray_RarePath):
         // r1 == element count
         // r2 == array size + Thread::m_alloc_context::alloc_ptr
         // r3 == Thread
-        EPILOG_POP  "{r4,lr}"
+        EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhpNewArrayRare)
 
 LEAF_END RhpNewArray, _TEXT
