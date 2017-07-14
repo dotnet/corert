@@ -230,6 +230,9 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
+        private const uint DispatchQuantum = 30;
+
         /// <summary>
         /// The maximum number of threads in the default thread pool on Windows 10 as computed by
         /// TppComputeDefaultMaxThreads(TppMaxGlobalPool).
@@ -274,6 +277,14 @@ namespace System.Threading
 
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
+        }
+
+        internal static bool KeepDispatching(int startTickCount)
+        {
+            // Note: this function may incorrectly return false due to TickCount overflow
+            // if work item execution took around a multiple of 2^32 milliseconds (~49.7 days),
+            // which is improbable.
+            return ((uint)(Environment.TickCount - startTickCount) < DispatchQuantum);
         }
 
         internal static void NotifyWorkItemProgress()
