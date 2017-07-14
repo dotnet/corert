@@ -101,6 +101,11 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
         
+        internal static bool KeepDispatching(int startTickCount)
+        {
+            return true;
+        }
+
         internal static void NotifyWorkItemProgress()
         {
         }

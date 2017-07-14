@@ -543,6 +543,7 @@ process_sync_log_stats()
 }
 
 #ifdef MULTIPLE_HEAPS
+#ifndef DACCESS_COMPILE
 
 enum gc_join_stage
 {
@@ -970,6 +971,8 @@ t_join gc_t_join;
 #ifdef BACKGROUND_GC
 t_join bgc_t_join;
 #endif //BACKGROUND_GC
+
+#endif // DACCESS_COMPILE
 
 #endif //MULTIPLE_HEAPS
 

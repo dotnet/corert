@@ -155,6 +155,7 @@ namespace System.Runtime
             AppendExceptionStackFrame = 3,
             CheckStaticClassConstruction = 4,
             GetSystemArrayEEType = 5,
+            OnFirstChance = 6,
         }
 
         // Given an address pointing somewhere into a managed module, get the classlib-defined fail-fast 
@@ -211,6 +212,25 @@ namespace System.Runtime
 #endif
         }
 
+        private static void OnFirstChanceExceptionViaClassLib(object exception)
+        {
+            IntPtr pOnFirstChanceFunction =
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype((IntPtr)exception.m_pEEType, ClassLibFunctionId.OnFirstChance);
+
+            if (pOnFirstChanceFunction == IntPtr.Zero)
+            {
+                return;
+            }
+
+            try
+            {
+                CalliIntrinsics.CallVoid(pOnFirstChanceFunction, exception);
+            }
+            catch
+            {
+                // disallow all exceptions leaking out of callbacks
+            }
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe void UnhandledExceptionFailFastViaClasslib(
@@ -647,7 +667,10 @@ namespace System.Runtime
 
             bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
+
+            OnFirstChanceExceptionViaClassLib(exceptionObj);
             DebuggerNotify.BeginFirstPass(exceptionObj, frameIter.ControlPC, frameIter.SP);
+
             for (; isValid; isValid = frameIter.Next(out startIdx, out unwoundReversePInvoke))
             {
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we
