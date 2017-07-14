@@ -242,6 +242,7 @@ extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
 extern "C" void GetSystemArrayEEType();
+extern "C" void OnFirstChanceException();
 
 typedef void(*pfn)();
 
@@ -252,6 +253,7 @@ static const pfn c_classlibFunctions[] = {
     &AppendExceptionStackFrame,
     nullptr, // &CheckStaticClassConstruction,
     &GetSystemArrayEEType,
+    &OnFirstChanceException
 };
 
 #endif // !CPPCODEGEN
