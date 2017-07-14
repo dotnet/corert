@@ -821,6 +821,9 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     case ClasslibFunctionId::CheckStaticClassConstruction:
         pMethod = m_pModuleHeader->Get_CheckStaticClassConstruction();
         break;
+    case ClasslibFunctionId::OnFirstChanceException:
+        pMethod = m_pModuleHeader->Get_OnFirstChanceException();
+        break;
     default:
         pMethod = NULL;
         break;

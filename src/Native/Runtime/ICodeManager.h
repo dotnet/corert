@@ -77,6 +77,7 @@ enum class ClasslibFunctionId
     AppendExceptionStackFrame = 3,
     CheckStaticClassConstruction = 4,
     GetSystemArrayEEType = 5,
+    OnFirstChanceException = 6,
 };
 
 class ICodeManager
