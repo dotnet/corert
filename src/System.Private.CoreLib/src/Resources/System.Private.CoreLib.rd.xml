@@ -114,6 +114,9 @@
       </Namespace>
     </Assembly>
     
-    <Type Name="Internal.Runtime.CompilerServices.HasEmbeddedStringResourcesAttribute" Browse="Required Public" />
+    <!-- The toolchain injects this after analysis, so it doesn't get marked automatically,
+         but it's intended to be visible to reflection. Not having metadata for it triggers exceptions
+         from calls like Assembly.GetCustomAttributes. -->
+    <Type Name="Internal.Runtime.CompilerServices.HasEmbeddedStringResourcesAttribute" Dynamic="Required Public" />
   </Library>
 </Directives>

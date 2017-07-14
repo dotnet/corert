@@ -7,6 +7,7 @@ using System.Text;
 using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Reflection;
 
 using Internal.Runtime.Augments;
 
@@ -84,6 +85,24 @@ namespace Internal.DeveloperExperience
             fileName = null;
             lineNumber = 0;
             columnNumber = 0;
+        }
+
+        public virtual void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
+        }
+
+        /// <summary>
+        /// Makes reasonable effort to get the MethodBase reflection info. Returns null if it can't.
+        /// </summary>
+        public virtual void TryGetMethodBase(IntPtr methodStartAddress, out MethodBase method)
+        {
+            ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
+            method = null;
+            if (reflectionCallbacks != null)
+            {
+                method = reflectionCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+            }
         }
 
         public virtual bool OnContractFailure(String stackTrace, ContractFailureKind contractFailureKind, String displayMessage, String userMessage, String conditionText, Exception innerException)
