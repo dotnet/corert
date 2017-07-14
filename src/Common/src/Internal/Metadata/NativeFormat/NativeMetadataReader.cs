@@ -196,7 +196,7 @@ namespace Internal.Metadata.NativeFormat
         /// Used as the root entrypoint for metadata, this is where all top-down
         /// structural walks of metadata must start.
         /// </summary>
-        public IEnumerable<ScopeDefinitionHandle> ScopeDefinitions
+        public ScopeDefinitionHandleCollection ScopeDefinitions
         {
             get
             {
