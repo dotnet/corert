@@ -27,5 +27,14 @@ namespace Internal.StackTraceGenerator
             lineNumber = 0;
             columnNumber = 0;
         }
+
+        /// <summary>
+        /// Makes reasonable effort to locate the IL offset within the current method.
+        /// </summary>
+        public static void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            // CORERT-TODO: Implement StackTraceGenerator on Unix
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
+        }
     }
 }
