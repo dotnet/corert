@@ -11,6 +11,8 @@ internal partial class Interop
 {
     internal partial class mincore
     {
+        private const int DllSearchPathUseSystem32 = 0x800;
+
         internal enum SYSTEM_INFORMATION_CLASS
         {
             SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION = 8
@@ -38,7 +40,7 @@ internal partial class Interop
             {
                 if(s_querySystemInformation == null)
                 {
-                    IntPtr ntDll = LoadLibraryEx("NtDll.dll", IntPtr.Zero, 0);
+                    IntPtr ntDll = LoadLibraryEx("NtDll.dll", IntPtr.Zero, DllSearchPathUseSystem32);
                     fixed (byte* name = Encoding.ASCII.GetBytes("NtQuerySystemInformation"))
                     {
                         IntPtr entryPoint = GetProcAddress(ntDll, name);
