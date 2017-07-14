@@ -58,7 +58,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
         {
             get
             {
-                byte[] mvid = _assembly.Scope.ScopeDefinition.Mvid.ReadOnlyCollectionToArray();
+                byte[] mvid = _assembly.Scope.ScopeDefinition.Mvid.ToArray();
                 if (mvid.Length == 0)
                     return default(Guid); // Workaround for TFS 441076 - Module data not emitted for facade assemblies.
                 return new Guid(mvid);

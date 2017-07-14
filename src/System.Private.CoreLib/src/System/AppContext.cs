@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -26,11 +27,19 @@ namespace System
         private static readonly Dictionary<string, SwitchValueState> s_switchMap = new Dictionary<string, SwitchValueState>();
         private static Dictionary<String, Object> s_localStore = new Dictionary<String, Object>();
         private static string s_defaultBaseDirectory;
+        // AppDomain lives in CoreFX, but some of this class's events need to pass in AppDomains, so people registering those
+        // events need to first pass in an AppDomain that we stash here to pass back in the events.
+        private static object s_appDomain;
 
         static AppContext()
         {
             // populate the AppContext with the default set of values
             AppContextDefaultValues.PopulateDefaultValues();
+        }
+
+        public static void SetAppDomain(object appDomain)
+        {
+            s_appDomain = appDomain;
         }
 
         public static string TargetFrameworkName => Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
@@ -87,13 +96,19 @@ namespace System
             }
         }
 
-        private static void OnFirstChanceException(object sender, FirstChanceExceptionEventArgs e)
+        internal static void OnFirstChanceException(object sender, FirstChanceExceptionEventArgs e)
         {
             var firstChanceException = FirstChanceException;
             if (firstChanceException != null)
             {
                 firstChanceException(sender, e);
             }
+        }
+
+        [RuntimeExport("OnFirstChanceException")]
+        internal static void OnFirstChanceException(object e)
+        {
+            OnFirstChanceException(s_appDomain, new FirstChanceExceptionEventArgs((Exception)e));
         }
 
         private static void OnProcessExit(object sender, EventArgs e)

@@ -387,68 +387,72 @@ namespace System.Reflection.Runtime.General
             switch (handleType)
             {
                 case HandleType.ConstantBooleanArray:
-                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value.ToArray();
 
                 case HandleType.ConstantCharArray:
-                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value.ToArray();
 
                 case HandleType.ConstantByteArray:
-                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ToArray();
 
                 case HandleType.ConstantSByteArray:
-                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ToArray();
 
                 case HandleType.ConstantInt16Array:
-                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt16Array:
-                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ToArray();
 
                 case HandleType.ConstantInt32Array:
-                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt32Array:
-                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ToArray();
 
                 case HandleType.ConstantInt64Array:
-                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt64Array:
-                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ToArray();
 
                 case HandleType.ConstantSingleArray:
-                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value.ToArray();
 
                 case HandleType.ConstantDoubleArray:
-                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ReadOnlyCollectionToArray();
+                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ToArray();
 
                 case HandleType.ConstantEnumArray:
                     return TryParseConstantEnumArray(handle.ToConstantEnumArrayHandle(reader), reader, out exception);
 
                 case HandleType.ConstantStringArray:
                     {
-                        Handle[] constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value.ToArray();
-                        string[] elements = new string[constantHandles.Length];
-                        for (int i = 0; i < constantHandles.Length; i++)
+                        HandleCollection constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
+                        string[] elements = new string[constantHandles.Count];
+                        int i = 0;
+                        foreach (Handle constantHandle in constantHandles)
                         {
                             object elementValue;
-                            exception = constantHandles[i].TryParseConstantValue(reader, out elementValue);
+                            exception = constantHandle.TryParseConstantValue(reader, out elementValue);
                             if (exception != null)
                                 return null;
                             elements[i] = (string)elementValue;
+                            i++;
                         }
                         return elements;
                     }
 
                 case HandleType.ConstantHandleArray:
                     {
-                        Handle[] constantHandles = handle.ToConstantHandleArrayHandle(reader).GetConstantHandleArray(reader).Value.ToArray();
-                        object[] elements = new object[constantHandles.Length];
-                        for (int i = 0; i < constantHandles.Length; i++)
+                        HandleCollection constantHandles = handle.ToConstantHandleArrayHandle(reader).GetConstantHandleArray(reader).Value;
+                        object[] elements = new object[constantHandles.Count];
+                        int i = 0;
+                        foreach (Handle constantHandle in constantHandles)
                         {
-                            exception = constantHandles[i].TryParseConstantValue(reader, out elements[i]);
+                            exception = constantHandle.TryParseConstantValue(reader, out elements[i]);
                             if (exception != null)
                                 return null;
+                            i++;
                         }
                         return elements;
                     }
@@ -469,28 +473,28 @@ namespace System.Reflection.Runtime.General
             switch (enumArray.Value.HandleType)
             {
                 case HandleType.ConstantByteArray:
-                    return enumArray.Value.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantSByteArray:
-                    return enumArray.Value.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantInt16Array:
-                    return enumArray.Value.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantUInt16Array:
-                    return enumArray.Value.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantInt32Array:
-                    return enumArray.Value.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantUInt32Array:
-                    return enumArray.Value.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantInt64Array:
-                    return enumArray.Value.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ToArray(elementType);
 
                 case HandleType.ConstantUInt64Array:
-                    return enumArray.Value.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ReadOnlyCollectionToEnumArray(elementType);
+                    return enumArray.Value.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ToArray(elementType);
 
                 default:
                     throw new BadImageFormatException();
@@ -609,7 +613,7 @@ namespace System.Reflection.Runtime.General
                 yield return namespaceHandle;
 
                 NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
-                foreach (NamespaceDefinitionHandle childNamespaceHandle in GetTransitiveNamespaces(reader, namespaceDefinition.NamespaceDefinitions))
+                foreach (NamespaceDefinitionHandle childNamespaceHandle in GetTransitiveNamespaces(reader, namespaceDefinition.NamespaceDefinitions.AsEnumerable()))
                     yield return childNamespaceHandle;
             }
         }
@@ -641,7 +645,7 @@ namespace System.Reflection.Runtime.General
 
                 yield return typeDefinitionHandle;
 
-                foreach (TypeDefinitionHandle nestedTypeDefinitionHandle in GetTransitiveTypes(reader, typeDefinition.NestedTypes, publicOnly))
+                foreach (TypeDefinitionHandle nestedTypeDefinitionHandle in GetTransitiveTypes(reader, typeDefinition.NestedTypes.AsEnumerable(), publicOnly))
                     yield return nestedTypeDefinitionHandle;
             }
         }
@@ -682,6 +686,259 @@ namespace System.Reflection.Runtime.General
             ReverseStringInStringBuilder(fullName, 0, fullName.Length);
             fullName.Append(typeName);
             return fullName.ToString();
+        }
+
+        public static IEnumerable<NamespaceDefinitionHandle> AsEnumerable(this NamespaceDefinitionHandleCollection collection)
+        {
+            foreach (NamespaceDefinitionHandle handle in collection)
+                yield return handle;
+        }
+
+        public static IEnumerable<TypeDefinitionHandle> AsEnumerable(this TypeDefinitionHandleCollection collection)
+        {
+            foreach (TypeDefinitionHandle handle in collection)
+                yield return handle;
+        }
+
+        public static Handle[] ToArray(this HandleCollection collection)
+        {
+            int count = collection.Count;
+            Handle[] result = new Handle[count];
+            int i = 0;
+            foreach (Handle element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static bool[] ToArray(this BooleanCollection collection)
+        {
+            int count = collection.Count;
+            bool[] result = new bool[count];
+            int i = 0;
+            foreach (bool element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static char[] ToArray(this CharCollection collection)
+        {
+            int count = collection.Count;
+            char[] result = new char[count];
+            int i = 0;
+            foreach (char element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static float[] ToArray(this SingleCollection collection)
+        {
+            int count = collection.Count;
+            float[] result = new float[count];
+            int i = 0;
+            foreach (float element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static double[] ToArray(this DoubleCollection collection)
+        {
+            int count = collection.Count;
+            double[] result = new double[count];
+            int i = 0;
+            foreach (double element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static byte[] ToArray(this ByteCollection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            byte[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (byte[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new byte[count];
+            }
+            int i = 0;
+            foreach (byte element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static sbyte[] ToArray(this SByteCollection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            sbyte[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (sbyte[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new sbyte[count];
+            }
+            int i = 0;
+            foreach (sbyte element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static ushort[] ToArray(this UInt16Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            ushort[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (ushort[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new ushort[count];
+            }
+            int i = 0;
+            foreach (ushort element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static short[] ToArray(this Int16Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            short[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (short[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new short[count];
+            }
+            int i = 0;
+            foreach (short element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static uint[] ToArray(this UInt32Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            uint[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (uint[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new uint[count];
+            }
+            int i = 0;
+            foreach (uint element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static int[] ToArray(this Int32Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            int[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (int[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new int[count];
+            }
+            int i = 0;
+            foreach (int element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static ulong[] ToArray(this UInt64Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            ulong[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (ulong[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new ulong[count];
+            }
+            int i = 0;
+            foreach (ulong element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static long[] ToArray(this Int64Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            long[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (long[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new long[count];
+            }
+            int i = 0;
+            foreach (long element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
         }
     }
 }

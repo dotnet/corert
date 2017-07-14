@@ -3,40 +3,82 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Text;
 using System;
-using System.Diagnostics.Contracts;
+using System.IO;
 using System.Reflection;
 
 namespace System.Diagnostics
 {
     /// <summary>
-    /// Stack frame represents a single frame in a stack trace; frames
-    /// corresponding to methods with available symbolic information
-    /// provide source file / line information. Some frames may provide IL
-    /// offset information and / or MethodBase reflection information.
     /// There is no good reason for the methods of this class to be virtual.
     /// </summary>
-    public class StackFrame
+    public partial class StackFrame
     {
         /// <summary>
-        /// Constant returned when the native or IL offset is unknown
+        /// Reflection information for the method if available, null otherwise.
         /// </summary>
-        public const int OFFSET_UNKNOWN = -1;
+        private MethodBase _method;
+
+        /// <summary>
+        /// Native offset of the current instruction within the current method if available,
+        /// OFFSET_UNKNOWN otherwise.
+        /// </summary>
+        private int _nativeOffset;
+
+        /// <summary>
+        /// IL offset of the current instruction within the current method if available,
+        /// OFFSET_UNKNOWN otherwise.
+        /// </summary>
+        private int _ilOffset;
+
+        /// <summary>
+        /// Source file name representing the current code location if available, null otherwise.
+        /// </summary>
+        private String _fileName;
+
+        /// <summary>
+        /// Line number representing the current code location if available, 0 otherwise.
+        /// </summary>
+        private int _lineNumber;
+
+        /// <summary>
+        /// Column number representing the current code location if available, 0 otherwise.
+        /// </summary>
+        private int _columnNumber;
+
+        /// <summary>
+        /// This flag is set to true when the frame represents a rethrow marker.
+        /// </summary>
+        private bool _isLastFrameFromForeignExceptionStackTrace;
+
+        internal void InitMembers()
+        {
+            _method = null;
+            _nativeOffset = OFFSET_UNKNOWN;
+            _ilOffset = OFFSET_UNKNOWN;
+            _fileName = null;
+            _lineNumber = 0;
+            _columnNumber = 0;
+            _isLastFrameFromForeignExceptionStackTrace = false;
+        }
 
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
         public StackFrame()
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, false);
         }
 
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
-        public StackFrame(bool fNeedFileInfo)
+        public StackFrame(bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, needFileInfo);
         }
 
         /// <summary>
@@ -44,15 +86,17 @@ namespace System.Diagnostics
         /// </summary>
         public StackFrame(int skipFrames)
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(skipFrames + StackTrace.METHODS_TO_SKIP, false);
         }
 
         /// <summary>
         /// Constructs a StackFrame corresponding to a calling stack frame.
         /// </summary>
-        public StackFrame(int skipFrames, bool fNeedFileInfo)
+        public StackFrame(int skipFrames, bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(skipFrames + StackTrace.METHODS_TO_SKIP, needFileInfo);
         }
 
         /// <summary>
@@ -62,7 +106,11 @@ namespace System.Diagnostics
         /// </summary>
         public StackFrame(String fileName, int lineNumber)
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
+            _fileName = fileName;
+            _lineNumber = lineNumber;
+            _columnNumber = 0;
         }
 
         /// <summary>
@@ -72,7 +120,56 @@ namespace System.Diagnostics
         /// </summary>
         public StackFrame(String fileName, int lineNumber, int colNumber)
         {
-            throw new NotImplementedException();
+            InitMembers();
+            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
+            _fileName = fileName;
+            _lineNumber = lineNumber;
+            _columnNumber = colNumber;
+        }
+
+        /// <summary>
+        /// Constant returned when the native or IL offset is unknown
+        /// </summary>
+        public const int OFFSET_UNKNOWN = -1;
+
+        internal virtual void SetMethodBase(MethodBase mb)
+        {
+            _method = mb;
+        }
+
+        internal virtual void SetOffset(int iOffset)
+        {
+            _nativeOffset = iOffset;
+        }
+
+        internal virtual void SetILOffset(int iOffset)
+        {
+            _ilOffset = iOffset;
+        }
+
+        internal virtual void SetFileName(String strFName)
+        {
+            _fileName = strFName;
+        }
+
+        internal virtual void SetLineNumber(int iLine)
+        {
+            _lineNumber = iLine;
+        }
+
+        internal virtual void SetColumnNumber(int iCol)
+        {
+            _columnNumber = iCol;
+        }
+
+        internal virtual void SetIsLastFrameFromForeignExceptionStackTrace(bool fIsLastFrame)
+        {
+            _isLastFrameFromForeignExceptionStackTrace = fIsLastFrame;
+        }
+
+        internal virtual bool GetIsLastFrameFromForeignExceptionStackTrace()
+        {
+            return _isLastFrameFromForeignExceptionStackTrace;
         }
 
         /// <summary>
@@ -80,9 +177,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual MethodBase GetMethod()
         {
-            Contract.Ensures(Contract.Result<MethodBase>() != null);
-
-            throw new NotImplementedException();
+            return _method;
         }
 
         /// <summary>
@@ -91,8 +186,9 @@ namespace System.Diagnostics
         /// </summary>
         public virtual int GetNativeOffset()
         {
-            throw new NotImplementedException();
+            return _nativeOffset;
         }
+
 
         /// <summary>
         /// Returns the offset from the start of the IL code for the
@@ -101,7 +197,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual int GetILOffset()
         {
-            throw new NotImplementedException();
+            return _ilOffset;
         }
 
         /// <summary>
@@ -111,7 +207,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual String GetFileName()
         {
-            throw new NotImplementedException();
+            return _fileName;
         }
 
         /// <summary>
@@ -121,7 +217,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual int GetFileLineNumber()
         {
-            throw new NotImplementedException();
+            return _lineNumber;
         }
 
         /// <summary>
@@ -131,7 +227,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual int GetFileColumnNumber()
         {
-            throw new NotImplementedException();
+            return _columnNumber;
         }
 
         /// <summary>
@@ -139,7 +235,69 @@ namespace System.Diagnostics
         /// </summary>
         public override String ToString()
         {
-            throw new NotImplementedException();
+            StringBuilder sb = new StringBuilder(255);
+            bool includeFileInfoIfAvailable;
+
+            if (_method != null)
+            {
+                sb.Append(_method.Name);
+
+                // deal with the generic portion of the method
+                if (_method is MethodInfo methodInfo && methodInfo.IsGenericMethod)
+                {
+                    Type[] typars = methodInfo.GetGenericArguments();
+
+                    sb.Append('<');
+                    int k = 0;
+                    bool fFirstTyParam = true;
+                    while (k < typars.Length)
+                    {
+                        if (fFirstTyParam == false)
+                            sb.Append(',');
+                        else
+                            fFirstTyParam = false;
+
+                        sb.Append(typars[k].Name);
+                        k++;
+                    }
+
+                    sb.Append('>');
+                }
+                includeFileInfoIfAvailable = true;
+            }
+            else
+            {
+                includeFileInfoIfAvailable = AppendStackFrameWithoutMethodBase(sb);
+            }
+
+            if (includeFileInfoIfAvailable)
+            {
+                sb.Append(" at offset ");
+                if (_nativeOffset == OFFSET_UNKNOWN)
+                    sb.Append("<offset unknown>");
+                else
+                    sb.Append(_nativeOffset);
+
+                sb.Append(" in file:line:column ");
+
+                bool useFileName = (_fileName != null);
+
+                if (!useFileName)
+                    sb.Append("<filename unknown>");
+                else
+                    sb.Append(_fileName);
+                sb.Append(':');
+                sb.Append(_lineNumber);
+                sb.Append(':');
+                sb.Append(_columnNumber);
+            }
+            else
+            {
+                sb.Append("<null>");
+            }
+            sb.Append(Environment.NewLine);
+
+            return sb.ToString();
         }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
 
 namespace System.Diagnostics
 {
@@ -13,7 +14,7 @@ namespace System.Diagnostics
         /// </summary>
         public static IntPtr GetNativeImageBase(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            return RuntimeImports.RhGetOSModuleFromPointer(stackFrame.GetNativeIPAddress());
         }
 
         /// <summary>
@@ -21,7 +22,7 @@ namespace System.Diagnostics
         /// </summary>
         public static IntPtr GetNativeIP(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            return stackFrame.GetNativeIPAddress();
         }
 
         /// <summary>
@@ -30,7 +31,7 @@ namespace System.Diagnostics
         /// </summary>
         public static bool HasILOffset(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            return stackFrame.GetILOffset() != StackFrame.OFFSET_UNKNOWN;
         }
 
         /// <summary>
@@ -38,7 +39,7 @@ namespace System.Diagnostics
         /// </summary>
         public static bool HasMethod(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            return stackFrame.HasMethod();
         }
 
         /// <summary>
@@ -46,7 +47,8 @@ namespace System.Diagnostics
         /// </summary>
         public static bool HasNativeImage(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            // In .NET Native, everything has a native image (at least today)
+            return true;
         }
 
         /// <summary>
@@ -54,7 +56,7 @@ namespace System.Diagnostics
         /// </summary>
         public static bool HasSource(this StackFrame stackFrame)
         {
-            throw new NotImplementedException();
+            return stackFrame.GetFileName() != null;
         }
     }
 }

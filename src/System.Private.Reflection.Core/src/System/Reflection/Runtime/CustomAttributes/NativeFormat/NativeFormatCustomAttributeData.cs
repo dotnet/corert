@@ -104,7 +104,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         internal sealed override IList<CustomAttributeTypedArgument> GetConstructorArguments(bool throwIfMissingMetadata)
         {
             int index = 0;
-            LowLevelList<Handle> lazyCtorTypeHandles = null;
+            Handle[] lazyCtorTypeHandles = null;
             LowLevelListWithIList<CustomAttributeTypedArgument> customAttributeTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
 
             foreach (FixedArgumentHandle fixedArgumentHandle in _customAttribute.FixedArguments)
@@ -120,7 +120,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                             // parsing the constructor's signature to get the type info. 
                             if (lazyCtorTypeHandles == null)
                             {
-                                IEnumerable<Handle> parameterTypeSignatureHandles;
+                                HandleCollection parameterTypeSignatureHandles;
                                 HandleType handleType = _customAttribute.Constructor.HandleType;
                                 switch (handleType)
                                 {
@@ -134,8 +134,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                                     default:
                                         throw new BadImageFormatException();
                                 }
-                                LowLevelList<Handle> ctorTypeHandles = new LowLevelList<Handle>(parameterTypeSignatureHandles);
-                                lazyCtorTypeHandles = ctorTypeHandles;
+                                lazyCtorTypeHandles = parameterTypeSignatureHandles.ToArray();
                             }
                             Handle typeHandle = lazyCtorTypeHandles[index];
                             Exception exception = null;

@@ -117,7 +117,7 @@ namespace System.Reflection.Runtime.General
             ushort buildNumber,
             ushort revisionNumber,
             ConstantStringValueHandle culture,
-            IEnumerable<byte> publicKeyOrToken,
+            ByteCollection publicKeyOrToken,
             global::Internal.Metadata.NativeFormat.AssemblyFlags assemblyFlags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;

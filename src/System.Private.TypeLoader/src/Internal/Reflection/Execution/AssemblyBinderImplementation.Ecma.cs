@@ -54,7 +54,7 @@ namespace Internal.Reflection.Execution
             MetadataReader reader = pe.GetMetadataReader();
 
             // 2. Create AssemblyName from MetadataReader
-            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
+            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
 
             lock(s_ecmaLoadedAssemblies)
             {
@@ -143,7 +143,7 @@ namespace Internal.Reflection.Execution
 
                                 MetadataReader reader = ownedPEReader.GetMetadataReader();
                                 // Create AssemblyName from MetadataReader
-                                RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
+                                RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
 
                                 // If assembly name doesn't match, it isn't the one we're looking for. Continue to look for more assemblies
                                 if (!AssemblyNameMatches(refName, runtimeAssemblyName))
