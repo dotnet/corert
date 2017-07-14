@@ -215,7 +215,7 @@ namespace System.Runtime
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
             IntPtr pOnFirstChanceFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEtype((IntPtr)exception.m_pEEType, ClassLibFunctionId.OnFirstChance);
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((IntPtr)exception.m_pEEType, ClassLibFunctionId.OnFirstChance);
 
             if (pOnFirstChanceFunction == IntPtr.Zero)
             {
