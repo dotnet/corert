@@ -87,16 +87,16 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * addre
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
-COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEtype, (EEType * pEEtype, ClasslibFunctionId functionId))
+COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEType, (EEType * pEEType, ClasslibFunctionId functionId))
 {
-    if (pEEtype->HasTypeManager())
+    if (pEEType->HasTypeManager())
     {
-        return pEEtype->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
+        return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
     }
     else
     {
         RuntimeInstance * pRI = GetRuntimeInstance();
-        Module * pModule = pRI->FindModuleByAddress(pEEtype);
+        Module * pModule = pRI->FindModuleByAddress(pEEType);
         if (pModule != NULL)
         {
             return pModule->GetClasslibFunction(functionId);
