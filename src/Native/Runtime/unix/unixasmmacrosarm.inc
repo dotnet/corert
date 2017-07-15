@@ -22,6 +22,9 @@
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
 #define SIZEOF__MinObject 12
 
+// Maximum subsection number in .text section
+#define MAX_NUMBER_SUBSECTION_TEXT 0x2000
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -251,8 +254,12 @@ C_FUNC(\Name):
 1:
         add     r0, pc, r0
         bl      __tls_get_addr(PLT)
+        // push data at the end of text section
+        .pushsection .text, MAX_NUMBER_SUBSECTION_TEXT, "aM", %progbits, 4
+        .balign 4
 2:
         .4byte  \Var(TLSGD) + (. - 1b - 4)
+        .popsection
 .endm
 
 .macro INLINE_GETTHREAD

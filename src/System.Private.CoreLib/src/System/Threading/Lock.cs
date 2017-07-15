@@ -167,7 +167,7 @@ namespace System.Threading
                     RuntimeThread.SpinWait(spins);
                     spins *= 2;
                 }
-                else
+                else if (oldState != 0)
                 {
                     //
                     // We reached our spin limit, and need to wait.  Increment the waiter count.

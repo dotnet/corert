@@ -76,50 +76,52 @@ build_managed_corert()
 get_official_cross_builds()
 {
     if [ $__CrossBuild == 1 ]; then
-        __corefxsite="https://ci.dot.net/job/dotnet_corefx/job/master/view/Official%20Builds/job/"
-        __coreclrsite="https://ci.dot.net/job/dotnet_coreclr/job/master/view/Official%20Builds/job/"
-        __corefxsource=
-        __coreclrsource=
-        __buildtype=
-        if [ $__BuildType = "Debug" ]; then
-            __buildtype="debug"
-        else
-            __buildtype="release"
-        fi
+        ID=
         case $__BuildArch in
             arm)
             ;;
             arm64)
             ;;
             armel)
-                ID=
                 if [ -e $ROOTFS_DIR/etc/os-release ]; then
                     source $ROOTFS_DIR/etc/os-release
                 fi
-                if [ "$ID" = "tizen" ]; then
-                   __corefxsource="tizen_armel_cross_${__buildtype}/lastSuccessfulBuild/artifact/bin/build.tar.gz"
-                   __coreclrsource="armel_cross_${__buildtype}_tizen/lastSuccessfulBuild/artifact/bin/Product/Linux.armel.${__BuildType}/libSystem.Globalization.Native.a"
-                fi
                 ;;
         esac
-        if [ -n "${__corefxsource}" ]; then
-            wget "${__corefxsite}${__corefxsource}"
-            export BUILDERRORLEVEL=$?
-            if [ $BUILDERRORLEVEL != 0 ]; then
-                exit $BUILDERRORLEVEL
-            fi
-            tar xvf ./build.tar.gz ./System.Native.a
-            mv ./System.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
-            rm -rf ./build.tar.gz
+
+        # only tizen case now
+        if [ "$ID" != "tizen" ]; then
+            return 0
         fi
-        if [ -n ${__coreclrsource} ]; then
-            wget "${__coreclrsite}${__coreclrsource}"
-            export BUILDERRORLEVEL=$?
-            if [ $BUILDERRORLEVEL != 0 ]; then
-                exit $BUILDERRORLEVEL
-            fi
-            mv ./libSystem.Globalization.Native.a $__ProjectRoot/bin/Product/Linux.${__BuildArch}.${__BuildType}/framework
+        __tizenToolsRoot=${__ProjectRoot}/Tools/tizen
+        __corefxsite="https://ci.dot.net/job/dotnet_corefx/job/master/view/Official%20Builds/job/"
+        __coreclrsite="https://ci.dot.net/job/dotnet_coreclr/job/master/view/Official%20Builds/job/"
+        __buildArchiveName="build.tar.gz"
+        __systemNativeLibName="System.Native.a"
+        __systemGlobNativeLibName="libSystem.Globalization.Native.a"
+        if [ $__BuildType = "Debug" ]; then
+            __buildtype="debug"
+        else
+            __buildtype="release"
         fi
+        __corefxsource="tizen_armel_cross_${__buildtype}/lastSuccessfulBuild/artifact/bin/${__buildArchiveName}"
+        __coreclrsource="armel_cross_${__buildtype}_tizen/lastSuccessfulBuild/artifact/bin/Product/Linux.armel.${__BuildType}/${__systemGlobNativeLibName}"
+        mkdir -p $__tizenToolsRoot
+
+        (cd ${__tizenToolsRoot} && wget -N "${__corefxsite}${__corefxsource}")
+        export BUILDERRORLEVEL=$?
+        if [ $BUILDERRORLEVEL != 0 ]; then
+            exit $BUILDERRORLEVEL
+        fi
+        tar xvf ${__tizenToolsRoot}/${__buildArchiveName} -C ${__tizenToolsRoot} ./${__systemNativeLibName}
+        cp ${__tizenToolsRoot}/${__systemNativeLibName} $__ProjectRoot/bin/Linux.${__BuildArch}.${__BuildType}/framework
+
+        (cd ${__tizenToolsRoot} && wget -N "${__coreclrsite}${__coreclrsource}")
+        export BUILDERRORLEVEL=$?
+        if [ $BUILDERRORLEVEL != 0 ]; then
+            exit $BUILDERRORLEVEL
+        fi
+        cp ${__tizenToolsRoot}/${__systemGlobNativeLibName} $__ProjectRoot/bin/Linux.${__BuildArch}.${__BuildType}/framework
      fi
 }
 

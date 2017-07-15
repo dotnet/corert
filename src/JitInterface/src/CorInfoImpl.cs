@@ -3079,6 +3079,7 @@ namespace Internal.JitInterface
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
@@ -3519,10 +3520,18 @@ namespace Internal.JitInterface
 
         private ushort getRelocTypeHint(void* target)
         {
-            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
-                return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
+            switch (_compilation.TypeSystemContext.Target.Architecture)
+            {
+                case TargetArchitecture.X64:
+                    return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
 
-            return UInt16.MaxValue;
+                case TargetArchitecture.ARM:
+                case TargetArchitecture.ARMEL:
+                    return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
+
+                default:
+                    return UInt16.MaxValue;
+            }
         }
 
         private void getModuleNativeEntryPointRange(ref void* pStart, ref void* pEnd)

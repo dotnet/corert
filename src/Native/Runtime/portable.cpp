@@ -294,6 +294,8 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 #ifdef USE_PORTABLE_HELPERS
 void * ReturnFromCallDescrThunk;
 #endif
+
+#if defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 // 
 // Return address hijacking
 //
@@ -321,6 +323,7 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+#endif // defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 
 #ifdef USE_PORTABLE_HELPERS
 

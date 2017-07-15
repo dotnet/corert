@@ -18,7 +18,7 @@ namespace Internal.Runtime.Augments
 
             RuntimeImports.RhpShutdown();
 
-            Interop.Kernel32.ExitProcess(s_latchedExitCode);
+            ExitRaw();
         }
 
         private static string[] s_commandLineArgs;

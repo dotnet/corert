@@ -445,7 +445,7 @@ namespace Internal.Runtime.TypeLoader
                         // GCDesc data in *reverse* order for instance GCDescs (subtracts 4 from the pointer values at each iteration).
                         //    - For the first GCDesc, we use (pEEType - 4) to point to the first 4-byte integer directly preceeding the EEType
                         //    - For the second GCDesc, given that the state.NonUniversalInstanceGCDesc already points to the first byte preceeding the template EEType, we 
-                        //      subtract 3 to point to the first 4-byte integer directly preceeding the template EEtype
+                        //      subtract 3 to point to the first 4-byte integer directly preceeding the template EEType
                         TestGCDescsForEquality(new IntPtr((byte*)pEEType - 4), state.NonUniversalInstanceGCDesc - 3, cbGCDesc, true);
                     }
 #endif
