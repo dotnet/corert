@@ -246,11 +246,6 @@ namespace System.IO
 
         public virtual Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.Factory.FromAsync(
@@ -259,8 +254,15 @@ namespace System.IO
                     buffer, offset, count, this);
         }
 
-        public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(ReadAsyncInternal(buffer, offset, count), callback, state);
+        public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (!CanRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            }
+
+            return TaskToApm.Begin(ReadAsyncInternal(buffer, offset, count), callback, state);
+        }
 
         public virtual int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
@@ -293,11 +295,6 @@ namespace System.IO
 
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.Factory.FromAsync(
@@ -306,8 +303,15 @@ namespace System.IO
                     buffer, offset, count, this);
         }
 
-        public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-            TaskToApm.Begin(WriteAsyncInternal(buffer, offset, count), callback, state);
+        public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (!CanWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            }
+
+            return TaskToApm.Begin(WriteAsyncInternal(buffer, offset, count), callback, state);
+        }
 
         public virtual void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
