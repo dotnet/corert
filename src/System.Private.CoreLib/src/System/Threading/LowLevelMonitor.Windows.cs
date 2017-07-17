@@ -11,104 +11,41 @@ namespace System.Threading
     /// <summary>
     /// Wraps a critical section and condition variable.
     /// </summary>
-    internal sealed class LowLevelMonitor : IDisposable
+    internal sealed partial class LowLevelMonitor : IDisposable
     {
         private const int ErrorTimeout = 0x000005B4;
 
         private Interop.Kernel32.CRITICAL_SECTION _criticalSection;
         private Interop.Kernel32.CONDITION_VARIABLE _conditionVariable;
 
-#if DEBUG
-        private RuntimeThread _ownerThread;
-#endif
-
         public LowLevelMonitor()
         {
             Interop.Kernel32.InitializeCriticalSection(out _criticalSection);
             Interop.Kernel32.InitializeConditionVariable(out _conditionVariable);
-
-#if DEBUG
-            _ownerThread = null;
-#endif
         }
 
-        ~LowLevelMonitor()
+        private void DisposeCore()
         {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            VerifyIsNotLockedByAnyThread();
-
             Interop.Kernel32.DeleteCriticalSection(ref _criticalSection);
-            GC.SuppressFinalize(this);
         }
 
-#if DEBUG
-        public bool IsLocked => _ownerThread == RuntimeThread.CurrentThread;
-#endif
-
-        public void VerifyIsLocked()
+        private void AcquireCore()
         {
-#if DEBUG
-            Debug.Assert(IsLocked);
-#endif
-        }
-
-        public void VerifyIsNotLocked()
-        {
-#if DEBUG
-            Debug.Assert(!IsLocked);
-#endif
-        }
-
-        private void VerifyIsNotLockedByAnyThread()
-        {
-#if DEBUG
-            Debug.Assert(_ownerThread == null);
-#endif
-        }
-
-        private void ResetOwnerThread()
-        {
-#if DEBUG
-            VerifyIsLocked();
-            _ownerThread = null;
-#endif
-        }
-
-        private void SetOwnerThreadToCurrent()
-        {
-#if DEBUG
-            VerifyIsNotLockedByAnyThread();
-            _ownerThread = RuntimeThread.CurrentThread;
-#endif
-        }
-
-        public void Acquire()
-        {
-            VerifyIsNotLocked();
             Interop.Kernel32.EnterCriticalSection(ref _criticalSection);
-            SetOwnerThreadToCurrent();
         }
 
-        public void Release()
+        private void ReleaseCore()
         {
-            ResetOwnerThread();
             Interop.Kernel32.LeaveCriticalSection(ref _criticalSection);
         }
 
-        public void Wait()
+        private void WaitCore()
         {
-            Wait(-1);
+            WaitCore(-1);
         }
 
-        public bool Wait(int timeoutMilliseconds)
+        private bool WaitCore(int timeoutMilliseconds)
         {
-            Debug.Assert(timeoutMilliseconds >= -1);
-
-            ResetOwnerThread();
             bool waitResult = Interop.Kernel32.SleepConditionVariableCS(ref _conditionVariable, ref _criticalSection, timeoutMilliseconds);
             if (!waitResult)
             {
@@ -120,13 +57,11 @@ namespace System.Threading
                     throw exception;
                 }
             }
-            SetOwnerThreadToCurrent();
             return waitResult;
         }
 
-        public void Signal_Release()
+        private void Signal_ReleaseCore()
         {
-            ResetOwnerThread();
             Interop.Kernel32.WakeConditionVariable(ref _conditionVariable);
             Interop.Kernel32.LeaveCriticalSection(ref _criticalSection);
         }

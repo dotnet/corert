@@ -12,13 +12,9 @@ namespace System.Threading
     /// 
     /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
     /// </summary>
-    internal sealed class LowLevelMonitor : IDisposable
+    internal sealed partial class LowLevelMonitor : IDisposable
     {
         private IntPtr _nativeMonitor;
-
-#if DEBUG
-        private RuntimeThread _ownerThread;
-#endif
 
         public LowLevelMonitor()
         {
@@ -27,21 +23,10 @@ namespace System.Threading
             {
                 throw new OutOfMemoryException();
             }
-
-#if DEBUG
-            _ownerThread = null;
-#endif
         }
 
-        ~LowLevelMonitor()
+        private void DisposeCore()
         {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            VerifyIsNotLockedByAnyThread();
-
             if (_nativeMonitor == IntPtr.Zero)
             {
                 return;
@@ -49,89 +34,38 @@ namespace System.Threading
 
             Interop.Sys.LowLevelMonitor_Delete(_nativeMonitor);
             _nativeMonitor = IntPtr.Zero;
-            GC.SuppressFinalize(this);
         }
 
-#if DEBUG
-        public bool IsLocked => _ownerThread == RuntimeThread.CurrentThread;
-#endif
-
-        public void VerifyIsLocked()
+        private void AcquireCore()
         {
-#if DEBUG
-            Debug.Assert(IsLocked);
-#endif
-        }
-
-        public void VerifyIsNotLocked()
-        {
-#if DEBUG
-            Debug.Assert(!IsLocked);
-#endif
-        }
-
-        private void VerifyIsNotLockedByAnyThread()
-        {
-#if DEBUG
-            Debug.Assert(_ownerThread == null);
-#endif
-        }
-
-        private void ResetOwnerThread()
-        {
-#if DEBUG
-            VerifyIsLocked();
-            _ownerThread = null;
-#endif
-        }
-
-        private void SetOwnerThreadToCurrent()
-        {
-#if DEBUG
-            VerifyIsNotLockedByAnyThread();
-            _ownerThread = RuntimeThread.CurrentThread;
-#endif
-        }
-
-        public void Acquire()
-        {
-            VerifyIsNotLocked();
             Interop.Sys.LowLevelMutex_Acquire(_nativeMonitor);
-            SetOwnerThreadToCurrent();
         }
 
-        public void Release()
+        private void ReleaseCore()
         {
-            ResetOwnerThread();
             Interop.Sys.LowLevelMutex_Release(_nativeMonitor);
         }
 
-        public void Wait()
+        private void WaitCore()
         {
-            ResetOwnerThread();
             Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
-            SetOwnerThreadToCurrent();
         }
 
-        public bool Wait(int timeoutMilliseconds)
+        private bool WaitCore(int timeoutMilliseconds)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
 
             if (timeoutMilliseconds < 0)
             {
-                Wait();
+                WaitCore();
                 return true;
             }
 
-            ResetOwnerThread();
-            bool waitResult = Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
-            SetOwnerThreadToCurrent();
-            return waitResult;
+            return Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
         }
 
-        public void Signal_Release()
+        private void Signal_ReleaseCore()
         {
-            ResetOwnerThread();
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);
         }
 

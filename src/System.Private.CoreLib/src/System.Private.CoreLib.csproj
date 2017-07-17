@@ -381,6 +381,7 @@
     <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\LowLevelLock.cs" />
+    <Compile Include="System\Threading\LowLevelMonitor.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
