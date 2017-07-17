@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
                         // Make sure we aren't trying to callvirt Object.Finalize
                         MethodDesc method = (MethodDesc)target;
                         if (method.IsFinalizer)
-                            throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramCallVirtFinalize, method);
+                            ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtFinalize, method);
                     }
                     break;
             }

@@ -118,6 +118,9 @@ namespace Internal.Runtime.TypeLoader
 
         static unsafe CallConverterThunk()
         {
+#if PLATFORM_UNIX
+            // TODO
+#else
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
@@ -131,7 +134,9 @@ namespace Internal.Runtime.TypeLoader
             {
                 CallingConventionConverter_SpecifyCommonStubData((IntPtr)commonStubData);
             }
-#endif
+#endif //_TARGET_ARM_
+
+#endif // PLATFORM_UNIX
         }
 
         internal static bool GetByRefIndicatorAtIndex(int index, bool[] lookup)
@@ -383,6 +388,28 @@ namespace Internal.Runtime.TypeLoader
                                  conversionInfo.CalleeForcedByRefData);
                 return true;
             }
+        }
+
+        public static unsafe bool TryGetCallConversionTargetPointerAndInstantiatingArg(IntPtr potentialStub, out IntPtr methodTarget, out IntPtr instantiatingArg)
+        {
+            methodTarget = instantiatingArg = IntPtr.Zero;
+
+            IntPtr callConversionId;
+            IntPtr commonStubDataPtr;
+            object thunkPoolHeap = s_thunkPoolHeap;
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            {
+                // This isn't a call conversion stub
+                return false;
+            }
+
+            CallConversionInfo conversionInfo = CallConversionInfo.GetConverter(callConversionId.ToInt32());
+            if (!conversionInfo.HasKnownTargetPointerAndInstantiatingArgument)
+                return false;
+
+            methodTarget = conversionInfo.TargetFunctionPointer;
+            instantiatingArg = conversionInfo.InstantiatingStubArgument;
+            return true;
         }
 
         // This struct shares a layout with CallDescrData in the MRT codebase.

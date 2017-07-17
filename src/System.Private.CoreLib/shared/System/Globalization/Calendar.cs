@@ -57,9 +57,7 @@ namespace System.Globalization
 
         internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
-
         private int _currentEraValue = -1;
-
 
         private bool _isReadOnly = false;
 
@@ -836,7 +834,6 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            // Call nativeGetTwoDigitYearMax
             int twoDigitYearMax = CalendarData.GetTwoDigitYearMax(CalID);
             if (twoDigitYearMax < 0)
             {

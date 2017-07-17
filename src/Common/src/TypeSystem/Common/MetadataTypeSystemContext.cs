@@ -87,7 +87,7 @@ namespace Internal.TypeSystem
             int typeIndex = (int)wellKnownType - 1;
             DefType type = _wellKnownTypes[typeIndex];
             if (type == null && throwIfNotFound) 
-                throw new TypeSystemException.TypeLoadException("System", s_wellKnownTypeNames[typeIndex], SystemModule);
+                ThrowHelper.ThrowTypeLoadException("System", s_wellKnownTypeNames[typeIndex], SystemModule);
 
             return type;
         }

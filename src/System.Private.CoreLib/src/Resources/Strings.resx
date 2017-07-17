@@ -1687,9 +1687,6 @@
   <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
     <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
   </data>
-  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
-    <value>SetData can only be used to set the value of a given name once.</value>
-  </data>
   <data name="SemaphoreSlim_Disposed" xml:space="preserve">
     <value>The semaphore has been disposed.</value>
   </data>
@@ -2607,5 +2604,11 @@
   </data>
   <data name="NotSupported_ByRefLikeArray" xml:space="preserve">
     <value>Cannot create arrays of ByRef-like values.</value>
+  </data>
+  <data name="StackTrace_AtWord" xml:space="preserve">
+    <value>   at </value>
+  </data>
+  <data name="StackTrace_EndStackTraceFromPreviousThrow" xml:space="preserve">
+    <value>--- End of stack trace from previous location where exception was thrown ---</value>
   </data>
 </root>

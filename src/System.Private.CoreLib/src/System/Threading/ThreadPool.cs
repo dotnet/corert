@@ -672,14 +672,22 @@ namespace System.Threading
                 }
             }
         }
-        
+
         /// <summary>
-        /// Dipatches work items to this thread.
+        /// Dispatches work items to this thread.
         /// </summary>
-        /// <returns><c>true</c> if this thread did as much work as was available. <c>false</c> if this thread stopped working early.</returns>
+        /// <returns>
+        /// <c>true</c> if this thread did as much work as was available or its quantum expired.
+        /// <c>false</c> if this thread stopped working early.
+        /// </returns>
         internal static bool Dispatch()
         {
             var workQueue = ThreadPoolGlobals.workQueue;
+
+            //
+            // Save the start time
+            //
+            int startTickCount = Environment.TickCount;
 
             //
             // Update our records to indicate that an outstanding request for a thread has now been fulfilled.
@@ -703,9 +711,9 @@ namespace System.Threading
                 ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
 
                 //
-                // Loop until there is no work.
+                // Loop until our quantum expires or there is no work.
                 //
-                while (true)
+                while (ThreadPool.KeepDispatching(startTickCount))
                 {
                     workQueue.Dequeue(tl, out IThreadPoolWorkItem workItem, out bool missedSteal);
 
@@ -746,6 +754,9 @@ namespace System.Threading
                         return false;
                     }
                 }
+
+                // If we get here, it's because our quantum expired.
+                return true;
             }
             catch (Exception e)
             {

@@ -165,7 +165,7 @@ namespace Internal.TypeSystem.Ecma
             if (type == null)
             {
                 // PREFER: "new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this)" but the metadata is too broken
-                throw new TypeSystemException.TypeLoadException(Namespace, Name, Module);
+                ThrowHelper.ThrowTypeLoadException(Namespace, Name, Module);
             }
             _baseType = type;
             return type;

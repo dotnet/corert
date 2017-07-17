@@ -42,7 +42,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     continue;
 
                 // We've successfully drilled down the namespace chain. Now look for a top-level type matching the type name.
-                IEnumerable<TypeDefinitionHandle> candidateTypes = namespaceDefinition.TypeDefinitions;
+                TypeDefinitionHandleCollection candidateTypes = namespaceDefinition.TypeDefinitions;
                 foreach (TypeDefinitionHandle candidateType in candidateTypes)
                 {
                     TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
@@ -51,7 +51,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 }
 
                 // No match found in this assembly - see if there's a matching type forwarder.
-                IEnumerable<TypeForwarderHandle> candidateTypeForwarders = namespaceDefinition.TypeForwarders;
+                TypeForwarderHandleCollection candidateTypeForwarders = namespaceDefinition.TypeForwarders;
                 foreach (TypeForwarderHandle typeForwarderHandle in candidateTypeForwarders)
                 {
                     TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         private bool TryResolveNamespaceDefinitionCaseSensitive(MetadataReader reader, string[] namespaceParts, ScopeDefinitionHandle scopeDefinitionHandle, out NamespaceDefinition namespaceDefinition)
         {
             namespaceDefinition = scopeDefinitionHandle.GetScopeDefinition(reader).RootNamespaceDefinition.GetNamespaceDefinition(reader);
-            IEnumerable<NamespaceDefinitionHandle> candidates = namespaceDefinition.NamespaceDefinitions;
+            NamespaceDefinitionHandleCollection candidates = namespaceDefinition.NamespaceDefinitions;
             int idx = namespaceParts.Length;
             while (idx-- != 0)
             {

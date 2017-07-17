@@ -315,7 +315,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string DiagnosticNamespace
+        public string DiagnosticNamespace
         {
             get
             {
@@ -325,7 +325,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string DiagnosticName
+        public string DiagnosticName
         {
             get
             {

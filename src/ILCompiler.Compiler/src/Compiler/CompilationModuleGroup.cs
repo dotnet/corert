@@ -105,7 +105,7 @@ namespace ILCompiler
                 Debug.Assert(false, "Resolving a TypeRef in the compiler generated assembly?");
 
                 if (throwIfNotFound)
-                    throw new TypeSystemException.TypeLoadException(nameSpace, name, this);
+                    ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);
 
                 return null;
             }

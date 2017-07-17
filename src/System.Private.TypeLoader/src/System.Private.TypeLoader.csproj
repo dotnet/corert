@@ -382,8 +382,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemEntity.cs">
       <Link>Internal\TypeSystem\TypeSystemEntity.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemException.cs">
-      <Link>Internal\TypeSystem\TypeSystemException.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.Common.cs">
+      <Link>Internal\TypeSystem\ThrowHelper.Common.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>Internal\TypeSystem\TypeSystemHelpers.cs</Link>
@@ -393,6 +393,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>LockFreeReaderHashtableOfPointers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
+      <Link>Internal\TypeSystem\Utilities\ExceptionTypeNameFormatter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
       <Link>TypeNameFormatter.cs</Link>
@@ -468,6 +471,7 @@
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\ExceptionTypeNameFormatter.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\InstantiatedMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForInstantiatedType.Runtime.cs" />
@@ -475,6 +479,7 @@
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.Canon.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeNoMetadataType.cs" />
+    <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
