@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.General
                 if (optional == modifiedType.IsOptional)
                 {
                     Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
-                    customModifiers.Add(customModifier);
+                    customModifiers.Insert(0, customModifier);
                 }
 
                 handle = modifiedType.Type;
