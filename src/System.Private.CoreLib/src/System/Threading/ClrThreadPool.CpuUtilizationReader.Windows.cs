@@ -15,7 +15,6 @@ namespace System.Threading
                 public long idleTime;
                 public long kernelTime;
                 public long userTime;
-                public long affinityMask;
                 public int numberOfProcessors;
                 public Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[] usageBuffer;
             }
@@ -25,31 +24,9 @@ namespace System.Threading
             public CpuUtilizationReader()
             {
                 cpuInfo.numberOfProcessors = ThreadPoolGlobals.processorCount;
-                cpuInfo.affinityMask = GetCurrentProcessAffinityMask();
-
-                if (cpuInfo.affinityMask == 0)
-                {
-                    long mask = 0;
-                    long maskPos = 1;
-                    for (int i = 0; i < ThreadPoolGlobals.processorCount; i++)
-                    {
-                        mask |= maskPos;
-                        maskPos <<= 1;
-                    }
-                    cpuInfo.affinityMask = mask;
-                }
 
                 cpuInfo.usageBuffer = new Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[ThreadPoolGlobals.processorCount];
                 GetCpuUtilization(); // Call once to initialize the usage buffer
-            }
-
-            private long GetCurrentProcessAffinityMask()
-            {
-                if (!Interop.Kernel32.GetProcessAffinityMask(Interop.mincore.GetCurrentProcess(), out UIntPtr processMask, out UIntPtr systemAffinityMask))
-                {
-                    return 1;
-                }
-                return (long)processMask & (long)systemAffinityMask;
             }
 
             private unsafe int GetCpuUtilization()
@@ -66,14 +43,11 @@ namespace System.Threading
                 long kernelTime = 0;
                 long userTime = 0;
 
-                for (long procNumber = 0, mask = cpuInfo.affinityMask; procNumber < cpuInfo.usageBuffer.Length && mask != 0; procNumber++, mask >>= 1)
+                for (long procNumber = 0; procNumber < cpuInfo.usageBuffer.Length; procNumber++)
                 {
-                    if ((mask & 1) != 0)
-                    {
-                        idleTime += cpuInfo.usageBuffer[procNumber].IdleTime;
-                        kernelTime += cpuInfo.usageBuffer[procNumber].KernelTime;
-                        userTime += cpuInfo.usageBuffer[procNumber].UserTime;
-                    }
+                    idleTime += cpuInfo.usageBuffer[procNumber].IdleTime;
+                    kernelTime += cpuInfo.usageBuffer[procNumber].KernelTime;
+                    userTime += cpuInfo.usageBuffer[procNumber].UserTime;
                 }
 
                 long cpuTotalTime = (userTime - cpuInfo.userTime) + (kernelTime - cpuInfo.kernelTime);

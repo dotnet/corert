@@ -532,9 +532,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs">
-      <Link>Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.QueryPerformance.cs">
       <Link>Interop\Windows\kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
