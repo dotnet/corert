@@ -10,6 +10,11 @@ namespace System.Threading
     /// <summary>
     /// A LIFO semaphore implemented using Win32 IO Completion Ports.
     /// </summary>
+    /// <remarks>
+    /// IO Completion ports release waiting threads in LIFO order, so we can use them to create a LIFO semaphore.
+    /// See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198(v=vs.85).aspx under How I/O Completion Ports Work.
+    /// From the docs "Threads that block their execution on an I/O completion port are released in last-in-first-out (LIFO) order."
+    /// </remarks>
     internal sealed class LowLevelLifoSemaphore : IDisposable
     {
         private IntPtr _completionPort;
@@ -35,7 +40,9 @@ namespace System.Threading
                 Debug.Assert(error != Interop.Kernel32.ERROR_ABANDONDED_WAIT_0, "LowLevelLifoSemaphore waited on after dispose.");
                 if (error != 0)
                 {
-                    Environment.FailFast($"Failed to get completion packet. Error {error}");
+                    var exception = new OutOfMemoryException();
+                    exception.SetErrorCode(error);
+                    throw exception;
                 }
             }
             return success;
@@ -47,8 +54,10 @@ namespace System.Threading
             {
                 if(!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
                 {
-                    var error = Marshal.GetLastWin32Error();
-                    Environment.FailFast($"Failed to post completion packet. Error {error}");
+                    var lastError = Marshal.GetLastWin32Error();
+                    var exception = new OutOfMemoryException();
+                    exception.SetErrorCode(lastError);
+                    throw exception;
                 }
             }
             return 0; // TODO: Track actual signal count to calculate this

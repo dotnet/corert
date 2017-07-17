@@ -23,7 +23,8 @@ namespace System.Threading
     {
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads < 0 || completionPortThreads < 0) {
+            if (workerThreads < 0 || completionPortThreads < 0)
+            {
                 return false;
             }
             return ClrThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads);
@@ -39,7 +40,8 @@ namespace System.Threading
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads < 0 || completionPortThreads < 0) {
+            if (workerThreads < 0 || completionPortThreads < 0)
+            {
                 return false;
             }
             return ClrThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads);

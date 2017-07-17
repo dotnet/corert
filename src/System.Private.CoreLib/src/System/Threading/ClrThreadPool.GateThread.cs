@@ -94,7 +94,7 @@ namespace System.Threading
                 return delay > minimumDelay;
             }
 
-            private static RuntimeThread CreateGateThread()
+            private static RuntimeThread CreateRuntimeThread()
             {
                 RuntimeThread gateThread = RuntimeThread.Create(GateThreadStart);
                 gateThread.IsBackground = true;
@@ -106,24 +106,29 @@ namespace System.Threading
             {
                 if (s_gateThread == null)
                 {
-                    bool createdGateThread = false;
-                    try
+                    CreateGateThread();
+                }
+            }
+
+            private static void CreateGateThread()
+            {
+                bool createdGateThread = false;
+                try
+                {
+                    s_createdLock.Acquire();
+                    if (s_gateThread == null)
                     {
-                        s_createdLock.Acquire();
-                        if (s_gateThread == null)
-                        {
-                            s_gateThread = CreateGateThread();
-                            createdGateThread = true;
-                        }
+                        s_gateThread = CreateRuntimeThread();
+                        createdGateThread = true;
                     }
-                    finally
-                    {
-                        s_createdLock.Release();
-                    }
-                    if (createdGateThread)
-                    {
-                        s_gateThread.Start();
-                    }
+                }
+                finally
+                {
+                    s_createdLock.Release();
+                }
+                if (createdGateThread)
+                {
+                    s_gateThread.Start();
                 }
             }
         }
