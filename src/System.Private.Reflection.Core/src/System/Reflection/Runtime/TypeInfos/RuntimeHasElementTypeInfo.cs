@@ -73,6 +73,19 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
+
+                return Empty<CustomAttributeData>.Enumerable;
+            }
+        }
+
         public sealed override bool ContainsGenericParameters
         {
             get
