@@ -110,22 +110,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract override bool ContainsGenericParameters { get; }
 
-        //
-        // Left unsealed so that RuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo and RuntimeGenericParameterTypeInfo can override.
-        //
-        public override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                Debug.Assert(IsArray || IsByRef || IsPointer);
-                return Empty<CustomAttributeData>.Enumerable;
-            }
-        }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
  
         //
         // Left unsealed as generic parameter types must override.
