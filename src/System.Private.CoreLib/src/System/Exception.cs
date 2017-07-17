@@ -49,7 +49,18 @@ namespace System
 
         protected Exception(SerializationInfo info, StreamingContext context)
         {
-            throw new NotImplementedException();
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            _message = info.GetString("Message"); // Do not rename (binary serialization)
+            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
+            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
+            _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
+            _stackTrace = info.GetString("StackTraceString");
+            HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
+            _source = info.GetString("Source"); // Do not rename (binary serialization)
         }
 
         public virtual String Message
@@ -214,7 +225,33 @@ namespace System
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotImplementedException();
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+            
+            if (_source == null)
+            {
+                _source = Source; // Set the Source information correctly before serialization
+            }
+            
+            if (_message == null)
+            {
+                _message = Message; // Set the Message information correctly before serialization
+            }
+
+            info.AddValue("ClassName",  GetClassName(), typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Message", _message, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
+            info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
+            info.AddValue("HelpURL", _helpURL, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("StackTraceString",  StackTrace, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackIndex", 0, typeof(Int32)); // Do not rename (binary serialization)
+            info.AddValue("ExceptionMethod", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("HResult", HResult); // Do not rename (binary serialization)
+            info.AddValue("Source", _source, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("WatsonBuckets", null, typeof(String)); // Do not rename (binary serialization)
         }
 
         private string GetStackTrace(bool needFileInfo)
@@ -297,6 +334,9 @@ namespace System
 
         private int _HResult;     // HResult
 
+        // To maintain compatibility across runtimes, if this object was deserialized, it will store its stack trace as a string
+        private String _stackTrace;
+
         public int HResult
         {
             get { return _HResult; }
@@ -309,6 +349,9 @@ namespace System
         {
             get
             {
+                if (_stackTrace != null)
+                    return _stackTrace;
+
                 if (!HasBeenThrown)
                     return null;
 

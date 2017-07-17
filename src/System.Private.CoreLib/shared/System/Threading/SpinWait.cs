@@ -45,7 +45,7 @@ namespace System.Threading
     /// <remarks>
     /// <para>
     /// <see cref="SpinWait"/> encapsulates common spinning logic. On single-processor machines, yields are
-    /// always used instead of busy waits, and on computers with Intel� processors employing Hyper-Threading�
+    /// always used instead of busy waits, and on computers with Intel(R) processors employing Hyper-Threading
     /// technology, it helps to prevent hardware thread starvation. SpinWait encapsulates a good mixture of
     /// spinning and true yielding.
     /// </para>
@@ -63,7 +63,6 @@ namespace System.Threading
     /// threads must spin, each should use its own instance of SpinWait.
     /// </para>
     /// </remarks>
-
     public struct SpinWait
     {
         // These constants determine the frequency of yields versus spinning. The
@@ -117,7 +116,7 @@ namespace System.Threading
                 // We prefer to call Thread.Yield first, triggering a SwitchToThread. This
                 // unfortunately doesn't consider all runnable threads on all OS SKUs. In
                 // some cases, it may only consult the runnable threads whose ideal processor
-                // is the one currently executing code. Thus we ocassionally issue a call to
+                // is the one currently executing code. Thus we occasionally issue a call to
                 // Sleep(0), which considers all runnable threads at equal priority. Even this
                 // is insufficient since we may be spin waiting for lower priority threads to
                 // execute; we therefore must call Sleep(1) once in a while too, which considers
@@ -206,15 +205,15 @@ namespace System.Threading
         public static bool SpinUntil(Func<bool> condition, TimeSpan timeout)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
-            return SpinUntil(condition, (int)timeout.TotalMilliseconds);
+            return SpinUntil(condition, (int)totalMilliseconds);
         }
 
         /// <summary>
@@ -267,7 +266,7 @@ namespace System.Threading
     }
 
     /// <summary>
-    /// A helper class to get the number of preocessors, it updates the numbers of processors every sampling interval
+    /// A helper class to get the number of processors, it updates the numbers of processors every sampling interval.
     /// </summary>
     internal static class PlatformHelper
     {
@@ -290,8 +289,8 @@ namespace System.Threading
                     s_lastProcessorCountRefreshTicks = now;
                 }
 
-                Debug.Assert(procCount > 0 && procCount <= 64,
-                    "Processor count not within the expected range (1 - 64).");
+                Debug.Assert(procCount > 0,
+                    "Processor count should be greater than 0.");
 
                 return procCount;
             }

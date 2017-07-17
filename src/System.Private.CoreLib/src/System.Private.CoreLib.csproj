@@ -221,9 +221,7 @@
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
-    <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
     <Compile Include="System\InvokeUtils.cs" />
@@ -245,6 +243,7 @@
     <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
     <Compile Include="System\Diagnostics\StackFrame.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
@@ -253,14 +252,11 @@
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\Globalization\Calendar.cs" />
-    <Compile Include="System\Globalization\CalendarData.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CompareInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
-    <Compile Include="System\Globalization\GregorianCalendar.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
     <Compile Include="System\Guid.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
@@ -378,7 +374,6 @@
     <Compile Include="System\Threading\FirstLevelSpinWaiter.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\IOCompletionCallback.cs" />
-    <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\LowLevelLock.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.cs" />
@@ -392,7 +387,6 @@
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
     <Compile Include="System\Threading\SpinLock.cs" />
-    <Compile Include="System\Threading\SpinWait.cs" />
     <Compile Include="System\Threading\SynchronizationContext.cs" />
     <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SynchronizationContext.Dummy.cs" Condition="'$(EnableWinRT)' != 'true'" />
@@ -420,7 +414,6 @@
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="System\TimeSpan.cs" />
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />
     <Compile Include="System\Type.CoreRT.cs" />

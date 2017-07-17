@@ -67,7 +67,12 @@ namespace System.Threading
         {
             ClrThreadPool.ThreadPoolInstance.RequestWorker();
         }
-        
+
+        internal static bool KeepDispatching(int startTickCount)
+        {
+            return true;
+        }
+
         internal static void NotifyWorkItemProgress()
         {
             ClrThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();

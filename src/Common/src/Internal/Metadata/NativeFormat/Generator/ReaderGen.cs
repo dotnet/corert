@@ -174,7 +174,7 @@ class ReaderGen : CsWriter
 
     private void EmitCollection(string collectionTypeName, string elementTypeName)
     {
-        OpenScope($"public partial struct {collectionTypeName} : IReadOnlyCollection<{elementTypeName}>");
+        OpenScope($"public partial struct {collectionTypeName}");
 
         WriteLine("private NativeReader _reader;");
         WriteLine("private uint _offset;");
@@ -196,15 +196,7 @@ class ReaderGen : CsWriter
         WriteLine($"return new Enumerator(_reader, _offset);");
         CloseScope("GetEnumerator");
 
-        OpenScope($"IEnumerator<{elementTypeName}> IEnumerable<{elementTypeName}>.GetEnumerator()");
-        WriteLine($"return new Enumerator(_reader, _offset);");
-        CloseScope("GetEnumerator");
-
-        OpenScope($"System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()");
-        WriteLine("return new Enumerator(_reader, _offset);");
-        CloseScope("GetEnumerator");
-
-        OpenScope($"public struct Enumerator : IEnumerator<{elementTypeName}>");
+        OpenScope($"public struct Enumerator");
 
         WriteLine("private NativeReader _reader;");
         WriteLine("private uint _offset;");
@@ -223,12 +215,6 @@ class ReaderGen : CsWriter
         CloseScope();
         CloseScope("Current");
 
-        OpenScope("object System.Collections.IEnumerator.Current");
-        OpenScope("get");
-        WriteLine("return _current;");
-        CloseScope();
-        CloseScope("Current");
-
         OpenScope("public bool MoveNext()");
         WriteLine("if (_remaining == 0)");
         WriteLine("    return false;");
@@ -236,10 +222,6 @@ class ReaderGen : CsWriter
         WriteLine("_offset = _reader.Read(_offset, out _current);");
         WriteLine("return true;");
         CloseScope("MoveNext");
-
-        OpenScope("void System.Collections.IEnumerator.Reset()");
-        WriteLine("throw new NotSupportedException();");
-        CloseScope("Reset");
 
         OpenScope("public void Dispose()");
         CloseScope("Dispose");

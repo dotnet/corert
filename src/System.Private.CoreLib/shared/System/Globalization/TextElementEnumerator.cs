@@ -12,7 +12,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -26,10 +25,8 @@ namespace System.Globalization
         private int _index;
         private int _startIndex;
 
-        [NonSerialized]
         private int _strLen;                // This is the length of the total string, counting from the beginning of string.
 
-        [NonSerialized]
         private int _currTextElementLen; // The current text element lenght after MoveNext() is called.
 
         private UnicodeCategory _uc;
@@ -51,7 +48,7 @@ namespace System.Globalization
         {
             if (_index >= _strLen)
             {
-                // Make the index to be greater than strLen so that we can throw exception if GetTextElement() is called.
+                // Make the _index to be greater than _strLen so that we can throw exception if GetTextElement() is called.
                 _index = _strLen + 1;
                 return (false);
             }
