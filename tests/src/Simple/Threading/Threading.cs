@@ -54,14 +54,11 @@ internal static class Runner
         // Console.WriteLine("    ThreadPoolTests.RunJobsAfterThreadTimeout");
         // ThreadPoolTests.RunJobsAfterThreadTimeout();
 
-        Console.WriteLine("    ThreadPoolTests.ThreadLocalWorkQueueDepletionTest");
-        ThreadPoolTests.ThreadLocalWorkQueueDepletionTest();
+        Console.WriteLine("    ThreadPoolTests.WorkQueueDepletionTest");
+        ThreadPoolTests.WorkQueueDepletionTest();
 
         Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
         ThreadPoolTests.WorkerThreadStateReset();
-
-        Console.WriteLine("    ThreadPoolTests.GlobalWorkQueueDepletionTest");
-        ThreadPoolTests.GlobalWorkQueueDepletionTest();
 
         // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
         // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
@@ -954,25 +951,46 @@ internal static class ThreadPoolTests
     }
 
     [Fact]
-    public static void ThreadLocalWorkQueueDepletionTest()
+    public static void WorkQueueDepletionTest()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
-        int count = 0;
-        int maxCount = Environment.ProcessorCount * 64;
+        int numLocalScheduled = 0;
+        int numGlobalScheduled = 0;
+        int numToSchedule = Environment.ProcessorCount * 64;
+        int numCompleted = 0;
         object syncRoot = new object();
-        void Job()
+        void ThreadLocalJob()
         {
-            if(Interlocked.Increment(ref count) >= maxCount)
+            if(Interlocked.Increment(ref numLocalScheduled) <= numToSchedule)
+            {
+                Task.Factory.StartNew(ThreadLocalJob);
+            }
+            if(Interlocked.Increment(ref numLocalScheduled) <= numToSchedule)
+            {
+                Task.Factory.StartNew(ThreadLocalJob);
+            }
+            if (Interlocked.Increment(ref numCompleted) == numToSchedule * 2)
             {
                 e0.Set();
             }
-            else
+        }
+        void GlobalJob(object _)
+        {
+            if(Interlocked.Increment(ref numGlobalScheduled) <= numToSchedule)
             {
-                Task.Factory.StartNew(Job);
-                Task.Factory.StartNew(Job);
+                ThreadPool.QueueUserWorkItem(GlobalJob);
+            }
+            if(Interlocked.Increment(ref numGlobalScheduled) <= numToSchedule)
+            {
+                ThreadPool.QueueUserWorkItem(GlobalJob);
+            }
+            if (Interlocked.Increment(ref numCompleted) == numToSchedule * 2)
+            {
+                e0.Set();
             }
         }
-        Task.Factory.StartNew(Job);
+        Task.Factory.StartNew(ThreadLocalJob);
+        ThreadPool.QueueUserWorkItem(GlobalJob);
         e0.CheckedWait();
     }
 
