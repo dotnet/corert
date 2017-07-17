@@ -79,7 +79,7 @@ bool GCToOSInterface::Initialize()
 {
     int pageSize = sysconf(_SC_PAGE_SIZE);
 
-    g_pageSizeUnixInl = uint32_t((pageSize > 0) pageSize : 0x1000);
+    g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
 
     // Calculate and cache the number of processors on this machine
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
