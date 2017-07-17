@@ -16,26 +16,26 @@ namespace System.Threading
                 public long kernelTime;
                 public long userTime;
                 public int numberOfProcessors;
-                public Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[] usageBuffer;
+                public Interop.mincore.SystemProcessorPerformanceInformation[] usageBuffer;
             }
 
-            private ProcessCpuInformation cpuInfo = new ProcessCpuInformation();
+            private ProcessCpuInformation _cpuInfo = new ProcessCpuInformation();
 
             public CpuUtilizationReader()
             {
-                cpuInfo.numberOfProcessors = ThreadPoolGlobals.processorCount;
+                _cpuInfo.numberOfProcessors = ThreadPoolGlobals.processorCount;
 
-                cpuInfo.usageBuffer = new Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION[ThreadPoolGlobals.processorCount];
+                _cpuInfo.usageBuffer = new Interop.mincore.SystemProcessorPerformanceInformation[ThreadPoolGlobals.processorCount];
                 GetCpuUtilization(); // Call once to initialize the usage buffer
             }
 
             private unsafe int GetCpuUtilization()
             {
-                fixed (Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION* buffer = cpuInfo.usageBuffer)
+                fixed (Interop.mincore.SystemProcessorPerformanceInformation* buffer = _cpuInfo.usageBuffer)
                 {
-                    int status = Interop.mincore.QuerySystemInformation(Interop.mincore.SYSTEM_INFORMATION_CLASS.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION,
+                    int status = Interop.mincore.QuerySystemInformation(Interop.mincore.SystemInformationClass.SystemProcessorPerformanceInformation,
                         buffer,
-                        sizeof(Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * cpuInfo.usageBuffer.Length,
+                        sizeof(Interop.mincore.SystemProcessorPerformanceInformation) * _cpuInfo.usageBuffer.Length,
                         out uint returnLength);
 
                     if (status != 0)
@@ -48,19 +48,19 @@ namespace System.Threading
                 long kernelTime = 0;
                 long userTime = 0;
 
-                for (long procNumber = 0; procNumber < cpuInfo.usageBuffer.Length; procNumber++)
+                for (long procNumber = 0; procNumber < _cpuInfo.usageBuffer.Length; procNumber++)
                 {
-                    idleTime += cpuInfo.usageBuffer[procNumber].IdleTime;
-                    kernelTime += cpuInfo.usageBuffer[procNumber].KernelTime;
-                    userTime += cpuInfo.usageBuffer[procNumber].UserTime;
+                    idleTime += _cpuInfo.usageBuffer[procNumber].IdleTime;
+                    kernelTime += _cpuInfo.usageBuffer[procNumber].KernelTime;
+                    userTime += _cpuInfo.usageBuffer[procNumber].UserTime;
                 }
 
-                long cpuTotalTime = (userTime - cpuInfo.userTime) + (kernelTime - cpuInfo.kernelTime);
-                long cpuBusyTime = cpuTotalTime - (idleTime - cpuInfo.idleTime);
+                long cpuTotalTime = (userTime - _cpuInfo.userTime) + (kernelTime - _cpuInfo.kernelTime);
+                long cpuBusyTime = cpuTotalTime - (idleTime - _cpuInfo.idleTime);
 
-                cpuInfo.kernelTime = kernelTime;
-                cpuInfo.userTime = userTime;
-                cpuInfo.idleTime = idleTime;
+                _cpuInfo.kernelTime = kernelTime;
+                _cpuInfo.userTime = userTime;
+                _cpuInfo.idleTime = idleTime;
 
                 if (cpuTotalTime > 0)
                 {

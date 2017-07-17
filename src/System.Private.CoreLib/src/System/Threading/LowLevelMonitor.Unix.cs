@@ -68,11 +68,5 @@ namespace System.Threading
         {
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);
         }
-
-        /// The following methods typical in a monitor are omitted since they are currently not necessary for the way in which
-        /// this class is used:
-        ///   - TryAcquire
-        ///   - Signal (use <see cref="Signal_Release"/> instead)
-        ///   - SignalAll
     }
 }

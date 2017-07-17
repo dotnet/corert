@@ -20,12 +20,6 @@ internal partial class Interop
             private uint SpinCount;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CONDITION_VARIABLE
-        {
-            private IntPtr Ptr;
-        }
-
         [DllImport(Libraries.Kernel32)]
         internal static extern void InitializeCriticalSection(out CRITICAL_SECTION lpCriticalSection);
 
@@ -37,15 +31,5 @@ internal partial class Interop
 
         [DllImport(Libraries.Kernel32)]
         internal static extern void DeleteCriticalSection(ref CRITICAL_SECTION lpCriticalSection);
-        
-        [DllImport(Libraries.Kernel32)]
-        internal static extern void InitializeConditionVariable(out CONDITION_VARIABLE ConditionVariable);
-
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern void WakeConditionVariable(ref CONDITION_VARIABLE ConditionVariable);
-
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool SleepConditionVariableCS(ref CONDITION_VARIABLE ConditionVariable, ref CRITICAL_SECTION CriticalSection, int dwMilliseconds);
     }
 }

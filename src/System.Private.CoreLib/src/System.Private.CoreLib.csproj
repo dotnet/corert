@@ -530,6 +530,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.CriticalSection.cs">
       <Link>Interop\Windows\kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ConditionVariable.cs">
+      <Link>Interop\Windows\kernel32\Interop.ConditionVariable.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>

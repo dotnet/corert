@@ -65,11 +65,5 @@ namespace System.Threading
             Interop.Kernel32.WakeConditionVariable(ref _conditionVariable);
             Interop.Kernel32.LeaveCriticalSection(ref _criticalSection);
         }
-
-        /// The following methods typical in a monitor are omitted since they are currently not necessary for the way in which
-        /// this class is used:
-        ///   - TryAcquire
-        ///   - Signal (use <see cref="Signal_Release"/> instead)
-        ///   - SignalAll
     }
 }

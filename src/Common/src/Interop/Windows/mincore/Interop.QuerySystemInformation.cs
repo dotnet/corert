@@ -13,13 +13,13 @@ internal partial class Interop
     {
         private const int DllSearchPathUseSystem32 = 0x800;
 
-        internal enum SYSTEM_INFORMATION_CLASS
+        internal enum SystemInformationClass
         {
-            SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION = 8
+            SystemProcessorPerformanceInformation = 8
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION
+        internal struct SystemProcessorPerformanceInformation
         {
             public long IdleTime;
             public long KernelTime;
@@ -29,11 +29,16 @@ internal partial class Interop
             public uint InterruptCount;
         }
         
+        // We have to dynamically load the address of NtQuerySystemInformation because the symbol is not exported from NtDll.dll.
+        // In RyuJIT-compiled code, a regular P/Invoke works perfectly since it dynamically loads the symbol anyway.
+        // However, with C++ code-gen, a regular P/Invoke compiles to a static call, which fails in linking since the function is not exported.
+        // So, we have to manually get the proc address and get the delegate at runtime ourselves to compile and link in the C++ code-gen scenario.
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal unsafe delegate int QuerySystemInformationDelegate(SYSTEM_INFORMATION_CLASS SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
+        internal unsafe delegate int QuerySystemInformationDelegate(SystemInformationClass SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
 
         private static QuerySystemInformationDelegate s_querySystemInformation;
-
+        
         internal unsafe static QuerySystemInformationDelegate QuerySystemInformation
         {
             get

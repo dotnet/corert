@@ -26,7 +26,9 @@ namespace System.Threading
             if (_completionPort == IntPtr.Zero)
             {
                 var error = Marshal.GetLastWin32Error();
-                Environment.FailFast($"Failed to create I/O Completion Port. Error ${error}");
+                var exception = new OutOfMemoryException();
+                exception.SetErrorCode(error);
+                throw exception;
             }
             Release(initialSignalCount);
         }
