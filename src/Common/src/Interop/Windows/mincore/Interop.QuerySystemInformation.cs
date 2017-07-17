@@ -30,7 +30,7 @@ internal partial class Interop
         }
         
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal unsafe delegate void QuerySystemInformationDelegate(SYSTEM_INFORMATION_CLASS SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
+        internal unsafe delegate int QuerySystemInformationDelegate(SYSTEM_INFORMATION_CLASS SystemInformationClass, void* SystemInformation, int SystemInformationLength, out uint returnLength);
 
         private static QuerySystemInformationDelegate s_querySystemInformation;
 
@@ -45,6 +45,10 @@ internal partial class Interop
                     {
                         IntPtr entryPoint = GetProcAddress(ntDll, name);
                         s_querySystemInformation = (QuerySystemInformationDelegate)PInvokeMarshal.GetPInvokeDelegateForStub(entryPoint, typeof(QuerySystemInformationDelegate).TypeHandle);
+                        if (s_querySystemInformation == null)
+                        {
+                            Environment.FailFast("NtQuerySystemInformation function not found.", new PlatformNotSupportedException("NtQuerySystemInformation function not found."));
+                        }
                     }
                 }
                 return s_querySystemInformation;

@@ -33,10 +33,15 @@ namespace System.Threading
             {
                 fixed (Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION* buffer = cpuInfo.usageBuffer)
                 {
-                    Interop.mincore.QuerySystemInformation(Interop.mincore.SYSTEM_INFORMATION_CLASS.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION,
+                    int status = Interop.mincore.QuerySystemInformation(Interop.mincore.SYSTEM_INFORMATION_CLASS.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION,
                         buffer,
                         sizeof(Interop.mincore.SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * cpuInfo.usageBuffer.Length,
                         out uint returnLength);
+
+                    if (status != 0)
+                    {
+                        Environment.FailFast($"NtQuerySystemInformation call failed with status {status}");
+                    }
                 }
 
                 long idleTime = 0;

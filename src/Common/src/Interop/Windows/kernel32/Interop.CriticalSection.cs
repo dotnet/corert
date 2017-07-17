@@ -10,20 +10,20 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRITICAL_SECTION
+        internal struct CRITICAL_SECTION
         {
-            IntPtr _debugInfo;
-            int _lockCount;
-            int _recursionCount;
-            IntPtr _owningThread;
-            IntPtr _lockSemaphore;
-            uint _spinCount;
+            private IntPtr DebugInfo;
+            private int LockCount;
+            private int RecursionCount;
+            private IntPtr OwningThread;
+            private IntPtr LockSemaphore;
+            private uint SpinCount;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CONDITION_VARIABLE
+        internal struct CONDITION_VARIABLE
         {
-            IntPtr _ptr;
+            private IntPtr Ptr;
         }
 
         [DllImport(Libraries.Kernel32)]

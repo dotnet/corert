@@ -112,12 +112,10 @@ namespace System.Threading
             bool waitResult = Interop.Kernel32.SleepConditionVariableCS(ref _conditionVariable, ref _criticalSection, timeoutMilliseconds);
             if (!waitResult)
             {
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetHRForLastWin32Error();
                 if (lastError != ErrorTimeout)
                 {
-                    var exception = new Exception();
-                    exception.SetErrorCode(lastError);
-                    throw exception;
+                    throw Marshal.GetExceptionForHR(lastError);
                 }
             }
             SetOwnerThreadToCurrent();
