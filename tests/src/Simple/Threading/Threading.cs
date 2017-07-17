@@ -1033,29 +1033,6 @@ internal static class ThreadPoolTests
     }
 
     [Fact]
-    public static void GlobalWorkQueueDepletionTest()
-    {
-        ManualResetEvent e0 = new ManualResetEvent(false);
-        int count = 0;
-        int maxCount = Environment.ProcessorCount * 64;
-        object syncRoot = new object();
-        void Job(object _)
-        {
-            if(Interlocked.Increment(ref count) >= maxCount)
-            {
-                e0.Set();
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(Job);
-                ThreadPool.QueueUserWorkItem(Job);
-            }
-        }
-        ThreadPool.QueueUserWorkItem(Job);
-        e0.CheckedWait();
-    }
-
-    [Fact]
     public static void SettingMinThreadsWillCreateThreadsUpToMinimum()
     {
         ThreadPool.GetMinThreads(out int minThreads, out int unusedMin);
