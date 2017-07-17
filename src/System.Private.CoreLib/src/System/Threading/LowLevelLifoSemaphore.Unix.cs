@@ -14,7 +14,7 @@ namespace System.Threading
 
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount)
         {
-            _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, maximumSignalCount);
+            _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(initialSignalCount, maximumSignalCount);
         }
 
         public bool Wait(int timeoutMs)
