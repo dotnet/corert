@@ -18,7 +18,7 @@ namespace System.Threading
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
-        private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
+        private int _cpuUtilization = 0;
 
         private const short MaxPossibleThreadCount = short.MaxValue;
 
