@@ -388,6 +388,7 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 
 #endif // !DACCESS_COMPILE
 
+GPTR_IMPL_INIT(PTR_VOID, g_RhpInitiateThreadAbortAddr, (void**)&RhpInitiateThreadAbort);
 
 #ifdef _WIN32
 

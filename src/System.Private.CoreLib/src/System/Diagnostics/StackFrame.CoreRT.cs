@@ -130,8 +130,15 @@ namespace System.Diagnostics
         /// </summary>
         internal void AppendToStackTrace(StringBuilder builder)
         {
-            builder.Append(SR.StackTrace_AtWord);
-            builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
+            if (_ipAddress == StackTraceHelper.SpecialIP.EdiSeparator)
+            {
+                builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
+            }
+            else
+            {
+                builder.Append(SR.StackTrace_AtWord);
+                builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
+            }
         }
     }
 }
