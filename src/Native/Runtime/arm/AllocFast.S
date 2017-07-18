@@ -34,6 +34,9 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // set the new alloc pointer
         str         r2, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
+        // Set the new object's EEType pointer
+        str         r4, [r3, #OFFSETOF__Object__m_pEEType]
+
         mov         r0, r3
 
         EPILOG_POP  "{r4,pc}"
