@@ -24,7 +24,6 @@ LEAF_ENTRY CallingConventionConverter_ReturnIntegerReturnThunk, _TEXT
         EMIT_BREAKPOINT
 LEAF_END CallingConventionConverter_ReturnIntegerReturnThunk, _TEXT
 
-
 //
 // __jmpstub__CallingConventionConverter_CommonCallingStub
 //
@@ -57,3 +56,11 @@ LEAF_ENTRY CallingConventionConverter_GetStubs, _TEXT
         // UNIXTODO: Implement this function
         EMIT_BREAKPOINT
 LEAF_END CallingConventionConverter_GetStubs, _TEXT
+
+//
+// void CallingConventionConverter_SpecifyCommonStubData(CallingConventionConverter_CommonCallingStub_PointerData *commonData);
+//
+LEAF_ENTRY CallingConventionConverter_SpecifyCommonStubData
+        // UNIXTODO: Implement this function
+        EMIT_BREAKPOINT
+LEAF_END CallingConventionConverter_SpecifyCommonStubData
