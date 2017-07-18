@@ -204,6 +204,12 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public void EmitUnaligned()
+        {
+            Emit(ILOpcode.unaligned);
+            EmitByte(1);
+        }
+
         public void EmitLdInd(TypeDesc type)
         {
             switch (type.UnderlyingType.Category)
