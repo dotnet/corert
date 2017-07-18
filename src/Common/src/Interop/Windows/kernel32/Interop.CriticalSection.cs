@@ -17,7 +17,7 @@ internal partial class Interop
             private int RecursionCount;
             private IntPtr OwningThread;
             private IntPtr LockSemaphore;
-            private uint SpinCount;
+            private UIntPtr SpinCount;
         }
 
         [DllImport(Libraries.Kernel32)]

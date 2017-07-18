@@ -36,17 +36,7 @@ namespace System.Threading
         public bool Wait(int timeoutMs)
         {
             bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out var numberOfBytes, out var completionKey, out var pointerToOverlapped, timeoutMs);
-            if (!success)
-            {
-                var error = Marshal.GetLastWin32Error();
-                Debug.Assert(error != Interop.Kernel32.ERROR_ABANDONDED_WAIT_0, "LowLevelLifoSemaphore waited on after dispose.");
-                if (error != 0)
-                {
-                    var exception = new OutOfMemoryException();
-                    exception.SetErrorCode(error);
-                    throw exception;
-                }
-            }
+            Debug.Assert(success || (Marshal.GetLastWin32Error() == WaitHandle.WaitTimeout));
             return success;
         }
 

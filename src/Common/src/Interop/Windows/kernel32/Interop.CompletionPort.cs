@@ -19,7 +19,5 @@ internal partial class Interop
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetQueuedCompletionStatus(IntPtr CompletionPort, out int lpNumberOfBytes, out UIntPtr CompletionKey, out IntPtr lpOverlapped, int dwMilliseconds);
-        
-        internal const int ERROR_ABANDONDED_WAIT_0 = 735;
     }
 }

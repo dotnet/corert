@@ -954,8 +954,8 @@ internal static class ThreadPoolTests
     public static void WorkQueueDepletionTest()
     {
         ManualResetEvent e0 = new ManualResetEvent(false);
-        int numLocalScheduled = 0;
-        int numGlobalScheduled = 0;
+        int numLocalScheduled = 1;
+        int numGlobalScheduled = 1;
         int numToSchedule = Environment.ProcessorCount * 64;
         int numCompleted = 0;
         object syncRoot = new object();

@@ -33,15 +33,12 @@ namespace System.Threading
                     {
                         if (TakeActiveRequest())
                         {
-                            var wrapper = ThreadPoolCallbackWrapper.Enter();
                             Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
                             if (ThreadPoolWorkQueue.Dispatch())
                             {
                                 // If the queue runs out of work for us, we need to update the number of working workers to reflect that we are done working for now
                                 RemoveWorkingWorker();
                             }
-
-                            wrapper.Exit(resetThread: true);
                         }
                         else
                         {

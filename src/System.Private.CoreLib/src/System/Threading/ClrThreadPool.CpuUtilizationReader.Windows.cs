@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -12,59 +13,38 @@ namespace System.Threading
         {
             private struct ProcessCpuInformation
             {
-                public long idleTime;
-                public long kernelTime;
-                public long userTime;
-                public int numberOfProcessors;
-                public Interop.mincore.SystemProcessorPerformanceInformation[] usageBuffer;
+                public ulong idleTime;
+                public ulong kernelTime;
+                public ulong userTime;
             }
 
-            private ProcessCpuInformation _cpuInfo = new ProcessCpuInformation();
+            private ProcessCpuInformation cpuInfo = new ProcessCpuInformation();
 
             public CpuUtilizationReader()
             {
-                _cpuInfo.numberOfProcessors = ThreadPoolGlobals.processorCount;
-
-                _cpuInfo.usageBuffer = new Interop.mincore.SystemProcessorPerformanceInformation[ThreadPoolGlobals.processorCount];
                 GetCpuUtilization(); // Call once to initialize the usage buffer
             }
 
             private unsafe int GetCpuUtilization()
             {
-                fixed (Interop.mincore.SystemProcessorPerformanceInformation* buffer = _cpuInfo.usageBuffer)
+                if (!Interop.Kernel32.GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
                 {
-                    int status = Interop.mincore.QuerySystemInformation(Interop.mincore.SystemInformationClass.SystemProcessorPerformanceInformation,
-                        buffer,
-                        sizeof(Interop.mincore.SystemProcessorPerformanceInformation) * _cpuInfo.usageBuffer.Length,
-                        out uint returnLength);
-
-                    if (status != 0)
-                    {
-                        Environment.FailFast($"NtQuerySystemInformation call failed with status {status}");
-                    }
+                    int error = Marshal.GetLastWin32Error();
+                    var exception = new OutOfMemoryException();
+                    exception.SetErrorCode(error);
+                    throw exception;
                 }
 
-                long idleTime = 0;
-                long kernelTime = 0;
-                long userTime = 0;
+                ulong cpuTotalTime = (userTime - cpuInfo.userTime) + (kernelTime - cpuInfo.kernelTime);
+                ulong cpuBusyTime = cpuTotalTime - (idleTime - cpuInfo.idleTime);
 
-                for (long procNumber = 0; procNumber < _cpuInfo.usageBuffer.Length; procNumber++)
-                {
-                    idleTime += _cpuInfo.usageBuffer[procNumber].IdleTime;
-                    kernelTime += _cpuInfo.usageBuffer[procNumber].KernelTime;
-                    userTime += _cpuInfo.usageBuffer[procNumber].UserTime;
-                }
-
-                long cpuTotalTime = (userTime - _cpuInfo.userTime) + (kernelTime - _cpuInfo.kernelTime);
-                long cpuBusyTime = cpuTotalTime - (idleTime - _cpuInfo.idleTime);
-
-                _cpuInfo.kernelTime = kernelTime;
-                _cpuInfo.userTime = userTime;
-                _cpuInfo.idleTime = idleTime;
+                cpuInfo.kernelTime = kernelTime;
+                cpuInfo.userTime = userTime;
+                cpuInfo.idleTime = idleTime;
 
                 if (cpuTotalTime > 0)
                 {
-                    long reading = cpuBusyTime * 100 / cpuTotalTime;
+                    ulong reading = cpuBusyTime * 100 / cpuTotalTime;
                     Debug.Assert(0 <= reading && reading <= int.MaxValue);
                     return (int)reading;
                 }

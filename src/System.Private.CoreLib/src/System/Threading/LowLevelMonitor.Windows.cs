@@ -13,8 +13,6 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class LowLevelMonitor : IDisposable
     {
-        private const int ErrorTimeout = 0x000005B4;
-
         private Interop.Kernel32.CRITICAL_SECTION _criticalSection;
         private Interop.Kernel32.CONDITION_VARIABLE _conditionVariable;
 
@@ -50,7 +48,7 @@ namespace System.Threading
             if (!waitResult)
             {
                 int lastError = Marshal.GetLastWin32Error();
-                if (lastError != ErrorTimeout)
+                if (lastError != Interop.Errors.ERROR_TIMEOUT)
                 {
                     var exception = new OutOfMemoryException();
                     exception.SetErrorCode(lastError);

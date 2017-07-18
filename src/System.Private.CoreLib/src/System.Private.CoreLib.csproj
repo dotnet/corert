@@ -526,6 +526,9 @@
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ConditionVariable.cs">
       <Link>Interop\Windows\kernel32\Interop.ConditionVariable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetSystemTimes.cs">
+      <Link>Interop\Windows\kernel32\Interop.GetSystemTimes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
@@ -572,9 +575,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
       <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QuerySystemInformation.cs">
-      <Link>Interop\Windows\mincore\Interop.QuerySystemInformation.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Threading.cs">
       <Link>Interop\Windows\mincore\Interop.Threading.cs</Link>
