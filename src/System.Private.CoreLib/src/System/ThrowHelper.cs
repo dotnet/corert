@@ -63,9 +63,27 @@ namespace System
             throw new ArgumentOutOfRangeException();
         }
 
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        {
+            throw GetArgumentOutOfRangeException(argument, resource);
+        }
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        {
+            return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
+        }
+
         internal static void ThrowArgumentException_DestinationTooShort()
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort);
+        }
+
+        internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        {
+            throw GetArgumentException(resource, argument);
+        }
+        private static ArgumentException GetArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        {
+            return new ArgumentException(GetResourceString(resource), GetArgumentName(argument));
         }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
@@ -89,9 +107,28 @@ namespace System
                     return "values";
                 case ExceptionArgument.obj:
                     return "obj";
+                case ExceptionArgument.value:
+                    return "value";
+                case ExceptionArgument.startIndex:
+                    return "startIndex";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
+                    return "";
+            }
+        }
+
+        private static string GetResourceString(ExceptionResource resource)
+        {
+            switch (resource)
+            {
+                case ExceptionResource.ArgumentOutOfRange_Index:
+                    return SR.ArgumentOutOfRange_Index;
+                case ExceptionResource.Arg_ArrayPlusOffTooSmall:
+                    return SR.Arg_ArrayPlusOffTooSmall;
+                default:
+                    Debug.Assert(false,
+                        "The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
             }
         }
@@ -106,5 +143,16 @@ namespace System
         text,
         values,
         obj,
+        value,
+        startIndex,
+    }
+
+    //
+    // The convention for this enum is using the resource name as the enum name
+    // 
+    internal enum ExceptionResource
+    {
+        ArgumentOutOfRange_Index,
+        Arg_ArrayPlusOffTooSmall,
     }
 }

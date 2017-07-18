@@ -55,6 +55,8 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore. .NET Core integration with MSBuild is work in progress and these instructions need updating accordingly from time to time.
 
+    * Projects with references to other projects or packages require workaround described in https://github.com/dotnet/corert/issues/2619#issuecomment-276095878
+
 ## Using RyuJIT ##
 
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. Linking is done using the platform specific linker.
@@ -69,7 +71,7 @@ Native executable will be dropped in `./bin/[configuration]/native/` folder and 
 
 ## Using CPP Code Generator ##
 
-This approach uses platform specific C++ compiler and linker for compiling/linking the application.
+This approach uses [transpiler](https://en.wikipedia.org/wiki/Source-to-source_compiler) to convert IL to C++, and then uses platform specific C++ compiler and linker for compiling/linking the application. The transpiler is a lot less mature than the RyuJIT path. If you came here to give CoreRT a try on your .NET Core program, use the RyuJIT option above.
 
 From the shell/command prompt, issue the following commands to generate the native executable:
 

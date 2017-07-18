@@ -32,7 +32,11 @@ namespace System.Threading
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineSeparated
         {
+#if ARM64
+            private const int CacheLineSize = 128;
+#else
             private const int CacheLineSize = 64;
+#endif
             [FieldOffset(CacheLineSize * 1)]
             public ThreadCounts counts;
             [FieldOffset(CacheLineSize * 2)]
