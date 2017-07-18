@@ -33,6 +33,7 @@ namespace System.Threading
                     {
                         if (TakeActiveRequest())
                         {
+                            var wrapper = ThreadPoolCallbackWrapper.Enter();
                             Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
                             if (ThreadPoolWorkQueue.Dispatch())
                             {
@@ -40,14 +41,7 @@ namespace System.Threading
                                 RemoveWorkingWorker();
                             }
 
-                            // Reset thread-local state that we control.
-                            if (currentThread.Priority != ThreadPriority.Normal)
-                            {
-                                currentThread.Priority = ThreadPriority.Normal;
-                            }
-
-                            CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
-                            CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
+                            wrapper.Exit(resetThread: true);
                         }
                         else
                         {
