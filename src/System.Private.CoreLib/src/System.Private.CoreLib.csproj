@@ -184,7 +184,6 @@
     <Compile Include="System\AppContextDefaultValues.cs" />
     <Compile Include="System\ArgIterator.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
