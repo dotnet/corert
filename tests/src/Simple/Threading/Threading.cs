@@ -1042,7 +1042,7 @@ internal static class ThreadPoolTests
             ManualResetEvent e0 = new ManualResetEvent(false);
             AutoResetEvent jobsQueued = new AutoResetEvent(false);
             int count = 0;
-            ThreadPool.SetMinThreads(minThreads + 1, unusedMin);
+            ThreadPool.SetMaxThreads(minThreads, unusedMax);
             for(int i = 0; i < minThreads + 1; ++i)
             {
                 ThreadPool.QueueUserWorkItem( _ => {
