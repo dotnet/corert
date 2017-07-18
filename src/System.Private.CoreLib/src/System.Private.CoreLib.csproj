@@ -346,16 +346,6 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="System\Text\DecoderBestFitFallback.cs" />
-    <Compile Include="System\Text\DecoderExceptionFallback.cs" />
-    <Compile Include="System\Text\DecoderFallback.cs" />
-    <Compile Include="System\Text\DecoderNLS.cs" />
-    <Compile Include="System\Text\DecoderReplacementFallback.cs" />
-    <Compile Include="System\Text\EncoderBestFitFallback.cs" />
-    <Compile Include="System\Text\EncoderExceptionFallback.cs" />
-    <Compile Include="System\Text\EncoderFallback.cs" />
-    <Compile Include="System\Text\EncoderNLS.cs" />
-    <Compile Include="System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="System\Text\EncodingData.cs" />
     <Compile Include="System\Text\EncodingTable.cs" />
     <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
