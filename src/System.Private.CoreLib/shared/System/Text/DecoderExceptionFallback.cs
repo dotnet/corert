@@ -4,7 +4,6 @@
 
 using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -83,7 +82,7 @@ namespace System.Text
             for (i = 0; i < bytesUnknown.Length && i < 20; i++)
             {
                 strBytes.Append('[');
-                strBytes.Append(bytesUnknown[i].ToString("X2", FormatProvider.InvariantCulture));
+                strBytes.Append(bytesUnknown[i].ToString("X2", CultureInfo.InvariantCulture));
                 strBytes.Append(']');
             }
 
@@ -107,16 +106,19 @@ namespace System.Text
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message)
             : base(message)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public DecoderFallbackException(String message, byte[] bytesUnknown, int index)

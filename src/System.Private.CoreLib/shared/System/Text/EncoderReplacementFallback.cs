@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -58,7 +60,7 @@ namespace System.Text
                     break;
             }
             if (bFoundHigh)
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement)));
 
             _strDefault = replacement;
         }
@@ -146,13 +148,11 @@ namespace System.Text
             // Double check input surrogate pair
             if (!Char.IsHighSurrogate(charUnknownHigh))
                 throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xD800, 0xDBFF));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
 
             if (!Char.IsLowSurrogate(charUnknownLow))
                 throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xDC00, 0xDFFF));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             Contract.EndContractBlock();
 
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
 using System.Text;
 using System;
 using System.Diagnostics.Contracts;
@@ -18,34 +19,32 @@ namespace System.Text
     // Instances of specific implementations of the Decoder abstract base
     // class are typically obtained through calls to the GetDecoder method
     // of Encoding objects.
-    //
 
     internal class DecoderNLS : Decoder
     {
         // Remember our encoding
-        protected Encoding m_encoding;
-        protected bool m_mustFlush;
-        internal bool m_throwOnOverflow;
-        internal int m_bytesUsed;
+        private Encoding _encoding;
+        private bool _mustFlush;
+        internal bool _throwOnOverflow;
+        internal int _bytesUsed;
 
         internal DecoderNLS(Encoding encoding)
         {
-            this.m_encoding = encoding;
-            this.m_fallback = this.m_encoding.DecoderFallback;
+            _encoding = encoding;
+            _fallback = this._encoding.DecoderFallback;
             this.Reset();
         }
 
         // This is used by our child deserializers
         internal DecoderNLS()
         {
-            this.m_encoding = null;
+            _encoding = null;
             this.Reset();
         }
 
         public override void Reset()
         {
-            if (m_fallbackBuffer != null)
-                m_fallbackBuffer.Reset();
+            _fallbackBuffer?.Reset();
         }
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
@@ -92,11 +91,11 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Remember the flush
-            this.m_mustFlush = flush;
-            this.m_throwOnOverflow = true;
+            _mustFlush = flush;
+            _throwOnOverflow = true;
 
             // By default just call the encoding version, no flush by default
-            return m_encoding.GetCharCount(bytes, count, this);
+            return _encoding.GetCharCount(bytes, count, this);
         }
 
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
@@ -157,11 +156,11 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Remember our flush
-            m_mustFlush = flush;
-            m_throwOnOverflow = true;
+            _mustFlush = flush;
+            _throwOnOverflow = true;
 
-            // By default just call the encoding's version
-            return m_encoding.GetChars(bytes, byteCount, chars, charCount, this);
+            // By default just call the encodings version
+            return _encoding.GetChars(bytes, byteCount, chars, charCount, this);
         }
 
         // This method is used when the output buffer might not be big enough.
@@ -227,25 +226,26 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // We don't want to throw
-            this.m_mustFlush = flush;
-            this.m_throwOnOverflow = false;
-            this.m_bytesUsed = 0;
+            _mustFlush = flush;
+            _throwOnOverflow = false;
+            _bytesUsed = 0;
 
             // Do conversion
-            charsUsed = this.m_encoding.GetChars(bytes, byteCount, chars, charCount, this);
-            bytesUsed = this.m_bytesUsed;
+            charsUsed = _encoding.GetChars(bytes, byteCount, chars, charCount, this);
+            bytesUsed = _bytesUsed;
 
             // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
             completed = (bytesUsed == byteCount) && (!flush || !this.HasState) &&
-                               (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0);
-            // Our data thingys are now full, we can return
+                               (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0);
+
+            // Our data thingy are now full, we can return
         }
 
         public bool MustFlush
         {
             get
             {
-                return m_mustFlush;
+                return _mustFlush;
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.Text
         // Allow encoding to clear our must flush instead of throwing (in ThrowCharsOverflow)
         internal void ClearMustFlush()
         {
-            m_mustFlush = false;
+            _mustFlush = false;
         }
     }
 }
