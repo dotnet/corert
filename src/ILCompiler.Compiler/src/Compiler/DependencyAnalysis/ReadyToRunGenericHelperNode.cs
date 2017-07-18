@@ -31,10 +31,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
         {
+            // Necessary type handle is not something you can put in a dictionary - someone should have normalized to TypeHandle
+            Debug.Assert(id != ReadyToRunHelperId.NecessaryTypeHandle);
+
             switch (id)
             {
                 case ReadyToRunHelperId.TypeHandle:
-                case ReadyToRunHelperId.NecessaryTypeHandle: // TODO: make a separate dictionary entry?
                     return factory.GenericLookup.Type((TypeDesc)target);
                 case ReadyToRunHelperId.MethodHandle:
                     return factory.GenericLookup.MethodHandle((MethodDesc)target);

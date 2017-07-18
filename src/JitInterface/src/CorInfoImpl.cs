@@ -881,6 +881,11 @@ namespace Internal.JitInterface
                 if (contextMethod != MethodBeingCompiled)
                     return;
 
+                // Necessary type handle is not something that can be in a dictionary (only a constructed type).
+                // We only use necessary type handles if we can do a constant lookup.
+                if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
+                    helperId = ReadyToRunHelperId.TypeHandle;
+
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 
                 if (genericLookup.UseHelper)
@@ -1506,6 +1511,11 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetGenericLookupHelper(CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, ReadyToRunHelperId helperId, object helperArgument)
         {
+            // Necessary type handle is not something that can be in a dictionary (only a constructed type).
+            // We only use necessary type handles if we can do a constant lookup.
+            if (helperId == ReadyToRunHelperId.NecessaryTypeHandle)
+                helperId = ReadyToRunHelperId.TypeHandle;
+
             if (runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ
                 || runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
             {
