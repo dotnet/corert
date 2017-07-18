@@ -105,9 +105,46 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
         // reflect the correct return address in our exception context record.  The other throw helpers don't
         // need this because they cannot be tail-called from C#.
-        INLINE_THREAD_UNHIJACK  r0, r1, r3        // trashes R1, R3
-        ldr          r1, [r2]                     // r1 <- return address
-        str          r1, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]  // set 'faulting' IP after unhijack
+        // NOTE: we cannot use INLINE_THREAD_UNHIJACK because it will write into the stack at the location
+        // where the tail-calling thread had saved LR, which may not match where we have saved LR.
+
+        ldr         r1, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        cbz         r1, LOCAL_LABEL(NotHijacked)
+
+        ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+
+        // r4: exception object
+        // r1: hijacked return address
+        // r0: pThread
+        // r3: hijacked return address location
+
+        add         r12, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)        // re-compute SP at callsite
+        cmp         r3, r12             // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
+        blo         LOCAL_LABEL(TailCallWasHijacked)
+
+        // normal case where a valid return address location is hijacked
+        str         r1, [r3]
+        b           LOCAL_LABEL(ClearThreadState)
+
+LOCAL_LABEL(TailCallWasHijacked):
+
+        // Abnormal case where the return address location is now invalid because we ended up here via a tail
+        // call.  In this case, our hijacked return address should be the correct caller of this method.
+        //
+
+        // stick the previous return address in LR as well as in the right spots in our PAL_LIMITED_CONTEXT.
+        mov         lr, r1
+        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
+        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
+
+LOCAL_LABEL(ClearThreadState):
+
+        // clear the Thread's hijack state
+        mov         r3, #0
+        str         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         r3, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+
+LOCAL_LABEL(NotHiJacked):
 
         add         r1, sp, #rsp_offsetof_ExInfo                    // r1 <- ExInfo*
         mov         r3, #0
