@@ -18,7 +18,7 @@ namespace System.Threading
                 public ulong userTime;
             }
 
-            private ProcessCpuInformation cpuInfo = new ProcessCpuInformation();
+            private ProcessCpuInformation _cpuInfo = new ProcessCpuInformation();
 
             public CpuUtilizationReader()
             {
@@ -35,12 +35,12 @@ namespace System.Threading
                     throw exception;
                 }
 
-                ulong cpuTotalTime = (userTime - cpuInfo.userTime) + (kernelTime - cpuInfo.kernelTime);
-                ulong cpuBusyTime = cpuTotalTime - (idleTime - cpuInfo.idleTime);
+                ulong cpuTotalTime = (userTime - _cpuInfo.userTime) + (kernelTime - _cpuInfo.kernelTime);
+                ulong cpuBusyTime = cpuTotalTime - (idleTime - _cpuInfo.idleTime);
 
-                cpuInfo.kernelTime = kernelTime;
-                cpuInfo.userTime = userTime;
-                cpuInfo.idleTime = idleTime;
+                _cpuInfo.kernelTime = kernelTime;
+                _cpuInfo.userTime = userTime;
+                _cpuInfo.idleTime = idleTime;
 
                 if (cpuTotalTime > 0)
                 {
