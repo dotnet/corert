@@ -13,16 +13,16 @@ namespace System.Threading
         {
             private struct ProcessCpuInformation
             {
-                public ulong idleTime;
-                public ulong kernelTime;
-                public ulong userTime;
+                public long idleTime;
+                public long kernelTime;
+                public long userTime;
             }
 
-            private ProcessCpuInformation _cpuInfo = new ProcessCpuInformation();
+            private ProcessCpuInformation _processCpuInfo = new ProcessCpuInformation();
 
             public CpuUtilizationReader()
             {
-                GetCpuUtilization(); // Call once to initialize the usage buffer
+                GetCpuUtilization(); // Call once to initialize _processCpuInfo with useful starting info
             }
 
             private unsafe int GetCpuUtilization()
@@ -35,17 +35,18 @@ namespace System.Threading
                     throw exception;
                 }
 
-                ulong cpuTotalTime = (userTime - _cpuInfo.userTime) + (kernelTime - _cpuInfo.kernelTime);
-                ulong cpuBusyTime = cpuTotalTime - (idleTime - _cpuInfo.idleTime);
+                long cpuTotalTime = ((long)userTime - _processCpuInfo.userTime) + ((long)kernelTime - _processCpuInfo.kernelTime);
+                long cpuBusyTime = cpuTotalTime - ((long)idleTime - _processCpuInfo.idleTime);
 
-                _cpuInfo.kernelTime = kernelTime;
-                _cpuInfo.userTime = userTime;
-                _cpuInfo.idleTime = idleTime;
+                _processCpuInfo.kernelTime = (long)kernelTime;
+                _processCpuInfo.userTime = (long)userTime;
+                _processCpuInfo.idleTime = (long)idleTime;
 
                 if (cpuTotalTime > 0)
                 {
-                    ulong reading = cpuBusyTime * 100 / cpuTotalTime;
-                    Debug.Assert(0 <= reading && reading <= int.MaxValue);
+                    long reading = cpuBusyTime * 100 / cpuTotalTime;
+                    reading = Math.Min(reading, 100);
+                    Debug.Assert(0 <= reading);
                     return (int)reading;
                 }
                 return 0;

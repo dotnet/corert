@@ -19,21 +19,22 @@ namespace System.Threading
             
             private static RuntimeThread s_gateThread;
             private static LowLevelLock s_createdLock = new LowLevelLock();
-            private static CpuUtilizationReader s_cpu = new CpuUtilizationReader();
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
+                CpuUtilizationReader cpu = new CpuUtilizationReader();
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
 
-                    if(ThreadPoolInstance._numRequestedWorkers == 0)
+                    ThreadPoolInstance._cpuUtilization = cpu.CurrentUtilization;
+
+                    if (ThreadPoolInstance._numRequestedWorkers == 0)
                     {
                         continue;
                     }
 
-                    ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
                     if (!s_disableStarvationDetection)
                     {
