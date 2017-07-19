@@ -885,11 +885,6 @@ namespace Internal.IL
                     _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
                 }
             }
-            else
-            {
-                if (field.IsStatic)
-                    ThrowHelper.ThrowInvalidProgramException();
-            }
         }
 
         private void ImportLoadField(int token, bool isStatic)
