@@ -57,8 +57,8 @@ namespace System.Threading
                     targetSignalToNoiseRatio: GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
                     maxChangePerSecond: GetConfig("HillClimbing_MaxChangePerSecond", 4),
                     maxChangePerSample: GetConfig("HillClimbing_MaxChangePerSample", 20),
-                    sampleMsLow: GetConfig("HillClimbing_SampleIntervalLow", 10),
-                    sampleMsHigh: GetConfig("HillClimbing_SampleIntervalHigh", 200),
+                    sampleIntervalMsLow: GetConfig("HillClimbing_SampleIntervalLow", 10),
+                    sampleIntervalMsHigh: GetConfig("HillClimbing_SampleIntervalHigh", 200),
                     errorSmoothingFactor: GetConfig("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
                     gainExponent: GetConfig("HillClimbing_GainExponent", 200) / 100.0,
                     maxSampleError: GetConfig("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
@@ -84,9 +84,9 @@ namespace System.Threading
             private readonly double _maxChangePerSecond;
             private readonly double _maxChangePerSample;
             private readonly int _maxThreadWaveMagnitude;
-            private readonly int _sampleMsLow;
+            private readonly int _sampleIntervalMsLow;
             private readonly double _threadMagnitudeMultiplier;
-            private readonly int _sampleMsHigh;
+            private readonly int _sampleIntervalMsHigh;
             private readonly double _throughputErrorSmoothingFactor;
             private readonly double _gainExponent;
             private readonly double _maxSampleError;
@@ -106,7 +106,7 @@ namespace System.Threading
             private Random _randomIntervalGenerator = new Random();
 
             public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
-                double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleMsLow, int sampleMsHigh,
+                double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalMsLow, int sampleIntervalMsHigh,
                 double errorSmoothingFactor, double gainExponent, double maxSampleError)
             {
                 _wavePeriod = wavePeriod;
@@ -117,8 +117,8 @@ namespace System.Threading
                 _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
                 _maxChangePerSecond = maxChangePerSecond;
                 _maxChangePerSample = maxChangePerSample;
-                _sampleMsLow = sampleMsLow;
-                _sampleMsHigh = sampleMsHigh;
+                _sampleIntervalMsLow = sampleIntervalMsLow;
+                _sampleIntervalMsHigh = sampleIntervalMsHigh;
                 _throughputErrorSmoothingFactor = errorSmoothingFactor;
                 _gainExponent = gainExponent;
                 _maxSampleError = maxSampleError;
@@ -126,7 +126,7 @@ namespace System.Threading
                 _samples = new double[_samplesToMeasure];
                 _threadCounts = new double[_samplesToMeasure];
 
-                _currentSampleMs = _randomIntervalGenerator.Next(_sampleMsLow, _sampleMsHigh + 1);
+                _currentSampleMs = _randomIntervalGenerator.Next(_sampleIntervalMsLow, _sampleIntervalMsHigh + 1);
             }
 
             public (int newThreadCount, int newSampleMs) Update(int currentThreadCount, double sampleDurationSeconds, int numCompletions)
@@ -389,7 +389,7 @@ namespace System.Threading
             private void ChangeThreadCount(int newThreadCount, StateOrTransition state)
             {
                 _lastThreadCount = newThreadCount;
-                _currentSampleMs = _randomIntervalGenerator.Next(_sampleMsLow, _sampleMsHigh + 1);
+                _currentSampleMs = _randomIntervalGenerator.Next(_sampleIntervalMsLow, _sampleIntervalMsHigh + 1);
                 double throughput = _secondsElapsedSinceLastChange > 0 ? _completionsSinceLastChange / _secondsElapsedSinceLastChange : 0;
                 LogTransition(newThreadCount, throughput, state);
                 _secondsElapsedSinceLastChange = 0;
