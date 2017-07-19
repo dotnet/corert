@@ -158,11 +158,13 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
-        sub sp, sp, \Size
+        sub sp, sp, #\Size
+        .pad #\Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
-        add sp, sp, \Size
+        add sp, sp, #\Size
+        .pad #-\Size
 .endm
 
 //-----------------------------------------------------------------------------
@@ -287,3 +289,8 @@ C_FUNC(\Name):
 1:
 .endm
 
+.macro EPILOG_BRANCH_REG reg
+
+        bx          \reg
+
+.endm
