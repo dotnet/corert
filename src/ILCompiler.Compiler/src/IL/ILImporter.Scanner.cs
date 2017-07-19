@@ -844,9 +844,11 @@ namespace Internal.IL
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
 
-            if (isStatic)
+            // Covers both ldsfld/ldsflda and ldfld/ldflda with a static field
+            if (isStatic || field.IsStatic)
             {
-                if (!field.IsStatic)
+                // ldsfld/ldsflda with an instance field is invalid IL
+                if (isStatic && !field.IsStatic)
                     ThrowHelper.ThrowInvalidProgramException();
 
                 // References to literal fields from IL body should never resolve.
