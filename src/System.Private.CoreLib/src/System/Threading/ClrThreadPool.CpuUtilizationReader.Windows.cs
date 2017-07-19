@@ -20,39 +20,35 @@ namespace System.Threading
 
             private ProcessCpuInformation _processCpuInfo = new ProcessCpuInformation();
 
-            public CpuUtilizationReader()
+            public int CurrentUtilization
             {
-                GetCpuUtilization(); // Call once to initialize _processCpuInfo with useful starting info
-            }
-
-            private unsafe int GetCpuUtilization()
-            {
-                if (!Interop.Kernel32.GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
+                get
                 {
-                    int error = Marshal.GetLastWin32Error();
-                    var exception = new OutOfMemoryException();
-                    exception.SetErrorCode(error);
-                    throw exception;
+                    if (!Interop.Kernel32.GetSystemTimes(out var idleTime, out var kernelTime, out var userTime))
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        var exception = new OutOfMemoryException();
+                        exception.SetErrorCode(error);
+                        throw exception;
+                    }
+
+                    long cpuTotalTime = ((long)userTime - _processCpuInfo.userTime) + ((long)kernelTime - _processCpuInfo.kernelTime);
+                    long cpuBusyTime = cpuTotalTime - ((long)idleTime - _processCpuInfo.idleTime);
+
+                    _processCpuInfo.kernelTime = (long)kernelTime;
+                    _processCpuInfo.userTime = (long)userTime;
+                    _processCpuInfo.idleTime = (long)idleTime;
+
+                    if (cpuTotalTime > 0 && cpuBusyTime > 0)
+                    {
+                        long reading = cpuBusyTime * 100 / cpuTotalTime;
+                        reading = Math.Min(reading, 100);
+                        Debug.Assert(0 <= reading);
+                        return (int)reading;
+                    }
+                    return 0;
                 }
-
-                long cpuTotalTime = ((long)userTime - _processCpuInfo.userTime) + ((long)kernelTime - _processCpuInfo.kernelTime);
-                long cpuBusyTime = cpuTotalTime - ((long)idleTime - _processCpuInfo.idleTime);
-
-                _processCpuInfo.kernelTime = (long)kernelTime;
-                _processCpuInfo.userTime = (long)userTime;
-                _processCpuInfo.idleTime = (long)idleTime;
-
-                if (cpuTotalTime > 0)
-                {
-                    long reading = cpuBusyTime * 100 / cpuTotalTime;
-                    reading = Math.Min(reading, 100);
-                    Debug.Assert(0 <= reading);
-                    return (int)reading;
-                }
-                return 0;
             }
-
-            public int CurrentUtilization => GetCpuUtilization();
         }
     }
 }

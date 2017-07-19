@@ -20,15 +20,17 @@ namespace System.Threading
             private static RuntimeThread s_gateThread;
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
+            private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
+
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                CpuUtilizationReader cpu = new CpuUtilizationReader();
+                var initialCpuRead = s_cpu.CurrentUtilization; // The first reading is over a time range other than what we are focusing on, so we do not use the read.
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
 
-                    ThreadPoolInstance._cpuUtilization = cpu.CurrentUtilization;
+                    ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
                     if (ThreadPoolInstance._numRequestedWorkers == 0)
                     {

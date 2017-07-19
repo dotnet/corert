@@ -9,11 +9,6 @@ namespace System.Threading
         private class CpuUtilizationReader
         {
             private Interop.Sys.ProcessCpuInformation _cpuInfo;
-            public CpuUtilizationReader()
-            {
-                _cpuInfo = new Interop.Sys.ProcessCpuInformation();
-                Interop.Sys.GetCpuUtilization(ref _cpuInfo); // Initialize the _cpuInfo structure so future calls with it get correct readings
-            }
 
             public int CurrentUtilization => Interop.Sys.GetCpuUtilization(ref _cpuInfo); // Updates cpuInfo as a side effect for the next call
         }
