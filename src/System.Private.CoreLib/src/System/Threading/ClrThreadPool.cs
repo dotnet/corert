@@ -22,33 +22,24 @@ namespace System.Threading
         private static short GetThreadCountConfig(string configName)
         {
             var value = AppContext.GetData(configName);
-            ushort numThreads = 0;
+            short numThreads = 0;
             switch (value)
             {
                 case string str:
                     if (str.StartsWith("0x"))
                     {
-                        ushort.TryParse(str.Substring(2), NumberStyles.HexNumber, new NumberFormatInfo(), out numThreads);
+                        short.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out numThreads);
                     }
                     else
                     {
-                        ushort.TryParse(str, NumberStyles.Integer, new NumberFormatInfo(), out numThreads);
+                        short.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out numThreads);
                     }
                     break;
-                case short val:
-                    numThreads = (ushort)val;
-                    break;
-                case int val:
-                    numThreads = (ushort)val;
-                    break;
-                case ushort val:
-                    numThreads = val;
-                    break;
-                case uint val:
-                    numThreads = (ushort)val;
+                case IConvertible convertible:
+                    value = convertible.ToUInt16(NumberFormatInfo.InvariantInfo);
                     break;
             }
-            return (short)Math.Min(numThreads, MaxPossibleThreadCount);
+            return Math.Min(numThreads, MaxPossibleThreadCount);
         }
 
         private const int CpuUtilizationHigh = 95;

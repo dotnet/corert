@@ -26,7 +26,7 @@ namespace System.Threading
                         int result;
                         if (str.StartsWith("0x"))
                         {
-                            if(!int.TryParse(str.Substring(2), NumberStyles.HexNumber, new NumberFormatInfo(), out result))
+                            if(!int.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out result))
                             {
                                 return defaultValue;
                             }
@@ -34,14 +34,14 @@ namespace System.Threading
                         }
                         else
                         {
-                            if (!int.TryParse(str, NumberStyles.Integer, new NumberFormatInfo(), out result))
+                            if (!int.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out result))
                             {
                                 return defaultValue;
                             }
                             return result;
                         }
-                    case int i:
-                        return i;
+                    case IConvertible convertible:
+                        return convertible.ToInt32(NumberFormatInfo.InvariantInfo);
                 }
 
                 return defaultValue;
