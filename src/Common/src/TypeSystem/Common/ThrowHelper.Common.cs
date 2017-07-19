@@ -11,31 +11,37 @@ namespace Internal.TypeSystem
 {
     public static partial class ThrowHelper
     {
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(string nestedTypeName, ModuleDesc module)
         {
             ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, nestedTypeName, Format.Module(module));
         }
 
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(string @namespace, string name, ModuleDesc module)
         {
             ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, Format.Type(@namespace, name), Format.Module(module));
         }
 
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(TypeDesc type)
         {
             ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, Format.Type(type), Format.OwningModule(type));
         }
 
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(ExceptionStringID id, MethodDesc method)
         {
             ThrowTypeLoadException(id, Format.Type(method.OwningType), Format.OwningModule(method), Format.Method(method));
         }
 
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(ExceptionStringID id, TypeDesc type, string messageArg)
         {
             ThrowTypeLoadException(id, Format.Type(type), Format.OwningModule(type), messageArg);
         }
 
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowTypeLoadException(ExceptionStringID id, TypeDesc type)
         {
             ThrowTypeLoadException(id, Format.Type(type), Format.OwningModule(type));
