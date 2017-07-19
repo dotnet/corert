@@ -23,18 +23,17 @@ namespace System.Threading
                 switch (config)
                 {
                     case string str:
-                        int result;
                         if (str.StartsWith("0x"))
                         {
-                            if(!int.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out result))
-                            {
-                                return defaultValue;
-                            }
-                            return result;
+                            return Convert.ToInt32(str, 16);
+                        }
+                        else if (str.StartsWith("0"))
+                        {
+                            return Convert.ToInt32(str, 8);
                         }
                         else
                         {
-                            if (!int.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out result))
+                            if (!int.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out int result))
                             {
                                 return defaultValue;
                             }
