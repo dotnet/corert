@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Threading
 {
@@ -22,11 +23,23 @@ namespace System.Threading
                 switch (config)
                 {
                     case string str:
-                        if (int.TryParse(str, out int result))
+                        int result;
+                        if (str.StartsWith("0x"))
                         {
+                            if(!int.TryParse(str.Substring(2), NumberStyles.HexNumber, new NumberFormatInfo(), out result))
+                            {
+                                return defaultValue;
+                            }
                             return result;
                         }
-                        break;
+                        else
+                        {
+                            if (!int.TryParse(str, NumberStyles.Integer, new NumberFormatInfo(), out result))
+                            {
+                                return defaultValue;
+                            }
+                            return result;
+                        }
                     case int i:
                         return i;
                 }

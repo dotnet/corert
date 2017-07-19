@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Internal.LowLevelLinq;
 
@@ -25,7 +26,14 @@ namespace System.Threading
             switch (value)
             {
                 case string str:
-                    ushort.TryParse(str, out numThreads);
+                    if (str.StartsWith("0x"))
+                    {
+                        ushort.TryParse(str.Substring(2), NumberStyles.HexNumber, new NumberFormatInfo(), out numThreads);
+                    }
+                    else
+                    {
+                        ushort.TryParse(str, NumberStyles.Integer, new NumberFormatInfo(), out numThreads);
+                    }
                     break;
                 case short val:
                     numThreads = (ushort)val;
@@ -48,8 +56,8 @@ namespace System.Threading
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
 
-        private static readonly short s_forcedMinWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMinWorkerThreads");
-        private static readonly short s_forcedMaxWorkerThreads = GetThreadCountConfig("ThreadPool_ForceMaxWorkerThreads");
+        private static readonly short s_forcedMinWorkerThreads = GetThreadCountConfig("System.Threading.ThreadPool.MinThreads");
+        private static readonly short s_forcedMaxWorkerThreads = GetThreadCountConfig("System.Threading.ThreadPool.MaxThreads");
 
         private short _minThreads = (short)ThreadPoolGlobals.processorCount;
         private short _maxThreads = MaxPossibleThreadCount;
