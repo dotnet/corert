@@ -19,32 +19,6 @@ namespace System.Threading
 
         private const short MaxPossibleThreadCount = short.MaxValue;
 
-        private static short GetThreadCountConfig(string configName)
-        {
-            var value = AppContext.GetData(configName);
-            ushort numThreads = 0;
-            switch (value)
-            {
-                case string str:
-                    if (str.StartsWith("0x"))
-                    {
-                        numThreads = Convert.ToUInt16(str, 16);
-                    }
-                    else if (str.StartsWith("0"))
-                    {
-                        numThreads = Convert.ToUInt16(str, 8);
-                    }
-                    else
-                    {
-                        ushort.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out numThreads);
-                    }
-                    break;
-                case IConvertible convertible:
-                    return convertible.ToInt16(NumberFormatInfo.InvariantInfo);
-            }
-            return (short)Math.Min(numThreads, MaxPossibleThreadCount);
-        }
-
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
