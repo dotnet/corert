@@ -9,7 +9,7 @@ namespace System.Threading
 {
     internal partial class ClrThreadPool
     {
-        /// <summary>
+        /// <summary>ASpp
         /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
         /// </summary>
         private partial class HillClimbing
@@ -17,51 +17,22 @@ namespace System.Threading
             private static readonly Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
             public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
 
-            private static int GetConfig(string configName, int defaultValue)
-            {
-                object config = AppContext.GetData(configName);
-                switch (config)
-                {
-                    case string str:
-                        if (str.StartsWith("0x"))
-                        {
-                            return Convert.ToInt32(str, 16);
-                        }
-                        else if (str.StartsWith("0"))
-                        {
-                            return Convert.ToInt32(str, 8);
-                        }
-                        else
-                        {
-                            if (!int.TryParse(str, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out int result))
-                            {
-                                return defaultValue;
-                            }
-                            return result;
-                        }
-                    case IConvertible convertible:
-                        return convertible.ToInt32(NumberFormatInfo.InvariantInfo);
-                }
-
-                return defaultValue;
-            }
-
             private static HillClimbing CreateHillClimber()
             {
                 // Default values pulled from CoreCLR
-                return new HillClimbing(wavePeriod: GetConfig("HillClimbing_WavePeriod", 4),
-                    maxWaveMagnitude: GetConfig("HillClimbing_MaxWaveMagnitude", 20),
-                    waveMagnitudeMultiplier: GetConfig("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
-                    waveHistorySize: GetConfig("HillClimbing_WaveHistorySize", 8),
-                    targetThroughputRatio: GetConfig("HillClimbing_Bias", 15) / 100.0,
-                    targetSignalToNoiseRatio: GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
-                    maxChangePerSecond: GetConfig("HillClimbing_MaxChangePerSecond", 4),
-                    maxChangePerSample: GetConfig("HillClimbing_MaxChangePerSample", 20),
-                    sampleIntervalMsLow: GetConfig("HillClimbing_SampleIntervalLow", 10),
-                    sampleIntervalMsHigh: GetConfig("HillClimbing_SampleIntervalHigh", 200),
-                    errorSmoothingFactor: GetConfig("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
-                    gainExponent: GetConfig("HillClimbing_GainExponent", 200) / 100.0,
-                    maxSampleError: GetConfig("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
+                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetConfig("HillClimbing_WavePeriod", 4),
+                    maxWaveMagnitude: AppContextConfigHelper.GetConfig("HillClimbing_MaxWaveMagnitude", 20),
+                    waveMagnitudeMultiplier: AppContextConfigHelper.GetConfig("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
+                    waveHistorySize: AppContextConfigHelper.GetConfig("HillClimbing_WaveHistorySize", 8),
+                    targetThroughputRatio: AppContextConfigHelper.GetConfig("HillClimbing_Bias", 15) / 100.0,
+                    targetSignalToNoiseRatio: AppContextConfigHelper.GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
+                    maxChangePerSecond: AppContextConfigHelper.GetConfig("HillClimbing_MaxChangePerSecond", 4),
+                    maxChangePerSample: AppContextConfigHelper.GetConfig("HillClimbing_MaxChangePerSample", 20),
+                    sampleIntervalMsLow: AppContextConfigHelper.GetConfig("HillClimbing_SampleIntervalLow", 10),
+                    sampleIntervalMsHigh: AppContextConfigHelper.GetConfig("HillClimbing_SampleIntervalHigh", 200),
+                    errorSmoothingFactor: AppContextConfigHelper.GetConfig("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
+                    gainExponent: AppContextConfigHelper.GetConfig("HillClimbing_GainExponent", 200) / 100.0,
+                    maxSampleError: AppContextConfigHelper.GetConfig("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
                 );
             }
 

@@ -50,8 +50,8 @@ namespace System.Threading
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
 
-        private static readonly short s_forcedMinWorkerThreads = GetThreadCountConfig("System.Threading.ThreadPool.MinThreads");
-        private static readonly short s_forcedMaxWorkerThreads = GetThreadCountConfig("System.Threading.ThreadPool.MaxThreads");
+        private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetConfig("System.Threading.ThreadPool.MinThreads", (short)0);
+        private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetConfig("System.Threading.ThreadPool.MaxThreads", (short)0);
 
         private short _minThreads = (short)ThreadPoolGlobals.processorCount;
         private short _maxThreads = MaxPossibleThreadCount;
