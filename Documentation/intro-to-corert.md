@@ -27,4 +27,4 @@ These benefits open up some new scenarios for .NET developers
 Roadmap
 =======
 
-To start, we are targeting native executables (AKA "console apps"). Over time, we'll extend that to include ASP.NET 5 apps. You can continue to use CoreCLR for your .NET Core apps. It remains a great option if native compilation isn't critical for your needs. CoreCLR will also provide a superior debugging experience until we add debugging support to CoreRT.
+To start, we are targeting native executables (AKA "console apps"). Over time, we'll extend that to include ASP.NET Core apps. You can continue to use CoreCLR for your .NET Core apps. It remains a great option if native compilation isn't critical for your needs. CoreCLR will also provide a superior debugging experience until we add debugging support to CoreRT.
