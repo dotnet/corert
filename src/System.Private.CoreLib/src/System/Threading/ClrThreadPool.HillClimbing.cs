@@ -9,7 +9,7 @@ namespace System.Threading
 {
     internal partial class ClrThreadPool
     {
-        /// <summary>ASpp
+        /// <summary>
         /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
         /// </summary>
         private partial class HillClimbing
@@ -17,22 +17,25 @@ namespace System.Threading
             private static readonly Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
             public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
 
+            private const int DefaultSampleIntervalMsLow = 10;
+            private const int DefaultSampleIntervalMsHigh = 200;
+
             private static HillClimbing CreateHillClimber()
             {
                 // Default values pulled from CoreCLR
-                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetConfig("HillClimbing_WavePeriod", 4),
-                    maxWaveMagnitude: AppContextConfigHelper.GetConfig("HillClimbing_MaxWaveMagnitude", 20),
-                    waveMagnitudeMultiplier: AppContextConfigHelper.GetConfig("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
-                    waveHistorySize: AppContextConfigHelper.GetConfig("HillClimbing_WaveHistorySize", 8),
-                    targetThroughputRatio: AppContextConfigHelper.GetConfig("HillClimbing_Bias", 15) / 100.0,
-                    targetSignalToNoiseRatio: AppContextConfigHelper.GetConfig("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
-                    maxChangePerSecond: AppContextConfigHelper.GetConfig("HillClimbing_MaxChangePerSecond", 4),
-                    maxChangePerSample: AppContextConfigHelper.GetConfig("HillClimbing_MaxChangePerSample", 20),
-                    sampleIntervalMsLow: AppContextConfigHelper.GetConfig("HillClimbing_SampleIntervalLow", 10),
-                    sampleIntervalMsHigh: AppContextConfigHelper.GetConfig("HillClimbing_SampleIntervalHigh", 200),
-                    errorSmoothingFactor: AppContextConfigHelper.GetConfig("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
-                    gainExponent: AppContextConfigHelper.GetConfig("HillClimbing_GainExponent", 200) / 100.0,
-                    maxSampleError: AppContextConfigHelper.GetConfig("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
+                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetInt32Config("HillClimbing_WavePeriod", 4),
+                    maxWaveMagnitude: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxWaveMagnitude", 20),
+                    waveMagnitudeMultiplier: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveMagnitudeMultiplier", 100) / 100.0,
+                    waveHistorySize: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveHistorySize", 8),
+                    targetThroughputRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_Bias", 15) / 100.0,
+                    targetSignalToNoiseRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_TargetSignalToNoiseRatio", 300) / 100.0,
+                    maxChangePerSecond: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSecond", 4),
+                    maxChangePerSample: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSample", 20),
+                    sampleIntervalMsLow: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalLow", DefaultSampleIntervalMsLow, allowNegative: false),
+                    sampleIntervalMsHigh: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalHigh", DefaultSampleIntervalMsHigh, allowNegative: false),
+                    errorSmoothingFactor: AppContextConfigHelper.GetInt32Config("HillClimbing_ErrorSmoothingFactor", 1) / 100.0,
+                    gainExponent: AppContextConfigHelper.GetInt32Config("HillClimbing_GainExponent", 200) / 100.0,
+                    maxSampleError: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
                 );
             }
 
@@ -88,8 +91,16 @@ namespace System.Threading
                 _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
                 _maxChangePerSecond = maxChangePerSecond;
                 _maxChangePerSample = maxChangePerSample;
-                _sampleIntervalMsLow = sampleIntervalMsLow;
-                _sampleIntervalMsHigh = sampleIntervalMsHigh;
+                if (sampleIntervalMsLow <= sampleIntervalMsHigh)
+                {
+                    _sampleIntervalMsLow = sampleIntervalMsLow;
+                    _sampleIntervalMsHigh = sampleIntervalMsHigh;
+                }
+                else
+                {
+                    _sampleIntervalMsLow = DefaultSampleIntervalMsLow;
+                    _sampleIntervalMsHigh = DefaultSampleIntervalMsHigh;
+                }
                 _throughputErrorSmoothingFactor = errorSmoothingFactor;
                 _gainExponent = gainExponent;
                 _maxSampleError = maxSampleError;
