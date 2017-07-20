@@ -376,7 +376,7 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
     return false;
 }
 
-
+EXTERN_C void * RhpLockCmpXchg64AVLocation;
 
 static UIntNative UnwindWriteBarrierToCaller(
 #ifdef PLATFORM_UNIX
@@ -395,8 +395,15 @@ static UIntNative UnwindWriteBarrierToCaller(
     UIntNative sp = pContext->GetSp();
     UIntNative adjustedFaultingIP = *(UIntNative *)sp;
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(_ARM64_)
     UIntNative adjustedFaultingIP = pContext->GetLr();
+#elif defined(_ARM_)
+    UIntNative adjustedFaultingIP = pContext->GetLr();
+    if (pContext->GetIp() == (unsigned int)RhpLockCmpXchg64AVLocation)
+    {
+        UIntNative sp = pContext->GetSp();
+        pContext->SetSp(sp + sizeof(UIntNative) * 4);
+    }
 #else
 #error "Unknown Architecture"
 #endif

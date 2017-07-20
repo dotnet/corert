@@ -22,7 +22,8 @@ LOCAL_LABEL(CmpXchg32Retry):
           cmp          r2, r3
           bne          LOCAL_LABEL(CmpXchg32Exit)
           strex        r12, r1, [r0]
-          cbnz         r12, LOCAL_LABEL(CmpXchg32Retry)
+          cmp          r12, #0
+          bne          LOCAL_LABEL(CmpXchg32Retry)
 LOCAL_LABEL(CmpXchg32Exit):
           mov          r0, r3
           dmb
@@ -47,8 +48,9 @@ ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
           cmp          r1, r5
           bne          LOCAL_LABEL(CmpXchg64Exit)
           strexd       r12, r2, r3, [r0]
-          cbnz         r12, LOCAL_LABEL(CmpXchg64Retry)
-LOCAL_LABEL(CmpXchg64Exit)
+          cmp          r12, #0
+          bne          LOCAL_LABEL(CmpXchg64Retry)
+LOCAL_LABEL(CmpXchg64Exit):
           mov          r0, r6
           dmb
           EPILOG_POP   "{r4-r6,pc}"
