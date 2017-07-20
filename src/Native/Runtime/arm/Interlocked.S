@@ -15,6 +15,7 @@
 // r1 = value
 // r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg32, _TEXT
+          dmb
 ALTERNATE_ENTRY RhpLockCmpXchg32AVLocation
 LOCAL_LABEL(CmpXchg32Retry):
           ldrex        r3, [r0]
@@ -23,6 +24,7 @@ LOCAL_LABEL(CmpXchg32Retry):
           strex        r3, r1, [r0]
           cbnz         r3, LOCAL_LABEL(CmpXchg32Retry)
 LOCAL_LABEL(CmpXchg32Exit):
+          dmb
           bx           lr
 LEAF_END RhpLockCmpXchg32, _TEXT
 
@@ -33,9 +35,13 @@ LEAF_END RhpLockCmpXchg32, _TEXT
 // {r1,r2} = value
 // sp[0+8] = comparand
 LEAF_ENTRY RhpLockCmpXchg64, _TEXT
+          PROLOG_PUSH  "{r4-r8,lr}"
+          dmb
+          mov          r7, sp
+          add          r7, #24
+          ldmia        r7!, {r5-r6}
 ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
-          PROLOG_PUSH  "{r4-r6,lr}"
-          ldmia        sp!, {r5-r6}
+          ldrexd       r7, r8, [r0]
 LOCAL_LABEL(CmpXchg64Retry):
           ldrexd       r3, r4, [r0]
           eor          r3, r5
@@ -45,5 +51,8 @@ LOCAL_LABEL(CmpXchg64Retry):
           strexd       r3, r1, r2, [r0]
           cbz          r3, LOCAL_LABEL(CmpXchg64Retry)
 LOCAL_LABEL(CmpXchg64Exit):
-          EPILOG_POP   "{r4-r6,pc}"
+          mov          r0, r7
+          mov          r1, r8
+          dmb
+          EPILOG_POP   "{r4-r8,pc}"
 LEAF_END RhpLockCmpXchg64, _TEXT
