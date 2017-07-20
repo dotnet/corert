@@ -29,21 +29,21 @@ LEAF_END RhpLockCmpXchg32, _TEXT
 // WARNING: Code in EHHelpers.cpp makes assumptions about this helper, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpLockCmpXchg32AVLocation
 // - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
-// r0       = destination address
-// {r1, r2} = value
-// sp[0+8]  = comparand
+// r0      = destination address
+// {r1,r2} = value
+// sp[0+8] = comparand
 LEAF_ENTRY RhpLockCmpXchg64, _TEXT
 ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
-          PROLOG_PUSH "{r4-r6,lr}"
-          ldmia       sp!, {r5-r6}
+          PROLOG_PUSH  "{r4-r6,lr}"
+          ldmia        sp!, {r5-r6}
 LOCAL_LABEL(CmpXchg64Retry):
-          ldrexd      r3, r4, [r0]
-          eor         r3, r5
-          eor         r4, r6
-          orr         r3, r4
-          cbnz        r3, LOCAL_LABEL(CmpXchg64Exit)
-          strexd      r3, r1, r2, [r0]
-          cbz         r3, LOCAL_LABEL(CmpXchg64Retry)
+          ldrexd       r3, r4, [r0]
+          eor          r3, r5
+          eor          r4, r6
+          orr          r3, r4
+          cbnz         r3, LOCAL_LABEL(CmpXchg64Exit)
+          strexd       r3, r1, r2, [r0]
+          cbz          r3, LOCAL_LABEL(CmpXchg64Retry)
 LOCAL_LABEL(CmpXchg64Exit):
-          EPILOG_POP  "{r4-r6,pc}"
+          EPILOG_POP   "{r4-r6,pc}"
 LEAF_END RhpLockCmpXchg64, _TEXT
