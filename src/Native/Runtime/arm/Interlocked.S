@@ -37,11 +37,12 @@ LEAF_END RhpLockCmpXchg32, _TEXT
 // {r2,r3} = value
 // sp[0+8] = comparand
 LEAF_ENTRY RhpLockCmpXchg64, _TEXT
+ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
+          ldr          r12, [r0]        // dummy read for null check
           PROLOG_PUSH  "{r4-r6,lr}"
           dmb
           ldrd         r4, r5, [sp,#0x10]
 LOCAL_LABEL(CmpXchg64Retry):
-ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
           ldrexd       r6, r1, [r0]
           cmp          r6, r4
           bne          LOCAL_LABEL(CmpXchg64Exit)
