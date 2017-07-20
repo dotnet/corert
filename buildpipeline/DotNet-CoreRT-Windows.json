@@ -176,7 +176,7 @@
       "inputs": {
         "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
         "SearchPattern": "**\\*.pdb",
-        "SymbolsFolder": "$(Build.SourcesDirectory)\\$(SourceFolder)\\bin\\*$(Platform).$(Configuration)",
+        "SymbolsFolder": "$(Build.SourcesDirectory)\\$(SourceFolder)\\bin\\Windows_NT.$(Platform).$(Configuration)",
         "SkipIndexing": "false",
         "TreatNotIndexedAsWarning": "false",
         "SymbolsMaximumWaitTime": "",
