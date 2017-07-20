@@ -21,9 +21,10 @@ LOCAL_LABEL(CmpXchg32Retry):
           ldrex        r3, [r0]
           cmp          r2, r3
           bne          LOCAL_LABEL(CmpXchg32Exit)
-          strex        r3, r1, [r0]
-          cbnz         r3, LOCAL_LABEL(CmpXchg32Retry)
+          strex        r12, r1, [r0]
+          cbnz         r12, LOCAL_LABEL(CmpXchg32Retry)
 LOCAL_LABEL(CmpXchg32Exit):
+          mov          r0, r3
           dmb
           bx           lr
 LEAF_END RhpLockCmpXchg32, _TEXT
