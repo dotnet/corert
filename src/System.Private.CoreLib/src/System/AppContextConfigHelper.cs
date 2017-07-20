@@ -13,7 +13,7 @@ namespace System
             try
             {
                 object config = AppContext.GetData(configName);
-                int result = 0;
+                int result = defaultValue;
                 switch (config)
                 {
                     case string str:
@@ -31,7 +31,7 @@ namespace System
                         }
                         break;
                     case IConvertible convertible:
-                        result = convertible.ToInt16(NumberFormatInfo.InvariantInfo);
+                        result = convertible.ToInt32(NumberFormatInfo.InvariantInfo);
                         break;
                 }
                 return !allowNegative && result < 0 ? defaultValue : result;
@@ -52,7 +52,7 @@ namespace System
             try
             {
                 object config = AppContext.GetData(configName);
-                short result = 0;
+                short result = defaultValue;
                 switch (config)
                 {
                     case string str:
