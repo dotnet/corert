@@ -1028,7 +1028,7 @@ namespace Internal.Runtime.CallInterceptor
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #else
                             byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters();
-                            SignExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
+                            CallConverterThunk.SignExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #endif
 
@@ -1049,7 +1049,7 @@ namespace Internal.Runtime.CallInterceptor
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #else
                             byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters();
-                            ZeroExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
+                            CallConverterThunk.ZeroExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #endif
 
