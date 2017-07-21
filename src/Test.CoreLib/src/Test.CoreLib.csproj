@@ -174,8 +174,8 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\MethodImplAttribute.cs">
       <Link>System\Runtime\CompilerServices\MethodImplAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\StackOnlyAttribute.cs">
-      <Link>Runtime.Base\src\System\Runtime\CompilerServices\StackOnlyAttribute.cs</Link>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs">
+      <Link>Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
       <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>

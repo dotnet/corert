@@ -288,6 +288,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 
         public bool Equals(EcmaFormatRuntimeAssembly other)
         {
+            if (other == null)
+                return false;
+
             return Object.ReferenceEquals(other.MetadataReader, MetadataReader);
         }
 

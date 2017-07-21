@@ -200,7 +200,11 @@ namespace Internal.IL
                     case ILOpcode.leave_s:
                         {
                             int delta = (sbyte)ReadILByte();
-                            CreateBasicBlock(_currentOffset + delta);
+                            int target = _currentOffset + delta;
+                            if ((uint)target < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(target);
+                            else
+                                ReportInvalidBranchTarget(target);
                         }
                         break;
                     case ILOpcode.brfalse_s:
@@ -217,7 +221,11 @@ namespace Internal.IL
                     case ILOpcode.blt_un_s:
                         {
                             int delta = (sbyte)ReadILByte();
-                            CreateBasicBlock(_currentOffset + delta);
+                            int target = _currentOffset + delta;
+                            if ((uint)target < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(target);
+                            else
+                                ReportInvalidBranchTarget(target);
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -225,7 +233,11 @@ namespace Internal.IL
                     case ILOpcode.leave:
                         {
                             int delta = (int)ReadILUInt32();
-                            CreateBasicBlock(_currentOffset + delta);
+                            int target = _currentOffset + delta;
+                            if ((uint)target < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(target);
+                            else
+                                ReportInvalidBranchTarget(target);
                         }
                         break;
                     case ILOpcode.brfalse:
@@ -242,7 +254,11 @@ namespace Internal.IL
                     case ILOpcode.blt_un:
                         {
                             int delta = (int)ReadILUInt32();
-                            CreateBasicBlock(_currentOffset + delta);
+                            int target = _currentOffset + delta;
+                            if ((uint)target < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(target);
+                            else
+                                ReportInvalidBranchTarget(target);
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -253,7 +269,11 @@ namespace Internal.IL
                             for (uint i = 0; i < count; i++)
                             {
                                 int delta = (int)ReadILUInt32();
-                                CreateBasicBlock(jmpBase + delta);
+                                int target = jmpBase + delta;
+                                if ((uint)target < (uint)_basicBlocks.Length)
+                                    CreateBasicBlock(target);
+                                else
+                                    ReportInvalidBranchTarget(target);
                             }
                             CreateBasicBlock(_currentOffset);
                         }
@@ -876,12 +896,19 @@ namespace Internal.IL
                         ImportReadOnlyPrefix();
                         continue;
                     default:
-                        throw new BadImageFormatException("Invalid opcode");
+                        ReportInvalidInstruction(opCode);
+                        EndImportingInstruction();
+                        return;
                 }
+
+                EndImportingInstruction();
 
                 // Check if control falls through the end of method.
                 if (_currentOffset >= _basicBlocks.Length)
-                    throw new TypeSystemException.InvalidProgramException();
+                {
+                    ReportFallthroughAtEndOfMethod();
+                    return;
+                }
 
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
                 if (nextBasicBlock != null)
@@ -889,8 +916,6 @@ namespace Internal.IL
                     ImportFallthrough(nextBasicBlock);
                     return;
                 }
-
-                EndImportingInstruction();
             }
         }
 

@@ -146,7 +146,7 @@ namespace Internal.JitInterface
                 // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
                 if (methodIL == null)
                 {
-                    throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
                 }
 
                 _methodScope = methodInfo.scope;
@@ -177,7 +177,7 @@ namespace Internal.JitInterface
                 }
                 if (result == CorJitResult.CORJIT_BADCODE)
                 {
-                    throw new TypeSystemException.InvalidProgramException();
+                    ThrowHelper.ThrowInvalidProgramException();
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
@@ -542,7 +542,7 @@ namespace Internal.JitInterface
 
             // Varargs are not supported in .NET Core
             if (sig.callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
-                throw new TypeSystemException.BadImageFormatException();
+                ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
 
@@ -1093,7 +1093,7 @@ namespace Internal.JitInterface
                 // References to literal fields from IL body should never resolve.
                 // The CLR would throw a MissingFieldException while jitting and so should we.
                 if (field.IsLiteral)
-                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
@@ -1104,7 +1104,7 @@ namespace Internal.JitInterface
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 {
                     if (type.IsVoid)
-                        throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
+                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, methodIL.OwningMethod);
 
                     type = type.MakeArrayType();
                 }
@@ -1483,7 +1483,7 @@ namespace Internal.JitInterface
             // we shouldn't allow boxing of types that contains stack pointers
             // csc and vbc already disallow it.
             if (type.IsValueType && ((DefType)type).IsByRefLike)
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
         }
@@ -1724,7 +1724,8 @@ namespace Internal.JitInterface
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeMethodHandle));
 
                 case CorInfoClassId.CLASSID_ARGUMENT_HANDLE:
-                    throw new TypeSystemException.TypeLoadException("System", "RuntimeArgumentHandle", _compilation.TypeSystemContext.SystemModule);
+                    ThrowHelper.ThrowTypeLoadException("System", "RuntimeArgumentHandle", _compilation.TypeSystemContext.SystemModule);
+                    return null;
 
                 case CorInfoClassId.CLASSID_STRING:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
@@ -2765,18 +2766,8 @@ namespace Internal.JitInterface
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
-
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        {
-            CORINFO_CONST_LOOKUP pLookup = new CORINFO_CONST_LOOKUP();
-
-            getAddressOfPInvokeTarget(method, ref pLookup);
-            Debug.Assert(pLookup.addr != null);
-            Debug.Assert(pLookup.accessType == InfoAccessType.IAT_VALUE);
-            ppIndirection = null;
-
-            return pLookup.addr;
-        }
+        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
@@ -3088,6 +3079,7 @@ namespace Internal.JitInterface
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
                     pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
+                    pResult.codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
@@ -3528,10 +3520,18 @@ namespace Internal.JitInterface
 
         private ushort getRelocTypeHint(void* target)
         {
-            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
-                return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
+            switch (_compilation.TypeSystemContext.Target.Architecture)
+            {
+                case TargetArchitecture.X64:
+                    return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
 
-            return UInt16.MaxValue;
+                case TargetArchitecture.ARM:
+                case TargetArchitecture.ARMEL:
+                    return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
+
+                default:
+                    return UInt16.MaxValue;
+            }
         }
 
         private void getModuleNativeEntryPointRange(ref void* pStart, ref void* pEnd)

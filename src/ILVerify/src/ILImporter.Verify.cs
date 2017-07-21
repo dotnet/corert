@@ -38,18 +38,18 @@ namespace Internal.IL
 
     partial class ILImporter
     {
-        MethodDesc _method;
-        MethodSignature _methodSignature;
-        TypeSystemContext _typeSystemContext;
+        readonly MethodDesc _method;
+        readonly MethodSignature _methodSignature;
+        readonly TypeSystemContext _typeSystemContext;
 
-        TypeDesc _thisType;
+        readonly TypeDesc _thisType;
 
-        MethodIL _methodIL;
-        byte[] _ilBytes;
-        LocalVariableDefinition[] _locals;
+        readonly MethodIL _methodIL;
+        readonly byte[] _ilBytes;
+        readonly LocalVariableDefinition[] _locals;
 
-        bool _initLocals;
-        int _maxStack;
+        readonly bool _initLocals;
+        readonly int _maxStack;
 
         bool[] _instructionBoundaries; // For IL verification
 
@@ -123,7 +123,17 @@ namespace Internal.IL
             _typeSystemContext = method.Context;
 
             if (!_methodSignature.IsStatic)
-                _thisType = method.OwningType.InstantiateAsOpen();
+            {
+                var thisType = method.OwningType.InstantiateAsOpen();
+
+                // ECMA-335 II.13.3 Methods of value types, P. 164:
+                // ... By contrast, instance and virtual methods of value types shall be coded to expect a
+                // managed pointer(see Partition I) to an unboxed instance of the value type. ...
+                if (thisType.IsValueType)
+                    thisType = thisType.MakeByRefType();
+
+                _thisType = thisType;
+            }
 
             _methodIL = methodIL;
 
@@ -170,8 +180,8 @@ namespace Internal.IL
                 for (int j = 0; j < _exceptionRegions.Length; j++)
                 {
                     var r = _exceptionRegions[j].ILRegion;
-
-                    if (r.TryOffset <= offset && r.TryOffset + r.TryLength >= offset)
+                    // Check if offset is within the range [TryOffset, TryOffset + TryLength[
+                    if (r.TryOffset <= offset && offset < r.TryOffset + r.TryLength)
                     {
                         if (!basicBlock.TryIndex.HasValue)
                         {
@@ -189,7 +199,8 @@ namespace Internal.IL
                             }
                         }
                     }
-                    if (r.HandlerOffset <= offset && r.HandlerOffset + r.HandlerLength >= offset)
+                    // Check if offset is within the range [HandlerOffset, HandlerOffset + HandlerLength[
+                    if (r.HandlerOffset <= offset && offset < r.HandlerOffset + r.HandlerLength)
                     {
                         if (!basicBlock.HandlerIndex.HasValue)
                         {
@@ -207,7 +218,8 @@ namespace Internal.IL
                             }
                         }
                     }
-                    if(r.FilterOffset != -1 && r.FilterOffset <= offset && r.HandlerOffset - 1 >= offset)
+                    // Check if offset is within the range [FilterOffset, HandlerOffset[
+                    if (r.FilterOffset != -1 && r.FilterOffset <= offset && offset < r.HandlerOffset )
                     {
                         if(!basicBlock.FilterIndex.HasValue)
                         {
@@ -547,6 +559,8 @@ namespace Internal.IL
 
             if (basicBlock.EntryStack?.Length > 0)
             {
+                if (_stack == null || _stack.Length < basicBlock.EntryStack.Length)
+                    Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
                 _stackTop = basicBlock.EntryStack.Length;
             }
@@ -1251,12 +1265,17 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Volatile);
 
             var address = Pop();
+            CheckIsByRef(address);
 
             if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
-
-            CheckIsByRef(address);
-            CheckIsAssignable(address.Type, type);
+            {
+                CheckIsObjRef(address.Type);
+                type = address.Type;
+            }
+            else
+            {
+                CheckIsAssignable(address.Type, type);
+            }
             Push(StackValue.CreateFromType(type));
         }
 
@@ -1279,10 +1298,13 @@ namespace Internal.IL
             Check(!address.IsReadOnly, VerifierError.ReadOnlyIllegalWrite);
 
             CheckIsByRef(address);
-            if (!value.IsNullReference)
-                CheckIsAssignable(type, address.Type);
 
-            CheckIsAssignable(value, StackValue.CreateFromType(type));
+            var typeVal = StackValue.CreateFromType(type);
+            var addressVal = StackValue.CreateFromType(address.Type);
+            if (!value.IsNullReference)
+                CheckIsAssignable(typeVal, addressVal);
+
+            CheckIsAssignable(value, typeVal);
         }
 
         void ImportThrow()
@@ -1739,6 +1761,21 @@ namespace Internal.IL
         void ImportRefAnyVal(int token)
         {
             throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+        }
+
+        private void ReportInvalidBranchTarget(int targetOffset)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ReportFallthroughAtEndOfMethod()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            throw new NotImplementedException();
         }
     }
 }

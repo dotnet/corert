@@ -103,6 +103,26 @@ namespace Internal.Reflection.Execution
             return Type.GetTypeFromHandle(runtimeTypeHandle).ToDisplayStringIfAvailable(null);
         }
 
+        public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
+            QMethodDefinition methodHandle;
+            RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
+                ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
+            {
+                return null;
+            }
+
+            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
+            {
+                declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
+            }
+
+            // We don't use the type argument handles as we want the uninstantiated method info
+            return ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles: null);
+        }
+
         public sealed override String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);

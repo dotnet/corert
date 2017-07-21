@@ -168,7 +168,11 @@ namespace Internal.Reflection.Execution
             String pathToRunningExe = RuntimeAugments.TryGetFullPathToMainApplication();
             String directoryContainingRunningExe = System_Private_CoreLib::System.IO.Path.GetDirectoryName(pathToRunningExe);
             String fullName = System_Private_CoreLib::System.IO.Path.Combine(directoryContainingRunningExe, name);
-            return (Stream)RuntimeAugments.OpenFileIfExists(fullName);
+
+            if (RuntimeAugments.FileExists(fullName))
+                return new FileStream(fullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            else
+                return null;
         }
 
         /// <summary>

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -112,6 +111,11 @@ namespace System.Threading
             s_semaphore.Release(1);
         }
         
+        internal static bool KeepDispatching(int startTickCount)
+        {
+            return true;
+        }
+
         internal static void NotifyWorkItemProgress()
         {
         }
@@ -127,7 +131,7 @@ namespace System.Threading
         [NativeCallable]
         private static IntPtr ThreadPoolDispatchCallback(IntPtr context)
         {
-            RuntimeThread.InitializeThreadPoolThread();
+            var wrapper = ThreadPoolCallbackWrapper.Enter();
 
             do
             {
@@ -138,6 +142,8 @@ namespace System.Threading
                 s_semaphore.Wait();
 
             } while (true);
+
+            //wrapper.Exit(resetThread: false);
         }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(

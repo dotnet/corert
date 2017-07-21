@@ -22,8 +22,10 @@ using System.Runtime;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
@@ -40,12 +42,6 @@ namespace Internal.Runtime.Augments
 
     public static class RuntimeAugments
     {
-        /// <summary>
-        /// Callbacks used for desktop emulation in console lab tests. Initialized by
-        /// InitializeDesktopSupport; currently the only provided method is OpenFileIfExists.
-        /// </summary>
-        private static DesktopSupportCallbacks s_desktopSupportCallbacks;
-
         /// <summary>
         /// Callbacks used for metadata-based stack trace resolution.
         /// </summary>
@@ -70,12 +66,6 @@ namespace Internal.Runtime.Augments
         public static void InitializeInteropLookups(InteropCallbacks callbacks)
         {
             s_interopCallbacks = callbacks;
-        }
-
-        [CLSCompliant(false)]
-        public static void InitializeDesktopSupport(DesktopSupportCallbacks callbacks)
-        {
-            s_desktopSupportCallbacks = callbacks;
         }
 
         [CLSCompliant(false)]
@@ -289,10 +279,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe void StoreValueTypeField(ref byte address, Object fieldValue, RuntimeTypeHandle fieldType)
         {
-            fixed (byte* pData = &address)
-            {
-                RuntimeImports.RhUnbox(fieldValue, (void*)pData, fieldType.ToEETypePtr());
-            }
+            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
         }
 
         public static unsafe void StoreValueTypeField(Object obj, int fieldOffset, Object fieldValue, RuntimeTypeHandle fieldType)
@@ -955,26 +942,6 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhCallDescrWorkerNative(callDescr);
         }
 
-        /// <summary>
-        /// This method opens a file if it exists. For console apps, ILC will inject a call to
-        /// InitializeDesktopSupport in StartupCodeTrigger. This will set up the
-        /// _desktopSupportCallbacks that can be then used to open files.
-        /// The return type is actually a Stream (which we cannot use here due to layering).
-        /// This mechanism shields AppX builds from the cost of merging in System.IO.FileSystem.
-        /// </summary>
-        /// <param name="path">File path / name</param>
-        /// <returns>An initialized Stream instance or null if the file doesn't exist;
-        /// throws when the desktop compat quirks are not enabled</returns>
-        public static object OpenFileIfExists(string path)
-        {
-            if (s_desktopSupportCallbacks == null)
-            {
-                throw new NotSupportedException();
-            }
-
-            return s_desktopSupportCallbacks.OpenFileIfExists(path);
-        }
-
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object[], object> invoker)
         {
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
@@ -1066,6 +1033,11 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        public static bool FileExists(string path)
+        {
+            return InternalFile.Exists(path);
+        }
+
         public static string GetLastResortString(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.LastResortToString;
@@ -1128,6 +1100,23 @@ namespace Internal.Runtime.Augments
         {
             RuntimeImports.RhpVerifyDebuggerCleanup();
         }
+
+        public static IntPtr RhpGetCurrentThread()
+        {
+            return RuntimeImports.RhpGetCurrentThread();
+        }
+
+        public static void RhpInitiateThreadAbort(IntPtr thread, bool rude)
+        {
+            Exception ex = new ThreadAbortException();
+            RuntimeImports.RhpInitiateThreadAbort(thread, ex, rude);
+        }
+
+        public static void RhpCancelThreadAbort(IntPtr thread)
+        {
+            RuntimeImports.RhpCancelThreadAbort(thread);   
+        }
+
     }
 }
 

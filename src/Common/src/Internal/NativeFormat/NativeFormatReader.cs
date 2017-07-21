@@ -414,6 +414,13 @@ namespace Internal.NativeFormat
             return value;
         }
 
+        public ulong GetUnsignedLong()
+        {
+            ulong value;
+            _offset = _reader.DecodeUnsignedLong(_offset, out value);
+            return value;
+        }
+
         public int GetSigned()
         {
             int value;

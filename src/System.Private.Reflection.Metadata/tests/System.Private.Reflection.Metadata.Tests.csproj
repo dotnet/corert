@@ -45,6 +45,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeHashingAlgorithms.cs">
       <Link>TypeHashingAlgorithms.cs</Link>
     </Compile>
+    <Compile Include="CollectionExtensions.cs" />
     <Compile Include="HashCodeTests.cs" />
     <Compile Include="RoundTripTests.cs" />
   </ItemGroup>

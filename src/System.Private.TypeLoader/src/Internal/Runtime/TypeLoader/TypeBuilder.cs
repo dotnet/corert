@@ -678,7 +678,7 @@ namespace Internal.Runtime.TypeLoader
                 // Given that we use universal template types to build the dynamic EETypes, these dynamic types will end up with NULL dictionary 
                 // entries, causing the normal-canonical code sharing to fail.
                 // To fix this problem, we will load the generic dictionary from the non-universal template type, and build a generic dictionary out of
-                // it for the dynamic type, and store that dictionary pointer in the dynamic EEtype's structure.
+                // it for the dynamic type, and store that dictionary pointer in the dynamic EEType's structure.
                 TypeBuilderState tempState = new TypeBuilderState();
                 tempState.NativeLayoutInfo = new NativeLayoutInfo();
                 state.NonUniversalTemplateType = tempState.TemplateType = type.Context.TemplateLookup.TryGetNonUniversalTypeTemplate(type, ref tempState.NativeLayoutInfo);

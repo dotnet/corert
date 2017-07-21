@@ -24,15 +24,24 @@ namespace ILCompiler.DependencyAnalysis
         private CompilerTypeSystemContext _context;
         private CompilationModuleGroup _compilationModuleGroup;
         private VTableSliceProvider _vtableSliceProvider;
+        private DictionaryLayoutProvider _dictionaryLayoutProvider;
         private bool _markingComplete;
 
-        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager, InteropStubManager interoptStubManager, NameMangler nameMangler, LazyGenericsPolicy lazyGenericsPolicy, VTableSliceProvider vtableSliceProvider)
+        public NodeFactory(
+            CompilerTypeSystemContext context,
+            CompilationModuleGroup compilationModuleGroup,
+            MetadataManager metadataManager,
+            InteropStubManager interoptStubManager,
+            NameMangler nameMangler,
+            LazyGenericsPolicy lazyGenericsPolicy,
+            VTableSliceProvider vtableSliceProvider,
+            DictionaryLayoutProvider dictionaryLayoutProvider)
         {
             _target = context.Target;
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
+            _dictionaryLayoutProvider = dictionaryLayoutProvider;
             NameMangler = nameMangler;
             InteropStubManager = interoptStubManager;
             CreateNodeCaches();
@@ -462,10 +471,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ModuleMetadataNode(module);
             });
 
-            _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(methodOrType =>
-            {
-                return new DictionaryLayoutNode(methodOrType);
-            });
+            _genericDictionaryLayouts = new NodeCache<TypeSystemEntity, DictionaryLayoutNode>(_dictionaryLayoutProvider.GetLayout);
 
             _stringAllocators = new NodeCache<MethodDesc, IMethodNode>(constructor =>
             {
@@ -687,7 +693,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<TypeSystemEntity, DictionaryLayoutNode> _genericDictionaryLayouts;
-        public virtual DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
+        public DictionaryLayoutNode GenericDictionaryLayout(TypeSystemEntity methodOrType)
         {
             return _genericDictionaryLayouts.GetOrAdd(methodOrType);
         }

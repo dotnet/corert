@@ -447,7 +447,7 @@ namespace Internal.TypeSystem.NativeFormat
                 if (impl == null)
                 {
                     // TODO: invalid input: the type doesn't derive from our System.Object
-                    throw new TypeSystemException.TypeLoadException(this);
+                    ThrowHelper.ThrowTypeLoadException(this);
                 }
 
                 if (impl.OwningType != objectType)
@@ -458,7 +458,8 @@ namespace Internal.TypeSystem.NativeFormat
                 return null;
             }
 
-            throw new TypeSystemException.TypeLoadException(objectType);
+            ThrowHelper.ThrowTypeLoadException(objectType);
+            return null;
         }
 
         public override IEnumerable<FieldDesc> GetFields()

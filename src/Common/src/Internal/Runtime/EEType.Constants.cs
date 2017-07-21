@@ -43,9 +43,9 @@ namespace Internal.Runtime
         HasPointersFlag = 0x0020,
 
         /// <summary>
-        /// This type instance was allocated at runtime (rather than being embedded in a module image).
+        /// Type implements ICastable to allow dynamic resolution of interface casts.
         /// </summary>
-        RuntimeAllocatedFlag = 0x0040,
+        ICastableFlag = 0x0040,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
@@ -118,7 +118,7 @@ namespace Internal.Runtime
         /// <summary>
         /// Type implements ICastable to allow dynamic resolution of interface casts.
         /// </summary>
-        ICastableFlag = 0x00000002,
+        UNUSED1 = 0x00000002,
 
         /// <summary>
         /// Type is an instantiation of Nullable<T>.
@@ -143,7 +143,7 @@ namespace Internal.Runtime
         /// <summary>
         /// Old unused flag
         /// </summary>
-        UNUSED = 0x00000040,
+        UNUSED2 = 0x00000040,
 
         /// <summary>
         /// This EEType was constructed from a universal canonical template, and has

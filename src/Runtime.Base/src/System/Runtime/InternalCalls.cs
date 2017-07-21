@@ -234,10 +234,10 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void* RhpGetClasslibFunctionFromCodeAddress(IntPtr address, EH.ClassLibFunctionId id);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromEEtype")]
+        [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromEEType")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void* RhpGetClasslibFunctionFromEEtype(IntPtr pEEType, EH.ClassLibFunctionId id);
+        internal extern static unsafe void* RhpGetClasslibFunctionFromEEType(IntPtr pEEType, EH.ClassLibFunctionId id);
 
         //
         // StackFrameIterator
@@ -396,6 +396,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static int RhpGetThunkBlockSize();
+
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern static Exception RhpGetThreadAbortException();
 
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls

@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ILScanNodeFactory : NodeFactory
     {
         public ILScanNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager, InteropStubManager interopStubManager, NameMangler nameMangler)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider())
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), new LazyVTableSliceProvider(), new LazyDictionaryLayoutProvider())
         {
         }
 
@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // On CLR this would throw a SecurityException with "ECall methods must be packaged into a system module."
                 // This is a corner case that nobody is likely to care about.
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             if (CompilationModuleGroup.ContainsMethodBody(method))

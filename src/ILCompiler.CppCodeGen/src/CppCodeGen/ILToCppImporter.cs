@@ -2639,6 +2639,21 @@ namespace Internal.IL
             AddTypeReference(type, constructed);
             return _writer.GetCppSignatureTypeName(type);
         }
+
+        private void ReportInvalidBranchTarget(int targetOffset)
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private void ReportFallthroughAtEndOfMethod()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
     }
 }
 

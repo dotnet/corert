@@ -35,7 +35,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
-#if defined(USE_PORTABLE_HELPERS) || defined(_ARM_)
+#ifdef USE_PORTABLE_HELPERS
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
@@ -171,10 +171,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     return pObject;
 }
 
-#endif // defined(USE_PORTABLE_HELPERS) || defined(_ARM_)
-
-#ifdef USE_PORTABLE_HELPERS
-
 #ifdef _ARM_
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
@@ -298,6 +294,8 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 #ifdef USE_PORTABLE_HELPERS
 void * ReturnFromCallDescrThunk;
 #endif
+
+#if defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 // 
 // Return address hijacking
 //
@@ -325,6 +323,7 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+#endif // defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 
 #ifdef USE_PORTABLE_HELPERS
 

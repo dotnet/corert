@@ -37,14 +37,6 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolNode.Offset => 0;
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            return new DependencyList
-            {
-                new DependencyListEntry(GetDictionaryLayout(factory), "Dictionary layout"),
-            };
-        }
-
         public abstract bool IsExported(NodeFactory factory);
 
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
@@ -59,12 +51,18 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
             builder.RequireInitialPointerAlignment();
 
-            // Node representing the generic dictionary doesn't have any dependencies for
-            // dependency analysis purposes. The dependencies are tracked as dependencies of the
-            // concrete method bodies. When we reach the object data emission phase, the dependencies
-            // should all already have been marked.
-            if (!relocsOnly)
+            DictionaryLayoutNode layout = GetDictionaryLayout(factory);
+
+            // Node representing the generic dictionary layout might be one of two kinds:
+            // With fixed slots, or where slots are added as we're expanding the graph.
+            // If it's the latter, we can't touch the collection of slots before the graph expansion
+            // is complete (relocsOnly == false). It's someone else's responsibility
+            // to make sure the dependencies are properly generated.
+            // If this is a dictionary layout with fixed slots, it's the responsibility of
+            // each dictionary to ensure the targets are marked.
+            if (layout.HasFixedSlots || !relocsOnly)
             {
+                // TODO: pass the layout we already have to EmitDataInternal
                 EmitDataInternal(ref builder, factory);
             }
 
@@ -132,12 +130,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList result = null;
+            DependencyList result = result = new DependencyList();
+
+            result.Add(GetDictionaryLayout(factory), "Layout");
 
             if (factory.CompilationModuleGroup.ShouldPromoteToFullType(_owningType))
             {
-                result = new DependencyList();
-
                 // If the compilation group wants this type to be fully promoted, it means the EEType is going to be
                 // COMDAT folded with other EETypes generated in a different object file. This means their generic
                 // dictionaries need to have identical contents. The only way to achieve that is by generating
@@ -206,6 +204,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
+
+            dependencies.Add(GetDictionaryLayout(factory), "Layout");
+
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);

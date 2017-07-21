@@ -11,8 +11,11 @@
 
 enum FuncEvalMode : uint32_t
 {
-    RegularFuncEval = 1,
+    CallParameterizedFunction = 1,
     NewStringWithLength = 2,
+    NewParameterizedArray = 3,
+    NewParameterizedObjectNoConstructor = 4,
+    NewParameterizedObject = 5,
 };
 
 enum DebuggerGcProtectionRequestKind : uint16_t
@@ -46,11 +49,12 @@ struct DebuggerResponse
 
 enum DebuggerResponseKind : uint32_t
 {
-    FuncEvalCompleteWithReturn       = 0,
-    FuncEvalParameterBufferReady     = 1,
-    RequestBufferReady               = 2,
-    ConservativeReportingBufferReady = 3,
-    HandleReady                      = 4,
+    FuncEvalCompleteWithReturn = 0,
+    FuncEvalCompleteWithException = 1,
+    FuncEvalParameterBufferReady = 2,
+    RequestBufferReady = 3,
+    ConservativeReportingBufferReady = 4,
+    HandleReady = 5,
 };
 
 struct DebuggerGcProtectionResponse

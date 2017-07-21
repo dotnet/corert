@@ -161,17 +161,20 @@ endm
 ;;  All other registers trashed
 ;;
 
-EXTERN _RhpWaitForGC : PROC
+EXTERN _RhpWaitForGCNoAbort : PROC
 
 WaitForGCCompletion macro
         test        dword ptr [ebx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         @F
 
         mov         ecx, esp
-        call        _RhpWaitForGC
+        call        _RhpWaitForGCNoAbort
 @@:
 
 endm
+
+RhpThrowHwEx equ @RhpThrowHwEx@0
+extern RhpThrowHwEx : proc
 
 ;;
 ;; Main worker for our GC probes.  Do not call directly!! This assumes that HijackFixupProlog has been done.
@@ -188,8 +191,8 @@ endm
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
 RhpGcProbe  proc
-        cmp         [RhpTrapThreads], 0
-        jne         SynchronousRendezVous
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         SynchronousRendezVous
 
         HijackFixupEpilog
 
@@ -198,12 +201,23 @@ SynchronousRendezVous:
 
         WaitForGCCompletion
 
+        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
         ;;
         ;; Restore preserved registers -- they may have been updated by GC 
         ;;
         PopProbeFrame
 
+        test        edx, PTFF_THREAD_ABORT
+        jnz         Abort
+
         HijackFixupEpilog
+Abort:
+        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        pop         edx
+        pop         eax         ;; ecx was pushed here, but we don't care for its value
+        pop         ebp
+        pop         edx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx
 
 RhpGcProbe  endp
 
@@ -501,8 +515,8 @@ ifdef _DEBUG
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
 
-        cmp         [RhpTrapThreads], 0
-        jne         @F
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @F
 
         call        RhDebugBreak
 @@:
@@ -710,7 +724,7 @@ ifdef FEATURE_GC_STRESS
 endif ;; FEATURE_GC_STRESS
 
         mov         ecx, esp            ; esp is address of PInvokeTransitionFrame
-        mov         eax, _RhpWaitForGC
+        mov         eax, _RhpWaitForGCNoAbort
         call        RhpCall
 
 DoneWaitingForGc:
@@ -720,8 +734,13 @@ DoneWaitingForGc:
         mov         ecx, [ebp - 8h]
         mov         [ebp - 4h], ecx
 
+        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+
         ; Restore our integer register state from the PInvokeTransitionFrame
         PopProbeFrame
+
+        test        edx, PTFF_THREAD_ABORT
+
         pop         ecx
         pop         edx
 
@@ -730,6 +749,15 @@ DoneWaitingForGc:
 
         ; Pop the rest of our frame
         lea         esp, [ebp - 4]
+
+        jz          @f           ;; result of the test instruction before the pops above
+
+        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        popfd                    ;; restore flags
+        pop         ebp 
+        pop         edx          ;; return address as exception RIP
+        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+@@:        
         popfd
         pop         ebp
         ret

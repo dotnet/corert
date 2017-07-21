@@ -83,8 +83,6 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().Rank == 1);
             Contract.EndContractBlock();
 
-            elementType = elementType.UnderlyingSystemType;
-
             return CreateSzArray(elementType, length);
         }
 
@@ -101,8 +99,6 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().Rank == 2);
             Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
             Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
-
-            elementType = elementType.UnderlyingSystemType;
 
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
             int* pLengths = stackalloc int[2];
@@ -128,8 +124,6 @@ namespace System
             Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
             Contract.Ensures(Contract.Result<Array>().GetLength(2) == length3);
 
-            elementType = elementType.UnderlyingSystemType;
-
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
@@ -150,8 +144,6 @@ namespace System
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
             Contract.EndContractBlock();
-
-            elementType = elementType.UnderlyingSystemType;
 
             if (lengths.Length == 1)
             {
@@ -179,8 +171,6 @@ namespace System
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
             Contract.EndContractBlock();
-
-            elementType = elementType.UnderlyingSystemType;
 
             return CreateMultiDimArray(elementType, lengths, lowerBounds);
         }
@@ -214,15 +204,29 @@ namespace System
 
         private static Type GetArrayTypeFromElementType(Type elementType, bool multiDim, int rank)
         {
-            if (!elementType.IsRuntimeImplemented())
-                throw new InvalidOperationException(SR.InvalidOperation_ArrayCreateInstance_NotARuntimeType);
-            if (elementType.Equals(typeof(void)))
-                throw new NotSupportedException(SR.NotSupported_VoidArray);
+            elementType = elementType.UnderlyingSystemType;
+            ValidateElementType(elementType);
 
             if (multiDim)
                 return elementType.MakeArrayType(rank);
             else
                 return elementType.MakeArrayType();
+        }
+
+        private static void ValidateElementType(Type elementType)
+        {
+            if (!elementType.IsRuntimeImplemented())
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(elementType));
+            while (elementType.IsArray)
+            {
+                elementType = elementType.GetElementType();
+            }
+            if (elementType.IsByRef)
+                throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
+            if (elementType.Equals(CommonRuntimeTypes.Void))
+                throw new NotSupportedException(SR.NotSupported_VoidArray);
+            if (elementType.ContainsGenericParameters)
+                throw new NotSupportedException(SR.NotSupported_OpenType);
         }
 
         public void Initialize()

@@ -258,7 +258,8 @@ private:
         // This type contain gc pointers
         HasPointersFlag         = 0x0020,
 
-        // Unused               = 0x0040,
+        // Type implements ICastable to allow dynamic resolution of interface casts.
+        ICastableTypeFlag       = 0x0040,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
@@ -287,8 +288,8 @@ public:
         // This type requires 8-byte alignment for its fields on certain platforms (only ARM currently).
         RequiresAlign8Flag      = 0x00000001,
 
-        // Type implements ICastable to allow dynamic resolution of interface casts.
-        ICastableFlag           = 0x00000002,
+        // Old unused flag
+        UNUSED1                 = 0x00000002,
 
         // Type is an instantiation of Nullable<T>.
         IsNullableFlag          = 0x00000004,
@@ -303,7 +304,7 @@ public:
         HasCctorFlag            = 0x0000020,
 
         // Old unused flag
-        UNUSED                  = 0x00000040,
+        UNUSED2                 = 0x00000040,
 
         // This EEType was constructed from a universal canonical template, and has
         // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
@@ -535,18 +536,6 @@ public:
     // only ARM so far).
     bool RequiresAlign8()
         { return (get_RareFlags() & RequiresAlign8Flag) != 0; }
-
-    // Determine whether a type supports ICastable.
-    bool IsICastable()
-        { return (get_RareFlags() & ICastableFlag) != 0; }
-
-    // Retrieve the address of the method that implements ICastable.IsInstanceOfInterface for
-    // ICastable types.
-    inline PTR_Code get_ICastableIsInstanceOfInterfaceMethod();
-
-    // Retrieve the vtable slot number of the method that implements ICastable.GetImplType for ICastable
-    // types.
-    inline PTR_Code get_ICastableGetImplTypeMethod();
 
     // Determine whether a type is an instantiation of Nullable<T>.
     bool IsNullable()

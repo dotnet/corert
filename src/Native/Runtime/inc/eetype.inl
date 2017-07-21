@@ -341,65 +341,6 @@ inline UInt32 EEType::get_RareFlags()
     return pOptFields->GetRareFlags(0);
 }
 
-// Retrieve the vtable slot number of the method that implements ICastableFlag.IsInstanceOfInterface for
-// ICastable types.
-inline PTR_Code EEType::get_ICastableIsInstanceOfInterfaceMethod()
-{
-    EEType * eeType = this;
-    do
-    {
-        ASSERT(eeType->IsICastable());
-
-        OptionalFields * pOptFields = eeType->get_OptionalFields();
-        ASSERT(pOptFields);
-
-        UInt16 uiSlot = pOptFields->GetICastableIsInstSlot(0xffff);
-        if (uiSlot != 0xffff)
-        {
-            if (uiSlot < eeType->m_usNumVtableSlots)
-                return this->get_Slot(uiSlot);
-            else
-                return eeType->get_SealedVirtualSlot(uiSlot - eeType->m_usNumVtableSlots);
-        }
-        eeType = eeType->get_BaseType();
-    }
-    while (eeType != NULL);
-
-    ASSERT(!"get_ICastableIsInstanceOfInterfaceMethod");
-
-    return NULL;
-}
-
-// Retrieve the vtable slot number of the method that implements ICastableFlag.GetImplType for ICastable
-// types.
-inline PTR_Code EEType::get_ICastableGetImplTypeMethod()
-{
-    EEType * eeType = this;
-
-    do
-    {
-        ASSERT(eeType->IsICastable());
-
-        OptionalFields * pOptFields = eeType->get_OptionalFields();
-        ASSERT(pOptFields);
-
-        UInt16 uiSlot = pOptFields->GetICastableGetImplTypeSlot(0xffff);
-        if (uiSlot != 0xffff)
-        {
-            if (uiSlot < eeType->m_usNumVtableSlots)
-                return this->get_Slot(uiSlot);
-            else
-                return eeType->get_SealedVirtualSlot(uiSlot - eeType->m_usNumVtableSlots);
-        }
-        eeType = eeType->get_BaseType();
-    }
-    while (eeType != NULL);
-
-    ASSERT(!"get_ICastableGetImplTypeMethod");
-
-    return NULL;
-}
-
 // Retrieve the value type T from a Nullable<T>.
 inline EEType * EEType::GetNullableType()
 {
@@ -560,6 +501,17 @@ inline DynamicModule * EEType::get_DynamicModule()
     bool isPointerArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetPointerRank() > 0;
     bool isSpecialArray = isMdArray || isPointerArray;
     bool fHasSealedVirtuals = !isSpecialArray && (pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots()));
+    bool hasICastableMethods = false;
+
+    if (pMT->IsICastable())
+    {
+        SLOT_INDEX *icastableMethod = pMT->GetICastableMethods();
+        if (icastableMethod[0] != INVALID_SLOT_INDEX)
+            hasICastableMethods = true;
+        if (icastableMethod[1] != INVALID_SLOT_INDEX)
+            hasICastableMethods = true;
+    }
+
 
     return
         // Do we need a padding size for value types or unsealed classes? that could be unboxed?
@@ -578,7 +530,7 @@ inline DynamicModule * EEType::get_DynamicModule()
         // Do we need a DispatchMap?
         (!isSpecialArray && pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
         // Do we need to cache ICastable method vtable slots?
-        (pMT->IsICastable()) ||
+        hasICastableMethods ||
         // Is the class a Nullable<T> instantiation (need to store the flag and possibly a field offset)?
         pMT->IsNullable() ||
         (pMT->HasStaticClassConstructor() && !pMT->HasEagerStaticClassConstructor() ||

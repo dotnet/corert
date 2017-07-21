@@ -652,7 +652,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP += 2 + 1; // 2 locals and stack alignment
+            SP += 3; // 3 locals
         }
         else
         {
@@ -681,7 +681,14 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    SP++; // local / stack alignment
+    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+    {
+        SP += 2; // 2 locals
+    }
+    else
+    {
+        SP++; // 1 local
+    }
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;
@@ -1470,7 +1477,7 @@ PTR_VOID StackFrameIterator::GetEffectiveSafePointAddress()
     return m_effectiveSafePointAddress;
 }
 
-ICodeManager * StackFrameIterator::GetCodeManager()
+PTR_ICodeManager StackFrameIterator::GetCodeManager()
 {
     ASSERT(IsValid());
     return m_pCodeManager;
@@ -1496,7 +1503,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
-        m_pCodeManager = m_pInstance->FindCodeManagerByAddress(m_ControlPC);
+        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
         FAILFAST_OR_DAC_FAIL(m_pCodeManager);
 
         FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo));

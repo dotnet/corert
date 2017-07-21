@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             if (ConverterKind != other.ConverterKind)
                 return false;
 
-            if (Signature.Equals(other.Signature))
+            if (!Signature.Equals(other.Signature))
                 return false;
 
             return true;

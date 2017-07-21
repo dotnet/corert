@@ -281,8 +281,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (elementType.IsByRef)
                 throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
-            if (elementType.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
 
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.

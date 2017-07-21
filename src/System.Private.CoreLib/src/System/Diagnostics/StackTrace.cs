@@ -3,6 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime;
+using System.Text;
+
+using Internal.Diagnostics;
 
 namespace System.Diagnostics
 {
@@ -18,19 +22,24 @@ namespace System.Diagnostics
         public const int METHODS_TO_SKIP = 0;
 
         /// <summary>
+        /// Stack frames comprising this stack trace.
+        /// </summary>
+        private StackFrame[] _stackFrames;
+
+        /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
         public StackTrace()
         {
-            throw new NotImplementedException();
+            InitializeForThreadFrameIndex(METHODS_TO_SKIP, needFileInfo: false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(bool fNeedFileInfo)
+        public StackTrace(bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitializeForThreadFrameIndex(METHODS_TO_SKIP, needFileInfo);
         }
 
         /// <summary>
@@ -39,16 +48,16 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(int skipFrames)
         {
-            throw new NotImplementedException();
+            InitializeForThreadFrameIndex(skipFrames, needFileInfo: false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(int skipFrames, bool fNeedFileInfo)
+        public StackTrace(int skipFrames, bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitializeForThreadFrameIndex(skipFrames, needFileInfo);
         }
 
         /// <summary>
@@ -56,15 +65,15 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e)
         {
-            throw new NotImplementedException();
+            InitializeForExceptionFrameIndex(e, METHODS_TO_SKIP, needFileInfo: false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        public StackTrace(Exception e, bool fNeedFileInfo)
+        public StackTrace(Exception e, bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitializeForExceptionFrameIndex(e, METHODS_TO_SKIP, needFileInfo);
         }
 
         /// <summary>
@@ -73,16 +82,16 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames)
         {
-            throw new NotImplementedException();
+            InitializeForExceptionFrameIndex(e, skipFrames, needFileInfo: false);
         }
 
         /// <summary>
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
+        public StackTrace(Exception e, int skipFrames, bool needFileInfo)
         {
-            throw new NotImplementedException();
+            InitializeForExceptionFrameIndex(e, skipFrames, needFileInfo);
         }
 
         /// <summary>
@@ -91,7 +100,62 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(StackFrame frame)
         {
-            throw new NotImplementedException();
+            _stackFrames = new StackFrame[] { frame };
+        }
+
+        /// <summary>
+        /// Construct a stack trace based on a subset of a precomputed array of IP addresses.
+        /// </summary>
+        /// <param name="ipAddresses">Array of IP addresses to use as the stack trace</param>
+        /// <param name="startIndex">Starting index in the array to use</param>
+        /// <param name="endIndex">Ending index in the array (one plus the last element)</param>
+        /// <param name="needFileInfo">True when source file / line information is requested</param>
+        internal StackTrace(IntPtr[] ipAddresses, int startIndex, int endIndex, bool needFileInfo)
+        {
+            InitializeForIpAddressArray(ipAddresses, startIndex, endIndex, needFileInfo);
+        }
+
+        /// <summary>
+        /// Initialize the stack trace based on current thread and given initial frame index.
+        /// </summary>
+        private void InitializeForThreadFrameIndex(int skipFrames, bool needFileInfo)
+        {
+            int frameCount = -RuntimeImports.RhGetCurrentThreadStackTrace(Array.Empty<IntPtr>());
+            Debug.Assert(frameCount >= 0);
+            IntPtr[] stackTrace = new IntPtr[frameCount];
+            int trueFrameCount = RuntimeImports.RhGetCurrentThreadStackTrace(stackTrace);
+            Debug.Assert(trueFrameCount == frameCount);
+            InitializeForIpAddressArray(stackTrace, skipFrames, frameCount, needFileInfo);
+        }
+
+        /// <summary>
+        /// Initialize the stack trace based on a given exception and initial frame index.
+        /// </summary>
+        private void InitializeForExceptionFrameIndex(Exception exception, int skipFrames, bool needFileInfo)
+        {
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+            IntPtr[] stackIPs = exception.GetStackIPs();
+            InitializeForIpAddressArray(stackIPs, skipFrames, stackIPs.Length, needFileInfo);
+        }
+
+        /// <summary>
+        /// Initialize the stack trace based on a given array of IP addresses.
+        /// </summary>
+        private void InitializeForIpAddressArray(IntPtr[] ipAddresses, int skipFrames, int endFrameIndex, bool needFileInfo)
+        {
+            int frameCount = (skipFrames < endFrameIndex ? endFrameIndex - skipFrames : 0);
+            if (frameCount > 0)
+            {
+                _stackFrames = new StackFrame[frameCount];
+                for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+                {
+                    IntPtr ipAddress = ipAddresses[frameIndex + skipFrames];
+                    _stackFrames[frameIndex] = new StackFrame(ipAddress, needFileInfo);
+                }
+            }
         }
 
         /// <summary>
@@ -99,7 +163,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual int FrameCount
         {
-            get { throw new NotImplementedException(); }
+            get { return _stackFrames != null ? _stackFrames.Length : 0; }
         }
 
         /// <summary>
@@ -108,7 +172,11 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame GetFrame(int index)
         {
-            throw new NotImplementedException();
+            if (_stackFrames != null && index >= 0 && index < _stackFrames.Length)
+            {
+                return _stackFrames[index];
+            }
+            return null;
         }
 
         /// <summary>
@@ -119,7 +187,14 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame[] GetFrames()
         {
-            throw new NotImplementedException();
+            if (_stackFrames == null)
+            {
+                return null;
+            }
+
+            StackFrame[] array = new StackFrame[_stackFrames.Length];
+            Array.Copy(_stackFrames, array, _stackFrames.Length);
+            return array;
         }
 
         /// <summary>
@@ -127,7 +202,17 @@ namespace System.Diagnostics
         /// </summary>
         public override String ToString()
         {
-            throw new NotImplementedException();
+            if (_stackFrames == null)
+            {
+                return "";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            foreach (StackFrame frame in _stackFrames)
+            {
+                frame.AppendToStackTrace(builder);
+            }
+            return builder.ToString();
         }
     }
 }

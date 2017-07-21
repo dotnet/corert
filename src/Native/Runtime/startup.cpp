@@ -33,17 +33,14 @@
 unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
-HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
-
-
 #ifdef PLATFORM_UNIX
 Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
 #else
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #endif
 
-void CheckForPalFallback();
-void DetectCPUFeatures();
+static void CheckForPalFallback();
+static void DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
@@ -52,7 +49,7 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
-bool InitDLL(HANDLE hPalInstance)
+static bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
 
@@ -81,13 +78,11 @@ bool InitDLL(HANDLE hPalInstance)
     //
     // init per-instance state
     //
-    HANDLE hRuntimeInstance = RtuCreateRuntimeInstance(hPalInstance);
-    if (NULL == hRuntimeInstance)
+    if (!RuntimeInstance::Initialize(hPalInstance))
         return false;
+
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    // @TODO: currently we're always forcing a workstation GC.
-    // @TODO: GC per-instance vs per-DLL state separation
     RedhawkGCInterface::GCType gcType = g_pRhConfig->GetUseServerGC()
         ? RedhawkGCInterface::GCType_Server
         : RedhawkGCInterface::GCType_Workstation;
@@ -122,7 +117,7 @@ bool InitDLL(HANDLE hPalInstance)
     return true;
 }
 
-void CheckForPalFallback()
+static void CheckForPalFallback()
 {
 #ifdef _DEBUG
     UInt32 disallowSetting = g_pRhConfig->GetDisallowRuntimeServicesFallback();
@@ -189,7 +184,7 @@ int g_registerModuleCount = 0;
 
 RegisterModuleTrace g_registerModuleTraces[NUM_REGISTER_MODULE_TRACES] = { 0 };
 
-void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
+static void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
 {
     char localBuffer[20];
     int cch = 0;
@@ -210,7 +205,7 @@ void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
 }
 #endif // PROFILE_STARTUP
 
-bool UninitDLL(HANDLE /*hModDLL*/)
+static void UninitDLL()
 {
 #ifdef PROFILE_STARTUP
     char buffer[1024];
@@ -232,18 +227,11 @@ bool UninitDLL(HANDLE /*hModDLL*/)
 
     fwrite(buffer, len, 1, stdout);
 #endif // PROFILE_STARTUP
-    return true;
-}
-
-void DllThreadAttach(HANDLE /*hPalInstance*/)
-{
-    // We do not call ThreadStore::AttachThread from here because the loader lock is held.  Instead, the 
-    // threads themselves will do this on their first reverse pinvoke.
 }
 
 volatile bool g_processShutdownHasStarted = false;
 
-void DllThreadDetach()
+static void DllThreadDetach()
 {
     // BEWARE: loader lock is held here!
 
@@ -304,36 +292,20 @@ COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader
     return UInt32_TRUE;
 }
 
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhpEnableConservativeStackReporting, ())
+extern "C" bool RhInitialize()
 {
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-    if (!pInstance->EnableConservativeStackReporting())
-        return UInt32_FALSE;
+    if (!PalInit())
+        return false;
 
-    return UInt32_TRUE;
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
+        return false;
+
+    return true;
 }
 
-#endif // !DACCESS_COMPILE
-
-GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
-
-#ifndef DACCESS_COMPILE
-
-//
-// Creates a new runtime instance.
-//
-// @TODO: EXPORT
-HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance)
+COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
 {
-    CreateHolder<RuntimeInstance> pRuntimeInstance = RuntimeInstance::Create(hPalInstance);
-    if (NULL == pRuntimeInstance)
-        return NULL;
-
-    ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
-    g_pTheRuntimeInstance = pRuntimeInstance;
-
-    pRuntimeInstance.SuppressRelease();
-    return (HANDLE) pRuntimeInstance;
+    GetRuntimeInstance()->EnableConservativeStackReporting();
 }
 
 //
@@ -352,5 +324,34 @@ COOP_PINVOKE_HELPER(void, RhpShutdown, ())
     // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
     g_processShutdownHasStarted = true;
 }
+
+#ifdef _WIN32
+EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, UInt32 dwReason, void* /*pvReserved*/)
+{
+    switch (dwReason)
+    {
+    case DLL_PROCESS_ATTACH:
+    {
+        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_BEGIN);
+
+        if (!InitDLL(hPalInstance))
+            return FALSE;
+
+        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_COMPLETE);
+    }
+    break;
+
+    case DLL_PROCESS_DETACH:
+        UninitDLL();
+        break;
+
+    case DLL_THREAD_DETACH:
+        DllThreadDetach();
+        break;
+    }
+
+    return TRUE;
+}
+#endif // _WIN32
 
 #endif // !DACCESS_COMPILE

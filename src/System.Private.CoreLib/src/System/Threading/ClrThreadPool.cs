@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Internal.LowLevelLinq;
 
@@ -17,15 +18,16 @@ namespace System.Threading
 #pragma warning restore IDE1006 // Naming Styles
 
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000;
+      
+        private const short MaxPossibleThreadCount = short.MaxValue;
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
         private int _cpuUtilization = 85; // TODO: Add calculation for CPU utilization
 
-        private const short MaxPossibleThreadCount = short.MaxValue;
 
-        private static short s_forcedMinWorkerThreads = 0; // TODO: Config. Treat as unsigned when loading from config. Cap to MaxPossibleThreadCount when loading.
-        private static short s_forcedMaxWorkerThreads = 0; // TODO: Config. Tread as unsigned when loading from config. Cap to MaxPossibleThreadCount when loading.
+        private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0);
+        private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0);
 
         private short _minThreads = (short)ThreadPoolGlobals.processorCount;
         private short _maxThreads = MaxPossibleThreadCount;
@@ -34,7 +36,11 @@ namespace System.Threading
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineSeparated
         {
+#if ARM64
+            private const int CacheLineSize = 128;
+#else
             private const int CacheLineSize = 64;
+#endif
             [FieldOffset(CacheLineSize * 1)]
             public ThreadCounts counts;
             [FieldOffset(CacheLineSize * 2)]
@@ -50,7 +56,7 @@ namespace System.Threading
         private CacheLineSeparated _separated;
         private ulong _currentSampleStartTime;
         private int _completionCount = 0;
-        private int _threadAdjustmentInterval;
+        private int _threadAdjustmentIntervalMs;
 
         private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
 
@@ -214,11 +220,11 @@ namespace System.Threading
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 
-            if(elapsedSeconds * 1000 >= _threadAdjustmentInterval / 2)
+            if(elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
             {
                 ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
                 int newMax;
-                (newMax, _threadAdjustmentInterval) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
+                (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
 
                 while(newMax != currentCounts.numThreadsGoal)
                 {
@@ -232,7 +238,7 @@ namespace System.Threading
                         // If we're increasing the max, inject a thread.  If that thread finds work, it will inject
                         // another thread, etc., until nobody finds work or we reach the new maximum.
                         //
-                        // If we're reducing the max, whichever threads notice this first will retire themselves.
+                        // If we're reducing the max, whichever threads notice this first will sleep and timeout themselves.
                         //
                         if (newMax > oldCounts.numThreadsGoal)
                         {
@@ -253,7 +259,7 @@ namespace System.Threading
                     }
                 }
                 _separated.priorCompletionCount = totalNumCompletions;
-                _separated.nextCompletedWorkRequestsTime = currentTicks + _threadAdjustmentInterval;
+                _separated.nextCompletedWorkRequestsTime = currentTicks + _threadAdjustmentIntervalMs;
                 Volatile.Write(ref _separated.priorCompletedWorkRequestsTime, currentTicks);
                 _currentSampleStartTime = endTime;
             }

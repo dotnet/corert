@@ -447,6 +447,18 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
+            if (!(this is CanonicalDefinitionEETypeNode))
+            {
+                foreach (DefType itf in _type.RuntimeInterfaces)
+                {
+                    if (itf == factory.ICastableInterface)
+                    {
+                        flags |= (UInt16)EETypeFlags.ICastableFlag;
+                        break;
+                    }
+                }
+            }               
+
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
             // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
@@ -754,15 +766,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
 
-            foreach (DefType itf in _type.RuntimeInterfaces)
-            {
-                if (itf == factory.ICastableInterface)
-                {
-                    flags |= (uint)EETypeRareFlags.ICastableFlag;
-                    break;
-                }
-            }
-
             if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
             {
                 flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
@@ -922,7 +925,7 @@ namespace ILCompiler.DependencyAnalysis
                 // TODO: it might be more resonable for the type system to enforce this (also for methods)
                 if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
                 {
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 foreach (TypeDesc typeArg in defType.Instantiation)
@@ -934,7 +937,7 @@ namespace ILCompiler.DependencyAnalysis
                         || typeArg.IsVoid
                         || (typeArg.IsValueType && ((DefType)typeArg).IsByRefLike))
                     {
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
                     // TODO: validate constraints
@@ -958,25 +961,25 @@ namespace ILCompiler.DependencyAnalysis
                     if (parameterType.IsFunctionPointer)
                     {
                         // Arrays of function pointers are not currently supported
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
                     LayoutInt elementSize = parameterType.GetElementSize();
                     if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
                     }
 
                     if (((ArrayType)parameterizedType).Rank > 32)
                     {
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
                     }
 
                     if ((parameterType.IsDefType) && ((DefType)parameterType).IsByRefLike)
                     {
                         // Arrays of byref-like types are not allowed
-                        throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
                 }
 
@@ -985,7 +988,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // CLR compat note: "ldtoken int32&&" will actually fail with a message about int32&; "ldtoken int32&[]"
                     // will fail with a message about being unable to create an array of int32&. This is a middle ground.
-                    throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
@@ -995,7 +998,7 @@ namespace ILCompiler.DependencyAnalysis
             // Function pointer EETypes are not currently supported
             if (type.IsFunctionPointer)
             {
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
         }
 

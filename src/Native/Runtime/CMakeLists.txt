@@ -6,7 +6,6 @@ set(COMMON_RUNTIME_SOURCES
     DebugEventSource.cpp
     DebugFuncEval.cpp
     DebuggerHook.cpp
-    dllmain.cpp
     eetype.cpp
     EHHelpers.cpp
     event.cpp
@@ -88,6 +87,7 @@ if(WIN32)
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
+    ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   )
 
 else()

@@ -935,8 +935,12 @@ namespace Internal.Reflection.Execution
                 }
                 else
                 {
-                    canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
-                    instantiationArgument = IntPtr.Zero;
+                    // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
+                    if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
+                    {
+                        canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
+                        instantiationArgument = IntPtr.Zero;
+                    }
                 }
             }
 
@@ -1433,7 +1437,7 @@ namespace Internal.Reflection.Execution
         /// <summary>
         /// Locate the static constructor context given the runtime type handle (EEType) for the type in question.
         /// </summary>
-        /// <param name="typeHandle">EEtype of the type to look up</param>
+        /// <param name="typeHandle">EEType of the type to look up</param>
         internal unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);

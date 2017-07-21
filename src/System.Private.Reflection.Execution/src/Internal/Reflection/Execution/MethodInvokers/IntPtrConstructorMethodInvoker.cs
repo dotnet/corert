@@ -27,10 +27,12 @@ namespace Internal.Reflection.Execution.MethodInvokers
             // Since we control the definition of System.IntPtr, we only do enough analysis of the signature to disambiguate the constructors we support.
             _id = IntPtrConstructorId.None;
             Method method = methodHandle.GetMethod(reader);
-            Handle[] parameterTypeSignatureHandles = method.Signature.GetMethodSignature(reader).Parameters.ToArray();
-            if (parameterTypeSignatureHandles.Length == 1)
+            HandleCollection parameterTypeSignatureHandles = method.Signature.GetMethodSignature(reader).Parameters;
+            if (parameterTypeSignatureHandles.Count == 1)
             {
-                Handle parameterTypeHandle = parameterTypeSignatureHandles[0];
+                HandleCollection.Enumerator enumerator = parameterTypeSignatureHandles.GetEnumerator();
+                enumerator.MoveNext();
+                Handle parameterTypeHandle = enumerator.Current;
 
                 // If any parameter is a pointer type, bail as we don't support Invokes on pointers.
                 if (parameterTypeHandle.HandleType != HandleType.TypeDefinition)

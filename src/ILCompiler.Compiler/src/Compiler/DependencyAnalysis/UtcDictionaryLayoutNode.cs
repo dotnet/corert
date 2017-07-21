@@ -25,9 +25,24 @@ namespace ILCompiler.DependencyAnalysis
     /// </remarks>
     public partial class UtcDictionaryLayoutNode : DictionaryLayoutNode
     {
+        public override bool HasFixedSlots
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public UtcDictionaryLayoutNode(TypeSystemEntity owningMethodOrType) : base(owningMethodOrType)
         {
 
         }
+
+#if CORERT
+        public override int GetSlotForEntry(GenericLookupResult entry) => throw new NotImplementedException();
+        public override IEnumerable<GenericLookupResult> Entries => throw new NotImplementedException();
+        public override ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory) => throw new NotImplementedException();
+        public override void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary) => throw new NotImplementedException();
+#endif
     }
 }

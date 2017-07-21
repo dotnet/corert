@@ -119,7 +119,7 @@ namespace Internal.StackTraceMetadata
         /// Emit comma-separated list of type names into the output string builder.
         /// </summary>
         /// <param name="typeVector">Enumeration of type handles to output</param>
-        private void EmitTypeVector(IEnumerable<Handle> typeVector)
+        private void EmitTypeVector(HandleCollection typeVector)
         {
             bool first = true;
             foreach (Handle handle in typeVector)

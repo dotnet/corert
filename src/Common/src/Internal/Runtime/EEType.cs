@@ -595,7 +595,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.ICastableFlag) != 0;
+                return ((_usFlags & (UInt16)EETypeFlags.ICastableFlag) != 0);
             }
         }
 
@@ -609,16 +609,17 @@ namespace Internal.Runtime
                 Debug.Assert(IsICastable);
 
                 byte* optionalFields = OptionalFieldsPtr;
-                Debug.Assert(optionalFields != null);
-
-                const UInt16 NoSlot = 0xFFFF;
-                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableIsInstSlot, NoSlot);
-                if (uiSlot != NoSlot)
+                if(optionalFields != null)
                 {
-                    if (uiSlot < NumVtableSlots)
-                        return GetVTableStartAddress()[uiSlot];
-                    else
-                        return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                    const UInt16 NoSlot = 0xFFFF;
+                    UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableIsInstSlot, NoSlot);
+                    if (uiSlot != NoSlot)
+                    {
+                        if (uiSlot < NumVtableSlots)
+                            return GetVTableStartAddress()[uiSlot];
+                        else
+                            return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                    }
                 }
 
                 EEType* baseType = BaseType;
@@ -640,16 +641,17 @@ namespace Internal.Runtime
                 Debug.Assert(IsICastable);
 
                 byte* optionalFields = OptionalFieldsPtr;
-                Debug.Assert(optionalFields != null);
-
-                const UInt16 NoSlot = 0xFFFF;
-                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableGetImplTypeSlot, NoSlot);
-                if (uiSlot != NoSlot)
+                if(optionalFields != null)
                 {
-                    if (uiSlot < NumVtableSlots)
-                        return GetVTableStartAddress()[uiSlot];
-                    else
-                        return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                    const UInt16 NoSlot = 0xFFFF;
+                    UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ICastableGetImplTypeSlot, NoSlot);
+                    if (uiSlot != NoSlot)
+                    {
+                        if (uiSlot < NumVtableSlots)
+                            return GetVTableStartAddress()[uiSlot];
+                        else
+                            return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                    }
                 }
 
                 EEType* baseType = BaseType;
@@ -743,16 +745,6 @@ namespace Internal.Runtime
                 // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
                 // the type (where the fields of the type includes the EEType*)
                 return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
-            }
-        }
-
-        // Mark or determine that a type instance was allocated at runtime (currently only used for unification of
-        // generic instantiations). This is sometimes important for memory management or debugging purposes.
-        internal bool IsRuntimeAllocated
-        {
-            get
-            {
-                return ((_usFlags & (UInt16)EETypeFlags.RuntimeAllocatedFlag) != 0);
             }
         }
 
@@ -1045,10 +1037,6 @@ namespace Internal.Runtime
             {
                 if (!HasOptionalFields)
                     return null;
-
-                // Runtime allocated EETypes don't copy over optional fields. We should be careful to avoid operations
-                // that require them on paths that can handle such cases.
-                Debug.Assert(!IsRuntimeAllocated);
 
                 UInt32 cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
                 fixed (EEType* pThis = &this)
