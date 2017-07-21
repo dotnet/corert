@@ -242,7 +242,6 @@
     <Compile Include="System\Diagnostics\StackTrace.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
-    <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
@@ -323,7 +322,6 @@
     <Compile Include="System\NonSerializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="System\SByte.cs" />
-    <Compile Include="System\Single.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.Intern.cs" />
