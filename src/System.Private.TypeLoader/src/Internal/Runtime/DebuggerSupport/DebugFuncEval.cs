@@ -223,7 +223,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             if (isConstructor)
             {
-                typesAndValues.thisObj = CreateObject(typesAndValues.types[1]);
+                typesAndValues.thisObj = RuntimeAugments.RawNewObject(typesAndValues.types[1]);
             }
 
             LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
@@ -249,7 +249,7 @@ namespace Internal.Runtime.DebuggerSupport
             TypeSystemContextFactory.Recycle(typeSystemContext);
 
             RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
-            object returnValue = CreateObject(objectTypeHandle);
+            object returnValue = RuntimeAugments.RawNewObject(objectTypeHandle);
 
             GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
             IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
@@ -372,25 +372,6 @@ namespace Internal.Runtime.DebuggerSupport
             RuntimeAugments.RhpSendCustomEventToDebugger(debuggerFuncEvalCompleteWithReturnResponsePointer, Unsafe.SizeOf<DebuggerFuncEvalCompleteWithReturnResponse>());
 
             // debugger magic will make sure this function never returns, instead control will be transferred back to the point where the FuncEval begins
-        }
-
-        private static unsafe object CreateObject(RuntimeTypeHandle objectTypeHandle)
-        {
-            object returnValue = null;
-            if (objectTypeHandle.Equals(typeof(IntPtr)))
-            {
-                returnValue = new IntPtr();
-            }
-            else if (objectTypeHandle.Equals(typeof(UIntPtr)))
-            {
-                returnValue = new UIntPtr();
-            }
-            else
-            {
-                returnValue = RuntimeAugments.NewObject(objectTypeHandle);
-            }
-
-            return returnValue;
         }
 
         public static void Initialize()
