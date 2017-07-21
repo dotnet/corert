@@ -268,8 +268,9 @@
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Nullable.cs" />
-    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
-    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.cs" />
+    <Compile Include="System\Number.cs" />
+    <Compile Include="System\Number.NumberBuffer.cs" />
+    <Compile Include="System\Number.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\ParseNumbers.cs" />
@@ -486,7 +487,7 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Include="System\AppContext.Windows.cs" />
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
-    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
+    <Compile Include="System\Number.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
@@ -638,7 +639,7 @@
     <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.Unix.cs" />
-    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
+    <Compile Include="System\Number.Unix.cs" />
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
@@ -697,8 +698,8 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs</Link>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Number.cs">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Number.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
@@ -743,9 +744,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs">
-      <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Numerics\Hashing\HashHelpers.cs">
       <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
