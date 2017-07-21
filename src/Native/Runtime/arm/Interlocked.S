@@ -31,7 +31,7 @@ LOCAL_LABEL(CmpXchg32Exit):
 LEAF_END RhpLockCmpXchg32, _TEXT
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about this helper, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpLockCmpXchg32AVLocation
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpLockCmpXchg64AVLocation
 // - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 // r0      = destination address
 // {r2,r3} = value
