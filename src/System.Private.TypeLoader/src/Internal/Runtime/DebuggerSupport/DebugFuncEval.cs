@@ -223,6 +223,7 @@ namespace Internal.Runtime.DebuggerSupport
 
             if (isConstructor)
             {
+                // TODO, FuncEval, deal with Nullable objects
                 typesAndValues.thisObj = RuntimeAugments.RawNewObject(typesAndValues.types[1]);
             }
 
@@ -249,6 +250,8 @@ namespace Internal.Runtime.DebuggerSupport
             TypeSystemContextFactory.Recycle(typeSystemContext);
 
             RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
+
+            // TODO, FuncEval, deal with Nullable objects
             object returnValue = RuntimeAugments.RawNewObject(objectTypeHandle);
 
             GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
