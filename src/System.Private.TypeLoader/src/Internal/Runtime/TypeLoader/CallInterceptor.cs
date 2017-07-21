@@ -440,8 +440,9 @@ namespace Internal.Runtime.CallInterceptor
                 if (ofsCallee < 0)
                     needsFloatArgs = true;
 
-                TypeHandle dummyTypeHandle;
-                if (calleeArgs.IsArgPassedByRef() && calleeArgs.GetArgType(out dummyTypeHandle) != CorElementType.ELEMENT_TYPE_BYREF)
+                TypeHandle argTypeHandle;
+                CorElementType argType = calleeArgs.GetArgType(out argTypeHandle);
+                if (calleeArgs.IsArgPassedByRef() && argType != CorElementType.ELEMENT_TYPE_BYREF)
                 {
                     callConversionOps.Add(new CallConversionOperation(
                         CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK,
@@ -456,16 +457,69 @@ namespace Internal.Runtime.CallInterceptor
                 }
                 else
                 {
-                    callConversionOps.Add(new CallConversionOperation(
-                        CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
-                        calleeArgs.GetArgSize(),
-                        CallConversionInterpreter.ArgBlock,
-                        i,
-                        ofsCallee
-#if CCCONVERTER_TRACE
-                        , "Arg #" + i.LowLevelToString()
+                    //
+                    // Converting by-ref values to non-by-ref form requires the converter to be capable of taking a pointer to a small integer
+                    // value anywhere in memory and then copying the referenced value into an ABI-compliant pointer-sized "slot" which
+                    // faithfully communicates the value.  In such cases, the argument slot prepared by the converter must conform to all
+                    // sign/zero-extension rules mandated by the ABI.
+                    //
+                    // ARM32 requires all less-than-pointer-sized values to be sign/zero-extended when they are placed into pointer-sized
+                    // slots (i.e., requires "producer-oriented" sign/zero-extension).  x86/amd64 do not have this requirement (i.e., the
+                    // unused high bytes of the pointer-sized slot are ignored by the consumer and are allowed to take on any value); however
+                    // to reduce the need for ever more #ifs in this file, this behavior will not be #if'd away. (Its not wrong, its just unnecessary)
+                    //
+
+                    switch (argType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I1:
+                        case CorElementType.ELEMENT_TYPE_I2:
+#if BIT64
+                        case CorElementType.ELEMENT_TYPE_I4:
 #endif
-                        ));
+                            callConversionOps.Add(new CallConversionOperation(
+                                CallConversionOperation.OpCode.SIGNEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                                calleeArgs.GetArgSize(),
+                                CallConversionInterpreter.ArgBlock,
+                                i,
+                                ofsCallee
+#if CCCONVERTER_TRACE
+                                , "Arg #" + i.LowLevelToString()
+#endif
+                            ));
+                            break;
+
+                        case CorElementType.ELEMENT_TYPE_U1:
+                        case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+#if BIT64
+                        case CorElementType.ELEMENT_TYPE_U4:
+#endif
+                            callConversionOps.Add(new CallConversionOperation(
+                                CallConversionOperation.OpCode.ZEROEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                                calleeArgs.GetArgSize(),
+                                CallConversionInterpreter.ArgBlock,
+                                i,
+                                ofsCallee
+#if CCCONVERTER_TRACE
+                                , "Arg #" + i.LowLevelToString()
+#endif
+                            ));
+                            break;
+
+                        default:
+                            callConversionOps.Add(new CallConversionOperation(
+                                CallConversionOperation.OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+                                calleeArgs.GetArgSize(),
+                                CallConversionInterpreter.ArgBlock,
+                                i,
+                                ofsCallee
+#if CCCONVERTER_TRACE
+                                , "Arg #" + i.LowLevelToString()
+#endif
+                            ));
+                            break;
+                    }
                 }
             }
 
@@ -559,6 +613,12 @@ namespace Internal.Runtime.CallInterceptor
                     case OpCode.COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
                         s = "COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK";
                         break;
+                    case OpCode.ZEROEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "ZEROEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
+                    case OpCode.SIGNEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        s = "SIGNEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK";
+                        break;
                     case OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
                         s = "COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK";
                         break;
@@ -582,6 +642,12 @@ namespace Internal.Runtime.CallInterceptor
                         break;
                     case OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         s = "RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
+                        break;
+                    case OpCode.RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        s = "RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
+                        break;
+                    case OpCode.RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        s = "RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z";
                         break;
                     case OpCode.CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W:
                         s = "CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W";
@@ -622,7 +688,7 @@ namespace Internal.Runtime.CallInterceptor
         }
 
 #else
-        public CallConversionOperation(OpCode op, int X, int Y, int Z, int W)
+            public CallConversionOperation(OpCode op, int X, int Y, int Z, int W)
         {
             this.Op = op;
             this.X = X;
@@ -672,6 +738,8 @@ namespace Internal.Runtime.CallInterceptor
             SET_LOCALBLOCK_X_POINTER_Y_TO_OFFSET_Z_IN_LOCALBLOCK,
             COPY_X_BYTES_FROM_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_TO_OFFSET_W_IN_TRANSITION_BLOCK,
             COPY_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+            SIGNEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
+            ZEROEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
             COPY_X_BYTES_TO_LOCALBLOCK_Y_POINTER_Z_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
             COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK,
             CALL_INTERCEPTOR,
@@ -680,6 +748,8 @@ namespace Internal.Runtime.CallInterceptor
             RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK,
             RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
             RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
+            RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
+            RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z,
             CALL_DESCR_MANAGED_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
             CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
             COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z,
@@ -827,6 +897,30 @@ namespace Internal.Runtime.CallInterceptor
                         }
                         break;
 
+                    case CallConversionOperation.OpCode.SIGNEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer();
+                            void* pDst = locals.TransitionBlockPtr + op.W;
+                            CallConverterThunk.SignExtend(pSrc, pDst, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> SignExtend " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.ZEROEXTEND_X_BYTES_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK:
+                        {
+                            void* pSrc = locals.GetLocalBlock(op.Y).GetRawMemoryPointer()[op.Z].ToPointer();
+                            void* pDst = locals.TransitionBlockPtr + op.W;
+                            CallConverterThunk.ZeroExtend(pSrc, pDst, op.X);
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> ZeroExtend " + op.X.LowLevelToString() + " bytes from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+#endif
+                        }
+                        break;
+
                     case CallConversionOperation.OpCode.COPY_X_BYTES_TO_LOCALBLOCK_Y_OFFSET_Z_IN_LOCALBLOCK_FROM_OFFSET_W_IN_TRANSITION_BLOCK:
                         {
                             void* pSrc = locals.TransitionBlockPtr + op.W;
@@ -922,6 +1016,49 @@ namespace Internal.Runtime.CallInterceptor
 #endif
                         }
                         break;
+
+                    case CallConversionOperation.OpCode.RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        {
+#if X86
+                            CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
+                            fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
+                            {
+                                CallConverterThunk.SignExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), retBlk, op.Z);
+                            }
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#else
+                            byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters();
+                            SignExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#endif
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> SignExtend " + op.Z.LowLevelToString() + " bytes from [" + new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer()).LowLevelToString() + "] to return block");
+#endif
+                        }
+                        break;
+
+                    case CallConversionOperation.OpCode.RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
+                        {
+#if X86
+                            CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
+                            fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
+                            {
+                                CallConverterThunk.ZeroExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), retBlk, op.Z);
+                            }
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#else
+                            byte* returnBlock = locals.TransitionBlockPtr + TransitionBlock.GetOffsetOfArgumentRegisters();
+                            ZeroExtend(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), returnBlock, op.Z);
+                            locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
+#endif
+
+#if CCCONVERTER_TRACE
+                            CallingConventionConverterLogger.WriteLine("     -> ZeroExtend " + op.Z.LowLevelToString() + " bytes from [" + new IntPtr(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer()).LowLevelToString() + "] to return block");
+#endif
+                        }
+                        break;
+
                     case CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         {
 #if CALLDESCR_FPARGREGSARERETURNREGS
@@ -1343,7 +1480,41 @@ namespace Internal.Runtime.CallInterceptor
             }
             else
             {
-                callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
+                //
+                // Converting by-ref values to non-by-ref form requires the converter to be capable of taking a pointer to a small integer
+                // value anywhere in memory and then copying the referenced value into an ABI-compliant pointer-sized "slot" which
+                // faithfully communicates the value.  In such cases, the argument slot prepared by the converter must conform to all
+                // sign/zero-extension rules mandated by the ABI.
+                //
+                // ARM32 requires all less-than-pointer-sized values to be sign/zero-extended when they are placed into pointer-sized
+                // slots (i.e., requires "producer-oriented" sign/zero-extension).  x86/amd64 do not have this requirement (i.e., the
+                // unused high bytes of the pointer-sized slot are ignored by the consumer and are allowed to take on any value); however
+                // to reduce the need for ever more #ifs in this file, this behavior will not be #if'd away. (Its not wrong, its just unnecessary)
+                //
+                switch (returnType.GetCorElementType())
+                {
+                    case CorElementType.ELEMENT_TYPE_I1:
+                    case CorElementType.ELEMENT_TYPE_I2:
+#if BIT64
+                    case CorElementType.ELEMENT_TYPE_I4:
+#endif
+                        callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    case CorElementType.ELEMENT_TYPE_U2:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
+#if BIT64
+                    case CorElementType.ELEMENT_TYPE_U4:
+#endif
+                        callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
+                        break;
+
+                    default:
+                        callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
+                        break;
+                }
             }
 
             Debug.Assert(callConversionOps[0].Op == CallConversionOperation.OpCode.ALLOC_X_LOCALBLOCK_BYTES_FOR_BLOCK_Y);
