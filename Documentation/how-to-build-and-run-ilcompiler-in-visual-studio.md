@@ -12,7 +12,7 @@ Build your repo by issuing the following command at repo root:
 build.cmd
 ```
 
-If you changed `c:\corert\src\ILCompiler\repro\project.json`
+If you changed `c:\corert\src\ILCompiler\repro\repro.csproj`
 
 ```
 build.cmd clean

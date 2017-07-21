@@ -13,7 +13,7 @@ If you're using Visual Studio 2017, you need to run the above command from the "
 This will result in the following:
 
 - Restore nuget packages required for building
-- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\packaging\publish1`.
+- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\<OS>.<arch>.<Config>\tools`.
 - Build and run tests
 
 # Install latest CLI tools
@@ -45,11 +45,11 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 </Project>
 ```
 
-* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug` argument to all dotnet commands below.
+* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Windows_NT.x64.Debug` argument to all dotnet commands below.
 
-    * Unix: `export IlcPath=<repo_root>/bin/Product/Linux.x64.Debug`
+    * Unix: `export IlcPath=<repo_root>/bin/Linux.x64.Debug`
 
-    * Windows: `set IlcPath=<repo_root>\bin\Product\Windows_NT.x64.Debug`
+    * Windows: `set IlcPath=<repo_root>\bin\Windows_NT.x64.Debug`
 
 * Run `dotnet restore`. This will download nuget packages required for compilation.
 
@@ -95,7 +95,7 @@ If you are seeing errors such as:
 
 ```
 libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' conflicts with target machine type 'x64' [C:\Users\[omitted]\nativetest\app\app.csproj]
-C:\Users\[omitted]\nativetest\bin\Product\Windows_NT.x64.Debug\packaging\publish1\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp1.0\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
+C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp1.0\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
 ```
 
 Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2017` instead of a vanilla command prompt

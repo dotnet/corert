@@ -6,11 +6,14 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "",
+            "windows": {
+                "program": "${workspaceRoot}/bin/Windows_NT.x64.Debug/tools/ilc.dll"
+            },
             "osx": {
-                "program": "${workspaceRoot}/bin/Product/OSX.x64.Debug/packaging/publish1/ilc.dll"
+                "program": "${workspaceRoot}/bin/OSX.x64.Debug/tools/ilc.dll"
             },
             "linux": {
-                "program": "${workspaceRoot}/bin/Product/Linux.x64.Debug/packaging/publish1/ilc.dll"
+                "program": "${workspaceRoot}/bin/Linux.x64.Debug/tools/ilc.dll"
             },
             "args": [],
             "cwd": "${workspaceRoot}",
@@ -21,7 +24,7 @@
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",
-            "processId": "${command.pickProcess}"
+            "processId": "${command:pickProcess}"
         }
     ]
 }
