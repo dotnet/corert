@@ -142,7 +142,7 @@ namespace System.Threading
                             if (elapsedForNextDueTime < timer.m_period)
                             {
                                 // Discount the extra time that has elapsed since the previous firing
-                                // prevents the timer ticks from drifting
+                                // to prevent the timer ticks from drifting
                                 timer.m_dueTime = timer.m_period - elapsedForNextDueTime;
                             }
                             else
