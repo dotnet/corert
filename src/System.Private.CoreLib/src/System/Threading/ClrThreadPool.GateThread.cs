@@ -14,9 +14,6 @@ namespace System.Threading
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             
-            private static bool s_disableStarvationDetection = true; // TODO: Config
-            private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
-            
             private static volatile bool s_requested = false;
 
             private static bool s_created = false;
@@ -26,6 +23,8 @@ namespace System.Threading
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
+                AppContext.TryGetSwitch("System.Threading.ThreadPool.DisableStarvationDetection", out bool disableStarvationDetection);
+                AppContext.TryGetSwitch("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", out bool debuggerBreakOnWorkStarvation);
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
@@ -43,7 +42,7 @@ namespace System.Threading
 
                     ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
 
-                    if (!s_disableStarvationDetection)
+                    if (!disableStarvationDetection)
                     {
                         if (ThreadPoolInstance._numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
                         {
@@ -54,7 +53,7 @@ namespace System.Threading
                                 // don't add a thread if we're at max or if we are already in the process of adding threads
                                 while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
                                 {
-                                    if (s_debuggerBreakOnWorkStarvation)
+                                    if (debuggerBreakOnWorkStarvation)
                                     {
                                         Debug.WriteLine("The CLR ThreadPool detected work starvation!");
                                         Debugger.Break();

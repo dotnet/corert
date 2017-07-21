@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
+using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -53,8 +53,7 @@ namespace System.Text
         {
             // Fall back our char
             throw new EncoderFallbackException(
-                SR.Format(SR.Argument_InvalidCodePageConversionIndex,
-                    (int)charUnknown, index), charUnknown, index);
+                SR.Format(SR.Argument_InvalidCodePageConversionIndex, (int)charUnknown, index), charUnknown, index);
         }
 
         public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
@@ -62,14 +61,12 @@ namespace System.Text
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xD800, 0xDBFF));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xDC00, 0xDFFF));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
             Contract.EndContractBlock();
 
@@ -77,8 +74,7 @@ namespace System.Text
 
             // Fall back our char
             throw new EncoderFallbackException(
-                SR.Format(SR.Argument_InvalidCodePageConversionIndex,
-                    iTemp, index), charUnknownHigh, charUnknownLow, index);
+                SR.Format(SR.Argument_InvalidCodePageConversionIndex, iTemp, index), charUnknownHigh, charUnknownLow, index);
         }
 
         public override char GetNextChar()
@@ -112,39 +108,40 @@ namespace System.Text
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message)
             : base(message)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
         public EncoderFallbackException(String message, Exception innerException)
             : base(message, innerException)
         {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
-        internal EncoderFallbackException(String message, char charUnknown, int index)
-            : base(message)
+        internal EncoderFallbackException(
+            String message, char charUnknown, int index) : base(message)
         {
             _charUnknown = charUnknown;
             _index = index;
         }
 
-        internal EncoderFallbackException(String message, char charUnknownHigh, char charUnknownLow, int index)
-            : base(message)
+        internal EncoderFallbackException(
+            String message, char charUnknownHigh, char charUnknownLow, int index) : base(message)
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xD800, 0xDBFF));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
-                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xDC00, 0xDFFF));
+                throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
             Contract.EndContractBlock();
 

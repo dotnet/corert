@@ -376,8 +376,6 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
     return false;
 }
 
-
-
 static UIntNative UnwindWriteBarrierToCaller(
 #ifdef PLATFORM_UNIX
     PAL_LIMITED_CONTEXT * pContext
