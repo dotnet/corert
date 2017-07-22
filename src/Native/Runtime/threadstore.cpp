@@ -213,7 +213,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
-    // reason for this is that we essentially implement Decker's algorithm, which requires write ordering.
+    // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
 
     bool keepWaiting;
