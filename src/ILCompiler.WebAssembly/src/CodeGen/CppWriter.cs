@@ -19,7 +19,7 @@ namespace ILCompiler.CppCodeGen
 {
     internal class CppWriter
     {
-        private CppCodegenCompilation _compilation;
+        private WebAssemblyCodegenCompilation _compilation;
 
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
@@ -29,7 +29,7 @@ namespace ILCompiler.CppCodeGen
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
-        public CppWriter(CppCodegenCompilation compilation, string outputFilePath)
+        public CppWriter(WebAssemblyCodegenCompilation compilation, string outputFilePath)
         {
             _compilation = compilation;
 
@@ -406,7 +406,7 @@ namespace ILCompiler.CppCodeGen
 
                 MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
 
-                if (!_compilation.Options.HasOption(CppCodegenConfigProvider.NoLineNumbersString))
+                if (!_compilation.Options.HasOption(WebAssemblyCodegenConfigProvider.NoLineNumbersString))
                 {
                     IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
                     if (sequencePoints != null)

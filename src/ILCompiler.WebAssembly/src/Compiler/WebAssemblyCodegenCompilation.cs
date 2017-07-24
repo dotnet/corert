@@ -12,18 +12,18 @@ using ILCompiler.CppCodeGen;
 
 namespace ILCompiler
 {
-    public sealed class CppCodegenCompilation : Compilation
+    public sealed class WebAssemblyCodegenCompilation : Compilation
     {
         private CppWriter _cppWriter = null;
 
-        internal CppCodegenConfigProvider Options { get; }
+        internal WebAssemblyCodegenConfigProvider Options { get; }
 
-        internal CppCodegenCompilation(
+        internal WebAssemblyCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             Logger logger,
-            CppCodegenConfigProvider options)
+            WebAssemblyCodegenConfigProvider options)
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), logger)
         {
             Options = options;
@@ -33,7 +33,7 @@ namespace ILCompiler
         {
             get
             {
-                /// Some degree of control exposed by <see cref="CppCodegenConfigProvider.NoLineNumbersString"/>.
+                /// Some degree of control exposed by <see cref="WebAssemblyCodegenConfigProvider.NoLineNumbersString"/>.
                 return true;
             }
         }

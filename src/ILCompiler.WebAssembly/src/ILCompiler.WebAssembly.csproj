@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -37,7 +37,7 @@
     <Compile Include="CodeGen\CppGenerationBuffer.cs" />
     <Compile Include="CodeGen\CppWriter.cs" />
     <Compile Include="CodeGen\NodeDataSection.cs" />
-    <Compile Include="CodeGen\ILToCppImporter.cs" />
+    <Compile Include="CodeGen\ILToWebAssemblyImporter.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>

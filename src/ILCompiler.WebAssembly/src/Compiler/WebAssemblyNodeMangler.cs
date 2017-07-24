@@ -11,7 +11,7 @@ namespace ILCompiler
     //
     // The naming format of these names is known to the debugger
     // 
-    public sealed class CppNodeMangler : NodeMangler
+    public sealed class WebAssemblyNodeMangler : NodeMangler
     {
         // Mangled name of boxed version of a type
         public sealed override string MangledBoxedTypeName(TypeDesc type)
