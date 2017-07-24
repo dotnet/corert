@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+
+using Internal.Runtime.Augments;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -19,6 +24,23 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override bool IsPointerImpl() => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => false;
+
+        public sealed override bool IsByRefLike
+        {
+            get
+            {
+                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+                if (!typeHandle.IsNull())
+                    return RuntimeAugments.IsByRefLike(typeHandle);
+
+                foreach (CustomAttributeData cad in CustomAttributes)
+                {
+                    if (cad.AttributeType == typeof(IsByRefLikeAttribute))
+                        return true;
+                }
+                return false;
+            }
+        }
 
         // Left unsealed as RuntimeCLSIDTypeInfo has special behavior and needs to override.
         public override bool HasSameMetadataDefinitionAs(MemberInfo other)
