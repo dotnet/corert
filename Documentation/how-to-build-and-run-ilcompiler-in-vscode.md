@@ -25,11 +25,14 @@ And then press SHIFT+COMMAND+B to start the build.
 Go to the debug pane and click Debug, choose .NET Core as the environment. If needed, you can change program property in launch.json (the gear button) to point to a different flavor of ilc:
 
 ```json
+            "windows": {
+                "program": "${workspaceRoot}/bin/Windows_NT.x64.Debug/tools/ilc.dll"
+            },
             "osx": {
-                "program": "${workspaceRoot}/bin/Product/OSX.x64.Debug/packaging/publish1/ilc.dll"
+                "program": "${workspaceRoot}/bin/OSX.x64.Debug/tools/ilc.dll"
             },
             "linux": {
-                "program": "${workspaceRoot}/bin/Product/Linux.x64.Debug/packaging/publish1/ilc.dll"
+                "program": "${workspaceRoot}/bin/Linux.x64.Debug/tools/ilc.dll"
             },
 ```
 
