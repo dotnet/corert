@@ -1,0 +1,43 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.WebAssembly</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netstandard1.3</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
+      <Link>IL\ILImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />
+    <Compile Include="Compiler\WebAssemblyNodeMangler.cs" />
+    <Compile Include="Compiler\WebAssemblyCodegenCompilation.cs" />
+    <Compile Include="Compiler\WebAssemblyCodegenCompilationBuilder.cs" />
+    <Compile Include="CodeGen\DependencyNodeIterator.cs" />
+    <Compile Include="CodeGen\EvaluationStack.cs" />
+    <Compile Include="CodeGen\CppGenerationBuffer.cs" />
+    <Compile Include="CodeGen\CppWriter.cs" />
+    <Compile Include="CodeGen\NodeDataSection.cs" />
+    <Compile Include="CodeGen\ILToCppImporter.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
+</Project>
