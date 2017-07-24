@@ -348,7 +348,7 @@ namespace ILCompiler
             useScanner &= !_noScanner;
 
             ILScanResults scanResults = null;
-            if (useScanner)
+            if (useScanner && !_isCppCodegen && !_isWasmCodegen)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots);
