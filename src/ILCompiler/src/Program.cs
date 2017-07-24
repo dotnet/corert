@@ -22,6 +22,7 @@ namespace ILCompiler
 
         private string _outputFilePath;
         private bool _isCppCodegen;
+        private bool _isWasmCodegen;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -124,6 +125,7 @@ namespace ILCompiler
                 syntax.DefineOption("O", ref optimize, "Enable optimizations");
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
+                syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -215,11 +217,11 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || !_isCppCodegen ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || !_isCppCodegen || !_isWasmCodegen?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
-            var simdVectorLength = _isCppCodegen ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
+            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
@@ -290,7 +292,7 @@ namespace ILCompiler
                 if (entrypointModule != null)
                 {
                     LibraryInitializers libraryInitializers =
-                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                        new LibraryInitializers(typeSystemContext, _isCppCodegen, _isWasmCodegen);
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
                 }
 
@@ -333,7 +335,9 @@ namespace ILCompiler
             //
 
             CompilationBuilder builder;
-            if (_isCppCodegen)
+            if (_isWasmCodegen)
+                builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
+            else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);

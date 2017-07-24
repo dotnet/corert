@@ -35,8 +35,9 @@ namespace ILCompiler
 
         private readonly TypeSystemContext _context;
         private readonly bool _isCppCodeGen;
+        private readonly bool _isWasmCodeGen;
 
-        public LibraryInitializers(TypeSystemContext context, bool isCppCodeGen)
+        public LibraryInitializers(TypeSystemContext context, bool isCppCodeGen, bool isWasmCodeGen)
         {
             _context = context;
             //
@@ -44,6 +45,7 @@ namespace ILCompiler
             // this can be useful to workaround CppCodeGen bugs.
             //
             _isCppCodeGen = isCppCodeGen;
+            _isWasmCodeGen = isWasmCodeGen;
         }
 
         public IList<MethodDesc> LibraryInitializerMethods

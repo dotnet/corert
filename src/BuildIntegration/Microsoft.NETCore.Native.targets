@@ -32,6 +32,7 @@ See the LICENSE file in the project root for more information.
 
     <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
+    <IlcOutputFileExt Condition="$(NativeCodeGen) == 'wasm'">.wasm</IlcOutputFileExt>
 
 
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
@@ -45,8 +46,11 @@ See the LICENSE file in the project root for more information.
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
+    <IlcCompileOutput Condition="$(NativeCodeGen) == 'wasm'">$(NativeIntermediateOutputPath)$(TargetName).wasm</IlcCompileOutput>
+
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
+    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'wasm'">WasmCompile</LinkNativeDependsOn>
 
     <FrameworkLibPath Condition="'$(FrameworkLibPath)' == ''">$(NativeOutputPath)</FrameworkLibPath>
     <FrameworkObjPath Condition="'$(FrameworkObjPath)' == ''">$(NativeIntermediateOutputPath)</FrameworkObjPath>
@@ -130,6 +134,25 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppCompiler) @(CompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)cl.rsp" Lines="@(CompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Target Name="WasmCompile"
+      Inputs="$(IlcCompileOutput)"
+      Outputs="$(NativeObject)"
+      DependsOnTargets="IlcCompile">
+<!-- TODO : Figure out how to compile wasm
+    <ItemGroup>
+      <CompilerArg Include="$(IlcCompileOutput)" />
+      <CompilerArg Include="/Fo$(NativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CompilerArg Include="-o $(NativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CompilerArg Include="@(CppCompilerAndLinkerArg)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
+    <Exec Command="$(CppCompiler) @(CompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)cl.rsp" Lines="@(CompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  -->
   </Target>
 
   <Target Name="LinkNative"
