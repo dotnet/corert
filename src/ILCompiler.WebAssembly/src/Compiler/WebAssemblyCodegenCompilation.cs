@@ -8,7 +8,6 @@ using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.CppCodeGen;
 
 namespace ILCompiler
 {
@@ -55,9 +54,9 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (CppMethodCodeNode methodCodeNodeNeedingCode in obj)
+            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
             {
-                throw new System.NotImplementedException();
+                Internal.IL.ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }
         }
 
