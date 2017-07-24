@@ -27,6 +27,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
+    <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />
     <Compile Include="Compiler\WebAssemblyNodeMangler.cs" />
