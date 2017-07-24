@@ -12,7 +12,13 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
+    <NoWarn>8002</NoWarn>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="LLVMSharp">
+      <Version>3.9.1-rc3</Version>
+    </PackageReference>
+  </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
