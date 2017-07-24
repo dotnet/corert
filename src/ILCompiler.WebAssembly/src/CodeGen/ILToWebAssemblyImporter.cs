@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 using ILCompiler;
+using LLVMSharp;
 
 namespace Internal.IL
 {
@@ -14,6 +15,7 @@ namespace Internal.IL
     // backend before the actual compilation happens to gain insights into the code.
     partial class ILImporter
     {
+        public LLVMModuleRef Module { get; }
         private readonly MethodDesc _method;
         private readonly WebAssemblyCodegenCompilation _compilation;
 
@@ -47,6 +49,7 @@ namespace Internal.IL
 
         public ILImporter(WebAssemblyCodegenCompilation compilation, MethodDesc method, MethodIL methodIL)
         {
+            Module = compilation.Module;
             _compilation = compilation;
             _method = method;
             _ilBytes = methodIL.GetILBytes();

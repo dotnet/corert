@@ -8,12 +8,14 @@ using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using LLVMSharp;
 
 namespace ILCompiler
 {
     public sealed class WebAssemblyCodegenCompilation : Compilation
     {
         internal WebAssemblyCodegenConfigProvider Options { get; }
+        internal LLVMModuleRef Module { get; }
 
         internal WebAssemblyCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -23,6 +25,8 @@ namespace ILCompiler
             WebAssemblyCodegenConfigProvider options)
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), logger)
         {
+            Module = LLVM.ModuleCreateWithName("netscripten");
+            LLVM.SetTarget(Module, "asmjs-unknown-emscripten");
             Options = options;
         }
 
@@ -49,7 +53,7 @@ namespace ILCompiler
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
-            WebAssemblyObjectWriter.EmitObject(outputFile, nodes, NodeFactory, dumper);
+            WebAssemblyObjectWriter.EmitObject(outputFile, nodes, NodeFactory, this, dumper);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

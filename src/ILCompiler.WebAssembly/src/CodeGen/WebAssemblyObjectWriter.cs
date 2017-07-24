@@ -16,6 +16,8 @@ using Internal.TypeSystem.TypesDebugInfo;
 using Internal.JitInterface;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
+using LLVMSharp;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -23,6 +25,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class WebAssemblyObjectWriter : IDisposable
     {
+        // this is the llvm instance.
+        public LLVMModuleRef Module { get; }
+
         // This is used to build mangled names
         private Utf8StringBuilder _sb = new Utf8StringBuilder();
 
@@ -228,10 +233,10 @@ namespace ILCompiler.DependencyAnalysis
 
         System.IO.FileStream _file;
 
-        public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory)
+        public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory, WebAssemblyCodegenCompilation compilation)
         {
             _nodeFactory = factory;
-            _file = new System.IO.FileStream(objectFilePath, FileMode.CreateNew);
+            Module = compilation.Module;
         }
 
         public void Dispose()
@@ -297,9 +302,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, IObjectDumper dumper)
+        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, WebAssemblyCodegenCompilation compilation, IObjectDumper dumper)
         {
-            WebAssemblyObjectWriter objectWriter = new WebAssemblyObjectWriter(objectFilePath, factory);
+            WebAssemblyObjectWriter objectWriter = new WebAssemblyObjectWriter(objectFilePath, factory, compilation);
             bool succeeded = false;
 
             try
