@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 using ILCompiler;
@@ -18,6 +19,11 @@ namespace Internal.IL
 
         private readonly byte[] _ilBytes;
 
+        /// <summary>
+        /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
+        /// </summary>
+        private EvaluationStack<StackEntry> _stack = new EvaluationStack<StackEntry>(0);
+
         private class BasicBlock
         {
             // Common fields
@@ -25,6 +31,8 @@ namespace Internal.IL
 
             public int StartOffset;
             public int EndOffset;
+
+            public EvaluationStack<StackEntry> EntryStack;
 
             public bool TryStart;
             public bool FilterStart;
@@ -57,12 +65,76 @@ namespace Internal.IL
             ImportBasicBlocks();
         }
 
+
+        /// <summary>
+        /// Push an expression named <paramref name="name"/> of kind <paramref name="kind"/>.
+        /// </summary>
+        /// <param name="kind">Kind of entry in stack</param>
+        /// <param name="name">Variable to be pushed</param>
+        /// <param name="type">Type if any of <paramref name="name"/></param>
+        private void PushExpression(StackValueKind kind, string name, TypeDesc type = null)
+        {
+            Debug.Assert(kind != StackValueKind.Unknown, "Unknown stack kind");
+
+            _stack.Push(new ExpressionEntry(kind, name, type));
+        }
+        
+
+        /// <summary>
+        /// Generate a cast in case the stack type of source is not identical or compatible with destination type.
+        /// </summary>
+        /// <param name="destType">Type of destination</param>
+        /// <param name="srcEntry">Source entry from stack</param>
+        private void AppendCastIfNecessary(TypeDesc destType, StackEntry srcEntry)
+        {
+            ConstantEntry constant = srcEntry as ConstantEntry;
+            if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType || destType != srcEntry.Type)
+            {
+                throw new NotImplementedException();
+                /*
+                Append("(");
+                Append(GetSignatureTypeNameAndAddReference(destType));
+                Append(")");*/
+            }
+        }
+
+        private void AppendCastIfNecessary(StackValueKind dstType, TypeDesc srcType)
+        {
+            if (dstType == StackValueKind.ByRef)
+            {
+
+                throw new NotImplementedException();
+                /*
+                Append("(");
+                Append(GetSignatureTypeNameAndAddReference(srcType));
+                Append(")");*/
+            }
+            else
+            if (srcType.IsPointer)
+            {
+                throw new NotImplementedException();
+                //Append("(intptr_t)");
+            }
+        }
+
+
         private void MarkInstructionBoundary()
         {
         }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _stack.Clear();
+
+            EvaluationStack<StackEntry> entryStack = basicBlock.EntryStack;
+            if (entryStack != null)
+            {
+                int n = entryStack.Length;
+                for (int i = 0; i < n; i++)
+                {
+                    _stack.Push(entryStack[i].Duplicate());
+                }
+            }
         }
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
@@ -331,6 +403,60 @@ namespace Internal.IL
 
         private void ImportFallthrough(BasicBlock next)
         {
+            EvaluationStack<StackEntry> entryStack = next.EntryStack;
+
+            if (entryStack != null)
+            {
+                if (entryStack.Length != _stack.Length)
+                    throw new InvalidProgramException();
+
+                for (int i = 0; i < entryStack.Length; i++)
+                {
+                    // TODO: Do we need to allow conversions?
+                    if (entryStack[i].Kind != _stack[i].Kind)
+                        throw new InvalidProgramException();
+
+                    if (entryStack[i].Kind == StackValueKind.ValueType)
+                    {
+                        if (entryStack[i].Type != _stack[i].Type)
+                            throw new InvalidProgramException();
+                    }
+                }
+            }
+            else
+            {
+                if (_stack.Length > 0)
+                {
+                    entryStack = new EvaluationStack<StackEntry>(_stack.Length);
+
+#pragma warning disable 162 // Due to not implement3ed exception incrementer in for needs pragma warning disable
+                    for (int i = 0; i < _stack.Length; i++)
+                    {
+                        throw new NotImplementedException();
+                        //entryStack.Push(NewSpillSlot(_stack[i]));
+                    }
+#pragma warning restore 162
+                }
+                next.EntryStack = entryStack;
+            }
+
+            if (entryStack != null)
+            {
+#pragma warning disable 162// Due to not implement3ed exception incrementer in for needs pragma warning disable
+                for (int i = 0; i < entryStack.Length; i++)
+                {
+                    throw new NotImplementedException();
+                    /*AppendLine();
+                    Append(entryStack[i]);
+                    Append(" = ");
+                    Append(_stack[i]);
+                    AppendSemicolon();*/
+                }
+#pragma warning restore 162
+            }
+
+            MarkBasicBlock(next);
+
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)

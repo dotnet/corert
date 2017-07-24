@@ -186,7 +186,7 @@ namespace Internal.IL
         /// Add representation of current entry in <paramref name="builder"/>.
         /// </summary>
         /// <param name="builder">Generation buffer used for appending new content.</param>
-        public abstract void Append(CppGenerationBuffer builder);
+        //public abstract void Append(CppGenerationBuffer builder);
 
         /// <summary>
         /// Create a new copy of current entry.
@@ -263,10 +263,10 @@ namespace Internal.IL
             Value = value;
         }
 
-        public override void Append(CppGenerationBuffer _builder)
+        /*public override void Append(CppGenerationBuffer _builder)
         {
             _builder.Append(Value.ToStringInvariant());
-        }
+        }*/
 
         protected override void BuildRepresentation(StringBuilder s)
         {
@@ -285,7 +285,7 @@ namespace Internal.IL
         {
         }
 
-        public override void Append(CppGenerationBuffer _builder)
+        /*public override void Append(CppGenerationBuffer _builder)
         {
             if (Value == Int32.MinValue)
             {
@@ -299,7 +299,7 @@ namespace Internal.IL
             {
                 _builder.Append(Value.ToStringInvariant());
             }
-        }
+        }*/
 
         public override StackEntry Duplicate()
         {
@@ -336,7 +336,7 @@ namespace Internal.IL
         {
         }
 
-        public override void Append(CppGenerationBuffer _builder)
+        /*public override void Append(CppGenerationBuffer _builder)
         {
             if (Value == long.MinValue)
             {
@@ -349,7 +349,7 @@ namespace Internal.IL
                 _builder.Append(Value.ToStringInvariant());
                 _builder.Append(')');
             }
-        }
+        }*/
 
         public override StackEntry Duplicate()
         {
@@ -390,7 +390,7 @@ namespace Internal.IL
         {
         }
 
-        public override void Append(CppGenerationBuffer _builder)
+        /*public override void Append(CppGenerationBuffer _builder)
         {
             long val = BitConverter.DoubleToInt64Bits(Value);
             _builder.Append("__uint64_to_double(0x");
@@ -414,8 +414,8 @@ namespace Internal.IL
             {
                 _builder.Append(Value.ToStringInvariant());
             }
-            _builder.Append(" */");
-        }
+            _builder.Append(" */ //");
+        //}
 
         public override StackEntry Duplicate()
         {
@@ -443,10 +443,10 @@ namespace Internal.IL
         {
             Name = name;
         }
-        public override void Append(CppGenerationBuffer _builder)
+       /* public override void Append(CppGenerationBuffer _builder)
         {
             _builder.Append(Name);
-        }
+        }*/
 
         public override StackEntry Duplicate()
         {
@@ -500,11 +500,11 @@ namespace Internal.IL
         {
         }
 
-        public override void Append(CppGenerationBuffer _builder)
+        /*public override void Append(CppGenerationBuffer _builder)
         {
             _builder.Append("// FIXME: An invalid value was pushed onto the evaluation stack.");
             Debug.Assert(false, "Invalid stack values shouldn't be appended.");
-        }
+        }*/
 
         public override StackEntry Duplicate()
         {
