@@ -215,12 +215,11 @@ namespace Internal.IL
             GetLocalSizeAndOffsetAtIndex(index, out int localSize, out int localOffset);
 
             LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
-            var typedSp = LLVM.BuildPointerCast(_builder, LLVM.GetFirstParam(_llvmFunction), LLVM.PointerType(valueType, 0), String.Empty);
-            var loadLocation = LLVM.BuildGEP(_builder, typedSp,
+            var loadLocation = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
                 String.Empty);
-
-            var loadResult = LLVM.BuildLoad(_builder, loadLocation, String.Empty);
+            var typedLoadLocation = LLVM.BuildPointerCast(_builder, loadLocation, LLVM.PointerType(valueType, 0), String.Empty);
+            var loadResult = LLVM.BuildLoad(_builder, typedLoadLocation, String.Empty);
 
             _stack.Push(new ExpressionEntry(GetStackValueKind(_locals[index].Type), String.Empty, loadResult, _locals[index].Type));
         }
@@ -272,18 +271,17 @@ namespace Internal.IL
             {
                 throw new NotImplementedException("storing to argument");
             }
-
+            
             GetLocalSizeAndOffsetAtIndex(index, out int localSize, out int localOffset);
 
             LLVMValueRef toStore = _stack.Pop().LLVMValue;
 
             LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
-            var typedSp = LLVM.BuildPointerCast(_builder, LLVM.GetFirstParam(_llvmFunction), LLVM.PointerType(valueType, 0), String.Empty);
-            var storeLocation = LLVM.BuildGEP(_builder, typedSp,
+            var storeLocation = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
                 String.Empty);
-
-            LLVM.BuildStore(_builder, toStore, storeLocation);
+            var typedStoreLocation = LLVM.BuildPointerCast(_builder, storeLocation, LLVM.PointerType(valueType, 0), String.Empty);
+            LLVM.BuildStore(_builder, toStore, typedStoreLocation);
         }
 
         private LLVMTypeRef GetLLVMTypeForTypeDesc(TypeDesc type)

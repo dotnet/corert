@@ -74,12 +74,16 @@ namespace ILCompiler.DependencyAnalysis
             var mainEntryBlock = LLVM.AppendBasicBlock(mainFunc, "entry");
             LLVM.PositionBuilderAtEnd(builder, mainEntryBlock);
             LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "Main");
+
+            var shadowStack = LLVM.BuildMalloc(builder, LLVM.ArrayType(LLVM.Int8Type(), 1000000), String.Empty);
+            var castShadowStack = LLVM.BuildPointerCast(builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
             LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
             {
-                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)),
+                castShadowStack,
                 LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0))
             },
             String.Empty);
+
             LLVM.BuildRet(builder, LLVM.ConstInt(LLVM.Int32Type(), 42, LLVMMisc.False));
             LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
