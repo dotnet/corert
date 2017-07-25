@@ -18,6 +18,9 @@ namespace Internal.IL
         public LLVMModuleRef Module { get; }
         private readonly MethodDesc _method;
         private readonly WebAssemblyCodegenCompilation _compilation;
+        private LLVMValueRef _llvmFunction;
+        private LLVMBasicBlockRef _curBasicBlock;
+        private LLVMBuilderRef _builder;
 
         private readonly byte[] _ilBytes;
 
@@ -47,7 +50,7 @@ namespace Internal.IL
         }
         private ExceptionRegion[] _exceptionRegions;
 
-        public ILImporter(WebAssemblyCodegenCompilation compilation, MethodDesc method, MethodIL methodIL)
+        public ILImporter(WebAssemblyCodegenCompilation compilation, MethodDesc method, MethodIL methodIL, string mangledName)
         {
             Module = compilation.Module;
             _compilation = compilation;
@@ -60,6 +63,7 @@ namespace Internal.IL
             {
                 _exceptionRegions[i] = new ExceptionRegion() { ILRegion = ilExceptionRegions[i] };
             }
+            CreateLLVMFunction(mangledName);
         }
 
         public void Import()
@@ -68,6 +72,12 @@ namespace Internal.IL
             ImportBasicBlocks();
         }
 
+        private void CreateLLVMFunction(string mangledName)
+        {
+            LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            _llvmFunction = LLVM.AddFunction(Module, mangledName , universalSignature);
+            _builder = LLVM.CreateBuilder();
+        }
 
         /// <summary>
         /// Push an expression named <paramref name="name"/> of kind <paramref name="kind"/>.
@@ -138,6 +148,9 @@ namespace Internal.IL
                     _stack.Push(entryStack[i].Duplicate());
                 }
             }
+
+            _curBasicBlock = LLVM.AppendBasicBlock(_llvmFunction, "Block" + basicBlock.StartOffset);
+            LLVM.PositionBuilderAtEnd(_builder, _curBasicBlock);
         }
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)

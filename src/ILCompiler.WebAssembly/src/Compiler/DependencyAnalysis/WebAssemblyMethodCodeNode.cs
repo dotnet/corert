@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodDesc _method;
         private string _methodCode;
-        private IEnumerable<Object> _dependencies;
+        private IEnumerable<Object> _dependencies = Enumerable.Empty<Object>();
 
         public WebAssemblyMethodCodeNode(MethodDesc method)
         {
@@ -50,7 +50,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override bool StaticDependenciesAreComputed => _methodCode != null;
+        public override bool StaticDependenciesAreComputed => CompilationCompleted;
+
+        public bool CompilationCompleted { get; set; }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

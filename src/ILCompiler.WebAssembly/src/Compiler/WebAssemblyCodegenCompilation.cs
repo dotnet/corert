@@ -59,7 +59,7 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (IMethodBodyNode methodCodeNodeNeedingCode in obj)
+            foreach (WebAssemblyMethodCodeNode methodCodeNodeNeedingCode in obj)
             {
                 Internal.IL.ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }
@@ -82,7 +82,7 @@ namespace ILCompiler
 
             public void AddCompilationRoots(IRootingServiceProvider rootProvider)
             {
-                RootWellKnownType(WellKnownType.Void, rootProvider);
+                /*RootWellKnownType(WellKnownType.Void, rootProvider);
                 RootWellKnownType(WellKnownType.Boolean, rootProvider);
                 RootWellKnownType(WellKnownType.Char, rootProvider);
                 RootWellKnownType(WellKnownType.SByte, rootProvider);
@@ -96,7 +96,7 @@ namespace ILCompiler
                 RootWellKnownType(WellKnownType.IntPtr, rootProvider);
                 RootWellKnownType(WellKnownType.UIntPtr, rootProvider);
                 RootWellKnownType(WellKnownType.Single, rootProvider);
-                RootWellKnownType(WellKnownType.Double, rootProvider);
+                RootWellKnownType(WellKnownType.Double, rootProvider);*/
             }
         }
     }

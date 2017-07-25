@@ -18,7 +18,7 @@ namespace Internal.IL
 {
     internal partial class ILImporter
     {
-        public static void CompileMethod(WebAssemblyCodegenCompilation compilation, IMethodBodyNode methodCodeNodeNeedingCode)
+        public static void CompileMethod(WebAssemblyCodegenCompilation compilation, WebAssemblyMethodCodeNode methodCodeNodeNeedingCode)
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
@@ -42,7 +42,7 @@ namespace Internal.IL
 
             try
             {
-                var ilImporter = new ILImporter(compilation, method, methodIL);
+                var ilImporter = new ILImporter(compilation, method, methodIL, methodCodeNodeNeedingCode.GetMangledName(compilation.NameMangler));
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 
@@ -64,6 +64,7 @@ namespace Internal.IL
                     ilImporter.SetParameterNames(parameters);*/
 
                 ilImporter.Import();
+                methodCodeNodeNeedingCode.CompilationCompleted = true;
             }
             catch (Exception e)
             {
