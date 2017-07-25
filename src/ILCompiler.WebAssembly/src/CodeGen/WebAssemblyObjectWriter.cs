@@ -26,6 +26,91 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class WebAssemblyObjectWriter : IDisposable
     {
+        public static string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        {
+            if (symbol is ObjectNode)
+            {
+                ObjectNode objNode = (ObjectNode)symbol;
+                ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
+                if (symbolDefNode.Offset == 0)
+                {
+                    return symbol.GetMangledName(nameMangler);
+                }
+                else
+                {
+                    return symbol.GetMangledName(nameMangler) + "___REALBASE";
+                }
+            }
+            else if (symbol is ObjectAndOffsetSymbolNode)
+            {
+                ObjectAndOffsetSymbolNode objAndOffset = (ObjectAndOffsetSymbolNode)symbol;
+                if (objAndOffset.Target is IHasStartSymbol)
+                {
+                    ISymbolNode startSymbol = ((IHasStartSymbol)objAndOffset.Target).StartSymbol;
+                    if (startSymbol == symbol)
+                    {
+                        Debug.Assert(startSymbol.Offset == 0);
+                        return symbol.GetMangledName(nameMangler);
+                    }
+                    return GetBaseSymbolName(startSymbol, nameMangler, objectWriterUse);
+                }
+                return GetBaseSymbolName((ISymbolNode)objAndOffset.Target, nameMangler, objectWriterUse);
+            }
+            else if (symbol is EmbeddedObjectNode)
+            {
+                EmbeddedObjectNode embeddedNode = (EmbeddedObjectNode)symbol;
+                return GetBaseSymbolName(embeddedNode.ContainingNode.StartSymbol, nameMangler, objectWriterUse);
+            }
+            else
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+                return null;
+            }
+        }
+
+        public static LLVMValueRef GetOffsetFromBaseSymbolValue(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        {
+            return LLVM.GetNamedGlobal(module, symbol.GetMangledName(nameMangler) + "___OFFSET");
+        }
+
+        private static int GetNumericOffsetFromBaseSymbolValue(ISymbolNode symbol)
+        {
+            if(symbol is ObjectNode)
+            {
+                ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
+                return symbolDefNode.Offset;
+            }
+            else if (symbol is ObjectAndOffsetSymbolNode)
+            {
+                ObjectAndOffsetSymbolNode objAndOffset = (ObjectAndOffsetSymbolNode)symbol;
+                ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
+                if (objAndOffset.Target is IHasStartSymbol)
+                {
+                    ISymbolNode startSymbol = ((IHasStartSymbol)objAndOffset.Target).StartSymbol;
+                    
+                    if (startSymbol == symbol)
+                    {
+                        Debug.Assert(symbolDefNode.Offset == 0);
+                        return symbolDefNode.Offset;
+                    }
+                    return symbolDefNode.Offset;
+                }
+                int baseOffset = GetNumericOffsetFromBaseSymbolValue((ISymbolNode)objAndOffset.Target);
+                return baseOffset + symbolDefNode.Offset;
+            }
+            else if (symbol is EmbeddedObjectNode)
+            {
+                EmbeddedObjectNode embeddedNode = (EmbeddedObjectNode)symbol;
+                int baseOffset = GetNumericOffsetFromBaseSymbolValue(embeddedNode.ContainingNode.StartSymbol);
+                return baseOffset + embeddedNode.OffsetFromBeginningOfArray;
+            }
+            else
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+                return 0;
+            }
+        }
+
         // this is the llvm instance.
         public LLVMModuleRef Module { get; }
 
@@ -95,41 +180,117 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EnsureCurrentSection()
         {
-            //throw new NotImplementedException(); // This function isn't complete
+        }
+
+        ArrayBuilder<byte> _currentObjectData = new ArrayBuilder<byte>();
+        Dictionary<int, LLVMValueRef> _currentObjectSymbolRefs = new Dictionary<int, LLVMValueRef>();
+        ObjectNode _currentObjectNode;
+
+        public void StartObjectNode(ObjectNode node)
+        {
+            Debug.Assert(_currentObjectNode == null);
+            _currentObjectNode = node;
+            Debug.Assert(_currentObjectData.Count == 0);
+        }
+
+        public void DoneObjectNode()
+        {
+            int pointerSize = _nodeFactory.Target.PointerSize;
+            EmitAlignment(_nodeFactory.Target.PointerSize);
+            Debug.Assert(_nodeFactory.Target.PointerSize == 4);
+            int countOfPointerSizedElements = _currentObjectData.Count / _nodeFactory.Target.PointerSize;
+            List<LLVMValueRef> entries = new List<LLVMValueRef>();
+
+            byte[] currentObjectData = _currentObjectData.ToArray();
+            var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
+
+            for (int i = 0; i < countOfPointerSizedElements; i++)
+            {
+                int curOffset = (i * pointerSize);
+                LLVMValueRef pointedAtValue;
+                if (_currentObjectSymbolRefs.TryGetValue(curOffset, out pointedAtValue))
+                {
+                    var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
+                    entries.Add(ptrValue);
+                }
+                else
+                {
+                    int value = BitConverter.ToInt32(currentObjectData, curOffset);
+                    var dataVal = LLVM.ConstInt(intPtrType, (uint)value, (LLVMBool)false);
+                    entries.Add(dataVal);
+                }
+            }
+
+            ISymbolNode symNode = _currentObjectNode as ISymbolNode;
+            if (symNode == null)
+                symNode = ((IHasStartSymbol)_currentObjectNode).StartSymbol;
+            string realName = GetBaseSymbolName(symNode, _nodeFactory.NameMangler, true);
+
+            var funcptrarray = LLVM.ConstArray(intPtrType, entries.ToArray());
+            var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, 2), realName, 0);
+            LLVM.SetInitializer(arrayglobal, funcptrarray);
+            LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
+
+            _currentObjectNode = null;
+            _currentObjectSymbolRefs.Clear();
+            _currentObjectData = new ArrayBuilder<byte>();
         }
 
         public void EmitAlignment(int byteAlignment)
         {
-            //throw new NotImplementedException(); // This function isn't complete
+            while ((_currentObjectData.Count % byteAlignment) != 0)
+                _currentObjectData.Add(0);
         }
 
         public void EmitBlob(byte[] blob)
         {
-            //throw new NotImplementedException(); // This function isn't complete
+            _currentObjectData.Append(blob);
         }
-
+        
         public void EmitIntValue(ulong value, int size)
         {
-            //throw new NotImplementedException(); // This function isn't complete
+            switch (size)
+            {
+                case 1:
+                    _currentObjectData.Append(BitConverter.GetBytes((byte)value));
+                    break;
+                case 2:
+                    _currentObjectData.Append(BitConverter.GetBytes((ushort)value));
+                    break;
+                case 4:
+                    _currentObjectData.Append(BitConverter.GetBytes((uint)value));
+                    break;
+                case 8:
+                    _currentObjectData.Append(BitConverter.GetBytes(value));
+                    break;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
 
         public void EmitBytes(IntPtr pArray, int length)
         {
-            //throw new NotImplementedException(); // This function isn't complete
+            unsafe
+            {
+                byte* pBytes = (byte*)pArray;
+                for (int i = 0; i < length; i++)
+                    _currentObjectData.Add(pBytes[i]);
+            }
+        }
+        
+        public void EmitSymbolDef(string realSymbolName, string symbolIdentifier, int offsetFromSymbolName)
+        {
+            var intType = LLVM.Int32Type();
+            var myGlobal = LLVM.AddGlobalInAddressSpace(Module, intType, symbolIdentifier + "___OFFSET", 0);
+            LLVM.SetInitializer(myGlobal, LLVM.ConstInt(intType, (uint)offsetFromSymbolName, (LLVMBool)false));
+            LLVM.SetLinkage(myGlobal, LLVMLinkage.LLVMExternalLinkage);
         }
 
-        public void EmitSymbolDef(byte[] symbolName)
+        public int EmitSymbolRef(string realSymbolName, int offsetFromSymbolName, bool isFunction, RelocType relocType, int delta = 0)
         {
-            //throw new NotImplementedException(); // This function isn't complete
-        }
-        public void EmitSymbolDef(Utf8StringBuilder symbolName)
-        {
-            //EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray);
-            //throw new NotImplementedException(); // This function isn't complete
-        }
+            int symbolStartOffset = _currentObjectData.Count;
 
-        public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
-        {
             // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
             // https://github.com/dotnet/corert/issues/3278
             if (relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
@@ -138,10 +299,23 @@ namespace ILCompiler.DependencyAnalysis
                 delta = checked(delta + sizeof(int));
             }
 
-            //            return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
-            //throw new NotImplementedException(); // This function isn't complete
-            return 4;
+            EmitBlob(new byte[this._nodeFactory.Target.PointerSize]);
+            if (relocType == RelocType.IMAGE_REL_BASED_REL32)
+            {
+                Console.WriteLine("REL BASED RELOC");
+                return this._nodeFactory.Target.PointerSize;
+            }
+
+            LLVMValueRef valRef = isFunction ? LLVM.GetNamedFunction(Module, realSymbolName) : LLVM.GetNamedGlobal(Module, realSymbolName);
+
+            if (offsetFromSymbolName != 0)
+                valRef = LLVM.GetElementAsConstant(LLVM.ConstBitCast(valRef, LLVM.PointerType(LLVM.Int8Type(), 0)), (uint)offsetFromSymbolName);
+            
+
+            _currentObjectSymbolRefs.Add(symbolStartOffset, valRef);
+            return _nodeFactory.Target.PointerSize;
         }
+
         public string GetMangledName(TypeDesc type)
         {
             return _nodeFactory.NameMangler.GetMangledTypeName(type);
@@ -182,13 +356,9 @@ namespace ILCompiler.DependencyAnalysis
         // Returns size of the emitted symbol reference
         public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
         {
-            _sb.Clear();
-            AppendExternCPrefix(_sb);
-            target.AppendMangledName(_nodeFactory.NameMangler, _sb);
-
-            //return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset));
-            //throw new NotImplementedException(); // This function isn't complete
-            return 4;
+            string realSymbolName = GetBaseSymbolName(target, _nodeFactory.NameMangler, true);
+            int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target);
+            return EmitSymbolRef(realSymbolName, offsetFromBase, target is CppMethodCodeNode, relocType, delta);
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -244,8 +414,13 @@ namespace ILCompiler.DependencyAnalysis
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-                    EmitSymbolDef(_sb);
-
+                    string baseSymbolNode = GetBaseSymbolName(name, _nodeFactory.NameMangler, true);
+                    string symbolId = name.ToString();
+                    int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(name);
+                    Debug.Assert(offsetFromBase == currentOffset);
+                    
+                    EmitSymbolDef(baseSymbolNode, symbolId, offsetFromBase);
+                    /*
                     string alternateName = _nodeFactory.GetSymbolAlternateName(name);
                     if (alternateName != null)
                     {
@@ -254,7 +429,7 @@ namespace ILCompiler.DependencyAnalysis
                         _sb.Append(alternateName);
 
                         EmitSymbolDef(_sb);
-                    }
+                    }*/
                 }
             }
         }
@@ -351,7 +526,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
-
+                    objectWriter.StartObjectNode(node);
                     ObjectData nodeContents = node.GetData(factory);
 
                     if (dumper != null)
@@ -422,6 +597,8 @@ namespace ILCompiler.DependencyAnalysis
                             }
                             int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
+                            /*
+                             WebAssembly has no thumb 
                             // Emit a copy of original Thumb2 instruction that came from RyuJIT
                             if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_MOV32 ||
                                 reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_BRANCH24)
@@ -433,7 +610,7 @@ namespace ILCompiler.DependencyAnalysis
                                         objectWriter.EmitBytes((IntPtr)location, size);
                                     }
                                 }
-                            }
+                            }*/
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)
@@ -475,6 +652,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // It is possible to have a symbol just after all of the data.
                     objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
+                    objectWriter.DoneObjectNode();
                 }
 
                 succeeded = true;
