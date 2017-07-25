@@ -166,6 +166,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             EmitNativeMain();
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMPrintMessageAction, out IntPtr unused);
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
             LLVM.DumpModule(Module);
             //throw new NotImplementedException(); // This function isn't complete
@@ -593,7 +594,7 @@ namespace ILCompiler.DependencyAnalysis
                 //ObjectNodeSection managedCodeSection = null;
 
                 var listOfOffsets = new List<int>();
-                foreach (DependencyNode depNode in nodes)
+                foreach (DependencyNode depNode in /*nodes*/ new DependencyNode[0])
                 {
                     ObjectNode node = depNode as ObjectNode;
                     if (node == null)

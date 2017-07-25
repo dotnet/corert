@@ -358,7 +358,11 @@ namespace Internal.IL
                     return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
 
                 case TypeFlags.Enum:
-                    return GetLLVMTypeForTypeDesc(type.UnderlyingType);                    
+                    return GetLLVMTypeForTypeDesc(type.UnderlyingType);
+
+                case TypeFlags.Void:
+                    return LLVM.VoidType();
+
                 default:
                     throw new NotImplementedException(type.Category.ToString());
             }
@@ -429,8 +433,8 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, int token)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
-            if(method.IsRawPInvoke())
+            MethodDesc callee = (MethodDesc)_methodIL.GetObject(token);
+            if (callee.IsPInvoke)
             {
                 ImportRawPInvoke(method);
                 return;
@@ -448,7 +452,7 @@ namespace Internal.IL
             // argument offset
             uint argOffset = 0;
 
-            for(int index=0; index< callee.Signature.Length; index++)
+            for (int index = 0; index < callee.Signature.Length; index++)
             {
                 LLVMValueRef toStore = _stack.Pop().LLVMValue;
 
@@ -485,8 +489,16 @@ namespace Internal.IL
                 LLVM.SetLinkage(nativeFunc, LLVMLinkage.LLVMDLLImportLinkage);
             }
 
+            LLVMValueRef[] arguments = new LLVMValueRef[method.Signature.Length];
+            for(int i = 0; i < arguments.Length; i++)
+            {
+                // Arguments are reversed on the stack
+                arguments[arguments.Length - i - 1] = _stack.Pop().LLVMValue;
+            }
 
-            //LLVM.BuildCall(_builder, nativeFunc)
+            var ReturnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, String.Empty);
+
+            // TODO: Do something with the return value
         }
 
         private void ImportCalli(int token)
