@@ -28,6 +28,11 @@ namespace ILCompiler.DependencyAnalysis
     {
         public static string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
+            if (symbol is WebAssemblyMethodCodeNode)
+            {
+                return symbol.GetMangledName(nameMangler);
+            }
+
             if (symbol is ObjectNode)
             {
                 ObjectNode objNode = (ObjectNode)symbol;
@@ -70,12 +75,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public static LLVMValueRef GetOffsetFromBaseSymbolValue(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
+            if (symbol is WebAssemblyMethodCodeNode)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
             return LLVM.GetNamedGlobal(module, symbol.GetMangledName(nameMangler) + "___OFFSET");
         }
 
         private static int GetNumericOffsetFromBaseSymbolValue(ISymbolNode symbol)
         {
-            if(symbol is ObjectNode)
+            if (symbol is WebAssemblyMethodCodeNode)
+            {
+                return 0;
+            }
+
+            if (symbol is ObjectNode)
             {
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
                 return symbolDefNode.Offset;
@@ -358,7 +373,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             string realSymbolName = GetBaseSymbolName(target, _nodeFactory.NameMangler, true);
             int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target);
-            return EmitSymbolRef(realSymbolName, offsetFromBase, target is CppMethodCodeNode, relocType, delta);
+            return EmitSymbolRef(realSymbolName, offsetFromBase, target is WebAssemblyMethodCodeNode, relocType, delta);
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
