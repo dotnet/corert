@@ -274,6 +274,85 @@ namespace Internal.IL
 
         private void ImportBinaryOperation(ILOpcode opcode)
         {
+            StackEntry op1 = _stack.Pop();
+            StackEntry op2 = _stack.Pop();
+
+            // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
+            StackValueKind kind;
+            TypeDesc type;
+
+            if (op1.Kind > op2.Kind)
+            {
+                kind = op1.Kind;
+                type = op1.Type;
+            }
+            else
+            {
+                kind = op2.Kind;
+                type = op2.Type;
+            }
+
+            // The one exception from the above rule
+            if ((kind == StackValueKind.ByRef) &&
+                    (opcode == ILOpcode.sub || opcode == ILOpcode.sub_ovf || opcode == ILOpcode.sub_ovf_un))
+            {
+                kind = StackValueKind.NativeInt;
+                type = null;
+            }
+
+            LLVMValueRef result;
+            switch (opcode)
+            {
+                case ILOpcode.add:
+                    result = LLVM.BuildAdd(_builder, op1.LLVMValue, op2.LLVMValue, "add");
+                    break;
+                case ILOpcode.sub:
+                    result = LLVM.BuildSub(_builder, op1.LLVMValue, op2.LLVMValue, "sub");
+                    break;
+                case ILOpcode.mul:
+                    result = LLVM.BuildMul(_builder, op1.LLVMValue, op2.LLVMValue, "mul");
+                    break;
+                case ILOpcode.div:
+                    result = LLVM.BuildSDiv(_builder, op1.LLVMValue, op2.LLVMValue, "sdiv");
+                    break;
+                case ILOpcode.div_un:
+                    result = LLVM.BuildUDiv(_builder, op1.LLVMValue, op2.LLVMValue, "udiv");
+                    break;
+                case ILOpcode.rem:
+                    result = LLVM.BuildSRem(_builder, op1.LLVMValue, op2.LLVMValue, "srem");
+                    break;
+                case ILOpcode.rem_un:
+                    result = LLVM.BuildURem(_builder, op1.LLVMValue, op2.LLVMValue, "urem");
+                    break;
+                case ILOpcode.and:
+                    result = LLVM.BuildAnd(_builder, op1.LLVMValue, op2.LLVMValue, "and");
+                    break;
+                case ILOpcode.or:
+                    result = LLVM.BuildOr(_builder, op1.LLVMValue, op2.LLVMValue, "or");
+                    break;
+                case ILOpcode.xor:
+                    result = LLVM.BuildXor(_builder, op1.LLVMValue, op2.LLVMValue, "xor");
+                    break;
+
+                // TODO: Overflow checks
+                case ILOpcode.add_ovf:
+                case ILOpcode.add_ovf_un:
+                    result = LLVM.BuildAdd(_builder, op1.LLVMValue, op2.LLVMValue, "add");
+                    break;
+                case ILOpcode.sub_ovf:
+                case ILOpcode.sub_ovf_un:
+                    result = LLVM.BuildSub(_builder, op1.LLVMValue, op2.LLVMValue, "sub");
+                    break;
+                case ILOpcode.mul_ovf:
+                case ILOpcode.mul_ovf_un:
+                    result = LLVM.BuildMul(_builder, op1.LLVMValue, op2.LLVMValue, "mul");
+                    break;
+
+                default:
+                    throw new InvalidOperationException(); // Should be unreachable
+            }
+
+            PushExpression(kind, "", result, type);
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
