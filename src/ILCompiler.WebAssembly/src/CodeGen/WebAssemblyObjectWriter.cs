@@ -155,11 +155,16 @@ namespace ILCompiler.DependencyAnalysis
         public void SetSection(ObjectNodeSection section)
         {
             _currentSection = section;
-            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void FinishObjWriter()
         {
+            // Since emission to llvm is delayed until after all nodes are emitted... emit now.
+            foreach (var nodeData in _dataToFill)
+            {
+                nodeData.Fill(Module, _nodeFactory);
+            }
+
             EmitNativeMain();
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
             LLVM.DumpModule(Module);
@@ -198,8 +203,85 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         ArrayBuilder<byte> _currentObjectData = new ArrayBuilder<byte>();
-        Dictionary<int, LLVMValueRef> _currentObjectSymbolRefs = new Dictionary<int, LLVMValueRef>();
+        struct SymbolRefData
+        {
+            public SymbolRefData(bool isFunction, string symbolName, int offset)
+            {
+                IsFunction = isFunction;
+                SymbolName = symbolName;
+                Offset = offset;
+            }
+
+            readonly bool IsFunction;
+            readonly string SymbolName;
+            readonly int Offset;
+
+            public LLVMValueRef ToLLVMValueRef(LLVMModuleRef module)
+            {
+                LLVMValueRef valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
+
+                if (Offset != 0)
+                {
+                    var pointerType = LLVM.PointerType(LLVM.Int8Type(), 0);
+                    var bitCast = LLVM.ConstBitCast(valRef, pointerType);
+                    LLVMValueRef[] index = new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (uint)Offset, (LLVMBool)false)};
+                    valRef = LLVM.ConstGEP(bitCast, index);
+                }
+
+                return valRef;
+            }
+        }
+
+        Dictionary<int, SymbolRefData> _currentObjectSymbolRefs = new Dictionary<int, SymbolRefData>();
         ObjectNode _currentObjectNode;
+
+        List<ObjectNodeDataEmission> _dataToFill = new List<ObjectNodeDataEmission>();
+
+        struct ObjectNodeDataEmission
+        {
+            public ObjectNodeDataEmission(LLVMValueRef node, byte[] data, Dictionary<int, SymbolRefData> objectSymbolRefs)
+            {
+                Node = node;
+                Data = data;
+                ObjectSymbolRefs = objectSymbolRefs;
+            }
+            LLVMValueRef Node;
+            readonly byte[] Data;
+            readonly Dictionary<int, SymbolRefData> ObjectSymbolRefs;
+
+            public void Fill(LLVMModuleRef module, NodeFactory nodeFactory)
+            {
+                List<LLVMValueRef> entries = new List<LLVMValueRef>();
+                int pointerSize = nodeFactory.Target.PointerSize;
+
+                int countOfPointerSizedElements = Data.Length / pointerSize;
+
+                byte[] currentObjectData = Data;
+                var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
+                var intType = LLVM.Int32Type();
+                for (int i = 0; i < countOfPointerSizedElements; i++)
+                {
+                    int curOffset = (i * pointerSize);
+                    SymbolRefData symbolRef;
+                    if (ObjectSymbolRefs.TryGetValue(curOffset, out symbolRef))
+                    {
+                        LLVMValueRef pointedAtValue = symbolRef.ToLLVMValueRef(module);
+                        var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
+                        entries.Add(ptrValue);
+                    }
+                    else
+                    {
+                        int value = BitConverter.ToInt32(currentObjectData, curOffset);
+                        var dataVal = LLVM.ConstInt(intType, (uint)value, (LLVMBool)false);
+                        var ptrValue = LLVM.ConstBitCast(dataVal, intPtrType);
+                        entries.Add(dataVal);
+                    }
+                }
+
+                var funcptrarray = LLVM.ConstArray(intPtrType, entries.ToArray());
+                LLVM.SetInitializer(Node, funcptrarray);
+            }
+        }
 
         public void StartObjectNode(ObjectNode node)
         {
@@ -214,40 +296,20 @@ namespace ILCompiler.DependencyAnalysis
             EmitAlignment(_nodeFactory.Target.PointerSize);
             Debug.Assert(_nodeFactory.Target.PointerSize == 4);
             int countOfPointerSizedElements = _currentObjectData.Count / _nodeFactory.Target.PointerSize;
-            List<LLVMValueRef> entries = new List<LLVMValueRef>();
-
-            byte[] currentObjectData = _currentObjectData.ToArray();
-            var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
-
-            for (int i = 0; i < countOfPointerSizedElements; i++)
-            {
-                int curOffset = (i * pointerSize);
-                LLVMValueRef pointedAtValue;
-                if (_currentObjectSymbolRefs.TryGetValue(curOffset, out pointedAtValue))
-                {
-                    var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
-                    entries.Add(ptrValue);
-                }
-                else
-                {
-                    int value = BitConverter.ToInt32(currentObjectData, curOffset);
-                    var dataVal = LLVM.ConstInt(intPtrType, (uint)value, (LLVMBool)false);
-                    entries.Add(dataVal);
-                }
-            }
 
             ISymbolNode symNode = _currentObjectNode as ISymbolNode;
             if (symNode == null)
                 symNode = ((IHasStartSymbol)_currentObjectNode).StartSymbol;
             string realName = GetBaseSymbolName(symNode, _nodeFactory.NameMangler, true);
 
-            var funcptrarray = LLVM.ConstArray(intPtrType, entries.ToArray());
-            var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, 2), realName, 0);
-            LLVM.SetInitializer(arrayglobal, funcptrarray);
+            var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
+            var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, (uint)countOfPointerSizedElements), realName, 0);
             LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
 
+            _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
+
             _currentObjectNode = null;
-            _currentObjectSymbolRefs.Clear();
+            _currentObjectSymbolRefs = new Dictionary<int, SymbolRefData>();
             _currentObjectData = new ArrayBuilder<byte>();
         }
 
@@ -321,13 +383,9 @@ namespace ILCompiler.DependencyAnalysis
                 return this._nodeFactory.Target.PointerSize;
             }
 
-            LLVMValueRef valRef = isFunction ? LLVM.GetNamedFunction(Module, realSymbolName) : LLVM.GetNamedGlobal(Module, realSymbolName);
-
-            if (offsetFromSymbolName != 0)
-                valRef = LLVM.GetElementAsConstant(LLVM.ConstBitCast(valRef, LLVM.PointerType(LLVM.Int8Type(), 0)), (uint)offsetFromSymbolName);
             
 
-            _currentObjectSymbolRefs.Add(symbolStartOffset, valRef);
+            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, symbolStartOffset + delta));
             return _nodeFactory.Target.PointerSize;
         }
 
@@ -430,7 +488,9 @@ namespace ILCompiler.DependencyAnalysis
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
                     string baseSymbolNode = GetBaseSymbolName(name, _nodeFactory.NameMangler, true);
-                    string symbolId = name.ToString();
+
+
+                    string symbolId = name.GetMangledName(_nodeFactory.NameMangler);
                     int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(name);
                     Debug.Assert(offsetFromBase == currentOffset);
                     
