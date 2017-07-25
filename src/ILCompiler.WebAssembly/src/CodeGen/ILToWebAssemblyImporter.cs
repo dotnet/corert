@@ -344,13 +344,15 @@ namespace Internal.IL
                 case TypeFlags.UInt32:
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
+                    return LLVM.Int32Type();
+
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
-                    return LLVM.Int32Type();
+                    return LLVM.PointerType(LLVM.Int32Type(), 0);
 
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
@@ -878,9 +880,12 @@ namespace Internal.IL
         {
         }
 
+        // Loads symbol address. Address is represented as a i32*
         private LLVMValueRef LoadAddressOfSymbolNode(ISymbolNode node)
         {
-            return WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, false);
+            LLVMValueRef addressOfAddress = WebAssemblyObjectWriter.GetSymbolValuePointer(Module, node, _compilation.NameMangler, false);
+            //return addressOfAddress;
+            return LLVM.BuildLoad(_builder, addressOfAddress, "LoadAddressOfSymbolNode");
         }
 
         private void ImportLoadString(int token)

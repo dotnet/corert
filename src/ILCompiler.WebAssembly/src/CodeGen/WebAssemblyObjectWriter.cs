@@ -68,7 +68,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                ThrowHelper.ThrowInvalidProgramException();
                 return null;
             }
         }
@@ -88,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return symbolAddress;
             }
-            var intPtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
+            var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
             var myGlobal = LLVM.AddGlobalInAddressSpace(module, intPtrType, symbolAddressGlobalName, 0);
             LLVM.SetGlobalConstant(myGlobal, (LLVMBool)true);
             LLVM.SetLinkage(myGlobal, LLVMLinkage.LLVMInternalLinkage);
@@ -392,12 +391,13 @@ namespace ILCompiler.DependencyAnalysis
             var intType = LLVM.Int32Type();
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
             {
-                var intPtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
-                var pointerToRealSymbol = LLVM.ConstBitCast(realSymbol, intPtrType);
+                var int8PtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
+                var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
+                var pointerToRealSymbol = LLVM.ConstBitCast(realSymbol, int8PtrType);
                 var offsetValue = LLVM.ConstInt(intType, (uint)offsetFromSymbolName, (LLVMBool)false);
                 var symbolPointerData = LLVM.ConstGEP(pointerToRealSymbol, new LLVMValueRef[] { offsetValue });
-
-                LLVM.SetInitializer(symbolAddress, symbolPointerData);
+                var symbolPointerDataAsInt32Ptr = LLVM.ConstBitCast(symbolPointerData, intPtrType);
+                LLVM.SetInitializer(symbolAddress, symbolPointerDataAsInt32Ptr);
             }
         }
 
@@ -467,6 +467,15 @@ namespace ILCompiler.DependencyAnalysis
         public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
         {
             string realSymbolName = GetBaseSymbolName(target, _nodeFactory.NameMangler, true);
+
+            if (realSymbolName == null)
+            {
+                Console.WriteLine("Unable to generate symbolRef to " + target.GetMangledName(_nodeFactory.NameMangler));
+
+                int pointerSize = _nodeFactory.Target.PointerSize;
+                EmitBlob(new byte[pointerSize]);
+                return pointerSize;
+            }
             int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target);
             return EmitSymbolRef(realSymbolName, offsetFromBase, target is WebAssemblyMethodCodeNode, relocType, delta);
         }
