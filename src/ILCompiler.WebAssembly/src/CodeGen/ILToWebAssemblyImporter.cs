@@ -22,6 +22,7 @@ namespace Internal.IL
         private LLVMValueRef _llvmFunction;
         private LLVMBasicBlockRef _curBasicBlock;
         private LLVMBuilderRef _builder;
+        private readonly LocalVariableDefinition[] _locals;
 
         private readonly byte[] _ilBytes;
 
@@ -57,6 +58,7 @@ namespace Internal.IL
             _compilation = compilation;
             _method = method;
             _ilBytes = methodIL.GetILBytes();
+            _locals = methodIL.GetLocals();
 
             var ilExceptionRegions = methodIL.GetExceptionRegions();
             _exceptionRegions = new ExceptionRegion[ilExceptionRegions.Length];
@@ -71,6 +73,24 @@ namespace Internal.IL
         {
             FindBasicBlocks();
             ImportBasicBlocks();
+        }
+
+        private void GenerateProlog()
+        {
+            int totalLocalSize = 0;
+            foreach(LocalVariableDefinition local in _locals)
+            {
+                int localSize = local.Type.GetElementSize().AsInt;
+                totalLocalSize += localSize;
+            }
+
+            var sp = LLVM.GetFirstParam(_llvmFunction);
+            
+            for (int i = 0; i < totalLocalSize; i++)
+            {
+                var stackOffset = LLVM.BuildGEP(_builder, sp, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)i, LLVMMisc.False) }, String.Empty);
+                LLVM.BuildStore(_builder, LLVM.ConstInt(LLVM.Int8Type(), 0, LLVMMisc.False), stackOffset);
+            }
         }
 
         private void CreateLLVMFunction(string mangledName)
@@ -150,8 +170,19 @@ namespace Internal.IL
                 }
             }
 
+            bool isFirstBlock = false;
+            if(_curBasicBlock.Equals(default(LLVMBasicBlockRef)))
+            {
+                isFirstBlock = true;
+            }
+
             _curBasicBlock = LLVM.AppendBasicBlock(_llvmFunction, "Block" + basicBlock.StartOffset);
             LLVM.PositionBuilderAtEnd(_builder, _curBasicBlock);
+
+            if(isFirstBlock)
+            {
+                GenerateProlog();
+            }
         }
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
