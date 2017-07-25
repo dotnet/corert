@@ -213,6 +213,8 @@ namespace ILCompiler
                     throw new CommandLineException("Target OS is not supported");
             }
 
+            if (_isWasmCodegen)
+                _targetArchitecture = TargetArchitecture.Wasm32;
             //
             // Initialize type system context
             //
