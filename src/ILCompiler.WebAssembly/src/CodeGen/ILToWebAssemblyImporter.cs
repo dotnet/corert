@@ -44,6 +44,8 @@ namespace Internal.IL
             public bool TryStart;
             public bool FilterStart;
             public bool HandlerStart;
+
+            public LLVMBasicBlockRef Block;
         }
 
         private class ExceptionRegion
@@ -156,6 +158,15 @@ namespace Internal.IL
         {
         }
 
+        private LLVMBasicBlockRef GetLLVMBasicBlockForBlock(BasicBlock block)
+        {
+            if (block.Block.Pointer == IntPtr.Zero)
+            {
+                block.Block = LLVM.AppendBasicBlock(_llvmFunction, "Block" + block.StartOffset);
+            }
+            return block.Block;
+        }
+
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
             _stack.Clear();
@@ -175,10 +186,10 @@ namespace Internal.IL
             {
                 isFirstBlock = true;
             }
-
-            _curBasicBlock = LLVM.AppendBasicBlock(_llvmFunction, "Block" + basicBlock.StartOffset);
+            _curBasicBlock = GetLLVMBasicBlockForBlock(basicBlock);
+            
             LLVM.PositionBuilderAtEnd(_builder, _curBasicBlock);
-
+            
             if(isFirstBlock)
             {
                 GenerateProlog();
@@ -187,6 +198,11 @@ namespace Internal.IL
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
+            var terminator = basicBlock.Block.GetBasicBlockTerminator();
+            if (terminator.Pointer == IntPtr.Zero)
+            {
+                LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(_basicBlocks[_currentOffset]));
+            }
         }
 
         private void StartImportingInstruction()
@@ -413,6 +429,85 @@ namespace Internal.IL
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            if (opcode == ILOpcode.br)
+            {
+                LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(target));
+            }
+            else
+            {
+                LLVMValueRef condition;
+
+                if (opcode == ILOpcode.brfalse)
+                {
+                    var op = _stack.Pop();
+                    condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, op.LLVMValue, LLVM.ConstInt(LLVM.Int32Type(), 0, LLVMMisc.False), "brfalse");
+                }
+                else if (opcode == ILOpcode.brtrue)
+                {
+                    var op = _stack.Pop();
+                    condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, op.LLVMValue, LLVM.ConstInt(LLVM.Int32Type(), 0, LLVMMisc.False), "brfalse");
+                }
+                else
+                {
+                    var op1 = _stack.Pop();
+                    var op2 = _stack.Pop();
+
+                    // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
+                    StackValueKind kind;
+
+                    if (op1.Kind > op2.Kind)
+                    {
+                        kind = op1.Kind;
+                    }
+                    else
+                    {
+                        kind = op2.Kind;
+                    }
+
+
+                    switch (opcode)
+                    {
+                        case ILOpcode.beq:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, op1.LLVMValue, op2.LLVMValue, "beq");
+                            break;
+                        case ILOpcode.bge:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGE, op1.LLVMValue, op2.LLVMValue, "bge");
+                            break;
+                        case ILOpcode.bgt:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, op1.LLVMValue, op2.LLVMValue, "bgt");
+                            break;
+                        case ILOpcode.ble:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLE, op1.LLVMValue, op2.LLVMValue, "ble");
+                            break;
+                        case ILOpcode.blt:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, op1.LLVMValue, op2.LLVMValue, "blt");
+                            break;
+                        case ILOpcode.bne_un:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, op1.LLVMValue, op2.LLVMValue, "bne_un");
+                            break;
+                        case ILOpcode.bge_un:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGE, op1.LLVMValue, op2.LLVMValue, "bge_un");
+                            break;
+                        case ILOpcode.bgt_un:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, op1.LLVMValue, op2.LLVMValue, "bgt_un");
+                            break;
+                        case ILOpcode.ble_un:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULE, op1.LLVMValue, op2.LLVMValue, "ble_un");
+                            break;
+                        case ILOpcode.blt_un:
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, op1.LLVMValue, op2.LLVMValue, "blt_un");
+                            break;
+                        default:
+                            throw new NotSupportedException(); // unreachable
+                    }
+                }
+
+                LLVM.BuildCondBr(_builder, condition, GetLLVMBasicBlockForBlock(target), GetLLVMBasicBlockForBlock(fallthrough));
+
+                ImportFallthrough(fallthrough);
+            }
+
+            ImportFallthrough(target);
         }
 
         private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
@@ -524,6 +619,44 @@ namespace Internal.IL
 
         private void ImportCompareOperation(ILOpcode opcode)
         {
+            var op1 = _stack.Pop();
+            var op2 = _stack.Pop();
+
+            // StackValueKind is carefully ordered to make this work (assuming the IL is valid)
+            StackValueKind kind;
+
+            if (op1.Kind > op2.Kind)
+            {
+                kind = op1.Kind;
+            }
+            else
+            {
+                kind = op2.Kind;
+            }
+
+            LLVMValueRef result;
+            switch (opcode)
+            {
+                case ILOpcode.ceq:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, op1.LLVMValue, op2.LLVMValue, "ceq");
+                    break;
+                case ILOpcode.cgt:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, op1.LLVMValue, op2.LLVMValue, "cgt");
+                    break;
+                case ILOpcode.clt:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, op1.LLVMValue, op2.LLVMValue, "clt");
+                    break;
+                case ILOpcode.cgt_un:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, op1.LLVMValue, op2.LLVMValue, "cgt_un");
+                    break;
+                case ILOpcode.clt_un:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, op1.LLVMValue, op2.LLVMValue, "clt_un");
+                    break;
+                default:
+                    throw new NotSupportedException(); // unreachable
+            }
+
+            PushExpression(kind, "", result);
         }
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
