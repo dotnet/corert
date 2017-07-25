@@ -40,6 +40,7 @@
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
     <Compile Include="CodeGen\ILToWebAssemblyImporter_Statics.cs" />
+    <Compile Include="CodeGen\LLVMMisc.cs" />
     <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />

@@ -54,52 +54,54 @@ namespace ILCompiler.DependencyAnalysis
         public void SetSection(ObjectNodeSection section)
         {
             _currentSection = section;
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void FinishObjWriter()
         {
-            throw new NotImplementedException(); // This function isn't complete
+            LLVM.WriteBitcodeToFile(Module, _objectFilePath);
+            LLVM.DumpModule(Module);
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void SetCodeSectionAttribute(ObjectNodeSection section)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EnsureCurrentSection()
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EmitAlignment(int byteAlignment)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EmitBlob(byte[] blob)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EmitIntValue(ulong value, int size)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EmitBytes(IntPtr pArray, int length)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public void EmitSymbolDef(byte[] symbolName)
         {
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
         public void EmitSymbolDef(Utf8StringBuilder symbolName)
         {
             //EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray);
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
         }
 
         public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
@@ -113,7 +115,8 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             //            return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
+            return 4;
         }
         public string GetMangledName(TypeDesc type)
         {
@@ -160,7 +163,8 @@ namespace ILCompiler.DependencyAnalysis
             target.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
             //return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset));
-            throw new NotImplementedException(); // This function isn't complete
+            //throw new NotImplementedException(); // This function isn't complete
+            return 4;
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -231,11 +235,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        System.IO.FileStream _file;
+        //System.IO.FileStream _file;
+        string _objectFilePath;
 
         public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory, WebAssemblyCodegenCompilation compilation)
         {
             _nodeFactory = factory;
+            _objectFilePath = objectFilePath;
             Module = compilation.Module;
         }
 
@@ -246,14 +252,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void Dispose(bool bDisposing)
         {
-            if (_file != null)
-            {
-                // Finalize object emission.
-                FinishObjWriter();
-                _file.Flush();
-                _file.Dispose();
-                _file = null;
-            }
+            FinishObjWriter();
+            //if (_file != null)
+            //{
+            //    // Finalize object emission.
+            //    FinishObjWriter();
+            //    _file.Flush();
+            //    _file.Dispose();
+            //    _file = null;
+            //}
 
             _nodeFactory = null;
 

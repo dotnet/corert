@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Text;
 using ILCompiler.Compiler.CppCodeGen;
 using Internal.TypeSystem;
+using LLVMSharp;
+using ILCompiler.CodeGen;
 
 namespace Internal.IL
 {
@@ -171,15 +173,18 @@ namespace Internal.IL
         /// </summary>
         public TypeDesc Type { get; }
 
+        public LLVMValueRef LLVMValue { get; }
+
         /// <summary>
         /// Initializes a new instance of StackEntry.
         /// </summary>
         /// <param name="kind">Kind of entry.</param>
         /// <param name="type">Type if any of entry.</param>
-        protected StackEntry(StackValueKind kind, TypeDesc type = null)
+        protected StackEntry(StackValueKind kind, LLVMValueRef llvmValue, TypeDesc type = null)
         {
             Kind = kind;
             Type = type;
+            LLVMValue = llvmValue;
         }
 
         /// <summary>
@@ -239,7 +244,7 @@ namespace Internal.IL
     /// </summary>
     internal abstract class ConstantEntry : StackEntry
     {
-        protected ConstantEntry(StackValueKind kind, TypeDesc type = null) : base(kind, type)
+        protected ConstantEntry(StackValueKind kind, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
         {
         }
 
@@ -258,7 +263,7 @@ namespace Internal.IL
     {
         public T Value { get; }
 
-        protected ConstantEntry(StackValueKind kind, T value, TypeDesc type = null) : base(kind, type)
+        protected ConstantEntry(StackValueKind kind, T value, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
         {
             Value = value;
         }
@@ -281,7 +286,7 @@ namespace Internal.IL
 
     internal class Int32ConstantEntry : ConstantEntry<int>
     {
-        public Int32ConstantEntry(int value, TypeDesc type = null) : base(StackValueKind.Int32, value, type)
+        public Int32ConstantEntry(int value, TypeDesc type = null) : base(StackValueKind.Int32, value, LLVM.ConstInt(LLVM.Int32Type(), (ulong)value, LLVMMisc.False), type)
         {
         }
 
@@ -332,7 +337,7 @@ namespace Internal.IL
 
     internal class Int64ConstantEntry : ConstantEntry<long>
     {
-        public Int64ConstantEntry(long value, TypeDesc type = null) : base(StackValueKind.Int64, value, type)
+        public Int64ConstantEntry(long value, TypeDesc type = null) : base(StackValueKind.Int64, value, LLVM.ConstInt(LLVM.Int64Type(), (ulong)value, LLVMMisc.False), type)
         {
         }
 
@@ -386,7 +391,7 @@ namespace Internal.IL
 
     internal class FloatConstantEntry : ConstantEntry<double>
     {
-        public FloatConstantEntry(double value, TypeDesc type = null) : base(StackValueKind.Float, value, type)
+        public FloatConstantEntry(double value, TypeDesc type = null) : base(StackValueKind.Float, value, LLVM.ConstReal(LLVM.FloatType(), value), type)
         {
         }
 
@@ -439,7 +444,7 @@ namespace Internal.IL
         /// <param name="kind">Kind of entry</param>
         /// <param name="name">String representation of entry</param>
         /// <param name="type">Type if any of entry</param>
-        public ExpressionEntry(StackValueKind kind, string name, TypeDesc type = null) : base(kind, type)
+        public ExpressionEntry(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
         {
             Name = name;
         }
@@ -450,7 +455,7 @@ namespace Internal.IL
 
         public override StackEntry Duplicate()
         {
-            return new ExpressionEntry(Kind, Name, Type);
+            return new ExpressionEntry(Kind, Name, LLVMValue, Type);
         }
 
         protected override void BuildRepresentation(StringBuilder s)
@@ -464,6 +469,7 @@ namespace Internal.IL
         }
     }
 
+    /*
     /// <summary>
     /// Entry representing some token (either of TypeDesc, MethodDesc or FieldDesc) along with its string representation
     /// </summary>
@@ -487,7 +493,7 @@ namespace Internal.IL
             s.Append(' ');
             s.Append(LdToken);
         }
-    }
+    }*/
 
     internal class InvalidEntry : StackEntry
     {
@@ -496,7 +502,7 @@ namespace Internal.IL
         /// </summary>
         public static InvalidEntry Entry = new InvalidEntry();
 
-        protected InvalidEntry() : base(StackValueKind.Unknown, null)
+        protected InvalidEntry() : base(StackValueKind.Unknown, default(LLVMValueRef), null)
         {
         }
 

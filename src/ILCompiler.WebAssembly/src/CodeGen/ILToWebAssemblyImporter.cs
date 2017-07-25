@@ -85,11 +85,11 @@ namespace Internal.IL
         /// <param name="kind">Kind of entry in stack</param>
         /// <param name="name">Variable to be pushed</param>
         /// <param name="type">Type if any of <paramref name="name"/></param>
-        private void PushExpression(StackValueKind kind, string name, TypeDesc type = null)
+        private void PushExpression(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null)
         {
             Debug.Assert(kind != StackValueKind.Unknown, "Unknown stack kind");
 
-            _stack.Push(new ExpressionEntry(kind, name, type));
+            _stack.Push(new ExpressionEntry(kind, name, llvmValue, type));
         }
         
 
