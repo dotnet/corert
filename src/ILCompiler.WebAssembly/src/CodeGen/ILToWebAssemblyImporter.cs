@@ -130,6 +130,32 @@ namespace Internal.IL
         {
             Debug.Assert(kind != StackValueKind.Unknown, "Unknown stack kind");
 
+            switch (kind)
+            {
+                case StackValueKind.Int32:
+                case StackValueKind.NativeInt:
+                    {
+                        if (!type.IsWellKnownType(WellKnownType.Int32)
+                            && !type.IsWellKnownType(WellKnownType.IntPtr)
+                            && !type.IsWellKnownType(WellKnownType.UInt32)
+                            && !type.IsWellKnownType(WellKnownType.UIntPtr))
+                        {
+                            llvmValue = LLVM.BuildIntCast(_builder, llvmValue, LLVM.Int32Type(), "");
+                        }
+                    }
+                    break;
+
+                case StackValueKind.Int64:
+                    {
+                        if (!type.IsWellKnownType(WellKnownType.Int64)
+                            && !(type.IsWellKnownType(WellKnownType.UInt64)))
+                        {
+                            llvmValue = LLVM.BuildIntCast(_builder, llvmValue, LLVM.Int64Type(), "");
+                        }
+                    }
+                    break;
+            }
+
             _stack.Push(new ExpressionEntry(kind, name, llvmValue, type));
         }
         
@@ -255,7 +281,7 @@ namespace Internal.IL
             var typedLoadLocation = LLVM.BuildPointerCast(_builder, loadLocation, LLVM.PointerType(valueType, 0), String.Empty);
             var loadResult = LLVM.BuildLoad(_builder, typedLoadLocation, String.Empty);
 
-            _stack.Push(new ExpressionEntry(GetStackValueKind(_locals[index].Type), String.Empty, loadResult, _locals[index].Type));
+            PushExpression(GetStackValueKind(_locals[index].Type), String.Empty, loadResult, _locals[index].Type);
         }
 
         private StackValueKind GetStackValueKind(TypeDesc type)
@@ -317,11 +343,12 @@ namespace Internal.IL
 
         private void ImportStoreHelper(LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset)
         {
+            var typedToStore = LLVM.BuildIntCast(_builder, toStore, valueType, String.Empty);
             var storeLocation = LLVM.BuildGEP(_builder, basePtr,
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), offset, LLVMMisc.False) },
                 String.Empty);
             var typedStoreLocation = LLVM.BuildPointerCast(_builder, storeLocation, LLVM.PointerType(valueType, 0), String.Empty);
-            LLVM.BuildStore(_builder, toStore, typedStoreLocation);
+            LLVM.BuildStore(_builder, typedToStore, typedStoreLocation);
         }
 
         private LLVMTypeRef GetLLVMTypeForTypeDesc(TypeDesc type)
@@ -773,7 +800,7 @@ namespace Internal.IL
                     throw new NotSupportedException(); // unreachable
             }
 
-            PushExpression(kind, "", result);
+            PushExpression(kind, "", result, GetWellKnownType(WellKnownType.SByte));
         }
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
