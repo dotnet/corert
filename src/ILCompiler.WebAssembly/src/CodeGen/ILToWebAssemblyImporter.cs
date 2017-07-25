@@ -241,7 +241,7 @@ namespace Internal.IL
 
             LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
             var loadLocation = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)(GetTotalParameterOffset()+localOffset), LLVMMisc.False) },
                 String.Empty);
             var typedLoadLocation = LLVM.BuildPointerCast(_builder, loadLocation, LLVM.PointerType(valueType, 0), String.Empty);
             var loadResult = LLVM.BuildLoad(_builder, typedLoadLocation, String.Empty);
@@ -302,8 +302,14 @@ namespace Internal.IL
             LLVMValueRef toStore = _stack.Pop().LLVMValue;
 
             LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
-            var storeLocation = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
+
+            ImportStoreHelper(toStore, valueType, LLVM.GetFirstParam(_llvmFunction), (uint)(GetTotalParameterOffset() + localOffset));
+        }
+
+        private void ImportStoreHelper(LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset)
+        {
+            var storeLocation = LLVM.BuildGEP(_builder, basePtr,
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), offset, LLVMMisc.False) },
                 String.Empty);
             var typedStoreLocation = LLVM.BuildPointerCast(_builder, storeLocation, LLVM.PointerType(valueType, 0), String.Empty);
             LLVM.BuildStore(_builder, toStore, typedStoreLocation);
@@ -424,9 +430,9 @@ namespace Internal.IL
         private void ImportCall(ILOpcode opcode, int token)
         {
 
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc callee = (MethodDesc)_methodIL.GetObject(token);
 
-            LLVMValueRef fn = LLVM.GetNamedFunction(Module, method.Name);
+            LLVMValueRef fn = LLVM.GetNamedFunction(Module, callee.Name);
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
 
@@ -435,7 +441,23 @@ namespace Internal.IL
                 String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
 
-            LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {castShadowStack, LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)) }, string.Empty);
+            // argument offset
+            uint argOffset = 0;
+
+            for(int index=0; index< callee.Signature.Length; index++)
+            {
+                LLVMValueRef toStore = _stack.Pop().LLVMValue;
+
+                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(callee.Signature[index]);
+
+                ImportStoreHelper(toStore, valueType, castShadowStack, argOffset);
+
+                argOffset += (uint) callee.Signature[index].GetElementSize().AsInt;
+            }
+
+            LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
+                castShadowStack,
+                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)) }, string.Empty);
         }
 
         private void ImportCalli(int token)
