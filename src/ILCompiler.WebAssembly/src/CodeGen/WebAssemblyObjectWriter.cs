@@ -260,6 +260,9 @@ namespace ILCompiler.DependencyAnalysis
                 byte[] currentObjectData = Data;
                 var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
                 var intType = LLVM.Int32Type();
+
+                var int8PtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
+
                 for (int i = 0; i < countOfPointerSizedElements; i++)
                 {
                     int curOffset = (i * pointerSize);
@@ -273,9 +276,12 @@ namespace ILCompiler.DependencyAnalysis
                     else
                     {
                         int value = BitConverter.ToInt32(currentObjectData, curOffset);
+                        var nullptr = LLVM.ConstPointerNull(int8PtrType);
                         var dataVal = LLVM.ConstInt(intType, (uint)value, (LLVMBool)false);
-                        var ptrValue = LLVM.ConstBitCast(dataVal, intPtrType);
-                        entries.Add(dataVal);
+                        var ptrValAsInt8Ptr = LLVM.ConstGEP(nullptr, new LLVMValueRef[] { dataVal });
+
+                        var ptrValue = LLVM.ConstBitCast(ptrValAsInt8Ptr, intPtrType);
+                        entries.Add(ptrValue);
                     }
                 }
 
@@ -594,7 +600,7 @@ namespace ILCompiler.DependencyAnalysis
                 //ObjectNodeSection managedCodeSection = null;
 
                 var listOfOffsets = new List<int>();
-                foreach (DependencyNode depNode in /*nodes*/ new DependencyNode[0])
+                foreach (DependencyNode depNode in nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
                     if (node == null)
