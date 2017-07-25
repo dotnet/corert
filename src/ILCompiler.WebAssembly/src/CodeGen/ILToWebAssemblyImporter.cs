@@ -429,8 +429,12 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, int token)
         {
-
-            MethodDesc callee = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            if(method.IsRawPInvoke())
+            {
+                ImportRawPInvoke(method);
+                return;
+            }
 
             LLVMValueRef fn = LLVM.GetNamedFunction(Module, callee.Name);
 
@@ -458,6 +462,31 @@ namespace Internal.IL
             LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
                 castShadowStack,
                 LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)) }, string.Empty);
+        }
+
+        private void ImportRawPInvoke(MethodDesc method)
+        {
+            LLVMValueRef nativeFunc = LLVM.GetNamedFunction(Module, method.Name);
+
+            // Create an import if we haven't already
+            if (nativeFunc.Pointer == IntPtr.Zero)
+            {
+                // Set up native parameter types
+                LLVMTypeRef[] paramTypes = new LLVMTypeRef[method.Signature.Length];
+                for (int i = 0; i < paramTypes.Length; i++)
+                {
+                    paramTypes[i] = GetLLVMTypeForTypeDesc(method.Signature[i]);
+                }
+
+                // Define the full signature
+                LLVMTypeRef nativeFuncType = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), paramTypes, LLVMMisc.False);
+
+                nativeFunc = LLVM.AddFunction(Module, method.Name, nativeFuncType);
+                LLVM.SetLinkage(nativeFunc, LLVMLinkage.LLVMDLLImportLinkage);
+            }
+
+
+            //LLVM.BuildCall(_builder, nativeFunc)
         }
 
         private void ImportCalli(int token)
