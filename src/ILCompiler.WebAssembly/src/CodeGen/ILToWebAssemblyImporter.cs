@@ -23,6 +23,7 @@ namespace Internal.IL
         private LLVMBasicBlockRef _curBasicBlock;
         private LLVMBuilderRef _builder;
         private readonly LocalVariableDefinition[] _locals;
+        private MethodIL _methodIL;
 
         private readonly byte[] _ilBytes;
 
@@ -61,6 +62,7 @@ namespace Internal.IL
             _method = method;
             _ilBytes = methodIL.GetILBytes();
             _locals = methodIL.GetLocals();
+            _methodIL = methodIL;
 
             var ilExceptionRegions = methodIL.GetExceptionRegions();
             _exceptionRegions = new ExceptionRegion[ilExceptionRegions.Length];
@@ -97,6 +99,13 @@ namespace Internal.IL
 
         private void CreateLLVMFunction(string mangledName)
         {
+            //LLVMTypeRef [] parameters = new LLVMTypeRef[_method.Signature.Length];
+            //for(int index =0; index < _method.Signature.Length; index++)
+            //    parameters[index++] = GetLLVMTypeForTypeDesc(_method.Signature[index]);
+
+            //LLVMTypeRef universalSignature = LLVM.FunctionType(GetLLVMTypeForTypeDesc(_method.Signature.ReturnType),
+            //    , parameters, false);
+
             LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
             _llvmFunction = LLVM.AddFunction(Module, mangledName , universalSignature);
             _builder = LLVM.CreateBuilder();
@@ -349,6 +358,26 @@ namespace Internal.IL
             }
         }
 
+        private int GetTotalLocalOffset()
+        {
+            int offset = 0;
+            for (int i = 0; i < _locals.Length; i++)
+            {
+                offset += _locals[i].Type.GetElementSize().AsInt;
+            }
+            return offset;
+        }
+
+        private int GetTotalParameterOffset()
+        {
+            int offset = 0;
+            for (int i = 0; i < _method.Signature.Length; i++)
+            {
+                offset += _method.Signature[i].GetElementSize().AsInt;
+            }
+            return offset;
+        }
+
         private void GetLocalSizeAndOffsetAtIndex(int index, out int size, out int offset)
         {
             LocalVariableDefinition local = _locals[index];
@@ -394,6 +423,19 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, int token)
         {
+
+            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+
+            LLVMValueRef fn = LLVM.GetNamedFunction(Module, method.Name);
+
+            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+
+            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
+                String.Empty);
+            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
+
+            LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {castShadowStack, LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)) }, string.Empty);
         }
 
         private void ImportCalli(int token)
