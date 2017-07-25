@@ -207,10 +207,144 @@ namespace Internal.IL
 
         private void ImportLoadVar(int index, bool argument)
         {
+            if (argument)
+            {
+                throw new NotImplementedException("loading from argument");
+            }
+
+            GetLocalSizeAndOffsetAtIndex(index, out int localSize, out int localOffset);
+
+            LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
+            var typedSp = LLVM.BuildPointerCast(_builder, LLVM.GetFirstParam(_llvmFunction), LLVM.PointerType(valueType, 0), String.Empty);
+            var loadLocation = LLVM.BuildGEP(_builder, typedSp,
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
+                String.Empty);
+
+            var loadResult = LLVM.BuildLoad(_builder, loadLocation, String.Empty);
+
+            _stack.Push(new ExpressionEntry(GetStackValueKind(_locals[index].Type), String.Empty, loadResult, _locals[index].Type));
+        }
+
+        private StackValueKind GetStackValueKind(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    return StackValueKind.Int32;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    return StackValueKind.Int64;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    return StackValueKind.Float;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    return StackValueKind.NativeInt;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    return StackValueKind.ValueType;
+                case TypeFlags.Enum:
+                    return GetStackValueKind(type.UnderlyingType);
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    return StackValueKind.ObjRef;
+                case TypeFlags.ByRef:
+                    return StackValueKind.ByRef;
+                case TypeFlags.Pointer:
+                    return StackValueKind.NativeInt;
+                default:
+                    return StackValueKind.Unknown;
+            }
         }
 
         private void ImportStoreVar(int index, bool argument)
         {
+            if(argument)
+            {
+                throw new NotImplementedException("storing to argument");
+            }
+
+            GetLocalSizeAndOffsetAtIndex(index, out int localSize, out int localOffset);
+
+            LLVMValueRef toStore = _stack.Pop().LLVMValue;
+
+            LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
+            var typedSp = LLVM.BuildPointerCast(_builder, LLVM.GetFirstParam(_llvmFunction), LLVM.PointerType(valueType, 0), String.Empty);
+            var storeLocation = LLVM.BuildGEP(_builder, typedSp,
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) },
+                String.Empty);
+
+            LLVM.BuildStore(_builder, toStore, storeLocation);
+        }
+
+        private LLVMTypeRef GetLLVMTypeForTypeDesc(TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Boolean:
+                    return LLVM.Int1Type();
+
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    return LLVM.Int8Type();
+
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                case TypeFlags.Char:
+                    return LLVM.Int16Type();
+
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    return LLVM.Int32Type();
+
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    return LLVM.Int64Type();
+
+                case TypeFlags.Single:
+                    return LLVM.FloatType();
+
+                case TypeFlags.Double:
+                    return LLVM.DoubleType();
+
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    return LLVM.ArrayType(LLVM.Int8Type(), (uint)type.GetElementSize().AsInt);
+
+                case TypeFlags.Enum:
+                    return GetLLVMTypeForTypeDesc(type.UnderlyingType);                    
+                default:
+                    throw new NotImplementedException(type.Category.ToString());
+            }
+        }
+
+        private void GetLocalSizeAndOffsetAtIndex(int index, out int size, out int offset)
+        {
+            LocalVariableDefinition local = _locals[index];
+            size = local.Type.GetElementSize().AsInt;
+
+            offset = 0;
+            for (int i = 0; i < index; i++)
+            {
+                offset += _locals[i].Type.GetElementSize().AsInt;
+            }
         }
 
         private void ImportAddressOfVar(int index, bool argument)
