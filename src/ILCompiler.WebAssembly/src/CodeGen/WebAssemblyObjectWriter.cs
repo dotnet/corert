@@ -73,14 +73,27 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static LLVMValueRef GetOffsetFromBaseSymbolValue(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        private static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
+
+        public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
             if (symbol is WebAssemblyMethodCodeNode)
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
 
-            return LLVM.GetNamedGlobal(module, symbol.GetMangledName(nameMangler) + "___OFFSET");
+            string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
+            LLVMValueRef symbolAddress;
+            if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
+            {
+                return symbolAddress;
+            }
+            var intPtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
+            var myGlobal = LLVM.AddGlobalInAddressSpace(module, intPtrType, symbolAddressGlobalName, 0);
+            LLVM.SetGlobalConstant(myGlobal, (LLVMBool)true);
+            LLVM.SetLinkage(myGlobal, LLVMLinkage.LLVMInternalLinkage);
+            s_symbolValues.Add(symbolAddressGlobalName, myGlobal);
+            return myGlobal;
         }
 
         private static int GetNumericOffsetFromBaseSymbolValue(ISymbolNode symbol)
@@ -117,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 EmbeddedObjectNode embeddedNode = (EmbeddedObjectNode)symbol;
                 int baseOffset = GetNumericOffsetFromBaseSymbolValue(embeddedNode.ContainingNode.StartSymbol);
-                return baseOffset + embeddedNode.OffsetFromBeginningOfArray;
+                return baseOffset + ((ISymbolDefinitionNode)embeddedNode).Offset;
             }
             else
             {
@@ -238,6 +251,8 @@ namespace ILCompiler.DependencyAnalysis
 
         List<ObjectNodeDataEmission> _dataToFill = new List<ObjectNodeDataEmission>();
 
+        List<KeyValuePair<string, int>> _symbolDefs = new List<KeyValuePair<string, int>>();
+
         struct ObjectNodeDataEmission
         {
             public ObjectNodeDataEmission(LLVMValueRef node, byte[] data, Dictionary<int, SymbolRefData> objectSymbolRefs)
@@ -315,9 +330,16 @@ namespace ILCompiler.DependencyAnalysis
 
             _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
 
+
+            foreach (var symbolIdInfo in _symbolDefs)
+            {
+                EmitSymbolDef(arrayglobal, symbolIdInfo.Key, symbolIdInfo.Value);
+            }
+
             _currentObjectNode = null;
             _currentObjectSymbolRefs = new Dictionary<int, SymbolRefData>();
             _currentObjectData = new ArrayBuilder<byte>();
+            _symbolDefs.Clear();
         }
 
         public void EmitAlignment(int byteAlignment)
@@ -363,12 +385,20 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         
-        public void EmitSymbolDef(string realSymbolName, string symbolIdentifier, int offsetFromSymbolName)
+        public void EmitSymbolDef(LLVMValueRef realSymbol, string symbolIdentifier, int offsetFromSymbolName)
         {
+            string symbolAddressGlobalName = symbolIdentifier + "___SYMBOL";
+            LLVMValueRef symbolAddress;
             var intType = LLVM.Int32Type();
-            var myGlobal = LLVM.AddGlobalInAddressSpace(Module, intType, symbolIdentifier + "___OFFSET", 0);
-            LLVM.SetInitializer(myGlobal, LLVM.ConstInt(intType, (uint)offsetFromSymbolName, (LLVMBool)false));
-            LLVM.SetLinkage(myGlobal, LLVMLinkage.LLVMExternalLinkage);
+            if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
+            {
+                var intPtrType = LLVM.PointerType(LLVM.Int8Type(), 0);
+                var pointerToRealSymbol = LLVM.ConstBitCast(realSymbol, intPtrType);
+                var offsetValue = LLVM.ConstInt(intType, (uint)offsetFromSymbolName, (LLVMBool)false);
+                var symbolPointerData = LLVM.ConstGEP(pointerToRealSymbol, new LLVMValueRef[] { offsetValue });
+
+                LLVM.SetInitializer(symbolAddress, symbolPointerData);
+            }
         }
 
         public int EmitSymbolRef(string realSymbolName, int offsetFromSymbolName, bool isFunction, RelocType relocType, int delta = 0)
@@ -494,14 +524,11 @@ namespace ILCompiler.DependencyAnalysis
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-                    string baseSymbolNode = GetBaseSymbolName(name, _nodeFactory.NameMangler, true);
-
-
                     string symbolId = name.GetMangledName(_nodeFactory.NameMangler);
                     int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(name);
                     Debug.Assert(offsetFromBase == currentOffset);
-                    
-                    EmitSymbolDef(baseSymbolNode, symbolId, offsetFromBase);
+
+                    _symbolDefs.Add(new KeyValuePair<string, int>(symbolId, offsetFromBase));
                     /*
                     string alternateName = _nodeFactory.GetSymbolAlternateName(name);
                     if (alternateName != null)

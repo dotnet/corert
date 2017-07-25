@@ -16,7 +16,6 @@ namespace ILCompiler.DependencyAnalysis
     internal class WebAssemblyMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodBodyNode
     {
         private MethodDesc _method;
-        private string _methodCode;
         private IEnumerable<Object> _dependencies = Enumerable.Empty<Object>();
 
         public WebAssemblyMethodCodeNode(MethodDesc method)
@@ -25,21 +24,12 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        public void SetCode(string methodCode, IEnumerable<Object> dependencies)
+        public void SetDependencies(IEnumerable<Object> dependencies)
         {
-            Debug.Assert(_methodCode == null);
-            _methodCode = methodCode;
+            Debug.Assert(dependencies != null);
             _dependencies = dependencies;
         }
-
-        public string CppCode
-        {
-            get
-            {
-                return _methodCode;
-            }
-        }
-
+        
         public MethodDesc Method
         {
             get

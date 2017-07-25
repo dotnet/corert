@@ -40,9 +40,10 @@ namespace Internal.IL
             if (methodIL == null)
                 return;
 
+            ILImporter ilImporter = null;
             try
             {
-                var ilImporter = new ILImporter(compilation, method, methodIL, methodCodeNodeNeedingCode.GetMangledName(compilation.NameMangler));
+                ilImporter = new ILImporter(compilation, method, methodIL, methodCodeNodeNeedingCode.GetMangledName(compilation.NameMangler));
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 
@@ -65,12 +66,15 @@ namespace Internal.IL
 
                 ilImporter.Import();
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
+                methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
             }
             catch (Exception e)
             {
                 compilation.Logger.Writer.WriteLine(e.Message + " (" + method + ")");
 
-                throw new NotImplementedException();
+                methodCodeNodeNeedingCode.CompilationCompleted = true;
+//                methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
+                //throw new NotImplementedException();
                 //methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
             }
         }
