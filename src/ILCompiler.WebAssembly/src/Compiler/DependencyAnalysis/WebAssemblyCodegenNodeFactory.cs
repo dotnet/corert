@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (CompilationModuleGroup.ContainsMethodBody(method))
             {
-                return new CppMethodCodeNode(method);
+                return new WebAssemblyMethodCodeNode(method);
             }
             else
             {

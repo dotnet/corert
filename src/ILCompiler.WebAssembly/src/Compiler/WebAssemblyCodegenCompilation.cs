@@ -25,6 +25,7 @@ namespace ILCompiler
             WebAssemblyCodegenConfigProvider options)
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), logger)
         {
+            LLVM.LoadLibrary_libLLVM("./libLLVM-x64.dll");
             Module = LLVM.ModuleCreateWithName("netscripten");
             LLVM.SetTarget(Module, "asmjs-unknown-emscripten");
             Options = options;
@@ -58,7 +59,7 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
+            foreach (IMethodBodyNode methodCodeNodeNeedingCode in obj)
             {
                 Internal.IL.ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }

@@ -13,13 +13,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class CppMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodBodyNode
+    internal class WebAssemblyMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodBodyNode
     {
         private MethodDesc _method;
         private string _methodCode;
         private IEnumerable<Object> _dependencies;
 
-        public CppMethodCodeNode(MethodDesc method)
+        public WebAssemblyMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
             _method = method;
@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
             var dependencies = new DependencyList();
 
             foreach (Object node in _dependencies)
-                dependencies.Add(node, "CPP code ");
+                dependencies.Add(node, "Wasm code ");
 
             return dependencies;
         }

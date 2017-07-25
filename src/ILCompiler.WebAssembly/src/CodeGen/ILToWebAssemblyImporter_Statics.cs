@@ -18,7 +18,7 @@ namespace Internal.IL
 {
     internal partial class ILImporter
     {
-        public static void CompileMethod(WebAssemblyCodegenCompilation compilation, MethodCodeNode methodCodeNodeNeedingCode)
+        public static void CompileMethod(WebAssemblyCodegenCompilation compilation, IMethodBodyNode methodCodeNodeNeedingCode)
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
