@@ -17,6 +17,7 @@ using Internal.JitInterface;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using LLVMSharp;
+using ILCompiler.CodeGen;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -59,9 +60,28 @@ namespace ILCompiler.DependencyAnalysis
 
         public void FinishObjWriter()
         {
+            EmitNativeMain();
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
             LLVM.DumpModule(Module);
             //throw new NotImplementedException(); // This function isn't complete
+        }
+
+        private void EmitNativeMain()
+        {
+            LLVMBuilderRef builder = LLVM.CreateBuilder();
+            var mainSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[0], false);
+            var mainFunc = LLVM.AddFunction(Module, "main", mainSignature);
+            var mainEntryBlock = LLVM.AppendBasicBlock(mainFunc, "entry");
+            LLVM.PositionBuilderAtEnd(builder, mainEntryBlock);
+            LLVMValueRef managedMain = LLVM.GetNamedFunction(Module, "Main");
+            LLVM.BuildCall(builder, managedMain, new LLVMValueRef[]
+            {
+                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)),
+                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0))
+            },
+            String.Empty);
+            LLVM.BuildRet(builder, LLVM.ConstInt(LLVM.Int32Type(), 42, LLVMMisc.False));
+            LLVM.SetLinkage(mainFunc, LLVMLinkage.LLVMExternalLinkage);
         }
 
         public void SetCodeSectionAttribute(ObjectNodeSection section)

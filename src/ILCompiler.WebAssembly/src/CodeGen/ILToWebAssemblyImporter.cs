@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 using ILCompiler;
 using LLVMSharp;
+using ILCompiler.CodeGen;
 
 namespace Internal.IL
 {
@@ -207,6 +208,9 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
+            StackEntry retVal = _stack.Pop();
+            //LLVM.BuildRet(_builder, retVal.LLVMValue);
+            LLVM.BuildRetVoid(_builder);
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -223,6 +227,21 @@ namespace Internal.IL
 
         private void ImportLoadInt(long value, StackValueKind kind)
         {
+            switch (kind)
+            {
+                case StackValueKind.Int32:
+                case StackValueKind.NativeInt:
+                    _stack.Push(new Int32ConstantEntry((int)value));
+                    break;
+
+                case StackValueKind.Int64:
+                    _stack.Push(new Int64ConstantEntry(value));
+                    break;
+
+                default:
+                    throw new InvalidOperationException(kind.ToString());
+            }           
+
         }
 
         private void ImportLoadFloat(double value)
