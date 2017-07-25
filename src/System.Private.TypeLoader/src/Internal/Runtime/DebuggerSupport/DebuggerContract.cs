@@ -27,6 +27,7 @@ namespace Internal.Runtime.DebuggerSupport
         RequestBufferReady = 3,
         ConservativeReportingBufferReady = 4,
         HandleReady = 5,
+        FuncEvalCrossThreadDependency = 6,
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 16)]
