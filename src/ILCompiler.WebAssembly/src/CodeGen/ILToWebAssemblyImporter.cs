@@ -108,13 +108,6 @@ namespace Internal.IL
 
         private void CreateLLVMFunction(string mangledName)
         {
-            //LLVMTypeRef [] parameters = new LLVMTypeRef[_method.Signature.Length];
-            //for(int index =0; index < _method.Signature.Length; index++)
-            //    parameters[index++] = GetLLVMTypeForTypeDesc(_method.Signature[index]);
-
-            //LLVMTypeRef universalSignature = LLVM.FunctionType(GetLLVMTypeForTypeDesc(_method.Signature.ReturnType),
-            //    , parameters, false);
-
             LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
             _llvmFunction = LLVM.AddFunction(Module, mangledName , universalSignature);
             _builder = LLVM.CreateBuilder();
@@ -482,8 +475,18 @@ namespace Internal.IL
         private void ImportReturn()
         {
             StackEntry retVal = _stack.Pop();
-            //LLVM.BuildRet(_builder, retVal.LLVMValue);
-            LLVM.BuildRetVoid(_builder);
+            if (_method.Signature.ReturnType == GetWellKnownType(WellKnownType.Void))
+            {
+                LLVM.BuildRetVoid(_builder);
+            }
+            else
+            {
+                LLVM.BuildRet(_builder, retVal.LLVMValue);
+
+                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_method.Signature.ReturnType);
+
+                ImportStoreHelper(retVal.LLVMValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
+            }
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -494,20 +497,30 @@ namespace Internal.IL
                 ImportRawPInvoke(method);
                 return;
             }
+            if (opcode != ILOpcode.call)
+            {
+                throw new NotImplementedException();
+            }
 
             LLVMValueRef fn = LLVM.GetNamedFunction(Module, callee.Name);
 
-            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+            int offset = GetTotalParameterOffset() + GetTotalLocalOffset() + callee.Signature.ReturnType.GetElementSize().AsInt;
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
             var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
 
+            int returnOffset = GetTotalParameterOffset() + GetTotalLocalOffset();
+            var returnAddress = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)returnOffset, LLVMMisc.False) },
+                String.Empty);
+            var castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), String.Empty);
+
             // argument offset
             uint argOffset = 0;
 
-            for (int index = 0; index < callee.Signature.Length; index++)
+            for (int index = callee.Signature.Length -1; index >=0; index--)
             {
                 LLVMValueRef toStore = _stack.Pop().LLVMValue;
 
@@ -520,7 +533,13 @@ namespace Internal.IL
 
             LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
                 castShadowStack,
-                LLVM.ConstPointerNull(LLVM.PointerType(LLVM.Int8Type(), 0)) }, string.Empty);
+                castReturnAddress}, string.Empty);
+
+
+            var loadResult = LLVM.BuildLoad(_builder, castReturnAddress, String.Empty);
+
+            PushExpression(GetStackValueKind(callee.Signature.ReturnType), String.Empty, loadResult, callee.Signature.ReturnType);
+
         }
 
         private void ImportRawPInvoke(MethodDesc method)
