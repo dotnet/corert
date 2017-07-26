@@ -126,7 +126,6 @@ namespace Internal.IL
             switch (kind)
             {
                 case StackValueKind.Int32:
-                case StackValueKind.NativeInt:
                     {
                         if (!type.IsWellKnownType(WellKnownType.Int32)
                             && !type.IsWellKnownType(WellKnownType.IntPtr)
@@ -146,6 +145,9 @@ namespace Internal.IL
                             llvmValue = LLVM.BuildIntCast(_builder, llvmValue, LLVM.Int64Type(), "");
                         }
                     }
+                    break;
+
+                case StackValueKind.NativeInt:
                     break;
             }
 
@@ -845,13 +847,9 @@ namespace Internal.IL
             //conv.u for a pointer should change to a int8*
             if(wellKnownType == WellKnownType.UIntPtr)
             {
-                if (value.Kind == StackValueKind.NativeInt)
+                if (value.Kind == StackValueKind.Int32)
                 {
-                    convertedValue.LLVMValue = LLVM.BuildPointerCast(_builder, value.LLVMValue, LLVM.PointerType(LLVM.Int8Type(), 0), "conv.u");
-                }
-                else if (value.Kind == StackValueKind.Int32)
-                {
-                    //convertedValue.LLVMValue = LLVM.BuildGEP(_builder, LLVM.null, new LLVMValueRef[] { value.LLVMValue }, "conv.u");
+                    convertedValue.LLVMValue = LLVM.BuildIntToPtr(_builder, value.LLVMValue, LLVM.PointerType(LLVM.Int8Type(), 0), "conv.u");
                 }
             }
 
