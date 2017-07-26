@@ -13,15 +13,14 @@
 // - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 // r0 = destination address
 // r1 = value
-// r2 = comparand  ({r}ax - accumulator - on intel)
+// r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg32, _TEXT
           dmb
 ALTERNATE_ENTRY RhpLockCmpXchg32AVLocation
 LOCAL_LABEL(CmpXchg32Retry):
           ldrex        r3, [r0]
-          cmp          r2, r3     // if comparing is unsuccessful should return value in [r0]
+          cmp          r2, r3
           bne          LOCAL_LABEL(CmpXchg32Exit)
-          mov          r3, r2     // if comparing is successful should return comparand
           strex        r12, r1, [r0]
           cmp          r12, #0
           bne          LOCAL_LABEL(CmpXchg32Retry)
@@ -47,10 +46,9 @@ LOCAL_LABEL(CmpXchg64Retry):
           ldrexd       r6, r1, [r0]
           cmp          r6, r4
           bne          LOCAL_LABEL(CmpXchg64Exit)
-          cmp          r1, r5             // if comparing is unsuccessful should return {r6->r0,r1}
+          cmp          r1, r5
           bne          LOCAL_LABEL(CmpXchg64Exit)
           strexd       r12, r2, r3, [r0]
-          ldrd         r6, r1, [sp,#0x10] // if comparing is successful should return comparand
           cmp          r12, #0
           bne          LOCAL_LABEL(CmpXchg64Retry)
 LOCAL_LABEL(CmpXchg64Exit):
