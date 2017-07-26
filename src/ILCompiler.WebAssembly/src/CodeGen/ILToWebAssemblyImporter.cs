@@ -378,8 +378,10 @@ namespace Internal.IL
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
+                    return LLVM.Int32Type();
+
                 case TypeFlags.Pointer:
-                    return LLVM.PointerType(LLVM.Int32Type(), 0);
+                    return LLVM.PointerType(GetLLVMTypeForTypeDesc(type.GetParameterType()), 0);
 
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
@@ -440,6 +442,20 @@ namespace Internal.IL
 
         private void ImportAddressOfVar(int index, bool argument)
         {
+            if (argument)
+            {
+                throw new NotImplementedException("ldarga");
+            }
+
+            int localOffset = GetTotalParameterOffset();
+            GetLocalSizeAndOffsetAtIndex(index, out int size, out int offset);
+            localOffset += offset;
+
+            var localPtr = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)localOffset, LLVMMisc.False) }, "ldloca");
+            //var typedLocalPtr = LLVM.BuildPointerCast(_builder, localPtr, GetLLVMTypeForTypeDesc(_locals[index].Type.MakePointerType()), "ldloca");
+
+            _stack.Push(new ExpressionEntry(StackValueKind.NativeInt, "ldloca", localPtr, _locals[index].Type.MakePointerType()));
         }
 
         private void ImportDup()
@@ -532,10 +548,10 @@ namespace Internal.IL
             for(int i = 0; i < arguments.Length; i++)
             {
                 // Arguments are reversed on the stack
-                arguments[arguments.Length - i - 1] = _stack.Pop().LLVMValue;
+                arguments[arguments.Length - i - 1] =_stack.Pop().LLVMValue;
             }
 
-            var ReturnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, String.Empty);
+            var ReturnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, "call");
 
             // TODO: Do something with the return value
         }
@@ -554,11 +570,11 @@ namespace Internal.IL
             {
                 case StackValueKind.Int32:
                 case StackValueKind.NativeInt:
-                    _stack.Push(new Int32ConstantEntry((int)value));
+                    _stack.Push(new Int32ConstantEntry((int)value, _method.Context.GetWellKnownType(WellKnownType.Int32)));
                     break;
 
                 case StackValueKind.Int64:
-                    _stack.Push(new Int64ConstantEntry(value));
+                    _stack.Push(new Int64ConstantEntry(value, _method.Context.GetWellKnownType(WellKnownType.Int64)));
                     break;
 
                 default:
@@ -805,6 +821,22 @@ namespace Internal.IL
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
+            StackEntry value = _stack.Pop();
+            StackEntry convertedValue = value.Duplicate();
+            //conv.u for a pointer should change to a int8*
+            if(wellKnownType == WellKnownType.UIntPtr)
+            {
+                if (value.Kind == StackValueKind.NativeInt)
+                {
+                    convertedValue.LLVMValue = LLVM.BuildPointerCast(_builder, value.LLVMValue, LLVM.PointerType(LLVM.Int8Type(), 0), "conv.u");
+                }
+                else if (value.Kind == StackValueKind.Int32)
+                {
+                    //convertedValue.LLVMValue = LLVM.BuildGEP(_builder, LLVM.null, new LLVMValueRef[] { value.LLVMValue }, "conv.u");
+                }
+            }
+
+            _stack.Push(convertedValue);
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
@@ -905,6 +937,21 @@ namespace Internal.IL
 
         private void ImportStoreField(int token, bool isStatic)
         {
+            if(isStatic)
+            {
+                throw new NotImplementedException("static stfld");
+            }
+
+            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+
+            StackEntry valueEntry = _stack.Pop();
+            StackEntry objectEntry = _stack.Pop();
+
+            var untypedObjectPointer = LLVM.BuildPointerCast(_builder, objectEntry.LLVMValue, LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), "stfld");
+            var storeLocation = LLVM.BuildGEP(_builder, untypedObjectPointer,
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)field.Offset.AsInt, LLVMMisc.False) }, "stfld");
+            var typedStoreLocation = LLVM.BuildPointerCast(_builder, storeLocation, LLVM.PointerType(GetLLVMTypeForTypeDesc(valueEntry.Type), 0), "stfld");
+            LLVM.BuildStore(_builder, valueEntry.LLVMValue, typedStoreLocation);
         }
 
         // Loads symbol address. Address is represented as a i32*

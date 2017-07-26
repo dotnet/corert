@@ -173,7 +173,7 @@ namespace Internal.IL
         /// </summary>
         public TypeDesc Type { get; }
 
-        public LLVMValueRef LLVMValue { get; }
+        public LLVMValueRef LLVMValue { get; set; }
 
         /// <summary>
         /// Initializes a new instance of StackEntry.
