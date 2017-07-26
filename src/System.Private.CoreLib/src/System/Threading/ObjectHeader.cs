@@ -36,6 +36,22 @@ namespace System.Threading
         private const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
         internal const int MASK_HASHCODE_INDEX = BIT_SBLK_IS_HASHCODE - 1;
 
+#if ARM || ARM64
+        [MethodImpl(MethodImplOptions.NoInlining)]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static unsafe int ReadVolatileMemory(int* pHeader)
+        {
+            // While in x86/amd64 Volatile.Read is cheap, in arm we have to pay the
+            // cost of a barrier. We do no inlining to get around that.
+#if ARM || ARM64
+            return *pHeader;
+#else
+            return Volatile.Read(ref *pHeader);
+#endif
+        }
+
         /// <summary>
         /// Returns the hash code assigned to the object.  If no hash code has yet been assigned,
         /// it assigns one in a thread-safe way.
@@ -51,7 +67,7 @@ namespace System.Threading
             {
                 // The header is 4 bytes before m_pEEType field on all architectures
                 int* pHeader = (int*)pEEType - 1;
-                int bits = *pHeader;
+                int bits = ReadVolatileMemory(pHeader);
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
                 {
@@ -147,7 +163,7 @@ namespace System.Threading
                 int* pHeader = (int*)pEEType - 1;
                 int hashOrIndex;
 
-                if (GetSyncEntryIndex(*pHeader, out hashOrIndex))
+                if (GetSyncEntryIndex(ReadVolatileMemory(pHeader), out hashOrIndex))
                 {
                     // Already have a sync entry for this object, return the synchronization object
                     // stored in the entry.

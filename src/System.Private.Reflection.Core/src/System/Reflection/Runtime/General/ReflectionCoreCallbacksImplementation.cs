@@ -295,11 +295,11 @@ namespace System.Reflection.Runtime.General
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding;
             if (isStatic)
             {
-                bindingFlags |= BindingFlags.Static | BindingFlags.FlattenHierarchy;
+                bindingFlags |= BindingFlags.Static;
             }
             else
             {
-                bindingFlags |= BindingFlags.Instance;
+                bindingFlags |= BindingFlags.Instance | BindingFlags.DeclaredOnly;
             }
             if (ignoreCase)
             {
@@ -313,14 +313,16 @@ namespace System.Reflection.Runtime.General
             {
                 parameterTypes[i] = parameters[i].ParameterType;
             }
-            MethodInfo methodInfo = containingType.GetMethod(method, bindingFlags, null, parameterTypes, null);
-            if (methodInfo == null)
-                return null;
 
-            if (!methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
-                return null;
+            while (containingType != null)
+            {
+                MethodInfo methodInfo = containingType.GetMethod(method, bindingFlags, null, parameterTypes, null);
+                if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
+                    return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
-            return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
+                containingType = (RuntimeTypeInfo)(containingType.BaseType);
+            }
+            return null;
         }
 
         public sealed override Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError)

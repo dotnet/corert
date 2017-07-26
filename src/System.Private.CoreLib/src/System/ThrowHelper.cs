@@ -111,6 +111,8 @@ namespace System
                     return "value";
                 case ExceptionArgument.startIndex:
                     return "startIndex";
+                case ExceptionArgument.task:
+                    return "task";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -145,6 +147,7 @@ namespace System
         obj,
         value,
         startIndex,
+        task
     }
 
     //

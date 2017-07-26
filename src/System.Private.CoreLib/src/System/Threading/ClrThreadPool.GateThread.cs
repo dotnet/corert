@@ -13,11 +13,9 @@ namespace System.Threading
         {
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
-            
-            private static bool s_disableStarvationDetection = false; // TODO: Config
-            private static bool s_debuggerBreakOnWorkStarvation = false; // TODO: Config
-            
+
             private static RuntimeThread s_gateThread;
+          
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
             private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
@@ -26,6 +24,10 @@ namespace System.Threading
             private static void GateThreadStart()
             {
                 var initialCpuRead = s_cpu.CurrentUtilization; // The first reading is over a time range other than what we are focusing on, so we do not use the read.
+
+                AppContext.TryGetSwitch("System.Threading.ThreadPool.DisableStarvationDetection", out bool disableStarvationDetection);
+                AppContext.TryGetSwitch("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", out bool debuggerBreakOnWorkStarvation);
+
                 while (true)
                 {
                     RuntimeThread.Sleep(GateThreadDelayMs);
@@ -38,7 +40,7 @@ namespace System.Threading
                     }
 
 
-                    if (!s_disableStarvationDetection)
+                    if (!disableStarvationDetection)
                     {
                         if (ThreadPoolInstance._numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
                         {
@@ -49,7 +51,7 @@ namespace System.Threading
                                 // don't add a thread if we're at max or if we are already in the process of adding threads
                                 while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
                                 {
-                                    if (s_debuggerBreakOnWorkStarvation)
+                                    if (debuggerBreakOnWorkStarvation)
                                     {
                                         Debugger.Break();
                                     }

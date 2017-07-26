@@ -12,17 +12,20 @@
 **
 ===========================================================*/
 
+using System;
+using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Double : IComparable, IFormattable, IComparable<Double>, IEquatable<Double>, IConvertible
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Double :IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>
     {
         private double m_value; // Do not rename (binary serialization)
 
@@ -39,60 +42,87 @@ namespace System
         public const double PositiveInfinity = (double)1.0 / (double)(0.0);
         public const double NaN = (double)0.0 / (double)0.0;
 
-        // 0x8000000000000000 is exactly same as -0.0. We use this explicit definition to avoid the confusion between 0.0 and -0.0.
-        internal static double NegativeZero = Int64BitsToDouble(unchecked((long)0x8000000000000000));
+        // We use this explicit definition to avoid the confusion between 0.0 and -0.0.
+        internal const double NegativeZero = -0.0;
 
-        private static unsafe double Int64BitsToDouble(long value)
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        [Pure]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsFinite(double d)
         {
-            return *((double*)&value);
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
         }
 
+        /// <summary>Determines whether the specified value is infinite.</summary>
         [Pure]
-        public static unsafe bool IsInfinity(double d)
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsInfinity(double d)
         {
-            return (*(long*)(&d) & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
         }
 
+        /// <summary>Determines whether the specified value is NaN.</summary>
         [Pure]
-        public static bool IsPositiveInfinity(double d)
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsNaN(double d)
         {
-            //Jit will generate inlineable code with this
-            if (d == double.PositiveInfinity)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000;
         }
 
+        /// <summary>Determines whether the specified value is negative.</summary>
         [Pure]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsNegative(double d)
+        {
+            var bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(d));
+            return (bits & 0x8000000000000000) == 0x8000000000000000;
+        }
+
+        /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [Pure]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegativeInfinity(double d)
         {
-            //Jit will generate inlineable code with this
-            if (d == double.NegativeInfinity)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return (d == double.NegativeInfinity);
         }
 
-
+        /// <summary>Determines whether the specified value is normal.</summary>
         [Pure]
-        internal static unsafe bool IsNegative(double d)
+        [NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsNormal(double d)
         {
-            return (*(UInt64*)(&d) & 0x8000000000000000) == 0x8000000000000000;
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            bits &= 0x7FFFFFFFFFFFFFFF;
+            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
         }
 
-
+        /// <summary>Determines whether the specified value is positive infinity.</summary>
         [Pure]
-        public static unsafe bool IsNaN(double d)
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPositiveInfinity(double d)
         {
-            return (*(UInt64*)(&d) & 0x7FFFFFFFFFFFFFFFL) > 0x7FF0000000000000L;
+            return (d == double.PositiveInfinity);
+        }
+
+        /// <summary>Determines whether the specified value is subnormal.</summary>
+        [Pure]
+        [NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsSubnormal(double d)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            bits &= 0x7FFFFFFFFFFFFFFF;
+            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) == 0);
         }
 
         // Compares this object to another object, returning an instance of System.Relation.
@@ -217,47 +247,47 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDouble(m_value, null, null);
+            return Number.FormatDouble(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDouble(m_value, format, null);
+            return Number.FormatDouble(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDouble(m_value, null, provider);
+            return Number.FormatDouble(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDouble(m_value, format, provider);
+            return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         public static double Parse(String s)
         {
-            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, null);
+            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static double Parse(String s, NumberStyles style)
         {
-            Decimal.ValidateParseStyleFloatingPoint(style);
-            return Parse(s, style, null);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Parse(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static double Parse(String s, IFormatProvider provider)
         {
-            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static double Parse(String s, NumberStyles style, IFormatProvider provider)
         {
-            Decimal.ValidateParseStyleFloatingPoint(style);
-            return FormatProvider.ParseDouble(s, style, provider);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses a double from a String in the given style.  If
@@ -268,32 +298,42 @@ namespace System
         // PositiveInfinity or NegativeInfinity for a number that is too
         // large or too small.
         //
+        private static double Parse(String s, NumberStyles style, NumberFormatInfo info)
+        {
+            return Number.ParseDouble(s, style, info);
+        }
+
         public static bool TryParse(String s, out double result)
         {
-            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, null, out result);
+            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out double result)
         {
-            Decimal.ValidateParseStyleFloatingPoint(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out double result)
+        {
             if (s == null)
             {
                 result = 0;
                 return false;
             }
-            bool success = FormatProvider.TryParseDouble(s, style, provider, out result);
+            bool success = Number.TryParseDouble(s, style, info, out result);
             if (!success)
             {
                 String sTrim = s.Trim();
-                if (FormatProvider.IsPositiveInfinity(sTrim, provider))
+                if (sTrim.Equals(info.PositiveInfinitySymbol))
                 {
                     result = PositiveInfinity;
                 }
-                else if (FormatProvider.IsNegativeInfinity(sTrim, provider))
+                else if (sTrim.Equals(info.NegativeInfinitySymbol))
                 {
                     result = NegativeInfinity;
                 }
-                else if (FormatProvider.IsNaNSymbol(sTrim, provider))
+                else if (sTrim.Equals(info.NaNSymbol))
                 {
                     result = NaN;
                 }
@@ -319,7 +359,7 @@ namespace System
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Double", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Double", "Char"));
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
@@ -379,7 +419,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Double", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Double", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)
