@@ -557,8 +557,8 @@ namespace Internal.IL
 
             var loadResult = LLVM.BuildLoad(_builder, castReturnAddress, String.Empty);
 
+            // todo void returns
             PushExpression(GetStackValueKind(callee.Signature.ReturnType), String.Empty, loadResult, callee.Signature.ReturnType);
-
         }
 
         private void ImportRawPInvoke(MethodDesc method)
@@ -589,9 +589,10 @@ namespace Internal.IL
                 arguments[arguments.Length - i - 1] =_stack.Pop().LLVMValue;
             }
 
-            var ReturnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, "call");
+            var returnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, "call");
 
-            // TODO: Do something with the return value
+            // todo void returns
+            PushExpression(GetStackValueKind(method.Signature.ReturnType), String.Empty, returnValue, method.Signature.ReturnType);
         }
 
         private void ImportCalli(int token)
