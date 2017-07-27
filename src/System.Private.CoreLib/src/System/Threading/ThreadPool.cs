@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
+using System.Collections.Concurrent;
 
 namespace System.Threading
 {
@@ -235,7 +236,6 @@ namespace System.Threading
                     if (m_array[i & m_mask] == obj)
                     {
                         // If we found the element, block out steals to avoid interference.
-                        // @TODO: optimize away the lock?
                         bool lockTaken = false;
                         try
                         {
@@ -389,137 +389,7 @@ namespace System.Threading
             }
         }
 
-        internal class QueueSegment
-        {
-            // Holds a segment of the queue.  Enqueues/Dequeues start at element 0, and work their way up.
-            internal readonly IThreadPoolWorkItem[] nodes;
-            private const int QueueSegmentLength = 256;
-
-            // Holds the indexes of the lowest and highest valid elements of the nodes array.
-            // The low index is in the lower 16 bits, high index is in the upper 16 bits.
-            // Use GetIndexes and CompareExchangeIndexes to manipulate this.
-            private volatile int indexes;
-
-            // The next segment in the queue.
-            public volatile QueueSegment Next;
-
-
-            private const int SixteenBits = 0xffff;
-
-            private void GetIndexes(out int upper, out int lower)
-            {
-                int i = indexes;
-                upper = (i >> 16) & SixteenBits;
-                lower = i & SixteenBits;
-
-                Debug.Assert(upper >= lower);
-                Debug.Assert(upper <= nodes.Length);
-                Debug.Assert(lower <= nodes.Length);
-                Debug.Assert(upper >= 0);
-                Debug.Assert(lower >= 0);
-            }
-
-            private bool CompareExchangeIndexes(ref int prevUpper, int newUpper, ref int prevLower, int newLower)
-            {
-                Debug.Assert(newUpper >= newLower);
-                Debug.Assert(newUpper <= nodes.Length);
-                Debug.Assert(newLower <= nodes.Length);
-                Debug.Assert(newUpper >= 0);
-                Debug.Assert(newLower >= 0);
-                Debug.Assert(newUpper >= prevUpper);
-                Debug.Assert(newLower >= prevLower);
-                Debug.Assert(newUpper == prevUpper ^ newLower == prevLower);
-
-                int oldIndexes = (prevUpper << 16) | (prevLower & SixteenBits);
-                int newIndexes = (newUpper << 16) | (newLower & SixteenBits);
-                int prevIndexes = Interlocked.CompareExchange(ref indexes, newIndexes, oldIndexes);
-                prevUpper = (prevIndexes >> 16) & SixteenBits;
-                prevLower = prevIndexes & SixteenBits;
-                return prevIndexes == oldIndexes;
-            }
-
-            public QueueSegment()
-            {
-                Debug.Assert(QueueSegmentLength <= SixteenBits);
-                nodes = new IThreadPoolWorkItem[QueueSegmentLength];
-            }
-
-
-            public bool IsUsedUp()
-            {
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-                return (upper == nodes.Length) &&
-                       (lower == nodes.Length);
-            }
-
-            public bool TryEnqueue(IThreadPoolWorkItem node)
-            {
-                //
-                // If there's room in this segment, atomically increment the upper count (to reserve
-                // space for this node), then store the node.
-                // Note that this leaves a window where it will look like there is data in that
-                // array slot, but it hasn't been written yet.  This is taken care of in TryDequeue
-                // with a busy-wait loop, waiting for the element to become non-null.  This implies
-                // that we can never store null nodes in this data structure.
-                //
-                Debug.Assert(null != node);
-
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-
-                while (true)
-                {
-                    if (upper == nodes.Length)
-                        return false;
-
-                    if (CompareExchangeIndexes(ref upper, upper + 1, ref lower, lower))
-                    {
-                        Debug.Assert(Volatile.Read(ref nodes[upper]) == null);
-                        Volatile.Write(ref nodes[upper], node);
-                        return true;
-                    }
-                }
-            }
-
-            public bool TryDequeue(out IThreadPoolWorkItem node)
-            {
-                //
-                // If there are nodes in this segment, increment the lower count, then take the
-                // element we find there.
-                //
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-
-                while (true)
-                {
-                    if (lower == upper)
-                    {
-                        node = null;
-                        return false;
-                    }
-
-                    if (CompareExchangeIndexes(ref upper, upper, ref lower, lower + 1))
-                    {
-                        // It's possible that a concurrent call to Enqueue hasn't yet
-                        // written the node reference to the array.  We need to spin until
-                        // it shows up.
-                        SpinWait spinner = new SpinWait();
-                        while ((node = Volatile.Read(ref nodes[lower])) == null)
-                            spinner.SpinOnce();
-
-                        // Null-out the reference so the object can be GC'd earlier.
-                        nodes[lower] = null;
-
-                        return true;
-                    }
-                }
-            }
-        }
-
-        // The head and tail of the queue.  We enqueue to the head, and dequeue from the tail.
-        internal volatile QueueSegment queueHead;
-        internal volatile QueueSegment queueTail;
+        internal readonly LowLevelConcurrentQueue<IThreadPoolWorkItem> workItems = new LowLevelConcurrentQueue<IThreadPoolWorkItem>();
         
         private volatile int numOutstandingThreadRequests = 0;
 
@@ -528,7 +398,6 @@ namespace System.Threading
 
         public ThreadPoolWorkQueue()
         {
-            queueTail = queueHead = new QueueSegment();
         }
 
         public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue()
@@ -586,18 +455,7 @@ namespace System.Threading
             }
             else
             {
-                QueueSegment head = queueHead;
-
-                while (!head.TryEnqueue(callback))
-                {
-                    Interlocked.CompareExchange(ref head.Next, new QueueSegment(), null);
-
-                    while (head.Next != null)
-                    {
-                        Interlocked.CompareExchange(ref queueHead, head.Next, head);
-                        head = queueHead;
-                    }
-                }
+                workItems.Enqueue(callback);
             }
 
             EnsureThreadRequested();
@@ -612,36 +470,13 @@ namespace System.Threading
             return tl.workStealingQueue.LocalFindAndPop(callback);
         }
 
-        public void Dequeue(ThreadPoolWorkQueueThreadLocals tl, out IThreadPoolWorkItem callback, out bool missedSteal)
+        public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, out bool missedSteal)
         {
             missedSteal = false;
             WorkStealingQueue localWsq = tl.workStealingQueue;
-            callback = localWsq.LocalPop();
+            IThreadPoolWorkItem callback = localWsq.LocalPop();
 
-            if (null == callback)
-            {
-                QueueSegment tail = queueTail;
-                while (true)
-                {
-                    if (tail.TryDequeue(out callback))
-                    {
-                        Debug.Assert(null != callback);
-                        break;
-                    }
-
-                    if (null == tail.Next || !tail.IsUsedUp())
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        Interlocked.CompareExchange(ref queueTail, tail.Next, tail);
-                        tail = queueTail;
-                    }
-                }
-            }
-
-            if (null == callback)
+            if (null == callback && !workItems.TryDequeue(out callback))
             {
                 WorkStealingQueue[] otherQueues = WorkStealingQueueList.Queues;
                 int i = tl.random.Next(otherQueues.Length);
@@ -662,6 +497,7 @@ namespace System.Threading
                     c--;
                 }
             }
+            return callback;
         }
         
         /// <summary>
@@ -686,6 +522,7 @@ namespace System.Threading
             // false later, but only if we're absolutely certain that the queue is empty.
             //
             bool needAnotherThread = true;
+            IThreadPoolWorkItem workItem = null;
             try
             {
                 //
@@ -698,7 +535,7 @@ namespace System.Threading
                 //
                 while (true)
                 {
-                    workQueue.Dequeue(tl, out IThreadPoolWorkItem workItem, out bool missedSteal);
+                    workItem = workQueue.Dequeue(tl, out bool missedSteal);
 
                     if (workItem == null)
                     {
@@ -738,6 +575,22 @@ namespace System.Threading
                     }
                 }
             }
+            catch (ThreadAbortException tae)
+            {
+                //
+                // This is here to catch the case where this thread is aborted between the time we exit the finally block in the dispatch
+                // loop, and the time we execute the work item.  QueueUserWorkItemCallback uses this to update its accounting of whether
+                // it was executed or not (in debug builds only).  Task uses this to communicate the ThreadAbortException to anyone
+                // who waits for the task to complete.
+                //
+                workItem?.MarkAborted(tae);
+
+                //
+                // In this case, the VM is going to request another thread on our behalf.  No need to do it twice.
+                //
+                needAnotherThread = false;
+                // throw;  //no need to explicitly rethrow a ThreadAbortException, and doing so causes allocations on amd64.
+            }
             catch (Exception e)
             {
                 // Work items should not allow exceptions to escape.  For example, Task catches and stores any exceptions.
@@ -756,8 +609,41 @@ namespace System.Threading
                 if (needAnotherThread)
                     workQueue.EnsureThreadRequested();
             }
+
+            // we can never reach this point, but the C# compiler doesn't know that, because it doesn't know the ThreadAbortException will be reraised above.
+            Debug.Fail("Should never reach this point");
+            return true;
         }
     }
+
+
+    // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
+    internal struct FastRandom // xorshift prng
+    {
+        private uint _w, _x, _y, _z;
+
+        public FastRandom(int seed)
+        {
+            _x = (uint)seed;
+            _w = 88675123;
+            _y = 362436069;
+            _z = 521288629;
+        }
+
+        public int Next(int maxValue)
+        {
+            Debug.Assert(maxValue > 0);
+
+            uint t = _x ^ (_x << 11);
+            _x = _y;
+            _y = _z;
+            _z = _w;
+            _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
+
+            return (int)(_w % (uint)maxValue);
+        }
+    }
+
 
     // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
     internal sealed class ThreadPoolWorkQueueThreadLocals
@@ -768,7 +654,7 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
-        public readonly Random random = new Random(Environment.CurrentManagedThreadId);
+        public readonly FastRandom random = new FastRandom(Environment.CurrentManagedThreadId);  // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
@@ -830,6 +716,7 @@ namespace System.Threading
     internal interface IThreadPoolWorkItem
     {
         void ExecuteWorkItem();
+        void MarkAborted(ThreadAbortException exception);
     }
 
     internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
@@ -849,11 +736,11 @@ namespace System.Threading
                 "A QueueUserWorkItemCallback was never called!");
         }
 
-        private void MarkExecuted()
+        private void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
-                0 == Interlocked.Exchange(ref executed, 1),
+                0 == Interlocked.Exchange(ref executed, 1) || aborted,
                 "A QueueUserWorkItemCallback was called twice!");
         }
 #endif
@@ -868,7 +755,7 @@ namespace System.Threading
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
 #if DEBUG
-            MarkExecuted();
+            MarkExecuted(aborted: false);
 #endif
             try
             {
@@ -882,6 +769,15 @@ namespace System.Threading
                 RuntimeAugments.ReportUnhandledException(e);
                 throw; //unreachable
             }
+        }
+
+        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException exception)
+        {
+#if DEBUG
+            // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
+            // This counts as being executed for our purposes.
+            MarkExecuted(aborted: true);
+#endif
         }
 
         internal static ContextCallback ccb = new ContextCallback(WaitCallback_Context);
@@ -912,11 +808,11 @@ namespace System.Threading
                 "A QueueUserWorkItemCallbackDefaultContext was never called!");
         }
 
-        private void MarkExecuted()
+        private void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
-                0 == Interlocked.Exchange(ref executed, 1),
+                0 == Interlocked.Exchange(ref executed, 1) || aborted,
                 "A QueueUserWorkItemCallbackDefaultContext was called twice!");
         }
 #endif
@@ -930,7 +826,7 @@ namespace System.Threading
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
 #if DEBUG
-            MarkExecuted();
+            MarkExecuted(aborted: false);
 #endif
             try
             {
@@ -941,6 +837,15 @@ namespace System.Threading
                 RuntimeAugments.ReportUnhandledException(e);
                 throw; //unreachable
             }
+        }
+        
+        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
+        {
+#if DEBUG
+            // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
+            // This counts as being executed for our purposes.
+            MarkExecuted(aborted: true);
+#endif
         }
 
         internal static ContextCallback ccb = new ContextCallback(WaitCallback_Context);
@@ -1152,11 +1057,19 @@ namespace System.Threading
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
         internal static IEnumerable<IThreadPoolWorkItem> GetQueuedWorkItems()
         {
-            return EnumerateQueuedWorkItems(ThreadPoolWorkQueue.WorkStealingQueueList.Queues, ThreadPoolGlobals.workQueue.queueTail);
+            return EnumerateQueuedWorkItems(ThreadPoolWorkQueue.WorkStealingQueueList.Queues, ThreadPoolGlobals.workQueue.workItems);
         }
 
-        internal static IEnumerable<IThreadPoolWorkItem> EnumerateQueuedWorkItems(ThreadPoolWorkQueue.WorkStealingQueue[] wsQueues, ThreadPoolWorkQueue.QueueSegment globalQueueTail)
+        internal static IEnumerable<IThreadPoolWorkItem> EnumerateQueuedWorkItems(ThreadPoolWorkQueue.WorkStealingQueue[] wsQueues, LowLevelConcurrentQueue<IThreadPoolWorkItem> globalQueue)
         {
+            if (globalQueue != null)
+            {
+                foreach (IThreadPoolWorkItem workItem in globalQueue)
+                {
+                    yield return workItem;
+                } 
+            }
+
             if (wsQueues != null)
             {
                 // First, enumerate all workitems in thread-local queues.
@@ -1174,23 +1087,6 @@ namespace System.Threading
                     }
                 }
             }
-
-            if (globalQueueTail != null)
-            {
-                // Now the global queue
-                for (ThreadPoolWorkQueue.QueueSegment segment = globalQueueTail;
-                    segment != null;
-                    segment = segment.Next)
-                {
-                    IThreadPoolWorkItem[] items = segment.nodes;
-                    for (int i = 0; i < items.Length; i++)
-                    {
-                        IThreadPoolWorkItem item = items[i];
-                        if (item != null)
-                            yield return item;
-                    }
-                }
-            }
         }
 
         internal static IEnumerable<IThreadPoolWorkItem> GetLocallyQueuedWorkItems()
@@ -1200,7 +1096,7 @@ namespace System.Threading
 
         internal static IEnumerable<IThreadPoolWorkItem> GetGloballyQueuedWorkItems()
         {
-            return EnumerateQueuedWorkItems(null, ThreadPoolGlobals.workQueue.queueTail);
+            return EnumerateQueuedWorkItems(null, ThreadPoolGlobals.workQueue.workItems);
         }
 
         private static object[] ToObjectArray(IEnumerable<IThreadPoolWorkItem> workitems)
