@@ -240,7 +240,7 @@ DEFINE_CHECKED_WRITE_BARRIER r1, r1, r3
 // r1 = value
 // r2 = comparand
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
-	        PROLOG_PUSH "{r4,lr}"
+          PROLOG_PUSH "{r4,lr}"
           dmb
 ALTERNATE_ENTRY 	RhpCheckedLockCmpXchgAVLocation
 LOCAL_LABEL(CmpXchgRetry):
@@ -253,7 +253,7 @@ LOCAL_LABEL(CmpXchgRetry):
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1, r3
           mov          r0, r4
-	        EPILOG_POP   "{r4,pc}"
+          EPILOG_POP   "{r4,pc}"
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
