@@ -600,7 +600,7 @@ namespace System.Threading.Tasks
         ///// <summary>
         ///// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this workitem.
         ///// </summary>
-        //void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
+        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
         private static ContextCallback s_invokeActionCallback;
