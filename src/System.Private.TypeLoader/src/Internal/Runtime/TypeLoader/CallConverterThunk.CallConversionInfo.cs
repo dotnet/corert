@@ -66,6 +66,8 @@ namespace Internal.Runtime.TypeLoader
                 case ThunkKind.StandardToStandardInstantiating: return "StandardToStandardInstantiating";
                 case ThunkKind.StandardToGenericInstantiating: return "StandardToGenericInstantiating";
                 case ThunkKind.StandardToGenericInstantiatingIfNotHasThis: return "StandardToGenericInstantiatingIfNotHasThis";
+                case ThunkKind.StandardToGenericPassthruInstantiating: return "StandardToGenericPassthruInstantiating";
+                case ThunkKind.StandardToGenericPassthruInstantiatingIfNotHasThis: return "StandardToGenericPassthruInstantiatingIfNotHasThis";
                 case ThunkKind.StandardToGeneric: return "StandardToGeneric";
                 case ThunkKind.GenericToStandard: return "GenericToStandard";
                 case ThunkKind.StandardUnboxing: return "StandardUnboxing";
