@@ -912,9 +912,9 @@ internal static class WaitThreadTests
         AutoResetEvent e1 = new AutoResetEvent(false);
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
         {
-            Thread.Sleep(150);
-        }, null, 100, false);
-        Thread.Sleep(275);
+            Thread.Sleep(300);
+        }, null, 200, false);
+        Thread.Sleep(550);
         handle.Unregister(e1);
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
     }
