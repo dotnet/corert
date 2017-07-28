@@ -31,7 +31,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 
           // Now load the target address and jump to it.
           ldr          r12, [r4, #POINTER_SIZE]
-          PROLOG_PUSH  "{r0-r5}"
+          EPILOG_POP   "{r0-r5}"
           bx           r12
 
 NESTED_END RhCommonStub, _TEXT
