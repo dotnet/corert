@@ -196,21 +196,35 @@ namespace System.Threading
                     int preWaitTimeMs = Environment.TickCount;
 
                     // Recalculate Timeout
-                    int timeoutDurationMs = ThreadPoolThreadTimeoutMs;
-                    for (int i = 0; i < numUserWaits; i++)
+                    int timeoutDurationMs = Timeout.Infinite;
+                    if (numUserWaits == 0)
                     {
-                        if (_registeredWaits[i].InfiniteTimeout)
+                        timeoutDurationMs = ThreadPoolThreadTimeoutMs;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < numUserWaits; i++)
                         {
-                            continue;
-                        }
+                            if (_registeredWaits[i].InfiniteTimeout)
+                            {
+                                continue;
+                            }
 
-                        int handleTimeoutDurationMs = _registeredWaits[i].TimeoutTimeMs - preWaitTimeMs;
+                            int handleTimeoutDurationMs = _registeredWaits[i].TimeoutTimeMs - preWaitTimeMs;
 
-                        timeoutDurationMs = Math.Min(handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0, timeoutDurationMs);
+                            if (timeoutDurationMs == Timeout.Infinite)
+                            {
+                                timeoutDurationMs = handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0;
+                            }
+                            else
+                            {
+                                timeoutDurationMs = Math.Min(handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0, timeoutDurationMs);
+                            }
 
-                        if (timeoutDurationMs == 0)
-                        {
-                            break;
+                            if (timeoutDurationMs == 0)
+                            {
+                                break;
+                            }
                         }
                     }
 
