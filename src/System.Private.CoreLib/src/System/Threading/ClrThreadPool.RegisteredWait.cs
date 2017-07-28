@@ -23,7 +23,7 @@ namespace System.Threading
                 Callback = callbackHelper;
                 TimeoutDurationMs = millisecondsTimeout;
                 Repeating = repeating;
-                RestartTimeout();
+                RestartTimeout(Environment.TickCount);
             }
 
             /// <summary>
@@ -150,7 +150,7 @@ namespace System.Threading
                 private volatile int _callbackCount;
                 private LowLevelLock _callbackLock = new LowLevelLock();
 
-                public void Set()
+                public void Reset()
                 {
                     _callbackLock.Acquire();
                     try
@@ -166,7 +166,7 @@ namespace System.Threading
                     }
                 }
 
-                public void Reset()
+                public void Set()
                 {
                     _callbackLock.Acquire();
                     try
