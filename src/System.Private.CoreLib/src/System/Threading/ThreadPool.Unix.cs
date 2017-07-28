@@ -157,7 +157,7 @@ namespace System.Threading
             ClrThreadPool.RegisteredWait registeredHandle = new ClrThreadPool.RegisteredWait(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
-                Environment.TickCount + (int)millisecondsTimeOutInterval,
+                (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
             ClrThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
             return new RegisteredWaitHandle(registeredHandle);

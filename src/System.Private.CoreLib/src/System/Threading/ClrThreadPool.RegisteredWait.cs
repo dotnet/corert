@@ -21,14 +21,16 @@ namespace System.Threading
             {
                 Handle = waitHandle;
                 Callback = callbackHelper;
-                TimeoutTimeMs = millisecondsTimeout;
+                TimeoutDuration = millisecondsTimeout;
                 Repeating = repeating;
+                RestartTimeout();
             }
 
             /// <summary>
             /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
             /// </summary>
             internal _ThreadPoolWaitOrTimerCallback Callback { get; }
+
 
             /// <summary>
             /// The <see cref="WaitHandle"/> that was registered.
@@ -38,7 +40,14 @@ namespace System.Threading
             /// <summary>
             /// The time this handle times out at in ticks.
             /// </summary>
-            internal int TimeoutTimeMs { get; }
+            internal int TimeoutTimeMs { get; private set; }
+
+            private int TimeoutDuration { get; }
+
+            public void RestartTimeout()
+            {
+                TimeoutTimeMs = Environment.TickCount + TimeoutDuration;
+            }
 
             /// <summary>
             /// Whether or not the wait is a repeating wait.

@@ -301,6 +301,11 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             private void QueueWaitCompletion(RegisteredWait registeredHandle, bool timedOut)
             {
+                if (registeredHandle.Repeating)
+                {
+                    registeredHandle.RestartTimeout();
+                }
+
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
 
