@@ -197,12 +197,9 @@ namespace System.Threading
                     _callbackLock.Release();
                 }
             }
-
-            private int callCount = 0;
+            
             internal void BlockOnUnregistration()
             {
-                ++callCount;
-                Debug.Assert(callCount == 1);
                 _unregisteredEvent.WaitOne();
             }
         }
