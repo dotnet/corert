@@ -701,10 +701,29 @@ namespace Internal.Reflection.Execution
 
                 Debug.Assert(parameterTypeHandles.Length == byRefParameters.Length && byRefParameters.Length == forcedByRefParameters.Length);
 
-                bool isMethodOnStructure = RuntimeAugments.IsValueType(declaringType);
+                ThunkKind thunkKind;
+                if (methodBase.IsGenericMethod)
+                {
+                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                }
+                else if (RuntimeAugments.IsValueType(declaringType))
+                {
+                    // Unboxing instantiating stub
+                    if (dictionary == IntPtr.Zero)
+                    {
+                        Debug.Assert(!methodBase.IsStatic);
+                        thunkKind = CallConverterThunk.ThunkKind.StandardToGeneric;
+                    }
+                    else
+                        thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                }
+                else
+                {
+                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiatingIfNotHasThis;
+                }
 
                 return CallConverterThunk.MakeThunk(
-                    (methodBase.IsGenericMethod || isMethodOnStructure ? ThunkKind.StandardToGenericInstantiating : ThunkKind.StandardToGenericInstantiatingIfNotHasThis),
+                    thunkKind,
                     methodEntrypoint,
                     dictionary,
                     !methodBase.IsStatic,
@@ -714,7 +733,10 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
+                if (dictionary == IntPtr.Zero)
+                    return methodEntrypoint;
+                else
+                    return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
             }
         }
 

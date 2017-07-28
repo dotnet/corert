@@ -42,11 +42,6 @@ struct DebuggerGcProtectionRequest
     uint64_t payload; /* TODO, FuncEval, what would be a better name for this? */
 };
 
-struct DebuggerResponse
-{
-    int kind;
-};
-
 enum DebuggerResponseKind : uint32_t
 {
     FuncEvalCompleteWithReturn = 0,
@@ -55,6 +50,12 @@ enum DebuggerResponseKind : uint32_t
     RequestBufferReady = 3,
     ConservativeReportingBufferReady = 4,
     HandleReady = 5,
+    FuncEvalCrossThreadDependency = 6,
+};
+
+struct DebuggerResponse
+{
+    DebuggerResponseKind kind;
 };
 
 struct DebuggerGcProtectionResponse

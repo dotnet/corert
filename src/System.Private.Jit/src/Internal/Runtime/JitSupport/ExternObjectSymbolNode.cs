@@ -38,7 +38,7 @@ namespace Internal.Runtime.JitSupport
 
         /// <summary>
         /// Return a "GenericDictionaryCell" which can be used to get a pointer sized value 
-        /// points to or is what this nodeis used with.
+        /// points to or is what this node is used with.
         /// </summary>
         public abstract GenericDictionaryCell GetDictionaryCell();
     }

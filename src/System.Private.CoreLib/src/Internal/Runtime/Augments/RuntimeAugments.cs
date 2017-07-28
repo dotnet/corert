@@ -623,6 +623,8 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().IsArray;
         }
 
+        public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToEETypePtr().IsByRefLike;
+
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsDynamicType;
