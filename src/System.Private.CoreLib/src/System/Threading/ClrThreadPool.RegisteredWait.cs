@@ -45,6 +45,8 @@ namespace System.Threading
             /// </summary>
             internal bool Repeating { get; }
 
+            private RecursiveEvent CanUnregister { get; } = new RecursiveEvent();
+
             /// <summary>
             /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
             /// </summary>
@@ -58,11 +60,6 @@ namespace System.Threading
             public bool IsUnregistered => _unregisterSignaled != 0;
 
             public bool IsBlocking { get; set; } = true;
-
-            /// <summary>
-            /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
-            /// </summary>
-            private ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
 
             /// <summary>
             /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWait"/> was registered on.
@@ -111,7 +108,7 @@ namespace System.Threading
                     {
                         try
                         {
-                            CanUnregister.WaitOne(interruptible: false);
+                            CanUnregister.Wait();
                             EventWaitHandle.Set(handle);
                         }
                         finally
@@ -134,6 +131,52 @@ namespace System.Threading
                     _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
                 }
                 CanUnregister.Set();
+            }
+
+
+            private class RecursiveEvent
+            {
+                private ManualResetEvent _unregisterEvent = new ManualResetEvent(true);
+
+                private volatile int _callbackCount;
+                private LowLevelLock _callbackLock = new LowLevelLock();
+
+                public void Set()
+                {
+                    _callbackLock.Acquire();
+                    try
+                    {
+                        if (_callbackCount++ == 0)
+                        {
+                            _unregisterEvent.Reset();
+                        }
+                    }
+                    finally
+                    {
+                        _callbackLock.Release();
+                    }
+                }
+
+                public void Reset()
+                {
+                    _callbackLock.Acquire();
+                    try
+                    {
+                        if (--_callbackCount == 0)
+                        {
+                            _unregisterEvent.Set();
+                        }
+                    }
+                    finally
+                    {
+                        _callbackLock.Release();
+                    }
+                }
+
+                public void Wait()
+                {
+                    _unregisterEvent.WaitOne(interruptible: false);
+                }
             }
         }
 
