@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+  // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -92,7 +92,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 
 #else  // WRITE_BARRIER_CHECK
 
-.macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG, TRASHREG
+.macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG
 .endm
 
 #endif // WRITE_BARRIER_CHECK
@@ -333,7 +333,7 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
-          UPDATE_GC_SHADOW BASENAME, r2, r0, r3
+          UPDATE_GC_SHADOW BASENAME, r2, r0
 
           // If the reference is to an object that's not in an ephemeral generation we have no need to track it
           // (since the object won't be collected or moved by an ephemeral collection).
