@@ -243,12 +243,12 @@ LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
           PROLOG_PUSH "{r4,lr}"
           dmb
 ALTERNATE_ENTRY 	RhpCheckedLockCmpXchgAVLocation
-LOCAL_LABEL(CmpXchgRetry):
+LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           ldrex        r4, [r0]
           cmp          r2, r4
           bne          LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_r1)
           strex        r3, r1, [r0]
-          cbnz         r3, LOCAL_LABEL(CmpXchgRetry)
+          cbnz         r3, LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
           dmb
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1, r3
@@ -262,10 +262,14 @@ LEAF_END RhpCheckedLockCmpXchg, _TEXT
 // r0 = destination address
 // r1 = value
 LEAF_ENTRY RhpCheckedXchg, _TEXT
+          dmb
 ALTERNATE_ENTRY RhpCheckedXchgAVLocation
-          ldr          r2, [r0]
-          str          r1, [r0]
+LOCAL_LABEL(RhpCheckedXchgRetry):
+          ldrex        r2, [r0]
+          strex        r3, r1, [r0]
+          cbnz         r3, LOCAL_LABEL(RhpCheckedXchgRetry)
           mov          r0, r2
+          dmb
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1, r3
 
