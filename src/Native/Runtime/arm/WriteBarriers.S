@@ -101,7 +101,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 // the helpers have identical structure we use a macro to define this structure. Two arguments are taken, the
 // name of the register that points to the location to be updated and the name of the register that holds the
 // object reference (this should be in upper case as it's used in the definition of the name of the helper).
-.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, TRASHREG
+.macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
