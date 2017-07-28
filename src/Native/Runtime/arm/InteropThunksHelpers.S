@@ -16,7 +16,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           // Custom calling convention:
           //      red zone has pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
           //      Copy red zone value into r12 so that the PROLOG_PUSH doesn't destroy it
-          PROLOG_NOP   ldr r12, [sp, #-4]
+          ldr          r12, [sp, #-4]
           PROLOG_PUSH  "{r0-r5}"
 
           mov          r4, r12
