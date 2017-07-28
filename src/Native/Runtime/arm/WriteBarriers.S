@@ -10,12 +10,12 @@
 
 #ifdef WRITE_BARRIER_CHECK
 
-.macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG, TRASHREG
+.macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG
 
           // If g_GCShadow is 0, don't perform the check.
-          ldr          \TRASHREG, =C_FUNC(g_GCShadow)
-          ldr          \TRASHREG, [\TRASHREG]
-          cbz          \TRASHREG, LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG)
+          ldr          r12, =C_FUNC(g_GCShadow)
+          ldr          r12, [r12]
+          cbz          r12, LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG)
 
           // Save DESTREG since we're about to modify it (and we need the original value both within the macro and
           // once we exit the macro). Note that this is naughty since we're altering the stack pointer outside of
@@ -28,17 +28,17 @@
           push         \DESTREG
 
           // Transform DESTREG into the equivalent address in the shadow heap.
-          ldr          \TRASHREG, =C_FUNC(g_lowest_address)
-          ldr          \TRASHREG, [\TRASHREG]
-          sub          \DESTREG, \TRASHREG
+          ldr          r12, =C_FUNC(g_lowest_address)
+          ldr          r12, [r12]
+          sub          \DESTREG, r12
           cmp          \DESTREG, #0
           blo          LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
-          ldr          \TRASHREG, =C_FUNC(g_GCShadow)
-          ldr          \TRASHREG, [\TRASHREG]
-          add          \DESTREG, \TRASHREG
-          ldr          \TRASHREG, =C_FUNC(g_GCShadowEnd)
-          ldr          \TRASHREG, [\TRASHREG]
-          cmp          \DESTREG, \TRASHREG
+          ldr          r12, =C_FUNC(g_GCShadow)
+          ldr          r12, [r12]
+          add          \DESTREG, r12
+          ldr          r12, =C_FUNC(g_GCShadowEnd)
+          ldr          r12, [r12]
+          cmp          \DESTREG, r12
           jhi          LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
 
           // Update the shadow heap.
@@ -48,11 +48,11 @@
           // read must be strongly ordered wrt to the previous write to prevent race conditions. We also need to
           // recover the old value of DESTREG for the comparison so use an xchg instruction (which has an implicit lock
           // prefix).
-          mov          \TRASHREG, \DESTREG
+          mov          r12, \DESTREG
           ldr          \DESTREG, [sp]
-          str          \TRASHREG, [sp]
-          ldr          \TRASHREG, [\DESTREG]
-          cmp          \TRASHREG, \REFREG
+          str          r12, [sp]
+          ldr          r12, [\DESTREG]
+          cmp          r12, \REFREG
           bne          LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG)
 
           // The original DESTREG value is now restored but the stack has a value (the shadow version of the
@@ -69,9 +69,9 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG):
           // variant that doesn't implicitly specify the lock prefix. Note that INVALIDGCVALUE is a 32-bit
           // immediate and therefore must be moved into a register before it can be written to the shadow
           // location.
-          mov          \TRASHREG, \DESTREG
+          mov          r12, \DESTREG
           ldr          \DESTREG, [sp]
-          str          \TRASHREG, [sp]
+          str          r12, [sp]
           push         \REFREG
           movw         \REFREG, #(INVALIDGCVALUE & 0xFFFF)
           movt         \REFREG, #(INVALIDGCVALUE >> 16)
@@ -101,18 +101,18 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 
           // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
           // we're in a debug build and write barrier checking has been enabled).
-          UPDATE_GC_SHADOW \BASENAME, \REFREG, r0, \TRASHREG
+          UPDATE_GC_SHADOW \BASENAME, \REFREG, r0
 
           // If the reference is to an object that's not in an ephemeral generation we have no need to track it
           // (since the object won't be collected or moved by an ephemeral collection).
-          ldr	         \TRASHREG, =C_FUNC(g_ephemeral_low)
-          ldr          \TRASHREG, [\TRASHREG]
-          cmp          \REFREG, \TRASHREG
+          ldr	         r12, =C_FUNC(g_ephemeral_low)
+          ldr          r12, [r12]
+          cmp          \REFREG, r12
           blo          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
-          ldr	         \TRASHREG, =C_FUNC(g_ephemeral_high)
-          ldr          \TRASHREG, [\TRASHREG]
-          cmp	         \REFREG, \TRASHREG
+          ldr	         r12, =C_FUNC(g_ephemeral_high)
+          ldr          r12, [r12]
+          cmp	         \REFREG, r12
           bhi          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
@@ -120,20 +120,20 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
           // the byte if it hasn't already been done since writes are expensive and impact scaling.
           lsr          r0, #LOG2_CLUMP_SIZE
-          ldr	         \TRASHREG, =C_FUNC(g_card_table)
-          ldr          \TRASHREG, [\TRASHREG]
-          add          r0, \TRASHREG
-          ldrb         \TRASHREG, [r0]
-          cmp          \TRASHREG, #0FFh
+          ldr	         r12, =C_FUNC(g_card_table)
+          ldr          r12, [r12]
+          add          r0, r12
+          ldrb         r12, [r0]
+          cmp          r12, #0FFh
           bne          LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG)
 
 LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
-          b            	LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
+          b            LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
 // We get here if it's necessary to update the card table.
 LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG):
-          mov          \TRASHREG, #0FFh
-          strb         \TRASHREG, [r0]
+          mov          r12, #0FFh
+          strb         r12, [r0]
 
 LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG):
 
@@ -143,7 +143,7 @@ LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG):
 // the helpers have identical structure we use a macro to define this structure. One argument is taken, the
 // name of the register that will hold the object reference (this should be in upper case as it's used in the
 // definition of the name of the helper).
-.macro DEFINE_UNCHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME, TRASHREG
+.macro DEFINE_UNCHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
 
 // Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
 // decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
@@ -164,7 +164,7 @@ ALTERNATE_ENTRY RhpAssignRefAVLocation
           // and the card table update we may perform below.
           str          \REFREG, [r0]
 
-          DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG, \TRASHREG
+          DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG
 
           bx           lr
 LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
@@ -172,7 +172,7 @@ LEAF_END RhpAssignRef\EXPORT_REG_NAME, _TEXT
 
 // One day we might have write barriers for all the possible argument registers but for now we have
 // just one write barrier that assumes the input register is RSI.
-DEFINE_UNCHECKED_WRITE_BARRIER r1, r1, r3
+DEFINE_UNCHECKED_WRITE_BARRIER r1, r1
 
 //
 // Define the helpers used to implement the write barrier required when writing an object reference into a
@@ -181,20 +181,20 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1, r3
 // collection.
 //
 
-.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG, TRASHREG
+.macro DEFINE_CHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
 
           // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
           // in which case no write barrier is required.
-          ldr	         \TRASHREG, =C_FUNC(g_lowest_address)
-          ldr          \TRASHREG, [\TRASHREG]
-          cmp          r0, \TRASHREG
+          ldr	         r12, =C_FUNC(g_lowest_address)
+          ldr          r12, [r12]
+          cmp          r0, r12
           blo          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
-          ldr	         \TRASHREG, =C_FUNC(g_highest_address)
-          ldr          \TRASHREG, [\TRASHREG]
-          cmp          r0, \TRASHREG
+          ldr	         r12, =C_FUNC(g_highest_address)
+          ldr          r12, [r12]
+          cmp          r0, r12
           bhi          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
-          DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG, \TRASHREG
+          DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
 
 .endm
 
@@ -202,10 +202,10 @@ DEFINE_UNCHECKED_WRITE_BARRIER r1, r1, r3
 // the helpers have identical structure we use a macro to define this structure. One argument is taken, the
 // name of the register that will hold the object reference (this should be in upper case as it's used in the
 // definition of the name of the helper).
-.macro DEFINE_CHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME, TRASHREG
+.macro DEFINE_CHECKED_WRITE_BARRIER REFREG, EXPORT_REG_NAME
 
 // Define a helper with a name of the form RhpCheckedAssignRefEAX etc. (along with suitable calling standard
-// decoration). The location to be updated is always in RDI. The object reference that will be assigned into
+// decoration). The location to be updated is always in R0. The object reference that will be assigned into
 // that location is in one of the other general registers determined by the value of REFREG.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
@@ -223,7 +223,7 @@ ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
           // and the card table update we may perform below.
           str          \REFREG, [r0]
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG, \TRASHREG
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG
 
           bx           lr
 LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
@@ -231,7 +231,7 @@ LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 
 // One day we might have write barriers for all the possible argument registers but for now we have
 // just one write barrier that assumes the input register is RSI.
-DEFINE_CHECKED_WRITE_BARRIER r1, r1, r3
+DEFINE_CHECKED_WRITE_BARRIER r1, r1
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
@@ -251,7 +251,7 @@ LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           cbnz         r3, LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
           dmb
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1, r3
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1
           mov          r0, r4
           EPILOG_POP   "{r4,pc}"
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
@@ -271,7 +271,7 @@ LOCAL_LABEL(RhpCheckedXchgRetry):
           mov          r0, r2
           dmb
 
-          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1, r3
+          DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1
 
           bx           lr
 LEAF_END RhpCheckedXchg, _TEXT
