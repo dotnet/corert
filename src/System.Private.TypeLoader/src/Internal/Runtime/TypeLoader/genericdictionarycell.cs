@@ -712,7 +712,7 @@ namespace Internal.Runtime.TypeLoader
                             }
                         case TypeLoaderEnvironment.MethodAddressType.UniversalCanonical:
                             {
-                                if (Method.IsCanonicalMethod(CanonicalFormKind.Specific) &&
+                                if (Method.IsCanonicalMethod(CanonicalFormKind.Universal) &&
                                     !NeedsDictionaryParameterToCallCanonicalVersion(Method) &&
                                     !UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(
                                         Method.GetTypicalMethodDefinition().Signature))
@@ -870,15 +870,25 @@ namespace Internal.Runtime.TypeLoader
 
                 Debug.Assert(!MethodSignature.IsNativeLayoutSignature || (MethodSignature.NativeLayoutSignature() != IntPtr.Zero));
 
-                CallConverterThunk.ThunkKind thunkKind;
+                CallConverterThunk.ThunkKind thunkKind = default(CallConverterThunk.ThunkKind);
                 if (usgConverter)
                 {
                     if (genericMethod || containingTypeIsValueType)
                     {
-                        if (dictionary == IntPtr.Zero)
-                            thunkKind = CallConverterThunk.ThunkKind.StandardToGenericPassthruInstantiating;
+                        if (Method.UnboxingStub)
+                        {
+                            if (dictionary == IntPtr.Zero)
+                                Environment.FailFast("Need standard to generic non-instantiating unboxing stub thunk kind");
+                            else
+                                thunkKind = CallConverterThunk.ThunkKind.StandardUnboxingAndInstantiatingGeneric;
+                        }
                         else
-                            thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                        {
+                            if (dictionary == IntPtr.Zero)
+                                thunkKind = CallConverterThunk.ThunkKind.StandardToGenericPassthruInstantiating;
+                            else
+                                thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                        }
                     }
                     else
                     {
