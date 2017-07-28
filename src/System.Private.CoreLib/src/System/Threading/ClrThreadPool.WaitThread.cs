@@ -303,7 +303,7 @@ namespace System.Threading
             {
                 if (registeredHandle.Repeating)
                 {
-                    registeredHandle.RestartTimeout();
+                    registeredHandle.RestartTimeout(Environment.TickCount);
                 }
 
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));

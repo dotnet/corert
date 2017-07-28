@@ -21,7 +21,7 @@ namespace System.Threading
             {
                 Handle = waitHandle;
                 Callback = callbackHelper;
-                TimeoutDuration = millisecondsTimeout;
+                TimeoutDurationMs = millisecondsTimeout;
                 Repeating = repeating;
                 RestartTimeout();
             }
@@ -38,15 +38,15 @@ namespace System.Threading
             internal WaitHandle Handle { get; }
 
             /// <summary>
-            /// The time this handle times out at in ticks.
+            /// The time this handle times out at in ms.
             /// </summary>
             internal int TimeoutTimeMs { get; private set; }
 
-            private int TimeoutDuration { get; }
+            private int TimeoutDurationMs { get; }
 
-            public void RestartTimeout()
+            public void RestartTimeout(int currentTimeMs)
             {
-                TimeoutTimeMs = Environment.TickCount + TimeoutDuration;
+                TimeoutTimeMs = currentTimeMs + TimeoutDurationMs;
             }
 
             /// <summary>
