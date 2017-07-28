@@ -125,5 +125,18 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+        
+        internal static void Set(SafeWaitHandle waitHandle)
+        {
+            waitHandle.DangerousAddRef();
+            try
+            {
+                return SetCore(waitHandle.DangerousGetHandle());
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+        }
     }
 }

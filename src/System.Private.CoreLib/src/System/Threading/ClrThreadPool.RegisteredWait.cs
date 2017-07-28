@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
 
@@ -20,7 +21,7 @@ namespace System.Threading
             {
                 Handle = waitHandle;
                 Callback = callbackHelper;
-                TimeoutTime = millisecondsTimeout;
+                TimeoutTimeMs = millisecondsTimeout;
                 Repeating = repeating;
             }
 
@@ -37,7 +38,7 @@ namespace System.Threading
             /// <summary>
             /// The time this handle times out at in ticks.
             /// </summary>
-            internal int TimeoutTime { get; }
+            internal int TimeoutTimeMs { get; }
 
             /// <summary>
             /// Whether or not the wait is a repeating wait.
@@ -56,12 +57,12 @@ namespace System.Threading
 
             public bool IsUnregistered => _unregisterSignaled != 0;
 
-            public bool IsBlocking => UserUnregisterWaitHandle?.IsInvalid ?? false;
+            public bool IsBlocking { get; set; } = true;
 
             /// <summary>
             /// A <see cref="ManualResetEvent"/> that allows a <see cref="ClrThreadPool.WaitThread"/> to control when exactly this handle is unregistered.
             /// </summary>
-            internal ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
+            private ManualResetEvent CanUnregister { get; } = new ManualResetEvent(true);
 
             /// <summary>
             /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWait"/> was registered on.
@@ -70,11 +71,27 @@ namespace System.Threading
 
             private int _unregisterCalled;
 
+            private bool _automaticallyUnregistered;
+
             internal bool Unregister(WaitHandle waitObject)
             {
+                // In this case we will never signal the user-provided handle since we've already unregistered
+                // so we can just return.
+                if (_unregisterSignaled == 1 && _automaticallyUnregistered) 
+                {
+                    return true;
+                }
+
+                _automaticallyUnregistered = false;
+
                 if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
                 {
                     UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
+                    if (!(UserUnregisterWaitHandle?.IsInvalid ?? true))
+                    {
+                        UserUnregisterWaitHandle.DangerousAddRef();
+                        IsBlocking = UserUnregisterWaitHandle.DangerousGetHandle() == new IntPtr(-1);
+                    }
                     WaitThread.QueueOrExecuteUnregisterWait(this);
                     return true;
                 }
@@ -84,17 +101,22 @@ namespace System.Threading
             /// <summary>
             /// Signal <see cref="UserUnregisterWaitHandle"/> if it has not been signaled yet and is a valid handle.
             /// </summary>
-            internal void SignalUserWaitHandle()
+            internal void SignalUserWaitHandle(bool automaticallyUnregistered = false)
             {
                 if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
                 {
-                    CanUnregister.WaitOne();
-
-                    if (UserUnregisterWaitHandle != null)
+                    _automaticallyUnregistered = automaticallyUnregistered;
+                    SafeWaitHandle handle = UserUnregisterWaitHandle;
+                    if (!(handle?.IsInvalid ?? true))
                     {
-                        if (!UserUnregisterWaitHandle.IsInvalid)
+                        try
                         {
-                            WaitHandle.Set(UserUnregisterWaitHandle);
+                            CanUnregister.WaitOne(interruptible: false);
+                            EventWaitHandle.Set(handle);
+                        }
+                        finally
+                        {
+                            handle.DangerousRelease();
                         }
                     }
                 }
@@ -106,10 +128,12 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             internal void PerformCallback(bool timedOut)
             {
+                CanUnregister.Reset(); // TODO: Refcount like setup for tracking calls into PerformCallback
                 if (_unregisterSignaled == 0)
                 {
                     _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
                 }
+                CanUnregister.Set();
             }
         }
 

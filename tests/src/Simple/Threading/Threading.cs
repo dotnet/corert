@@ -67,6 +67,9 @@ internal static class Runner
         // This test takes a long time to run. Enable for manual testing.
         // Console.WriteLine("    WaitThreadTests.WaitWithLongerTimeoutThanWaitThreadCanStillTimeout");
         // WaitThreadTests.WaitWithLongerTimeoutThanWaitThreadCanStillTimeout();
+
+        Console.WriteLine("    WaitThreadTests.UnregisterCallbackIsNotCalledAfterCallbackFinishesIfAnotherCallbackOnSameWaitRunning");
+        WaitThreadTests.UnregisterCallbackIsNotCalledAfterCallbackFinishesIfAnotherCallbackOnSameWaitRunning();
         return Pass;
     }
 }
@@ -916,6 +919,19 @@ internal static class WaitThreadTests
         ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => e0.Set(), null, 21000, true);
         Thread.Sleep(20000);
         Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void UnregisterCallbackIsNotCalledAfterCallbackFinishesIfAnotherCallbackOnSameWaitRunning()
+    {
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        AutoResetEvent e1 = new AutoResetEvent(false);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+            Thread.Sleep(1500);
+        }, null, 1000, false);
+        Thread.Sleep(2750);
+        handle.Unregister(e1);
+        Assert.False(e1.WaitOne(0));
     }
 }
 

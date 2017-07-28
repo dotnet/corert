@@ -263,10 +263,10 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(IntPtr handle, int timeoutMilliseconds)
+        public static bool Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
-            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds);
+            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
         }
 
         public static bool Wait(
@@ -291,8 +291,9 @@ namespace System.Threading
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= numWaitHandles);
             Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= safeWaitHandles.Length);
+            Debug.Assert(numWaitHandles <= waitHandles.Length);
             Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 

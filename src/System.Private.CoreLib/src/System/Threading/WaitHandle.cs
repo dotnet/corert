@@ -109,7 +109,7 @@ namespace System.Threading
             return WaitOneCore(millisecondsTimeout);
         }
 
-        private bool WaitOneCore(int millisecondsTimeout)
+        private bool WaitOneCore(int millisecondsTimeout, bool interruptible = true)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -125,7 +125,7 @@ namespace System.Threading
             waitHandle.DangerousAddRef();
             try
             {
-                return WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                return WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, interruptible);
             }
             finally
             {
@@ -138,6 +138,8 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) => WaitOne(millisecondsTimeout);
         public virtual bool WaitOne(TimeSpan timeout, bool exitContext) => WaitOne(timeout);
+
+        internal bool WaitOne(bool interruptible) => WaitOneCore(Timeout.Infinite, interruptible);
 
         /// <summary>
         /// Obtains all of the corresponding safe wait handles and adds a ref to each. Since the <see cref="SafeWaitHandle"/>

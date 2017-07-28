@@ -9,8 +9,8 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout) =>
-            WaitSubsystem.Wait(handle, millisecondsTimeout);
+        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout, bool interruptible) =>
+            WaitSubsystem.Wait(handle, millisecondsTimeout, interruptible);
 
         private static int WaitAnyCore(
             RuntimeThread currentThread,
@@ -34,11 +34,6 @@ namespace System.Threading
         private static bool SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)
         {
             return WaitSubsystem.SignalAndWait(handleToSignal, handleToWaitOn, millisecondsTimeout);
-        }
-
-        internal static void Set(SafeWaitHandle handle)
-        {
-            WaitSubsystem.SetEvent(handle.DangerousGetHandle());
         }
     }
 }

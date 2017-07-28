@@ -24,27 +24,20 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWait handle)
         {
-            bool needToStartWaitThread = RegisterWaitHandleOnWaitThread(handle);
-
-            if (needToStartWaitThread)
-            {
-                _waitThreadsTail.Thread.Start(); // If this fails, propogate the exception up like CoreCLR
-            }
+            RegisterWaitHandleOnWaitThread(handle);
         }
 
-        private bool RegisterWaitHandleOnWaitThread(RegisteredWait handle)
+        private void RegisterWaitHandleOnWaitThread(RegisteredWait handle)
         {
             _waitThreadListLock.Acquire();
             try
             {
-                bool needToStartWaitThread = false;
                 if (_waitThreadsHead == null) // Lazily create the first wait thread.
                 {
                     _waitThreadsTail = _waitThreadsHead = new WaitThreadNode
                     {
                         Thread = new WaitThread()
                     };
-                    needToStartWaitThread = true;
                 }
 
                 // Register the wait handle on the first wait thread that is not at capacity.
@@ -54,7 +47,7 @@ namespace System.Threading
                 {
                     if (current.Thread.RegisterWaitHandle(handle))
                     {
-                        return needToStartWaitThread;
+                        return;
                     }
                     prev = current;
                     current = current.Next;
@@ -66,7 +59,7 @@ namespace System.Threading
                     Thread = new WaitThread()
                 };
                 prev.Next.Thread.RegisterWaitHandle(handle);
-                return true;
+                return;
             }
             finally
             {
@@ -183,6 +176,14 @@ namespace System.Threading
 
             internal bool AnyUserWaits => _numUserWaits != 0;
 
+            public WaitThread()
+            {
+                _waitHandles[0] = _changeHandlesEvent;
+                RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
+                waitThread.IsBackground = true;
+                waitThread.Start();
+            }
+
             /// <summary>
             /// The main routine for the wait thread.
             /// </summary>
@@ -192,18 +193,18 @@ namespace System.Threading
                 {
                     ProcessRemovals();
                     int numUserWaits = _numUserWaits;
-                    int preWaitTicks = Environment.TickCount;
+                    int preWaitTimeMs = Environment.TickCount;
 
                     // Recalculate Timeout
-                    int timeout = ThreadPoolThreadTimeoutMs;
+                    int timeoutDurationMs = ThreadPoolThreadTimeoutMs;
                     for (int i = 0; i < numUserWaits; i++)
                     {
-                        int handleRemaining = _registeredWaits[i].TimeoutTime - preWaitTicks;
+                        int handleTimeoutDurationMs = _registeredWaits[i].TimeoutTimeMs - preWaitTimeMs;
 
-                        timeout = Math.Min(handleRemaining > 0 ? handleRemaining : 0, timeout);
+                        timeoutDurationMs = Math.Min(handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0, timeoutDurationMs);
                     }
 
-                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeout);
+                    int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeoutDurationMs);
 
                     if (signaledHandleIndex == 0) // If we were woken up for a change in our handles, continue.
                     {
@@ -218,7 +219,7 @@ namespace System.Threading
                     }
                     else
                     {
-                        if(!AnyUserWaits)
+                        if(numUserWaits == 0)
                         {
                             if (ThreadPoolInstance.TryRemoveWaitThread(this))
                             {
@@ -226,12 +227,12 @@ namespace System.Threading
                             }
                         }
 
-                        int elapsedTicks = Environment.TickCount - preWaitTicks; // Calculate using relative time to ensure we don't have issues with overflow wraparound
+                        int elapsedTicks = Environment.TickCount - preWaitTimeMs; // Calculate using relative time to ensure we don't have issues with overflow wraparound
                         for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWait registeredHandle = _registeredWaits[i];
-                            int timeoutRemainingTicks = registeredHandle.TimeoutTime - preWaitTicks;
-                            if (elapsedTicks > timeoutRemainingTicks)
+                            int handleTimeoutDurationMs = registeredHandle.TimeoutTimeMs - preWaitTimeMs;
+                            if (elapsedTicks > handleTimeoutDurationMs)
                             {
                                 QueueWaitCompletion(registeredHandle, true);
                             }
@@ -274,24 +275,12 @@ namespace System.Threading
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
                                 _registeredWaits[_numUserWaits - 1] = null;
                                 _waitHandles[_numUserWaits] = null;
-                                for (int k = _numUserWaits - 1; k > 0; k--)
-                                {
-                                    if (_registeredWaits[k - 1] != null)
-                                    {
-                                        _numUserWaits = k;
-                                        break;
-                                    }
-                                }
-
-                                if(_registeredWaits[0] == null)
-                                {
-                                    _numUserWaits = 0;
-                                }
-
+                                --_numUserWaits;
+                                _pendingRemoves[i] = null;
                                 break;
                             }
                         }
-                        _pendingRemoves[i] = null;
+                        Debug.Assert(_pendingRemoves[i] == null);
                     }
                     _numPendingRemoves = 0;
 
@@ -322,12 +311,10 @@ namespace System.Threading
             private void CompleteWait(object state)
             {
                 CompletedWaitHandle handle = (CompletedWaitHandle)state;
-                handle.CompletedHandle.CanUnregister.Reset();
                 handle.CompletedHandle.PerformCallback(handle.TimedOut);
-                handle.CompletedHandle.CanUnregister.Set();
                 if (!handle.CompletedHandle.Repeating)
                 {
-                    QueueOrExecuteUnregisterWait(handle.CompletedHandle);
+                    UnregisterWait(handle.CompletedHandle, true);
                 }
             }
 
@@ -360,18 +347,7 @@ namespace System.Threading
                 _changeHandlesEvent.Set();
                 return true;
             }
-
-            /// <summary>
-            /// Starts the wait thread.
-            /// </summary>
-            public void Start()
-            {
-                _waitHandles[0] = _changeHandlesEvent;
-                RuntimeThread waitThread = RuntimeThread.Create(WaitThreadStart);
-                waitThread.IsBackground = true;
-                waitThread.Start();
-            }
-
+            
             /// <summary>
             /// Queues on the thread pool or executes directly a call to <see cref="UnregisterWait(object)"/>.
             /// </summary>
@@ -393,14 +369,14 @@ namespace System.Threading
                 }
             }
 
+            private void UnregisterWait(object state) => UnregisterWait((RegisteredWait)state, false);
+
             /// <summary>
             /// Unregister a wait handle.
             /// </summary>
             /// <param name="state">The wait handle to unregister.</param>
-            private void UnregisterWait(object state)
+            private void UnregisterWait(RegisteredWait handle, bool automaticallyUnregistered)
             {
-                RegisteredWait handle = (RegisteredWait)state;
-
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
                 _removesLock.Acquire();
                 try
@@ -418,7 +394,7 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
-                handle.SignalUserWaitHandle();
+                handle.SignalUserWaitHandle(automaticallyUnregistered);
             }
         }
     }
