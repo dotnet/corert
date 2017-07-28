@@ -44,6 +44,10 @@
           // Update the shadow heap.
           str          \REFREG, [\DESTREG]
 
+          // The following read must be strongly ordered wrt to the write we've just performed in order to
+          // prevent race conditions.
+          dmb
+
           // Now check that the real heap location still contains the value we just wrote into the shadow heap. This
           // read must be strongly ordered wrt to the previous write to prevent race conditions. We also need to
           // recover the old value of DESTREG for the comparison so use an xchg instruction (which has an implicit lock
@@ -160,6 +164,17 @@ ALTERNATE_ENTRY RhpAssignRef
 ALTERNATE_ENTRY RhpAssignRefAVLocation
 .endif
 
+          // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
+          // intent is that writes to the target object ($REFREG) will be visible across all CPUs before the
+          // write to the destination ($DESTREG). This covers most of the common scenarios where the programmer
+          // might assume strongly ordered accessess, namely where the preceding writes are used to initialize
+          // the object and the final write, made by this barrier in the instruction following the DMB,
+          // publishes that object for other threads/cpus to see.
+          //
+          // Note that none of this is relevant for single cpu machines. We may choose to implement a
+          // uniprocessor specific version of this barrier if uni-proc becomes a significant scenario again.
+	        dmb
+
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
           str          \REFREG, [r0]
@@ -219,6 +234,16 @@ ALTERNATE_ENTRY RhpCheckedAssignRef
 ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
 .endif
 
+          // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
+          // intent is that writes to the target object ($REFREG) will be visible across all CPUs before the
+          // write to the destination ($DESTREG). This covers most of the common scenarios where the programmer
+          // might assume strongly ordered accessess, namely where the preceding writes are used to initialize
+          // the object and the final write, made by this barrier in the instruction following the DMB,
+          // publishes that object for other threads/cpus to see.
+          //
+          // Note that none of this is relevant for single cpu machines. We may choose to implement a
+          // uniprocessor specific version of this barrier if uni-proc becomes a significant scenario again.
+          dmb
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
           str          \REFREG, [r0]
@@ -240,6 +265,9 @@ DEFINE_CHECKED_WRITE_BARRIER r1, r1
 // r1 = value
 // r2 = comparand
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
+          // To implement our chosen memory model for ARM we insert a memory barrier at GC write brriers. This
+          // barrier must occur before the object reference update, so we have to do it unconditionally even
+          // though the update may fail below.
           dmb
 ALTERNATE_ENTRY 	RhpCheckedLockCmpXchgAVLocation
 LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
@@ -249,7 +277,6 @@ LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           strex        r3, r1, [r0]
           cbnz         r3, LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
           mov          r3, r2
-          dmb
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1
 
@@ -263,6 +290,8 @@ LEAF_END RhpCheckedLockCmpXchg, _TEXT
 // r0 = destination address
 // r1 = value
 LEAF_ENTRY RhpCheckedXchg, _TEXT
+          // To implement our chosen memory model for ARM we insert a memory barrier at GC write barriers. This
+          // barrier must occur before the object reference update.
           dmb
 ALTERNATE_ENTRY RhpCheckedXchgAVLocation
 LOCAL_LABEL(RhpCheckedXchgRetry):
@@ -270,7 +299,6 @@ LOCAL_LABEL(RhpCheckedXchgRetry):
           strex        r3, r1, [r0]
           cbnz         r3, LOCAL_LABEL(RhpCheckedXchgRetry)
           mov          r0, r2
-          dmb
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1
 
