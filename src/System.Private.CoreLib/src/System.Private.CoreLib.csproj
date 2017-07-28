@@ -646,7 +646,6 @@
     <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.RegisteredWait.cs" />
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />

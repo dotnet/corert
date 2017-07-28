@@ -22,12 +22,12 @@ namespace System.Threading
         /// Register a wait handle on a <see cref="WaitThread"/>.
         /// </summary>
         /// <param name="handle">A description of the requested registration.</param>
-        internal void RegisterWaitHandle(RegisteredWait handle)
+        internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
             RegisterWaitHandleOnWaitThread(handle);
         }
 
-        private void RegisterWaitHandleOnWaitThread(RegisteredWait handle)
+        private void RegisterWaitHandleOnWaitThread(RegisteredWaitHandle handle)
         {
             _waitThreadListLock.Acquire();
             try
@@ -122,24 +122,24 @@ namespace System.Threading
         internal class WaitThread
         {
             /// <summary>
-            /// The info for a completed wait on a specific <see cref="RegisteredWait"/>.
+            /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
             /// </summary>
             private struct CompletedWaitHandle
             {
-                public CompletedWaitHandle(RegisteredWait completedHandle, bool timedOut)
+                public CompletedWaitHandle(RegisteredWaitHandle completedHandle, bool timedOut)
                 {
                     CompletedHandle = completedHandle;
                     TimedOut = timedOut;
                 }
 
-                public RegisteredWait CompletedHandle { get; }
+                public RegisteredWaitHandle CompletedHandle { get; }
                 public bool TimedOut { get; }
             }
 
             /// <summary>
             /// The wait handles registered on this wait thread.
             /// </summary>
-            private readonly RegisteredWait[] _registeredWaits = new RegisteredWait[WaitHandle.MaxWaitHandles - 1];
+            private readonly RegisteredWaitHandle[] _registeredWaits = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles - 1];
             /// <summary>
             /// The raw wait handles to wait on.
             /// </summary>
@@ -159,7 +159,7 @@ namespace System.Threading
             /// <summary>
             /// A list of removals of wait handles that are waiting for the wait thread to process.
             /// </summary>
-            private readonly RegisteredWait[] _pendingRemoves = new RegisteredWait[WaitHandle.MaxWaitHandles - 1];
+            private readonly RegisteredWaitHandle[] _pendingRemoves = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles - 1];
             /// <summary>
             /// The number of pending removals.
             /// </summary>
@@ -235,7 +235,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    RegisteredWait signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
+                    RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
 
                     if (signaledHandle != null)
                     {
@@ -254,7 +254,7 @@ namespace System.Threading
                         int elapsedTicks = Environment.TickCount - preWaitTimeMs; // Calculate using relative time to ensure we don't have issues with overflow wraparound
                         for (int i = 0; i < numUserWaits; i++)
                         {
-                            RegisteredWait registeredHandle = _registeredWaits[i];
+                            RegisteredWaitHandle registeredHandle = _registeredWaits[i];
                             int handleTimeoutDurationMs = registeredHandle.TimeoutTimeMs - preWaitTimeMs;
                             if (elapsedTicks > handleTimeoutDurationMs)
                             {
@@ -324,7 +324,7 @@ namespace System.Threading
             /// </summary>
             /// <param name="registeredHandle">The handle that completed.</param>
             /// <param name="timedOut">Whether or not the wait timed out.</param>
-            private void QueueWaitCompletion(RegisteredWait registeredHandle, bool timedOut)
+            private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 if (registeredHandle.Repeating)
                 {
@@ -353,7 +353,7 @@ namespace System.Threading
             /// </summary>
             /// <param name="handle">The handle to register.</param>
             /// <returns>If the handle was successfully registered on this wait thread.</returns>
-            public bool RegisterWaitHandle(RegisteredWait handle)
+            public bool RegisterWaitHandle(RegisteredWaitHandle handle)
             {
                 _registeredHandlesLock.Acquire();
                 try
@@ -384,10 +384,10 @@ namespace System.Threading
             /// <param name="handle">The handle to unregister.</param>
             /// <remarks>
             /// As per CoreCLR's behavior, if the user passes in an invalid <see cref="WaitHandle"/>
-            /// into <see cref="RegisteredWait.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
+            /// into <see cref="RegisteredWaitHandle.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
             /// Otherwise, the unregistration of the wait handle is queued on the thread pool.
             /// </remarks>
-            public void QueueOrExecuteUnregisterWait(RegisteredWait handle)
+            public void QueueOrExecuteUnregisterWait(RegisteredWaitHandle handle)
             {
                 if (handle.IsBlocking)
                 {
@@ -399,13 +399,13 @@ namespace System.Threading
                 }
             }
 
-            private void UnregisterWait(object state) => UnregisterWait((RegisteredWait)state, blocking: false);
+            private void UnregisterWait(object state) => UnregisterWait((RegisteredWaitHandle)state, blocking: false);
 
             /// <summary>
             /// Unregister a wait handle.
             /// </summary>
             /// <param name="state">The wait handle to unregister.</param>
-            private void UnregisterWait(RegisteredWait handle, bool blocking)
+            private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
             {
                 bool pendingUnregistration = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
