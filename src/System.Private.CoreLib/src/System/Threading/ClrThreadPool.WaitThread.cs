@@ -199,9 +199,19 @@ namespace System.Threading
                     int timeoutDurationMs = ThreadPoolThreadTimeoutMs;
                     for (int i = 0; i < numUserWaits; i++)
                     {
+                        if (_registeredWaits[i].InfiniteTimeout)
+                        {
+                            continue;
+                        }
+
                         int handleTimeoutDurationMs = _registeredWaits[i].TimeoutTimeMs - preWaitTimeMs;
 
                         timeoutDurationMs = Math.Min(handleTimeoutDurationMs > 0 ? handleTimeoutDurationMs : 0, timeoutDurationMs);
+
+                        if (timeoutDurationMs == 0)
+                        {
+                            break;
+                        }
                     }
 
                     int signaledHandleIndex = WaitHandle.WaitAny(_waitHandles, numUserWaits + 1, timeoutDurationMs);
@@ -271,6 +281,7 @@ namespace System.Threading
                         {
                             if (_pendingRemoves[i] == _registeredWaits[j])
                             {
+                                _registeredWaits[j].TrySignalUserWaitHandle();
                                 _registeredWaits[j] = _registeredWaits[_numUserWaits - 1];
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
                                 _registeredWaits[_numUserWaits - 1] = null;
@@ -305,7 +316,7 @@ namespace System.Threading
                 {
                     registeredHandle.RestartTimeout(Environment.TickCount);
                 }
-
+                registeredHandle.RequestCallback();
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
 
@@ -319,7 +330,7 @@ namespace System.Threading
                 handle.CompletedHandle.PerformCallback(handle.TimedOut);
                 if (!handle.CompletedHandle.Repeating)
                 {
-                    UnregisterWait(handle.CompletedHandle, true);
+                    UnregisterWait(handle.CompletedHandle);
                 }
             }
 
@@ -366,7 +377,7 @@ namespace System.Threading
             {
                 if (handle.IsBlocking)
                 {
-                    UnregisterWait(handle);
+                    UnregisterWait(handle, blocking: true);
                 }
                 else
                 {
@@ -374,24 +385,25 @@ namespace System.Threading
                 }
             }
 
-            private void UnregisterWait(object state) => UnregisterWait((RegisteredWait)state, false);
+            private void UnregisterWait(object state) => UnregisterWait((RegisteredWait)state, blocking: false);
 
             /// <summary>
             /// Unregister a wait handle.
             /// </summary>
             /// <param name="state">The wait handle to unregister.</param>
-            private void UnregisterWait(RegisteredWait handle, bool automaticallyUnregistered)
+            private void UnregisterWait(RegisteredWait handle, bool blocking)
             {
+                bool pendingUnregistration = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
                 _removesLock.Acquire();
                 try
                 {
-                    Debug.Assert(Array.IndexOf(_registeredWaits, handle) != -1 || handle.IsUnregistered);
                     // If this handle is not already pending removal and hasn't already been removed
-                    if (Array.IndexOf(_pendingRemoves, handle) == -1 && !handle.IsUnregistered)
+                    if (Array.IndexOf(_registeredWaits, handle) != -1 && Array.IndexOf(_pendingRemoves, handle) == -1)
                     {
                         _pendingRemoves[_numPendingRemoves++] = handle;
                         _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
+                        pendingUnregistration = true;
                     }
                 }
                 finally
@@ -399,7 +411,10 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
-                handle.SignalUserWaitHandle(automaticallyUnregistered);
+                if (pendingUnregistration && blocking)
+                {
+                    handle.BlockOnUnregistration();
+                }
             }
         }
     }

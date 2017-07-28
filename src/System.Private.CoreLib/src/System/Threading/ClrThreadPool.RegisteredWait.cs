@@ -44,6 +44,8 @@ namespace System.Threading
 
             private int TimeoutDurationMs { get; }
 
+            public bool InfiniteTimeout => TimeoutDurationMs == -1;
+
             public void RestartTimeout(int currentTimeMs)
             {
                 TimeoutTimeMs = currentTimeMs + TimeoutDurationMs;
@@ -54,19 +56,17 @@ namespace System.Threading
             /// </summary>
             internal bool Repeating { get; }
 
-            private RecursiveEvent CanUnregister { get; } = new RecursiveEvent();
-
             /// <summary>
             /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
             /// </summary>
             private SafeWaitHandle UserUnregisterWaitHandle { get; set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
 
+            private IntPtr UserUnregisterWaitHandleValue { get; set; } = new IntPtr(-1);
+
             /// <summary>
             /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
             /// </summary>
             private volatile int _unregisterSignaled;
-
-            public bool IsUnregistered => _unregisterSignaled != 0;
 
             public bool IsBlocking { get; set; } = true;
 
@@ -77,28 +77,28 @@ namespace System.Threading
 
             private int _unregisterCalled;
 
-            private bool _automaticallyUnregistered;
+            private AutoResetEvent _unregisteredEvent = new AutoResetEvent(false);
 
             internal bool Unregister(WaitHandle waitObject)
             {
-                // In this case we will never signal the user-provided handle since we've already unregistered
-                // so we can just return.
-                if (_unregisterSignaled == 1 && _automaticallyUnregistered) 
-                {
-                    return true;
-                }
-
-                _automaticallyUnregistered = false;
-
                 if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
                 {
                     UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                     if (!(UserUnregisterWaitHandle?.IsInvalid ?? true))
                     {
                         UserUnregisterWaitHandle.DangerousAddRef();
-                        IsBlocking = UserUnregisterWaitHandle.DangerousGetHandle() == new IntPtr(-1);
+                        UserUnregisterWaitHandleValue = UserUnregisterWaitHandle.DangerousGetHandle();
+                        IsBlocking = UserUnregisterWaitHandleValue == new IntPtr(-1);
                     }
-                    WaitThread.QueueOrExecuteUnregisterWait(this);
+                    else
+                    {
+                        IsBlocking = false;
+                    }
+
+                    if (_unregisterSignaled == 0)
+                    {
+                        WaitThread.QueueOrExecuteUnregisterWait(this);
+                    }
                     return true;
                 }
                 return false;
@@ -107,17 +107,15 @@ namespace System.Threading
             /// <summary>
             /// Signal <see cref="UserUnregisterWaitHandle"/> if it has not been signaled yet and is a valid handle.
             /// </summary>
-            internal void SignalUserWaitHandle(bool automaticallyUnregistered = false)
+            private void SignalUserWaitHandle()
             {
                 if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
                 {
-                    _automaticallyUnregistered = automaticallyUnregistered;
-                    SafeWaitHandle handle = UserUnregisterWaitHandle;
-                    if (!(handle?.IsInvalid ?? true))
+                    var handle = UserUnregisterWaitHandle;
+                    if (UserUnregisterWaitHandleValue != new IntPtr(-1))
                     {
                         try
                         {
-                            CanUnregister.Wait();
                             EventWaitHandle.Set(handle);
                         }
                         finally
@@ -125,6 +123,7 @@ namespace System.Threading
                             handle.DangerousRelease();
                         }
                     }
+                    _unregisteredEvent.Set();
                 }
             }
 
@@ -134,60 +133,78 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             internal void PerformCallback(bool timedOut)
             {
-                CanUnregister.Reset(); // TODO: Refcount like setup for tracking calls into PerformCallback
                 if (_unregisterSignaled == 0)
                 {
                     _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
                 }
-                CanUnregister.Set();
+                CompleteCallbackRequest();
             }
 
+            private volatile int _numRequestedCallbacks;
+            private LowLevelLock _callbackLock = new LowLevelLock();
+            private bool _signalAfterCallbacksComplete;
 
-            private class RecursiveEvent
+            internal void RequestCallback()
             {
-                private ManualResetEvent _unregisterEvent = new ManualResetEvent(true);
-
-                private volatile int _callbackCount;
-                private LowLevelLock _callbackLock = new LowLevelLock();
-
-                public void Reset()
+                _callbackLock.Acquire();
+                try
                 {
-                    _callbackLock.Acquire();
-                    try
+                    _numRequestedCallbacks++;
+                }
+                finally
+                {
+                    _callbackLock.Release();
+                }
+            }
+
+            internal void TrySignalUserWaitHandle()
+            {
+                _callbackLock.Acquire();
+                try
+                {
+
+                    if (UserUnregisterWaitHandle != null && UserUnregisterWaitHandleValue != new IntPtr(-1))
                     {
-                        if (_callbackCount++ == 0)
+                        if (_numRequestedCallbacks == 0)
                         {
-                            _unregisterEvent.Reset();
+                            SignalUserWaitHandle();
+                        }
+                        else
+                        {
+                            _signalAfterCallbacksComplete = true;
                         }
                     }
-                    finally
-                    {
-                        _callbackLock.Release();
-                    }
                 }
-
-                public void Set()
+                finally
                 {
-                    _callbackLock.Acquire();
-                    try
-                    {
-                        if (--_callbackCount == 0)
-                        {
-                            _unregisterEvent.Set();
-                        }
-                    }
-                    finally
-                    {
-                        _callbackLock.Release();
-                    }
+                    _callbackLock.Release();
                 }
+            }
 
-                public void Wait()
+            private void CompleteCallbackRequest()
+            {
+                _callbackLock.Acquire();
+                try
                 {
-                    _unregisterEvent.WaitOne(interruptible: false);
+                    --_numRequestedCallbacks;
+                    if (_numRequestedCallbacks == 0 && _signalAfterCallbacksComplete)
+                    {
+                        SignalUserWaitHandle();
+                    }
                 }
+                finally
+                {
+                    _callbackLock.Release();
+                }
+            }
+
+            private int callCount = 0;
+            internal void BlockOnUnregistration()
+            {
+                ++callCount;
+                Debug.Assert(callCount == 1);
+                _unregisteredEvent.WaitOne();
             }
         }
-
     }
 }

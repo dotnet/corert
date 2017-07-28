@@ -51,12 +51,6 @@ internal static class Runner
         Console.WriteLine("    WaitThreadTests.UnregisterEventSignaledWhenUnregistered");
         WaitThreadTests.UnregisterEventSignaledWhenUnregistered();
 
-        // Manual Test for CLR Thread Pool
-        // Add in a busy loop at the top of ClrThreadPool.WaitThread.CompleteWait to replicate the race condition
-        // this test is testing
-        // Console.WriteLine("    WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed");
-        // WaitThreadTests.UnregisterCallbackRaceNoCallbackWhenCallbackDelayed(); 
-
         Console.WriteLine("    WaitThreadTests.CanRegisterMoreThan64Waits");
         WaitThreadTests.CanRegisterMoreThan64Waits();
 
@@ -70,6 +64,10 @@ internal static class Runner
 
         Console.WriteLine("    WaitThreadTests.UnregisterCallbackIsNotCalledAfterCallbackFinishesIfAnotherCallbackOnSameWaitRunning");
         WaitThreadTests.UnregisterCallbackIsNotCalledAfterCallbackFinishesIfAnotherCallbackOnSameWaitRunning();
+
+        Console.WriteLine("    WaitThreadTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue");
+        WaitThreadTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue();
+
         return Pass;
     }
 }
@@ -836,7 +834,7 @@ internal static class WaitThreadTests
             e1.Set();
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         registeredWaitHandle.Unregister(null);
-        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
     }
 
     [Fact]
@@ -851,12 +849,13 @@ internal static class WaitThreadTests
         for (int i = 0; i < 4; ++i)
         {
             e0.Set();
-            Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+            Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         }
         var invalidWaitHandle = new InvalidWaitHandle();
         registered.Unregister(invalidWaitHandle);
+        Thread.Sleep(50);
         e0.Set();
-        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds));
+        Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
     }
 
     [Fact]
@@ -867,21 +866,6 @@ internal static class WaitThreadTests
         var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         registered.Unregister(e1);
         Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
-    }
-
-    [Fact]
-    public static void UnregisterCallbackRaceNoCallbackWhenCallbackDelayed()
-    {
-        var e0 = new AutoResetEvent(false);
-        var e1 = new AutoResetEvent(false);
-        var e2 = new ManualResetEvent(true);
-        var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
-        {
-            e2.Reset();
-        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
-        e0.Set();
-        registered.Unregister(e1);
-        Assert.True(WaitHandle.WaitAll(new WaitHandle[]{e1, e2}, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 
     [Fact]
@@ -926,12 +910,23 @@ internal static class WaitThreadTests
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
         AutoResetEvent e1 = new AutoResetEvent(false);
-        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
+        {
             Thread.Sleep(150);
         }, null, 100, false);
         Thread.Sleep(275);
         handle.Unregister(e1);
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+    }
+
+    [Fact]
+    public static void CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue()
+    {
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, -1, true);
+        e0.Set();
+        Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
+        Assert.True(handle.Unregister(null));
     }
 }
 
