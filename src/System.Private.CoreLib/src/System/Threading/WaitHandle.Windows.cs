@@ -30,7 +30,7 @@ namespace System.Threading
         {
             fixed (IntPtr* pHandles = handles)
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout, true);
             }
         }
 

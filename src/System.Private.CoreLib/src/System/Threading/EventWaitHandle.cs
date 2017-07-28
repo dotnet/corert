@@ -126,7 +126,7 @@ namespace System.Threading
             }
         }
         
-        internal static void Set(SafeWaitHandle waitHandle)
+        internal static bool Set(SafeWaitHandle waitHandle)
         {
             waitHandle.DangerousAddRef();
             try
