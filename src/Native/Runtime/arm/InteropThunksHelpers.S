@@ -16,7 +16,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           // Custom calling convention:
           //      red zone has pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
           //      Copy red zone value into r12 so that the PROLOG_PUSH doesn't destroy it
-	        PROLOG_NOP   ldr r12, [sp, #-4]
+          PROLOG_NOP   ldr r12, [sp, #-4]
           PROLOG_PUSH  "{r0-r5}"
 
           mov          r4, r12
@@ -27,7 +27,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           // r4 = address of context cell in thunk's data
 
           ldr          r12, [r4]
- 	        str          r12, [r0]
+          str          r12, [r0]
 
           // Now load the target address and jump to it.
           ldr          r12, [r4, #POINTER_SIZE]
@@ -51,6 +51,6 @@ LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 
           INLINE_GET_TLS_VAR  tls_thunkData
 
-	        ldr           r0, [r0]
+          ldr           r0, [r0]
           bx            lr
 LEAF_END RhGetCurrentThunkContext, _TEXT
