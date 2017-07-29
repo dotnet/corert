@@ -326,11 +326,15 @@ namespace System.Threading
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
+                registeredHandle.RequestCallback();
                 if (registeredHandle.Repeating)
                 {
                     registeredHandle.RestartTimeout(Environment.TickCount);
                 }
-                registeredHandle.RequestCallback();
+                else
+                {
+                    UnregisterWait(registeredHandle);
+                }
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
 
@@ -342,10 +346,6 @@ namespace System.Threading
             {
                 CompletedWaitHandle handle = (CompletedWaitHandle)state;
                 handle.CompletedHandle.PerformCallback(handle.TimedOut);
-                if (!handle.CompletedHandle.Repeating)
-                {
-                    UnregisterWait(handle.CompletedHandle);
-                }
             }
 
             /// <summary>
