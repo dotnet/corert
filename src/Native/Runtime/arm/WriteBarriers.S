@@ -1,4 +1,4 @@
-  // Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -123,10 +123,9 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           // track this write. The location address is translated into an offset in the card table bitmap. We set
           // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
           // the byte if it hasn't already been done since writes are expensive and impact scaling.
-          lsr          r0, #LOG2_CLUMP_SIZE
-          ldr	         r12, =C_FUNC(g_card_table)
+          ldr          r12, =C_FUNC(g_card_table)
           ldr          r12, [r12]
-          add          r0, r12
+          add          r12, r12, r0, lsr #LOG2_CLUMP_SIZE
           ldrb         r12, [r0]
           cmp          r12, #0FFh
           bne          LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG)
@@ -355,10 +354,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
           // track this write. The location address is translated into an offset in the card table bitmap. We set
           // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
           // the byte if it hasn't already been done since writes are expensive and impact scaling.
-          lsr           r2, #LOG2_CLUMP_SIZE
           ldr           r3, =C_FUNC(g_card_table)
           ldr           r3, [r3]
-          add           r2, r3
+          add           r2, r3, r2, lsr #LOG2_CLUMP_SIZE
           ldrb          r3, [r2]
           cmp           r3, #0FFh
           bne           LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable)
