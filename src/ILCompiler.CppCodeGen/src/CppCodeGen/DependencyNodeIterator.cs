@@ -17,12 +17,14 @@ namespace ILCompiler.Compiler.CppCodeGen
         private List<DependencyNode> _nodes;
         private HashSet<DependencyNode> _visited;
         private Dictionary<TypeDesc, EETypeNode> _typeToNodeMap;
+        private NodeFactory _factory;
 
-        public DependencyNodeIterator(IEnumerable<DependencyNode> nodes)
+        public DependencyNodeIterator(IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             _nodes = new List<DependencyNode>();
             _typeToNodeMap = new Dictionary<TypeDesc, EETypeNode>();
             _visited = new HashSet<DependencyNode>();
+            _factory = factory;
             foreach (var node in nodes)
             {
                 if (node is EETypeNode)
@@ -56,17 +58,26 @@ namespace ILCompiler.Compiler.CppCodeGen
                         AddTypeNode(baseTypeNode);
                     else if (!_nodes.Contains(baseTypeNode)) _nodes.Add(baseTypeNode);
                 }
-                foreach (var field in node.Type.GetFields())
+                if (!node.Type.IsGenericDefinition)
                 {
-                    EETypeNode fieldNode;
-                    _typeToNodeMap.TryGetValue(field.FieldType, out fieldNode);
-                    if (fieldNode != null)
+                    foreach (var field in node.Type.GetFields())
                     {
-                        if (fieldNode.Type.IsValueType)
+                        EETypeNode fieldNode;
+                        _typeToNodeMap.TryGetValue(field.FieldType, out fieldNode);
+                        if (fieldNode == null)
                         {
-                            if (!fieldNode.Type.IsPrimitive)
-                                AddTypeNode(fieldNode);
-                            else if (!_nodes.Contains(fieldNode)) _nodes.Add(fieldNode);
+                            if (field.FieldType.IsValueType)
+                                AddTypeNode((EETypeNode)_factory.NecessaryTypeSymbol(field.FieldType));
+                        }
+                        else
+                        {
+                            if (fieldNode.Type.IsValueType)
+                            {
+                                if (!fieldNode.Type.IsPrimitive)
+                                    AddTypeNode(fieldNode);
+                                else if (!_nodes.Contains(fieldNode))
+                                    _nodes.Add(fieldNode);
+                            }
                         }
                     }
                 }
