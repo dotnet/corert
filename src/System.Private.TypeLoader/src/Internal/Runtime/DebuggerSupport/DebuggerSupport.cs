@@ -64,35 +64,6 @@ namespace Internal.Runtime.DebuggerSupport
 
     public class TypeSystemHelper
     {
-        public static Array NewArray(RuntimeTypeHandle arrElmType, int arrSize)
-        {
-            RuntimeTypeHandle arrayTypeHandle = default(RuntimeTypeHandle);
-            bool succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
-                    arrElmType,
-                    false,
-                    -1,
-                    out arrayTypeHandle);
-            Debug.Assert(succeed);
-            return Internal.Runtime.Augments.RuntimeAugments.NewArray(arrayTypeHandle, arrSize);
-        }
-
-        public static Array NewMultiDimArray(RuntimeTypeHandle arrElmType, int rank, int[] dims, int[] lowerBounds)
-        {
-            RuntimeTypeHandle arrayTypeHandle = default(RuntimeTypeHandle);
-            bool succeed = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(
-                              arrElmType,
-                              true,
-                              rank,
-                              out arrayTypeHandle
-                              );
-            Debug.Assert(succeed);
-            return Internal.Runtime.Augments.RuntimeAugments.NewMultiDimArray(
-                           arrayTypeHandle,
-                           dims,
-                           lowerBounds
-                           );
-        }
-
         public static bool CallingConverterDataFromMethodSignature(LowLevelNativeFormatReader reader,
                                                                    ulong[] externalReferences,
                                                                    out bool hasThis,
@@ -131,11 +102,6 @@ namespace Internal.Runtime.DebuggerSupport
             return objectTypeDesc.GetRuntimeTypeHandle();
         }
 
-        public static unsafe object BoxAnyType(IntPtr pData, RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.RhBoxAny(pData,typeHandle.Value);
-        }
-
         private static TypeDesc GetConstructedType(LowLevelNativeFormatReader reader, ulong[] externalReferences)
         {
             NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
@@ -148,16 +114,10 @@ namespace Internal.Runtime.DebuggerSupport
 
             TypeDesc objectTypeDesc = null;
             NativeParser parser = new NativeParser(reader.InternalReader, reader.Offset);
-            try
-            {
-                objectTypeDesc = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(
-                                    ref parser, 
-                                    nativeLayoutContext);
-            }
-            finally
-            {
-                TypeSystemContextFactory.Recycle(typeSystemContext);
-            }
+            objectTypeDesc = TypeLoaderEnvironment.Instance.GetConstructedTypeFromParserAndNativeLayoutContext(
+                                ref parser,
+                                nativeLayoutContext);
+            TypeSystemContextFactory.Recycle(typeSystemContext);
             return objectTypeDesc;
         }
     }

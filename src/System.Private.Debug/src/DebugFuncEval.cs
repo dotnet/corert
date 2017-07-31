@@ -96,7 +96,7 @@ namespace Internal.Runtime.DebuggerSupport
                 else if (!isVoid)
                 {
                     IntPtr input = arguments.GetAddressOfVarData(0);
-                    returnValue = TypeSystemHelper.BoxAnyType(input, param.types[0]);
+                    returnValue = RuntimeAugments.RhBoxAny(input, param.types[0].Value);
                 }
 
                 // The return value could be null if the target function returned null
@@ -270,20 +270,36 @@ namespace Internal.Runtime.DebuggerSupport
             }
 
             Array returnValue;
+            RuntimeTypeHandle arrayTypeHandle;
             // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank.
             // Pass false for isMdArray, and rank == -1 for SzArrays
-            if (rank == 1 && lowerBounds[0] == 0)
+            IntPtr returnValueHandlePointer = IntPtr.Zero;
+            uint returnHandleIdentifier = 0;
+            try
             {
-                returnValue = TypeSystemHelper.NewArray(arrElmTypeHandle, dims[0]);
+                if (rank == 1 && lowerBounds[0] == 0)
+                {
+                    // TODO : throw exception with loc message
+                    Debug.Assert(TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, false, -1, out arrayTypeHandle));
+                    returnValue = Internal.Runtime.Augments.RuntimeAugments.NewArray(arrayTypeHandle, dims[0]);
+                }
+                else
+                {
+                    // TODO : throw exception with loc message
+                    Debug.Assert(TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, true, (int)rank, out arrayTypeHandle));
+                    returnValue = Internal.Runtime.Augments.RuntimeAugments.NewMultiDimArray(
+                                  arrayTypeHandle,
+                                  dims,
+                                  lowerBounds);
+                }
+                GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
+                returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
+                returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
             }
-            else
+            finally
             {
-                returnValue = TypeSystemHelper.NewMultiDimArray(arrElmTypeHandle, (int)rank, dims, lowerBounds);
+                ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
             }
-            GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
-            IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);
-            uint returnHandleIdentifier = RuntimeAugments.RhpRecordDebuggeeInitiatedHandle(returnValueHandlePointer);
-            ReturnToDebuggerWithReturn(returnHandleIdentifier, returnValueHandlePointer, false);
         }
 
         private unsafe static void BuildDebuggerPreparedExternalReferences(LowLevelNativeFormatReader reader,
