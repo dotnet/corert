@@ -122,7 +122,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           // the byte if it hasn't already been done since writes are expensive and impact scaling.
           ldr          r12, =C_FUNC(g_card_table)
           ldr          r12, [r12]
-          add          r12, r12, r0, lsr #LOG2_CLUMP_SIZE
+          add          r0, r12, r0, lsr #LOG2_CLUMP_SIZE
           ldrb         r12, [r0]
           cmp          r12, #0FFh
           bne          LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG)
