@@ -913,11 +913,13 @@ internal static class WaitThreadTests
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
         AutoResetEvent e1 = new AutoResetEvent(false);
+        int numCalls = 0;
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
         {
-            Thread.Sleep(300);
-        }, null, 200, false);
-        Thread.Sleep(550);
+            Assert.NotEqual(numCalls++, 3);
+            Thread.Sleep(600);
+        }, null, 400, false);
+        Thread.Sleep(1100);
         handle.Unregister(e1);
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
     }
