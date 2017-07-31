@@ -109,12 +109,12 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
           ldr	         r12, =C_FUNC(g_ephemeral_low)
           ldr          r12, [r12]
           cmp          \REFREG, r12
-          blo          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
+          blo          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
           ldr	         r12, =C_FUNC(g_ephemeral_high)
           ldr          r12, [r12]
           cmp	         \REFREG, r12
-          bhi          LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
+          bhi          LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG)
 
           // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
           // track this write. The location address is translated into an offset in the card table bitmap. We set
