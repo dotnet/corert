@@ -182,6 +182,118 @@ namespace ILCompiler
             return NodeFactory.VTable(type).HasFixedSlots;
         }
 
+        public bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            switch (lookupKind)
+            {
+                case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.DefaultConstructor:
+                    return ((TypeDesc)targetOfLookup).IsRuntimeDeterminedSubtype;
+
+                case ReadyToRunHelperId.MethodDictionary:
+                case ReadyToRunHelperId.MethodEntry:
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.MethodHandle:
+                    return ((MethodDesc)targetOfLookup).IsRuntimeDeterminedExactMethod;
+
+                case ReadyToRunHelperId.FieldHandle:
+                    return ((FieldDesc)targetOfLookup).OwningType.IsRuntimeDeterminedSubtype;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            switch (lookupKind)
+            {
+                case ReadyToRunHelperId.TypeHandle:
+                    return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                    return NodeFactory.NecessaryTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.MethodDictionary:
+                    return NodeFactory.MethodGenericDictionary((MethodDesc)targetOfLookup);
+                case ReadyToRunHelperId.MethodEntry:
+                    return NodeFactory.FatFunctionPointer((MethodDesc)targetOfLookup);
+                case ReadyToRunHelperId.MethodHandle:
+                    return NodeFactory.RuntimeMethodHandle((MethodDesc)targetOfLookup);
+                case ReadyToRunHelperId.FieldHandle:
+                    return NodeFactory.RuntimeFieldHandle((FieldDesc)targetOfLookup);
+                case ReadyToRunHelperId.DefaultConstructor:
+                    {
+                        var type = (TypeDesc)targetOfLookup;   
+                        MethodDesc ctor = type.GetDefaultConstructor();
+                        if (ctor == null)
+                        {
+                            MetadataType activatorType = TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
+                            MetadataType classWithMissingCtor = activatorType.GetKnownNestedType("ClassWithMissingConstructor");
+                            ctor = classWithMissingCtor.GetParameterlessConstructor();
+                        }
+                        return NodeFactory.CanonicalEntrypoint(ctor);
+                    }
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public GenericDictionaryLookup ComputeGenericLookup(MethodDesc contextMethod, ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            GenericContextSource contextSource;
+
+            if (contextMethod.RequiresInstMethodDescArg())
+            {
+                contextSource = GenericContextSource.MethodParameter;
+            }
+            else if (contextMethod.RequiresInstMethodTableArg())
+            {
+                contextSource = GenericContextSource.TypeParameter;
+            }
+            else
+            {
+                Debug.Assert(contextMethod.AcquiresInstMethodTableFromThis());
+                contextSource = GenericContextSource.ThisObject;
+            }
+
+            // Can we do a fixed lookup? Start by checking if we can get to the dictionary.
+            // Context source having a vtable with fixed slots is a prerequisite.
+            if (contextSource == GenericContextSource.MethodParameter
+                || HasFixedSlotVTable(contextMethod.OwningType))
+            {
+                DictionaryLayoutNode dictionaryLayout;
+                if (contextSource == GenericContextSource.MethodParameter)
+                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod);
+                else
+                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod.OwningType);
+
+                // If the dictionary layout has fixed slots, we can compute the lookup now. Otherwise defer to helper.
+                if (dictionaryLayout.HasFixedSlots)
+                {
+                    int pointerSize = _nodeFactory.Target.PointerSize;
+
+                    GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
+                    int dictionarySlot = dictionaryLayout.GetSlotForEntry(lookup);
+                    int dictionaryOffset = dictionarySlot * pointerSize;
+
+                    if (contextSource == GenericContextSource.MethodParameter)
+                    {
+                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
+                    }
+                    else
+                    {
+                        int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
+                        int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
+                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                    }
+                }
+            }
+
+            // Fixed lookup not possible - use helper.
+            return GenericDictionaryLookup.CreateHelperLookup(contextSource);
+        }
+
         CompilationResults ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
             if (dumper != null)

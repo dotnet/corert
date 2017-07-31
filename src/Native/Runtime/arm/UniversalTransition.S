@@ -85,8 +85,6 @@
 NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
         // NOTE: While we do that, capture the two arguments in the red zone into r12 and r3.
-        str	         r4, [r3, #OFFSETOF__Object__m_pEEType]
-
         ldr          r12, [sp, #-4]          // Capture first argument from red zone into r12
         PROLOG_PUSH  "{r3}"                  // Push r3
         ldr          r3, [sp, #-4]           // Capture second argument from red zone into r3
