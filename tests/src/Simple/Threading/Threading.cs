@@ -926,7 +926,7 @@ internal static class WaitThreadTests
     public static void CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue()
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
-        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, Timeout.UnexpectedTimeoutMilliseconds, true);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         e0.Set();
         Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
         Assert.True(handle.Unregister(null));
@@ -936,7 +936,7 @@ internal static class WaitThreadTests
     public static void EventSetAfterUnregisterNotObservedOnWaitThread()
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
-        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, Timeout.UnexpectedTimeoutMilliseconds, true);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         handle.Unregister(null);
         e0.Set();
         Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
