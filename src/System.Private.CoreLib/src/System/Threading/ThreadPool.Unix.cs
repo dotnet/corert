@@ -91,7 +91,7 @@ namespace System.Threading
             if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
             {
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                if (!(UserUnregisterWaitHandle?.IsInvalid ?? true))
+                if (UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
                 {
                     UserUnregisterWaitHandle.DangerousAddRef();
                     UserUnregisterWaitHandleValue = UserUnregisterWaitHandle.DangerousGetHandle();
@@ -104,7 +104,7 @@ namespace System.Threading
 
                 if (_unregisterSignaled == 0)
                 {
-                    WaitThread.QueueOrExecuteUnregisterWait(this);
+                    WaitThread.UnregisterWait(this);
                 }
                 return true;
             }
@@ -119,7 +119,7 @@ namespace System.Threading
             if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
             {
                 SafeWaitHandle handle = UserUnregisterWaitHandle;
-                if (UserUnregisterWaitHandleValue != new IntPtr(-1))
+                if (!handle.IsInvalid)
                 {
                     try
                     {

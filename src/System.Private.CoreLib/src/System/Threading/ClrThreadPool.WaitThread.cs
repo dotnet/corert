@@ -333,7 +333,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    UnregisterWait(registeredHandle);
+                    UnregisterWait(registeredHandle, blocking: false);
                 }
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
@@ -387,19 +387,10 @@ namespace System.Threading
             /// into <see cref="RegisteredWaitHandle.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
             /// Otherwise, the unregistration of the wait handle is queued on the thread pool.
             /// </remarks>
-            public void QueueOrExecuteUnregisterWait(RegisteredWaitHandle handle)
+            public void UnregisterWait(RegisteredWaitHandle handle)
             {
-                if (handle.IsBlocking)
-                {
-                    UnregisterWait(handle, blocking: true);
-                }
-                else
-                {
-                    ThreadPool.QueueUserWorkItem(UnregisterWait, handle);
-                }
+                UnregisterWait(handle, handle.IsBlocking);
             }
-
-            private void UnregisterWait(object state) => UnregisterWait((RegisteredWaitHandle)state, blocking: false);
 
             /// <summary>
             /// Unregister a wait handle.

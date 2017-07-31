@@ -68,6 +68,9 @@ internal static class Runner
         Console.WriteLine("    WaitThreadTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue");
         WaitThreadTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue();
 
+        Console.WriteLine("    WaitThreadTests.EventSetAfterUnregisterNotObservedOnWaitThread");
+        WaitThreadTests.EventSetAfterUnregisterNotObservedOnWaitThread();
+
         return Pass;
     }
 }
@@ -923,10 +926,20 @@ internal static class WaitThreadTests
     public static void CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue()
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
-        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, -1, true);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, Timeout.UnexpectedTimeoutMilliseconds, true);
         e0.Set();
         Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
         Assert.True(handle.Unregister(null));
+    }
+
+    [Fact]
+    public static void EventSetAfterUnregisterNotObservedOnWaitThread()
+    {
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, Timeout.UnexpectedTimeoutMilliseconds, true);
+        handle.Unregister(null);
+        e0.Set();
+        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 }
 
