@@ -270,7 +270,7 @@ namespace Internal.Runtime.DebuggerSupport
             }
 
             Array returnValue;
-            RuntimeTypeHandle arrayTypeHandle;
+            RuntimeTypeHandle arrayTypeHandle = default(RuntimeTypeHandle);
             // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank.
             // Pass false for isMdArray, and rank == -1 for SzArrays
             IntPtr returnValueHandlePointer = IntPtr.Zero;
@@ -280,13 +280,15 @@ namespace Internal.Runtime.DebuggerSupport
                 if (rank == 1 && lowerBounds[0] == 0)
                 {
                     // TODO : throw exception with loc message
-                    Debug.Assert(TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, false, -1, out arrayTypeHandle));
+                    bool success = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, false, -1, out arrayTypeHandle);
+                    Debug.Assert(success);
                     returnValue = Internal.Runtime.Augments.RuntimeAugments.NewArray(arrayTypeHandle, dims[0]);
                 }
                 else
                 {
                     // TODO : throw exception with loc message
-                    Debug.Assert(TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, true, (int)rank, out arrayTypeHandle));
+                    bool success = TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(arrElmTypeHandle, true, (int)rank, out arrayTypeHandle);
+                    Debug.Assert(success);
                     returnValue = Internal.Runtime.Augments.RuntimeAugments.NewMultiDimArray(
                                   arrayTypeHandle,
                                   dims,
