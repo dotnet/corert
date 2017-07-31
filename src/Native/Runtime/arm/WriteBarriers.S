@@ -48,10 +48,7 @@
           // prevent race conditions.
           dmb
 
-          // Now check that the real heap location still contains the value we just wrote into the shadow heap. This
-          // read must be strongly ordered wrt to the previous write to prevent race conditions. We also need to
-          // recover the old value of DESTREG for the comparison so use an xchg instruction (which has an implicit lock
-          // prefix).
+          // Now check that the real heap location still contains the value we just wrote into the shadow heap.
           mov          r12, \DESTREG
           ldr          \DESTREG, [sp]
           str          r12, [sp]
@@ -153,14 +150,13 @@ LOCAL_LABEL(\BASENAME\()_EXIT_\REFREG):
 // location is in one of the other general registers determined by the value of REFREG.
 
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at WriteBarrierFunctionAvLOC
 // - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpAssignRef\EXPORT_REG_NAME, _TEXT
 
 // Export the canonical write barrier under unqualified name as well
 .ifc \REFREG, r1
 ALTERNATE_ENTRY RhpAssignRef
-ALTERNATE_ENTRY RhpAssignRefAVLocation
 .endif
 
           // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
@@ -176,6 +172,10 @@ ALTERNATE_ENTRY RhpAssignRefAVLocation
 
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
+ALTERNATE_ENTRY	"RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
+.ifc \REFREG, r1
+ALTERNATE_ENTRY RhpAssignRefAVLocation
+.endif
           str          \REFREG, [r0]
 
           DEFINE_UNCHECKED_WRITE_BARRIER_CORE RhpAssignRef, \REFREG
@@ -230,7 +230,6 @@ LEAF_ENTRY RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 // Export the canonical write barrier under unqualified name as well
 .ifc \REFREG, r1
 ALTERNATE_ENTRY RhpCheckedAssignRef
-ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
 .endif
 
           // Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
@@ -245,6 +244,10 @@ ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
           dmb
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
+ALTERNATE_ENTRY "RhpCheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
+.ifc \REFREG, r1
+ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+.endif
           str          \REFREG, [r0]
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedAssignRef, \REFREG
