@@ -969,6 +969,9 @@ namespace System
             if (!enumType.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
 
+            if (!enumType.IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+
             if (value == null)
             {
                 exception = new ArgumentNullException(nameof(value));
@@ -989,9 +992,6 @@ namespace System
                 exception = new ArgumentException(SR.Arg_MustContainEnumInfo);
                 return false;
             }
-
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
 
             // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
             if (enumType.ContainsGenericParameters)

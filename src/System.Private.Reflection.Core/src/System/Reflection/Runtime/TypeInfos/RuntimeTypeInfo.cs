@@ -52,6 +52,7 @@ namespace System.Reflection.Runtime.TypeInfos
         protected abstract override bool IsPointerImpl();
         public abstract override bool IsGenericParameter { get; }
         public abstract override bool IsConstructedGenericType { get; }
+        public abstract override bool IsByRefLike { get; }
 
         public abstract override Assembly Assembly { get; }
 
@@ -110,22 +111,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract override bool ContainsGenericParameters { get; }
 
-        //
-        // Left unsealed so that RuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo and RuntimeGenericParameterTypeInfo can override.
-        //
-        public override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                Debug.Assert(IsArray || IsByRef || IsPointer);
-                return Empty<CustomAttributeData>.Enumerable;
-            }
-        }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
  
         //
         // Left unsealed as generic parameter types must override.

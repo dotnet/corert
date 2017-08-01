@@ -70,7 +70,7 @@ namespace Internal.IL
             // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
             if (methodIL == null)
             {
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, method);
             }
 
             _compilation = compilation;
@@ -844,15 +844,17 @@ namespace Internal.IL
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
 
-            if (isStatic)
+            // Covers both ldsfld/ldsflda and ldfld/ldflda with a static field
+            if (isStatic || field.IsStatic)
             {
-                if (!field.IsStatic)
-                    throw new TypeSystemException.InvalidProgramException();
+                // ldsfld/ldsflda with an instance field is invalid IL
+                if (isStatic && !field.IsStatic)
+                    ThrowHelper.ThrowInvalidProgramException();
 
                 // References to literal fields from IL body should never resolve.
                 // The CLR would throw a MissingFieldException while jitting and so should we.
                 if (field.IsLiteral)
-                    throw new TypeSystemException.MissingFieldException(field.OwningType, field.Name);
+                    ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
                 if (field.HasRva)
                 {
@@ -884,11 +886,6 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.ReadyToRunHelper(helperId, owningType), reason);
                 }
-            }
-            else
-            {
-                if (field.IsStatic)
-                    throw new TypeSystemException.InvalidProgramException();
             }
         }
 
@@ -1029,17 +1026,17 @@ namespace Internal.IL
 
         private void ReportInvalidBranchTarget(int targetOffset)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportFallthroughAtEndOfMethod()
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportInvalidInstruction(ILOpcode opcode)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private bool IsRuntimeHelpersInitializeArray(MethodDesc method)

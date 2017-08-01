@@ -29,6 +29,9 @@
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
 
+#include "Debug.h"
+#include "DebugEventSource.h"
+
 EXTERN_C volatile UInt32 RhpTrapThreads = (UInt32)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
@@ -199,7 +202,21 @@ void ThreadStore::UnlockThreadStore()
 }
 
 void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
-{
+{    
+    // 
+    // SuspendAllThreads requires all threads running
+    // 
+    // Threads are by default frozen by the debugger during FuncEval
+    // Therefore, in case of FuncEval, we need to inform the debugger 
+    // to unfreeze the threads.
+    // 
+    struct DebuggerResponse crossThreadDependencyEventPayload;
+    crossThreadDependencyEventPayload.kind = DebuggerResponseKind::FuncEvalCrossThreadDependency;
+    DebugEventSource::SendCustomEvent(&crossThreadDependencyEventPayload, sizeof(struct DebuggerResponse));
+
+    // TODO, FuncEval, avoid firing the event unless we know it is FuncEval in progress
+    // TODO, FuncEval, what if user refuses to resume all threads?
+
     Thread * pThisThread = GetCurrentThreadIfAvailable();
 
     LockThreadStore();
@@ -213,7 +230,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
-    // reason for this is that we essentially implement Decker's algorithm, which requires write ordering.
+    // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
 
     bool keepWaiting;
@@ -388,6 +405,7 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 
 #endif // !DACCESS_COMPILE
 
+GPTR_IMPL_INIT(PTR_VOID, g_RhpInitiateThreadAbortAddr, (void**)&RhpInitiateThreadAbort);
 
 #ifdef _WIN32
 

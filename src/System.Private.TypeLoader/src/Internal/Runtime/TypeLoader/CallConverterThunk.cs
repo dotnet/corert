@@ -116,8 +116,13 @@ namespace Internal.Runtime.TypeLoader
         private extern static unsafe void CallingConventionConverter_SpecifyCommonStubData(IntPtr commonStubData);
 #endif
 
-        static unsafe CallConverterThunk()
+        private static bool s_callConverterThunk = CallConverterThunk_LazyCctor();
+
+        private static unsafe bool CallConverterThunk_LazyCctor()
         {
+#if PLATFORM_UNIX
+            // TODO
+#else
             CallingConventionConverter_GetStubs(out ReturnVoidReturnThunk, out ReturnIntegerPointReturnThunk, out CommonInputThunkStub
 #if CALLDESCR_FPARGREGSARERETURNREGS
 #else
@@ -131,7 +136,10 @@ namespace Internal.Runtime.TypeLoader
             {
                 CallingConventionConverter_SpecifyCommonStubData((IntPtr)commonStubData);
             }
-#endif
+#endif //_TARGET_ARM_
+
+#endif // PLATFORM_UNIX
+            return true;
         }
 
         internal static bool GetByRefIndicatorAtIndex(int index, bool[] lookup)
@@ -383,6 +391,28 @@ namespace Internal.Runtime.TypeLoader
                                  conversionInfo.CalleeForcedByRefData);
                 return true;
             }
+        }
+
+        public static unsafe bool TryGetCallConversionTargetPointerAndInstantiatingArg(IntPtr potentialStub, out IntPtr methodTarget, out IntPtr instantiatingArg)
+        {
+            methodTarget = instantiatingArg = IntPtr.Zero;
+
+            IntPtr callConversionId;
+            IntPtr commonStubDataPtr;
+            object thunkPoolHeap = s_thunkPoolHeap;
+            if (thunkPoolHeap == null || !RuntimeAugments.TryGetThunkData(thunkPoolHeap, potentialStub, out callConversionId, out commonStubDataPtr))
+            {
+                // This isn't a call conversion stub
+                return false;
+            }
+
+            CallConversionInfo conversionInfo = CallConversionInfo.GetConverter(callConversionId.ToInt32());
+            if (!conversionInfo.HasKnownTargetPointerAndInstantiatingArgument)
+                return false;
+
+            methodTarget = conversionInfo.TargetFunctionPointer;
+            instantiatingArg = conversionInfo.InstantiatingStubArgument;
+            return true;
         }
 
         // This struct shares a layout with CallDescrData in the MRT codebase.
@@ -784,34 +814,14 @@ namespace Internal.Runtime.TypeLoader
                         if (isCalleeArgPassedByRef == isCallerArgPassedByRef)
                         {
                             // Argument copies without adjusting calling convention.
-                            switch (stackSizeCallee)
+                            if (isCalleeArgPassedByRef)
                             {
-                                case 1:
-                                case 2:
-                                case 4:
-                                    *((int*)pDest) = *((int*)pSrc);
-                                    break;
-
-                                case 8:
-                                    *((long*)pDest) = *((long*)pSrc);
-                                    break;
-
-                                default:
-                                    if (isCalleeArgPassedByRef)
-                                    {
-                                        // even though this argument is passed by value, the actual calling convention
-                                        // passes a pointer to the value of the argument.
-                                        Debug.Assert(isCallerArgPassedByRef);
-                                        // Copy the pointer from the incoming arguments to the outgoing arguments.
-                                        *((void**)pDest) = *((void**)pSrc);
-                                    }
-                                    else
-                                    {
-                                        // In this case, the valuetype is passed directly on the stack, even though it is
-                                        // a non-integral size.
-                                        Buffer.MemoryCopy(pSrc, pDest, stackSizeCallee, stackSizeCallee);
-                                    }
-                                    break;
+                                *((IntPtr*)pDest) = *(IntPtr*)pSrc;
+                            }
+                            else
+                            {
+                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thValueType);
+                                ExtendingCopy_NoWriteBarrier(pSrc, pDest, argElemType, stackSizeCaller);
                             }
                         }
                         else
@@ -826,7 +836,9 @@ namespace Internal.Runtime.TypeLoader
                             else
                             {
                                 // Copy into the destination the data pointed at by the pointer in the source(caller) data.
-                                Buffer.MemoryCopy(*(byte**)pSrc, pDest, stackSizeCaller, stackSizeCaller);
+                                byte* pRealSrc = *(byte**)pSrc;
+                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thValueType);
+                                ExtendingCopy_NoWriteBarrier(pRealSrc, pDest, argElemType, stackSizeCaller);
                             }
                         }
 
@@ -1082,14 +1094,11 @@ namespace Internal.Runtime.TypeLoader
                         if (returnValueToCopy == null)
                         {
                             // object array delegate thunk result is a null object. We'll fill the return buffer with 'returnSize' zeros in that case
-                            memzeroPointer((byte*)(&((TransitionBlock*)callerTransitionBlock)->m_returnBlock), returnSize);
+                            memzeroPointer((byte*)(&((TransitionBlock*)callerTransitionBlock)->m_returnBlock), sizeof(ReturnBlock));
                         }
                         else
                         {
-                            if (isPointerAligned(&((TransitionBlock*)callerTransitionBlock)->m_returnBlock) && isPointerAligned(returnValueToCopy) && (returnSize % sizeof(IntPtr) == 0))
-                                RuntimeAugments.BulkMoveWithWriteBarrier(new IntPtr(&((TransitionBlock*)callerTransitionBlock)->m_returnBlock), new IntPtr(returnValueToCopy), returnSize);
-                            else
-                                Buffer.MemoryCopy(returnValueToCopy, &((TransitionBlock*)callerTransitionBlock)->m_returnBlock, returnSize, returnSize);
+                            ExtendingCopy_WriteBarrier(returnValueToCopy, &((TransitionBlock*)callerTransitionBlock)->m_returnBlock, returnType, returnSize);
                         }
 #endif
                     }
@@ -1113,6 +1122,10 @@ namespace Internal.Runtime.TypeLoader
                     CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
                     pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
                     returnValueToCopy = (void*)&pinnedResultObject;
+                    // Since we've changed the returnValueToCopy here, we need to update the idea of what we are returning
+                    returnType = CorElementType.ELEMENT_TYPE_OBJECT;
+                    thValueType = default(TypeHandle);
+                    returnSize = TypeHandle.GetElemSize(returnType, thValueType);
 
 #if _TARGET_X86_
                     ((TransitionBlock*)callerTransitionBlock)->m_returnBlock.returnValue = pinnedResultObject;
@@ -1187,23 +1200,155 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        if (isPointerAligned(callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters()) && isPointerAligned(returnValueToCopy) && (returnSize % sizeof(IntPtr) == 0))
-                            RuntimeAugments.BulkMoveWithWriteBarrier(new IntPtr(callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters()), new IntPtr(returnValueToCopy), returnSize);
-                        else
-                            Buffer.MemoryCopy(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnSize, returnSize);
+                        ExtendingCopy_WriteBarrier(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnType, returnSize);
                     }
                 }
                 else
                 {
                     Debug.Assert(returnValueToCopy != null);
 
-                    Buffer.MemoryCopy(returnValueToCopy,
-                                        callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(),
-                                        ArchitectureConstants.ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE,
-                                        ArchitectureConstants.ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE);
+                    ExtendingCopy_NoWriteBarrier(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnType, returnSize);
                 }
                 conversionParams._invokeReturnValue = ReturnIntegerPointReturnThunk;
 #endif
+            }
+        }
+
+        //
+        // Converting by-ref values to non-by-ref form requires the converter to be capable of taking a pointer to a small integer
+        // value anywhere in memory and then copying the referenced value into an ABI-compliant pointer-sized "slot" which
+        // faithfully communicates the value.  In such cases, the argument slot prepared by the converter must conform to all
+        // sign/zero-extension rules mandated by the ABI.
+        //
+        // ARM32 requires all less-than-pointer-sized values to be sign/zero-extended when they are placed into pointer-sized
+        // slots (i.e., requires "producer-oriented" sign/zero-extension).  x86/amd64 do not have this requirement (i.e., the
+        // unused high bytes of the pointer-sized slot are ignored by the consumer and are allowed to take on any value); however
+        // to reduce the need for ever more #ifs in this file, this behavior will not be #if'd away. (Its not wrong, its just unnecessary)
+        //
+        private static unsafe void ExtendingCopy_WriteBarrier(void* pSrcVoid, void* pDestVoid, CorElementType type, int typeSize)
+        {
+            byte* pSrc = (byte*)pSrcVoid;
+            byte* pDest = (byte*)pDestVoid;
+
+            if (SignExtendType(type))
+                SignExtend(pSrc, pDest, typeSize);
+            else if (ZeroExtendType(type))
+                ZeroExtend(pSrc, pDest, typeSize);
+            else if (isPointerAligned(pSrc) && isPointerAligned(pDest) && (typeSize % sizeof(IntPtr) == 0))
+                RuntimeAugments.BulkMoveWithWriteBarrier(new IntPtr(pDest), new IntPtr(pSrc), typeSize);
+            else
+                Buffer.MemoryCopy(pSrc, pDest, typeSize, typeSize);
+        }
+
+        //
+        // Converting by-ref values to non-by-ref form requires the converter to be capable of taking a pointer to a small integer
+        // value anywhere in memory and then copying the referenced value into an ABI-compliant pointer-sized "slot" which
+        // faithfully communicates the value.  In such cases, the argument slot prepared by the converter must conform to all
+        // sign/zero-extension rules mandated by the ABI.
+        //
+        // ARM32 requires all less-than-pointer-sized values to be sign/zero-extended when they are placed into pointer-sized
+        // slots (i.e., requires "producer-oriented" sign/zero-extension).  x86/amd64 do not have this requirement (i.e., the
+        // unused high bytes of the pointer-sized slot are ignored by the consumer and are allowed to take on any value); however
+        // to reduce the need for ever more #ifs in this file, this behavior will not be #if'd away. (Its not wrong, its just unnecessary)
+        //
+        private static unsafe void ExtendingCopy_NoWriteBarrier(void* pSrcVoid, void* pDestVoid, CorElementType type, int typeSize)
+        {
+            byte* pSrc = (byte*)pSrcVoid;
+            byte* pDest = (byte*)pDestVoid;
+
+            if (SignExtendType(type))
+                SignExtend(pSrc, pDest, typeSize);
+            else if (ZeroExtendType(type))
+                ZeroExtend(pSrc, pDest, typeSize);
+            else
+                Buffer.MemoryCopy(pSrc, pDest, typeSize, typeSize);
+        }
+
+        private static bool SignExtendType(CorElementType type)
+        {
+            switch (type)
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I2:
+#if BIT64
+                case CorElementType.ELEMENT_TYPE_I4:
+#endif
+                    return true;
+
+            }
+
+            return false;
+        }
+
+        private static bool ZeroExtendType(CorElementType type)
+        {
+            switch (type)
+            {
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_U2:
+#if BIT64
+                case CorElementType.ELEMENT_TYPE_U4:
+#endif
+                    return true;
+
+            }
+
+            return false;
+        }
+
+        internal static unsafe void SignExtend(void* pSrcVoid, void* pDestVoid, int size)
+        {
+            byte* pSrc = (byte*)pSrcVoid;
+            byte* pDest = (byte*)pDestVoid;
+
+            switch (size)
+            {
+                case 1:
+                    *((IntPtr*)pDest) = new IntPtr(*(sbyte*)pSrc);
+                    break;
+
+                case 2:
+                    *((IntPtr*)pDest) = new IntPtr(*(short*)pSrc);
+                    break;
+
+#if BIT64
+                // On 64 bit platforms, a 32 bit parameter may require truncation/extension
+                case 4:
+                    *((IntPtr*)pDest) = new IntPtr(*(int*)pSrc);
+                    break;
+#endif
+                default:
+                    Debug.Assert(false, "Should only be called for sizes where sign extension is a meaningful concept");
+                    break;
+            }
+        }
+
+        internal static unsafe void ZeroExtend(void* pSrcVoid, void* pDestVoid, int size)
+        {
+            byte* pSrc = (byte*)pSrcVoid;
+            byte* pDest = (byte*)pDestVoid;
+
+            switch (size)
+            {
+                case 1:
+                    *((UIntPtr*)pDest) = new UIntPtr(*(byte*)pSrc);
+                    break;
+
+                case 2:
+                    *((UIntPtr*)pDest) = new UIntPtr(*(ushort*)pSrc);
+                    break;
+
+#if BIT64
+                // On 64 bit platforms, a 32 bit parameter may require truncation/extension
+                case 4:
+                    *((UIntPtr*)pDest) = new UIntPtr(*(uint*)pSrc);
+                    break;
+#endif
+                default:
+                    Debug.Assert(false, "Should only be called for sizes where sign extension is a meaningful concept");
+                    break;
             }
         }
 

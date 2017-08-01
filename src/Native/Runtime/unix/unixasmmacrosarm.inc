@@ -11,9 +11,18 @@
 #define GC_ALLOC_ALIGN8_BIAS 4
 #define GC_ALLOC_ALIGN8 8
 
+#define TSF_Attached                    0x01
+#define TSF_SuppressGcStress            0x08
+#define TSF_DoNotTriggerGc              0x10
+
 #define PTFF_SAVE_ALL_PRESERVED 0x00000077  // NOTE: FP is not included in this set!
 #define PTFF_SAVE_SP 0x00000100
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
+
+// These must match the TrapThreadsFlags enum
+#define TrapThreadsFlags_None            0
+#define TrapThreadsFlags_AbortInProgress 1
+#define TrapThreadsFlags_TrapThreads     2
 
 // Rename fields of nested structs
 #define OFFSETOF__Thread__m_alloc_context__alloc_ptr (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
@@ -154,11 +163,13 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
-        sub sp, sp, \Size
+        sub sp, sp, #\Size
+        .pad #\Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
-        add sp, sp, \Size
+        add sp, sp, #\Size
+        .pad #-\Size
 .endm
 
 //-----------------------------------------------------------------------------
@@ -265,4 +276,26 @@ C_FUNC(\Name):
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+.endm
+
+.macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
+        //
+        // Thread::Unhijack()
+        //
+        ldr         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        cbz         \trashReg1, 1f
+
+        ldr         \trashReg2, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         \trashReg1, [\trashReg2]
+        mov         \trashReg1, #0
+        str         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+
+1:
+.endm
+
+.macro EPILOG_BRANCH_REG reg
+
+        bx          \reg
+
 .endm

@@ -20,11 +20,11 @@ namespace System.Reflection.Runtime.General
         {
             if (!skipCheck)
             {
-                if (!handle.IsTypeDefRefOrSpecHandle(reader))
+                if (!handle.IsTypeDefRefSpecOrModifiedTypeHandle(reader))
                     throw new BadImageFormatException();
             }
             
-            Debug.Assert(handle.IsTypeDefRefOrSpecHandle(reader));
+            Debug.Assert(handle.IsTypeDefRefSpecOrModifiedTypeHandle(reader));
             _reader = reader;
             _handle = handle;
 

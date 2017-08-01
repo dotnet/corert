@@ -169,7 +169,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsGenericDefinition)
                         return false;
 
-                    // Full EEtype of System.Canon should never be used.
+                    // Full EEType of System.Canon should never be used.
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                         return false;
 
@@ -190,7 +190,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void CheckCanGenerateConstructedEEType(NodeFactory factory, TypeDesc type)
         {
             if (!CreationAllowed(type))
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
     }
 }

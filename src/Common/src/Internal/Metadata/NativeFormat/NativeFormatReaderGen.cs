@@ -8067,7 +8067,7 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeVariableSignatureHandle
 
-    public partial struct FixedArgumentHandleCollection : IReadOnlyCollection<FixedArgumentHandle>
+    public partial struct FixedArgumentHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8093,17 +8093,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<FixedArgumentHandle> IEnumerable<FixedArgumentHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<FixedArgumentHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8125,14 +8115,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8142,18 +8124,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // FixedArgumentHandleCollection
 
-    public partial struct NamedArgumentHandleCollection : IReadOnlyCollection<NamedArgumentHandle>
+    public partial struct NamedArgumentHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8179,17 +8156,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<NamedArgumentHandle> IEnumerable<NamedArgumentHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<NamedArgumentHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8211,14 +8178,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8228,18 +8187,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // NamedArgumentHandleCollection
 
-    public partial struct MethodSemanticsHandleCollection : IReadOnlyCollection<MethodSemanticsHandle>
+    public partial struct MethodSemanticsHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8265,17 +8219,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<MethodSemanticsHandle> IEnumerable<MethodSemanticsHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<MethodSemanticsHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8297,14 +8241,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8314,18 +8250,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // MethodSemanticsHandleCollection
 
-    public partial struct CustomAttributeHandleCollection : IReadOnlyCollection<CustomAttributeHandle>
+    public partial struct CustomAttributeHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8351,17 +8282,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<CustomAttributeHandle> IEnumerable<CustomAttributeHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<CustomAttributeHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8383,14 +8304,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8400,18 +8313,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // CustomAttributeHandleCollection
 
-    public partial struct ParameterHandleCollection : IReadOnlyCollection<ParameterHandle>
+    public partial struct ParameterHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8437,17 +8345,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<ParameterHandle> IEnumerable<ParameterHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<ParameterHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8469,14 +8367,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8486,18 +8376,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // ParameterHandleCollection
 
-    public partial struct GenericParameterHandleCollection : IReadOnlyCollection<GenericParameterHandle>
+    public partial struct GenericParameterHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8523,17 +8408,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<GenericParameterHandle> IEnumerable<GenericParameterHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<GenericParameterHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8555,14 +8430,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8572,18 +8439,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // GenericParameterHandleCollection
 
-    public partial struct TypeDefinitionHandleCollection : IReadOnlyCollection<TypeDefinitionHandle>
+    public partial struct TypeDefinitionHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8609,17 +8471,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<TypeDefinitionHandle> IEnumerable<TypeDefinitionHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<TypeDefinitionHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8641,14 +8493,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8658,18 +8502,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // TypeDefinitionHandleCollection
 
-    public partial struct TypeForwarderHandleCollection : IReadOnlyCollection<TypeForwarderHandle>
+    public partial struct TypeForwarderHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8695,17 +8534,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<TypeForwarderHandle> IEnumerable<TypeForwarderHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<TypeForwarderHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8727,14 +8556,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8744,18 +8565,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // TypeForwarderHandleCollection
 
-    public partial struct NamespaceDefinitionHandleCollection : IReadOnlyCollection<NamespaceDefinitionHandle>
+    public partial struct NamespaceDefinitionHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8781,17 +8597,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<NamespaceDefinitionHandle> IEnumerable<NamespaceDefinitionHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<NamespaceDefinitionHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8813,14 +8619,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8830,18 +8628,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // NamespaceDefinitionHandleCollection
 
-    public partial struct MethodHandleCollection : IReadOnlyCollection<MethodHandle>
+    public partial struct MethodHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8867,17 +8660,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<MethodHandle> IEnumerable<MethodHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<MethodHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8899,14 +8682,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -8916,18 +8691,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // MethodHandleCollection
 
-    public partial struct FieldHandleCollection : IReadOnlyCollection<FieldHandle>
+    public partial struct FieldHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -8953,17 +8723,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<FieldHandle> IEnumerable<FieldHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<FieldHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -8985,14 +8745,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9002,18 +8754,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // FieldHandleCollection
 
-    public partial struct PropertyHandleCollection : IReadOnlyCollection<PropertyHandle>
+    public partial struct PropertyHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9039,17 +8786,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<PropertyHandle> IEnumerable<PropertyHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<PropertyHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9071,14 +8808,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9088,18 +8817,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // PropertyHandleCollection
 
-    public partial struct EventHandleCollection : IReadOnlyCollection<EventHandle>
+    public partial struct EventHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9125,17 +8849,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<EventHandle> IEnumerable<EventHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<EventHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9157,14 +8871,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9174,18 +8880,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // EventHandleCollection
 
-    public partial struct MethodImplHandleCollection : IReadOnlyCollection<MethodImplHandle>
+    public partial struct MethodImplHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9211,17 +8912,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<MethodImplHandle> IEnumerable<MethodImplHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<MethodImplHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9243,14 +8934,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9260,18 +8943,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // MethodImplHandleCollection
 
-    public partial struct ScopeDefinitionHandleCollection : IReadOnlyCollection<ScopeDefinitionHandle>
+    public partial struct ScopeDefinitionHandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9297,17 +8975,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<ScopeDefinitionHandle> IEnumerable<ScopeDefinitionHandle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<ScopeDefinitionHandle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9329,14 +8997,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9346,18 +9006,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // ScopeDefinitionHandleCollection
 
-    public partial struct BooleanCollection : IReadOnlyCollection<bool>
+    public partial struct BooleanCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9383,17 +9038,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<bool> IEnumerable<bool>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<bool>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9415,14 +9060,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9432,18 +9069,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // BooleanCollection
 
-    public partial struct CharCollection : IReadOnlyCollection<char>
+    public partial struct CharCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9469,17 +9101,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<char> IEnumerable<char>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<char>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9501,14 +9123,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9518,18 +9132,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // CharCollection
 
-    public partial struct ByteCollection : IReadOnlyCollection<byte>
+    public partial struct ByteCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9555,17 +9164,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<byte> IEnumerable<byte>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<byte>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9587,14 +9186,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9604,18 +9195,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // ByteCollection
 
-    public partial struct SByteCollection : IReadOnlyCollection<sbyte>
+    public partial struct SByteCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9641,17 +9227,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<sbyte> IEnumerable<sbyte>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<sbyte>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9673,14 +9249,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9690,18 +9258,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // SByteCollection
 
-    public partial struct Int16Collection : IReadOnlyCollection<short>
+    public partial struct Int16Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9727,17 +9290,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<short> IEnumerable<short>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<short>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9759,14 +9312,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9776,18 +9321,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // Int16Collection
 
-    public partial struct UInt16Collection : IReadOnlyCollection<ushort>
+    public partial struct UInt16Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9813,17 +9353,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<ushort> IEnumerable<ushort>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<ushort>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9845,14 +9375,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9862,18 +9384,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // UInt16Collection
 
-    public partial struct Int32Collection : IReadOnlyCollection<int>
+    public partial struct Int32Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9899,17 +9416,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<int> IEnumerable<int>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<int>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -9931,14 +9438,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -9948,18 +9447,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // Int32Collection
 
-    public partial struct UInt32Collection : IReadOnlyCollection<uint>
+    public partial struct UInt32Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -9985,17 +9479,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<uint> IEnumerable<uint>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<uint>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10017,14 +9501,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10034,18 +9510,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // UInt32Collection
 
-    public partial struct Int64Collection : IReadOnlyCollection<long>
+    public partial struct Int64Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -10071,17 +9542,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<long> IEnumerable<long>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<long>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10103,14 +9564,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10120,18 +9573,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // Int64Collection
 
-    public partial struct UInt64Collection : IReadOnlyCollection<ulong>
+    public partial struct UInt64Collection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -10157,17 +9605,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<ulong> IEnumerable<ulong>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<ulong>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10189,14 +9627,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10206,18 +9636,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // UInt64Collection
 
-    public partial struct SingleCollection : IReadOnlyCollection<float>
+    public partial struct SingleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -10243,17 +9668,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<float> IEnumerable<float>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<float>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10275,14 +9690,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10292,18 +9699,13 @@ namespace Internal.Metadata.NativeFormat
                 return true;
             } // MoveNext
 
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
-
             public void Dispose()
             {
             } // Dispose
         } // Enumerator
     } // SingleCollection
 
-    public partial struct DoubleCollection : IReadOnlyCollection<double>
+    public partial struct DoubleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -10329,17 +9731,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<double> IEnumerable<double>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<double>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10361,14 +9753,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10377,11 +9761,6 @@ namespace Internal.Metadata.NativeFormat
                 _offset = _reader.Read(_offset, out _current);
                 return true;
             } // MoveNext
-
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
 
             public void Dispose()
             {
@@ -10717,7 +10096,7 @@ namespace Internal.Metadata.NativeFormat
         } // ToTypeVariableSignatureHandle
     } // Handle
 
-    public partial struct HandleCollection : IReadOnlyCollection<Handle>
+    public partial struct HandleCollection
     {
         private NativeReader _reader;
         private uint _offset;
@@ -10743,17 +10122,7 @@ namespace Internal.Metadata.NativeFormat
             return new Enumerator(_reader, _offset);
         } // GetEnumerator
 
-        IEnumerator<Handle> IEnumerable<Handle>.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-        public struct Enumerator : IEnumerator<Handle>
+        public struct Enumerator
         {
             private NativeReader _reader;
             private uint _offset;
@@ -10775,14 +10144,6 @@ namespace Internal.Metadata.NativeFormat
                 }
             } // Current
 
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
             public bool MoveNext()
             {
                 if (_remaining == 0)
@@ -10791,11 +10152,6 @@ namespace Internal.Metadata.NativeFormat
                 _offset = _reader.Read(_offset, out _current);
                 return true;
             } // MoveNext
-
-            void System.Collections.IEnumerator.Reset()
-            {
-                throw new NotSupportedException();
-            } // Reset
 
             public void Dispose()
             {

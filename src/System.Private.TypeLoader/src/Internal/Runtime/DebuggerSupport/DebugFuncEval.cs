@@ -223,7 +223,8 @@ namespace Internal.Runtime.DebuggerSupport
 
             if (isConstructor)
             {
-                typesAndValues.thisObj = RuntimeAugments.NewObject(typesAndValues.types[1]);
+                // TODO, FuncEval, deal with Nullable objects
+                typesAndValues.thisObj = RuntimeAugments.RawNewObject(typesAndValues.types[1]);
             }
 
             LocalVariableSet.SetupArbitraryLocalVariableSet<TypesAndValues>(HighLevelDebugFuncEvalHelperWithVariables, ref typesAndValues, argumentTypes);
@@ -249,7 +250,9 @@ namespace Internal.Runtime.DebuggerSupport
             TypeSystemContextFactory.Recycle(typeSystemContext);
 
             RuntimeTypeHandle objectTypeHandle = objectTypeDesc.GetRuntimeTypeHandle();
-            object returnValue = RuntimeAugments.NewObject(objectTypeHandle);
+
+            // TODO, FuncEval, deal with Nullable objects
+            object returnValue = RuntimeAugments.RawNewObject(objectTypeHandle);
 
             GCHandle returnValueHandle = GCHandle.Alloc(returnValue);
             IntPtr returnValueHandlePointer = GCHandle.ToIntPtr(returnValueHandle);

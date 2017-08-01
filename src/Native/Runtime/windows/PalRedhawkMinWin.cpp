@@ -291,7 +291,11 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
     // this case (which should force our caller to resume the thread and try again -- since this is a fairly
     // narrow window we're highly likely to succeed next time).
-    if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) &&
+    // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
+    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
+    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
+    // it is not safe to manipulate with the current state of the thread context.
+    if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) == 0 ||
         (win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)))
         return false;
 

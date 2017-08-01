@@ -194,7 +194,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //-----------------------------------------------------------------------------------------------------------
     internal abstract partial class RuntimeCustomAttributeData
     {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
+        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
         {
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
                 yield return GetCustomAttributeData(reader, customAttributeHandle);
