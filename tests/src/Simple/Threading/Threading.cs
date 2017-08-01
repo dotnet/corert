@@ -913,7 +913,6 @@ internal static class WaitThreadTests
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
         AutoResetEvent e1 = new AutoResetEvent(false);
-        int numCalls = 0;
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
         {
             Thread.Sleep(300);
