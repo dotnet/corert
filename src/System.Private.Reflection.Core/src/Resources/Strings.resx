@@ -370,4 +370,10 @@
   <data name="Arg_EnumLitValueNotFound" xml:space="preserve">
     <value>Literal value was not found.</value>
   </data>
+  <data name="NotSupported_ByRefLike" xml:space="preserve">
+    <value>Cannot create boxed ByRef-like values.</value>
+  </data>
+  <data name="CannotUseByRefLikeTypeInInstantiation" xml:space="preserve">
+    <value>Cannot instantiate a generic type on a byref-like type.</value>
+  </data>
 </root>

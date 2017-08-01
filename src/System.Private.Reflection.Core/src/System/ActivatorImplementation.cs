@@ -124,6 +124,9 @@ namespace System
             if (type.ContainsGenericParameters)
                 throw new ArgumentException(SR.Format(SR.Acc_CreateGenericEx, type));
 
+            if (type.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
             Type elementType = type;
             while (elementType.HasElementType)
                 elementType = elementType.GetElementType();
