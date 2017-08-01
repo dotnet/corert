@@ -598,10 +598,6 @@ namespace System.Threading
                 if (needAnotherThread)
                     workQueue.EnsureThreadRequested();
             }
-
-            // we can never reach this point, but the C# compiler doesn't know that, because it doesn't know the ThreadAbortException will be reraised above.
-            Debug.Fail("Should never reach this point");
-            return true;
         }
     }
 
