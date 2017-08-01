@@ -89,7 +89,6 @@ namespace System.Threading
                 bool setSuccessfully = TrySetResult(true);
                 Debug.Assert(setSuccessfully, "Should have been able to complete task");
             }
-            void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
         }
         #endregion
 

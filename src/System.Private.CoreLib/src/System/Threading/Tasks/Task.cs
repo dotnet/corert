@@ -2353,31 +2353,6 @@ namespace System.Threading.Tasks
             }
         }
 
-
-        /// <summary>
-        /// Special purpose Finish() entry point to be used when the task delegate throws a ThreadAbortedException
-        /// This makes a note in the state flags so that we avoid any costly synchronous operations in the finish codepath
-        /// such as inlined continuations
-        /// </summary>
-        /// <param name="delegateRan">Whether the delegate was executed.</param>
-        internal void FinishThreadAbortedTask(bool delegateRan)
-        {
-            Debug.Assert(m_contingentProperties?.m_exceptionsHolder != null,
-                "FinishThreadAbortedTask() called on a task whose exception holder wasn't initialized");
-
-            m_contingentProperties.m_exceptionsHolder.MarkAsHandled(false);
-
-            // If this method has already been called for this task, or if this task has already completed, then
-            // return before actually calling Finish().
-            if (!AtomicStateUpdate(TASK_STATE_THREAD_WAS_ABORTED,
-                            TASK_STATE_THREAD_WAS_ABORTED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
-            {
-                return;
-            }
-
-            Finish(delegateRan);
-        }
-
         /// <summary>
         /// IThreadPoolWorkItem override, which is the entry function for this task when the TP scheduler decides to run it.
         /// 
@@ -2385,21 +2360,6 @@ namespace System.Threading.Tasks
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             ExecuteEntry(false);
-        }
-
-        /// <summary>
-        /// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this workitem.  This may occur
-        /// before Task would otherwise be able to observe it.  
-        /// </summary>
-        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
-        {
-            // If the task has marked itself as Completed, then it either a) already observed this exception (so we shouldn't handle it here)
-            // or b) completed before the exception ocurred (in which case it shouldn't count against this Task).
-            if (!IsCompleted)
-            {
-                HandleException(tae);
-                FinishThreadAbortedTask(delegateRan: false);
-            }
         }
 
         /// <summary>
