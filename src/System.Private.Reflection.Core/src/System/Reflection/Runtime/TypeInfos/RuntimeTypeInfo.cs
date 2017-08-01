@@ -446,6 +446,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (runtimeTypeArgument.IsGenericTypeDefinition)
                     runtimeTypeArgument = runtimeTypeArgument.GetConstructedGenericType(runtimeTypeArgument.RuntimeGenericTypeParameters);
 
+                if (runtimeTypeArgument.IsByRefLike)
+                    throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);
+
                 runtimeTypeArguments[i] = runtimeTypeArgument;
             }
             return this.GetConstructedGenericType(runtimeTypeArguments);

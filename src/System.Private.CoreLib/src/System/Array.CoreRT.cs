@@ -221,7 +221,7 @@ namespace System
             {
                 elementType = elementType.GetElementType();
             }
-            if (elementType.IsByRef)
+            if (elementType.IsByRef || elementType.IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLikeArray);
             if (elementType.Equals(CommonRuntimeTypes.Void))
                 throw new NotSupportedException(SR.NotSupported_VoidArray);
