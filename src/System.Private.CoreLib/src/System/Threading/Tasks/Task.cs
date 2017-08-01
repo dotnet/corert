@@ -6124,8 +6124,6 @@ namespace System.Threading.Tasks
         {
             m_action.Invoke(m_completingTask);
         }
-
-        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException exception) { /* nop */ }
     }
 
     // Proxy class for better debugging experience
