@@ -916,10 +916,12 @@ internal static class WaitThreadTests
         int numCalls = 0;
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
         {
-            Assert.NotEqual(numCalls++, 3);
-            Thread.Sleep(600);
-        }, null, 400, false);
-        Thread.Sleep(1100);
+            Thread.Sleep(300);
+        }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, false);
+        e0.Set();
+        Thread.Sleep(50);
+        e0.Set();
+        Thread.Sleep(50);
         handle.Unregister(e1);
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
     }

@@ -385,7 +385,7 @@ namespace System.Threading
             /// <remarks>
             /// As per CoreCLR's behavior, if the user passes in an invalid <see cref="WaitHandle"/>
             /// into <see cref="RegisteredWaitHandle.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
-            /// Otherwise, the unregistration of the wait handle is queued on the thread pool.
+            /// Otherwise, the unregistration of the wait handle is queued on the wait thread.
             /// </remarks>
             public void UnregisterWait(RegisteredWaitHandle handle)
             {
