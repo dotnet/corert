@@ -273,7 +273,6 @@ namespace System.Threading
 
             public IThreadPoolWorkItem LocalPop() => m_headIndex < m_tailIndex ? LocalPopCore() : null;
 
-
             [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
             private IThreadPoolWorkItem LocalPopCore()
             {
@@ -397,12 +396,9 @@ namespace System.Threading
         {
         }
 
-        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue()
-        {
-            if (null == ThreadPoolWorkQueueThreadLocals.Current)
-                ThreadPoolWorkQueueThreadLocals.Current = new ThreadPoolWorkQueueThreadLocals(this);
-            return ThreadPoolWorkQueueThreadLocals.Current;
-        }
+        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue() =>
+            ThreadPoolWorkQueueThreadLocals.threadLocals ??
+            (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
 
         internal void EnsureThreadRequested()
         {
@@ -415,7 +411,7 @@ namespace System.Threading
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
                 {
-                    ThreadPool.QueueDispatch();
+                    ThreadPool.RequestWorkerThread();
                     break;
                 }
                 count = prev;
@@ -444,7 +440,7 @@ namespace System.Threading
         {
             ThreadPoolWorkQueueThreadLocals tl = null;
             if (!forceGlobal)
-                tl = ThreadPoolWorkQueueThreadLocals.Current;
+                tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
 
             if (null != tl)
             {
@@ -460,13 +456,12 @@ namespace System.Threading
 
         internal bool LocalFindAndPop(IThreadPoolWorkItem callback)
         {
-            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.Current;
+            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
             return tl != null && tl.workStealingQueue.LocalFindAndPop(callback);
         }
 
         public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            missedSteal = false;
             WorkStealingQueue localWsq = tl.workStealingQueue;
             IThreadPoolWorkItem callback;
 
@@ -494,6 +489,7 @@ namespace System.Threading
                     c--;
                 }
             }
+
             return callback;
         }
 
@@ -553,6 +549,8 @@ namespace System.Threading
                         // which will be more efficient than this thread doing it anyway.
                         //
                         needAnotherThread = missedSteal;
+
+                        // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
                         return true;
                     }
 
@@ -576,9 +574,7 @@ namespace System.Threading
                     RuntimeThread.CurrentThread.ResetThreadPoolThread();
 
                     if (!ThreadPool.NotifyWorkItemComplete())
-                    {
                         return false;
-                    }
                 }
 
                 // If we get here, it's because our quantum expired.
@@ -640,7 +636,7 @@ namespace System.Threading
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
         [ThreadStatic]
-        public static ThreadPoolWorkQueueThreadLocals Current;
+        public static ThreadPoolWorkQueueThreadLocals threadLocals;
 
 
         public readonly ThreadPoolWorkQueue workQueue;
@@ -1054,7 +1050,7 @@ namespace System.Threading
 
         internal static IEnumerable<IThreadPoolWorkItem> GetLocallyQueuedWorkItems()
         {
-            ThreadPoolWorkQueue.WorkStealingQueue wsq = ThreadPoolWorkQueueThreadLocals.Current.workStealingQueue;
+            ThreadPoolWorkQueue.WorkStealingQueue wsq = ThreadPoolWorkQueueThreadLocals.threadLocals.workStealingQueue;
             if (wsq != null && wsq.m_array != null)
             {
                 IThreadPoolWorkItem[] items = wsq.m_array;
@@ -1126,6 +1122,6 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
-        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.Current != null; } }
+        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.threadLocals != null; } }
     }
 }
