@@ -64,11 +64,6 @@ namespace System.Threading
 
         private IntPtr UserUnregisterWaitHandleValue { get; set; } = new IntPtr(-1);
 
-        /// <summary>
-        /// Whether or not <see cref="UserUnregisterWaitHandle"/> has been signaled yet.
-        /// </summary>
-        private volatile int _unregisterSignaled;
-
         internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
 
         /// <summary>
@@ -94,10 +89,7 @@ namespace System.Threading
                 UserUnregisterWaitHandle?.DangerousAddRef();
                 UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
-                if (_unregisterSignaled == 0)
-                {
-                    WaitThread.UnregisterWait(this);
-                }
+                WaitThread.UnregisterWait(this);
                 return true;
             }
             return false;
@@ -108,22 +100,19 @@ namespace System.Threading
         /// </summary>
         private void SignalUserWaitHandle()
         {
-            if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
+            SafeWaitHandle handle = UserUnregisterWaitHandle;
+            IntPtr handleValue = UserUnregisterWaitHandleValue;
+            try 
             {
-                SafeWaitHandle handle = UserUnregisterWaitHandle;
-                IntPtr handleValue = UserUnregisterWaitHandleValue;
-                try 
+                if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
-                    if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
-                    {
-                        EventWaitHandle.Set(handleValue);
-                    }
+                    EventWaitHandle.Set(handleValue);
                 }
-                finally
-                {
-                    handle?.DangerousRelease();
-                    _callbacksComplete.Set();
-                }
+            }
+            finally
+            {
+                handle?.DangerousRelease();
+                _callbacksComplete.Set();
             }
         }
 
@@ -133,10 +122,7 @@ namespace System.Threading
         /// <param name="timedOut">Whether or not the wait timed out.</param>
         internal void PerformCallback(bool timedOut)
         {
-            if (_unregisterSignaled == 0)
-            {
-                _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
-            }
+            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
             CompleteCallbackRequest();
         }
 
