@@ -24,11 +24,6 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            RegisterWaitHandleOnWaitThread(handle);
-        }
-
-        private void RegisterWaitHandleOnWaitThread(RegisteredWaitHandle handle)
-        {
             _waitThreadListLock.Acquire();
             try
             {
@@ -67,6 +62,11 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Attempt to remove the given wait thread from the list. It is only removed if there are no user-provided waits on the thread.
+        /// </summary>
+        /// <param name="thread">The thread to remove.</param>
+        /// <returns><c>true</c> if the thread was successfully removed; otherwise, <c>false</c></returns>
         private bool TryRemoveWaitThread(WaitThread thread)
         {
             _waitThreadListLock.Acquire();
@@ -85,6 +85,10 @@ namespace System.Threading
             return true;
         }
 
+        /// <summary>
+        /// Removes the wait thread from the list.
+        /// </summary>
+        /// <param name="thread">The wait thread to remove from the list.</param>
         private void RemoveWaitThread(WaitThread thread)
         {
             if (_waitThreadsHead.Thread == thread)
@@ -267,7 +271,7 @@ namespace System.Threading
 
             /// <summary>
             /// Go through the <see cref="_pendingRemoves"/> array and remove those registered wait handles from the <see cref="_registeredWaits"/>
-            /// and <see cref="_waitHandles"/> arrays. Then move elements around in those arrays to fill holes.
+            /// and <see cref="_waitHandles"/> arrays, filling the holes along the way.
             /// </summary>
             private void ProcessRemovals()
             {
@@ -327,19 +331,20 @@ namespace System.Threading
             private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 registeredHandle.RequestCallback();
+                // If we the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
                     registeredHandle.RestartTimeout(Environment.TickCount);
                 }
                 else
                 {
-                    UnregisterWait(registeredHandle, blocking: false);
+                    UnregisterWait(registeredHandle, blocking: false); // We shouldn't block the wait thread on the unregistration.
                 }
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
 
             /// <summary>
-            /// Process the completion of a user-registered wait.
+            /// Process the completion of a user-registered wait (call the callback).
             /// </summary>
             /// <param name="state">A <see cref="CompletedWaitHandle"/> object representing the wait completion.</param>
             private void CompleteWait(object state)
@@ -395,7 +400,8 @@ namespace System.Threading
             /// <summary>
             /// Unregister a wait handle.
             /// </summary>
-            /// <param name="state">The wait handle to unregister.</param>
+            /// <param name="handle">The wait handle to unregister.</param>
+            /// <param name="blocking">Should the unregistration block on the full unregistration and all pending callback completion.</param>
             private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
             {
                 bool pendingUnregistration = false;
