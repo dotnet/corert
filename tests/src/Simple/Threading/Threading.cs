@@ -811,7 +811,7 @@ internal static class WaitThreadTests
             }
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         e0.Set();
-        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e1.CheckedWait();
     }
 
     [Fact]
@@ -826,7 +826,7 @@ internal static class WaitThreadTests
                 e1.Set();
             }
         }, null, ThreadTestHelpers.ExpectedTimeoutMilliseconds, true);
-        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e1.CheckedWait();
     }
 
     [Fact]
@@ -870,7 +870,7 @@ internal static class WaitThreadTests
         var e1 = new AutoResetEvent(false);
         var registered = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         registered.Unregister(e1);
-        Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e1.CheckedWait();
     }
 
     [Fact]
@@ -897,7 +897,7 @@ internal static class WaitThreadTests
                 e0.Set();
             }
         }, state, 0, true);
-        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e0.CheckedWait();
     }
 
     [Fact]
@@ -907,7 +907,7 @@ internal static class WaitThreadTests
         AutoResetEvent e0 = new AutoResetEvent(false);
         ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => e0.Set(), null, 21000, true);
         Thread.Sleep(20000);
-        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e0.CheckedWait();
     }
 
     [Fact]
@@ -944,7 +944,7 @@ internal static class WaitThreadTests
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
         handle.Unregister(null);
         e0.Set();
-        Assert.True(e0.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+        e0.CheckedWait();
     }
 
     [Fact]
@@ -960,6 +960,11 @@ internal static class ThreadTestHelpers
     public const int ExpectedTimeoutMilliseconds = 50;
     public const int ExpectedMeasurableTimeoutMilliseconds = 500;
     public const int UnexpectedTimeoutMilliseconds = 1000 * 30;
+
+    public static void CheckedWait(this WaitHandle wh)
+    {
+        Assert.True(wh.WaitOne(UnexpectedTimeoutMilliseconds));
+    }
 }
 
 
