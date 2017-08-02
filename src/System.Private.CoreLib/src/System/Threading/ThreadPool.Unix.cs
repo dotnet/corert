@@ -69,7 +69,7 @@ namespace System.Threading
         /// </summary>
         private volatile int _unregisterSignaled;
 
-        internal bool IsBlocking { get; private set; } = true;
+        internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
 
         /// <summary>
         /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
@@ -84,23 +84,15 @@ namespace System.Threading
 
         private int _unregisterCalled;
 
-        private AutoResetEvent _unregisteredEvent = new AutoResetEvent(false);
+        private readonly AutoResetEvent _unregisteredEvent = new AutoResetEvent(false);
 
         internal bool Unregister(WaitHandle waitObject)
         {
             if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
             {
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                if (UserUnregisterWaitHandle != null && !UserUnregisterWaitHandle.IsInvalid)
-                {
-                    UserUnregisterWaitHandle.DangerousAddRef();
-                    UserUnregisterWaitHandleValue = UserUnregisterWaitHandle.DangerousGetHandle();
-                    IsBlocking = UserUnregisterWaitHandleValue == new IntPtr(-1);
-                }
-                else
-                {
-                    IsBlocking = false;
-                }
+                UserUnregisterWaitHandle?.DangerousAddRef();
+                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
                 if (_unregisterSignaled == 0)
                 {
@@ -119,18 +111,19 @@ namespace System.Threading
             if (Interlocked.Exchange(ref _unregisterSignaled, 1) == 0)
             {
                 SafeWaitHandle handle = UserUnregisterWaitHandle;
-                if (!handle.IsInvalid)
+                IntPtr handleValue = UserUnregisterWaitHandleValue;
+                try 
                 {
-                    try
+                    if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                     {
-                        EventWaitHandle.Set(handle);
-                    }
-                    finally
-                    {
-                        handle.DangerousRelease();
+                        EventWaitHandle.Set(handleValue);
                     }
                 }
-                _unregisteredEvent.Set();
+                finally
+                {
+                    handle?.DangerousRelease();
+                    _unregisteredEvent.Set();
+                }
             }
         }
 
@@ -166,16 +159,13 @@ namespace System.Threading
             try
             {
 
-                if (UserUnregisterWaitHandle != null && UserUnregisterWaitHandleValue != new IntPtr(-1))
+                if (_numRequestedCallbacks == 0)
                 {
-                    if (_numRequestedCallbacks == 0)
-                    {
-                        SignalUserWaitHandle();
-                    }
-                    else
-                    {
-                        _signalAfterCallbacksComplete = true;
-                    }
+                    SignalUserWaitHandle();
+                }
+                else
+                {
+                    _signalAfterCallbacksComplete = true;
                 }
             }
             finally

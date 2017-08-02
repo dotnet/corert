@@ -126,17 +126,9 @@ namespace System.Threading
             }
         }
         
-        internal static bool Set(SafeWaitHandle waitHandle)
+        internal static bool Set(IntPtr handle)
         {
-            waitHandle.DangerousAddRef();
-            try
-            {
-                return SetCore(waitHandle.DangerousGetHandle());
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
-            }
+            return SetCore(handle);
         }
     }
 }
