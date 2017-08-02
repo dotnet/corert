@@ -2627,7 +2627,7 @@ namespace Internal.IL
                         node = _nodeFactory.TypeNonGCStaticsSymbol(owningType);
                 }
 
-                // TODO: Remove once the depedencies for static fields are tracked properly
+                // TODO: Remove once the dependencies for static fields are tracked properly
                 GetSignatureTypeNameAndAddReference(owningType, true);
                 _dependencies.Add(node);
             }
