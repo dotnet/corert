@@ -1034,7 +1034,7 @@ namespace System.Threading
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
-            if (millisecondsTimeOutInterval > (uint)int.MaxValue)
+            if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
@@ -1047,7 +1047,7 @@ namespace System.Threading
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
-            if (millisecondsTimeOutInterval > (uint)int.MaxValue)
+            if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }

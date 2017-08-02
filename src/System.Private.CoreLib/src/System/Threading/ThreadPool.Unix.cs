@@ -87,7 +87,7 @@ namespace System.Threading
 
         private int _unregisterCalled;
 
-        private readonly AutoResetEvent _callbacksComplete = new AutoResetEvent(false);
+        private AutoResetEvent _callbacksComplete;
 
         internal bool Unregister(WaitHandle waitObject)
         {
@@ -101,6 +101,10 @@ namespace System.Threading
                     UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                     UserUnregisterWaitHandle?.DangerousAddRef();
                     UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+                    if (IsBlocking)
+                    {
+                        _callbacksComplete = new AutoResetEvent(false);
+                    }
                 }
                 finally
                 {
@@ -337,6 +341,12 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
+            if (waitObject == null)
+                throw new ArgumentNullException(nameof(waitObject));
+
+            if (callBack == null)
+                throw new ArgumentNullException(nameof(callBack));
+
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
