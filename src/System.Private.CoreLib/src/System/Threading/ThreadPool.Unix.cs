@@ -244,6 +244,22 @@ namespace System.Threading
             }
         }
 
+        internal bool ShouldWaitForCallbacks
+        {
+            get
+            {
+                _callbackLock.Acquire();
+                try
+                {
+                    return _signalAfterCallbacksComplete;
+                }
+                finally
+                {
+                    _callbackLock.Release();
+                }
+            }
+        }
+
         /// <summary>
         /// Wait for all queued callbacks and the full unregistration to complete.
         /// </summary>

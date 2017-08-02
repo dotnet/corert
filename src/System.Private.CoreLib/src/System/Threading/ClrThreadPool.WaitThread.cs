@@ -404,7 +404,7 @@ namespace System.Threading
             /// <param name="blocking">Should the unregistration block on the full unregistration and all pending callback completion.</param>
             private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
             {
-                bool pendingUnregistration = false;
+                bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
                 _removesLock.Acquire();
                 try
@@ -414,7 +414,7 @@ namespace System.Threading
                     {
                         _pendingRemoves[_numPendingRemoves++] = handle;
                         _changeHandlesEvent.Set(); // Tell the wait thread that there are changes pending.
-                        pendingUnregistration = true;
+                        pendingRemoval = true;
                     }
                 }
                 finally
@@ -434,7 +434,7 @@ namespace System.Threading
                 // * Wait thread is in WaitAny. User thread sets the relevant event and then calls Unregister, both before the Wait thread wakes up
                 //   - Wait thread needs to observe that this event was signaled before it was unregistered
 
-                if (pendingUnregistration && blocking)
+                if (blocking && (pendingRemoval || handle.ShouldWaitForCallbacks))
                 {
                     handle.WaitForCallbacks();
                 }
