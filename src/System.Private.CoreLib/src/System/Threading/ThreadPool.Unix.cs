@@ -79,7 +79,7 @@ namespace System.Threading
         /// </summary>
         internal ClrThreadPool.WaitThread WaitThread { get; set; }
 
-        private volatile int _numRequestedCallbacks;
+        private int _numRequestedCallbacks;
 
         private LowLevelLock _callbackLock = new LowLevelLock();
 
@@ -94,10 +94,18 @@ namespace System.Threading
             if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
             {
                 GC.SuppressFinalize(this);
-                
-                UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                UserUnregisterWaitHandle?.DangerousAddRef();
-                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+
+                _callbackLock.Acquire();
+                try
+                {
+                    UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
+                    UserUnregisterWaitHandle?.DangerousAddRef();
+                    UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+                }
+                finally
+                {
+                    _callbackLock.Release();
+                }
 
                 WaitThread.UnregisterWait(this);
                 return true;
