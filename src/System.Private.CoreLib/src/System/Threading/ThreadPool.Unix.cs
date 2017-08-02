@@ -69,7 +69,7 @@ namespace System.Threading
         /// </summary>
         private volatile int _unregisterSignaled;
 
-        internal bool IsBlocking { get; set; } = true;
+        internal bool IsBlocking { get; private set; } = true;
 
         /// <summary>
         /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
