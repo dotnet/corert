@@ -255,12 +255,12 @@ namespace System.Threading
                             }
                         }
 
-                        int elapsedTicks = Environment.TickCount - preWaitTimeMs; // Calculate using relative time to ensure we don't have issues with overflow wraparound
+                        int elapsedDurationMs = Environment.TickCount - preWaitTimeMs; // Calculate using relative time to ensure we don't have issues with overflow wraparound
                         for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = _registeredWaits[i];
                             int handleTimeoutDurationMs = registeredHandle.TimeoutTimeMs - preWaitTimeMs;
-                            if (elapsedTicks > handleTimeoutDurationMs)
+                            if (elapsedDurationMs >= handleTimeoutDurationMs)
                             {
                                 QueueWaitCompletion(registeredHandle, true);
                             }
