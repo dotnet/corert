@@ -918,9 +918,10 @@ internal static class WaitThreadTests
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
         AutoResetEvent e1 = new AutoResetEvent(false);
+        AutoResetEvent e2 = new AutoResetEvent(false);
         RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) =>
         {
-            Thread.Sleep(300);
+            e2.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
         }, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, false);
         e0.Set();
         Thread.Sleep(50);
@@ -928,6 +929,7 @@ internal static class WaitThreadTests
         Thread.Sleep(50);
         handle.Unregister(e1);
         Assert.False(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        e2.Set();
     }
 
     [Fact]
