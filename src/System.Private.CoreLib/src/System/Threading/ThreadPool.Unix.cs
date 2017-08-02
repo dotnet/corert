@@ -87,11 +87,13 @@ namespace System.Threading
         private LowLevelLock _callbackLock = new LowLevelLock();
 
         /// <summary>
-        /// Notes if we need to signal the user's unregister event after all callbacks complete. 
+        /// Notes if we need to signal the user's unregister event after all callbacks complete.
         /// </summary>
         private bool _signalAfterCallbacksComplete;
 
         private int _unregisterCalled;
+
+        private bool _unregistered;
 
         private AutoResetEvent _callbacksComplete;
 
@@ -116,6 +118,12 @@ namespace System.Threading
                     UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                     UserUnregisterWaitHandle?.DangerousAddRef();
                     UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+                    if (_unregistered)
+                    {
+                        SignalUserWaitHandle();
+                        return true;
+                    }
+
                     if (IsBlocking)
                     {
                         _callbacksComplete = new AutoResetEvent(false);
@@ -139,7 +147,7 @@ namespace System.Threading
         {
             SafeWaitHandle handle = UserUnregisterWaitHandle;
             IntPtr handleValue = UserUnregisterWaitHandleValue;
-            try 
+            try
             {
                 if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
@@ -149,7 +157,8 @@ namespace System.Threading
             finally
             {
                 handle?.DangerousRelease();
-                _callbacksComplete.Set();
+                _callbacksComplete?.Set();
+                _unregistered = true;
             }
         }
 
@@ -240,6 +249,7 @@ namespace System.Threading
         /// </summary>
         internal void WaitForCallbacks()
         {
+            Debug.Assert(IsBlocking);
             _callbacksComplete.WaitOne();
         }
     }
@@ -325,7 +335,7 @@ namespace System.Threading
             // Release one thread to handle the new request
             s_semaphore.Release(1);
         }
-        
+
         internal static bool KeepDispatching(int startTickCount)
         {
             return true;

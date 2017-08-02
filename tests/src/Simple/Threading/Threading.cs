@@ -77,6 +77,9 @@ internal static class Runner
         Console.WriteLine("    WaitThreadTests.CanDisposeEventAfterUnblockingUnregister");
         WaitThreadTests.CanDisposeEventAfterUnblockingUnregister();
 
+        Console.WriteLine("    WaitThreadTests.UnregisterEventSignaledWhenUnregisteredEvenIfAutoUnregistered");
+        WaitThreadTests.UnregisterEventSignaledWhenUnregisteredEvenIfAutoUnregistered();
+
         return Pass;
     }
 }
@@ -967,6 +970,18 @@ internal static class WaitThreadTests
             RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
             handle.Unregister(null);
         }
+    }
+
+    [Fact]
+    public static void UnregisterEventSignaledWhenUnregisteredEvenIfAutoUnregistered()
+    {
+        var e0 = new AutoResetEvent(false);
+        RegisteredWaitHandle handle = ThreadPool.RegisterWaitForSingleObject(e0, (_, __) => {}, null, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, true);
+        e0.Set();
+        Thread.Sleep(50); // Ensure the callback has happened
+        var e1 = new AutoResetEvent(false);
+        handle.Unregister(e1);
+        e1.CheckedWait();
     }
 }
 
