@@ -331,7 +331,7 @@ namespace System.Threading
             private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 registeredHandle.RequestCallback();
-                // If we the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
+                // If the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
                     registeredHandle.RestartTimeout(Environment.TickCount);
