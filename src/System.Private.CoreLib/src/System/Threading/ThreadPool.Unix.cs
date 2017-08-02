@@ -27,6 +27,14 @@ namespace System.Threading
             RestartTimeout(Environment.TickCount);
         }
 
+        ~RegisteredWaitHandle()
+        {
+            if(WaitThread != null)
+            {
+                Unregister(null);
+            }
+        }
+
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
@@ -85,6 +93,8 @@ namespace System.Threading
         {
             if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
             {
+                GC.SuppressFinalize(this);
+                
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                 UserUnregisterWaitHandle?.DangerousAddRef();
                 UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
