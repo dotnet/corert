@@ -15,7 +15,7 @@ namespace System.Threading
         internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
             SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
-            bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
+            bool useSyncContextWait = interruptible && (context != null) && context.IsWaitNotificationRequired();
 
             if (useSyncContextWait)
             {
