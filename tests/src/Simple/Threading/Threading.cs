@@ -826,7 +826,6 @@ internal static class WaitThreadTests
                 e1.Set();
             }
         }, null, ThreadTestHelpers.ExpectedTimeoutMilliseconds, true);
-        Thread.Sleep(ThreadTestHelpers.ExpectedMeasurableTimeoutMilliseconds);
         Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
     }
 
@@ -855,7 +854,7 @@ internal static class WaitThreadTests
         for (int i = 0; i < 4; ++i)
         {
             e0.Set();
-            Assert.True(e1.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.True(e1.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
         }
         var invalidWaitHandle = new InvalidWaitHandle();
         registered.Unregister(null);
