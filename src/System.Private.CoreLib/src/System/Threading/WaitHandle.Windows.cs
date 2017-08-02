@@ -14,13 +14,16 @@ namespace System.Threading
     {
         internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
-            SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
-            bool useSyncContextWait = interruptible && (context != null) && context.IsWaitNotificationRequired();
-
-            if (useSyncContextWait)
+            if (interruptible)
             {
-                var handles = new IntPtr[1] { handle };
-                return context.Wait(handles, false, millisecondsTimeout);
+                SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
+                bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
+
+                if (useSyncContextWait)
+                {
+                    var handles = new IntPtr[1] { handle };
+                    return context.Wait(handles, false, millisecondsTimeout);
+                }
             }
 
             return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, interruptible);
