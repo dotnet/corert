@@ -191,8 +191,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern int EmitSymbolRef(IntPtr objWriter, byte[] symbolName, RelocType relocType, int delta);
-        public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0)
+        private static extern int EmitSymbolRef(IntPtr objWriter, byte[] symbolName, RelocType relocType, int delta, uint offset);
+        public int EmitSymbolRef(Utf8StringBuilder symbolName, RelocType relocType, int delta = 0, uint offset = 0)
         {
             // Workaround for ObjectWriter's lack of support for IMAGE_REL_BASED_RELPTR32
             // https://github.com/dotnet/corert/issues/3278
@@ -202,7 +202,7 @@ namespace ILCompiler.DependencyAnalysis
                 delta = checked(delta + sizeof(int));
             }
 
-            return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta);
+            return EmitSymbolRef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, relocType, delta, offset);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -691,13 +691,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         // Returns size of the emitted symbol reference
-        public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
+        public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType, uint Offset = 0)
         {
             _sb.Clear();
             AppendExternCPrefix(_sb);
             target.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-            return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset));
+            return EmitSymbolRef(_sb, relocType, checked(delta + target.Offset), Offset);
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -976,20 +976,29 @@ namespace ILCompiler.DependencyAnalysis
                                     delta = Relocation.ReadValue(reloc.RelocType, location);
                                 }
                             }
-                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
-                            // Emit a copy of original Thumb2 instruction that came from RyuJIT
-                            if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_MOV32 ||
-                                reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_BRANCH24)
+                            if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_MOV32)
                             {
                                 unsafe
                                 {
-                                    fixed (void* location = &nodeContents.Data[i])
+                                    fixed (byte* pContents = &nodeContents.Data[i])
                                     {
-                                        objectWriter.EmitBytes((IntPtr)location, size);
+                                        objectWriter.EmitBytes((IntPtr)(pContents), 8);
                                     }
                                 }
                             }
+                            else if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_BRANCH24)
+                            {
+                                unsafe
+                                {
+                                    fixed (byte* pContents = &nodeContents.Data[i])
+                                    {
+                                        objectWriter.EmitBytes((IntPtr)(pContents), 4);
+                                    }
+                                }
+                            }
+
+                            int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType, (uint)i);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)
