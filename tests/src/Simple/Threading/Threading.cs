@@ -801,6 +801,8 @@ internal static class WaitSubsystemTests
 
 internal static class WaitThreadTests
 {
+    private const int WaitThreadTimeoutTimeMs = 20000;
+
     [Fact]
     public static void SignalingRegisteredHandleCallsCalback()
     {
@@ -908,8 +910,8 @@ internal static class WaitThreadTests
     public static void WaitWithLongerTimeoutThanWaitThreadCanStillTimeout()
     {
         AutoResetEvent e0 = new AutoResetEvent(false);
-        ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => e0.Set(), null, 21000, true);
-        Thread.Sleep(20000);
+        ThreadPool.RegisterWaitForSingleObject(new AutoResetEvent(false), (_, __) => e0.Set(), null, WaitThreadTimeoutTimeMs + 1000, true);
+        Thread.Sleep(WaitThreadTimeoutTimeMs);
         e0.CheckedWait();
     }
 
