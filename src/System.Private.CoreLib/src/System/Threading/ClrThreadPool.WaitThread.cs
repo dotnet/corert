@@ -416,6 +416,18 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
+                // We do not need to wait for the Wait Thread to actually remove the handle from its array as long as
+                // the wait subsystem's implementation of WaitAny (CoreRT's/Win32's) observes set wait handles
+                // in the order of the array and in order of being set. This is true in both cases as far as we can tell.
+                // Below are a few cases where this is important:
+                // * Wait thread is between processing removals and WaitAny or still processing removals when this method is called.
+                //   The thread that called this method then disposes its wait handle
+                //   - Wait thread needs to not sleep from _changeHandlesEvent already being set.
+                // * Wait thread is in WaitAny. User thread calls Unregister and then sets the relevant event, both before the Wait thread wakes up
+                //   - Wait thread needs to observe that this event was unregistered before it was signaled.
+                // * Wait thread is in WaitAny. User thread sets the relevant event and then calls Unregister, both before the Wait thread wakes up
+                //   - Wait thread needs to observe that this event was signaled before it was unregistered
+
                 if (pendingUnregistration && blocking)
                 {
                     handle.WaitForCallbacks();
