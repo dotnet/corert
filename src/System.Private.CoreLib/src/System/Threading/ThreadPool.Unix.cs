@@ -79,17 +79,32 @@ namespace System.Threading
         /// </summary>
         internal ClrThreadPool.WaitThread WaitThread { get; set; }
 
+        /// <summary>
+        /// The number of callbacks that are currently queued on the Thread Pool or executing.
+        /// </summary>
         private int _numRequestedCallbacks;
 
         private LowLevelLock _callbackLock = new LowLevelLock();
 
+        /// <summary>
+        /// Notes if we need to signal the user's unregister event after all callbacks complete. 
+        /// </summary>
         private bool _signalAfterCallbacksComplete;
 
         private int _unregisterCalled;
 
         private readonly AutoResetEvent _callbacksComplete = new AutoResetEvent(false);
 
-        internal bool Unregister(WaitHandle waitObject)
+        /// <summary>
+        /// Unregisters this wait handle registration from the wait threads.
+        /// </summary>
+        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
+        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
+        /// <remarks>
+        /// This method will only return true on the first call.
+        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
+        /// </remarks>
+        public bool Unregister(WaitHandle waitObject)
         {
             if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
             {
@@ -155,6 +170,9 @@ namespace System.Threading
             CompleteCallbackRequest();
         }
 
+        /// <summary>
+        /// Tell this handle that there is a callback queued on the thread pool for this handle.
+        /// </summary>
         internal void RequestCallback()
         {
             _callbackLock.Acquire();
@@ -168,6 +186,10 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Called when the wait thread removes this handle registration. This will signal the user's event if there are no callbacks pending,
+        /// or note that the user's event must be signaled when the callbacks complete.
+        /// </summary>
         internal void OnRemoveWait()
         {
             _callbackLock.Acquire();
@@ -189,6 +211,9 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Reduces the number of callbacks requested. If there are no more callbacks and the user's handle is queued to be signaled, signal it.
+        /// </summary>
         private void CompleteCallbackRequest()
         {
             _callbackLock.Acquire();
@@ -206,6 +231,9 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Wait for all queued callbacks and the full unregistration to complete.
+        /// </summary>
         internal void WaitForCallbacks()
         {
             _callbacksComplete.WaitOne();
