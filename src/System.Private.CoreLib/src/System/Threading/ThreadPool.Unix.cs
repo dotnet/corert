@@ -122,6 +122,17 @@ namespace System.Threading
         /// <param name="timedOut">Whether or not the wait timed out.</param>
         internal void PerformCallback(bool timedOut)
         {
+#if DEBUG
+            _callbackLock.Acquire();
+            try
+            {
+                Debug.Assert(_numRequestedCallbacks != 0);
+            }
+            finally
+            {
+                _callbackLock.Release();
+            }
+#endif
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
             CompleteCallbackRequest();
         }
