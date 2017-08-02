@@ -45,7 +45,7 @@ namespace System.Threading
 
         private int TimeoutDurationMs { get; }
 
-        internal bool InfiniteTimeout => TimeoutDurationMs == -1;
+        internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
 
         internal void RestartTimeout(int currentTimeMs)
         {
@@ -84,7 +84,7 @@ namespace System.Threading
 
         private int _unregisterCalled;
 
-        private readonly AutoResetEvent _unregisteredEvent = new AutoResetEvent(false);
+        private readonly AutoResetEvent _callbacksComplete = new AutoResetEvent(false);
 
         internal bool Unregister(WaitHandle waitObject)
         {
@@ -122,7 +122,7 @@ namespace System.Threading
                 finally
                 {
                     handle?.DangerousRelease();
-                    _unregisteredEvent.Set();
+                    _callbacksComplete.Set();
                 }
             }
         }
@@ -153,7 +153,7 @@ namespace System.Threading
             }
         }
 
-        internal void TrySignalUserWaitHandle()
+        internal void OnRemoveWait()
         {
             _callbackLock.Acquire();
             try
@@ -191,9 +191,9 @@ namespace System.Threading
             }
         }
 
-        internal void BlockOnUnregistration()
+        internal void WaitForCallbacks()
         {
-            _unregisteredEvent.WaitOne();
+            _callbacksComplete.WaitOne();
         }
     }
 

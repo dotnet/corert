@@ -205,7 +205,7 @@ namespace System.Threading
                     {
                         for (int i = 0; i < numUserWaits; i++)
                         {
-                            if (_registeredWaits[i].InfiniteTimeout)
+                            if (_registeredWaits[i].IsInfiniteTimeout)
                             {
                                 continue;
                             }
@@ -295,7 +295,7 @@ namespace System.Threading
                         {
                             if (_pendingRemoves[i] == _registeredWaits[j])
                             {
-                                _registeredWaits[j].TrySignalUserWaitHandle();
+                                _registeredWaits[j].OnRemoveWait();
                                 _registeredWaits[j] = _registeredWaits[_numUserWaits - 1];
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
                                 _registeredWaits[_numUserWaits - 1] = null;
@@ -418,7 +418,7 @@ namespace System.Threading
 
                 if (pendingUnregistration && blocking)
                 {
-                    handle.BlockOnUnregistration();
+                    handle.WaitForCallbacks();
                 }
             }
         }
