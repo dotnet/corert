@@ -231,6 +231,9 @@
   <data name="DelegateGetMethodInfo_NoDynamic" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted was not enabled for metadata using the Dynamic attribute. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
   </data>
+  <data name="DelegateGetMethodInfo_NoDynamic_WithDisplayString" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted ({0}) was not enabled for metadata using the Dynamic attribute. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+  </data>
   <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
   </data>
