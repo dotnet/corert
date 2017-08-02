@@ -198,7 +198,7 @@
       },
       "inputs": {
         "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(Build.DefinitionName)\\$(Build.BuildNumber)\\symbols",
-        "contacts": "crummel;sedarg",
+        "contacts": "crummel;simonn;michals",
         "project": "DDE"
       }
     },

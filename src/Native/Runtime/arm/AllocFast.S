@@ -118,8 +118,8 @@ NESTED_END RhpNewObject, _TEXT
 LEAF_ENTRY RhpNewArray, _TEXT
         PROLOG_PUSH "{r4-r6,lr}"
         // we want to limit the element count to the non-negative 32-bit int range
-        movw        r12, 0xffff
-        movt        r12, (0x7fff >> 16)
+        movw        r12, #0xffff
+        movt        r12, #0x7fff
         cmp         r1, r12
         bhi         LOCAL_LABEL(ArraySizeOverflow)
         // if the element count is negative, it's an overflow error
