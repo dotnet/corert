@@ -59,7 +59,8 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpInitiateThreadAbort")]
         internal static extern void RhpInitiateThreadAbort(IntPtr thread, Exception exception, bool doRudeAbort);
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpCancelThreadAbort")]
         internal static extern void RhpCancelThreadAbort(IntPtr thread);
 
         //
