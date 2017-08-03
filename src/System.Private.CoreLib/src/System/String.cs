@@ -399,7 +399,7 @@ namespace System
         public extern String(ReadOnlySpan<char> value);
 
         [DependencyReductionRoot]
-        private unsafe string Ctor(ReadOnlySpan<char> value)
+        private unsafe static string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
             {
