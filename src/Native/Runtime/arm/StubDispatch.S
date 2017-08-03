@@ -84,14 +84,14 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
               cmp     r1, r3
               bne     0f
               ldr     r3, [r2, #(CurrentOffset + 4)]
-              blx     r3
+              bx      r3
           0:
               CurrentOffset = CurrentOffset + 8
           .endr
 
           // r12 still contains the the indirection cell address.
 
-          bl           C_FUNC(RhpInterfaceDispatchSlow)
+          b           C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
 
 .endm // DEFINE_INTERFACE_DISPATCH_STUB
@@ -139,14 +139,14 @@ LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
           pop          { r12 }
 
           // Just tail call to the cache miss helper.
-          bl           C_FUNC(RhpInterfaceDispatchSlow)
+          b            C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
 // No as alternate entry due to missed thumb bit in this case
 // See https://github.com/dotnet/coreclr/issues/12953
 LEAF_ENTRY RhpInitialDynamicInterfaceDispatch, _TEXT
           // Just tail call to the cache miss helper.
-          bl           C_FUNC(RhpInterfaceDispatchSlow)
+          b            C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInitialDynamicInterfaceDispatch, _TEXT
 
 // Cache miss case, call the runtime to resolve the target and update the cache.
@@ -161,6 +161,6 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
           str          r12, [sp, #-4]
 
           // jump to universal transition thunk
-          blx          C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+          b            C_FUNC(RhpUniversalTransition_DebugStepTailCall)
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
