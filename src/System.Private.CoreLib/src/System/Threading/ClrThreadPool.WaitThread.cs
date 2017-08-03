@@ -338,7 +338,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    UnregisterWait(registeredHandle, blocking: false); // We shouldn't block the wait thread on the unregistration.
+                    UnregisterWait(registeredHandle, blocking: false, waitForRemoval: false); // We shouldn't block the wait thread on the unregistration.
                 }
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
@@ -384,7 +384,7 @@ namespace System.Threading
             }
             
             /// <summary>
-            /// Queues on the thread pool or executes directly a call to <see cref="UnregisterWait(object)"/>.
+            /// Unregisters a wait handle.
             /// </summary>
             /// <param name="handle">The handle to unregister.</param>
             /// <remarks>
@@ -394,7 +394,7 @@ namespace System.Threading
             /// </remarks>
             public void UnregisterWait(RegisteredWaitHandle handle)
             {
-                UnregisterWait(handle, handle.IsBlocking);
+                UnregisterWait(handle, handle.IsBlocking, true);
             }
 
             /// <summary>
@@ -402,7 +402,8 @@ namespace System.Threading
             /// </summary>
             /// <param name="handle">The wait handle to unregister.</param>
             /// <param name="blocking">Should the unregistration block on the full unregistration and all pending callback completion.</param>
-            private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
+            /// <param name="waitForRemoval">Should wait for the handle to be removed from the array before ending</param>
+            private void UnregisterWait(RegisteredWaitHandle handle, bool blocking, bool waitForRemoval)
             {
                 bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
@@ -422,17 +423,10 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
-                // We do not need to wait for the Wait Thread to actually remove the handle from its array as long as
-                // the wait subsystem's implementation of WaitAny (CoreRT's/Win32's) observes set wait handles
-                // in the order of the array and in order of being set. This is true in both cases as far as we can tell.
-                // Below are a few cases where this is important:
-                // * Wait thread is between processing removals and WaitAny or still processing removals when this method is called.
-                //   The thread that called this method then disposes its wait handle
-                //   - Wait thread needs to not sleep from _changeHandlesEvent already being set.
-                // * Wait thread is in WaitAny. User thread calls Unregister and then sets the relevant event, both before the Wait thread wakes up
-                //   - Wait thread needs to observe that this event was unregistered before it was signaled.
-                // * Wait thread is in WaitAny. User thread sets the relevant event and then calls Unregister, both before the Wait thread wakes up
-                //   - Wait thread needs to observe that this event was signaled before it was unregistered
+                if (waitForRemoval && pendingRemoval)
+                {
+                    handle.WaitForRemoval();
+                }
 
                 if (blocking && (pendingRemoval || handle.ShouldWaitForCallbacks))
                 {

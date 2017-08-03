@@ -97,6 +97,8 @@ namespace System.Threading
 
         private AutoResetEvent _callbacksComplete;
 
+        private AutoResetEvent _removed;
+
         /// <summary>
         /// Unregisters this wait handle registration from the wait threads.
         /// </summary>
@@ -123,6 +125,8 @@ namespace System.Threading
                         SignalUserWaitHandle();
                         return true;
                     }
+
+                    _removed = new AutoResetEvent(false);
 
                     if (IsBlocking)
                     {
@@ -208,7 +212,7 @@ namespace System.Threading
             _callbackLock.Acquire();
             try
             {
-
+                _removed?.Set();
                 if (_numRequestedCallbacks == 0)
                 {
                     SignalUserWaitHandle();
@@ -267,6 +271,12 @@ namespace System.Threading
         {
             Debug.Assert(IsBlocking);
             _callbacksComplete.WaitOne();
+        }
+
+        internal void WaitForRemoval()
+        {
+            Debug.Assert(_unregisterCalled == 1); // Should only be called when the wait is unregistered by the user.
+            _removed.WaitOne();
         }
     }
 
