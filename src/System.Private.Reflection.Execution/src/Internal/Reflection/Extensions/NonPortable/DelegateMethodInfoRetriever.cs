@@ -70,7 +70,9 @@ namespace Internal.Reflection.Extensions.NonPortable
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
                 {
-                    string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(originalLdFtnResult);
+                    ReflectionExecution.ExecutionEnvironment.GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr ip, out IntPtr _);
+                    
+                    string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
                     if (methodDisplayString == null)
                         throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoDynamic);
                     else
