@@ -67,10 +67,10 @@ LEAF_END RhpCastableObjectDispatchHelper, _TEXT
 LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 
           // r12 currently contains the indirection cell address. But we need more scratch registers and
-	        // we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
+          // we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
           PROLOG_PUSH {r1-r2}
 
-          // load r11 to point to the cache block.
+          // load r2 to point to the cache block.
           ldr     r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
           // Load the EEType from the object instance in r0.
@@ -80,17 +80,18 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
           // For each entry in the cache, see if its EEType type matches the EEType in rax.
           // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
           .rept \entries
-              ldr     r3, [r2, #CurrentOffset]
-              cmp     r1, r3
-              bne     0f
-              ldr     r3, [r2, #(CurrentOffset + 4)]
-              bx      r3
+              ldr        r3, [r2, #CurrentOffset]
+              cmp        r1, r3
+              bne        0f
+              ldr        r3, [r2, #(CurrentOffset + 4)]
+              EPILOG_POP {r1-r2}
+              bx         r3
           0:
               CurrentOffset = CurrentOffset + 8
           .endr
 
+          EPILOG_POP  {r1-r2}
           // r12 still contains the the indirection cell address.
-
           b           C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
 
@@ -162,5 +163,4 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
 
           // jump to universal transition thunk
           b            C_FUNC(RhpUniversalTransition_DebugStepTailCall)
-
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
