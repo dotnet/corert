@@ -31,7 +31,7 @@ namespace System.Globalization
     // This is an internal flag.
     //
     // This flag is different from MonthNameStyles because this flag
-    // can be expanded to accomodate parsing behaviors like CJK month names
+    // can be expanded to accommodate parsing behaviors like CJK month names
     // or alternative month names, etc.
 
     [Flags]
