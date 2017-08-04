@@ -132,17 +132,20 @@ namespace System.Threading
         {
             GC.SuppressFinalize(this);
             _callbackLock.Acquire();
+            bool needToRollBackRefCountOnException = false;
             try
             {
                 if (_unregisterCalled)
                 {
                     return false;
                 }
-                _unregisterCalled = true;
 
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                 UserUnregisterWaitHandle?.DangerousAddRef();
+                needToRollBackRefCountOnException = true;
+
                 UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+
                 if (_unregistered)
                 {
                     SignalUserWaitHandle();
@@ -157,6 +160,30 @@ namespace System.Threading
                 {
                     _removed = RentEvent();
                 }
+                _unregisterCalled = true;
+            }
+            catch (Exception) // Rollback state on exception
+            {
+                if (_removed != null)
+                {
+                    ReturnEvent(_removed);
+                    _removed = null;
+                }
+                else if (_callbacksComplete != null)
+                {
+                    ReturnEvent(_callbacksComplete);
+                    _callbacksComplete = null;
+                }
+
+                UserUnregisterWaitHandleValue = (IntPtr)(-1);
+
+                if (needToRollBackRefCountOnException)
+                {
+                    UserUnregisterWaitHandle?.DangerousRelease();
+                }
+
+                UserUnregisterWaitHandle  = new SafeWaitHandle((IntPtr)(-1), false);
+                throw;
             }
             finally
             {
