@@ -338,7 +338,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    UnregisterWait(registeredHandle, blocking: false, waitForRemoval: false); // We shouldn't block the wait thread on the unregistration.
+                    UnregisterWait(registeredHandle, blocking: false); // We shouldn't block the wait thread on the unregistration.
                 }
                 ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
             }
@@ -394,16 +394,15 @@ namespace System.Threading
             /// </remarks>
             public void UnregisterWait(RegisteredWaitHandle handle)
             {
-                UnregisterWait(handle, handle.IsBlocking, true);
+                UnregisterWait(handle, true);
             }
 
             /// <summary>
             /// Unregister a wait handle.
             /// </summary>
             /// <param name="handle">The wait handle to unregister.</param>
-            /// <param name="blocking">Should the unregistration block on the full unregistration and all pending callback completion.</param>
-            /// <param name="waitForRemoval">Should wait for the handle to be removed from the array before ending</param>
-            private void UnregisterWait(RegisteredWaitHandle handle, bool blocking, bool waitForRemoval)
+            /// <param name="blocking">Should the unregistration block at all.</param>
+            private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
             {
                 bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
@@ -423,14 +422,16 @@ namespace System.Threading
                     _removesLock.Release();
                 }
 
-                if (waitForRemoval && pendingRemoval)
+                if (blocking)
                 {
-                    handle.WaitForRemoval();
-                }
-
-                if (blocking && (pendingRemoval || handle.ShouldWaitForCallbacks))
-                {
-                    handle.WaitForCallbacks();
+                    if (handle.IsBlocking)
+                    {
+                        handle.WaitForCallbacks();
+                    }
+                    else if (pendingRemoval)
+                    {
+                        handle.WaitForRemoval();
+                    }
                 }
             }
         }

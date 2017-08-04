@@ -91,7 +91,7 @@ namespace System.Threading
         /// </summary>
         private bool _signalAfterCallbacksComplete;
 
-        private int _unregisterCalled;
+        private bool _unregisterCalled;
 
         private bool _unregistered;
 
@@ -110,38 +110,41 @@ namespace System.Threading
         /// </remarks>
         public bool Unregister(WaitHandle waitObject)
         {
-            if (Interlocked.Exchange(ref _unregisterCalled, 1) == 0)
+            GC.SuppressFinalize(this);
+            _callbackLock.Acquire();
+            try
             {
-                GC.SuppressFinalize(this);
-
-                _callbackLock.Acquire();
-                try
+                if (_unregisterCalled)
                 {
-                    UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                    UserUnregisterWaitHandle?.DangerousAddRef();
-                    UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
-                    if (_unregistered)
-                    {
-                        SignalUserWaitHandle();
-                        return true;
-                    }
+                    return false;
+                }
+                _unregisterCalled = true;
 
+                UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
+                UserUnregisterWaitHandle?.DangerousAddRef();
+                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+                if (_unregistered)
+                {
+                    SignalUserWaitHandle();
+                    return true;
+                }
+
+                if (IsBlocking)
+                {
+                    _callbacksComplete = new AutoResetEvent(false);
+                }
+                else
+                {
                     _removed = new AutoResetEvent(false);
-
-                    if (IsBlocking)
-                    {
-                        _callbacksComplete = new AutoResetEvent(false);
-                    }
                 }
-                finally
-                {
-                    _callbackLock.Release();
-                }
-
-                WaitThread.UnregisterWait(this);
-                return true;
             }
-            return false;
+            finally
+            {
+                _callbackLock.Release();
+            }
+
+            WaitThread.UnregisterWait(this);
+            return true;
         }
 
         /// <summary>
@@ -149,6 +152,7 @@ namespace System.Threading
         /// </summary>
         private void SignalUserWaitHandle()
         {
+            _callbackLock.VerifyIsLocked();
             SafeWaitHandle handle = UserUnregisterWaitHandle;
             IntPtr handleValue = UserUnregisterWaitHandleValue;
             try
@@ -248,34 +252,22 @@ namespace System.Threading
             }
         }
 
-        internal bool ShouldWaitForCallbacks
-        {
-            get
-            {
-                _callbackLock.Acquire();
-                try
-                {
-                    return _signalAfterCallbacksComplete;
-                }
-                finally
-                {
-                    _callbackLock.Release();
-                }
-            }
-        }
-
         /// <summary>
         /// Wait for all queued callbacks and the full unregistration to complete.
         /// </summary>
         internal void WaitForCallbacks()
         {
             Debug.Assert(IsBlocking);
+            Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
+
             _callbacksComplete.WaitOne();
         }
 
         internal void WaitForRemoval()
         {
-            Debug.Assert(_unregisterCalled == 1); // Should only be called when the wait is unregistered by the user.
+            Debug.Assert(!IsBlocking);
+            Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
+
             _removed.WaitOne();
         }
     }
