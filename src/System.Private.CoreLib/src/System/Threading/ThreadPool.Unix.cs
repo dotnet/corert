@@ -35,6 +35,26 @@ namespace System.Threading
             }
         }
 
+        private static AutoResetEvent s_cachedEvent;
+
+        private static AutoResetEvent RentEvent()
+        {
+            AutoResetEvent resetEvent = Interlocked.Exchange(ref s_cachedEvent, (AutoResetEvent)null);
+            if (resetEvent == null)
+            {
+                resetEvent = new AutoResetEvent(false);
+            }
+            return resetEvent;
+        }
+
+        private static void ReturnEvent(AutoResetEvent resetEvent)
+        {
+            if (Interlocked.CompareExchange(ref s_cachedEvent, resetEvent, null) != null)
+            {
+                resetEvent.Dispose();
+            }
+        }
+
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
@@ -131,11 +151,11 @@ namespace System.Threading
 
                 if (IsBlocking)
                 {
-                    _callbacksComplete = new AutoResetEvent(false);
+                    _callbacksComplete = RentEvent();
                 }
                 else
                 {
-                    _removed = new AutoResetEvent(false);
+                    _removed = RentEvent();
                 }
             }
             finally
@@ -261,6 +281,8 @@ namespace System.Threading
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
             _callbacksComplete.WaitOne();
+            ReturnEvent(_callbacksComplete);
+            _callbacksComplete = null;
         }
 
         internal void WaitForRemoval()
@@ -269,6 +291,8 @@ namespace System.Threading
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
             _removed.WaitOne();
+            ReturnEvent(_removed);
+            _removed = null;
         }
     }
 
