@@ -633,12 +633,9 @@
     <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.cs" />
-<<<<<<< HEAD
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
-=======
     <Compile Include="System\Threading\ClrThreadPool.ClrThreadPoolEventSource.cs" />
->>>>>>> 4631afad3... Move ClrThreadPoolEventSource into its own file
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />

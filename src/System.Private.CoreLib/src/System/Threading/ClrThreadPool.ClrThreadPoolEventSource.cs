@@ -8,6 +8,7 @@ namespace System.Threading
 {
     internal partial class ClrThreadPool
     {
+        [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "{e13c0d23-ccbc-4e12-931b-d9cc2eee27e4}")]
         sealed class ClrThreadPoolEventSource : EventSource
         {
             private const string WorkerThreadMessage = "WorkerThreadCount=%1";
@@ -29,25 +30,25 @@ namespace System.Threading
             {
             }
 
-            [Event(50, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = EventOpcode.Start, Version = 0, Keywords = ThreadingKeyword)]
+            [Event(1, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = EventOpcode.Start, Version = 0, Keywords = ThreadingKeyword)]
             public void WorkerThreadStart(ThreadCounts counts)
             {
-                WriteEvent(50, counts.numExistingThreads);
+                WriteEvent(1, counts.numExistingThreads);
             }
 
-            [Event(51, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = EventOpcode.Stop, Version = 0, Keywords = ThreadingKeyword)]
+            [Event(2, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = EventOpcode.Stop, Version = 0, Keywords = ThreadingKeyword)]
             public void WorkerThreadStop(ThreadCounts counts)
             {
-                WriteEvent(51, counts.numExistingThreads);
+                WriteEvent(2, counts.numExistingThreads);
             }
 
-            [Event(57, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = WaitOpcode, Version = 0, Keywords = ThreadingKeyword)]
+            [Event(3, Level = EventLevel.Informational, Message = WorkerThreadMessage, Task = WorkerThreadTask, Opcode = WaitOpcode, Version = 0, Keywords = ThreadingKeyword)]
             public void WorkerThreadWait(ThreadCounts counts)
             {
-                WriteEvent(51, counts.numExistingThreads);
+                WriteEvent(3, counts.numExistingThreads);
             }
 
-            [Event(54, Level = EventLevel.Informational, Message = WorkerThreadAdjustmentSampleMessage, Opcode = SampleOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
+            [Event(4, Level = EventLevel.Informational, Message = WorkerThreadAdjustmentSampleMessage, Opcode = SampleOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
             public unsafe void WorkerThreadAdjustmentSample(double throughput)
             {
                 if (IsEnabled())
@@ -55,11 +56,11 @@ namespace System.Threading
                     EventData* data = stackalloc EventData[1];
                     data[0].DataPointer = (IntPtr)(&throughput);
                     data[0].Size = sizeof(double);
-                    WriteEventCore(54, 1, data);
+                    WriteEventCore(4, 1, data);
                 }
             }
 
-            [Event(55, Level = EventLevel.Informational, Message = WorkerThreadAdjustmentSampleMessage, Opcode = AdjustmentOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
+            [Event(5, Level = EventLevel.Informational, Message = WorkerThreadAdjustmentSampleMessage, Opcode = AdjustmentOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
             public unsafe void WorkerThreadAdjustmentAdjustment(double averageThroughput, int newWorkerThreadCount, HillClimbing.StateOrTransition stateOrTransition)
             {
                 if (IsEnabled())
@@ -72,11 +73,11 @@ namespace System.Threading
                     int reason = (int)stateOrTransition;
                     data[2].DataPointer = (IntPtr)(&reason);
                     data[2].Size = sizeof(int);
-                    WriteEventCore(55, 3, data);
+                    WriteEventCore(5, 3, data);
                 }
             }
 
-            [Event(56, Level = EventLevel.Verbose, Message = WorkerThreadAdjustmentSampleMessage, Opcode = StatsOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
+            [Event(6, Level = EventLevel.Verbose, Message = WorkerThreadAdjustmentSampleMessage, Opcode = StatsOpcode, Version = 0, Task = WorkerThreadAdjustmentTask, Keywords = ThreadingKeyword)]
             public unsafe void WorkerThreadAdjustmentStats(double duration, double throughput, double threadWave, double throughputWave, double throughputErrorEstimate,
                 double averageThroughputNoise, double ratio, double confidence, double currentControlSetting, ushort newThreadWaveMagnitude)
             {
@@ -103,7 +104,7 @@ namespace System.Threading
                     data[8].Size = sizeof(double);
                     data[9].DataPointer = (IntPtr)(&newThreadWaveMagnitude);
                     data[9].Size = sizeof(ushort);
-                    WriteEventCore(56, 10, data);
+                    WriteEventCore(6, 10, data);
                 }
             }
 
