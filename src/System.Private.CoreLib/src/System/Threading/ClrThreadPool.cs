@@ -17,6 +17,8 @@ namespace System.Threading
         public static readonly ClrThreadPool ThreadPoolInstance = new ClrThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
+        private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
+      
         private const short MaxPossibleThreadCount = short.MaxValue;
 
         private const int CpuUtilizationHigh = 95;

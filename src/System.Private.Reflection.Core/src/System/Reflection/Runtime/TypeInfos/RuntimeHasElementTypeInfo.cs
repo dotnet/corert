@@ -36,6 +36,7 @@ namespace System.Reflection.Runtime.TypeInfos
         protected abstract override bool IsPointerImpl();
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => false;
+        public sealed override bool IsByRefLike => false;
 
         //
         // Implements IKeyedItem.PrepareKey.

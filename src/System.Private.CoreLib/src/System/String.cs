@@ -395,6 +395,25 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
         }
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(ReadOnlySpan<char> value);
+
+        [DependencyReductionRoot]
+        private unsafe static string Ctor(ReadOnlySpan<char> value)
+        {
+            if (value.Length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(value.Length);
+            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            {
+                wstrcpy(dest, src, value.Length);
+            }
+            return result;
+        }
+
         public object Clone()
         {
             return this;

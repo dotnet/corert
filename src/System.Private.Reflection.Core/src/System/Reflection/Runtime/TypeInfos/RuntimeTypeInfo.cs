@@ -52,6 +52,7 @@ namespace System.Reflection.Runtime.TypeInfos
         protected abstract override bool IsPointerImpl();
         public abstract override bool IsGenericParameter { get; }
         public abstract override bool IsConstructedGenericType { get; }
+        public abstract override bool IsByRefLike { get; }
 
         public abstract override Assembly Assembly { get; }
 
@@ -444,6 +445,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
                 if (runtimeTypeArgument.IsGenericTypeDefinition)
                     runtimeTypeArgument = runtimeTypeArgument.GetConstructedGenericType(runtimeTypeArgument.RuntimeGenericTypeParameters);
+
+                if (runtimeTypeArgument.IsByRefLike)
+                    throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);
 
                 runtimeTypeArguments[i] = runtimeTypeArgument;
             }

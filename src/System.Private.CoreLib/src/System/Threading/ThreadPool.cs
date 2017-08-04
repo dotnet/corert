@@ -1008,9 +1008,8 @@ namespace System.Threading
         }
 
         // call back helper
-        internal static void PerformWaitOrTimerCallback(Object state, bool timedOut)
+        internal static void PerformWaitOrTimerCallback(_ThreadPoolWaitOrTimerCallback helper, bool timedOut)
         {
-            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
             if (helper._executionContext == null)
@@ -1035,6 +1034,8 @@ namespace System.Threading
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
+            if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
@@ -1046,6 +1047,8 @@ namespace System.Threading
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce)
         {
+            if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
@@ -1082,7 +1085,7 @@ namespace System.Threading
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
-            if (millisecondsTimeOutInterval < -1)
+            if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
@@ -1095,7 +1098,7 @@ namespace System.Threading
             long millisecondsTimeOutInterval,
             bool executeOnlyOnce)
         {
-            if (millisecondsTimeOutInterval < -1)
+            if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);

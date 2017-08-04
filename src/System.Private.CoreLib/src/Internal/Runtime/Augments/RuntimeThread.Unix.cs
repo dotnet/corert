@@ -135,7 +135,7 @@ namespace Internal.Runtime.Augments
         }
 
         /// <summary>
-        /// This an entry point for managed threads created by applicatoin
+        /// This is an entry point for managed threads created by application
         /// </summary>
         [NativeCallable]
         private static IntPtr ThreadEntryPoint(IntPtr parameter)

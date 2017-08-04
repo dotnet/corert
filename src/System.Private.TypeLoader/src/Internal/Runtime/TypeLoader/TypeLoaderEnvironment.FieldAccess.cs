@@ -51,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
         /// <summary>
-        /// Try to look up field acccess info for given canon in metadata blobs for all available modules.
+        /// Try to look up field access info for given canon in metadata blobs for all available modules.
         /// </summary>
         /// <param name="metadataReader">Metadata reader for the declaring type</param>
         /// <param name="declaringTypeHandle">Declaring type for the method</param>

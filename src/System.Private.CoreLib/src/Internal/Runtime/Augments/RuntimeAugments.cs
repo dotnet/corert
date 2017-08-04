@@ -623,6 +623,8 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().IsArray;
         }
 
+        public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToEETypePtr().IsByRefLike;
+
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsDynamicType;
@@ -850,6 +852,19 @@ namespace Internal.Runtime.Augments
             {
                 return s_stackTraceMetadataCallbacks;
             }
+        }
+
+        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
+        {
+            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
+            if (callbacks == null)
+                return null;
+
+            ip = RuntimeImports.RhFindMethodStartAddress(ip);
+            if (ip == IntPtr.Zero)
+                return null;
+
+            return callbacks.TryGetMethodNameFromStartAddress(ip);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;

@@ -69,7 +69,15 @@ namespace Internal.Reflection.Extensions.NonPortable
             if (callTryGetMethod)
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
-                    throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoDynamic);
+                {
+                    ReflectionExecution.ExecutionEnvironment.GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr ip, out IntPtr _);
+                    
+                    string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
+                    if (methodDisplayString == null)
+                        throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoDynamic);
+                    else
+                        throw new MissingRuntimeArtifactException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
+                }
             }
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
             MethodInfo methodInfo = methodBase as MethodInfo;
