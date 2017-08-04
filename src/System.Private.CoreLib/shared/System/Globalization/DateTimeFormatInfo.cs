@@ -2645,7 +2645,7 @@ namespace System.Globalization
                 {
                     String str;
                     // We have to call public methods here to work with inherited DTFI.
-                    // Insert the month name first, so that they are at the front of abbrevaited
+                    // Insert the month name first, so that they are at the front of abbreviated
                     // month names.
                     str = InvariantInfo.GetMonthName(i);
                     InsertHash(temp, str, TokenType.MonthToken, i);
