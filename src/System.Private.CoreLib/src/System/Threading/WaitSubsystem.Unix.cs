@@ -263,10 +263,10 @@ namespace System.Threading
             }
         }
 
-        public static bool Wait(IntPtr handle, int timeoutMilliseconds)
+        public static bool Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
-            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds);
+            return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
         }
 
         public static bool Wait(
@@ -285,23 +285,24 @@ namespace System.Threading
             RuntimeThread currentThread,
             SafeWaitHandle[] safeWaitHandles,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= waitHandles.Length);
-            Debug.Assert(waitHandles.Length > 0);
-            Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
+            Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= safeWaitHandles.Length);
+            Debug.Assert(numWaitHandles <= waitHandles.Length);
+            Debug.Assert(numWaitHandles <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            int count = waitHandles.Length;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(count);
+            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(numWaitHandles);
             bool success = false;
             try
             {
-                for (int i = 0; i < count; ++i)
+                for (int i = 0; i < numWaitHandles; ++i)
                 {
                     Debug.Assert(safeWaitHandles[i] != null);
                     WaitableObject waitableObject = HandleManager.FromHandle(safeWaitHandles[i].DangerousGetHandle());
@@ -328,14 +329,14 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    for (int i = 0; i < count; ++i)
+                    for (int i = 0; i < numWaitHandles; ++i)
                     {
                         waitableObjects[i] = null;
                     }
                 }
             }
 
-            if (count == 1)
+            if (numWaitHandles == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0];
                 waitableObjects[0] = null;
@@ -348,7 +349,7 @@ namespace System.Threading
             return
                 WaitableObject.Wait(
                     waitableObjects,
-                    count,
+                    numWaitHandles,
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,

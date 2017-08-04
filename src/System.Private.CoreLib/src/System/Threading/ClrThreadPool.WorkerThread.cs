@@ -19,8 +19,6 @@ namespace System.Threading
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
             private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount);
-
-            private const int TimeoutMs = 20 * 1000;
             
             private static void WorkerThreadStart()
             {
@@ -29,7 +27,7 @@ namespace System.Threading
                 while (true)
                 {
                     // TODO: Event:  Worker thread wait event
-                    while (s_semaphore.Wait(TimeoutMs))
+                    while (s_semaphore.Wait(ThreadPoolThreadTimeoutMs))
                     {
                         if (TakeActiveRequest())
                         {
