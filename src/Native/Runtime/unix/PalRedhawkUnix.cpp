@@ -1214,13 +1214,6 @@ extern "C" int main(int argc, char** argv);
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-    if (moduleBase == NULL)
-    {
-        // Get an address of the "main" function, which causes the dladdr to return
-        // path of the main executable
-        moduleBase = (HANDLE)&main;
-    }
-
     Dl_info dl;
     if (dladdr(moduleBase, &dl) == 0)
     {

@@ -294,6 +294,14 @@ static const pfn c_classlibFunctions[] = {
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
+#ifdef CORERT_DLL
+#if defined(_WIN32)
+#define wmain CoreRT_wmain
+#else
+#define main CoreRT_main
+#endif
+#endif // CORERT_DLL
+
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 int __cdecl wmain(int argc, wchar_t* argv[])
