@@ -34,6 +34,10 @@ namespace System.Threading
 
         private static SynchronizationContext GetWinRTContext()
         {
+            // Optimization: WinRT dispatchers are supported for STA and ASTA apartment types only
+            if (RuntimeThread.GetCurrentApartmentType() != RuntimeThread.ApartmentType.STA)
+                return null;
+
             object dispatcher = WinRTInterop.Callbacks.GetCurrentWinRTDispatcher();
             if (dispatcher == null)
                 return null;
@@ -41,7 +45,6 @@ namespace System.Threading
             return s_winRTContextCache.GetValue(dispatcher, _dispatcher => new WinRTSynchronizationContext(_dispatcher));
         }
     }
-
 
     internal sealed class WinRTSynchronizationContext : SynchronizationContext
     {
