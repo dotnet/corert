@@ -39,6 +39,8 @@ See the LICENSE file in the project root for more information.
 
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' ==  'Library' and '$(TargetOS)' == 'OSX' and $(NativeLib) == 'Shared'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(OutputType)' ==  'Library' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'OSX'">.dylib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' !=  'OSX'">.so</NativeBinaryExt>
@@ -119,6 +121,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
+      <IlcArg Condition="$(OutputType) ==  'Library' and $(NativeLib) != ''" Include="--nativelib" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

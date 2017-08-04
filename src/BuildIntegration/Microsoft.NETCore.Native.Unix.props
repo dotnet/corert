@@ -32,7 +32,8 @@ See the LICENSE file in the project root for more information.
 
   <ItemGroup>
     <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
+    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
+    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
     <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libRuntime.a" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
@@ -58,5 +59,6 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
+    <LinkerArg Include="-dynamiclib" Condition="'$(NativeLib)' == 'Shared'" />
   </ItemGroup>
 </Project>
