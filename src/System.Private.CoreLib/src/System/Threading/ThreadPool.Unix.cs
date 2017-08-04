@@ -88,9 +88,9 @@ namespace System.Threading
         /// <summary>
         /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
         /// </summary>
-        private SafeWaitHandle UserUnregisterWaitHandle { get; set; } = new SafeWaitHandle((IntPtr)(-1), false); // Initialize with an invalid handle like CoreCLR
+        private SafeWaitHandle UserUnregisterWaitHandle { get; set; }
 
-        private IntPtr UserUnregisterWaitHandleValue { get; set; } = new IntPtr(-1);
+        private IntPtr UserUnregisterWaitHandleValue { get; set; }
 
         internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
 
@@ -175,14 +175,14 @@ namespace System.Threading
                     _callbacksComplete = null;
                 }
 
-                UserUnregisterWaitHandleValue = (IntPtr)(-1);
+                UserUnregisterWaitHandleValue = IntPtr.Zero;
 
                 if (needToRollBackRefCountOnException)
                 {
                     UserUnregisterWaitHandle?.DangerousRelease();
                 }
 
-                UserUnregisterWaitHandle  = new SafeWaitHandle((IntPtr)(-1), false);
+                UserUnregisterWaitHandle  = null;
                 throw;
             }
             finally
