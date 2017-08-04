@@ -220,7 +220,7 @@ namespace System
         {
             Decimal d = default(Decimal);
 
-            ulong absoluteCy; // has to be ulong to accomodate the case where cy == long.MinValue.
+            ulong absoluteCy; // has to be ulong to accommodate the case where cy == long.MinValue.
             if (cy < 0)
             {
                 d.Sign = true;
