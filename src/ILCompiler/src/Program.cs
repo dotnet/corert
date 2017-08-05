@@ -39,6 +39,7 @@ namespace ILCompiler
         private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
+        private bool _nativeLib;
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
@@ -126,6 +127,7 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -309,6 +311,20 @@ namespace ILCompiler
                         compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
                     }
                 }
+                else if (_nativeLib)
+                {
+                    EcmaModule module = null;
+                    // Get first (and only) module
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        break;
+                    }
+
+                    LibraryInitializers libraryInitializers =
+                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new LibraryRootProvider(module, libraryInitializers.LibraryInitializerMethods));
+                }
 
                 if (_multiFile)
                 {
@@ -330,7 +346,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null)
+                    if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
                     // TODO: Wasm fails to compile some of the xported methods due to missing opcodes

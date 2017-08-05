@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
+using Internal.IL.Stubs.StartupCode;
 
 namespace ILCompiler
 {
@@ -12,11 +15,24 @@ namespace ILCompiler
     /// </summary>
     public class LibraryRootProvider : ICompilationRootProvider
     {
+        /// <summary>
+        /// Symbolic name under which the managed entrypoint is exported.
+        /// </summary>
+        public const string ManagedEntryPointMethodName = "__managed__Startup";
+
         private EcmaModule _module;
+        private IList<MethodDesc> _libraryInitializers;
 
         public LibraryRootProvider(EcmaModule module)
         {
             _module = module;
+            _libraryInitializers = new List<MethodDesc>();
+        }
+
+        public LibraryRootProvider(EcmaModule module, IList<MethodDesc> libraryInitializers)
+        {
+            _module = module;
+            _libraryInitializers = libraryInitializers;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -46,6 +62,11 @@ namespace ILCompiler
                     rootProvider.RootNonGCStaticBaseForType(type, "Library module type statics");
                 }
             }
+
+            TypeDesc owningType = _module.GetGlobalModuleType();
+            var nativeLibStartupCode = new NativeLibraryStartupMethod(owningType, _libraryInitializers);
+
+            rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", ManagedEntryPointMethodName);
         }
 
         private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)

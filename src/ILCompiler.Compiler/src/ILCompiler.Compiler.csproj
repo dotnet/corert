@@ -344,6 +344,7 @@
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
+    <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.cs" />
     <Compile Include="Logger.cs" />
   </ItemGroup>
   <ItemGroup>
