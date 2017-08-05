@@ -8,7 +8,7 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #ifndef CPPCODEGEN
 
@@ -292,7 +292,13 @@ static const pfn c_classlibFunctions[] = {
 
 #endif // !CPPCODEGEN
 
+static bool RUNTIME_INITIALIZED = false;
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
+extern "C" int InitializeRuntime();
+
+#ifdef CPPCODEGEN
+ReversePInvokeFrame frame;
+#endif
 
 #ifdef CORERT_DLL
 #if defined(_WIN32)
@@ -303,45 +309,35 @@ extern "C" void InitializeModules(void* osModule, void ** modules, int count, vo
 #endif // CORERT_DLL
 
 #if defined(_WIN32)
+#ifndef CORERT_DLL
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+#else
+extern "C" int __managed__Startup(int argc, wchar_t* argv[]);
+#endif // CORERT_DLL
 int __cdecl wmain(int argc, wchar_t* argv[])
 #else
+#ifndef CORERT_DLL
 extern "C" int __managed__Main(int argc, char* argv[]);
+#else
+extern "C" int __managed__Startup(int argc, char* argv[]);
+#endif // CORERT_DLL
 int main(int argc, char* argv[])
 #endif
 {
-    if (!RhInitialize())
-        return -1;
-
-#if defined(CPPCODEGEN)
-    RhpEnableConservativeStackReporting();
-#endif // CPPCODEGEN
-
-#ifndef CPPCODEGEN
-    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
-    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
-    if (!RhRegisterOSModule(
-        osModule,
-        (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
-        (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
-        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
-    {
-        return -1;
-    }
-#endif // !CPPCODEGEN
-
-#ifndef CPPCODEGEN
-    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
-#else // !CPPCODEGEN
-    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
-#endif // !CPPCODEGEN
+    int initval = InitializeRuntime();
+    if (initval != 0)
+        return initval;
 
     int retval;
 #ifdef CPPCODEGEN
     try
 #endif
     {
+#ifndef CORERT_DLL
         retval = __managed__Main(argc, argv);
+#else
+        retval = 0;
+#endif // CORERT_DLL
     }
 #ifdef CPPCODEGEN
     catch (const char* &e)
@@ -352,7 +348,61 @@ int main(int argc, char* argv[])
     }
 #endif
 
+#ifdef CPPCODEGEN
+    __reverse_pinvoke_return(&frame);
+#endif
+
     RhpShutdown();
+    RUNTIME_INITIALIZED = false;
 
     return retval;
+}
+
+extern "C" int InitializeRuntime()
+{
+    if (RUNTIME_INITIALIZED)
+        return 0;
+
+    if (!RhInitialize())
+        return -1;
+
+#if defined(CPPCODEGEN)
+    RhpEnableConservativeStackReporting();
+#endif // CPPCODEGEN
+
+#ifndef CPPCODEGEN
+#ifndef CORERT_DLL
+    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
+    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
+#else
+    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Startup);
+#endif // CORERT_DLL
+    if (!RhRegisterOSModule(
+        osModule,
+        (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
+        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
+#endif // !CPPCODEGEN
+
+    RUNTIME_INITIALIZED = true;
+
+#ifdef CPPCODEGEN
+    __reverse_pinvoke(&frame);
+#endif
+
+#ifndef CPPCODEGEN
+    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#else // !CPPCODEGEN
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
+#endif // !CPPCODEGEN
+
+#ifdef CORERT_DLL
+    // Run startup method immediately for a native library
+    return __managed__Startup(0, NULL);
+#else
+    return 0;
+#endif // CORERT_DLL
 }
