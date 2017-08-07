@@ -12,29 +12,32 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitForSingleObject(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
-            SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
-            bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
-
-            if (useSyncContextWait)
+            if (interruptible)
             {
-                var handles = new IntPtr[1] { handle };
-                return context.Wait(handles, false, millisecondsTimeout);
+                SynchronizationContext context = RuntimeThread.CurrentThread.SynchronizationContext;
+                bool useSyncContextWait = (context != null) && context.IsWaitNotificationRequired();
+
+                if (useSyncContextWait)
+                {
+                    var handles = new IntPtr[1] { handle };
+                    return context.Wait(handles, false, millisecondsTimeout);
+                }
             }
 
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, interruptible);
         }
 
         internal static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr[] handles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = handles)
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, numHandles, waitAll, millisecondsTimeout, true);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool interruptible)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -94,11 +97,11 @@ namespace System.Threading
             return result;
         }
 
-        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout)
+        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout, bool interruptible)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = WaitForSingleObject(handle, millisecondsTimeout);
+            int ret = WaitForSingleObject(handle, millisecondsTimeout, interruptible);
 
             if (ret == WaitAbandoned)
             {
@@ -158,19 +161,20 @@ namespace System.Threading
             RuntimeThread currentThread,
             SafeWaitHandle[] safeWaitHandles,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             int millisecondsTimeout)
         {
             Debug.Assert(currentThread == RuntimeThread.CurrentThread);
             Debug.Assert(safeWaitHandles != null);
-            Debug.Assert(safeWaitHandles.Length >= waitHandles.Length);
+            Debug.Assert(safeWaitHandles.Length >= numWaitHandles);
             Debug.Assert(waitHandles != null);
-            Debug.Assert(waitHandles.Length > 0);
-            Debug.Assert(waitHandles.Length <= MaxWaitHandles);
+            Debug.Assert(numWaitHandles > 0);
+            Debug.Assert(numWaitHandles <= MaxWaitHandles);
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = WaitMultiple(currentThread, safeWaitHandles, waitHandles.Length, millisecondsTimeout, false /* waitany*/ );
+            int ret = WaitMultiple(currentThread, safeWaitHandles, numWaitHandles, millisecondsTimeout, false /* waitany*/ );
 
-            if ((WaitAbandoned <= ret) && (WaitAbandoned + waitHandles.Length > ret))
+            if ((WaitAbandoned <= ret) && (WaitAbandoned + numWaitHandles > ret))
             {
                 int mutexIndex = ret - WaitAbandoned;
                 if (0 <= mutexIndex && mutexIndex < waitHandles.Length)

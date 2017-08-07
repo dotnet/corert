@@ -125,5 +125,10 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+        
+        internal static bool Set(IntPtr handle)
+        {
+            return SetCore(handle);
+        }
     }
 }
