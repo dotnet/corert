@@ -111,8 +111,13 @@ namespace Internal.IL
                 if (!_isFallbackBodyCompilation &&
                     (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
                 {
-                    // For beforefieldinit, we can wait for field access.
-                    if (!((MetadataType)owningType).IsBeforeFieldInit)
+                    // For beforefieldinit, we can wait for field access...
+                    bool runCctor = !((MetadataType)owningType).IsBeforeFieldInit;
+
+                    // ...unless this is a PInvoke, in which case we run it regardless
+                    runCctor |= _canonMethod.IsPInvoke;
+
+                    if (runCctor)
                     {
                         MethodDesc method = _methodIL.OwningMethod;
                         if (method.OwningType.IsRuntimeDeterminedSubtype)
@@ -257,12 +262,7 @@ namespace Internal.IL
 
             if (method.IsRawPInvoke())
             {
-                // Raw P/invokes don't have any dependencies, except for potentially a cctor trigger.
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(method.OwningType))
-                {
-                    // This cctor runs even if the type is beforefieldinit.
-                    _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, method.OwningType), "Owning type cctor");
-                }
+                // Raw P/invokes don't have any dependencies.
                 return;
             }
 
