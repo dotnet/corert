@@ -92,30 +92,6 @@ namespace System.Globalization
         {
             return Number.FormatDecimal(value, format, provider);
         }
-        public static String FormatDouble(double value, String format, IFormatProvider provider)
-        {
-            return Number.FormatDouble(value, format, provider);
-        }
-        public static String FormatInt32(int value, String format, IFormatProvider provider)
-        {
-            return Number.FormatInt32(value, format, provider);
-        }
-        public static String FormatInt64(long value, String format, IFormatProvider provider)
-        {
-            return Number.FormatInt64(value, format, provider);
-        }
-        public static String FormatSingle(float value, String format, IFormatProvider provider)
-        {
-            return Number.FormatSingle(value, format, provider);
-        }
-        public static String FormatUInt32(uint value, String format, IFormatProvider provider)
-        {
-            return Number.FormatUInt32(value, format, provider);
-        }
-        public static String FormatUInt64(ulong value, String format, IFormatProvider provider)
-        {
-            return Number.FormatUInt64(value, format, provider);
-        }
         #endregion
 
         #region Parsing
@@ -123,57 +99,9 @@ namespace System.Globalization
         {
             return Number.ParseDecimal(value, options, provider);
         }
-        public static Double ParseDouble(String value, NumberStyles options, IFormatProvider provider)
-        {
-            return Number.ParseDouble(value, options, provider);
-        }
-        public static int ParseInt32(String s, NumberStyles styles, IFormatProvider provider)
-        {
-            return Number.ParseInt32(s, styles, provider);
-        }
-        public static Int64 ParseInt64(String value, NumberStyles options, IFormatProvider provider)
-        {
-            return Number.ParseInt64(value, options, provider);
-        }
-        public static Single ParseSingle(String value, NumberStyles options, IFormatProvider provider)
-        {
-            return Number.ParseSingle(value, options, provider);
-        }
-        public static UInt32 ParseUInt32(String value, NumberStyles options, IFormatProvider provider)
-        {
-            return Number.ParseUInt32(value, options, provider);
-        }
-        public static UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
-        {
-            return Number.ParseUInt64(value, options, provider);
-        }
         public static Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
         {
             return Number.TryParseDecimal(value, options, provider, out result);
-        }
-        public static Boolean TryParseDouble(String value, NumberStyles options, IFormatProvider provider, out Double result)
-        {
-            return Number.TryParseDouble(value, options, provider, out result);
-        }
-        public static Boolean TryParseInt32(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
-        {
-            return Number.TryParseInt32(s, style, provider, out result);
-        }
-        public static Boolean TryParseInt64(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
-        {
-            return Number.TryParseInt64(s, style, provider, out result);
-        }
-        public static Boolean TryParseSingle(String value, NumberStyles options, IFormatProvider provider, out Single result)
-        {
-            return Number.TryParseSingle(value, options, provider, out result);
-        }
-        public static Boolean TryParseUInt32(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
-        {
-            return Number.TryParseUInt32(s, style, provider, out result);
-        }
-        public static Boolean TryParseUInt64(String s, NumberStyles style, IFormatProvider provider, out UInt64 result)
-        {
-            return Number.TryParseUInt64(s, style, provider, out result);
         }
         public static bool IsPositiveInfinity(string s, IFormatProvider provider)
         {
