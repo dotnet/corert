@@ -1248,18 +1248,13 @@ namespace Internal.JitInterface
     };
 
     // The following 16 bytes come from coreclr types. See comment below.
+    [StructLayout(LayoutKind.Sequential)]
     public struct VarLoc
     {
-       public int vlType;
-       // The 64bit field is here to keep VarLoc 8byte aligned on Amd64.
-       // For x86, we need to change the VarLoc definition here.
-#if BIT64
-       public long A;
-#else
-       public int A;
-       public int A1;
-#endif
-       public int B;
+        IntPtr A; // vlType + padding
+        int B;
+        int C;
+        int D;
 
         /*
            Changes to the following types may require revisiting the above layout.
