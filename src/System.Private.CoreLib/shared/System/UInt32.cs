@@ -12,19 +12,19 @@
 ** 
 ===========================================================*/
 
+using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
-    // * Wrapper for unsigned 32 bit integers.
-    [CLSCompliant(false)]
-    [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct UInt32 : IComparable, IFormattable, IComparable<UInt32>, IEquatable<UInt32>, IConvertible
+    [CLSCompliant(false)]
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct UInt32 : IComparable, IConvertible, IFormattable, IComparable<UInt32>, IEquatable<UInt32>
     {
         private uint m_value; // Do not rename (binary serialization)
 
@@ -74,7 +74,7 @@ namespace System
             return m_value == ((UInt32)obj).m_value;
         }
 
-        [NonVersionable]
+        [System.Runtime.Versioning.NonVersionable]
         public bool Equals(UInt32 obj)
         {
             return m_value == obj;
@@ -90,82 +90,65 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatUInt32(m_value, null, null);
+            return Number.FormatUInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatUInt32(m_value, null, provider);
+            return Number.FormatUInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatUInt32(m_value, format, null);
+            return Number.FormatUInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatUInt32(m_value, format, provider);
+            return Number.FormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
         public static uint Parse(String s)
         {
-            return FormatProvider.ParseUInt32(s, NumberStyles.Integer, null);
-        }
-
-        internal static void ValidateParseStyleInteger(NumberStyles style)
-        {
-            // Check for undefined flags
-            if ((style & Decimal.InvalidNumberStyles) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-            }
-            Contract.EndContractBlock();
-            if ((style & NumberStyles.AllowHexSpecifier) != 0)
-            { // Check for hex number
-                if ((style & ~NumberStyles.HexNumber) != 0)
-                {
-                    throw new ArgumentException(SR.Arg_InvalidHexStyle);
-                }
-            }
+            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
         public static uint Parse(String s, NumberStyles style)
         {
-            ValidateParseStyleInteger(style);
-            return FormatProvider.ParseUInt32(s, style, null);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseUInt32(s, style, NumberFormatInfo.CurrentInfo);
         }
 
 
         [CLSCompliant(false)]
         public static uint Parse(String s, IFormatProvider provider)
         {
-            return FormatProvider.ParseUInt32(s, NumberStyles.Integer, provider);
+            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
         public static uint Parse(String s, NumberStyles style, IFormatProvider provider)
         {
-            ValidateParseStyleInteger(style);
-            return FormatProvider.ParseUInt32(s, style, provider);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(String s, out UInt32 result)
         {
-            return FormatProvider.TryParseUInt32(s, NumberStyles.Integer, null, out result);
+            return Number.TryParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
         {
-            ValidateParseStyleInteger(style);
-            return FormatProvider.TryParseUInt32(s, style, provider, out result);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         //
@@ -244,7 +227,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "UInt32", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "UInt32", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)
