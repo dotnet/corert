@@ -265,7 +265,7 @@ namespace System
         /// of memory is available.</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize)
         {
@@ -609,6 +609,11 @@ namespace System
             }
 
             return size;
+        }
+
+        public static long GetAllocatedBytesForCurrentThread()
+        {
+            return RuntimeImports.RhGetAllocatedBytesForCurrentThread();
         }
     }
 }

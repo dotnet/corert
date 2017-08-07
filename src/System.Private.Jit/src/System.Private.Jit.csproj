@@ -5,7 +5,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
     <METADATA_TYPE_LOADER>true</METADATA_TYPE_LOADER>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
@@ -117,6 +116,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DelegateCreationInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\SimdHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MemoryHelper.cs" />

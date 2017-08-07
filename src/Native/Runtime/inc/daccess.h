@@ -1937,7 +1937,7 @@ typedef __VoidPtr PTR_CVOID;
 #define PTR_READ(addr, size) \
     DacInstantiateTypeByAddress(addr, size, true)
 
-// This value is used to intiailize target pointers to NULL.  We want this to be TADDR type
+// This value is used to initialize target pointers to NULL.  We want this to be TADDR type
 // (as opposed to, say, __TPtrBase) so that it can be used in the non-explicit ctor overloads,
 // eg. as an argument default value.
 // We can't always just use NULL because that's 0 which (in C++) can be any integer or pointer

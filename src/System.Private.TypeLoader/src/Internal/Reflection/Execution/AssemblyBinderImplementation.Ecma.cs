@@ -6,9 +6,11 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
 
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
+using Internal.Runtime.Augments;
 
 using System.Reflection.Runtime.General;
 
@@ -52,7 +54,7 @@ namespace Internal.Reflection.Execution
             MetadataReader reader = pe.GetMetadataReader();
 
             // 2. Create AssemblyName from MetadataReader
-            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
+            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
 
             lock(s_ecmaLoadedAssemblies)
             {
@@ -99,11 +101,122 @@ namespace Internal.Reflection.Execution
                             return;
                         }
 
-                        foundMatch = true;
                         result.EcmaMetadataReader = info.Reader;
+                        foundMatch = result.EcmaMetadataReader != null;
+
+                        // For failed matches, we will never be able to succeed, so return now
+                        if (!foundMatch)
+                            return;
+                    }
+                }
+
+                if (!foundMatch)
+                {
+                    try
+                    {
+                        // Not found in already loaded list, attempt to source assembly from disk
+                        foreach (string filePath in FilePathsForAssembly(refName))
+                        {
+                            FileStream ownedFileStream = null;
+                            PEReader ownedPEReader = null;
+                            try
+                            {
+                                if (!RuntimeAugments.FileExists(filePath))
+                                    continue;
+
+                                try
+                                {
+                                    ownedFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                                }
+                                catch (System.IO.IOException)
+                                {
+                                    // Failure to open a file is not fundamentally an assembly load error, but it does indicate this file cannot be used
+                                    continue;
+                                }
+
+                                ownedPEReader = new PEReader(ownedFileStream);
+                                // FileStream ownership transferred to ownedPEReader
+                                ownedFileStream = null;
+
+                                if (!ownedPEReader.HasMetadata)
+                                    continue;
+
+                                MetadataReader reader = ownedPEReader.GetMetadataReader();
+                                // Create AssemblyName from MetadataReader
+                                RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
+
+                                // If assembly name doesn't match, it isn't the one we're looking for. Continue to look for more assemblies
+                                if (!AssemblyNameMatches(refName, runtimeAssemblyName))
+                                    continue;
+
+                                // This is the one we are looking for, add it to the list of loaded assemblies
+                                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, ownedPEReader);
+
+                                s_ecmaLoadedAssemblies.Add(peinfo);
+
+                                // At this point the PE reader is no longer owned by this code, but is owned by the s_ecmaLoadedAssemblies list
+                                PEReader pe = ownedPEReader;
+                                ownedPEReader = null;
+
+                                ModuleList moduleList = ModuleList.Instance;
+                                ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, pe, reader);
+                                moduleList.RegisterModule(newModuleInfo);
+
+                                foundMatch = true;
+                                result.EcmaMetadataReader = peinfo.Reader;
+                                break;
+                            }
+                            finally
+                            {
+                                if (ownedFileStream != null)
+                                    ownedFileStream.Dispose();
+
+                                if (ownedPEReader != null)
+                                    ownedPEReader.Dispose();
+                            }
+                        }
+                    }
+                    catch (System.IO.IOException)
+                    { }
+                    catch (System.ArgumentException)
+                    { }
+                    catch (System.BadImageFormatException badImageFormat)
+                    {
+                        exception = badImageFormat;
+                    }
+
+                    // Cache missed lookups
+                    if (!foundMatch)
+                    {
+                        PEInfo peinfo = new PEInfo(refName, null, null);
+                        s_ecmaLoadedAssemblies.Add(peinfo);
                     }
                 }
             }
+        }
+
+        public IEnumerable<string> FilePathsForAssembly(RuntimeAssemblyName refName)
+        {
+            // Check for illegal characters in file name
+            if (refName.Name.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                yield break;
+
+            // Implement simple probing for assembly in application base directory and culture specific directory
+            string probingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string cultureQualifiedDirectory = probingDirectory;
+
+            if (!String.IsNullOrEmpty(refName.CultureName))
+            {
+                cultureQualifiedDirectory = Path.Combine(probingDirectory, refName.CultureName);
+            }
+            else
+            {
+                // Loading non-resource dlls not yet supported
+                yield break;
+            }
+
+            // Attach assembly name
+            yield return Path.Combine(cultureQualifiedDirectory, refName.Name + ".dll");
         }
 
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies)
@@ -113,6 +226,9 @@ namespace Internal.Reflection.Execution
                 for (int i = 0; i < s_ecmaLoadedAssemblies.Count; i++)
                 {
                     PEInfo info = s_ecmaLoadedAssemblies[i];
+                    if (info.Reader == null)
+                        continue;
+
                     AssemblyBindResult result = default(AssemblyBindResult);
                     result.EcmaMetadataReader = info.Reader;
                     loadedAssemblies.Add(result);

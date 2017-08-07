@@ -172,7 +172,6 @@ namespace System.Globalization
         {
         }
 
-
         public CultureInfo(String name, bool useUserOverride)
         {
             if (name == null)
@@ -191,6 +190,26 @@ namespace System.Globalization
             this.m_name = this._cultureData.CultureName;
             this._isInherited = !this.EETypePtr.FastEquals(EETypePtr.EETypePtrOf<CultureInfo>());
         }
+
+        private CultureInfo(CultureData cultureData)
+        {
+            Debug.Assert(cultureData != null);
+            _cultureData = cultureData;
+            m_name = cultureData.CultureName;
+            _isInherited = false;
+        }
+
+        private static CultureInfo CreateCultureInfoNoThrow(string name, bool useUserOverride)
+        {
+            Debug.Assert(name != null);
+            CultureData cultureData = CultureData.GetCultureData(name, useUserOverride);
+            if (cultureData == null)
+            {
+                return null;
+            }
+
+            return new CultureInfo(cultureData);
+        } 
 
         public CultureInfo(int culture) : this(culture, true)
         {
@@ -510,6 +529,12 @@ namespace System.Globalization
             }
         }
 
+        internal static void ResetThreadCulture()
+        {
+            s_currentThreadCulture = null;
+            s_currentThreadUICulture = null;
+        }
+
         public static CultureInfo InstalledUICulture
         {
             get
@@ -594,26 +619,24 @@ namespace System.Globalization
                 if (null == _parent)
                 {
                     CultureInfo culture = null;
-                    try
-                    {
-                        string parentName = this._cultureData.SPARENT;
+                    string parentName = this._cultureData.SPARENT;
 
-                        if (String.IsNullOrEmpty(parentName))
-                        {
-                            culture = InvariantCulture;
-                        }
-                        else
-                        {
-                            culture = new CultureInfo(parentName, this._cultureData.UseUserOverride);
-                        }
-                    }
-                    catch (ArgumentException)
+                    if (String.IsNullOrEmpty(parentName))
                     {
-                        // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
-                        // We can't allow ourselves to fail.  In case of custom cultures the parent of the
-                        // current custom culture isn't installed.
                         culture = InvariantCulture;
                     }
+                    else
+                    {
+                        culture = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride);
+                        if (culture == null)
+                        {
+                            // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
+                            // We can't allow ourselves to fail.  In case of custom cultures the parent of the
+                            // current custom culture isn't installed.
+                            culture = InvariantCulture;
+                        }
+                    }
+
                     Interlocked.CompareExchange<CultureInfo>(ref _parent, culture, null);
                 }
                 return _parent;

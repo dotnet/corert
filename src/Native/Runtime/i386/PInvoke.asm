@@ -41,7 +41,7 @@ _RhpWaitForSuspend endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGC
+;; RhpWaitForGCNoAbort
 ;;
 ;;
 ;; INPUT: ECX: transition frame
@@ -49,7 +49,7 @@ _RhpWaitForSuspend endp
 ;; OUTPUT: 
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-_RhpWaitForGC proc public
+_RhpWaitForGCNoAbort proc public
         push        ebp
         mov         ebp, esp
         push        eax
@@ -70,6 +70,46 @@ Done:
         pop         ebx
         pop         edx
         pop         eax
+        pop         ebp
+        ret
+_RhpWaitForGCNoAbort endp
+
+RhpThrowHwEx equ @RhpThrowHwEx@0
+EXTERN RhpThrowHwEx : PROC
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; RhpWaitForGC
+;;
+;;
+;; INPUT: ECX: transition frame
+;;
+;; OUTPUT: 
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+_RhpWaitForGC proc public
+        push        ebp
+        mov         ebp, esp
+        push        ebx
+
+        mov         ebx, ecx
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jz          NoWait
+
+        call        _RhpWaitForGCNoAbort
+NoWait:
+        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
+        jz          Done
+        test        dword ptr [ebx + OFFSETOF__PInvokeTransitionFrame__m_dwFlags], PTFF_THREAD_ABORT
+        jz          Done
+
+        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        pop         ebx
+        pop         ebp
+        pop         edx                 ; return address as exception RIP
+        jmp         RhpThrowHwEx        ; Throw the ThreadAbortException as a special kind of hardware exception
+Done:
+        pop         ebx
         pop         ebp
         ret
 _RhpWaitForGC endp
@@ -115,8 +155,8 @@ ThreadAttached:
 
 ReverseRetry:
         mov         dword ptr [edx + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], 0
-        jne         ReverseTrapReturningThread
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         ReverseTrapReturningThread
 
 AllDone:
         pop         edx         ; restore arg reg
@@ -169,9 +209,9 @@ FASTCALL_FUNC RhpReversePInvokeReturn, 0
         mov         ecx, [ecx + 0]  ; get previous M->U transition frame
 
         mov         [edx + OFFSETOF__Thread__m_pTransitionFrame], ecx
-        cmp         [RhpTrapThreads], 0
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
         pop         edx         ; restore return value
-        jne         _RhpWaitForSuspend
+        jnz         _RhpWaitForSuspend
         ret
 
 FASTCALL_ENDFUNC

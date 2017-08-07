@@ -17,17 +17,18 @@ FORCEINLINE void InlineGCSafeFillMemory(void * mem, size_t size, size_t pv)
     UInt8 * memBytes = (UInt8 *)mem;
     UInt8 * endBytes = &memBytes[size];
 
-    // handle unaligned bytes at the beginning 
+    // handle unaligned bytes at the beginning
     while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
         *memBytes++ = (UInt8)pv;
 
-    // now write pointer sized pieces 
+    // now write pointer sized pieces
+    // volatile ensures that this doesn't get optimized back into a memset call
     size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
-    UIntNative* memPtr = (UIntNative*)memBytes;
+    volatile UIntNative* memPtr = (UIntNative*)memBytes;
     for (size_t i = 0; i < nPtrs; i++)
         *memPtr++ = pv;
 
-    // handle remaining bytes at the end 
+    // handle remaining bytes at the end
     memBytes = (UInt8*)memPtr;
     while (memBytes < endBytes)
         *memBytes++ = (UInt8)pv;

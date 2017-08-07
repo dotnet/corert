@@ -14,7 +14,7 @@ namespace Internal.TypeSystem.NativeFormat
 {
     public static class MetadataExtensions
     {
-        public static bool HasCustomAttribute(this MetadataReader metadataReader, IEnumerable<CustomAttributeHandle> customAttributes,
+        public static bool HasCustomAttribute(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
             foreach (var attributeHandle in customAttributes)

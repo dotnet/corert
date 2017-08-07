@@ -1687,9 +1687,6 @@
   <data name="InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext" xml:space="preserve">
     <value>Send is not supported in the Windows Runtime SynchronizationContext</value>
   </data>
-  <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
-    <value>SetData can only be used to set the value of a given name once.</value>
-  </data>
   <data name="SemaphoreSlim_Disposed" xml:space="preserve">
     <value>The semaphore has been disposed.</value>
   </data>
@@ -2368,14 +2365,92 @@
   <data name="Serialization_InvalidPtrValue" xml:space="preserve">
     <value>An IntPtr or UIntPtr with an eight byte value cannot be deserialized on a machine with a four byte word size.</value>
   </data>
+  <data name="EventSource_AbstractMustNotDeclareEventMethods" xml:space="preserve">
+    <value>Abstract event source must not declare event methods ({0} with ID {1}).</value>
+  </data>
+  <data name="EventSource_AbstractMustNotDeclareKTOC" xml:space="preserve">
+    <value>Abstract event source must not declare {0} nested type.</value>
+  </data>
+  <data name="EventSource_AddScalarOutOfRange" xml:space="preserve">
+    <value>Getting out of bounds during scalar addition.</value>
+  </data>
+  <data name="EventSource_ChannelTypeDoesNotMatchEventChannelValue" xml:space="preserve">
+    <value>Channel {0} does not match event channel value {1}.</value>
+  </data>
+  <data name="EventSource_DataDescriptorsOutOfRange" xml:space="preserve">
+    <value>Data descriptors are out of range.</value>
+  </data>
+  <data name="EventSource_DuplicateStringKey" xml:space="preserve">
+    <value>Multiple definitions for string "{0}".</value>
+  </data>
+  <data name="EventSource_EnumKindMismatch" xml:space="preserve">
+    <value>The type of {0} is not expected in {1}.</value>
+  </data>
+  <data name="EventSource_EventChannelOutOfRange" xml:space="preserve">
+    <value>Channel {0} has a value of {1} which is outside the legal range (16-254).</value>
+  </data>
+  <data name="EventSource_EventIdReused" xml:space="preserve">
+    <value>Event {0} has ID {1} which is already in use.</value>
+  </data>
+  <data name="EventSource_EventMustHaveTaskIfNonDefaultOpcode" xml:space="preserve">
+    <value>Event {0} (with ID {1}) has a non-default opcode but not a task.</value>
+  </data>
+  <data name="EventSource_EventMustNotBeExplicitImplementation" xml:space="preserve">
+    <value>Event method {0} (with ID {1}) is an explicit interface method implementation. Re-write method as implicit implementation.</value>
+  </data>
+  <data name="EventSource_EventNameDoesNotEqualTaskPlusOpcode" xml:space="preserve">
+    <value>Event {0} (with ID {1}) has a name that is not the concatenation of its task name and opcode.</value>
+  </data>
+  <data name="EventSource_EventNameReused" xml:space="preserve">
+    <value>Event name {0} used more than once.  If you wish to overload a method, the overloaded method should have a NonEvent attribute.</value>
+  </data>
+  <data name="EventSource_EventParametersMismatch" xml:space="preserve">
+    <value>Event {0} was called with {1} argument(s), but it is defined with {2} parameter(s).</value>
+  </data>
+  <data name="EventSource_EventSourceGuidInUse" xml:space="preserve">
+    <value>An instance of EventSource with Guid {0} already exists.</value>
+  </data>
+  <data name="EventSource_EventWithAdminChannelMustHaveMessage" xml:space="preserve">
+    <value>Event {0} specifies an Admin channel {1}. It must specify a Message property.</value>
+  </data>
+  <data name="EventSource_IllegalKeywordsValue" xml:space="preserve">
+    <value>Keyword {0} has a value of {1} which is outside the legal range (0-0x0000080000000000).</value>
+  </data>
+  <data name="EventSource_IllegalOpcodeValue" xml:space="preserve">
+    <value>Opcode {0} has a value of {1} which is outside the legal range (11-238).</value>
+  </data>
+  <data name="EventSource_IllegalTaskValue" xml:space="preserve">
+    <value>Task {0} has a value of {1} which is outside the legal range (1-65535).</value>
+  </data>
+  <data name="EventSource_IncorrentlyAuthoredTypeInfo" xml:space="preserve">
+    <value>Incorrectly-authored TypeInfo - a type should be serialized as one field or as one group</value>
+  </data>
+  <data name="EventSource_InvalidCommand" xml:space="preserve">
+    <value>Invalid command value.</value>
+  </data>
+  <data name="EventSource_InvalidEventFormat" xml:space="preserve">
+    <value>Can't specify both etw event format flags.</value>
+  </data>
+  <data name="EventSource_KeywordCollision" xml:space="preserve">
+    <value>Keywords {0} and {1} are defined with the same value ({2}).</value>
+  </data>
+  <data name="EventSource_KeywordNeedPowerOfTwo" xml:space="preserve">
+    <value>Value {0} for keyword {1} needs to be a power of 2.</value>
+  </data>
+  <data name="EventSource_ListenerCreatedInsideCallback" xml:space="preserve">
+    <value>Creating an EventListener inside a EventListener callback.</value>
+  </data>
   <data name="EventSource_ListenerNotFound" xml:space="preserve">
     <value>Listener not found.</value>
   </data>
-  <data name="EventSource_ToString" xml:space="preserve">
-    <value>EventSource({0}, {1})</value>
+  <data name="EventSource_ListenerWriteFailure" xml:space="preserve">
+    <value>An error occurred when writing to a listener.</value>
   </data>
-  <data name="EventSource_ImplementGetMetadata" xml:space="preserve">
-    <value>Please implement the GetMetadata method in your derived class</value>
+  <data name="EventSource_MaxChannelExceeded" xml:space="preserve">
+    <value>Attempt to define more than the maximum limit of 8 channels for a provider.</value>
+  </data>
+  <data name="EventSource_MismatchIdToWriteEvent" xml:space="preserve">
+    <value>Event {0} is givien event ID {1} but {2} was passed to WriteEvent.</value>
   </data>
   <data name="EventSource_NeedGuid" xml:space="preserve">
     <value>The Guid of an EventSource must be non zero.</value>
@@ -2383,20 +2458,89 @@
   <data name="EventSource_NeedName" xml:space="preserve">
     <value>The name of an EventSource must not be null.</value>
   </data>
-  <data name="EventSource_NeedDescriptors" xml:space="preserve">
-    <value>The descriptor of an EventSource must be non-null.</value>
+  <data name="EventSource_NeedPositiveId" xml:space="preserve">
+    <value>Event IDs must be positive integers.</value>
   </data>
-  <data name="EventSource_NeedManifest" xml:space="preserve">
-    <value>The manifest of an EventSource must be non-null.</value>
+  <data name="EventSource_NoFreeBuffers" xml:space="preserve">
+    <value>No Free Buffers available from the operating system (e.g. event rate too fast).</value>
   </data>
-  <data name="EventSource_EventSourceGuidInUse" xml:space="preserve">
-    <value>An instance of EventSource with Guid {0} already exists.</value>
+  <data name="EventSource_NonCompliantTypeError" xml:space="preserve">
+    <value>The API supports only anonymous types or types decorated with the EventDataAttribute. Non-compliant type: {0} dataType.</value>
   </data>
-  <data name="EventSource_ListenerWriteFailure" xml:space="preserve">
-    <value>An error occurred when writing to a listener.</value>
+  <data name="EventSource_NoRelatedActivityId" xml:space="preserve">
+    <value>EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId.</value>
   </data>
-  <data name="EventSource_NoManifest" xml:space="preserve">
-    <value>A manifest could not be generated for this EventSource because it contains one or more ill-formed event methods.</value>
+  <data name="EventSource_NotSupportedArrayOfBinary" xml:space="preserve">
+    <value>Arrays of Binary are not supported.</value>
+  </data>
+  <data name="EventSource_NotSupportedArrayOfNil" xml:space="preserve">
+    <value>Arrays of Nil are not supported.</value>
+  </data>
+  <data name="EventSource_NotSupportedArrayOfNullTerminatedString" xml:space="preserve">
+    <value>Arrays of null-terminated string are not supported.</value>
+  </data>
+  <data name="EventSource_NotSupportedCustomSerializedData" xml:space="preserve">
+    <value>Enumerables of custom-serialized data are not supported</value>
+  </data>
+  <data name="EventSource_NotSupportedNestedArraysEnums" xml:space="preserve">
+    <value>Nested arrays/enumerables are not supported.</value>
+  </data>
+  <data name="EventSource_NullInput" xml:space="preserve">
+    <value>Null passed as a event argument.</value>
+  </data>
+  <data name="EventSource_OpcodeCollision" xml:space="preserve">
+    <value>Opcodes {0} and {1} are defined with the same value ({2}).</value>
+  </data>
+  <data name="EventSource_PinArrayOutOfRange" xml:space="preserve">
+    <value>Pins are out of range.</value>
+  </data>
+  <data name="EventSource_RecursiveTypeDefinition" xml:space="preserve">
+    <value>Recursive type definition is not supported.</value>
+  </data>
+  <data name="EventSource_SessionIdError" xml:space="preserve">
+    <value>Bit position in AllKeywords ({0}) must equal the command argument named "EtwSessionKeyword" ({1}).</value>
+  </data>
+  <data name="EventSource_StopsFollowStarts" xml:space="preserve">
+    <value>An event with stop suffix must follow a corresponding event with a start suffix.</value>
+  </data>
+  <data name="EventSource_TaskCollision" xml:space="preserve">
+    <value>Tasks {0} and {1} are defined with the same value ({2}).</value>
+  </data>
+  <data name="EventSource_TaskOpcodePairReused" xml:space="preserve">
+    <value>Event {0} (with ID {1}) has the same task/opcode pair as event {2} (with ID {3}).</value>
+  </data>
+  <data name="EventSource_TooManyArgs" xml:space="preserve">
+    <value>Too many arguments.</value>
+  </data>
+  <data name="EventSource_TooManyFields" xml:space="preserve">
+    <value>Too many fields in structure.</value>
+  </data>
+  <data name="EventSource_ToString" xml:space="preserve">
+    <value>EventSource({0}, {1})</value>
+  </data>
+  <data name="EventSource_TypeMustBeSealedOrAbstract" xml:space="preserve">
+    <value>Event source types must be sealed or abstract.</value>
+  </data>
+  <data name="EventSource_TypeMustDeriveFromEventSource" xml:space="preserve">
+    <value>Event source types must derive from EventSource.</value>
+  </data>
+  <data name="EventSource_UndefinedChannel" xml:space="preserve">
+    <value>Use of undefined channel value {0} for event {1}.</value>
+  </data>
+  <data name="EventSource_UndefinedKeyword" xml:space="preserve">
+    <value>Use of undefined keyword value {0} for event {1}.</value>
+  </data>
+  <data name="EventSource_UndefinedOpcode" xml:space="preserve">
+    <value>Use of undefined opcode value {0} for event {1}.</value>
+  </data>
+  <data name="EventSource_UnsupportedEventTypeInManifest" xml:space="preserve">
+    <value>Unsupported type {0} in event source.</value>
+  </data>
+  <data name="EventSource_UnsupportedMessageProperty" xml:space="preserve">
+    <value>Event {0} specifies an illegal or unsupported formatting message ("{1}").</value>
+  </data>
+  <data name="EventSource_VarArgsParameterMismatch" xml:space="preserve">
+    <value>The parameters to the Event method do not match the parameters to the WriteEvent method. This may cause the event to be displayed incorrectly.</value>
   </data>
   <data name="Argument_StreamNotWritable" xml:space="preserve">
     <value>Stream was not writable.</value>
@@ -2460,5 +2604,11 @@
   </data>
   <data name="NotSupported_ByRefLikeArray" xml:space="preserve">
     <value>Cannot create arrays of ByRef-like values.</value>
+  </data>
+  <data name="StackTrace_AtWord" xml:space="preserve">
+    <value>   at </value>
+  </data>
+  <data name="StackTrace_EndStackTraceFromPreviousThrow" xml:space="preserve">
+    <value>--- End of stack trace from previous location where exception was thrown ---</value>
   </data>
 </root>

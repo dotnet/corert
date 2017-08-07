@@ -9,16 +9,17 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout) =>
-            WaitSubsystem.Wait(handle, millisecondsTimeout);
+        private static bool WaitOneCore(IntPtr handle, int millisecondsTimeout, bool interruptible) =>
+            WaitSubsystem.Wait(handle, millisecondsTimeout, interruptible);
 
         private static int WaitAnyCore(
             RuntimeThread currentThread,
             SafeWaitHandle[] safeWaitHandles,
             WaitHandle[] waitHandles,
+            int numWaitHandles,
             int millisecondsTimeout)
         {
-            return WaitSubsystem.Wait(currentThread, safeWaitHandles, waitHandles, false, millisecondsTimeout);
+            return WaitSubsystem.Wait(currentThread, safeWaitHandles, waitHandles, numWaitHandles, false, millisecondsTimeout);
         }
 
         private static bool WaitAllCore(
@@ -27,7 +28,7 @@ namespace System.Threading
             WaitHandle[] waitHandles,
             int millisecondsTimeout)
         {
-            return WaitSubsystem.Wait(currentThread, safeWaitHandles, waitHandles, true, millisecondsTimeout) != WaitTimeout;
+            return WaitSubsystem.Wait(currentThread, safeWaitHandles, waitHandles, waitHandles.Length, true, millisecondsTimeout) != WaitTimeout;
         }
 
         private static bool SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)

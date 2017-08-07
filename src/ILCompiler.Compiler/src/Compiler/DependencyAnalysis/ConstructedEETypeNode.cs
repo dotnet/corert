@@ -69,8 +69,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual bool TrackInterfaceDispatchMapDepenendency => true;
-
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
@@ -82,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (TrackInterfaceDispatchMapDepenendency && _type.RuntimeInterfaces.Length > 0)
+            if (_type.RuntimeInterfaces.Length > 0)
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
@@ -107,9 +105,13 @@ namespace ILCompiler.DependencyAnalysis
             if (closestDefType.HasInstantiation)
             {
                 TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                TypeDesc canonClosestDefType = closestDefType.ConvertToCanonForm(CanonicalFormKind.Specific);
 
                 // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonType).RepresentsIndirectionCell)
+                // If the type is an array type, the check should be on its underlying Array<T> type. This is because a copy of
+                // an array type gets placed into each module but the Array<T> type only exists in the defining module and only 
+                // one template is needed for the Array<T> type by the dynamic type loader.
+                if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonClosestDefType).RepresentsIndirectionCell)
                     dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(canonType), "Template Type Layout");
             }
 
@@ -171,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsGenericDefinition)
                         return false;
 
-                    // Full EEtype of System.Canon should never be used.
+                    // Full EEType of System.Canon should never be used.
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                         return false;
 
@@ -192,7 +194,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void CheckCanGenerateConstructedEEType(NodeFactory factory, TypeDesc type)
         {
             if (!CreationAllowed(type))
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
         }
     }
 }

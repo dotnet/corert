@@ -3311,8 +3311,6 @@ namespace System.Runtime.InteropServices
         /// <returns>Return true if winning race. False otherwise</returns>
         internal bool Assign(IntPtr pComPtr, RuntimeTypeHandle handle)
         {
-            // disable warning for ref volatile
-#pragma warning disable 0420
             if (Interlocked.CompareExchange(ref ptr, pComPtr, default(IntPtr)) == default(IntPtr))
             {
                 Debug.Assert(!HasValue, "Entry should be empty");
@@ -3330,7 +3328,6 @@ namespace System.Runtime.InteropServices
             {
                 return false;
             }
-#pragma warning restore 0420
         }
 
         /// <summary>
@@ -3909,19 +3906,16 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal class FactoryCache
     {
-        private Lock m_factoryLock = new Lock();
         private System.Collections.Concurrent.ConcurrentDictionary<string, FactoryCacheItem> m_cachedFactories = new System.Collections.Concurrent.ConcurrentDictionary<string, FactoryCacheItem>();
 
         private static volatile FactoryCache s_factoryCache;
 
         internal static FactoryCache Get()
         {
-#pragma warning disable 0420
             if (s_factoryCache == null)
             {
                 Interlocked.CompareExchange(ref s_factoryCache, new FactoryCache(), null);
             }
-#pragma warning restore 0420
 
             return s_factoryCache;
         }
@@ -3965,12 +3959,10 @@ namespace System.Runtime.InteropServices
 
             FactoryCacheItem cacheItem;
 
-
             if (!skipCache)
             {
-
-                 if (m_cachedFactories.TryGetValue(className, out cacheItem))
-                 {
+                if (m_cachedFactories.TryGetValue(className, out cacheItem))
+                {
                     if (cacheItem.contextEntry == currentContext)
                     {
                         //
@@ -3978,8 +3970,7 @@ namespace System.Runtime.InteropServices
                         //
                         return cacheItem.factoryObject;
                     }
-                 }
-                
+                }
             }
 
             //
@@ -3996,12 +3987,11 @@ namespace System.Runtime.InteropServices
                 //
                 // Insert into or update cache
                 //
-                m_cachedFactories.AddOrUpdate(className, cacheItem,  (key, oldValue) => cacheItem);
+                m_cachedFactories[className] = cacheItem;
             }
 
             return cacheItem.factoryObject;
         }
-
     }
 #endif
 }

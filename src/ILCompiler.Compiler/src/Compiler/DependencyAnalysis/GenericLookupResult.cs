@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         CallingConvention_MaybeInstParam,   // CallingConventionConverterThunk MAYBE_INSTANTIATING_PARAM
         VtableOffset,       // Offset of a virtual method into the type's vtable
         Constrained,        // ConstrainedCallDesc
+        ConstrainedDirect,  // Direct ConstrainedCallDesc
     }
 
     public interface IGenericLookupResultTocWriter

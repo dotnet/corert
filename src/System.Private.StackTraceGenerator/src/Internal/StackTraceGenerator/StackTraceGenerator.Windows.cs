@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
 using Internal.StackGenerator.Dia;
@@ -78,11 +79,33 @@ namespace Internal.StackTraceGenerator
             fileName = null;
             lineNumber = 0;
             columnNumber = 0;
-            int rva;
-            IDiaSession session = GetDiaSession(ip, out rva);
-            if (session == null)
-                return;
-            TryGetSourceLineInfo(session, rva, out fileName, out lineNumber, out columnNumber);
+            if (!IsDiaStackTraceResolutionDisabled())
+            {
+                int rva;
+                IDiaSession session = GetDiaSession(ip, out rva);
+                if (session != null)
+                {
+                    TryGetSourceLineInfo(session, rva, out fileName, out lineNumber, out columnNumber);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Makes reasonable effort to find the IL offset corresponding to the given address within a method.
+        /// Returns StackFrame.OFFSET_UNKNOWN if not available.
+        /// </summary>
+        public static void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
+            if (!IsDiaStackTraceResolutionDisabled())
+            {
+                int rva;
+                IDiaSession session = GetDiaSession(ip, out rva);
+                if (session != null)
+                {
+                    TryGetILOffsetInfo(session, rva, out ilOffset);
+                }
+            }
         }
 
         //
@@ -211,6 +234,31 @@ namespace Internal.StackTraceGenerator
                     }
                 }
             }
+        }
+
+        private static void TryGetILOffsetInfo(IDiaSession session, int rva, out int ilOffset)
+        {
+            IDiaEnumLineNumbers lineNumbers;
+            int hr = session.FindILOffsetsByRVA(rva, 1, out lineNumbers);
+            if (hr == S_OK)
+            {
+                int numLineNumbers;
+                hr = lineNumbers.Count(out numLineNumbers);
+                if (hr == S_OK && numLineNumbers > 0)
+                {
+                    IDiaLineNumber ln;
+                    hr = lineNumbers.Item(0, out ln);
+                    if (hr == S_OK)
+                    {
+                        hr = ln.LineNumber(out ilOffset);
+                        if (hr == S_OK)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
         }
 
         //
@@ -602,7 +650,11 @@ namespace Internal.StackTraceGenerator
 
         // CoCreateInstance is not in WindowsApp_Downlevel.lib and ExactSpelling = true is required
         // to force MCG to resolve it.
-        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling =true)]
+        //
+        // This api is a WACK violation but it cannot be changed to CoCreateInstanceApp() without breaking the stack generator altogether.
+        // The toolchain will not include this library in the dependency closure as long as (1) the program is being compiled as a store app and not a console .exe
+        // and (2) the /buildType switch passed to ILC is set to the "ret".
+        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling = true)]
         private static extern unsafe int CoCreateInstance(byte* rclsid, IntPtr pUnkOuter, int dwClsContext, byte* riid, out IntPtr ppv);
 
         private const int S_OK = 0;

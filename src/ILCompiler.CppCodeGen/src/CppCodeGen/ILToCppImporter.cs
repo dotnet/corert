@@ -2627,7 +2627,7 @@ namespace Internal.IL
                         node = _nodeFactory.TypeNonGCStaticsSymbol(owningType);
                 }
 
-                // TODO: Remove once the depedencies for static fields are tracked properly
+                // TODO: Remove once the dependencies for static fields are tracked properly
                 GetSignatureTypeNameAndAddReference(owningType, true);
                 _dependencies.Add(node);
             }
@@ -2642,17 +2642,17 @@ namespace Internal.IL
 
         private void ReportInvalidBranchTarget(int targetOffset)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportFallthroughAtEndOfMethod()
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
 
         private void ReportInvalidInstruction(ILOpcode opcode)
         {
-            throw new TypeSystemException.InvalidProgramException();
+            ThrowHelper.ThrowInvalidProgramException();
         }
     }
 }

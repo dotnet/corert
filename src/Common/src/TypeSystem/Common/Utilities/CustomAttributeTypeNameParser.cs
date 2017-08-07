@@ -228,9 +228,9 @@ namespace Internal.TypeSystem
                         if (containingType == null)
                         {
                             if (throwIfNotFound)
-                                throw new TypeSystemException.TypeLoadException(typeName.ToString(), outerType.Module);
-                            else
-                                return null;
+                                ThrowHelper.ThrowTypeLoadException(typeName.ToString(), outerType.Module);
+                            
+                            return null;
                         }
                     }
                     else
@@ -250,7 +250,7 @@ namespace Internal.TypeSystem
             {
                 MetadataType type = containingType.GetNestedType(typeName.ToString());
                 if ((type == null) && throwIfNotFound)
-                    throw new TypeSystemException.TypeLoadException(typeName.ToString(), containingType.Module);
+                    ThrowHelper.ThrowTypeLoadException(typeName.ToString(), containingType.Module);
 
                 return type;
             }

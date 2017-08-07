@@ -46,6 +46,7 @@ ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
+ASM_OFFSET(   4c,    80, Thread, m_threadAbortException)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 

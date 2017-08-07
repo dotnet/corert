@@ -102,6 +102,24 @@ namespace ILCompiler
             return true;
         }
 
+        public bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+        }
+
+        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+        }
+
+        public GenericDictionaryLookup ComputeGenericLookup(MethodDesc contextMethod, ReadyToRunHelperId lookupKind, object targetOfLookup)
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+        }
+
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
             return DelegateCreationInfo.Create(delegateType, target, NodeFactory, followVirtualDispatch);

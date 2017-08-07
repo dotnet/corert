@@ -129,13 +129,17 @@ namespace System.Reflection.Runtime.MethodInfos
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] == null)
+                Type typeArgument = typeArguments[i];
+                if (typeArgument == null)
                     throw new ArgumentNullException();
 
-                if (!typeArguments[i].IsRuntimeImplemented())
+                if (!typeArgument.IsRuntimeImplemented())
                     throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
 
-                genericTypeArguments[i] = typeArguments[i].CastToRuntimeTypeInfo();
+                if (typeArgument.IsByRefLike)
+                    throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);
+
+                genericTypeArguments[i] = typeArgument.CastToRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));

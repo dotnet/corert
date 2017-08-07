@@ -198,7 +198,7 @@ __PPF_ThreadReg SETS "r2"
 ;;  All other registers trashed
 ;;
 
-    EXTERN RhpWaitForGC
+    EXTERN RhpWaitForGCNoAbort
 
     MACRO
         WaitForGCCompletion
@@ -208,7 +208,7 @@ __PPF_ThreadReg SETS "r2"
         bne         %ft0
 
         ldr         r2, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        bl          RhpWaitForGC
+        bl          RhpWaitForGCNoAbort
 0
     MEND
 
@@ -318,10 +318,13 @@ __PPF_ThreadReg SETS "r2"
     NESTED_END RhpGcStressProbe
 #endif ;; FEATURE_GC_STRESS
 
+    EXTERN RhpThrowHwEx
+
     LEAF_ENTRY RhpGcProbe
         ldr         r3, =RhpTrapThreads
         ldr         r3, [r3]
-        cbnz        r3, %0
+        tst         r3, #TrapThreadsFlags_TrapThreads
+        bne         %0
         bx          lr
 0
         b           RhpGcProbeRare
@@ -333,7 +336,18 @@ __PPF_ThreadReg SETS "r2"
         mov         r4, r2
         WaitForGCCompletion
 
+        ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        tst         r2, #PTFF_THREAD_ABORT
+        bne         %1
+
         EPILOG_PROBE_FRAME
+
+1        
+        FREE_PROBE_FRAME
+        EPILOG_NOP mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov         r1, lr ;; return address as exception PC
+        EPILOG_BRANCH RhpThrowHwEx
+
     NESTED_END RhpGcProbe
 
     LEAF_ENTRY RhpGcPoll
@@ -342,7 +356,8 @@ __PPF_ThreadReg SETS "r2"
         push        {r0}
         ldr         r0, =RhpTrapThreads
         ldr         r0, [r0]
-        cbnz        r0, %0
+        tst         r0, #TrapThreadsFlags_TrapThreads
+        bne         %0
         pop         {r0}
         bx          lr
 0
@@ -550,7 +565,8 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
 
         ldr         r1, =RhpTrapThreads
         ldr         r1, [r1]
-        cbnz        r1, %0
+        tst         r1, #TrapThreadsFlags_TrapThreads
+        bne         %0
 
         bl          RhDebugBreak
 0
@@ -694,18 +710,27 @@ NoGcStress
 #endif ;; FEATURE_GC_STRESS
 
         mov         r2, sp ; sp is address of PInvokeTransitionFrame
-        bl          RhpWaitForGC
+        bl          RhpWaitForGCNoAbort
 
 DoneWaitingForGc
+        ldr         r12, [sp, #OFFSETOF__PInvokeTransitionFrame__m_dwFlags]
+        tst         r12, #PTFF_THREAD_ABORT
+        bne         Abort
         ; restore condition codes
         ldr         r12, [sp, #m_SavedAPSR]
         msr         apsr_nzcvqg, r12
-
         FREE_PROBE_FRAME
         EPILOG_VPOP {d16-d31}
         EPILOG_VPOP {d4-d15}
-
-        EPILOG_POP {r12,pc}      ; recover the hijack target and jump to it
+        EPILOG_POP  {r12,pc}      ; recover the hijack target and jump to it
+Abort
+        FREE_PROBE_FRAME
+        EPILOG_VPOP {d16-d31}
+        EPILOG_VPOP {d4-d15}
+        EPILOG_POP  r12
+        EPILOG_NOP  mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_POP  r1            ;hijack target address as exception PC
+        EPILOG_BRANCH RhpThrowHwEx
 
     LEAF_END RhpLoopHijack
 

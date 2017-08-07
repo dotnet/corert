@@ -701,10 +701,29 @@ namespace Internal.Reflection.Execution
 
                 Debug.Assert(parameterTypeHandles.Length == byRefParameters.Length && byRefParameters.Length == forcedByRefParameters.Length);
 
-                bool isMethodOnStructure = RuntimeAugments.IsValueType(declaringType);
+                ThunkKind thunkKind;
+                if (methodBase.IsGenericMethod)
+                {
+                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                }
+                else if (RuntimeAugments.IsValueType(declaringType))
+                {
+                    // Unboxing instantiating stub
+                    if (dictionary == IntPtr.Zero)
+                    {
+                        Debug.Assert(!methodBase.IsStatic);
+                        thunkKind = CallConverterThunk.ThunkKind.StandardToGeneric;
+                    }
+                    else
+                        thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
+                }
+                else
+                {
+                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiatingIfNotHasThis;
+                }
 
                 return CallConverterThunk.MakeThunk(
-                    (methodBase.IsGenericMethod || isMethodOnStructure ? ThunkKind.StandardToGenericInstantiating : ThunkKind.StandardToGenericInstantiatingIfNotHasThis),
+                    thunkKind,
                     methodEntrypoint,
                     dictionary,
                     !methodBase.IsStatic,
@@ -714,7 +733,10 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
+                if (dictionary == IntPtr.Zero)
+                    return methodEntrypoint;
+                else
+                    return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
             }
         }
 
@@ -909,10 +931,8 @@ namespace Internal.Reflection.Execution
 #pragma warning restore 0420
         }
 
-        internal unsafe bool TryGetMethodForOriginalLdFtnResult(IntPtr originalLdFtnResult, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
         {
-            IntPtr canonOriginalLdFtnResult;
-            IntPtr instantiationArgument;
             if (FunctionPointerOps.IsGenericMethodPointer(originalLdFtnResult))
             {
                 GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(originalLdFtnResult);
@@ -935,10 +955,19 @@ namespace Internal.Reflection.Execution
                 }
                 else
                 {
-                    canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
-                    instantiationArgument = IntPtr.Zero;
+                    // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
+                    if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
+                    {
+                        canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
+                        instantiationArgument = IntPtr.Zero;
+                    }
                 }
             }
+        }
+
+        internal bool TryGetMethodForOriginalLdFtnResult(IntPtr originalLdFtnResult, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        {
+            GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument);
 
             // Search TemplateMethodMap
             if ((instantiationArgument != IntPtr.Zero) && TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(instantiationArgument, ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
@@ -1433,7 +1462,7 @@ namespace Internal.Reflection.Execution
         /// <summary>
         /// Locate the static constructor context given the runtime type handle (EEType) for the type in question.
         /// </summary>
-        /// <param name="typeHandle">EEtype of the type to look up</param>
+        /// <param name="typeHandle">EEType of the type to look up</param>
         internal unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
             return TypeLoaderEnvironment.TryGetStaticClassConstructionContext(typeHandle);

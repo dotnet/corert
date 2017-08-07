@@ -292,7 +292,6 @@ namespace Internal.TypeSystem.NoMetadata
             RuntimeTypeHandle genericDefinitionHandle = GetTypeDefinition().GetRuntimeTypeHandle();
             Debug.Assert(!genericDefinitionHandle.IsNull());
 
-            // NOTE: We're ignoring the containing type for compatiblity with SigFormat.cpp
             string enclosingDummy;
 
             // Try to get the name from metadata
@@ -316,7 +315,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Namespace
+        public string DiagnosticNamespace
         {
             get
             {
@@ -326,7 +325,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Name
+        public string DiagnosticName
         {
             get
             {
@@ -336,7 +335,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public string ModuleName
+        public string DiagnosticModuleName
         {
             get
             {
