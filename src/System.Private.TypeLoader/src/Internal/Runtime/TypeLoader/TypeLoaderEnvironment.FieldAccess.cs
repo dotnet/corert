@@ -48,7 +48,7 @@ namespace Internal.Runtime.TypeLoader
         public int Offset;
     }
 
-    [StructLayout(Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     struct ThreadStaticFieldOffsets
     {
         public uint StartingOffsetInTlsBlock;    // Offset in the TLS block containing the thread static fields of a given type
