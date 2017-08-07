@@ -30,6 +30,7 @@ public:
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
     HANDLE GetOsModuleHandle();
     void* GetClasslibFunction(ClasslibFunctionId functionId);
+    UInt32* GetPointerToTlsIndex() { return m_pTlsIndex; }
 
 private:
     

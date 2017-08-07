@@ -354,32 +354,26 @@ namespace Internal.Runtime.TypeLoader
         }
 
 
-        public unsafe IntPtr TryGetThreadStaticFieldOffsetCookieForTypeAndFieldOffset(RuntimeTypeHandle runtimeTypeHandle, uint fieldOffset)
+        public unsafe bool TryGetThreadStaticStartOffset(RuntimeTypeHandle runtimeTypeHandle, out int threadStaticsStartOffset)
         {
-            var cookieData = new PermanentAllocatedMemoryBlobs.ThreadStaticFieldOffsets();
+            threadStaticsStartOffset = -1;
 
             if (runtimeTypeHandle.IsDynamicType())
             {
-                cookieData.StartingOffsetInTlsBlock = 0;
-                cookieData.FieldOffset = fieldOffset;
+                // Specific TLS storage is allocated for each dynamic type. There is no starting offset since it's not a 
+                // TLS storage block shared by multiple types.
+                threadStaticsStartOffset = 0;
+                return true;
             }
             else
             {
                 IntPtr ptrToTlsOffset = TryGetTlsOffsetDictionaryCellForStaticType(runtimeTypeHandle);
                 if (ptrToTlsOffset == IntPtr.Zero)
-                    return IntPtr.Zero;
+                    return false;
 
-                uint tlsOffset = *(uint*)ptrToTlsOffset;
-                cookieData.StartingOffsetInTlsBlock = tlsOffset;
-                cookieData.FieldOffset = fieldOffset;
+                threadStaticsStartOffset = *(int*)ptrToTlsOffset;
+                return true;
             }
-
-            return PermanentAllocatedMemoryBlobs.GetPointerToThreadStaticFieldOffsets(cookieData);
-        }
-
-        public static unsafe uint GetThreadStaticTypeOffsetFromThreadStaticCookie(IntPtr threadStaticFieldCookie)
-        {
-            return ((PermanentAllocatedMemoryBlobs.ThreadStaticFieldOffsets*)threadStaticFieldCookie.ToPointer())->FieldOffset;
         }
 
         private IntPtr TryGetTlsIndexDictionaryCellForStaticType(RuntimeTypeHandle runtimeTypeHandle)

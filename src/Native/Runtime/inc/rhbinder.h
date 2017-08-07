@@ -759,15 +759,6 @@ enum RhEHClauseKind
 
 #define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
 
-// Structure used to store offsets information of thread static fields, and mainly used
-// by Reflection to get the address of that field in the TLS block
-struct ThreadStaticFieldOffsets
-{
-    UInt32 StartingOffsetInTlsBlock;    // Offset in the TLS block containing the thread static fields of a given type
-    UInt32 FieldOffset;                 // Offset of a thread static field from the start of its containing type's TLS fields block
-                                        // (in other words, the address of a field is 'TLS block + StartingOffsetInTlsBlock + FieldOffset')
-};
-
 #ifndef RHDUMP
 // as System::__Canon is not exported by the SharedLibrary.dll, it is represented by a special "pointer" for generic unification
 #ifdef BINDER

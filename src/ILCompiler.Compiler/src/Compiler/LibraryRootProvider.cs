@@ -41,7 +41,9 @@ namespace ILCompiler
                 if (!type.HasInstantiation)
                 {
                     RootMethods(type, "Library module method", rootProvider);
-                    rootProvider.RootStaticBasesForType(type, "Library module type statics");
+                    rootProvider.RootThreadStaticBaseForType(type, "Library module type statics");
+                    rootProvider.RootGCStaticBaseForType(type, "Library module type statics");
+                    rootProvider.RootNonGCStaticBaseForType(type, "Library module type statics");
                 }
             }
         }

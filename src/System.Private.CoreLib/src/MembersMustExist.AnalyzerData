@@ -118,7 +118,6 @@ internal static extern System.Runtime.TypeManagerHandle System.Runtime.RuntimeIm
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetOSModuleFromPointer(System.IntPtr pointerVal)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetRuntimeHelperForType(System.EETypePtr pEEType, System.Runtime.RuntimeImports.RuntimeHelperKind kind)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells)
-internal static extern byte* System.Runtime.RuntimeImports.RhGetThreadStaticFieldAddress(System.EETypePtr pEEType, System.IntPtr fieldCookie)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetUniversalTransitionThunk()
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAlloc(object value, System.Runtime.InteropServices.GCHandleType type)
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocDependent(object primary, object secondary)

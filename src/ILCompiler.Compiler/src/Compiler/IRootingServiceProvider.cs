@@ -13,7 +13,9 @@ namespace ILCompiler
     {
         void AddCompilationRoot(MethodDesc method, string reason, string exportName = null);
         void AddCompilationRoot(TypeDesc type, string reason);
-        void RootStaticBasesForType(TypeDesc type, string reason);
+        void RootThreadStaticBaseForType(TypeDesc type, string reason);
+        void RootGCStaticBaseForType(TypeDesc type, string reason);
+        void RootNonGCStaticBaseForType(TypeDesc type, string reason);
         void RootVirtualMethodForReflection(MethodDesc method, string reason);
     }
 }
