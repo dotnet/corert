@@ -229,6 +229,9 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
 
+    // Set each module's loop hijack flag
+    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
+
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
@@ -292,6 +295,10 @@ void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
     END_FOREACH_THREAD
 
     RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::TrapThreads;
+
+    // Reset module's hijackLoops flag 
+    GetRuntimeInstance()->SetLoopHijackFlags(0);
+
     RhpSuspendingThread = NULL;
     pCompletionEvent->Set();
     UnlockThreadStore();

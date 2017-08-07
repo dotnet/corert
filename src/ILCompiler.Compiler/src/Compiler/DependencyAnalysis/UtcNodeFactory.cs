@@ -86,6 +86,7 @@ namespace ILCompiler
             TLSDirectory = new ThreadStaticsDirectoryNode(targetPrefix);
             TlsStart = new ExternSymbolNode(targetPrefix + "_tls_start");
             TlsEnd = new ExternSymbolNode(targetPrefix + "_tls_end");
+            LoopHijackFlag = new LoopHijackFlagNode();
             this.buildMRT = buildMRT;
         }
 
@@ -164,6 +165,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticDesc, GCStaticDescRegion, GCStaticDescRegion.StartSymbol, GCStaticDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.LoopHijackFlag, LoopHijackFlag, LoopHijackFlag);
 
             if (!buildMRT)
             {
@@ -238,6 +240,8 @@ namespace ILCompiler
         // including the TLS data from different managed and native object files.
         public ExternSymbolNode TlsStart;
         public ExternSymbolNode TlsEnd;
+
+        public LoopHijackFlagNode LoopHijackFlag;
 
         protected override ISymbolDefinitionNode CreateThreadStaticsNode(MetadataType type)
         {
@@ -317,6 +321,11 @@ namespace ILCompiler
             {
                 return new UtcDictionaryLayoutNode(methodOrType);
             }
+        }
+
+        public ISymbolNode LoopHijackFlagSymbol()
+        {
+            return LoopHijackFlag;
         }
     }
 }
