@@ -57,21 +57,32 @@ namespace ILCompiler.DependencyAnalysis
             // Reflection static field bases handling is here because in the current reflection model we reflection-enable
             // all fields of types that are compiled. Ideally the list of reflection enabled fields should be known before
             // we even start the compilation process (with the static bases being compilation roots like any other).
-            if (type is MetadataType && !type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (type is MetadataType && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 MetadataType metadataType = (MetadataType)type;
 
-                if (metadataType.GCStaticFieldSize.AsInt > 0)
+                // For instantiated types, we write the static fields offsets directly into the table, and we do not reference the gc/non-gc statics nodes
+                if (!type.HasInstantiation)
                 {
-                    dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics for ReflectionFieldMap entry");
+                    if (metadataType.GCStaticFieldSize.AsInt > 0)
+                    {
+                        dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), "GC statics for ReflectionFieldMap entry");
+                    }
+
+                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                    {
+                        dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics for ReflectionFieldMap entry");
+                    }
                 }
 
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0)
+                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
                 {
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), "Non-GC statics for ReflectionFieldMap entry");
+                    if (factory.Target.Abi == TargetAbi.ProjectN)
+                    {
+                        dependencies.Add(((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol(metadataType), "Thread statics for ReflectionFieldMap entry");
+                    }
+                    // TODO: TLS for CoreRT
                 }
-
-                // TODO: TLS dependencies
             }
         }
 
@@ -97,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
                 FieldTableFlags flags;
                 if (field.IsThreadStatic)
                 {
-                    flags = FieldTableFlags.ThreadStatic;
+                    flags = FieldTableFlags.ThreadStatic | FieldTableFlags.FieldOffsetEncodedDirectly;
                 }
                 else if (field.IsStatic)
                 {
@@ -116,6 +127,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (fieldMapping.MetadataHandle != 0)
                     flags |= FieldTableFlags.HasMetadataHandle;
+
+                if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    flags |= FieldTableFlags.IsAnyCanonicalEntry;
 
                 if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                     flags |= FieldTableFlags.IsUniversalCanonicalEntry;
@@ -144,16 +158,28 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & FieldTableFlags.IsUniversalCanonicalEntry) != 0)
                 {
-                    // TODO: USG
-                    continue;
+                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(checked((uint)field.GetFieldOrdinal())));
                 }
                 else
                 {
                     switch (flags & FieldTableFlags.StorageClass)
                     {
                         case FieldTableFlags.ThreadStatic:
-                            // TODO: thread statics
-                            continue;
+                            if (factory.Target.Abi == TargetAbi.ProjectN)
+                            {
+                                if (!field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                {
+                                    ISymbolNode tlsOffsetForType = ((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol((MetadataType)field.OwningType);
+                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(_externalReferences.GetIndex(tlsOffsetForType)));
+                                }
+                                vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                            }
+                            else
+                            {
+                                // TODO: CoreRT
+                                continue;
+                            }
+                            break;
 
                         case FieldTableFlags.Static:
                             {

@@ -345,30 +345,47 @@ namespace ILCompiler
                 }
             }
 
-            public void RootStaticBasesForType(TypeDesc type, string reason)
+            public void RootThreadStaticBaseForType(TypeDesc type, string reason)
             {
                 Debug.Assert(!type.IsGenericDefinition);
 
                 MetadataType metadataType = type as MetadataType;
-                if (metadataType != null)
+                if (metadataType != null && metadataType.ThreadStaticFieldSize.AsInt > 0)
                 {
-                    if (metadataType.ThreadStaticFieldSize.AsInt > 0)
-                    {
-                        _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
-                    }
+                    _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
 
-                    if (metadataType.GCStaticFieldSize.AsInt > 0)
-                    {
-                        _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
-                    }
-
-                    if (metadataType.NonGCStaticFieldSize.AsInt > 0)
-                    {
+                    // Also explicitly root the non-gc base if we have a lazy cctor
+                    if(_factory.TypeSystemContext.HasLazyStaticConstructor(type))
                         _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
-                    }
                 }
             }
-            
+
+            public void RootGCStaticBaseForType(TypeDesc type, string reason)
+            {
+                Debug.Assert(!type.IsGenericDefinition);
+
+                MetadataType metadataType = type as MetadataType;
+                if (metadataType != null && metadataType.GCStaticFieldSize.AsInt > 0)
+                {
+                    _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
+
+                    // Also explicitly root the non-gc base if we have a lazy cctor
+                    if (_factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                        _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
+                }
+            }
+
+            public void RootNonGCStaticBaseForType(TypeDesc type, string reason)
+            {
+                Debug.Assert(!type.IsGenericDefinition);
+
+                MetadataType metadataType = type as MetadataType;
+                if (metadataType != null && (metadataType.NonGCStaticFieldSize.AsInt > 0 || _factory.TypeSystemContext.HasLazyStaticConstructor(type)))
+                {
+                    _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
+                }
+            }
+
             public void RootVirtualMethodForReflection(MethodDesc method, string reason)
             {
                 Debug.Assert(method.IsVirtual);

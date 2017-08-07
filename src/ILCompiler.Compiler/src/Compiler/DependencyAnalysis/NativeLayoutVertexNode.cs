@@ -1675,28 +1675,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             NativeWriter nativeWriter = GetNativeWriter(factory);
 
-            uint fieldOrdinal = 0;
-
-            foreach (FieldDesc field in _field.OwningType.GetFields())
-            {
-                // If this field does contribute to layout, skip
-                if (field.HasRva || field.IsLiteral)
-                    continue;
-
-                // NOTE: The order and contents of the field ordinal emitted here is based on the order of emission for fields
-                // in the USG template generation.
-
-                if (field == _field)
-                {
-                    Vertex typeVertex = factory.NativeLayout.TypeSignatureVertex(_field.OwningType).WriteVertex(factory);
-                    return nativeWriter.GetTuple(typeVertex, nativeWriter.GetUnsignedConstant(fieldOrdinal));
-                }
-                fieldOrdinal++;
-            }
-
-            // If we reach here, we were unable to calculate field ordinal.
-            Debug.Assert(false, "This should be unreachable, as we should have found a field ordinal above");
-            throw new Exception("Internal Compiler Error");
+            // NOTE: The order and contents of the field ordinal emitted here is based on the order of emission for fields
+            // in the USG template generation.
+            Vertex typeVertex = factory.NativeLayout.TypeSignatureVertex(_field.OwningType).WriteVertex(factory);
+            return nativeWriter.GetTuple(typeVertex, nativeWriter.GetUnsignedConstant(checked((uint)_field.GetFieldOrdinal())));
         }
     }
 

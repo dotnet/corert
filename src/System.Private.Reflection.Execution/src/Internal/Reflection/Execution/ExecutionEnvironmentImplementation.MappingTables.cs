@@ -1367,25 +1367,20 @@ namespace Internal.Reflection.Execution
                     }
 
                 case FieldTableFlags.ThreadStatic:
-                    if (fieldAccessMetadata.Cookie == IntPtr.Zero)
                     {
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForUniversalThreadStaticFields(
-                                TryGetStaticClassConstructionContext(declaringTypeHandle),
-                                declaringTypeHandle,
+                            (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(
+                                TryGetStaticClassConstructionContext(declaringTypeHandle), 
+                                declaringTypeHandle, 
+                                (int)fieldAccessMetadata.Cookie,
                                 fieldAccessMetadata.Offset,
                                 fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForUniversalThreadStaticFields(
-                                TryGetStaticClassConstructionContext(declaringTypeHandle),
+                            (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
+                                TryGetStaticClassConstructionContext(declaringTypeHandle), 
                                 declaringTypeHandle,
+                                (int)fieldAccessMetadata.Cookie,
                                 fieldAccessMetadata.Offset,
                                 fieldTypeHandle);
-                    }
-                    else
-                    {
-                        return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAccessMetadata.Cookie, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAccessMetadata.Cookie, fieldTypeHandle);
                     }
             }
 

@@ -331,7 +331,7 @@ namespace ILCompiler
             // Root all the generic type instantiations from the pre-computed metadata
             foreach (var type in loadedMetadata.RequiredGenericTypes)
             {
-                rootProvider.AddCompilationRoot(type, "Required instantiation");
+                rootProvider.AddCompilationRoot(type, "Required generic type");
             }
 
             // Root all the generic methods (either non-generic methods on generic types, or generic methods) from 
@@ -340,12 +340,27 @@ namespace ILCompiler
             foreach (var method in loadedMetadata.RequiredGenericMethods)
             {
                 if (method.IsVirtual)
-                    rootProvider.RootVirtualMethodForReflection(method, "Required instantiation");
+                    rootProvider.RootVirtualMethodForReflection(method, "Required generic method");
                 else
-                    rootProvider.AddCompilationRoot(method, "Required instantiation");
+                    rootProvider.AddCompilationRoot(method, "Required generic method");
             }
 
-            // TODO: required generic fields. Root containing type, and add field to list in ComputeMetadata()
+            foreach (var field in loadedMetadata.RequiredGenericFields)
+            {
+                // TODO: Create metadata mappings only for reflectable fields, not all fields of all compiled types
+                rootProvider.AddCompilationRoot(field.OwningType, "Required generic field's owning type");
+                if (field.IsThreadStatic)
+                {
+                    rootProvider.RootThreadStaticBaseForType(field.OwningType, "Required generic field");
+                }
+                else if (field.IsStatic)
+                {
+                    if (field.HasGCStaticBase)
+                        rootProvider.RootGCStaticBaseForType(field.OwningType, "Required generic field");
+                    else
+                        rootProvider.RootNonGCStaticBaseForType(field.OwningType, "Required generic field");
+                }
+            }
         }
 
         protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
@@ -432,6 +447,7 @@ namespace ILCompiler
                     methodMappings.Add(newMapping);
             }
 
+            // TODO: Create metadata mappings only for reflectable fields, not all fields of all compiled types
             foreach (var eetypeGenerated in GetTypesWithEETypes())
             {
                 if (eetypeGenerated.IsGenericDefinition)
@@ -445,6 +461,8 @@ namespace ILCompiler
                     if (canonicalType != eetypeGenerated && TypeGeneratesEEType(canonicalType))
                         continue;
                 }
+
+                Debug.Assert(_compilationModuleGroup.ContainsType(eetypeGenerated));
 
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                 {
