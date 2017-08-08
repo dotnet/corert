@@ -32,7 +32,7 @@ public:
     HANDLE GetOsModuleHandle();
     void* GetClasslibFunction(ClasslibFunctionId functionId);
     UInt32* GetPointerToTlsIndex() { return m_pTlsIndex; }
-    void SetLoopHijackFlag(UInt32 flag) { *m_pLoopHijackFlag = flag; }
+    void SetLoopHijackFlag(UInt32 flag) { if (m_pLoopHijackFlag != nullptr) *m_pLoopHijackFlag = flag; }
 
 private:
     
