@@ -26,7 +26,6 @@ namespace ILCompiler
         public LibraryRootProvider(EcmaModule module)
         {
             _module = module;
-            _libraryInitializers = new List<MethodDesc>();
         }
 
         public LibraryRootProvider(EcmaModule module, IList<MethodDesc> libraryInitializers)
@@ -63,10 +62,14 @@ namespace ILCompiler
                 }
             }
 
-            TypeDesc owningType = _module.GetGlobalModuleType();
-            var nativeLibStartupCode = new NativeLibraryStartupMethod(owningType, _libraryInitializers);
+            // We don't want to do this for MultiModule
+            if (_libraryInitializers != null)
+            {
+                TypeDesc owningType = _module.GetGlobalModuleType();
+                var nativeLibStartupCode = new NativeLibraryStartupMethod(owningType, _libraryInitializers);
 
-            rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", ManagedEntryPointMethodName);
+                rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", ManagedEntryPointMethodName);
+            }
         }
 
         private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
