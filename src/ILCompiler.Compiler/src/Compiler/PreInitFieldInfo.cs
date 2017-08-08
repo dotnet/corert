@@ -150,7 +150,7 @@ namespace ILCompiler
                 if (!field.IsStatic)
                     continue;
 
-                bool isValueType = IsSupportedValueType(type);
+                bool isValueType = IsSupportedValueType(field.FieldType);
                 if (isValueType != wantValueType)
                     continue;
 
