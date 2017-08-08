@@ -349,7 +349,7 @@ COOP_PINVOKE_HELPER(EEType *, RhpGetArrayBaseType, (EEType * pEEType))
 
 // Obtain the address of a thread static field for the current thread given the enclosing type and a field cookie
 // obtained from a fixed up binder blob field record.
-COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, ThreadStaticFieldOffsets* pFieldCookie))
+COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, UInt32 startingOffsetInTlsBlock, UInt32 fieldOffset))
 {
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
@@ -361,36 +361,57 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, T
 
     if (pEEType->IsDynamicType())
     {
+        // Specific TLS storage is allocated for each dynamic type. There is no starting offset since it's not a 
+        // TLS storage block shared by multiple types.
+        ASSERT(startingOffsetInTlsBlock == 0);
+
         // Special case for thread static fields on dynamic types: the TLS storage is managed by the runtime
         // for each dynamically created type with thread statics. The TLS storage size allocated for each type
         // is the size of all the thread statics on that type. We use the field offset to get the thread static
         // data for that field on the current thread.
         UInt8* pTlsStorage = ThreadStore::GetCurrentThread()->GetThreadLocalStorageForDynamicType(pEEType->get_DynamicThreadStaticOffset());
         ASSERT(pTlsStorage != NULL);
-        return (pFieldCookie != NULL ? pTlsStorage + pFieldCookie->FieldOffset : pTlsStorage);
+        return pTlsStorage + fieldOffset;
     }
     else
     {
-        // In all other cases the field cookie contains an offset from the base of all Redhawk thread statics
-        // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
-        // code using .tls) is that from the exe module.
+#if EETYPE_TYPE_MANAGER && !CORERT  /* TODO: CORERT */
+        if (pEEType->HasTypeManager())
+        {
+            TypeManager* pTypeManager = pEEType->GetTypeManagerPtr()->AsTypeManager();
+            ASSERT(pTypeManager != NULL);
 
-        // In the separate compilation case, the generic unification logic should assure
-        // that the pEEType parameter passed in is indeed the "winner" of generic unification,
-        // not one of the "losers".
-        // TODO: come up with an assert to check this.
-        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
-        if (pModule == NULL)
-            pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
-        ASSERT(pModule != NULL);
-        ModuleHeader * pExeModuleHeader = pModule->GetModuleHeader();
+            UInt32* pTlsIndex = pTypeManager->GetPointerToTlsIndex();
+            if (pTlsIndex == NULL)
+                return NULL;
+            
+            uiTlsIndex = *pTlsIndex;
+            uiFieldOffset = startingOffsetInTlsBlock + fieldOffset;
+        }
+        else
+#endif
+        {
+            // The startingOffsetInTlsBlock is an offset from the base of all Redhawk thread statics
+            // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
+            // code using .tls) is that from the exe module.
 
-        uiTlsIndex = *pExeModuleHeader->PointerToTlsIndex;
-        uiFieldOffset = pExeModuleHeader->TlsStartOffset + pFieldCookie->StartingOffsetInTlsBlock + pFieldCookie->FieldOffset;
+            // In the separate compilation case, the generic unification logic should assure
+            // that the pEEType parameter passed in is indeed the "winner" of generic unification,
+            // not one of the "losers".
+            // TODO: come up with an assert to check this.
+            Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
+            if (pModule == NULL)
+                pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
+            ASSERT(pModule != NULL);
+            ModuleHeader * pExeModuleHeader = pModule->GetModuleHeader();
+
+            uiTlsIndex = *pExeModuleHeader->PointerToTlsIndex;
+            uiFieldOffset = pExeModuleHeader->TlsStartOffset + startingOffsetInTlsBlock + fieldOffset;
+        }
+
+        // Now look at the current thread and retrieve the address of the field.
+        return ThreadStore::GetCurrentThread()->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset);
     }
-
-    // Now look at the current thread and retrieve the address of the field.
-    return ThreadStore::GetCurrentThread()->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset);
 }
 
 #if _TARGET_ARM_

@@ -48,6 +48,14 @@ namespace Internal.Runtime.TypeLoader
         public int Offset;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct ThreadStaticFieldOffsets
+    {
+        public uint StartingOffsetInTlsBlock;    // Offset in the TLS block containing the thread static fields of a given type
+        public uint FieldOffset;                 // Offset of a thread static field from the start of its containing type's TLS fields block
+                                                 // (in other words, the address of a field is 'TLS block + StartingOffsetInTlsBlock + FieldOffset')
+    }
+
     public sealed partial class TypeLoaderEnvironment
     {
         /// <summary>
@@ -110,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="canonFormKind">Canonical form to use</param>
         /// <param name="fieldAccessMetadata">Output - metadata information for field accessor construction</param>
         /// <returns>true when found, false otherwise</returns>
-        private static bool TryGetFieldAccessMetadataFromFieldAccessMap(
+        private unsafe static bool TryGetFieldAccessMetadataFromFieldAccessMap(
             MetadataReader metadataReader,
             RuntimeTypeHandle declaringTypeHandle,
             FieldHandle fieldHandle,
@@ -184,13 +192,13 @@ namespace Internal.Runtime.TypeLoader
                             continue;
                     }
 
-                    int cookieOrOffsetOrOrdinal = (int)entryParser.GetUnsigned();
-                    int fieldOffset;
+                    int fieldOffset = -1;
+                    int threadStaticsStartOffset = -1;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
 
                     if (canonFormKind == CanonicalFormKind.Universal)
                     {
-                        if (!TypeLoaderEnvironment.Instance.TryGetFieldOffset(declaringTypeHandle, (uint)cookieOrOffsetOrOrdinal, out fieldOffset))
+                        if (!TypeLoaderEnvironment.Instance.TryGetFieldOffset(declaringTypeHandle, entryParser.GetUnsigned() /* field ordinal */, out fieldOffset))
                         {
                             Debug.Assert(false);
                             return false;
@@ -198,19 +206,46 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
-                            fieldOffset = cookieOrOffsetOrOrdinal;
+                        if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
+                        {
+                            if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
+                            {
+                                if ((entryFlags & FieldTableFlags.IsAnyCanonicalEntry) == 0)
+                                {
+                                    int rvaToThreadStaticFieldOffsets = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
+                                    fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, rvaToThreadStaticFieldOffsets);
+                                    threadStaticsStartOffset = *(int*)fieldAddressCookie.ToPointer();
+                                }
+                                fieldOffset = (int)entryParser.GetUnsigned();
+                            }
+                            else
+                            {
+                                int rvaToThreadStaticFieldOffsets = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
+                                fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, rvaToThreadStaticFieldOffsets);
+                                ThreadStaticFieldOffsets* pThreadStaticFieldOffsets = (ThreadStaticFieldOffsets*)fieldAddressCookie.ToPointer();
+
+                                threadStaticsStartOffset = (int)pThreadStaticFieldOffsets->StartingOffsetInTlsBlock;
+                                fieldOffset = (int)pThreadStaticFieldOffsets->FieldOffset;
+                            }
+                        }
                         else
                         {
-#if CORERT
-                            fieldOffset = 0;
-                            fieldAddressCookie = externalReferences.GetFieldAddressFromIndex((uint)cookieOrOffsetOrOrdinal);
-
-                            if((entryFlags & FieldTableFlags.IsGcSection) != 0)
+                            if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
+                            {
                                 fieldOffset = (int)entryParser.GetUnsigned();
+                            }
+                            else
+                            {
+#if CORERT
+                                fieldOffset = 0;
+                                fieldAddressCookie = externalReferences.GetFieldAddressFromIndex(entryParser.GetUnsigned());
+
+                                if((entryFlags & FieldTableFlags.IsGcSection) != 0)
+                                    fieldOffset = (int)entryParser.GetUnsigned();
 #else
-                            fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
+                                fieldOffset = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
 #endif
+                            }
                         }
                     }
 
@@ -218,26 +253,13 @@ namespace Internal.Runtime.TypeLoader
                     {
                         // TODO: CoreRT support
 
-                        if (canonFormKind != CanonicalFormKind.Universal)
-                        {
-                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, fieldOffset);
-                        }
-
                         if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
                         {
-                            // In this case we didn't find an exact match, but we did find a canonically equivalent match
-                            // We might be in the dynamic type case, or the canonically equivalent, but not the same case.
-
-                            if (!RuntimeAugments.IsDynamicType(declaringTypeHandle))
-                            {
-                                int offsetToCreateCookieFor = fieldOffset;
-                                // We're working with a statically generated type, but we didn't find an exact match in the tables
-                                if (canonFormKind != CanonicalFormKind.Universal)
-                                    offsetToCreateCookieFor = checked((int)TypeLoaderEnvironment.GetThreadStaticTypeOffsetFromThreadStaticCookie(fieldAddressCookie));
-
-                                fieldAddressCookie = TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldOffsetCookieForTypeAndFieldOffset(declaringTypeHandle, checked((uint)offsetToCreateCookieFor));
-                            }
+                            if (!TypeLoaderEnvironment.Instance.TryGetThreadStaticStartOffset(declaringTypeHandle, out threadStaticsStartOffset))
+                                return false;
                         }
+
+                        fieldAddressCookie = new IntPtr(threadStaticsStartOffset);
                     }
 
                     fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;

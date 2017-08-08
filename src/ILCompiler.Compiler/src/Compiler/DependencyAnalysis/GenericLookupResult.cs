@@ -1239,7 +1239,7 @@ namespace ILCompiler.DependencyAnalysis
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.Indirection(utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType));
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1257,7 +1257,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
-            return GenericLookupResultReferenceType.Indirect;
+            return GenericLookupResultReferenceType.ConditionalIndirect;
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
@@ -1299,7 +1299,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             Debug.Assert(instantiatedType is MetadataType);
-            return factory.Indirection(utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType));
+            return utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1317,7 +1317,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
-            return GenericLookupResultReferenceType.Indirect;
+            return GenericLookupResultReferenceType.ConditionalIndirect;
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
