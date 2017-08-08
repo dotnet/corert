@@ -22,11 +22,11 @@ namespace System.Threading
             
             private static void WorkerThreadStart()
             {
-                ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts));
+                ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 RuntimeThread currentThread = RuntimeThread.CurrentThread;
                 while (true)
                 {
-                    ClrThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts));
+                    ClrThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                     while (s_semaphore.Wait(ThreadPoolThreadTimeoutMs))
                     {
                         if (TakeActiveRequest())
@@ -77,7 +77,7 @@ namespace System.Threading
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-                                ClrThreadPoolEventSource.Log.WorkerThreadStop(newCounts);
+                                ClrThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
                                 return;
                             }
                         }

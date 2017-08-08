@@ -415,7 +415,7 @@ namespace System.Threading
 
                 _logSize++;
 
-                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, stateOrTransition);
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)

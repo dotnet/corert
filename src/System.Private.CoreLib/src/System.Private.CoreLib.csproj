@@ -635,12 +635,12 @@
     <Compile Include="System\Threading\ClrThreadPool.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" />
     <Compile Include="System\Threading\ClrThreadPool.GateThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.ClrThreadPoolEventSource.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.cs" />
     <Compile Include="System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolEventSource.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />
