@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
             _factory = factory;
-            var preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type, wantValueType: true);
+            var preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type, hasGCStaticBase: false);
             if (preInitFieldInfos != null)
             {
                 _sortedPreInitFields = new List<PreInitFieldInfo>(preInitFieldInfos);

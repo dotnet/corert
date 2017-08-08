@@ -141,7 +141,7 @@ namespace ILCompiler
             return type.IsValueType || type.IsPointer;
         }
 
-        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool wantValueType)
+        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool hasGCStaticBase)
         {
             List<PreInitFieldInfo> list = null;
 
@@ -150,8 +150,7 @@ namespace ILCompiler
                 if (!field.IsStatic)
                     continue;
 
-                bool isValueType = IsSupportedValueType(field.FieldType);
-                if (isValueType != wantValueType)
+                if (field.HasGCStaticBase != hasGCStaticBase)
                     continue;
 
                 var dataField = GetPreInitDataField(field);
