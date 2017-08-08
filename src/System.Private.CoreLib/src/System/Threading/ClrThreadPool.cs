@@ -211,6 +211,7 @@ namespace System.Threading
         //
         private void AdjustMaxWorkersActive()
         {
+            _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
             int currentTicks = Environment.TickCount;
             int totalNumCompletions = Volatile.Read(ref _completionCount);
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
