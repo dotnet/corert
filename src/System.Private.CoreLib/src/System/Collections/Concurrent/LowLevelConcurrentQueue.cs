@@ -2,6 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+ 
+// 
+// A lock-free, concurrent queue primitive, and its associated debugger view type. 
+// 
+// This is a stripped-down version of ConcurrentQueue, for use from within the System.Threading 
+// surface to eliminate a dependency on System.Collections.Concurrent. 
+// Please try to keep this in sync with the public ConcurrentQueue implementation. 
+//
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- 
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;

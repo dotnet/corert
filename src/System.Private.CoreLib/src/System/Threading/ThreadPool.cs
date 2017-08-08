@@ -27,12 +27,12 @@
  */
 
 using Internal.Runtime.Augments;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -829,12 +829,12 @@ namespace System.Threading
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
 
-        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool compressStack)
+        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool flowExecutionContext)
         {
             _waitOrTimerCallback = waitOrTimerCallback;
             _state = state;
 
-            if (compressStack)
+            if (flowExecutionContext)
             {
                 // capture the exection context
                 _executionContext = ExecutionContext.Capture();
