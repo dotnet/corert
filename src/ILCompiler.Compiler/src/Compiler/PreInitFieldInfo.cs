@@ -136,18 +136,13 @@ namespace ILCompiler
             builder.EmitBytes(Data, offset, Data.Length - offset);
         }
 
-        static bool IsSupportedValueType(TypeDesc type)
-        {
-            return type.IsValueType || type.IsPointer;
-        }
-
         public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool hasGCStaticBase)
         {
             List<PreInitFieldInfo> list = null;
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic)
+                if (!field.IsStatic || field.IsThreadStatic)
                     continue;
 
                 if (field.HasGCStaticBase != hasGCStaticBase)
@@ -218,20 +213,26 @@ namespace ILCompiler
 
             var fieldType = field.FieldType;
 
-            if (IsSupportedValueType(fieldType))
-                return new PreInitFieldInfo(field, rvaData, rvaData.Length, fixups: null);
-
-            var arrType = field.FieldType as ArrayType;
-            if (arrType == null || !arrType.IsSzArray)
+            int elementCount;
+            if (fieldType.IsValueType || fieldType.IsPointer)
             {
-                // We only support single dimensional arrays
-                throw new NotSupportedException();
+                elementCount = -1;
             }
+            else
+            {
+                var arrType = field.FieldType as ArrayType;
+                if (arrType == null || !arrType.IsSzArray)
+                {
+                    // We only support single dimensional arrays
+                    throw new NotSupportedException();
+                }
 
-            int elementSize = arrType.ElementType.GetElementSize().AsInt;
-            if (rvaData.Length % elementSize != 0)
-                throw new BadImageFormatException();
-            int elementCount = rvaData.Length / elementSize;
+                int elementSize = arrType.ElementType.GetElementSize().AsInt;
+                if (rvaData.Length % elementSize != 0)
+                    throw new BadImageFormatException();
+
+                elementCount = rvaData.Length / elementSize;
+            }
 
             //
             // Construct fixups
