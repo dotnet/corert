@@ -306,7 +306,7 @@ namespace System.Threading
             wrapper.Exit(resetThread: false);
         }
 
-        internal static void QueueDispatch()
+        internal static void RequestWorkerThread()
         {
             if (s_work == IntPtr.Zero)
             {

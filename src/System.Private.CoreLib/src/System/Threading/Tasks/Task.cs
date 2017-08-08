@@ -2353,7 +2353,6 @@ namespace System.Threading.Tasks
             }
         }
 
-
         /// <summary>
         /// IThreadPoolWorkItem override, which is the entry function for this task when the TP scheduler decides to run it.
         /// 
