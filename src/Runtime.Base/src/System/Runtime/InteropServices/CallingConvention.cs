@@ -5,7 +5,7 @@
 namespace System.Runtime.InteropServices
 {
     // Used for the CallingConvention named argument to the DllImport and NativeCallable attribute
-    internal enum CallingConvention
+    public enum CallingConvention
     {
         Winapi = 1,
         Cdecl = 2,
