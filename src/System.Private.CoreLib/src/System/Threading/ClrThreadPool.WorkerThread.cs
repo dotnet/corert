@@ -80,6 +80,7 @@ namespace System.Threading
                                 ClrThreadPoolEventSource.Log.WorkerThreadStop(newCounts);
                                 return;
                             }
+                        }
                     }
                     finally
                     {
