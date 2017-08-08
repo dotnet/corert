@@ -82,6 +82,11 @@ namespace Internal.TypeSystem.Ecma
 
         static UnmanagedPdbSymbolReader()
         {
+#if PLATFORM_UNIX
+            s_symBinder = null;
+            s_metadataDispenser = null;
+            return;
+#else
             try
             {
                 Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
@@ -121,6 +126,7 @@ namespace Internal.TypeSystem.Ecma
             catch
             {
             }
+#endif
         }
 
         private static IMetaDataDispenser s_metadataDispenser;
