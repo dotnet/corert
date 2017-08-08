@@ -203,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (unboxingStub)
                     flags |= MethodFlags.IsUnboxingStub;
-                if (_method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                if (methodEntryPointNode.Method.IsCanonicalMethod(CanonicalFormKind.Universal))
                     flags |= MethodFlags.FunctionPointerIsUSG;
             }
 
