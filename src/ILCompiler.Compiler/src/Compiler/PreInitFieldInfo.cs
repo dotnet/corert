@@ -136,13 +136,22 @@ namespace ILCompiler
             builder.EmitBytes(Data, offset, Data.Length - offset);
         }
 
-        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)
+        static bool IsSupportedValueType(TypeDesc type)
+        {
+            return type.IsValueType || type.IsPointer;
+        }
+
+        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool wantValueType)
         {
             List<PreInitFieldInfo> list = null;
 
             foreach (var field in type.GetFields())
             {
                 if (!field.IsStatic)
+                    continue;
+
+                bool isValueType = IsSupportedValueType(type);
+                if (isValueType != wantValueType)
                     continue;
 
                 var dataField = GetPreInitDataField(field);
@@ -173,7 +182,7 @@ namespace ILCompiler
 
             var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
             if (decoded == null)
-                return null; 
+                return null;
 
             var decodedValue = decoded.Value;
             if (decodedValue.FixedArguments.Length != 2)
@@ -199,21 +208,26 @@ namespace ILCompiler
         /// </summary>
         private static PreInitFieldInfo ConstructPreInitFieldInfo(FieldDesc field, FieldDesc dataField)
         {
+            if (!dataField.HasRva)
+                throw new BadImageFormatException();
+
+            var ecmaDataField = dataField as EcmaField;
+            if (ecmaDataField == null)
+                throw new NotSupportedException();
+
+            var rvaData = ecmaDataField.GetFieldRvaData();
+
+            var fieldType = field.FieldType;
+
+            if (IsSupportedValueType(fieldType))
+                return new PreInitFieldInfo(field, rvaData, rvaData.Length, fixups: null);
+
             var arrType = field.FieldType as ArrayType;
             if (arrType == null || !arrType.IsSzArray)
             {
                 // We only support single dimensional arrays
                 throw new NotSupportedException();
             }
-
-            if (!dataField.HasRva)
-                throw new BadImageFormatException();
-            
-            var ecmaDataField = dataField as EcmaField;
-            if (ecmaDataField == null)
-                throw new NotSupportedException();
-            
-            var rvaData = ecmaDataField.GetFieldRvaData();
 
             int elementSize = arrType.ElementType.GetElementSize().AsInt;
             if (rvaData.Length % elementSize != 0)
@@ -266,6 +280,11 @@ namespace ILCompiler
             }
 
             return new PreInitFieldInfo(field, rvaData, elementCount, fixups);
+        }
+
+        public static int FieldDescCompare(PreInitFieldInfo fieldInfo1, PreInitFieldInfo fieldInfo2)
+        {
+            return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
     }
 }
