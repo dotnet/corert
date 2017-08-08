@@ -82,51 +82,48 @@ namespace Internal.TypeSystem.Ecma
 
         static UnmanagedPdbSymbolReader()
         {
-#if PLATFORM_UNIX
-            s_symBinder = null;
-            s_metadataDispenser = null;
-            return;
-#else
-            try
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+                try
+                {
+                    Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
-                ICLRMetaHost objMetaHost;
-                Guid CLSID_CLRMetaHost = new Guid(0x9280188d, 0x0e8e, 0x4867, 0xb3, 0x0c, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);
-                Guid IID_CLRMetaHost = new Guid(0xd332db9e, 0xb9b3, 0x4125, 0x82, 0x07, 0xa1, 0x48, 0x84, 0xf5, 0x32, 0x16);
-                if (CLRCreateInstance(ref CLSID_CLRMetaHost, ref IID_CLRMetaHost, out objMetaHost) < 0)
-                    return;
+                    ICLRMetaHost objMetaHost;
+                    Guid CLSID_CLRMetaHost = new Guid(0x9280188d, 0x0e8e, 0x4867, 0xb3, 0x0c, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);
+                    Guid IID_CLRMetaHost = new Guid(0xd332db9e, 0xb9b3, 0x4125, 0x82, 0x07, 0xa1, 0x48, 0x84, 0xf5, 0x32, 0x16);
+                    if (CLRCreateInstance(ref CLSID_CLRMetaHost, ref IID_CLRMetaHost, out objMetaHost) < 0)
+                        return;
 
-                ICLRRuntimeInfo objRuntime;
-                Guid IID_CLRRuntimeInfo = new Guid(0xbd39d1d2, 0xba2f, 0x486a, 0x89, 0xb0, 0xb4, 0xb0, 0xcb, 0x46, 0x68, 0x91);
-                if (objMetaHost.GetRuntime("v4.0.30319", ref IID_CLRRuntimeInfo, out objRuntime) < 0)
-                    return;
+                    ICLRRuntimeInfo objRuntime;
+                    Guid IID_CLRRuntimeInfo = new Guid(0xbd39d1d2, 0xba2f, 0x486a, 0x89, 0xb0, 0xb4, 0xb0, 0xcb, 0x46, 0x68, 0x91);
+                    if (objMetaHost.GetRuntime("v4.0.30319", ref IID_CLRRuntimeInfo, out objRuntime) < 0)
+                        return;
 
-                // To get everything from the v4 runtime
-                objRuntime.BindAsLegacyV2Runtime();
+                    // To get everything from the v4 runtime
+                    objRuntime.BindAsLegacyV2Runtime();
 
-                // Create a COM Metadata dispenser
-                object objDispenser;
-                Guid CLSID_CorMetaDataDispenser = new Guid(0xe5cb7a31, 0x7512, 0x11d2, 0x89, 0xce, 0x00, 0x80, 0xc7, 0x92, 0xe5, 0xd8);
-                if (objRuntime.GetInterface(ref CLSID_CorMetaDataDispenser, ref IID_IUnknown, out objDispenser) < 0)
-                    return;
-                s_metadataDispenser = (IMetaDataDispenser)objDispenser;
+                    // Create a COM Metadata dispenser
+                    object objDispenser;
+                    Guid CLSID_CorMetaDataDispenser = new Guid(0xe5cb7a31, 0x7512, 0x11d2, 0x89, 0xce, 0x00, 0x80, 0xc7, 0x92, 0xe5, 0xd8);
+                    if (objRuntime.GetInterface(ref CLSID_CorMetaDataDispenser, ref IID_IUnknown, out objDispenser) < 0)
+                        return;
+                    s_metadataDispenser = (IMetaDataDispenser)objDispenser;
 
-                // Create a SymBinder
-                object objBinder;
-                Guid CLSID_CorSymBinder = new Guid(0x0a29ff9e, 0x7f9c, 0x4437, 0x8b, 0x11, 0xf4, 0x24, 0x49, 0x1e, 0x39, 0x31);
-                if (CoCreateInstance(ref CLSID_CorSymBinder,
-                                     IntPtr.Zero, // pUnkOuter
-                                     1, // CLSCTX_INPROC_SERVER
-                                     ref IID_IUnknown,
-                                     out objBinder) < 0)
-                    return;
-                s_symBinder = (ISymUnmanagedBinder)objBinder;
+                    // Create a SymBinder
+                    object objBinder;
+                    Guid CLSID_CorSymBinder = new Guid(0x0a29ff9e, 0x7f9c, 0x4437, 0x8b, 0x11, 0xf4, 0x24, 0x49, 0x1e, 0x39, 0x31);
+                    if (CoCreateInstance(ref CLSID_CorSymBinder,
+                                         IntPtr.Zero, // pUnkOuter
+                                         1, // CLSCTX_INPROC_SERVER
+                                         ref IID_IUnknown,
+                                         out objBinder) < 0)
+                        return;
+                    s_symBinder = (ISymUnmanagedBinder)objBinder;
+                }
+                catch
+                {
+                }
             }
-            catch
-            {
-            }
-#endif
         }
 
         private static IMetaDataDispenser s_metadataDispenser;
