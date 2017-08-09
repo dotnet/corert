@@ -68,8 +68,7 @@ namespace System.Threading
                 data[0].Size = sizeof(double);
                 data[1].DataPointer = (IntPtr)(&newWorkerThreadCount);
                 data[1].Size = sizeof(int);
-                int reason = (int)stateOrTransition;
-                data[2].DataPointer = (IntPtr)(&reason);
+                data[2].DataPointer = (IntPtr)(&stateOrTransition);
                 data[2].Size = sizeof(int);
                 WriteEventCore(5, 3, data);
             }

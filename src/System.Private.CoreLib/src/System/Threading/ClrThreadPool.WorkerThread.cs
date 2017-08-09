@@ -52,6 +52,8 @@ namespace System.Threading
                             // If we woke up but couldn't find a request, we need to update the number of working workers to reflect that we are done working for now
                             RemoveWorkingWorker();
                         }
+
+                        ClrThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                     }
 
                     ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();

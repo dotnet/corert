@@ -410,7 +410,7 @@ namespace System.Threading
                 entry.tickCount = Environment.TickCount;
                 entry.stateOrTransition = stateOrTransition;
                 entry.newControlSetting = newThreadCount;
-                entry.lastHistoryCount = (int)(Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
+                entry.lastHistoryCount = ((int)Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
                 entry.lastHistoryMean = throughput;
 
                 _logSize++;
