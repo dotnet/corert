@@ -35,8 +35,8 @@ namespace ILCompiler.Compiler.Tests
             var context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes);
 
             context.InputFilePaths = new Dictionary<string, string> {
-                { "Test.CoreLib", @".\Test.CoreLib.dll" },
-                { "ILCompiler.Compiler.Tests.Assets", @".\ILCompiler.Compiler.Tests.Assets.dll" },
+                { "Test.CoreLib", @"Test.CoreLib.dll" },
+                { "ILCompiler.Compiler.Tests.Assets", @"ILCompiler.Compiler.Tests.Assets.dll" },
                 };
             context.ReferenceFilePaths = new Dictionary<string, string>();
 
