@@ -38,6 +38,7 @@ namespace System.Threading
                     maxSampleError: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxSampleErrorPercent", 15) / 100.0
                 );
             }
+            private const int LogCapacity = 200;
 
             public enum StateOrTransition
             {
@@ -49,6 +50,15 @@ namespace System.Threading
                 Stabilizing,
                 Starvation, // Used as a message from the thread pool for a forced transition
                 ThreadTimedOut, // Usage as a message from the thread pool for a forced transition
+            }
+
+            private struct LogEntry
+            {
+                public int tickCount;
+                public StateOrTransition stateOrTransition;
+                public int newControlSetting;
+                public int lastHistoryCount;
+                public double lastHistoryMean;
             }
             
             private readonly int _wavePeriod;
@@ -66,7 +76,7 @@ namespace System.Threading
             private readonly double _maxSampleError;
 
             private double _currentControlSetting;
-            private int _totalSamples;
+            private long _totalSamples;
             private int _lastThreadCount;
             private double _averageThroughputNoise;
             private double _secondsElapsedSinceLastChange;
@@ -78,6 +88,10 @@ namespace System.Threading
             private int _currentSampleMs;
             
             private Random _randomIntervalGenerator = new Random();
+
+            private LogEntry[] _log = new LogEntry[LogCapacity];
+            private int _logStart = 0;
+            private int _logSize = 0;
 
             public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
                 double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalMsLow, int sampleIntervalMsHigh,
@@ -172,9 +186,10 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-                // TODO: Event: Worker Thread Adjustment Sample
 
-                int sampleIndex = _totalSamples % _samplesToMeasure;
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
+
+                int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
                 _samples[sampleIndex] = throughput;
                 _threadCounts[sampleIndex] = currentThreadCount;
                 _totalSamples++;
@@ -195,7 +210,7 @@ namespace System.Threading
                 // multiple of the primary wave's period; otherwise the frequency we're looking for will fall between two  frequency bands 
                 // in the Fourier analysis, and we won't be able to measure it accurately.
                 // 
-                int sampleCount = Math.Min(_totalSamples - 1, _samplesToMeasure) / _wavePeriod * _wavePeriod;
+                int sampleCount = ((int)Math.Min(_totalSamples - 1, _samplesToMeasure)) / _wavePeriod * _wavePeriod;
 
                 if (sampleCount > _wavePeriod)
                 {
@@ -341,8 +356,9 @@ namespace System.Threading
                 //
                 // Record these numbers for posterity
                 //
-                
-                // TODO: Event: Worker Thread Adjustment stats
+
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                    throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
 
 
                 //
@@ -378,9 +394,28 @@ namespace System.Threading
                 _completionsSinceLastChange = 0;
             }
 
-            private void LogTransition(int newThreadCount, double throughput, StateOrTransition state)
+            private void LogTransition(int newThreadCount, double throughput, StateOrTransition stateOrTransition)
             {
-                // TODO: Log transitions
+                // Use the _log array as a circular array for log entries
+                int index = (_logStart + _logSize) % LogCapacity;
+
+                if(_logSize == LogCapacity)
+                {
+                    _logStart = (_logStart + 1) % LogCapacity;
+                    _logSize--; // hide this slot while we update it
+                }
+
+                ref LogEntry entry = ref _log[index];
+
+                entry.tickCount = Environment.TickCount;
+                entry.stateOrTransition = stateOrTransition;
+                entry.newControlSetting = newThreadCount;
+                entry.lastHistoryCount = ((int)Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
+                entry.lastHistoryMean = throughput;
+
+                _logSize++;
+
+                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)

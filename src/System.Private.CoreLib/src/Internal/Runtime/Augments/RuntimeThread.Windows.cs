@@ -223,7 +223,7 @@ namespace Internal.Runtime.Augments
                 }
                 else
                 {
-                    result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout);
+                    result = WaitHandle.WaitForSingleObject(waitHandle.DangerousGetHandle(), millisecondsTimeout, true);
                 }
 
                 return result == (int)Interop.Constants.WaitObject0;
@@ -274,7 +274,7 @@ namespace Internal.Runtime.Augments
         }
 
         /// <summary>
-        /// This an entry point for managed threads created by applicatoin
+        /// This is an entry point for managed threads created by application
         /// </summary>
         [NativeCallable(CallingConvention = CallingConvention.StdCall)]
         private static uint ThreadEntryPoint(IntPtr parameter)

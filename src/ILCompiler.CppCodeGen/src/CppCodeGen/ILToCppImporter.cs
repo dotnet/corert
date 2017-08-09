@@ -819,6 +819,37 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case ".ctor":
+                    if (IsTypeName(method, "System", "ByReference`1"))
+                    {
+                        var value = _stack.Pop();
+                        var byReferenceType = method.OwningType;
+
+                        string tempName = NewTempName();
+
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ValueType, byReferenceType));
+                        Append(" ");
+                        Append(tempName);
+                        AppendSemicolon();
+
+                        Append(tempName);
+                        Append("._value = (intptr_t)");
+                        Append(value);
+                        AppendSemicolon();
+
+                        PushExpression(StackValueKind.ValueType, tempName, byReferenceType);
+                        return true;
+                    }
+                    break;
+                case "get_Value":
+                    if (IsTypeName(method, "System", "ByReference`1"))
+                    {
+                        var thisRef = _stack.Pop();
+
+                        PushExpression(StackValueKind.ValueType, ((ExpressionEntry)thisRef).Name + "->_value", method.Signature.ReturnType);
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -2627,7 +2658,7 @@ namespace Internal.IL
                         node = _nodeFactory.TypeNonGCStaticsSymbol(owningType);
                 }
 
-                // TODO: Remove once the depedencies for static fields are tracked properly
+                // TODO: Remove once the dependencies for static fields are tracked properly
                 GetSignatureTypeNameAndAddReference(owningType, true);
                 _dependencies.Add(node);
             }

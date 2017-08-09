@@ -975,7 +975,7 @@ namespace System.Runtime.InteropServices
         ///          If so, it means that this exception was actually caused by a native exception in which case we do simply use the same
         ///              message and stacktrace.
         ///      b.  If not, this is actually a managed exception and in this case we RoOriginateLanguageException with the msg, hresult and the IErrorInfo
-        ///          aasociated with the managed exception. This helps us to retrieve the same exception in case it comes back to native.
+        ///          associated with the managed exception. This helps us to retrieve the same exception in case it comes back to native.
         /// 2. On win8 and for classic COM scenarios.
         ///     a. We create IErrorInfo for the given Exception object and SetErrorInfo with the given IErrorInfo.
         /// </summary>

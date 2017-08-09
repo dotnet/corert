@@ -1220,6 +1220,18 @@ namespace Internal.JitInterface
         // between offsets.
     };
 
+    public enum ILNum
+    {
+        VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
+        RETBUF_ILNUM        = -2, // Pointer to the return-buffer
+        TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+
+        UNKNOWN_ILNUM       = -4, // Unknown variable
+
+        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in the enum
+                                  // so that the compression routines know the enum's range.
+    };
+
     public struct ILVarInfo
     {
         public uint startOffset;
@@ -1236,13 +1248,13 @@ namespace Internal.JitInterface
     };
 
     // The following 16 bytes come from coreclr types. See comment below.
+    [StructLayout(LayoutKind.Sequential)]
     public struct VarLoc
     {
-       public int vlType;
-       // The 64bit field is here to keep VarLoc 8byte aligned on Amd64.
-       // For x86, we need to change the VarLoc definition here.
-       public long A;   
-       public int B;
+        IntPtr A; // vlType + padding
+        int B;
+        int C;
+        int D;
 
         /*
            Changes to the following types may require revisiting the above layout.
