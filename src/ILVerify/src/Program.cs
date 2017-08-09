@@ -78,7 +78,7 @@ namespace ILVerify
                 syntax.HandleErrors = true;
 
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
-                syntax.DefineOption("system-module", ref _systemModule, "Simple name of the system module for compilation.");
+                syntax.DefineOption("s|system-module", ref _systemModule, "Simple name of the system module for compilation.");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
