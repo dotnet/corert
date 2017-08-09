@@ -16,29 +16,19 @@ namespace ILCompiler.Compiler.Tests.Assets
     class DependencyGraph
     {
         /// <summary>
-        /// Validates that a beforefieldinit type with a pinvoke drags the cctor of PInvoke's owning type
-        /// when the PInvoke is used.
+        /// Validates a cast doesn't force a constructed EEType.
         /// </summary>
         class PInvokeCctorDependencyTest
         {
-            class ClassWithPInvoke
+            class TypeThatWasNeverAllocated
             {
-                static int s_cookie = GetCookie();
-
-                public static int GetCookie() => 42;
-
-                public static int NotUsed() => 123;
-
-                [DllImport("*")]
-                public static extern int PInvoke();
+                public static object O = null;
             }
 
-            [GeneratesMethodBody(typeof(ClassWithPInvoke), nameof(ClassWithPInvoke.GetCookie))]
-            [NoMethodBody(typeof(ClassWithPInvoke), nameof(ClassWithPInvoke.NotUsed))]
-            [NoConstructedEEType(typeof(ClassWithPInvoke))]
+            [NoConstructedEEType(typeof(TypeThatWasNeverAllocated))]
             public static void Entrypoint()
             {
-                ClassWithPInvoke.PInvoke();
+                ((TypeThatWasNeverAllocated)TypeThatWasNeverAllocated.O).GetHashCode();
             }
         }
     }
