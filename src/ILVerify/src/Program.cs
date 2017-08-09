@@ -26,10 +26,10 @@ namespace ILVerify
 {
     class Program
     {
-        private const string DotNetSystemModuleSimpleName = "mscorlib";
+        private const string DefaultSystemModuleName = "mscorlib";
         private bool _help;
-        private string _systemModule;
 
+        private string _systemModule = DefaultSystemModuleName;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
@@ -77,15 +77,15 @@ namespace ILVerify
                 syntax.HandleHelp = false;
                 syntax.HandleErrors = true;
 
-                syntax.DefineOption("h|help", ref _help, "Help message for ILC");
-                syntax.DefineOption("s|system-module", ref _systemModule, "Simple name of the system module for compilation.");
-                syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
+                syntax.DefineOption("h|help", ref _help, "Display this usage message");
+                syntax.DefineOption("s|system-module", ref _systemModule, "System module name (default: mscorlib)");
+                syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference metadata from the specified assembly");
                 syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
                 syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
 
-                syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
+                syntax.DefineParameterList("in", ref inputFiles, "Input file(s)");
             });
 
             foreach (var input in inputFiles)
@@ -93,9 +93,6 @@ namespace ILVerify
 
             foreach (var reference in referenceFiles)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
-
-            if (string.IsNullOrEmpty(_systemModule))
-                _systemModule = DotNetSystemModuleSimpleName;
 
             if (!string.IsNullOrEmpty(includeFile))
             {
