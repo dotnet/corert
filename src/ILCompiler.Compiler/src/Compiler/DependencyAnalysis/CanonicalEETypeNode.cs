@@ -53,6 +53,10 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
                 dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");
 
+            // Track generic virtual methods that will get added to the GVM tables
+            if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+                dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+
             return dependencyList;
         }
 
