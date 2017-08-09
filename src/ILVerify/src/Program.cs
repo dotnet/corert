@@ -26,8 +26,9 @@ namespace ILVerify
 {
     class Program
     {
-        private const string SystemModuleSimpleName = "mscorlib";
+        private const string DotNetSystemModuleSimpleName = "mscorlib";
         private bool _help;
+        private string _systemModule;
 
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -47,12 +48,7 @@ namespace ILVerify
         {
             Console.WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
             Console.WriteLine();
-            Console.WriteLine("--help          Display this usage message (Short form: -?)");
-            Console.WriteLine("--reference     Reference metadata from the specified assembly (Short form: -r)");
-            Console.WriteLine("--include       Use only methods/types/namespaces, which match the given regular expression(s) (Short form: -i)");
-            Console.WriteLine("--include-file  Same as --include, but the regular expression(s) are declared line by line in the specified file.");
-            Console.WriteLine("--exclude       Skip methods/types/namespaces, which match the given regular expression(s) (Short form: -e)");
-            Console.WriteLine("--exclude-file  Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
+            Console.WriteLine(helpText);
         }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
@@ -82,6 +78,7 @@ namespace ILVerify
                 syntax.HandleErrors = true;
 
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
+                syntax.DefineOption("system-module", ref _systemModule, "Simple name of the system module for compilation.");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
@@ -96,6 +93,9 @@ namespace ILVerify
 
             foreach (var reference in referenceFiles)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+
+            if (string.IsNullOrEmpty(_systemModule))
+                _systemModule = DotNetSystemModuleSimpleName;
 
             if (!string.IsNullOrEmpty(includeFile))
             {
@@ -129,7 +129,7 @@ namespace ILVerify
                     var message = new StringBuilder();
 
                     message.Append("[IL]: Error: ");
-                    
+
                     message.Append("[");
                     message.Append(_typeSystemContext.GetModulePath(((EcmaMethod)method).Module));
                     message.Append(" : ");
@@ -169,7 +169,7 @@ namespace ILVerify
                     {
                         _stringResourceManager = new ResourceManager("ILVerify.Resources.Strings", Assembly.GetExecutingAssembly());
                     }
-            
+
                     var str = _stringResourceManager.GetString(args.Code.ToString(), CultureInfo.InvariantCulture);
                     message.Append(string.IsNullOrEmpty(str) ? args.Code.ToString() : str);
 
@@ -237,7 +237,7 @@ namespace ILVerify
             _typeSystemContext.InputFilePaths = _inputFilePaths;
             _typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(SystemModuleSimpleName));
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(_systemModule));
 
             foreach (var inputPath in _inputFilePaths.Values)
             {
