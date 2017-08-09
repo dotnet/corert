@@ -20,6 +20,7 @@ namespace Internal.Runtime.DebuggerSupport
     {
         private readonly NativeReader _nativeReader;
         private uint _offset;
+
         public unsafe LowLevelNativeFormatReader(byte* buffer, uint bufferSize)
         {
             _nativeReader = new NativeReader(buffer, bufferSize);
@@ -58,6 +59,11 @@ namespace Internal.Runtime.DebuggerSupport
             get
             {
                 return _offset;
+            }
+
+            set
+            {
+                this._offset = value;
             }
         }
     }
@@ -118,6 +124,7 @@ namespace Internal.Runtime.DebuggerSupport
                                 ref parser,
                                 nativeLayoutContext);
             TypeSystemContextFactory.Recycle(typeSystemContext);
+            reader.Offset = parser.Offset;
             return objectTypeDesc;
         }
     }
