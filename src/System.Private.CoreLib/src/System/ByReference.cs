@@ -24,7 +24,7 @@ namespace System
             // Implemented as a JIT intrinsic - This default implementation is for 
             // completeness and to provide a concrete error if called via reflection
             // or if intrinsic is missed.
-            throw new System.PlatformNotSupportedException();
+            throw new NotSupportedException();
         }
 
         public ref T Value
@@ -35,7 +35,7 @@ namespace System
                 // Implemented as a JIT intrinsic - This default implementation is for 
                 // completeness and to provide a concrete error if called via reflection
                 // or if the intrinsic is missed.
-                throw new System.PlatformNotSupportedException();
+                throw new NotSupportedException();
             }
         }
     }
