@@ -1143,9 +1143,7 @@ namespace Internal.IL
             var shiftBy = Pop();
             var toBeShifted = Pop();
 
-            CheckIsInteger(shiftBy);
-            Check(shiftBy.Kind != StackValueKind.Int64, VerifierError.StackUnexpected, shiftBy);
-
+            Check(shiftBy.Kind == StackValueKind.Int32 || shiftBy.Kind == StackValueKind.NativeInt, VerifierError.StackUnexpected, shiftBy);
             CheckIsInteger(toBeShifted);
 
             Push(StackValue.CreatePrimitive(toBeShifted.Kind));
