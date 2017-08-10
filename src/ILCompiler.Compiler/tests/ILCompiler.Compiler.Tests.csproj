@@ -31,10 +31,12 @@
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
 
+    <!-- Type system dependens on DiaSymReader, but buildtools don't copy the dependency to the output directory. This hacks around it -->
     <PackageReference Include="Microsoft.DiaSymReader">
       <Version>1.0.8</Version>
     </PackageReference>
     <SupplementalTestData Include="..\..\..\packages\microsoft.diasymreader\1.0.8\lib\netstandard1.1\Microsoft.DiaSymReader.dll" />
+    
   </ItemGroup>
 
   <ItemGroup>
