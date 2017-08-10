@@ -118,6 +118,11 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
+#ifdef _TARGET_AMD64_
+// TODO: Workaround https://github.com/dotnet/corert/issues/4214 - compensate for wrong GCInfo
+extern "C" void RhpPInvoke();
+#endif
+
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo, 
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
@@ -133,6 +138,15 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         p += sizeof(int32_t);
 
     UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress));
+
+#ifdef _TARGET_AMD64_
+    // TODO: Workaround https://github.com/dotnet/corert/issues/4214 - compensate for wrong GCInfo
+    if (*(((UInt32*)safePointAddress) - 1) == (TADDR)RhpPInvoke - (TADDR)safePointAddress 
+            && *(((UInt8*)safePointAddress) - 5) == 0xe8)
+    {
+        codeOffset++;
+    }
+#endif
 
     GcInfoDecoder decoder(
         GCInfoToken(p),
