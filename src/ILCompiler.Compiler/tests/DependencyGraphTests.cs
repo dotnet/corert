@@ -10,6 +10,8 @@ using Internal.TypeSystem.Ecma;
 
 using Xunit;
 
+using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
+
 namespace ILCompiler.Compiler.Tests
 {
     //
@@ -93,28 +95,14 @@ namespace ILCompiler.Compiler.Tests
             foreach (var attr in method.GetDecodedCustomAttributes(assetsNamespace, "GeneratesMethodBodyAttribute"))
             {
                 foundSomethingToCheck = true;
-
-                MethodDesc methodToCheck = ((TypeDesc)attr.FixedArguments[0].Value).GetMethod((string)attr.FixedArguments[1].Value, null);
-                if (attr.FixedArguments.Length == 3)
-                {
-                    // TODO
-                    throw new NotImplementedException();
-                }
-
+                MethodDesc methodToCheck = GetMethodFromAttribute(attr);
                 Assert.Contains(methodToCheck.GetCanonMethodTarget(CanonicalFormKind.Specific), results.CompiledMethodBodies);
             }
 
             foreach (var attr in method.GetDecodedCustomAttributes(assetsNamespace, "NoMethodBodyAttribute"))
             {
                 foundSomethingToCheck = true;
-
-                MethodDesc methodToCheck = ((TypeDesc)attr.FixedArguments[0].Value).GetMethod((string)attr.FixedArguments[1].Value, null);
-                if (attr.FixedArguments.Length == 3)
-                {
-                    // TODO
-                    throw new NotImplementedException();
-                }
-
+                MethodDesc methodToCheck = GetMethodFromAttribute(attr);
                 Assert.DoesNotContain(methodToCheck.GetCanonMethodTarget(CanonicalFormKind.Specific), results.CompiledMethodBodies);
             }
 
@@ -123,6 +111,14 @@ namespace ILCompiler.Compiler.Tests
             //
 
             Assert.True(foundSomethingToCheck, "No invariants to check?");
+        }
+
+        private static MethodDesc GetMethodFromAttribute(CustomAttributeValue attr)
+        {
+            if (attr.NamedArguments.Length > 0)
+                throw new NotImplementedException(); // TODO: parse sig and instantiation
+
+            return ((TypeDesc)attr.FixedArguments[0].Value).GetMethod((string)attr.FixedArguments[1].Value, null);
         }
     }
 }

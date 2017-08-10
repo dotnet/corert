@@ -47,13 +47,17 @@ namespace ILCompiler.Compiler.Tests.Assets
     public class GeneratesMethodBodyAttribute : Attribute
     {
         public GeneratesMethodBodyAttribute(Type owningType, string methodName) { }
-        public GeneratesMethodBodyAttribute(Type owningType, string methodName, Type[] methodInstantiation) { }
+
+        public Type[] GenericArguments;
+        public Type[] Signature;
     }
 
     public class NoMethodBodyAttribute : Attribute
     {
         public NoMethodBodyAttribute(Type owningType, string methodName) { }
-        public NoMethodBodyAttribute(Type owningType, string methodName, Type[] methodInstantiation) { }
+
+        public Type[] GenericArguments;
+        public Type[] Signature;
     }
     #endregion
 }
