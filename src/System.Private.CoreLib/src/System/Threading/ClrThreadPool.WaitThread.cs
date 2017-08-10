@@ -350,6 +350,7 @@ namespace System.Threading
             /// <returns>If the handle was successfully registered on this wait thread.</returns>
             public bool RegisterWaitHandle(RegisteredWaitHandle handle)
             {
+                ThreadPoolInstance._waitThreadLock.VerifyIsLocked();
                 if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
                 {
                     return false;
