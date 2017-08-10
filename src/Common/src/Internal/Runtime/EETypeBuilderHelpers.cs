@@ -181,10 +181,10 @@ namespace Internal.Runtime
         /// of objects on the GCHeap. The amount of padding is recorded to allow unboxing to locals /
         /// arrays of value types which don't need it.
         /// </summary>
-        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
+        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment, int targetPointerSize)
         {
             // For the default case, return 0
-            if ((padding == 0) && (alignment == IntPtr.Size))
+            if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
             UInt32 alignmentLog2 = 0;
