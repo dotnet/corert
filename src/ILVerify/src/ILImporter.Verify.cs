@@ -1036,6 +1036,9 @@ namespace Internal.IL
 
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
+            var value = Pop();
+            IsAssignable(value, StackValue.CreatePrimitive(StackValueKind.Int32));
+
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
@@ -1044,8 +1047,6 @@ namespace Internal.IL
 
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
-
-            throw new NotImplementedException($"{nameof(ImportSwitchJump)} not implemented");
         }
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
