@@ -98,10 +98,10 @@ namespace Internal.IL
             }
 
             var sp = LLVM.GetFirstParam(_llvmFunction);
-            
+            int paramOffset = GetTotalParameterOffset();
             for (int i = 0; i < totalLocalSize; i++)
             {
-                var stackOffset = LLVM.BuildGEP(_builder, sp, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)i, LLVMMisc.False) }, String.Empty);
+                var stackOffset = LLVM.BuildGEP(_builder, sp, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)(paramOffset + i), LLVMMisc.False) }, String.Empty);
                 LLVM.BuildStore(_builder, LLVM.ConstInt(LLVM.Int8Type(), 0, LLVMMisc.False), stackOffset);
             }
         }
@@ -265,18 +265,21 @@ namespace Internal.IL
             int varBase;
             int varOffset;
             LLVMTypeRef valueType;
+            TypeDesc type;
 
             if (argument)
             {
                 varBase = 0;
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset);
                 valueType = GetLLVMTypeForTypeDesc(_method.Signature[index]);
+                type = _method.Signature[index];
             }
             else
             {
                 varBase = GetTotalParameterOffset();
                 GetLocalSizeAndOffsetAtIndex(index, out int localSize, out varOffset);
                 valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
+                type = _locals[index].Type;
             }
 
             var loadLocation = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
@@ -285,7 +288,7 @@ namespace Internal.IL
             var typedLoadLocation = LLVM.BuildPointerCast(_builder, loadLocation, LLVM.PointerType(valueType, 0), String.Empty);
             var loadResult = LLVM.BuildLoad(_builder, typedLoadLocation, String.Empty);
 
-            PushExpression(GetStackValueKind(_locals[index].Type), String.Empty, loadResult, _locals[index].Type);
+            PushExpression(GetStackValueKind(type), String.Empty, loadResult, type);
         }
 
         private StackValueKind GetStackValueKind(TypeDesc type)
