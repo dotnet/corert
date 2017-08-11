@@ -218,20 +218,19 @@ namespace ILCompiler
             {
                 elementCount = -1;
             }
-            else
+            else if (field.FieldType.IsSzArray)
             {
-                var arrType = field.FieldType as ArrayType;
-                if (arrType == null || !arrType.IsSzArray)
-                {
-                    // We only support single dimensional arrays
-                    throw new NotSupportedException();
-                }
+                var arrType = (ArrayType)field.FieldType;
 
                 int elementSize = arrType.ElementType.GetElementSize().AsInt;
                 if (rvaData.Length % elementSize != 0)
                     throw new BadImageFormatException();
 
                 elementCount = rvaData.Length / elementSize;
+            }
+            else
+            {
+                throw new NotSupportedException();
             }
 
             //
