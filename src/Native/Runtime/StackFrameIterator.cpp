@@ -29,13 +29,12 @@
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
 
+#include "DebugFuncEval.h"
+
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
-
-EXTERN_C void * RhpDebugFuncEvalHelper;
-GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * RhpUniversalTransition();
@@ -97,9 +96,6 @@ PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
 {
     return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
 }
-
-// TODO, FuncEval, remove the assumption that there is only 1 func eval in progress
-GVAL_IMPL_INIT(UInt64, g_debuggermagic, 0);
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
 {
@@ -1373,7 +1369,7 @@ void StackFrameIterator::PrepareToYieldFrame()
 
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
 
-    bool atDebuggerHijackSite = (this->m_ControlPC == (PTR_VOID)(TADDR)g_debuggermagic);
+    bool atDebuggerHijackSite = (this->m_ControlPC == (PTR_VOID)(TADDR)DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer());
 
     if (atDebuggerHijackSite)
     {
