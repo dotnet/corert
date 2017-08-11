@@ -135,18 +135,19 @@
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
     .entrypoint
-    // Code size       122 (0x7a)
+    // Code size       151 (0x97)
     .maxstack  2
     .locals init (int32 V_0,
              bool V_1,
              bool V_2,
              bool V_3,
              bool V_4,
-             int32 V_5)
+             bool V_5,
+             int32 V_6)
     IL_0000:  nop
     IL_0001:  ldc.i4.s   100
     IL_0003:  stloc.0
-    IL_0004:  call       bool PreInitDataTest::TestPreInitIntData()
+    IL_0004:  call       bool PreInitDataTest::TestPreInitPrimitiveData()
     IL_0009:  ldc.i4.0
     IL_000a:  ceq
     IL_000c:  stloc.1
@@ -160,7 +161,7 @@
     IL_001c:  ldc.i4.m1
     IL_001d:  stloc.0
     IL_001e:  nop
-    IL_001f:  call       bool PreInitDataTest::TestPreInitTypeData()
+    IL_001f:  call       bool PreInitDataTest::TestPreInitIntData()
     IL_0024:  ldc.i4.0
     IL_0025:  ceq
     IL_0027:  stloc.2
@@ -174,7 +175,7 @@
     IL_0037:  ldc.i4.m1
     IL_0038:  stloc.0
     IL_0039:  nop
-    IL_003a:  call       bool PreInitDataTest::TestPreInitMethodData()
+    IL_003a:  call       bool PreInitDataTest::TestPreInitTypeData()
     IL_003f:  ldc.i4.0
     IL_0040:  ceq
     IL_0042:  stloc.3
@@ -188,7 +189,7 @@
     IL_0052:  ldc.i4.m1
     IL_0053:  stloc.0
     IL_0054:  nop
-    IL_0055:  call       bool PreInitDataTest::TestOtherStatics()
+    IL_0055:  call       bool PreInitDataTest::TestPreInitMethodData()
     IL_005a:  ldc.i4.0
     IL_005b:  ceq
     IL_005d:  stloc.s    V_4
@@ -202,13 +203,58 @@
     IL_006f:  ldc.i4.m1
     IL_0070:  stloc.0
     IL_0071:  nop
-    IL_0072:  ldloc.0
-    IL_0073:  stloc.s    V_5
-    IL_0075:  br.s       IL_0077
+    IL_0072:  call       bool PreInitDataTest::TestOtherStatics()
+    IL_0077:  ldc.i4.0
+    IL_0078:  ceq
+    IL_007a:  stloc.s    V_5
+    IL_007c:  ldloc.s    V_5
+    IL_007e:  brfalse.s  IL_008f
 
-    IL_0077:  ldloc.s    V_5
-    IL_0079:  ret
+    IL_0080:  nop
+    IL_0081:  ldstr      "Failed"
+    IL_0086:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_008b:  nop
+    IL_008c:  ldc.i4.m1
+    IL_008d:  stloc.0
+    IL_008e:  nop
+    IL_008f:  ldloc.0
+    IL_0090:  stloc.s    V_6
+    IL_0092:  br.s       IL_0094
+
+    IL_0094:  ldloc.s    V_6
+    IL_0096:  ret
   } // end of method PreInitDataTest::Main
+
+  .method private hidebysig static bool  TestPreInitPrimitiveData() cil managed
+  {
+    // Code size       41 (0x29)
+    .maxstack  2
+    .locals init (bool V_0,
+             bool V_1)
+    IL_0000:  nop
+    IL_0001:  ldstr      "Testing preinitialized primitive data..."
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldsfld     int32 PreInitData::PreInitializedInt32Field
+    IL_0011:  ldc.i4     0x12345678
+    IL_0016:  ceq
+    IL_0018:  ldc.i4.0
+    IL_0019:  ceq
+    IL_001b:  stloc.0
+    IL_001c:  ldloc.0
+    IL_001d:  brfalse.s  IL_0023
+
+    IL_001f:  ldc.i4.0
+    IL_0020:  stloc.1
+    IL_0021:  br.s       IL_0027
+
+    IL_0023:  ldc.i4.1
+    IL_0024:  stloc.1
+    IL_0025:  br.s       IL_0027
+
+    IL_0027:  ldloc.1
+    IL_0028:  ret
+  } // end of method PreInitDataTest::TestPreInitPrimitiveData  
 
   .method private hidebysig static bool  TestPreInitIntData() cil managed
   {
