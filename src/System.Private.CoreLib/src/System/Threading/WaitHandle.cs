@@ -275,7 +275,7 @@ namespace System.Threading
         ** signalled or timeout milliseonds have elapsed.
         ========================================================================*/
 
-        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) => WaitAny(waitHandles, waitHandles.Length, millisecondsTimeout);
+        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) => WaitAny(waitHandles, waitHandles?.Length ?? 0, millisecondsTimeout);
 
         internal static int WaitAny(WaitHandle[] waitHandles, int numWaitHandles, int millisecondsTimeout)
         {
