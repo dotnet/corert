@@ -86,7 +86,7 @@ namespace System
             get
             {
                 if (_data == null)
-                    _data = new LowLevelListDictionary();
+                    _data = new ListDictionaryInternal();
 
                 return _data;
             }
