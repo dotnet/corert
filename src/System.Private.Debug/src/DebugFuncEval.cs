@@ -63,6 +63,8 @@ namespace Internal.Runtime.DebuggerSupport
         private static long s_funcEvalId = -1;
         private static IntPtr s_funcEvalThread;
 
+        private delegate void HighLevelDebugFuncEvalAbortHelperDelegate(ulong pointerValueFromDebugger);
+
         /// <summary>
         /// When the module initializes, we register ourselves as the high level debug func eval helpers.
         /// The runtime will call into these functions when apppropriate.
@@ -70,7 +72,7 @@ namespace Internal.Runtime.DebuggerSupport
         public static void Initialize()
         {
             RuntimeAugments.RhpSetHighLevelDebugFuncEvalHelper(AddrofIntrinsics.AddrOf<Action>(HighLevelDebugFuncEvalHelper));
-            RuntimeAugments.RhpSetHighLevelDebugFuncEvalAbortHelper(AddrofIntrinsics.AddrOf<Action<ulong>>(HighLevelDebugFuncEvalAbortHelper));
+            RuntimeAugments.RhpSetHighLevelDebugFuncEvalAbortHelper(AddrofIntrinsics.AddrOf<HighLevelDebugFuncEvalAbortHelperDelegate>(HighLevelDebugFuncEvalAbortHelper));
         }
 
         private unsafe static void HighLevelDebugFuncEvalHelper()
