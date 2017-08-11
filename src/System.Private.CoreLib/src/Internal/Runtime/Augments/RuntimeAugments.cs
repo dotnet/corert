@@ -1063,6 +1063,11 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(highLevelDebugFuncEvalHelper);
         }
 
+        public static void RhpSetHighLevelDebugFuncEvalAbortHelper(IntPtr highLevelDebugFuncEvalAbortHelper)
+        {
+            RuntimeImports.RhpSetHighLevelDebugFuncEvalAbortHelper(highLevelDebugFuncEvalAbortHelper);
+        }
+
         public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
         {
             RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
@@ -1129,9 +1134,13 @@ namespace Internal.Runtime.Augments
 
         public static void RhpCancelThreadAbort(IntPtr thread)
         {
-            RuntimeImports.RhpCancelThreadAbort(thread);   
+            RuntimeImports.RhpCancelThreadAbort(thread);
         }
 
+        public static void RhYield()
+        {
+            RuntimeImports.RhYield();
+        }
     }
 }
 
@@ -1144,4 +1153,3 @@ namespace System.Runtime.InteropServices
         internal static IntPtr AddrOf<T>(T ftn) { throw new PlatformNotSupportedException(); }
     }
 }
-
