@@ -99,6 +99,7 @@
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\LoopHijackFlagNode.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />

@@ -51,6 +51,7 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pCl
     m_pThreadStaticsDataSection = (UInt8*)GetModuleSection(ReadyToRunSectionType::ThreadStaticRegion, &length);
     m_pThreadStaticsGCInfo = (StaticGcDesc*)GetModuleSection(ReadyToRunSectionType::ThreadStaticGCDescRegion, &length);
     m_pTlsIndex = (UInt32*)GetModuleSection(ReadyToRunSectionType::ThreadStaticIndex, &length);
+    m_pLoopHijackFlag = (UInt32*)GetModuleSection(ReadyToRunSectionType::LoopHijackFlag, &length);
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)

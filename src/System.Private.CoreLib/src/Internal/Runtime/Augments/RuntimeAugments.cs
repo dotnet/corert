@@ -257,9 +257,9 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
         }
 
-        public static unsafe IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
+        public static unsafe IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, int threadStaticsBlockOffset, int fieldOffset)
         {
-            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.ToEETypePtr(), fieldCookie));
+            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.ToEETypePtr(), threadStaticsBlockOffset, fieldOffset));
         }
 
         public static unsafe void StoreValueTypeField(IntPtr address, Object fieldValue, RuntimeTypeHandle fieldType)

@@ -704,10 +704,19 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            //
+            // For universal canonical methods, we don't need the unboxing stub really, because
+            // the calling convention translation thunk will handle the unboxing (and we can avoid having a double thunk here)
+            // We just need the flag in the native layout info signature indicating that we needed an unboxing stub
+            //
+            bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
+
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
-                method: _method,
-                unboxing: _isUnboxingThunk, 
-                functionPointerTarget: factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                _method, 
+                _isUnboxingThunk,
+                factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
@@ -1239,7 +1248,7 @@ namespace ILCompiler.DependencyAnalysis
             UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.Indirection(utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType));
+            return utcNodeFactory.TypeThreadStaticsIndexSymbol(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1257,7 +1266,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
-            return GenericLookupResultReferenceType.Indirect;
+            return GenericLookupResultReferenceType.ConditionalIndirect;
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
@@ -1299,7 +1308,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(utcNodeFactory != null);
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             Debug.Assert(instantiatedType is MetadataType);
-            return factory.Indirection(utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType));
+            return utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1317,7 +1326,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
         {
-            return GenericLookupResultReferenceType.Indirect;
+            return GenericLookupResultReferenceType.ConditionalIndirect;
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)

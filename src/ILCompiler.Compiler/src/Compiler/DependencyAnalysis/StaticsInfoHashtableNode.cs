@@ -71,7 +71,16 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType)), "Non-GC statics indirection for StaticsInfoHashtable");
                 }
 
-                // TODO: TLS dependencies
+                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
+                {
+                    if (factory.Target.Abi == TargetAbi.ProjectN)
+                    {
+                        UtcNodeFactory utcFactory = (UtcNodeFactory)factory;
+                        dependencies.Add(utcFactory.TypeThreadStaticsIndexSymbol(metadataType), "Thread statics index indirection for StaticsInfoHashtable");
+                        dependencies.Add(utcFactory.TypeThreadStaticsOffsetSymbol(metadataType), "Thread statics offset indirection for StaticsInfoHashtable");
+                    }
+                    // TODO: TLS for CoreRT
+                }
             }
         }
 
@@ -108,8 +117,20 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode nonGCStaticIndirection = factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.NonGcStaticData, _nativeStaticsReferences.GetIndex(nonGCStaticIndirection));
                 }
+                if (metadataType.ThreadStaticFieldSize.AsInt > 0)
+                {
+                    if (factory.Target.Abi == TargetAbi.ProjectN)
+                    {
+                        UtcNodeFactory utcFactory = (UtcNodeFactory)factory;
 
-                // TODO: TLS
+                        ISymbolNode threadStaticIndexIndirection = utcFactory.TypeThreadStaticsIndexSymbol(metadataType);
+                        bag.AppendUnsigned(BagElementKind.ThreadStaticIndex, _nativeStaticsReferences.GetIndex(threadStaticIndexIndirection));
+
+                        ISymbolNode threadStaticOffsetIndirection = utcFactory.TypeThreadStaticsOffsetSymbol(metadataType);
+                        bag.AppendUnsigned(BagElementKind.ThreadStaticOffset, _nativeStaticsReferences.GetIndex(threadStaticOffsetIndirection));
+                    }
+                    // TODO: TLS for CoreRT
+                }
 
                 if (bag.ElementsCount > 0)
                 {

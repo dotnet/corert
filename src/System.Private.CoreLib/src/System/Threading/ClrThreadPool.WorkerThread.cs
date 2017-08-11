@@ -22,12 +22,11 @@ namespace System.Threading
             
             private static void WorkerThreadStart()
             {
-                // TODO: Event: Worker Thread Start event
+                ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 RuntimeThread currentThread = RuntimeThread.CurrentThread;
                 while (true)
                 {
-                    // TODO: Event:  Worker thread wait event
-                    while (s_semaphore.Wait(ThreadPoolThreadTimeoutMs))
+                    while (WaitForRequest())
                     {
                         if (TakeActiveRequest())
                         {
@@ -68,10 +67,9 @@ namespace System.Threading
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-                                // TODO: Event:  Worker Thread stop event
+                                ClrThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
                                 return;
                             }
-                            counts = oldCounts;
                         }
                     }
                     finally
@@ -79,6 +77,16 @@ namespace System.Threading
                         ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
                     }
                 }
+            }
+
+            /// <summary>
+            /// Waits for a request to work.
+            /// </summary>
+            /// <returns>If this thread was woken up before it timed out.</returns>
+            private static bool WaitForRequest()
+            {
+                ClrThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
             }
 
             /// <summary>

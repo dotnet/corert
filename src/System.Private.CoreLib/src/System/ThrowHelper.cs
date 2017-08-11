@@ -63,6 +63,15 @@ namespace System
             throw new ArgumentOutOfRangeException();
         }
 
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
+        {
+            throw GetArgumentOutOfRangeException(argument);
+        }
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument)
+        {
+            return new ArgumentOutOfRangeException(GetArgumentName(argument));
+        }
+
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, resource);

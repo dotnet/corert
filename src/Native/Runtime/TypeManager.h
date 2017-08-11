@@ -20,6 +20,7 @@ class TypeManager
     UInt32*                     m_pTlsIndex;  // Pointer to TLS index if this module uses thread statics 
     void**                      m_pClasslibFunctions;
     UInt32                      m_nClasslibFunctions;
+    UInt32*                     m_pLoopHijackFlag; 
 
     TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions);
 
@@ -30,6 +31,8 @@ public:
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
     HANDLE GetOsModuleHandle();
     void* GetClasslibFunction(ClasslibFunctionId functionId);
+    UInt32* GetPointerToTlsIndex() { return m_pTlsIndex; }
+    void SetLoopHijackFlag(UInt32 flag) { if (m_pLoopHijackFlag != nullptr) *m_pLoopHijackFlag = flag; }
 
 private:
     

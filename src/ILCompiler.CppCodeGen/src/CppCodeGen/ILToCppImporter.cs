@@ -819,6 +819,37 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case ".ctor":
+                    if (IsTypeName(method, "System", "ByReference`1"))
+                    {
+                        var value = _stack.Pop();
+                        var byReferenceType = method.OwningType;
+
+                        string tempName = NewTempName();
+
+                        Append(GetStackValueKindCPPTypeName(StackValueKind.ValueType, byReferenceType));
+                        Append(" ");
+                        Append(tempName);
+                        AppendSemicolon();
+
+                        Append(tempName);
+                        Append("._value = (intptr_t)");
+                        Append(value);
+                        AppendSemicolon();
+
+                        PushExpression(StackValueKind.ValueType, tempName, byReferenceType);
+                        return true;
+                    }
+                    break;
+                case "get_Value":
+                    if (IsTypeName(method, "System", "ByReference`1"))
+                    {
+                        var thisRef = _stack.Pop();
+
+                        PushExpression(StackValueKind.ValueType, ((ExpressionEntry)thisRef).Name + "->_value", method.Signature.ReturnType);
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }
