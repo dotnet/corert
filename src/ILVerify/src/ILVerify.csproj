@@ -178,6 +178,18 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\RuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.Common.cs">
+      <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.cs">
+      <Link>TypeSystem\Common\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
+      <Link>TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.Metadata.cs">
+      <Link>TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.Metadata.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>
