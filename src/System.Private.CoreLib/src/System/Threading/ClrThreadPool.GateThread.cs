@@ -15,13 +15,14 @@ namespace System.Threading
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             private const int GateThreadRunningMask = 0x4;
             
-            private static int numRunsRemaining;
+            private static int s_runningState;
 
-            private static AutoResetEvent runGateThreadEvent = new AutoResetEvent(false);
+            private static AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(true);
           
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
             private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
+            private const int MaxRuns = 2;
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
@@ -33,18 +34,12 @@ namespace System.Threading
 
                 while (true)
                 {
-                    runGateThreadEvent.WaitOne();
+                    s_runGateThreadEvent.WaitOne();
                     do
                     {
                         RuntimeThread.Sleep(GateThreadDelayMs);
 
                         ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
-
-                        if (ThreadPoolInstance._numRequestedWorkers == 0)
-                        {
-                            continue;
-                        }
-
 
                         if (!disableStarvationDetection)
                         {
@@ -80,7 +75,7 @@ namespace System.Threading
                                 }
                             }
                         }
-                    } while (Interlocked.Decrement(ref numRunsRemaining) > GetRunningMaskForNumRuns(0));
+                    } while (ThreadPoolInstance._numRequestedWorkers > 0 || Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
                 }
             }
 
@@ -109,30 +104,33 @@ namespace System.Threading
             // This is called by a worker thread
             internal static void EnsureRunning()
             {
-                int numRunsMask = Interlocked.Exchange(ref numRunsRemaining, GetRunningMaskForNumRuns(2));
+                int numRunsMask = Interlocked.Exchange(ref s_runningState, GetRunningStateForNumRuns(MaxRuns));
                 if ((numRunsMask & GateThreadRunningMask) == 0)
                 {
+                    bool created = false;
                     try
                     {
                         CreateGateThread();
-                        runGateThreadEvent.Set();
+                        created = true;
                     }
-                    catch (Exception)
+                    finally
                     {
-                        Interlocked.Exchange(ref numRunsRemaining, 0);
-                        throw;
+                        if (!created)
+                        {
+                            Interlocked.Exchange(ref s_runningState, 0); 
+                        }
                     }
                 }
-                else if (numRunsMask == GetRunningMaskForNumRuns(0))
+                else if (numRunsMask == GetRunningStateForNumRuns(0))
                 {
-                    runGateThreadEvent.Set();
+                    s_runGateThreadEvent.Set();
                 }
             }
 
-            private static int GetRunningMaskForNumRuns(int numRuns)
+            private static int GetRunningStateForNumRuns(int numRuns)
             {
                 Debug.Assert(numRuns >= 0);
-                Debug.Assert(numRuns < GateThreadRunningMask);
+                Debug.Assert(numRuns <= MaxRuns);
                 return GateThreadRunningMask | numRuns;
             }
 
