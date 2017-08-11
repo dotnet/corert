@@ -32,7 +32,8 @@ See the LICENSE file in the project root for more information.
   </ItemGroup>
 
   <ItemGroup>
-    <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
     <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
@@ -57,12 +58,14 @@ See the LICENSE file in the project root for more information.
   </ItemGroup>
 
   <ItemGroup>
+    <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
+    <LinkerArg Condition="$(DefFile) != ''" Include="/DEF:$(DefFile)" />
     <LinkerArg Include="@(NativeLibrary)" />
     <LinkerArg Include="@(AdditionalNativeLibrary)" />
     <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
     <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
     <LinkerArg Include="/INCREMENTAL:NO" />
-  </ItemGroup>
+  </ItemGroup> 
 
   <ItemGroup>
     <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
