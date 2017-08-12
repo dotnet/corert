@@ -468,8 +468,7 @@ namespace Internal.IL
             s.Append(Name);
         }
     }
-
-    /*
+ 
     /// <summary>
     /// Entry representing some token (either of TypeDesc, MethodDesc or FieldDesc) along with its string representation
     /// </summary>
@@ -477,14 +476,14 @@ namespace Internal.IL
     {
         public T LdToken { get; }
 
-        public LdTokenEntry(StackValueKind kind, string name, T token, TypeDesc type = null) : base(kind, name, type)
+        public LdTokenEntry(StackValueKind kind, string name, T token, LLVMValueRef value, TypeDesc type = null) : base(kind, name, value, type)
         {
             LdToken = token;
         }
 
         public override StackEntry Duplicate()
         {
-            return new LdTokenEntry<T>(Kind, Name, LdToken, Type);
+            return new LdTokenEntry<T>(Kind, Name, LdToken, LLVMValue, Type);
         }
 
         protected override void BuildRepresentation(StringBuilder s)
@@ -493,7 +492,7 @@ namespace Internal.IL
             s.Append(' ');
             s.Append(LdToken);
         }
-    }*/
+    }
 
     internal class InvalidEntry : StackEntry
     {

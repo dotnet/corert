@@ -288,14 +288,24 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    if (!_isWasmCodegen)
+                    {
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    }
                 }
 
                 if (entrypointModule != null)
                 {
-                    LibraryInitializers libraryInitializers =
-                        new LibraryInitializers(typeSystemContext, _isCppCodegen, _isWasmCodegen);
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                    if (!_isWasmCodegen)
+                    {
+                        LibraryInitializers libraryInitializers =
+                            new LibraryInitializers(typeSystemContext, _isCppCodegen, _isWasmCodegen);
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                    }
+                    else
+                    {
+                        compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
+                    }
                 }
 
                 if (_multiFile)
@@ -321,7 +331,10 @@ namespace ILCompiler
                     if (entrypointModule == null)
                         throw new Exception("No entrypoint module");
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    if (!_isWasmCodegen)
+                    {
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }

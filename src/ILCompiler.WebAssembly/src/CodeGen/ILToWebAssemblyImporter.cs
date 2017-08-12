@@ -19,10 +19,10 @@ namespace Internal.IL
     // backend before the actual compilation happens to gain insights into the code.
     partial class ILImporter
     {
-        ArrayBuilder<object> _dependences = new ArrayBuilder<object>();
+        ArrayBuilder<object> _dependencies = new ArrayBuilder<object>();
         public IEnumerable<object> GetDependencies()
         {
-            return _dependences.ToArray();
+            return _dependencies.ToArray();
         }
 
         public LLVMModuleRef Module { get; }
@@ -79,7 +79,8 @@ namespace Internal.IL
             {
                 _exceptionRegions[i] = new ExceptionRegion() { ILRegion = ilExceptionRegions[i] };
             }
-            CreateLLVMFunction(mangledName);
+            _llvmFunction = GetOrCreateLLVMFunction(mangledName);
+            _builder = LLVM.CreateBuilder();
         }
 
         public void Import()
@@ -106,11 +107,21 @@ namespace Internal.IL
             }
         }
 
-        private void CreateLLVMFunction(string mangledName)
+        private LLVMValueRef CreateLLVMFunction(string mangledName)
         {
             LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
-            _llvmFunction = LLVM.AddFunction(Module, mangledName , universalSignature);
-            _builder = LLVM.CreateBuilder();
+            return LLVM.AddFunction(Module, mangledName , universalSignature);            
+        }
+
+        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName)
+        {
+            LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
+
+            if(llvmFunction.Pointer == IntPtr.Zero)
+            {
+                return CreateLLVMFunction(mangledName);
+            }
+            return llvmFunction;
         }
 
         /// <summary>
@@ -523,8 +534,14 @@ namespace Internal.IL
             {
                 throw new NotImplementedException();
             }
+            HandleCall(callee);
+        }
 
-            LLVMValueRef fn = LLVM.GetNamedFunction(Module, callee.Name);
+        private void HandleCall(MethodDesc callee)
+        { 
+            AddMethodReference(callee);
+            string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
+            LLVMValueRef fn = GetOrCreateLLVMFunction(calleeName);
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset() + callee.Signature.ReturnType.GetElementSize().AsInt;
 
@@ -559,9 +576,16 @@ namespace Internal.IL
 
 
             var loadResult = LLVM.BuildLoad(_builder, castReturnAddress, String.Empty);
+            
+            if (!callee.Signature.ReturnType.IsVoid)
+            {
+                PushExpression(GetStackValueKind(callee.Signature.ReturnType), String.Empty, loadResult, callee.Signature.ReturnType);
+            }
+        }
 
-            // todo void returns
-            PushExpression(GetStackValueKind(callee.Signature.ReturnType), String.Empty, loadResult, callee.Signature.ReturnType);
+        private void AddMethodReference(MethodDesc method)
+        {
+            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
         private void ImportRawPInvoke(MethodDesc method)
@@ -627,6 +651,7 @@ namespace Internal.IL
 
         private void ImportLoadFloat(double value)
         {
+            _stack.Push(new FloatConstantEntry(value, _method.Context.GetWellKnownType(WellKnownType.Double)));
         }
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
@@ -903,6 +928,38 @@ namespace Internal.IL
 
         private void ImportLdToken(int token)
         {
+            var ldtokenValue = _methodIL.GetObject(token);
+            WellKnownType ldtokenKind;
+            string name;
+            StackEntry value;
+            if (ldtokenValue is TypeDesc)
+            {
+                ldtokenKind = WellKnownType.RuntimeTypeHandle;
+                //AddTypeReference((TypeDesc)ldtokenValue, false);
+
+                // todo: this doesn't work because we don't have the eetypeptr pushed. How do we get the eetypeptr?
+                MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                //AddMethodReference(helper);
+                HandleCall(helper);
+                name = ldtokenValue.ToString();
+
+                //value = new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, name, (TypeDesc)ldtokenValue, GetWellKnownType(ldtokenKind));
+            }
+            else if (ldtokenValue is FieldDesc)
+            {
+                ldtokenKind = WellKnownType.RuntimeFieldHandle;
+                // todo: this is probably the wrong llvm value for the field
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, LLVM.ConstInt(LLVM.Int32Type(), (uint)token, LLVMMisc.False), GetWellKnownType(ldtokenKind));
+                _stack.Push(value);
+            }
+            else if (ldtokenValue is MethodDesc)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         private void ImportLocalAlloc()
@@ -1007,7 +1064,7 @@ namespace Internal.IL
             string str = (string)_methodIL.GetObject(token);
             ISymbolNode node = _compilation.NodeFactory.SerializedStringObject(str);
             LLVMValueRef stringDataPointer = LoadAddressOfSymbolNode(node);
-            _dependences.Add(node);
+            _dependencies.Add(node);
             _stack.Push(new ExpressionEntry(GetStackValueKind(stringType), String.Empty, stringDataPointer, stringType));
         }
 
@@ -1086,7 +1143,8 @@ namespace Internal.IL
 #pragma warning disable 162 // Due to not implement3ed exception incrementer in for needs pragma warning disable
                     for (int i = 0; i < _stack.Length; i++)
                     {
-                        throw new NotImplementedException();
+                        // todo: do we need anything special for spilled stacks like cpp codegen does?
+                        entryStack.Push(_stack[i]);
                         //entryStack.Push(NewSpillSlot(_stack[i]));
                     }
 #pragma warning restore 162
@@ -1096,10 +1154,10 @@ namespace Internal.IL
 
             if (entryStack != null)
             {
+                // todo: do we have to do anything here?
 #pragma warning disable 162// Due to not implement3ed exception incrementer in for needs pragma warning disable
                 for (int i = 0; i < entryStack.Length; i++)
                 {
-                    throw new NotImplementedException();
                     /*AppendLine();
                     Append(entryStack[i]);
                     Append(" = ");

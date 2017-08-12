@@ -297,6 +297,7 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
+    <Compile Include="Compiler\RawMainMethodRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />
     <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
