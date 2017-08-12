@@ -462,8 +462,6 @@ namespace ILCompiler
                         continue;
                 }
 
-                Debug.Assert(_compilationModuleGroup.ContainsType(eetypeGenerated));
-
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                 {
                     int token;

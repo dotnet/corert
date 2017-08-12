@@ -51,4 +51,15 @@ namespace Internal.Runtime.DebuggerSupport
         [FieldOffset(8)]
         public long returnAddress;
     }
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
+    internal struct DebuggerFuncEvalCrossThreadDependencyNotification
+    {
+        [FieldOffset(0)]
+        public DebuggerResponseKind kind;
+        [FieldOffset(4)]
+        public int unused;
+        [FieldOffset(8)]
+        public ulong payload;
+    }
 }

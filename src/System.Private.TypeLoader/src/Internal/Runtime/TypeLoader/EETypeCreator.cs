@@ -186,9 +186,10 @@ namespace Internal.Runtime.TypeLoader
 
                 if (pTemplateEEType != null)
                 {
-                    valueTypeFieldPaddingEncoded = EEType.ComputeValueTypeFieldPaddingFieldValue(
+                    valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(
                         pTemplateEEType->ValueTypeFieldPadding, 
-                        (uint)pTemplateEEType->FieldAlignmentRequirement);
+                        (uint)pTemplateEEType->FieldAlignmentRequirement,
+                        IntPtr.Size);
                     baseSize = (int)pTemplateEEType->BaseSize;
                     isValueType = pTemplateEEType->IsValueType;
                     hasFinalizer = pTemplateEEType->IsFinalizable;
@@ -269,7 +270,7 @@ namespace Internal.Runtime.TypeLoader
                         // Add Object type pointer field to base size
                         baseSize += IntPtr.Size;
 
-                        valueTypeFieldPaddingEncoded = (uint)EEType.ComputeValueTypeFieldPaddingFieldValue(cbValueTypeFieldPadding, (uint)state.FieldAlignment.Value);
+                        valueTypeFieldPaddingEncoded = (uint)EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(cbValueTypeFieldPadding, (uint)state.FieldAlignment.Value, IntPtr.Size);
                     }
 
                     // Minimum base size is 3 pointers, and requires us to bump the size of an empty class type
