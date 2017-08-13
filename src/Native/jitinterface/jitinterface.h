@@ -21,7 +21,7 @@ struct JitInterfaceCallbacks
     void (__stdcall * getEHinfo)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned EHnumber, void* clause);
     void* (__stdcall * getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
-    void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
+    void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
     void (__stdcall * expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
@@ -283,10 +283,10 @@ public:
         return _ret;
     }
 
-    virtual void getMethodVTableOffset(void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection)
+    virtual void getMethodVTableOffset(void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative)
     {
         CorInfoException* pException = nullptr;
-        _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection);
+        _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection, isRelative);
         if (pException != nullptr)
             throw pException;
     }

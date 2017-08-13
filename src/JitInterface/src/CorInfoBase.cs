@@ -34,7 +34,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate CORINFO_MODULE_STRUCT_* __getMethodModule(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate void __getMethodVTableOffset(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection);
+        delegate void __getMethodVTableOffset(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, [MarshalAs(UnmanagedType.U1)] ref bool isRelative);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
         delegate CORINFO_METHOD_STRUCT_* __resolveVirtualMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType);
         [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
@@ -491,12 +491,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getMethodVTableOffset(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
+        static void _getMethodVTableOffset(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, [MarshalAs(UnmanagedType.U1)] ref bool isRelative)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getMethodVTableOffset(method, ref offsetOfIndirection, ref offsetAfterIndirection);
+                _this.getMethodVTableOffset(method, ref offsetOfIndirection, ref offsetAfterIndirection, ref isRelative);
             }
             catch (Exception ex)
             {

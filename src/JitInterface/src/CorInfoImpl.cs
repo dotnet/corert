@@ -803,11 +803,12 @@ namespace Internal.JitInterface
         private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("getMethodModule"); }
 
-        private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
+        private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         {
             MethodDesc methodDesc = HandleToObject(method);
             int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
             offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
+            isRelative = false;
 
             // Normalize to the slot defining method. We don't have slot information for the overrides.
             methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
@@ -912,6 +913,7 @@ namespace Internal.JitInterface
                     lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
+                    lookup.runtimeLookup.indirectSecondOffset = false;
                     lookup.lookupKind.runtimeLookupFlags = 0;
                     lookup.lookupKind.runtimeLookupArgs = null;
                 }
