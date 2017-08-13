@@ -213,6 +213,7 @@
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
+    <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
