@@ -171,7 +171,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     return pObject;
 }
 
-COOP_PINVOKE_HELPER(String *, RhpNewString, (EEType * pArrayEEType, int numElements))
+COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElements))
 {
     // TODO: Implement. We tail call to RhpNewArray for now since there's a bunch of TODOs in the places
     // that matter anyway.
