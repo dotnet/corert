@@ -119,6 +119,85 @@ LOCAL_LABEL(NewOutOfMemory):
 NESTED_END RhpNewObject, _TEXT
 
 
+// Allocate a string.
+//  RDI == EEType
+//  ESI == character/element count
+NESTED_ENTRY RhpNewString, _TEXT, NoHandler
+        // we want to limit the element count to the non-negative 32-bit int range
+        cmp         rsi, 07fffffffh
+        ja          LOCAL_LABEL(StringSizeOverflow)
+
+        push_nonvol_reg rbx
+        push_nonvol_reg r12
+        push_register rcx       // padding
+
+        mov         rbx, rdi    // save EEType
+        mov         r12, rsi    // save element count
+
+        // rax = GetThread()
+        INLINE_GETTHREAD
+
+        mov         rcx, rax    // rcx = Thread*
+
+        // Compute overall allocation size (align(base size + (element size * elements), 8)).
+        lea         rax, [(r12 * STRING_COMPONENT_SIZE) + (STRING_BASE_SIZE + 7)]
+        and         rax, -8
+
+        // rax == string size
+        // rbx == EEType
+        // rcx == Thread*
+        // r12 == element count
+
+        mov         rdx, rax
+        add         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        jc          LOCAL_LABEL(RhpNewString_RarePath)
+
+        // rax == new alloc ptr
+        // rbx == EEType
+        // rcx == Thread*
+        // rdx == string size
+        // r12 == element count
+        cmp         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ja          LOCAL_LABEL(RhpNewString_RarePath)
+
+        mov         [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+
+        // calc the new object pointer
+        sub         rax, rdx
+
+        mov         [rax + OFFSETOF__Object__m_pEEType], rbx
+        mov         [rax + OFFSETOF__String__m_Length], r12d
+
+        .cfi_remember_state
+        pop_register rcx       // padding
+        pop_nonvol_reg r12
+        pop_nonvol_reg rbx
+        ret
+
+        .cfi_restore_state
+        .cfi_def_cfa_offset 32  // workaround cfi_restore_state bug
+LOCAL_LABEL(RhpNewString_RarePath):
+        mov         rdi, rbx    // restore EEType
+        mov         rsi, r12    // restore element count
+        // passing string size in rdx
+
+        pop_register rcx        // padding
+        pop_nonvol_reg r12
+        pop_nonvol_reg rbx
+        jmp C_FUNC(RhpNewArrayRare)
+
+LOCAL_LABEL(StringSizeOverflow):
+        // We get here if the size of the final string object can't be represented as an unsigned 
+        // 32-bit value. We're going to tail-call to a managed helper that will throw
+        // an OOM exception that the caller of this allocator understands.
+
+        // rdi holds EEType pointer already
+        xor         esi, esi            // Indicate that we should throw OOM.
+        jmp         C_FUNC(RhExceptionHandling_FailedAllocation)
+
+NESTED_END RhpNewString, _TEXT
+
+
 // Allocate one dimensional, zero based array (SZARRAY).
 //  RDI == EEType
 //  ESI == element count

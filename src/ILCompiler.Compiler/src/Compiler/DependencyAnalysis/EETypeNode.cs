@@ -538,7 +538,7 @@ namespace ILCompiler.DependencyAnalysis
                 // SyncBlock + EETypePtr + length + firstChar
                 objectSize = 2 * pointerSize +
                     sizeof(int) +
-                    sizeof(char);
+                    StringComponentSize.Value;
             }
 
             objData.EmitInt(objectSize);

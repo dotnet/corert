@@ -134,7 +134,6 @@ internal static extern bool System.Runtime.RuntimeImports.RhIsPromoted(object ob
 internal static extern bool System.Runtime.RuntimeImports.RhIsServerGc()
 internal static extern object System.Runtime.RuntimeImports.RhMemberwiseClone(object obj)
 internal static extern System.Array System.Runtime.RuntimeImports.RhNewArray(System.EETypePtr pEEType, int length)
-internal static extern string System.Runtime.RuntimeImports.RhNewArrayAsString(System.EETypePtr pEEType, int length)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhNewInterfaceDispatchCell(System.EETypePtr pEEType, int slotNumber)
 internal static extern object System.Runtime.RuntimeImports.RhNewObject(System.EETypePtr pEEType)
 internal static extern void System.Runtime.RuntimeImports.RhpEtwExceptionThrown(char* exceptionTypeName, char* exceptionMessage, System.IntPtr faultingIP, long hresult)

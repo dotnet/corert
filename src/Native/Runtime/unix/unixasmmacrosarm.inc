@@ -191,6 +191,12 @@ C_FUNC(\Name):
 #endif
 .endm
 
+// Loads a 32bit constant into destination register
+.macro MOV32 DestReg, Constant
+        movw \DestReg, #((\Constant) & 0xFFFF)
+        movt \DestReg, #((\Constant) >> 16)
+.endm
+
 .macro EXPORT_POINTER_TO_ADDRESS Name
 
 1:
