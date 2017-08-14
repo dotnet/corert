@@ -29,12 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // sort the PreInitFieldInfo to appear in increasing offset order for easier emitting
             _sortedPreInitFields = new List<PreInitFieldInfo>(preInitFields);
-            _sortedPreInitFields.Sort(FieldDescCompare);
-        }
-
-        static int FieldDescCompare(PreInitFieldInfo fieldInfo1, PreInitFieldInfo fieldInfo2)
-        {
-            return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
+            _sortedPreInitFields.Sort(PreInitFieldInfo.FieldDescCompare);
         }
 
         protected override string GetName(NodeFactory factory) => GetMangledName(_type, factory.NameMangler);

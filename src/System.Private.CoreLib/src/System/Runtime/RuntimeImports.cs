@@ -33,6 +33,9 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSetHighLevelDebugFuncEvalHelper")]
         internal static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
 
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpSetHighLevelDebugFuncEvalAbortHelper(IntPtr highLevelDebugFuncEvalAbortHelper);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
         internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
@@ -577,7 +580,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
-        internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, IntPtr fieldCookie);
+        internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, int threadStaticsBlockOffset, int fieldOffset);
 
 #if CORERT
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

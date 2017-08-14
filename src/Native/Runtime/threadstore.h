@@ -26,6 +26,7 @@ private:
 
     void                    LockThreadStore();
     void                    UnlockThreadStore();
+    void                    SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireDebugEvent);
 
 public:
     class Iterator
@@ -66,7 +67,6 @@ public:
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 
 ThreadStore * GetThreadStore();
-
 
 #define FOREACH_THREAD(p_thread_name)                       \
 {                                                           \

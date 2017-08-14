@@ -183,12 +183,9 @@
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
-    <Compile Include="System\ArgIterator.cs" />
     <Compile Include="System\ArraySegment.cs" />
-    <Compile Include="System\Boolean.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
-    <Compile Include="System\Byte.cs" />
     <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
@@ -201,8 +198,6 @@
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
-    <Compile Include="System\Collections\ListDictionaryInternal.cs" />
-    <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
@@ -218,6 +213,7 @@
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
+    <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
@@ -251,14 +247,10 @@
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Guid.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
-    <Compile Include="System\Int16.cs" />
-    <Compile Include="System\Int32.cs" />
-    <Compile Include="System\Int64.cs" />
     <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Marvin.cs" />
     <Compile Include="System\Math.cs" />
@@ -322,7 +314,6 @@
     <Compile Include="System\SerializableAttribute.cs" />
     <Compile Include="System\NonSerializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
-    <Compile Include="System\SByte.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
     <Compile Include="System\String.Intern.cs" />
@@ -409,9 +400,6 @@
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
     <Compile Include="System\TypeLoadException.CoreRT.cs" />
-    <Compile Include="System\UInt16.cs" />
-    <Compile Include="System\UInt32.cs" />
-    <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
@@ -649,6 +637,7 @@
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
+    <Compile Include="System\Threading\ClrThreadPoolEventSource.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLock.Unix.cs" />

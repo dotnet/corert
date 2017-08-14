@@ -31,6 +31,7 @@
 
 #include "Debug.h"
 #include "DebugEventSource.h"
+#include "DebugFuncEval.h"
 
 EXTERN_C volatile UInt32 RhpTrapThreads = (UInt32)TrapThreadsFlags::None;
 
@@ -196,12 +197,18 @@ void ThreadStore::LockThreadStore()
 {
     m_Lock.AcquireReadLock();
 }
+
 void ThreadStore::UnlockThreadStore()
 { 
     m_Lock.ReleaseReadLock();
 }
 
 void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
+{
+    ThreadStore::SuspendAllThreads(pCompletionEvent, /* fireDebugEvent = */ true);
+}
+
+void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireDebugEvent)
 {    
     // 
     // SuspendAllThreads requires all threads running
@@ -210,12 +217,13 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     // Therefore, in case of FuncEval, we need to inform the debugger 
     // to unfreeze the threads.
     // 
-    struct DebuggerResponse crossThreadDependencyEventPayload;
-    crossThreadDependencyEventPayload.kind = DebuggerResponseKind::FuncEvalCrossThreadDependency;
-    DebugEventSource::SendCustomEvent(&crossThreadDependencyEventPayload, sizeof(struct DebuggerResponse));
-
-    // TODO, FuncEval, avoid firing the event unless we know it is FuncEval in progress
-    // TODO, FuncEval, what if user refuses to resume all threads?
+    if (fireDebugEvent && DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer() != 0)
+    {
+        struct DebuggerFuncEvalCrossThreadDependencyNotification crossThreadDependencyEventPayload;
+        crossThreadDependencyEventPayload.kind = DebuggerResponseKind::FuncEvalCrossThreadDependency;
+        crossThreadDependencyEventPayload.payload = 0;
+        DebugEventSource::SendCustomEvent(&crossThreadDependencyEventPayload, sizeof(struct DebuggerFuncEvalCrossThreadDependencyNotification));
+    }
 
     Thread * pThisThread = GetCurrentThreadIfAvailable();
 
@@ -228,6 +236,9 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
+
+    // Set each module's loop hijack flag
+    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
@@ -292,6 +303,10 @@ void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
     END_FOREACH_THREAD
 
     RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::TrapThreads;
+
+    // Reset module's hijackLoops flag 
+    GetRuntimeInstance()->SetLoopHijackFlags(0);
+
     RhpSuspendingThread = NULL;
     pCompletionEvent->Set();
     UnlockThreadStore();
@@ -309,8 +324,7 @@ void ThreadStore::WaitForSuspendComplete()
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
 {
     CLREventStatic dummyEvent;
-    SuspendAllThreads(&dummyEvent);
-
+    SuspendAllThreads(&dummyEvent, /* fireDebugEvent = */ false);
     // TODO: consider enabling multiple thread aborts running in parallel on different threads
     ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) == 0);
     RhpTrapThreads |= (UInt32)TrapThreadsFlags::AbortInProgress;
@@ -350,7 +364,7 @@ void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbort
 void ThreadStore::CancelThreadAbort(Thread* targetThread)
 {
     CLREventStatic dummyEvent;
-    SuspendAllThreads(&dummyEvent);
+    SuspendAllThreads(&dummyEvent, /* fireDebugEvent = */ false);
 
     ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) != 0);
     RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::AbortInProgress;
@@ -404,8 +418,6 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 };
 
 #endif // !DACCESS_COMPILE
-
-GPTR_IMPL_INIT(PTR_VOID, g_RhpInitiateThreadAbortAddr, (void**)&RhpInitiateThreadAbort);
 
 #ifdef _WIN32
 

@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
                 uint numInstanceFieldBytes = 1 + (uint)factory.Target.PointerSize;
 
                 uint valueTypeFieldPadding = (uint)(MinimumObjectSize - factory.Target.PointerSize) - numInstanceFieldBytes;
-                uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, 1);
+                uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, 1, _type.Context.Target.PointerSize);
                 Debug.Assert(valueTypeFieldPaddingEncoded != 0);
 
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);

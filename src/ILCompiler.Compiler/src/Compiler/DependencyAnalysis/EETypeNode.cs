@@ -851,12 +851,12 @@ namespace ILCompiler.DependencyAnalysis
 
             if (defType.InstanceByteCount.IsIndeterminate)
             {
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1);
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1, _type.Context.Target.PointerSize);
             }
             else
             {
                 uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt, _type.Context.Target.PointerSize);
             }
 
             if (valueTypeFieldPaddingEncoded != 0)

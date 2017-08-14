@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
-    // A place holder class for signed bytes.
-    [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    public struct SByte : IComparable, IFormattable, IComparable<SByte>, IEquatable<SByte>, IConvertible
+    [CLSCompliant(false)]    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct SByte : IComparable, IConvertible, IFormattable, IComparable<SByte>, IEquatable<SByte>
     {
         private sbyte m_value; // Do not rename (binary serialization)
 
@@ -74,51 +75,56 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, null, null);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, null, provider);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return ToString(format, null);
+            return ToString(format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
+            return ToString(format, NumberFormatInfo.GetInstance(provider));
+        }
 
+        private String ToString(String format, NumberFormatInfo info)
+        {
+            Contract.Ensures(Contract.Result<String>() != null);
 
             if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
                 uint temp = (uint)(m_value & 0x000000FF);
-                return FormatProvider.FormatUInt32(temp, format, provider);
+                return Number.FormatUInt32(temp, format, info);
             }
-            return FormatProvider.FormatInt32(m_value, format, provider);
+            return Number.FormatInt32(m_value, format, info);
         }
 
         [CLSCompliant(false)]
         public static sbyte Parse(String s)
         {
-            return Parse(s, NumberStyles.Integer, null);
+            return Parse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
         public static sbyte Parse(String s, NumberStyles style)
         {
-            UInt32.ValidateParseStyleInteger(style);
-            return Parse(s, style, null);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Parse(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
         public static sbyte Parse(String s, IFormatProvider provider)
         {
-            return Parse(s, NumberStyles.Integer, provider);
+            return Parse(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses a signed byte from a String in the given style.  If
@@ -128,11 +134,16 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte Parse(String s, NumberStyles style, IFormatProvider provider)
         {
-            UInt32.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        private static sbyte Parse(String s, NumberStyles style, NumberFormatInfo info)
+        {
             int i = 0;
             try
             {
-                i = FormatProvider.ParseInt32(s, style, provider);
+                i = Number.ParseInt32(s, style, info);
             }
             catch (OverflowException e)
             {
@@ -155,16 +166,21 @@ namespace System
         [CLSCompliant(false)]
         public static bool TryParse(String s, out SByte result)
         {
-            return TryParse(s, NumberStyles.Integer, null, out result);
+            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out SByte result)
         {
-            UInt32.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out SByte result)
+        {
             result = 0;
             int i;
-            if (!FormatProvider.TryParseInt32(s, style, provider, out i))
+            if (!Number.TryParseInt32(s, style, info, out i))
             {
                 return false;
             }
@@ -264,7 +280,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "SByte", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "SByte", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)

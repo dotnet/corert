@@ -16,25 +16,27 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ReferenceTypeFieldAccessorForThreadStaticFields : WritableStaticFieldAccessor
     {
-        private IntPtr _cookie;
+        private int _threadStaticsBlockOffset;
+        private int _fieldOffset;
         private RuntimeTypeHandle _declaringTypeHandle;
 
-        public ReferenceTypeFieldAccessorForThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, IntPtr cookie, RuntimeTypeHandle fieldTypeHandle)
+        public ReferenceTypeFieldAccessorForThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, int threadStaticsBlockOffset, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)
         {
-            _cookie = cookie;
+            _threadStaticsBlockOffset = threadStaticsBlockOffset;
+            _fieldOffset = fieldOffset;
             _declaringTypeHandle = declaringTypeHandle;
         }
 
         protected sealed override Object GetFieldBypassCctor()
         {
-            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
+            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _threadStaticsBlockOffset, _fieldOffset);
             return RuntimeAugments.LoadReferenceTypeField(fieldAddress);
         }
 
         protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _cookie);
+            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(_declaringTypeHandle, _threadStaticsBlockOffset, _fieldOffset);
             RuntimeAugments.StoreReferenceTypeField(fieldAddress, value);
         }
     }

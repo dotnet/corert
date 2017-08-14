@@ -12,20 +12,18 @@
 ** 
 ===========================================================*/
 
+using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
-    // The Byte class extends the Value class and 
-    // provides object representation of the byte primitive type. 
-    // 
-    [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Byte : IComparable, IFormattable, IComparable<Byte>, IEquatable<Byte>, IConvertible
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Byte : IComparable, IConvertible, IFormattable, IComparable<Byte>, IEquatable<Byte>
     {
         private byte m_value; // Do not rename (binary serialization)
 
@@ -83,24 +81,23 @@ namespace System
             return m_value;
         }
 
-
         [Pure]
         public static byte Parse(String s)
         {
-            return Parse(s, NumberStyles.Integer, null);
+            return Parse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public static byte Parse(String s, NumberStyles style)
         {
-            UInt32.ValidateParseStyleInteger(style);
-            return Parse(s, style, null);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Parse(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public static byte Parse(String s, IFormatProvider provider)
         {
-            return Parse(s, NumberStyles.Integer, provider);
+            return Parse(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
 
@@ -110,12 +107,16 @@ namespace System
         [Pure]
         public static byte Parse(String s, NumberStyles style, IFormatProvider provider)
         {
-            UInt32.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+        }
 
+        private static byte Parse(String s, NumberStyles style, NumberFormatInfo info)
+        {
             int i = 0;
             try
             {
-                i = FormatProvider.ParseInt32(s, style, provider);
+                i = Number.ParseInt32(s, style, info);
             }
             catch (OverflowException e)
             {
@@ -128,16 +129,20 @@ namespace System
 
         public static bool TryParse(String s, out Byte result)
         {
-            return TryParse(s, NumberStyles.Integer, null /* NumberFormatInfo.CurrentInfo */, out result);
+            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Byte result)
         {
-            UInt32.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
 
+        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out Byte result)
+        {
             result = 0;
             int i;
-            if (!FormatProvider.TryParseInt32(s, style, provider, out i))
+            if (!Number.TryParseInt32(s, style, info, out i))
             {
                 return false;
             }
@@ -153,35 +158,28 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, null, null);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatInt32(m_value, format, null);
+            return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            // if (provider == null)
-            // throw new ArgumentNullException("provider");
-
-            return FormatProvider.FormatInt32(m_value, null, provider);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         [Pure]
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-
-            // if (provider == null)
-            // throw new ArgumentNullException("provider");
-
-            return FormatProvider.FormatInt32(m_value, format, provider);
+            return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         //
@@ -261,7 +259,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Byte", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Byte", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)

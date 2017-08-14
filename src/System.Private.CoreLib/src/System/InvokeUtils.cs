@@ -488,7 +488,7 @@ namespace System
                 ref ArgSetupState argSetupState)
             {
                 // This method is implemented elsewhere in the toolchain
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException();
             }
 
             [DebuggerStepThrough]
@@ -500,7 +500,7 @@ namespace System
                 bool isTargetThisCall)
             {
                 // This method is implemented elsewhere in the toolchain
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException();
             }
 
             [DebuggerStepThrough]
@@ -513,7 +513,7 @@ namespace System
                 bool isTargetThisCall)
             {
                 // This method is implemented elsewhere in the toolchain
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException();
             }
         }
 

@@ -86,3 +86,10 @@ struct DebuggerFuncEvalParameterBufferReadyResponse
     uint32_t padding;
     uint64_t bufferAddress;
 };
+
+struct DebuggerFuncEvalCrossThreadDependencyNotification
+{
+    DebuggerResponseKind kind;
+    uint32_t padding;
+    uint64_t payload;
+};

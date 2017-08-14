@@ -27,8 +27,10 @@
  */
 
 using Internal.Runtime.Augments;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
@@ -50,71 +52,78 @@ namespace System.Threading
 
     internal sealed class ThreadPoolWorkQueue
     {
-        // Simple sparsely populated array to allow lock-free reading.
-        internal class SparseArray<T> where T : class
+        internal static class WorkStealingQueueList
         {
-            private volatile T[] m_array;
-            private readonly Lock m_lock = new Lock();
+            private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 
-            internal SparseArray(int initialSize)
-            {
-                m_array = new T[initialSize];
-            }
+            public static WorkStealingQueue[] Queues => _queues;
 
-            internal T[] Current
-            {
-                get { return m_array; }
-            }
+            // Track whether the WorkStealingQueueList is empty
+            // Three states simplifies race conditions.  They may be considered.
+            // Now Active --> Maybe Inactive -> Confirmed Inactive
+            public const int WsqNowActive = 2;
+            public static int wsqActive;
 
-            internal int Add(T e)
+            public static void Add(WorkStealingQueue queue)
             {
+                Debug.Assert(queue != null);
                 while (true)
                 {
-                    T[] array = m_array;
-                    using (LockHolder.Hold(m_lock))
-                    {
-                        for (int i = 0; i < array.Length; i++)
-                        {
-                            if (array[i] == null)
-                            {
-                                Volatile.Write(ref array[i], e);
-                                return i;
-                            }
-                            else if (i == array.Length - 1)
-                            {
-                                // Must resize. If we raced and lost, we start over again.
-                                if (array != m_array)
-                                    continue;
+                    WorkStealingQueue[] oldQueues = _queues;
+                    Debug.Assert(Array.IndexOf(oldQueues, queue) == -1);
 
-                                T[] newArray = new T[array.Length * 2];
-                                Array.Copy(array, newArray, i + 1);
-                                newArray[i + 1] = e;
-                                m_array = newArray;
-                                return i + 1;
-                            }
-                        }
+                    var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
+                    Array.Copy(oldQueues, 0, newQueues, 0, oldQueues.Length);
+                    newQueues[newQueues.Length - 1] = queue;
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
 
-            internal void Remove(T e)
+            public static void Remove(WorkStealingQueue queue)
             {
-                T[] array = m_array;
-                using (LockHolder.Hold(m_lock))
+                Debug.Assert(queue != null);
+                while (true)
                 {
-                    for (int i = 0; i < m_array.Length; i++)
+                    WorkStealingQueue[] oldQueues = _queues;
+                    if (oldQueues.Length == 0)
                     {
-                        if (m_array[i] == e)
-                        {
-                            Volatile.Write(ref m_array[i], null);
-                            break;
-                        }
+                        return;
+                    }
+
+                    int pos = Array.IndexOf(oldQueues, queue);
+                    if (pos == -1)
+                    {
+                        Debug.Fail("Should have found the queue");
+                        return;
+                    }
+
+                    var newQueues = new WorkStealingQueue[oldQueues.Length - 1];
+                    if (pos == 0)
+                    {
+                        Array.Copy(oldQueues, 1, newQueues, 0, newQueues.Length);
+                    }
+                    else if (pos == oldQueues.Length - 1)
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, newQueues.Length);
+                    }
+                    else
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, pos);
+                        Array.Copy(oldQueues, pos + 1, newQueues, pos, newQueues.Length - pos);
+                    }
+
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
         }
 
-        internal class WorkStealingQueue
+        internal sealed class WorkStealingQueue
         {
             private const int INITIAL_SIZE = 32;
             internal volatile IThreadPoolWorkItem[] m_array = new IThreadPoolWorkItem[INITIAL_SIZE];
@@ -130,7 +139,7 @@ namespace System.Threading
             private volatile int m_headIndex = START_INDEX;
             private volatile int m_tailIndex = START_INDEX;
 
-            private SpinLock m_foreignLock = new SpinLock(false);
+            private SpinLock m_foreignLock = new SpinLock(enableThreadOwnerTracking: false);
 
             public void LocalPush(IThreadPoolWorkItem obj)
             {
@@ -164,7 +173,7 @@ namespace System.Threading
                     finally
                     {
                         if (lockTaken)
-                            m_foreignLock.Exit(true);
+                            m_foreignLock.Exit(useMemoryBarrier: true);
                     }
                 }
 
@@ -189,7 +198,7 @@ namespace System.Threading
                         if (count >= m_mask)
                         {
                             // We're full; expand the queue by doubling its size.
-                            IThreadPoolWorkItem[] newArray = new IThreadPoolWorkItem[m_array.Length << 1];
+                            var newArray = new IThreadPoolWorkItem[m_array.Length << 1];
                             for (int i = 0; i < m_array.Length; i++)
                                 newArray[i] = m_array[(i + head) & m_mask];
 
@@ -206,23 +215,20 @@ namespace System.Threading
                     finally
                     {
                         if (lockTaken)
-                            m_foreignLock.Exit(false);
+                            m_foreignLock.Exit(useMemoryBarrier: false);
                     }
                 }
             }
 
+            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
             public bool LocalFindAndPop(IThreadPoolWorkItem obj)
             {
                 // Fast path: check the tail. If equal, we can skip the lock.
                 if (m_array[(m_tailIndex - 1) & m_mask] == obj)
                 {
-                    IThreadPoolWorkItem unused;
-                    if (LocalPop(out unused))
-                    {
-                        Debug.Assert(unused == obj);
-                        return true;
-                    }
-                    return false;
+                    IThreadPoolWorkItem unused = LocalPop();
+                    Debug.Assert(unused == null || unused == obj);
+                    return unused != null;
                 }
 
                 // Else, do an O(N) search for the work item. The theory of work stealing and our
@@ -238,13 +244,12 @@ namespace System.Threading
                     if (m_array[i & m_mask] == obj)
                     {
                         // If we found the element, block out steals to avoid interference.
-                        // @TODO: optimize away the lock?
                         bool lockTaken = false;
                         try
                         {
                             m_foreignLock.Enter(ref lockTaken);
 
-                            // If we lost the race, bail.
+                            // If we encountered a race condition, bail.
                             if (m_array[i & m_mask] == null)
                                 return false;
 
@@ -264,7 +269,7 @@ namespace System.Threading
                         finally
                         {
                             if (lockTaken)
-                                m_foreignLock.Exit(false);
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
                     }
                 }
@@ -272,18 +277,20 @@ namespace System.Threading
                 return false;
             }
 
-            public bool LocalPop(out IThreadPoolWorkItem obj)
+            public IThreadPoolWorkItem LocalPop() => m_headIndex < m_tailIndex ? LocalPopCore() : null;
+
+            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
+            private IThreadPoolWorkItem LocalPopCore()
             {
                 while (true)
                 {
-                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     int tail = m_tailIndex;
                     if (m_headIndex >= tail)
                     {
-                        obj = null;
-                        return false;
+                        return null;
                     }
 
+                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     tail -= 1;
                     Interlocked.Exchange(ref m_tailIndex, tail);
 
@@ -291,13 +298,13 @@ namespace System.Threading
                     if (m_headIndex <= tail)
                     {
                         int idx = tail & m_mask;
-                        obj = Volatile.Read(ref m_array[idx]);
+                        IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                         // Check for nulls in the array.
                         if (obj == null) continue;
 
                         m_array[idx] = null;
-                        return true;
+                        return obj;
                     }
                     else
                     {
@@ -311,224 +318,81 @@ namespace System.Threading
                             {
                                 // Element still available. Take it.
                                 int idx = tail & m_mask;
-                                obj = Volatile.Read(ref m_array[idx]);
+                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                                 // Check for nulls in the array.
                                 if (obj == null) continue;
 
                                 m_array[idx] = null;
-                                return true;
+                                return obj;
                             }
                             else
                             {
-                                // We lost the race, element was stolen, restore the tail.
+                                // If we encountered a race condition and element was stolen, restore the tail.
                                 m_tailIndex = tail + 1;
-                                obj = null;
-                                return false;
+                                return null;
                             }
                         }
                         finally
                         {
                             if (lockTaken)
-                                m_foreignLock.Exit(false);
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
                     }
                 }
             }
 
-            public bool TrySteal(out IThreadPoolWorkItem obj, ref bool missedSteal)
-            {
-                return TrySteal(out obj, ref missedSteal, 0); // no blocking by default.
-            }
+            public bool CanSteal => m_headIndex < m_tailIndex;
 
-            private bool TrySteal(out IThreadPoolWorkItem obj, ref bool missedSteal, int millisecondsTimeout)
+            public IThreadPoolWorkItem TrySteal(ref bool missedSteal)
             {
-                obj = null;
-
                 while (true)
                 {
-                    if (m_headIndex >= m_tailIndex)
-                        return false;
-
-                    bool taken = false;
-                    try
+                    if (CanSteal)
                     {
-                        m_foreignLock.TryEnter(millisecondsTimeout, ref taken);
-                        if (taken)
+                        bool taken = false;
+                        try
                         {
-                            // Increment head, and ensure read of tail doesn't move before it (fence).
-                            int head = m_headIndex;
-                            Interlocked.Exchange(ref m_headIndex, head + 1);
-
-                            if (head < m_tailIndex)
+                            m_foreignLock.TryEnter(ref taken);
+                            if (taken)
                             {
-                                int idx = head & m_mask;
-                                obj = Volatile.Read(ref m_array[idx]);
+                                // Increment head, and ensure read of tail doesn't move before it (fence).
+                                int head = m_headIndex;
+                                Interlocked.Exchange(ref m_headIndex, head + 1);
 
-                                // Check for nulls in the array.
-                                if (obj == null) continue;
+                                if (head < m_tailIndex)
+                                {
+                                    int idx = head & m_mask;
+                                    IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
-                                m_array[idx] = null;
-                                return true;
-                            }
-                            else
-                            {
-                                // Failed, restore head.
-                                m_headIndex = head;
-                                obj = null;
-                                missedSteal = true;
+                                    // Check for nulls in the array.
+                                    if (obj == null) continue;
+
+                                    m_array[idx] = null;
+                                    return obj;
+                                }
+                                else
+                                {
+                                    // Failed, restore head.
+                                    m_headIndex = head;
+                                }
                             }
                         }
-                        else
+                        finally
                         {
-                            missedSteal = true;
+                            if (taken)
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
-                    }
-                    finally
-                    {
-                        if (taken)
-                            m_foreignLock.Exit(false);
-                    }
 
-                    return false;
+                        missedSteal = true;
+                    }
+                    return null;
                 }
             }
         }
 
-        internal class QueueSegment
-        {
-            // Holds a segment of the queue.  Enqueues/Dequeues start at element 0, and work their way up.
-            internal readonly IThreadPoolWorkItem[] nodes;
-            private const int QueueSegmentLength = 256;
-
-            // Holds the indexes of the lowest and highest valid elements of the nodes array.
-            // The low index is in the lower 16 bits, high index is in the upper 16 bits.
-            // Use GetIndexes and CompareExchangeIndexes to manipulate this.
-            private volatile int indexes;
-
-            // The next segment in the queue.
-            public volatile QueueSegment Next;
-
-
-            private const int SixteenBits = 0xffff;
-
-            private void GetIndexes(out int upper, out int lower)
-            {
-                int i = indexes;
-                upper = (i >> 16) & SixteenBits;
-                lower = i & SixteenBits;
-
-                Debug.Assert(upper >= lower);
-                Debug.Assert(upper <= nodes.Length);
-                Debug.Assert(lower <= nodes.Length);
-                Debug.Assert(upper >= 0);
-                Debug.Assert(lower >= 0);
-            }
-
-            private bool CompareExchangeIndexes(ref int prevUpper, int newUpper, ref int prevLower, int newLower)
-            {
-                Debug.Assert(newUpper >= newLower);
-                Debug.Assert(newUpper <= nodes.Length);
-                Debug.Assert(newLower <= nodes.Length);
-                Debug.Assert(newUpper >= 0);
-                Debug.Assert(newLower >= 0);
-                Debug.Assert(newUpper >= prevUpper);
-                Debug.Assert(newLower >= prevLower);
-                Debug.Assert(newUpper == prevUpper ^ newLower == prevLower);
-
-                int oldIndexes = (prevUpper << 16) | (prevLower & SixteenBits);
-                int newIndexes = (newUpper << 16) | (newLower & SixteenBits);
-                int prevIndexes = Interlocked.CompareExchange(ref indexes, newIndexes, oldIndexes);
-                prevUpper = (prevIndexes >> 16) & SixteenBits;
-                prevLower = prevIndexes & SixteenBits;
-                return prevIndexes == oldIndexes;
-            }
-
-            public QueueSegment()
-            {
-                Debug.Assert(QueueSegmentLength <= SixteenBits);
-                nodes = new IThreadPoolWorkItem[QueueSegmentLength];
-            }
-
-
-            public bool IsUsedUp()
-            {
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-                return (upper == nodes.Length) &&
-                       (lower == nodes.Length);
-            }
-
-            public bool TryEnqueue(IThreadPoolWorkItem node)
-            {
-                //
-                // If there's room in this segment, atomically increment the upper count (to reserve
-                // space for this node), then store the node.
-                // Note that this leaves a window where it will look like there is data in that
-                // array slot, but it hasn't been written yet.  This is taken care of in TryDequeue
-                // with a busy-wait loop, waiting for the element to become non-null.  This implies
-                // that we can never store null nodes in this data structure.
-                //
-                Debug.Assert(null != node);
-
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-
-                while (true)
-                {
-                    if (upper == nodes.Length)
-                        return false;
-
-                    if (CompareExchangeIndexes(ref upper, upper + 1, ref lower, lower))
-                    {
-                        Debug.Assert(Volatile.Read(ref nodes[upper]) == null);
-                        Volatile.Write(ref nodes[upper], node);
-                        return true;
-                    }
-                }
-            }
-
-            public bool TryDequeue(out IThreadPoolWorkItem node)
-            {
-                //
-                // If there are nodes in this segment, increment the lower count, then take the
-                // element we find there.
-                //
-                int upper, lower;
-                GetIndexes(out upper, out lower);
-
-                while (true)
-                {
-                    if (lower == upper)
-                    {
-                        node = null;
-                        return false;
-                    }
-
-                    if (CompareExchangeIndexes(ref upper, upper, ref lower, lower + 1))
-                    {
-                        // It's possible that a concurrent call to Enqueue hasn't yet
-                        // written the node reference to the array.  We need to spin until
-                        // it shows up.
-                        SpinWait spinner = new SpinWait();
-                        while ((node = Volatile.Read(ref nodes[lower])) == null)
-                            spinner.SpinOnce();
-
-                        // Null-out the reference so the object can be GC'd earlier.
-                        nodes[lower] = null;
-
-                        return true;
-                    }
-                }
-            }
-        }
-
-        // The head and tail of the queue.  We enqueue to the head, and dequeue from the tail.
-        internal volatile QueueSegment queueHead;
-        internal volatile QueueSegment queueTail;
-
-        internal static SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16); //TODO: base this on processor count, once the security restrictions are removed from Environment.ProcessorCount
-
+        internal readonly LowLevelConcurrentQueue<IThreadPoolWorkItem> workItems = new LowLevelConcurrentQueue<IThreadPoolWorkItem>();
+        
         private volatile int numOutstandingThreadRequests = 0;
 
         // The number of threads executing work items in the Dispatch method
@@ -536,20 +400,16 @@ namespace System.Threading
 
         public ThreadPoolWorkQueue()
         {
-            queueTail = queueHead = new QueueSegment();
         }
 
-        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue()
-        {
-            if (null == ThreadPoolWorkQueueThreadLocals.Current)
-                ThreadPoolWorkQueueThreadLocals.Current = new ThreadPoolWorkQueueThreadLocals(this);
-            return ThreadPoolWorkQueueThreadLocals.Current;
-        }
+        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue() =>
+            ThreadPoolWorkQueueThreadLocals.threadLocals ??
+            (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
 
         internal void EnsureThreadRequested()
         {
             //
-            // If we have not yet requested #procs threads from the VM, then request a new thread.
+            // If we have not yet requested #procs threads, then request a new thread.
             //
             int count = numOutstandingThreadRequests;
             while (count < ThreadPoolGlobals.processorCount)
@@ -557,7 +417,7 @@ namespace System.Threading
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
                 {
-                    ThreadPool.QueueDispatch();
+                    ThreadPool.RequestWorkerThread();
                     break;
                 }
                 count = prev;
@@ -586,26 +446,27 @@ namespace System.Threading
         {
             ThreadPoolWorkQueueThreadLocals tl = null;
             if (!forceGlobal)
-                tl = ThreadPoolWorkQueueThreadLocals.Current;
+                tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
 
             if (null != tl)
             {
                 tl.workStealingQueue.LocalPush(callback);
+
+                // We must guarantee wsqActive is set to WsqNowActive after we push
+                // The ordering must be global because we rely on other threads
+                // observing in this order
+                Interlocked.MemoryBarrier();
+
+                // We do not want to simply write.  We want to prevent unnecessary writes
+                // which would invalidate reader's caches
+                if (WorkStealingQueueList.wsqActive != WorkStealingQueueList.WsqNowActive)
+                {
+                    Volatile.Write(ref WorkStealingQueueList.wsqActive, WorkStealingQueueList.WsqNowActive);
+                }
             }
             else
             {
-                QueueSegment head = queueHead;
-
-                while (!head.TryEnqueue(callback))
-                {
-                    Interlocked.CompareExchange(ref head.Next, new QueueSegment(), null);
-
-                    while (head.Next != null)
-                    {
-                        Interlocked.CompareExchange(ref queueHead, head.Next, head);
-                        head = queueHead;
-                    }
-                }
+                workItems.Enqueue(callback);
             }
 
             EnsureThreadRequested();
@@ -613,64 +474,64 @@ namespace System.Threading
 
         internal bool LocalFindAndPop(IThreadPoolWorkItem callback)
         {
-            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.Current;
-            if (null == tl)
-                return false;
-
-            return tl.workStealingQueue.LocalFindAndPop(callback);
+            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
+            return tl != null && tl.workStealingQueue.LocalFindAndPop(callback);
         }
 
-        public void Dequeue(ThreadPoolWorkQueueThreadLocals tl, out IThreadPoolWorkItem callback, out bool missedSteal)
+        public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            callback = null;
-            missedSteal = false;
-            WorkStealingQueue wsq = tl.workStealingQueue;
-
-            if (wsq.LocalPop(out callback))
-                Debug.Assert(null != callback);
-
-            if (null == callback)
+            IThreadPoolWorkItem callback;
+            int wsqActiveObserved = WorkStealingQueueList.wsqActive;
+            if (wsqActiveObserved > 0)
             {
-                QueueSegment tail = queueTail;
-                while (true)
-                {
-                    if (tail.TryDequeue(out callback))
-                    {
-                        Debug.Assert(null != callback);
-                        break;
-                    }
+                WorkStealingQueue localWsq = tl.workStealingQueue;
 
-                    if (null == tail.Next || !tail.IsUsedUp())
+                if ((callback = localWsq.LocalPop()) == null && // first try the local queue
+                    !workItems.TryDequeue(out callback)) // then try the global queue
+                {
+                    // finally try to steal from another thread's local queue
+                    WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                    int c = queues.Length;
+                    Debug.Assert(c > 0, "There must at least be a queue for this thread.");
+                    int maxIndex = c - 1;
+                    int i = tl.random.Next(c);
+                    while (c > 0)
                     {
-                        break;
+                        i = (i < maxIndex) ? i + 1 : 0;
+                        WorkStealingQueue otherQueue = queues[i];
+                        if (otherQueue != localWsq && otherQueue.CanSteal)
+                        {
+                            callback = otherQueue.TrySteal(ref missedSteal);
+                            if (callback != null)
+                            {
+                                break;
+                            }
+                        }
+                        c--;
                     }
-                    else
+                    if ((callback == null) && !missedSteal)
                     {
-                        Interlocked.CompareExchange(ref queueTail, tail.Next, tail);
-                        tail = queueTail;
+                        // Only decrement if the value is unchanged since we started looking for work
+                        // This prevents multiple threads decrementing based on overlapping scans.
+                        //
+                        // When we decrement from active, the producer may have inserted a queue item during our scan
+                        // therefore we cannot transition to empty
+                        //
+                        // When we decrement from Maybe Inactive, if the producer inserted a queue item during our scan,
+                        // the producer must write Active.  We may transition to empty briefly if we beat the
+                        // producer's write, but the producer will then overwrite us before waking threads.
+                        // So effectively we cannot mark the queue empty when an item is in the queue.
+                        Interlocked.CompareExchange(ref WorkStealingQueueList.wsqActive, wsqActiveObserved - 1, wsqActiveObserved);
                     }
                 }
             }
-
-            if (null == callback)
+            else
             {
-                WorkStealingQueue[] otherQueues = allThreadQueues.Current;
-                int i = tl.random.Next(otherQueues.Length);
-                int c = otherQueues.Length;
-                while (c > 0)
-                {
-                    WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i % otherQueues.Length]);
-                    if (otherQueue != null &&
-                        otherQueue != wsq &&
-                        otherQueue.TrySteal(out callback, ref missedSteal))
-                    {
-                        Debug.Assert(null != callback);
-                        break;
-                    }
-                    i++;
-                    c--;
-                }
+                // We only need to look at the global queue since WorkStealingQueueList is inactive
+                workItems.TryDequeue(out callback);
             }
+
+            return callback;
         }
 
         /// <summary>
@@ -703,6 +564,7 @@ namespace System.Threading
             // false later, but only if we're absolutely certain that the queue is empty.
             //
             bool needAnotherThread = true;
+            IThreadPoolWorkItem workItem = null;
             try
             {
                 //
@@ -715,7 +577,8 @@ namespace System.Threading
                 //
                 while (ThreadPool.KeepDispatching(startTickCount))
                 {
-                    workQueue.Dequeue(tl, out IThreadPoolWorkItem workItem, out bool missedSteal);
+                    bool missedSteal = false;
+                    workItem = workQueue.Dequeue(tl, ref missedSteal);
 
                     if (workItem == null)
                     {
@@ -727,6 +590,8 @@ namespace System.Threading
                         // which will be more efficient than this thread doing it anyway.
                         //
                         needAnotherThread = missedSteal;
+
+                        // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
                         return true;
                     }
 
@@ -750,9 +615,7 @@ namespace System.Threading
                     RuntimeThread.CurrentThread.ResetThreadPoolThread();
 
                     if (!ThreadPool.NotifyWorkItemComplete())
-                    {
                         return false;
-                    }
                 }
 
                 // If we get here, it's because our quantum expired.
@@ -779,22 +642,49 @@ namespace System.Threading
         }
     }
 
+
+    // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
+    internal struct FastRandom // xorshift prng
+    {
+        private uint _w, _x, _y, _z;
+
+        public FastRandom(int seed)
+        {
+            _x = (uint)seed;
+            _w = 88675123;
+            _y = 362436069;
+            _z = 521288629;
+        }
+
+        public int Next(int maxValue)
+        {
+            Debug.Assert(maxValue > 0);
+
+            uint t = _x ^ (_x << 11);
+            _x = _y; _y = _z; _z = _w;
+            _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
+
+            return (int)(_w % (uint)maxValue);
+        }
+    }
+
+
     // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
         [ThreadStatic]
-        public static ThreadPoolWorkQueueThreadLocals Current;
+        public static ThreadPoolWorkQueueThreadLocals threadLocals;
 
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
-        public readonly Random random = new Random(Environment.CurrentManagedThreadId);
+        public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId);  // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
-            ThreadPoolWorkQueue.allThreadQueues.Add(workStealingQueue);
+            ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
         }
 
         private void CleanUp()
@@ -803,23 +693,15 @@ namespace System.Threading
             {
                 if (null != workQueue)
                 {
-                    bool done = false;
-                    while (!done)
+                    IThreadPoolWorkItem cb;
+                    while ((cb = workStealingQueue.LocalPop()) != null)
                     {
-                        IThreadPoolWorkItem cb = null;
-                        if (workStealingQueue.LocalPop(out cb))
-                        {
-                            Debug.Assert(null != cb);
-                            workQueue.Enqueue(cb, true);
-                        }
-                        else
-                        {
-                            done = true;
-                        }
+                        Debug.Assert(null != cb);
+                        workQueue.Enqueue(cb, forceGlobal: true);
                     }
                 }
 
-                ThreadPoolWorkQueue.allThreadQueues.Remove(workStealingQueue);
+                ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
 
@@ -856,8 +738,8 @@ namespace System.Threading
     internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
     {
         private WaitCallback callback;
-        private ExecutionContext context;
-        private Object state;
+        private readonly ExecutionContext context;
+        private readonly Object state;
 
 #if DEBUG
         private volatile int executed;
@@ -894,7 +776,11 @@ namespace System.Threading
             try
             {
                 if (context == null)
-                    callback(state);
+                {
+                    WaitCallback cb = callback;
+                    callback = null;
+                    cb(state);
+                }
                 else
                     ExecutionContext.Run(context, ccb, this);
             }
@@ -905,12 +791,12 @@ namespace System.Threading
             }
         }
 
-        internal static ContextCallback ccb = new ContextCallback(WaitCallback_Context);
+        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
 
         private static void WaitCallback_Context(Object state)
         {
             QueueUserWorkItemCallback obj = (QueueUserWorkItemCallback)state;
-            WaitCallback wc = obj.callback as WaitCallback;
+            WaitCallback wc = obj.callback;
             Debug.Assert(null != wc);
             wc(obj.state);
         }
@@ -920,7 +806,7 @@ namespace System.Threading
     internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
     {
         private WaitCallback callback;
-        private Object state;
+        private readonly Object state;
 
 #if DEBUG
         private volatile int executed;
@@ -964,25 +850,25 @@ namespace System.Threading
             }
         }
 
-        internal static ContextCallback ccb = new ContextCallback(WaitCallback_Context);
+        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
 
         private static void WaitCallback_Context(Object state)
         {
             QueueUserWorkItemCallbackDefaultContext obj = (QueueUserWorkItemCallbackDefaultContext)state;
-            WaitCallback wc = obj.callback as WaitCallback;
+            WaitCallback wc = obj.callback;
             Debug.Assert(null != wc);
+            obj.callback = null;
             wc(obj.state);
         }
     }
 
     internal class _ThreadPoolWaitOrTimerCallback
     {
+        private WaitOrTimerCallback _waitOrTimerCallback;
+        private ExecutionContext _executionContext;
+        private Object _state;
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
-
-        private readonly WaitOrTimerCallback _waitOrTimerCallback;
-        private readonly ExecutionContext _executionContext;
-        private readonly Object _state;
 
         internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool flowExecutionContext)
         {
@@ -991,6 +877,7 @@ namespace System.Threading
 
             if (flowExecutionContext)
             {
+                // capture the exection context
                 _executionContext = ExecutionContext.Capture();
             }
         }
@@ -1170,48 +1057,32 @@ namespace System.Threading
         // This method tries to take the target callback out of the current thread's queue.
         internal static bool TryPopCustomWorkItem(IThreadPoolWorkItem workItem)
         {
+            Debug.Assert(null != workItem);
             return ThreadPoolGlobals.workQueue.LocalFindAndPop(workItem);
         }
 
         // Get all workitems.  Called by TaskScheduler in its debugger hooks.
         internal static IEnumerable<IThreadPoolWorkItem> GetQueuedWorkItems()
         {
-            return EnumerateQueuedWorkItems(ThreadPoolWorkQueue.allThreadQueues.Current, ThreadPoolGlobals.workQueue.queueTail);
-        }
-
-        internal static IEnumerable<IThreadPoolWorkItem> EnumerateQueuedWorkItems(ThreadPoolWorkQueue.WorkStealingQueue[] wsQueues, ThreadPoolWorkQueue.QueueSegment globalQueueTail)
-        {
-            if (wsQueues != null)
+            // Enumerate the global queue
+            foreach (IThreadPoolWorkItem workItem in ThreadPoolGlobals.workQueue.workItems)
             {
-                // First, enumerate all workitems in thread-local queues.
-                foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in wsQueues)
-                {
-                    if (wsq != null && wsq.m_array != null)
-                    {
-                        IThreadPoolWorkItem[] items = wsq.m_array;
-                        for (int i = 0; i < items.Length; i++)
-                        {
-                            IThreadPoolWorkItem item = items[i];
-                            if (item != null)
-                                yield return item;
-                        }
-                    }
-                }
+                yield return workItem;
             }
 
-            if (globalQueueTail != null)
+            // Enumerate each local queue
+            foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in ThreadPoolWorkQueue.WorkStealingQueueList.Queues)
             {
-                // Now the global queue
-                for (ThreadPoolWorkQueue.QueueSegment segment = globalQueueTail;
-                    segment != null;
-                    segment = segment.Next)
+                if (wsq != null && wsq.m_array != null)
                 {
-                    IThreadPoolWorkItem[] items = segment.nodes;
+                    IThreadPoolWorkItem[] items = wsq.m_array;
                     for (int i = 0; i < items.Length; i++)
                     {
                         IThreadPoolWorkItem item = items[i];
                         if (item != null)
+                        {
                             yield return item;
+                        }
                     }
                 }
             }
@@ -1219,13 +1090,20 @@ namespace System.Threading
 
         internal static IEnumerable<IThreadPoolWorkItem> GetLocallyQueuedWorkItems()
         {
-            return EnumerateQueuedWorkItems(new ThreadPoolWorkQueue.WorkStealingQueue[] { ThreadPoolWorkQueueThreadLocals.Current.workStealingQueue }, null);
+            ThreadPoolWorkQueue.WorkStealingQueue wsq = ThreadPoolWorkQueueThreadLocals.threadLocals.workStealingQueue;
+            if (wsq != null && wsq.m_array != null)
+            {
+                IThreadPoolWorkItem[] items = wsq.m_array;
+                for (int i = 0; i < items.Length; i++)
+                {
+                    IThreadPoolWorkItem item = items[i];
+                    if (item != null)
+                        yield return item;
+                }
+            }
         }
 
-        internal static IEnumerable<IThreadPoolWorkItem> GetGloballyQueuedWorkItems()
-        {
-            return EnumerateQueuedWorkItems(null, ThreadPoolGlobals.workQueue.queueTail);
-        }
+        internal static IEnumerable<IThreadPoolWorkItem> GetGloballyQueuedWorkItems() => ThreadPoolGlobals.workQueue.workItems;
 
         private static object[] ToObjectArray(IEnumerable<IThreadPoolWorkItem> workitems)
         {
@@ -1284,6 +1162,6 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
-        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.Current != null; } }
+        internal static bool IsThreadPoolThread { get { return ThreadPoolWorkQueueThreadLocals.threadLocals != null; } }
     }
 }

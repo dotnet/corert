@@ -192,6 +192,7 @@ public:
 
     bool ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP);
     bool ShouldHijackLoopForGcStress(UIntNative CallsiteIP);
+    void SetLoopHijackFlags(UInt32 flag);
 
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();

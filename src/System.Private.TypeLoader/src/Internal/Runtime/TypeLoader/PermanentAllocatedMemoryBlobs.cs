@@ -19,9 +19,8 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class PermanentAllocatedMemoryBlobs
     {
-        // Various functions in the type loader need to create permanent pointers for use by thread static lookup, or other purposes.
+        // Various functions in the type loader need to create permanent pointers for various purposes.
 
-        private static PermanentlyAllocatedMemoryRegions_ThreadStaticFieldOffsets s_threadStaticFieldCookies = new PermanentlyAllocatedMemoryRegions_ThreadStaticFieldOffsets();
         private static PermanentlyAllocatedMemoryRegions_Uint_In_IntPtr s_uintCellValues = new PermanentlyAllocatedMemoryRegions_Uint_In_IntPtr();
         private static PermanentlyAllocatedMemoryRegions_IntPtr_In_IntPtr s_pointerIndirectionCellValues = new PermanentlyAllocatedMemoryRegions_IntPtr_In_IntPtr();
 
@@ -69,57 +68,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public struct ThreadStaticFieldOffsets : IEquatable<ThreadStaticFieldOffsets>
-        {
-            public uint StartingOffsetInTlsBlock;    // Offset in the TLS block containing the thread static fields of a given type
-            public uint FieldOffset;                 // Offset of a thread static field from the start of its containing type's TLS fields block
-                                                     // (in other words, the address of a field is 'TLS block + StartingOffsetInTlsBlock + FieldOffset')
-
-            public override int GetHashCode()
-            {
-                return (int)(StartingOffsetInTlsBlock ^ FieldOffset << 8);
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (obj is ThreadStaticFieldOffsets)
-                {
-                    return Equals((ThreadStaticFieldOffsets)obj);
-                }
-                return false;
-            }
-
-            public bool Equals(ThreadStaticFieldOffsets other)
-            {
-                if (StartingOffsetInTlsBlock != other.StartingOffsetInTlsBlock)
-                    return false;
-
-                return FieldOffset == other.FieldOffset;
-            }
-        }
-
-        private class PermanentlyAllocatedMemoryRegions_ThreadStaticFieldOffsets
-        {
-            private LowLevelDictionary<ThreadStaticFieldOffsets, IntPtr> _allocatedBlocks = new LowLevelDictionary<ThreadStaticFieldOffsets, IntPtr>();
-            private Lock _lock = new Lock();
-
-            public unsafe IntPtr GetMemoryBlockForValue(ThreadStaticFieldOffsets value)
-            {
-                using (LockHolder.Hold(_lock))
-                {
-                    IntPtr result;
-                    if (_allocatedBlocks.TryGetValue(value, out result))
-                    {
-                        return result;
-                    }
-                    result = MemoryHelpers.AllocateMemory(sizeof(ThreadStaticFieldOffsets));
-                    *(ThreadStaticFieldOffsets*)(result.ToPointer()) = value;
-                    _allocatedBlocks.Add(value, result);
-                    return result;
-                }
-            }
-        }
-
         public static IntPtr GetPointerToUInt(uint value)
         {
             return s_uintCellValues.GetMemoryBlockForValue(value);
@@ -128,11 +76,6 @@ namespace Internal.Runtime.TypeLoader
         public static IntPtr GetPointerToIntPtr(IntPtr value)
         {
             return s_pointerIndirectionCellValues.GetMemoryBlockForValue(value);
-        }
-
-        public static IntPtr GetPointerToThreadStaticFieldOffsets(ThreadStaticFieldOffsets value)
-        {
-            return s_threadStaticFieldCookies.GetMemoryBlockForValue(value);
         }
     }
 }

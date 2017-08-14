@@ -32,11 +32,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BadImageFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BitConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Boolean.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Byte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs" />
@@ -63,6 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralComparable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IStructuralEquatable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
@@ -132,6 +135,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanStyles.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UnicodeCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Guid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ICloneable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs" />
@@ -170,6 +174,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Int16.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Int32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Int64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MarshalByRefObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemberAccessException.cs" />
@@ -353,6 +360,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\PartialTrustVisibilityLevel.cs" />
@@ -444,6 +452,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeInitializationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeUnloadedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\UInt16.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\UInt32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\UInt64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnauthorizedAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs" />

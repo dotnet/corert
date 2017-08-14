@@ -12,29 +12,28 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
-    // The Boolean class provides the
-    // object representation of the boolean primitive type.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Boolean : IComparable, IComparable<Boolean>, IEquatable<Boolean>, IConvertible
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Boolean : IComparable, IConvertible, IComparable<Boolean>, IEquatable<Boolean>
     {
         //
         // Member Variables
         //
         private bool m_value; // Do not rename (binary serialization)
 
-        // The true value. 
-        // 
+        // The true value.
+        //
         internal const int True = 1;
 
         // The false value.
-        // 
+        //
         internal const int False = 0;
 
 
@@ -110,6 +109,7 @@ namespace System
             return (m_value == ((Boolean)obj).m_value);
         }
 
+        [NonVersionable]
         public bool Equals(Boolean obj)
         {
             return m_value == obj;
@@ -262,7 +262,7 @@ namespace System
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Boolean", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Boolean", "Char"));
         }
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
@@ -322,7 +322,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(String.Format(SR.InvalidCast_FromTo, "Boolean", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Boolean", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)
