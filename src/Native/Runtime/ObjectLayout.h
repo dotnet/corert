@@ -100,3 +100,28 @@ public:
     void* GetArrayData();
 };
 typedef DPTR(Array) PTR_Array;
+
+//-------------------------------------------------------------------------------------------------
+class String : public Object
+{
+    friend class AsmOffsets;
+    friend class StringConstants;
+
+    UInt32       m_Length;
+    UInt16       m_FirstChar;
+};
+typedef DPTR(String) PTR_String;
+
+//-------------------------------------------------------------------------------------------------
+class StringConstants
+{
+public:
+    static UIntNative const ComponentSize = sizeof(((String*)0)->m_FirstChar);
+    static UIntNative const BaseSize = sizeof(ObjHeader) + offsetof(String, m_FirstChar) + ComponentSize;
+};
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const STRING_COMPONENT_SIZE = StringConstants::ComponentSize;
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const STRING_BASE_SIZE = StringConstants::BaseSize;

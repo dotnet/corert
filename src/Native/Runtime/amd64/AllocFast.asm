@@ -102,6 +102,58 @@ NewOutOfMemory:
 NESTED_END RhpNewObject, _TEXT
 
 
+;; Allocate a string.
+;;  RCX == EEType
+;;  EDX == character/element count
+LEAF_ENTRY RhNewString, _TEXT
+
+        ; we want to limit the element count to the non-negative 32-bit int range
+        cmp         rdx, 07fffffffh
+        ja          StringSizeOverflow
+
+        ; Compute overall allocation size (align(base size + (element size * elements), 8)).
+        lea         rax, [(rdx * STRING_COMPONENT_SIZE) + (STRING_BASE_SIZE + 7)]
+        and         rax, -8
+
+        ; rax == string size
+        ; rcx == EEType
+        ; rdx == element count
+
+        INLINE_GETTHREAD r10, r8
+
+        mov         r8, rax
+        add         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        jc          RhpNewArrayRare
+
+        ; rax == new alloc ptr
+        ; rcx == EEType
+        ; rdx == element count
+        ; r8 == array size
+        ; r10 == thread
+        cmp         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ja          RhpNewArrayRare
+
+        mov         [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+
+        ; calc the new object pointer
+        sub         rax, r8
+
+        mov         [rax + OFFSETOF__Object__m_pEEType], rcx
+        mov         [rax + OFFSETOF__String__m_Length], edx
+
+        ret
+
+StringSizeOverflow:
+        ; We get here if the size of the final string object can't be represented as an unsigned 
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
+        ; an OOM exception that the caller of this allocator understands.
+
+        ; rcx holds EEType pointer already
+        xor         edx, edx            ; Indicate that we should throw OOM.
+        jmp         RhExceptionHandling_FailedAllocation
+LEAF_END RhNewString, _TEXT
+
+
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  RCX == EEType
 ;;  EDX == element count
