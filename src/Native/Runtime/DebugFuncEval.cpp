@@ -10,10 +10,9 @@ GVAL_IMPL_INIT(UInt32, g_FuncEvalMode, 0);
 GVAL_IMPL_INIT(UInt64, g_FuncEvalTarget, 0);
 GVAL_IMPL_INIT(UInt32, g_FuncEvalParameterBufferSize, 0);
 GVAL_IMPL_INIT(UInt64, g_MostRecentFuncEvalHijackInstructionPointer, 0);
+GPTR_IMPL_INIT(PTR_VOID, g_HighLevelDebugFuncEvalAbortHelperAddr, 0);
 
 #ifndef DACCESS_COMPILE
-
-/* static */ HighLevelDebugFuncEvalAbortHelperType DebugFuncEval::s_highLevelDebugFuncEvalAbortHelper = nullptr;
 
 /* static */ void* DebugFuncEval::GetFuncEvalTarget()
 {
@@ -37,12 +36,12 @@ GVAL_IMPL_INIT(UInt64, g_MostRecentFuncEvalHijackInstructionPointer, 0);
 
 /* static */ HighLevelDebugFuncEvalAbortHelperType DebugFuncEval::GetHighLevelDebugFuncEvalAbortHelper()
 {
-    return s_highLevelDebugFuncEvalAbortHelper;
+    return (HighLevelDebugFuncEvalAbortHelperType)g_HighLevelDebugFuncEvalAbortHelperAddr;
 }
 
 /* static */ void DebugFuncEval::SetHighLevelDebugFuncEvalAbortHelper(HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper)
 {
-    s_highLevelDebugFuncEvalAbortHelper = highLevelDebugFuncEvalAbortHelper;
+    g_HighLevelDebugFuncEvalAbortHelperAddr = (PTR_PTR_VOID)highLevelDebugFuncEvalAbortHelper;
 }
 
 /// <summary>
