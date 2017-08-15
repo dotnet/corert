@@ -76,11 +76,6 @@ public:
     /// </summary>
     static void SetHighLevelDebugFuncEvalAbortHelper(HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper);
 
-private:
-
-    /// The high level debug func eval abort helper is a function that perform the actual func eval abort 
-    /// It is implemented in System.Private.Debug.dll 
-    static HighLevelDebugFuncEvalAbortHelperType s_highLevelDebugFuncEvalAbortHelper;
 };
 
 #else

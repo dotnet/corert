@@ -606,19 +606,12 @@ namespace System
 
         internal static String FastAllocateString(int length)
         {
-            try
-            {
-                // We allocate one extra char as an interop convenience so that our strings are null-
-                // terminated, however, we don't pass the extra +1 to the array allocation because the base
-                // size of this object includes the _firstChar field.
-                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), length);
-                Debug.Assert(newStr._stringLength == length);
-                return newStr;
-            }
-            catch (OverflowException)
-            {
-                throw new OutOfMemoryException();
-            }
+            // We allocate one extra char as an interop convenience so that our strings are null-
+            // terminated, however, we don't pass the extra +1 to the string allocation because the base
+            // size of this object includes the _firstChar field.
+            string newStr = RuntimeImports.RhNewString(EETypePtr.EETypePtrOf<string>(), length);
+            Debug.Assert(newStr._stringLength == length);
+            return newStr;
         }
 
         internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
