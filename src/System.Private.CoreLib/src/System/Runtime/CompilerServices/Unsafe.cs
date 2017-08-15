@@ -42,6 +42,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T Read<T>(ref byte source)
+        {
+            return Unsafe.As<byte, T>(ref source);
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T ReadUnaligned<T>(void* source)
+        {
+            return Unsafe.As<byte, T>(ref *(byte*)source);
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe T ReadUnaligned<T>(ref byte source)
         {
             return Unsafe.As<byte, T>(ref source);
@@ -64,9 +86,31 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void Write<T>(ref byte source, T value)
+        {
+            Unsafe.As<byte, T>(ref source) = value;
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void WriteUnaligned<T>(void* source, T value)
         {
             Unsafe.As<byte, T>(ref *(byte*)source) = value;
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void WriteUnaligned<T>(ref byte source, T value)
+        {
+            Unsafe.As<byte, T>(ref source) = value;
         }
 
         /// <summary>

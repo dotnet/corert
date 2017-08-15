@@ -84,6 +84,8 @@ namespace System.Runtime.InteropServices
 
 class Details
 {
+    private static IntPtr PreInitializedInt32Field_DataBlob;
+
     private static IntPtr PreInitializedIntField_DataBlob;
 
 #if BIT64
@@ -126,6 +128,9 @@ class PreInitData
 {
     internal static string StaticStringFieldBefore = "BEFORE";
 
+    //
+    // Reference type fields
+    //
     [PreInitialized]
     [InitDataBlob(typeof(Details), "PreInitializedIntField_DataBlob")]
     internal static int[] PreInitializedIntField;
@@ -138,6 +143,13 @@ class PreInitData
     [InitDataBlob(typeof(Details), "PreInitializedMethodField_DataBlob")]
     internal static IntPtr[] PreInitializedMethodField;
 
+    //
+    // Primitive type fields
+    //
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedInt32Field_DataBlob")]    
+    internal static int PreInitializedInt32Field;  // = 0x12345678
+
     internal static string StaticStringFieldAfter = "AFTER";
 }
 
@@ -149,6 +161,12 @@ public class PreInitDataTest
     public static int Main(string[] args)
     {
         int result = Pass;
+
+        if (!TestPreInitPrimitiveData())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
 
         if (!TestPreInitIntData())
         {
@@ -176,6 +194,16 @@ public class PreInitDataTest
         }
 
         return result;
+    }
+
+    static bool TestPreInitPrimitiveData()
+    {
+        Console.WriteLine("Testing preinitialized primitive data...");
+
+        if (PreInitData.PreInitializedInt32Field != 0x12345678)
+            return false;
+
+        return true;
     }
 
     static bool TestPreInitIntData()

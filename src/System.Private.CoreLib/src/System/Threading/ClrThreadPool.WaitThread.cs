@@ -16,7 +16,7 @@ namespace System.Threading
         private WaitThreadNode _waitThreadsHead;
         private WaitThreadNode _waitThreadsTail;
 
-        private LowLevelLock _waitThreadListLock = new LowLevelLock();
+        private LowLevelLock _waitThreadLock = new LowLevelLock();
 
         /// <summary>
         /// Register a wait handle on a <see cref="WaitThread"/>.
@@ -24,7 +24,7 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
-            _waitThreadListLock.Acquire();
+            _waitThreadLock.Acquire();
             try
             {
                 if (_waitThreadsHead == null) // Lazily create the first wait thread.
@@ -58,7 +58,7 @@ namespace System.Threading
             }
             finally
             {
-                _waitThreadListLock.Release();
+                _waitThreadLock.Release();
             }
         }
 
@@ -69,7 +69,7 @@ namespace System.Threading
         /// <returns><c>true</c> if the thread was successfully removed; otherwise, <c>false</c></returns>
         private bool TryRemoveWaitThread(WaitThread thread)
         {
-            _waitThreadListLock.Acquire();
+            _waitThreadLock.Acquire();
             try
             {
                 if (thread.AnyUserWaits)
@@ -80,7 +80,7 @@ namespace System.Threading
             }
             finally
             {
-                _waitThreadListLock.Release();
+                _waitThreadLock.Release();
             }
             return true;
         }
@@ -155,10 +155,6 @@ namespace System.Threading
             /// The number of user-registered waits on this wait thread.
             /// </summary>
             private int _numUserWaits = 0;
-            /// <summary>
-            /// A lock for editing any handle registration (i.e. the fields above).
-            /// </summary>
-            private readonly LowLevelLock _registeredHandlesLock = new LowLevelLock();
 
             /// <summary>
             /// A list of removals of wait handles that are waiting for the wait thread to process.
@@ -168,10 +164,6 @@ namespace System.Threading
             /// The number of pending removals.
             /// </summary>
             private int _numPendingRemoves = 0;
-            /// <summary>
-            /// A lock for modifying the pending removals.
-            /// </summary>
-            private readonly LowLevelLock _removesLock = new LowLevelLock();
 
             /// <summary>
             /// An event to notify the wait thread that there are pending adds or removals of wait handles so it needs to wake up.
@@ -275,8 +267,7 @@ namespace System.Threading
             /// </summary>
             private void ProcessRemovals()
             {
-                _removesLock.Acquire();
-                _registeredHandlesLock.Acquire();
+                ThreadPoolInstance._waitThreadLock.Acquire();
                 try
                 {
                     Debug.Assert(_numPendingRemoves >= 0);
@@ -318,8 +309,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    _registeredHandlesLock.Release();
-                    _removesLock.Release();
+                    ThreadPoolInstance._waitThreadLock.Release();
                 }
             }
             
@@ -360,24 +350,17 @@ namespace System.Threading
             /// <returns>If the handle was successfully registered on this wait thread.</returns>
             public bool RegisterWaitHandle(RegisteredWaitHandle handle)
             {
-                _registeredHandlesLock.Acquire();
-                try
+                ThreadPoolInstance._waitThreadLock.VerifyIsLocked();
+                if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
                 {
-                    if (_numUserWaits == WaitHandle.MaxWaitHandles - 1)
-                    {
-                        return false;
-                    }
-
-                    _registeredWaits[_numUserWaits] = handle;
-                    _waitHandles[_numUserWaits + 1] = handle.Handle;
-                    _numUserWaits++;
-
-                    handle.WaitThread = this;
+                    return false;
                 }
-                finally
-                {
-                    _registeredHandlesLock.Release();
-                }
+
+                _registeredWaits[_numUserWaits] = handle;
+                _waitHandles[_numUserWaits + 1] = handle.Handle;
+                _numUserWaits++;
+
+                handle.WaitThread = this;
 
                 _changeHandlesEvent.Set();
                 return true;
@@ -406,7 +389,7 @@ namespace System.Threading
             {
                 bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
-                _removesLock.Acquire();
+                ThreadPoolInstance._waitThreadLock.Acquire();
                 try
                 {
                     // If this handle is not already pending removal and hasn't already been removed
@@ -419,7 +402,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    _removesLock.Release();
+                    ThreadPoolInstance._waitThreadLock.Release();
                 }
 
                 if (blocking)

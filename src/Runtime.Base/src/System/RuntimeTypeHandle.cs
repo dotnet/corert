@@ -11,13 +11,13 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal class Type
+    public class Type
     {
         public RuntimeTypeHandle TypeHandle { get { return default(RuntimeTypeHandle); } }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RuntimeTypeHandle
+    public struct RuntimeTypeHandle
     {
         private EETypePtr _pEEType;
 

@@ -1140,7 +1140,13 @@ namespace Internal.IL
 
         void ImportShiftOperation(ILOpcode opcode)
         {
-            throw new NotImplementedException($"{nameof(ImportShiftOperation)} not implemented");
+            var shiftBy = Pop();
+            var toBeShifted = Pop();
+
+            Check(shiftBy.Kind == StackValueKind.Int32 || shiftBy.Kind == StackValueKind.NativeInt, VerifierError.StackUnexpected, shiftBy);
+            CheckIsInteger(toBeShifted);
+
+            Push(StackValue.CreatePrimitive(toBeShifted.Kind));
         }
 
         void ImportCompareOperation(ILOpcode opcode)

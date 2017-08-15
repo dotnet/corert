@@ -198,7 +198,6 @@
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
-    <Compile Include="System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
@@ -214,6 +213,7 @@
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\TimeSpanParse.cs" />
+    <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
@@ -247,7 +247,6 @@
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Guid.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />

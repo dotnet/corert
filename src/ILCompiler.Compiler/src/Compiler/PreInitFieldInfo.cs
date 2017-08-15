@@ -136,13 +136,16 @@ namespace ILCompiler
             builder.EmitBytes(Data, offset, Data.Length - offset);
         }
 
-        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)
+        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool hasGCStaticBase)
         {
             List<PreInitFieldInfo> list = null;
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic)
+                if (!field.IsStatic || field.IsThreadStatic)
+                    continue;
+
+                if (field.HasGCStaticBase != hasGCStaticBase)
                     continue;
 
                 var dataField = GetPreInitDataField(field);
@@ -173,7 +176,7 @@ namespace ILCompiler
 
             var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
             if (decoded == null)
-                return null; 
+                return null;
 
             var decodedValue = decoded.Value;
             if (decodedValue.FixedArguments.Length != 2)
@@ -199,26 +202,36 @@ namespace ILCompiler
         /// </summary>
         private static PreInitFieldInfo ConstructPreInitFieldInfo(FieldDesc field, FieldDesc dataField)
         {
-            var arrType = field.FieldType as ArrayType;
-            if (arrType == null || !arrType.IsSzArray)
-            {
-                // We only support single dimensional arrays
-                throw new NotSupportedException();
-            }
-
             if (!dataField.HasRva)
                 throw new BadImageFormatException();
-            
+
             var ecmaDataField = dataField as EcmaField;
             if (ecmaDataField == null)
                 throw new NotSupportedException();
-            
+
             var rvaData = ecmaDataField.GetFieldRvaData();
 
-            int elementSize = arrType.ElementType.GetElementSize().AsInt;
-            if (rvaData.Length % elementSize != 0)
-                throw new BadImageFormatException();
-            int elementCount = rvaData.Length / elementSize;
+            var fieldType = field.FieldType;
+
+            int elementCount;
+            if (fieldType.IsValueType || fieldType.IsPointer)
+            {
+                elementCount = -1;
+            }
+            else if (field.FieldType.IsSzArray)
+            {
+                var arrType = (ArrayType)field.FieldType;
+
+                int elementSize = arrType.ElementType.GetElementSize().AsInt;
+                if (rvaData.Length % elementSize != 0)
+                    throw new BadImageFormatException();
+
+                elementCount = rvaData.Length / elementSize;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
 
             //
             // Construct fixups
@@ -266,6 +279,11 @@ namespace ILCompiler
             }
 
             return new PreInitFieldInfo(field, rvaData, elementCount, fixups);
+        }
+
+        public static int FieldDescCompare(PreInitFieldInfo fieldInfo1, PreInitFieldInfo fieldInfo2)
+        {
+            return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
     }
 }
