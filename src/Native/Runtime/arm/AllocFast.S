@@ -116,7 +116,7 @@ NESTED_END RhpNewObject, _TEXT
 // Allocate a string.
 //  r0 == EEType
 //  r1 == element/character count
-LEAF_ENTRY RhpNewString, _TEXT
+LEAF_ENTRY RhNewString, _TEXT
         PROLOG_PUSH "{r4-r6,lr}"
         // Make sure computing the overall allocation size won't overflow
         MOV32       r12, ((0xFFFFFFFF - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
@@ -148,11 +148,11 @@ LEAF_ENTRY RhpNewString, _TEXT
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         adds        r6, r12
-        bcs         LOCAL_LABEL(RhpNewString_RarePath) // if we get a carry here, the string is too large to fit below 4 GB
+        bcs         LOCAL_LABEL(RhNewString_RarePath) // if we get a carry here, the string is too large to fit below 4 GB
 
         ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         r6, r12
-        bhi         LOCAL_LABEL(RhpNewString_RarePath)
+        bhi         LOCAL_LABEL(RhNewString_RarePath)
 
         // Reload new object address into r12.
         ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -178,7 +178,7 @@ LOCAL_LABEL(StringSizeOverflow):
         EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-LOCAL_LABEL(RhpNewString_RarePath):
+LOCAL_LABEL(RhNewString_RarePath):
         mov         r3, r0
         mov         r0, r4
         mov         r1, r5
@@ -190,7 +190,7 @@ LOCAL_LABEL(RhpNewString_RarePath):
         EPILOG_POP  "{r4-r6,lr}"
         b           C_FUNC(RhpNewArrayRare)
 
-LEAF_END RhpNewString, _TEXT
+LEAF_END RhNewString, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY).
