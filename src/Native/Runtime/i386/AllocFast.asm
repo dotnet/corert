@@ -161,6 +161,135 @@ NewFinalizable_OOM:
         
 FASTCALL_ENDFUNC
 
+;; Allocate a new string.
+;;  ECX == EEType
+;;  EDX == element count
+FASTCALL_FUNC   RhNewString, 8
+
+        push        ecx
+        push        edx
+
+        ;; Make sure computing the aligned overall allocation size won't overflow
+        cmp         edx, ((0FFFFFFFFh - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        ja          StringSizeOverflow
+
+        ; Compute overall allocation size (align(base size + (element size * elements), 4)).
+        lea         eax, [(edx * STRING_COMPONENT_SIZE) + (STRING_BASE_SIZE + 3)]
+        and         eax, -4
+
+        ; ECX == EEType
+        ; EAX == allocation size
+        ; EDX == scratch
+
+        INLINE_GETTHREAD    edx, ecx        ; edx = GetThread(), TRASHES ecx
+
+        ; ECX == scratch
+        ; EAX == allocation size
+        ; EDX == thread
+
+        mov         ecx, eax
+        add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        jc          StringAllocContextOverflow
+        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ja          StringAllocContextOverflow
+
+        ; ECX == allocation size
+        ; EAX == new alloc ptr
+        ; EDX == thread
+
+        ; set the new alloc pointer
+        mov         [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], eax
+
+        ; calc the new object pointer
+        sub         eax, ecx
+
+        pop         edx
+        pop         ecx
+
+        ; set the new object's EEType pointer and element count
+        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
+        mov         [eax + OFFSETOF__String__m_Length], edx
+        ret
+
+StringAllocContextOverflow:
+        ; ECX == string size
+        ;   original ECX pushed
+        ;   original EDX pushed
+
+        ; Re-push original ECX
+        push        [esp + 4]
+
+        ; Create EBP frame.
+        mov         [esp + 8], ebp
+        lea         ebp, [esp + 8]
+
+        PUSH_COOP_PINVOKE_FRAME edx
+
+        ; Preserve the string size in edi
+        mov         edi, ecx
+
+        ; Get the EEType and put it in ecx.
+        mov         ecx, dword ptr [ebp - 8]
+
+        ; Push alloc helper arguments (thread, size, flags, EEType).
+        push        edx                                             ; transition frame
+        push        edi                                             ; Size
+        xor         edx, edx                                        ; Flags
+        ;; Passing EEType in ecx
+
+        ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        call        RhpGcAlloc
+
+        ; Set the new object's EEType pointer and length on success.
+        test        eax, eax
+        jz          StringOutOfMemoryWithFrame
+
+        mov         ecx, [ebp - 8]
+        mov         edx, [ebp - 4]
+        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
+        mov         [eax + OFFSETOF__String__m_Length], edx
+
+        ;; If the object is bigger than RH_LARGE_OBJECT_SIZE, we must publish it to the BGC
+        cmp         edi, RH_LARGE_OBJECT_SIZE
+        jb          NewString_SkipPublish
+        mov         ecx, eax            ;; ecx: object
+        mov         edx, edi            ;; edx: object size
+        call        RhpPublishObject    ;; eax: this function returns the object that was passed-in
+NewString_SkipPublish: 
+
+        POP_COOP_PINVOKE_FRAME
+        add         esp, 8          ; pop ecx / edx
+        pop         ebp
+        ret
+
+StringOutOfMemoryWithFrame:
+        ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
+        ; an out of memory exception that the caller of this allocator understands.
+
+        mov         eax, [ebp - 8]  ; Preserve EEType pointer over POP_COOP_PINVOKE_FRAME
+
+        POP_COOP_PINVOKE_FRAME
+        add         esp, 8          ; pop ecx / edx
+        pop         ebp             ; restore ebp
+
+        mov         ecx, eax        ; EEType pointer
+        xor         edx, edx        ; Indicate that we should throw OOM.
+        jmp         RhExceptionHandling_FailedAllocation
+
+StringSizeOverflow:
+        ;; We get here if the size of the final string object can't be represented as an unsigned 
+        ;; 32-bit value. We're going to tail-call to a managed helper that will throw
+        ;; an OOM exception that the caller of this allocator understands.
+
+        add         esp, 8          ; pop ecx / edx
+
+        ;; ecx holds EEType pointer already
+        xor         edx, edx            ; Indicate that we should throw OOM.
+        jmp         RhExceptionHandling_FailedAllocation
+
+FASTCALL_ENDFUNC
+
+
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  ECX == EEType
 ;;  EDX == element count
@@ -171,7 +300,8 @@ FASTCALL_FUNC   RhpNewArray, 8
 
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
         ; if the element count is <= 0x10000, no overflow is possible because the component size is
-        ; <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only 12 bytes
+        ; <= 0xffff, and thus the product is <= 0xffff0000, and the base size for the worst case
+        ; (32 dimensional MdArray) is less than 0xffff.
         movzx       eax, word ptr [ecx + OFFSETOF__EEType__m_usComponentSize]
         cmp         edx,010000h
         ja          ArraySizeBig

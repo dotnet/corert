@@ -112,24 +112,97 @@ LOCAL_LABEL(NewOutOfMemory):
 
 NESTED_END RhpNewObject, _TEXT
 
+
+// Allocate a string.
+//  r0 == EEType
+//  r1 == element/character count
+LEAF_ENTRY RhpNewString, _TEXT
+        PROLOG_PUSH "{r4-r6,lr}"
+        // Make sure computing the overall allocation size won't overflow
+        MOV32       r12, ((0xFFFFFFFF - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        cmp         r1, r12
+        bhi         LOCAL_LABEL(StringSizeOverflow)
+
+        // Compute overall allocation size (align(base size + (element size * elements), 4)).
+        mov         r2, #(STRING_BASE_SIZE + 3)
+#if STRING_COMPONENT_SIZE == 2
+        add         r2, r2, r1, lsl #1                  // r2 += characters * 2
+#else
+        NotImplementedComponentSize
+#endif
+        bic         r2, r2, #3
+
+        mov         r4, r0 // Save EEType
+        mov         r5, r1 // Save element count
+        mov         r6, r2 // Save string size
+        // r0 = GetThread()
+        INLINE_GETTHREAD
+        // r4 == EEType
+        // r5 == element count
+        // r6 == string size
+        // r0 == Thread*
+
+        // Load potential new object address into r12.
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        // Determine whether the end of the object would lie outside of the current allocation context. If so,
+        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        adds        r6, r12
+        bcs         LOCAL_LABEL(RhpNewString_RarePath) // if we get a carry here, the string is too large to fit below 4 GB
+
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         r6, r12
+        bhi         LOCAL_LABEL(RhpNewString_RarePath)
+
+        // Reload new object address into r12.
+        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        // Update the alloc pointer to account for the allocation.
+        str         r6, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        // Set the new object's EEType pointer and element count.
+        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r5, [r12, #OFFSETOF__String__m_Length]
+
+        // Return the object allocated in r0.
+        mov         r0, r12
+        EPILOG_POP  "{r4-r6,pc}"
+
+LOCAL_LABEL(StringSizeOverflow):
+        // We get here if the size of the final string object can't be represented as an unsigned
+        // 32-bit value. We're going to tail-call to a managed helper that will throw
+        // an OOM exception that the caller of this allocator understands.
+
+        // EEType is in r0 already
+        mov         r1, 0                  // Indicate that we should throw OOM
+        EPILOG_POP  "{r4-r6,lr}"
+        b           C_FUNC(RhExceptionHandling_FailedAllocation)
+
+LOCAL_LABEL(RhpNewString_RarePath):
+        mov         r3, r0
+        mov         r0, r4
+        mov         r1, r5
+        mov         r2, r6
+        // r0 == EEType
+        // r1 == element count
+        // r2 == string size + Thread::m_alloc_context::alloc_ptr
+        // r3 == Thread
+        EPILOG_POP  "{r4-r6,lr}"
+        b           C_FUNC(RhpNewArrayRare)
+
+LEAF_END RhpNewString, _TEXT
+
+
 // Allocate one dimensional, zero based array (SZARRAY).
 //  r0 == EEType
 //  r1 == element count
 LEAF_ENTRY RhpNewArray, _TEXT
         PROLOG_PUSH "{r4-r6,lr}"
-        // we want to limit the element count to the non-negative 32-bit int range
-        movw        r12, #0xffff
-        movt        r12, #0x7fff
-        cmp         r1, r12
-        bhi         LOCAL_LABEL(ArraySizeOverflow)
-        // if the element count is negative, it's an overflow error
-        cmp         r1, #0
-        blt         LOCAL_LABEL(ArraySizeOverflow)
 
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
         // if the element count is <= 0x10000, no overflow is possible because the component
         // size is <= 0xffff (it's an unsigned 16-bit value) and thus the product is <= 0xffff0000
-        // and the base size is only 12 bytes.
+        // and the base size for the worst case (32 dimensional MdArray) is less than 0xffff.
         ldrh        r2, [r0, #OFFSETOF__EEType__m_usComponentSize]
         cmp         r1, #0x10000
         bhi         LOCAL_LABEL(ArraySizeBig)
@@ -177,6 +250,9 @@ LOCAL_LABEL(ArrayAlignSize):
         EPILOG_POP  "{r4-r6,pc}"
 
 LOCAL_LABEL(ArraySizeBig):
+        // if the element count is negative, it's an overflow error
+        cmp         r1, #0
+        blt         LOCAL_LABEL(ArraySizeOverflow)
 
         // now we know the element count is in the signed int range [0..0x7fffffff]
         // overflow in computing the total size of the array size gives an out of memory exception,
