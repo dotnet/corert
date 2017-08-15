@@ -173,7 +173,7 @@ StringSizeOverflow
         mov         r1, #0                  ; Indicate that we should throw OOM.
         b           RhExceptionHandling_FailedAllocation
 
-        LEAF_END    RhpNewString
+        LEAF_END    RhNewString
 
         INLINE_GETTHREAD_CONSTANT_POOL
 
