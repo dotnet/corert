@@ -743,7 +743,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
-        internal GVMDependenciesNode GVMDependencies(MethodDesc method)
+        public GVMDependenciesNode GVMDependencies(MethodDesc method)
         {
             return _gvmDependenciesNode.GetOrAdd(method);
         }
