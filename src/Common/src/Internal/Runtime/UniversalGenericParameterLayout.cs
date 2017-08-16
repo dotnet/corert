@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 
@@ -95,6 +96,15 @@ namespace Internal.Runtime
             }
 
             return false;
+        }
+
+        public static bool VTableMethodRequiresCallingConventionConverter(MethodDesc method)
+        {
+            if (!MethodSignatureHasVarsNeedingCallingConventionConverter(method.GetTypicalMethodDefinition().Signature))
+                return false;
+
+            MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetCanonMethodTarget(CanonicalFormKind.Specific);
+            return slotDecl.IsCanonicalMethod(CanonicalFormKind.Universal);
         }
     }
 }
