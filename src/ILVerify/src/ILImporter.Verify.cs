@@ -360,6 +360,57 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
+        void CheckIsValidBranchTarget(BasicBlock src, BasicBlock target)
+        {
+            if (src.TryIndex != target.TryIndex)
+            {
+                if (src.TryIndex == null)
+                    VerificationError(VerifierError.BranchIntoTry);
+                else if (target.TryIndex == null)
+                    VerificationError(VerifierError.BranchOutOfTry);
+                else
+                {
+                    if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
+                        VerificationError(VerifierError.BranchIntoTry);
+                    else
+                        VerificationError(VerifierError.BranchOutOfTry);
+                }
+                return;
+            }
+
+            if (src.FilterIndex != target.FilterIndex)
+            {
+                if (src.FilterIndex == null)
+                    VerificationError(VerifierError.BranchIntoFilter);
+                else if (target.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchOutOfFilter);
+                else
+                {
+                    if (_exceptionRegions[(int)src.FilterIndex].ILRegion.FilterOffset < _exceptionRegions[(int)target.FilterIndex].ILRegion.FilterOffset)
+                        VerificationError(VerifierError.BranchIntoFilter);
+                    else
+                        VerificationError(VerifierError.BranchOutOfFilter);
+                }
+                return;
+            }
+
+            if (src.HandlerIndex != target.HandlerIndex)
+            {
+                if (src.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchIntoHandler);
+                else if (target.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchOutOfHandler);
+                else
+                {
+                    if (_exceptionRegions[(int)src.HandlerIndex].ILRegion.HandlerOffset < _exceptionRegions[(int)target.HandlerIndex].ILRegion.HandlerOffset)
+                        VerificationError(VerifierError.BranchIntoHandler);
+                    else
+                        VerificationError(VerifierError.BranchOutOfHandler);
+                }
+                return;
+            }
+        }
+
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
@@ -1042,7 +1093,7 @@ namespace Internal.IL
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
-                //TODO: CheckIsSameExceptionRegion(_currentBasicBlock, target);
+                CheckIsValidBranchTarget(_currentBasicBlock, target);
                 ImportFallthrough(target);
             }
 
@@ -1052,7 +1103,7 @@ namespace Internal.IL
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
-            //TODO: CheckIsSameExceptionRegion(_currentBasicBlock, target);
+            CheckIsValidBranchTarget(_currentBasicBlock, target);
 
             switch (opcode)
             {
