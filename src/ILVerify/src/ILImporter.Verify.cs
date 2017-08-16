@@ -1037,11 +1037,12 @@ namespace Internal.IL
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
             var value = Pop();
-            IsAssignable(value, StackValue.CreatePrimitive(StackValueKind.Int32));
+            CheckIsAssignable(value, StackValue.CreatePrimitive(StackValueKind.Int32));
 
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
+                //TODO: CheckIsSameExceptionRegion(_currentBasicBlock, target);
                 ImportFallthrough(target);
             }
 
@@ -1051,6 +1052,8 @@ namespace Internal.IL
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            //TODO: CheckIsSameExceptionRegion(_currentBasicBlock, target);
+
             switch (opcode)
             {
                 case ILOpcode.br:
