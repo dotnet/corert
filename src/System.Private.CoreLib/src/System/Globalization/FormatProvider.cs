@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Globalization
 {
     // Internal Contract for all Globalization APIs that are needed by lower levels of System.Private.CoreLib.
@@ -95,11 +93,11 @@ namespace System.Globalization
         #endregion
 
         #region Parsing
-        public static Decimal ParseDecimal(String value, NumberStyles options, IFormatProvider provider)
+        public static Decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
             return Number.ParseDecimal(value, options, provider);
         }
-        public static Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
+        public static Boolean TryParseDecimal(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider, out Decimal result)
         {
             return Number.TryParseDecimal(value, options, provider, out result);
         }
