@@ -998,6 +998,20 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Allocated new method dictionary for method " + method.ToString() + " @ " + rmd.LowLevelToString());
         }
 
+        private RuntimeTypeHandle[] GetGenericContextOfBaseType(DefType type, int vtableMethodSlot)
+        {
+            DefType baseType = type.BaseType;
+            Debug.Assert(baseType == null || !GetRuntimeTypeHandle(baseType).IsNull());
+            Debug.Assert(vtableMethodSlot < GetRuntimeTypeHandle(type).GetNumVtableSlots());
+
+            int numBaseTypeVtableSlots = baseType == null ? 0 : GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
+
+            if (vtableMethodSlot < numBaseTypeVtableSlots)
+                return GetGenericContextOfBaseType(baseType, vtableMethodSlot);
+            else
+                return GetRuntimeTypeHandles(type.Instantiation);
+        }
+
         private unsafe void FinishVTableCallingConverterThunks(TypeDesc type, TypeBuilderState state)
         {
             Debug.Assert(state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal));
@@ -1009,9 +1023,11 @@ namespace Internal.Runtime.TypeLoader
             IntPtr* vtableCells = (IntPtr*)((byte*)GetRuntimeTypeHandle(type).ToIntPtr() + sizeof(EEType));
             Debug.Assert((state.VTableMethodSignatures.Length - state.NumSealedVTableMethodSignatures) <= numVtableSlots);
 
+            TypeDesc baseType = type.BaseType;
+            int numBaseTypeVtableSlots = GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
+
             // Generic context
             RuntimeTypeHandle[] typeArgs = Empty<RuntimeTypeHandle>.Array;
-            RuntimeTypeHandle[] methodArgs = Empty<RuntimeTypeHandle>.Array;        // No GVMs in vtables
 
             if (type is DefType)
                 typeArgs = GetRuntimeTypeHandles(((DefType)type).Instantiation);
@@ -1020,11 +1036,21 @@ namespace Internal.Runtime.TypeLoader
 
             for (int i = 0; i < state.VTableMethodSignatures.Length; i++)
             {
+                RuntimeTypeHandle[] typeArgsToUse = typeArgs;
+
                 int vtableSlotInDynamicType = -1;
                 if (!state.VTableMethodSignatures[i].IsSealedVTableSlot)
                 {
                     vtableSlotInDynamicType = state.VTableSlotsMapping.GetVTableSlotInTargetType((int)state.VTableMethodSignatures[i].VTableSlot);
                     Debug.Assert(vtableSlotInDynamicType != -1);
+
+                    if (vtableSlotInDynamicType < numBaseTypeVtableSlots)
+                    {
+                        // Vtable method  from the vtable portion of a base type. Use generic context of the basetype defining the vtable slot.
+                        // We should never reach here for array types (the vtable entries of the System.Array basetype should never need a converter).
+                        Debug.Assert(type is DefType);
+                        typeArgsToUse = GetGenericContextOfBaseType((DefType)type, vtableSlotInDynamicType);
+                    }
                 }
 
                 IntPtr originalFunctionPointerFromVTable = state.VTableMethodSignatures[i].IsSealedVTableSlot ?
@@ -1036,7 +1062,7 @@ namespace Internal.Runtime.TypeLoader
                     originalFunctionPointerFromVTable,
                     state.VTableMethodSignatures[i].MethodSignature,
                     IntPtr.Zero,                                        // No instantiating arg for non-generic instance methods
-                    typeArgs,
+                    typeArgsToUse,
                     Empty<RuntimeTypeHandle>.Array);                    // No GVMs in vtables, no no method args
 
                 if (state.VTableMethodSignatures[i].IsSealedVTableSlot)
