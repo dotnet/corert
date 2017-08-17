@@ -181,7 +181,7 @@ namespace System
 
                 public override int GetHashCode()
                 {
-                    return FormatProvider.GetHashCodeOrdinalIgnoreCase(_string);
+                    return TextInfo.GetHashCodeOrdinalIgnoreCase(_string);
                 }
 
                 public bool Equals(OrdinalIgnoreCaseString other)

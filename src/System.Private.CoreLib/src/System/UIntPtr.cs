@@ -172,9 +172,9 @@ namespace System
         public unsafe override String ToString()
         {
 #if BIT64
-            return ((ulong)_value).ToString(FormatProvider.InvariantCulture);
+            return ((ulong)_value).ToString(CultureInfo.InvariantCulture);
 #else
-            return ((uint)_value).ToString(FormatProvider.InvariantCulture);
+            return ((uint)_value).ToString(CultureInfo.InvariantCulture);
 #endif
         }
 

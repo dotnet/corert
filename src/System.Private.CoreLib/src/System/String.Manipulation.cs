@@ -1601,7 +1601,7 @@ namespace System
         // Creates a copy of this string in lower case.  The culture is set by culture.
         public String ToLower()
         {
-            return FormatProvider.ToLower(this);
+            return CultureInfo.CurrentCulture.TextInfo.ToLower(this);
         }
 
         // Creates a copy of this string in lower case.  The culture is set by culture.
@@ -1617,12 +1617,12 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public String ToLowerInvariant()
         {
-            return FormatProvider.ToLowerInvariant(this);
+            return CultureInfo.InvariantCulture.TextInfo.ToLower(this);
         }
 
         public String ToUpper()
         {
-            return FormatProvider.ToUpper(this);
+            return CultureInfo.CurrentCulture.TextInfo.ToUpper(this);
         }
 
         // Creates a copy of this string in upper case.  The culture is set by culture.
@@ -1638,7 +1638,7 @@ namespace System
         //Creates a copy of this string in upper case based on invariant culture.
         public String ToUpperInvariant()
         {
-            return FormatProvider.ToUpperInvariant(this);
+            return CultureInfo.InvariantCulture.TextInfo.ToUpper(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by
