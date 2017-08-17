@@ -70,94 +70,78 @@
     .method static public hidebysig void Branching.InsideTry_Valid() cil managed
     {
         .maxstack 2
-        .locals init (
-            [0] int32
-        )
 
-        IL_0000: ldc.i4.s  10
-        IL_0002: stloc.0
         .try
         {
-            IL_0003: ldloc.0
-            IL_0004: ldc.i4.s  10
-            IL_0006: bne.un.s  IL_0014
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
 
-            IL_0008: nop
-            IL_0012: br.s      IL_001E
+            nop
+            br.s      lbl_leave
 
-            IL_0014: nop
+            lbl_true: nop
 
-            IL_001E: leave.s   IL_002D
+            lbl_leave: leave.s   lbl_ret
         }
         catch [System.Runtime]System.Object
         {
-            IL_0020: pop
-            IL_002B: leave.s   IL_002D
+            pop
+            leave.s   lbl_ret
         }
 
-        IL_002D: ret
+        lbl_ret: ret
     }
 
     .method static public hidebysig void Branching.OutOfTry_Invalid_BranchOutOfTry() cil managed
     {
         .maxstack 2
-        .locals init (
-            [0] int32
-        )
 
-        IL_0000: ldc.i4.s  10
-        IL_0002: stloc.0
         .try
         {
-            IL_0003: ldloc.0
-            IL_0004: ldc.i4.s  10
-            IL_0006: bne.un.s  IL_0014
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
 
-            IL_0008: nop
-            IL_0012: br.s      IL_002D
+            nop
+            br.s      lbl_ret
 
-            IL_0014: nop
+            lbl_true: nop
 
-            IL_001E: leave.s   IL_002D
+            lbl_leave: leave.s   lbl_ret
         }
         catch [System.Runtime]System.Object
         {
-            IL_0020: pop
-            IL_002B: leave.s   IL_002D
+            pop
+            leave.s   lbl_ret
         }
 
-        IL_002D: ret
+        lbl_ret: ret
     }
 
     .method static public hidebysig void Branching.IntoTry_Invalid_BranchIntoTry() cil managed
     {
         .maxstack 2
-        .locals init (
-            [0] int32
-        )
 
-        IL_0000: ldc.i4.s  10
-        IL_0002: stloc.0
+        ldc.i4.s  10
+        ldc.i4.s  5
+        bne.un.s  lbl_true
 
-        IL_0003: ldloc.0
-        IL_0004: ldc.i4.s  10
-        IL_0006: bne.un.s  IL_0014
-
-        IL_0008: nop
-        IL_0012: br.s      IL_002D
+        nop
+        br.s      lbl_ret
 
         .try
         {
-            IL_0014: nop
+            lbl_true: nop
 
-            IL_001E: leave.s   IL_002D
+            leave.s   lbl_ret
         }
         catch [System.Runtime]System.Object
         {
-            IL_0020: pop
-            IL_002B: leave.s   IL_002D
+            pop
+            leave.s   lbl_ret
         }
 
-        IL_002D: ret
+        lbl_ret: ret
     }
 }
