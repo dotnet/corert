@@ -66,4 +66,82 @@
         IL_0013: pop
         IL_0014: ret
     }
+
+    .method static public hidebysig void Branching.InsideTry_Valid() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_leave
+
+            lbl_true: nop
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.OutOfTry_Invalid_BranchOutOfTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_ret
+
+            lbl_true: nop
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoTry_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 2
+
+        ldc.i4.s  10
+        ldc.i4.s  5
+        bne.un.s  lbl_true
+
+        nop
+        br.s      lbl_ret
+
+        .try
+        {
+            lbl_true: nop
+
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
 }

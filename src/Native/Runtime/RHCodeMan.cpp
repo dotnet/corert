@@ -942,7 +942,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     }
 
 #ifdef _ARM_
-    // We cannot get the return addres unless LR has 
+    // We cannot get the return address unless LR has 
     // be saved in the prolog.
     if (!pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
