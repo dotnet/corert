@@ -237,18 +237,18 @@ namespace System
         public unsafe override String ToString()
         {
 #if BIT64
-            return ((long)_value).ToString(FormatProvider.InvariantCulture);
+            return ((long)_value).ToString(CultureInfo.InvariantCulture);
 #else
-            return ((int)_value).ToString(FormatProvider.InvariantCulture);
+            return ((int)_value).ToString(CultureInfo.InvariantCulture);
 #endif
         }
 
         public unsafe String ToString(String format)
         {
 #if BIT64
-            return ((long)_value).ToString(format, FormatProvider.InvariantCulture);
+            return ((long)_value).ToString(format, CultureInfo.InvariantCulture);
 #else
-            return ((int)_value).ToString(format, FormatProvider.InvariantCulture);
+            return ((int)_value).ToString(format, CultureInfo.InvariantCulture);
 #endif
         }
 
