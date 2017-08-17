@@ -3,10 +3,6 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 
-:: Default to highest Visual Studio version available
-set __VSVersion=vs2015
-if defined VS150COMNTOOLS set __VSVersion=vs2017
-
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0.."
 :: remove trailing slash
@@ -34,9 +30,6 @@ if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
-
-if /i "%1" == "vs2017"   (set __VSVersion=vs2017&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"   (set __VSVersion=vs2015&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
@@ -95,40 +88,71 @@ exit /b 1
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
 
+:: Default to highest Visual Studio version available
+::
+:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
+:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
+:: allows users to locate where the instance of VS2015 is installed.
+::
+:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: is no longer set as a global environment variable and is instead only set if the user
+:: has launched the VS2017 Developer Command Prompt.
+::
+:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
+:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
+:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
+:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
+:: can be found.
 
-set __VSProductVersion=
-if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
-if /i "%__VSVersion%" == "vs2017" set __VSProductVersion=150
+if defined VisualStudioVersion goto :RunVCVars
 
-:: Check presence of VS
-if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
-echo Visual Studio 2015 or 2017 (Community is free) is a pre-requisite to build this repository.
-echo If you're using Visual Studio 2017, make sure to run build.cmd from the "Developer Command Prompt
-echo for VS 2017" (find it in the Start menu).
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:RunVCVars
+if "%VisualStudioVersion%"=="15.0" (
+    goto :VS2017
+) else if "%VisualStudioVersion%"=="14.0" (
+    goto :VS2015
+)
+
+:MissingVersion
+:: Can't find VS 2015 or 2017
+echo Visual Studio 2017 is a pre-requisite to build this repository. Visual Studio 2015 also works.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
+:VS2017
+:: Setup vars for VS2017
+set __VSVersion=vs2017
+set __VSProductVersion=150
+goto :CheckVSExistence
+
+:VS2015
+:: Setup vars for VS2015
+set __VSVersion=vs2015
+set __VSProductVersion=140
+goto :CheckVSExistence
+
 :CheckVSExistence
-:: Does VS VS 2015 really exist?
+:: Does VS really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Visual Studio not installed in !VS%__VSProductVersion%COMNTOOLS!.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
-
 :CheckMSBuild
-:: Note: We've disabled node reuse because it causes file locking issues.
-::       The issue is that we extend the build with our own targets which
-::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
 if /i "%__VSVersion%" == "vs2017" (
     rem The MSBuild that is installed in the shared location is not compatible
     rem with VS2017 C++ projects. I must use the MSBuild located in
     rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
-    rem which is compatible. However, I don't know a good way to specify this
-    rem path in a way that isn't specific to my system, so I am relying on the
-    rem system PATH to locate this tool.
-    set _msbuildexe=msbuild
+    set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 ) else (
     set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
     if not exist !_msbuildexe! (set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe")
