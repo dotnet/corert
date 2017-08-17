@@ -99,6 +99,9 @@ namespace ILCompiler.DependencyAnalysis
             if (!method.HasInstantiation)
                 return false;
 
+            if (method.IsAbstract)
+                return false;
+
             if (method.IsCanonicalMethod(CanonicalFormKind.Specific))
             {
                 // Must be fully canonical

@@ -990,7 +990,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (implMethod.IsAbstract)
                             return;
 
-                        if (UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(implMethod.Signature))
+                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
                             if (vtableSignatureNodeEntries == null)
                                 vtableSignatureNodeEntries = new List<NativeLayoutVertexNode>();
@@ -998,7 +998,7 @@ namespace ILCompiler.DependencyAnalysis
                             vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature));
                         }
                     }
-                    , _type, _type);
+                    , _type, _type, _type);
 
                 if (vtableSignatureNodeEntries != null)
                 {
@@ -1027,7 +1027,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (implMethod.IsAbstract)
                             return;
 
-                        if (UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(implMethod.Signature))
+                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
                             if (conditionalDependencies == null)
                                 conditionalDependencies = new List<CombinedDependencyListEntry>();
@@ -1038,7 +1038,7 @@ namespace ILCompiler.DependencyAnalysis
                                                                 "conditional vtable cctor sig"));
                         }
                     }
-                    , _type, _type);
+                    , _type, _type, _type);
             }
 
             if (conditionalDependencies != null)
@@ -1250,25 +1250,26 @@ namespace ILCompiler.DependencyAnalysis
                         if (implMethod.IsAbstract)
                             return;
 
-                        if (UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(implMethod.Signature))
+                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
                             if (vtableSignaturesSequence == null)
                                 vtableSignaturesSequence = new VertexSequence();
 
-                            NativeLayoutVertexNode signatureVertex = factory.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature);
-                            NativeLayoutVertexNode placedSignatureVertex = factory.NativeLayout.PlacedSignatureVertex(signatureVertex);
+                            NativeLayoutVertexNode methodSignature = factory.NativeLayout.MethodSignatureVertex(implMethod.GetTypicalMethodDefinition().Signature);
+                            Vertex signatureVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(methodSignature.WriteVertex(factory));
 
-                            Vertex vtableSignatureEntry = writer.GetTuple(writer.GetUnsignedConstant(((uint)vtableIndex) << 1), // We currently do not use sealed vtable entries yet. Update when that happens
-                                            placedSignatureVertex.WriteVertex(factory));
+                            Vertex vtableSignatureEntry = writer.GetTuple(
+                                writer.GetUnsignedConstant(((uint)vtableIndex) << 1), // We currently do not use sealed vtable entries yet. Update when that happens
+                                factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(signatureVertex));
 
                             vtableSignaturesSequence.Append(vtableSignatureEntry);
                         }
                     }
-                    , _type, _type);
+                    , _type, _type, _type);
 
                 if (vtableSignaturesSequence != null)
                 {
-                    Vertex placedVtableSigs = factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(vtableSignaturesSequence);
+                    Vertex placedVtableSigs = factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(vtableSignaturesSequence);
                     layoutInfo.Append(BagElementKind.VTableMethodSignatures, placedVtableSigs);
                 }
             }
@@ -1316,16 +1317,22 @@ namespace ILCompiler.DependencyAnalysis
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
         /// </summary>
-        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType)
+        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
         {
             if (implType.IsInterface)
                 return;
 
             declType = declType.GetClosestDefType();
+            templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            bool canShareNormalCanonicalCode = declType != declType.ConvertToCanonForm(CanonicalFormKind.Specific);
 
             var baseType = declType.BaseType;
             if (baseType != null)
-                ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, whichEntries, ref currentVTableIndex, operation, implType, baseType);
+            {
+                Debug.Assert(templateType.BaseType != null);
+                ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, whichEntries, ref currentVTableIndex, operation, implType, baseType, templateType.BaseType);
+            }
 
             IEnumerable<MethodDesc> vtableEntriesToProcess;
 
@@ -1360,6 +1367,10 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     throw new Exception();
             }
+
+            // Dictionary slot
+            if (canShareNormalCanonicalCode || templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                currentVTableIndex++;
 
             // Actual vtable slots follow
             foreach (MethodDesc declMethod in vtableEntriesToProcess)
