@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -386,7 +386,6 @@
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
@@ -471,7 +470,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="System\TimeZoneInfo.Win32.cs" />
     <Compile Include="System\AppContext.Windows.cs" />
     <Compile Include="System\DateTime.Windows.CoreRT.cs" />
     <Compile Include="System\Number.Windows.cs" />
@@ -623,7 +621,6 @@
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="System\AppContext.Unix.cs" />
-    <Compile Include="System\TimeZoneInfo.Unix.cs" />
     <Compile Include="System\DateTime.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Number.Unix.cs" />
