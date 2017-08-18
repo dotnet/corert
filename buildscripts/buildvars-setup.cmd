@@ -132,18 +132,18 @@ exit /b 1
 :: Setup vars for VS2017
 set __VSVersion=vs2017
 set __VSProductVersion=150
-goto :CheckVSExistence
+if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
+goto :CheckMSBuild
 
 :VS2015
 :: Setup vars for VS2015
 set __VSVersion=vs2015
 set __VSProductVersion=140
-goto :CheckVSExistence
+if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" goto :MissingVisualC
+goto :CheckMSBuild
 
-:CheckVSExistence
-:: Does VS really exist?
-if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
-echo Visual Studio not installed in !VS%__VSProductVersion%COMNTOOLS!.
+:MissingVisualC
+echo Could not find Visual C++ under !VS%__VSProductVersion%COMNTOOLS!. Visual C++ is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
@@ -156,8 +156,8 @@ if /i "%__VSVersion%" == "vs2017" (
 ) else (
     set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
     if not exist !_msbuildexe! (set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe")
-    if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 )
+if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
