@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Threading;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
 
-using global::Internal.Runtime.Augments;
-using global::Internal.Reflection.Execution;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
+using Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal abstract class InstanceFieldAccessor : FieldAccessor
     {
-        public InstanceFieldAccessor(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle)
+        public InstanceFieldAccessor(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, int offsetPlusHeader)
         {
             this.DeclaringTypeHandle = declaringTypeHandle;
             this.FieldTypeHandle = fieldTypeHandle;
+            this.OffsetPlusHeader = offsetPlusHeader;
         }
 
         public abstract override int Offset { get; }
@@ -97,7 +94,8 @@ namespace Internal.Reflection.Execution.FieldAccessors
         protected abstract Object UncheckedGetField(Object obj);
         protected abstract void UncheckedSetField(Object obj, Object value);
 
-        protected RuntimeTypeHandle DeclaringTypeHandle { get; private set; }
-        protected RuntimeTypeHandle FieldTypeHandle { get; private set; }
+        protected int OffsetPlusHeader { get; }
+        protected RuntimeTypeHandle DeclaringTypeHandle { get; }
+        protected RuntimeTypeHandle FieldTypeHandle { get; }
     }
 }

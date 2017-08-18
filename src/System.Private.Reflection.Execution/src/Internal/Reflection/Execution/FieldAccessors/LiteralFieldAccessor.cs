@@ -4,7 +4,6 @@
 
 using System;
 using System.Reflection;
-using System.Diagnostics;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
