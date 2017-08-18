@@ -123,16 +123,22 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (!((srcEEType.IsEnum || srcEEType.IsPrimitive) && (dstEEType.IsEnum || dstEEType.IsPrimitive || dstEEType.IsPointer)))
+            if (dstEEType.IsPointer)
+            {
+                Exception exception = ConvertPointerIfPossible(srcObject, srcEEType, dstEEType, semantics, out IntPtr dstIntPtr);
+                if (exception != null)
+                {
+                    dstObject = null;
+                    return exception;
+                }
+                dstObject = dstIntPtr;
+                return null;
+            }
+
+            if (!(srcEEType.IsPrimitive && dstEEType.IsPrimitive))
             {
                 dstObject = null;
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
-            }
-
-            if (dstEEType.IsPointer)
-            {
-                dstObject = null;
-                return NotImplemented.ActiveIssue("TFS 457960 - Passing Pointers through Reflection Invoke");
             }
 
             RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
@@ -220,6 +226,27 @@ namespace System
 
             Debug.Assert(dstObject.EETypePtr == dstEEType);
             return null;
+        }
+
+        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out IntPtr dstIntPtr)
+        {
+            if (srcObject is IntPtr srcIntPtr)
+            {
+                dstIntPtr = srcIntPtr;
+                return null;
+            }
+
+            if (srcObject is Pointer srcPointer)
+            {
+                if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
+                {
+                    dstIntPtr = srcPointer.GetPointerValue();
+                    return null;
+                }
+            }
+
+            dstIntPtr = IntPtr.Zero;
+            return CreateChangeTypeException(srcEEType, dstEEType, semantics);
         }
 
         private static Exception CreateChangeTypeException(EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics)

@@ -120,6 +120,24 @@
   <data name="ArrayByRef" xml:space="preserve">
     <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
   </data>
+  <data name="BranchIntoFilter" xml:space="preserve">
+    <value>Branch into exception filter block.</value>
+  </data>
+  <data name="BranchIntoHandler" xml:space="preserve">
+    <value>Branch into exception handler block.</value>
+  </data>
+  <data name="BranchIntoTry" xml:space="preserve">
+    <value>Branch into try block.</value>
+  </data>
+  <data name="BranchOutOfFilter" xml:space="preserve">
+    <value>Branch out of exception filter block.</value>
+  </data>
+  <data name="BranchOutOfHandler" xml:space="preserve">
+    <value>Branch out of exception handler block.</value>
+  </data>
+  <data name="BranchOutOfTry" xml:space="preserve">
+    <value>Branch out of try block.</value>
+  </data>
   <data name="CallAbstract" xml:space="preserve">
     <value>Call not allowed on abstract methods.</value>
   </data>
