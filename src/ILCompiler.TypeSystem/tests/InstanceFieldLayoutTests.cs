@@ -319,11 +319,6 @@ namespace TypeSystemTests
             }
 
             {
-                DefType type = _testModule.GetType("IsByRefLike", "ComposedStruct");
-                Assert.True(type.IsByRefLike);
-            }
-
-            {
                 DefType type = _testModule.GetType("IsByRefLike", "NotByRefLike");
                 Assert.False(type.IsByRefLike);
             }
@@ -333,12 +328,12 @@ namespace TypeSystemTests
         public void TestInvalidByRefLikeTypes()
         {
             {
-                DefType type = _testModule.GetType("IsByRefLike", "Invalid");
+                DefType type = _testModule.GetType("IsByRefLike", "InvalidClass");
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
 
             {
-                DefType type = _testModule.GetType("IsByRefLike", "ComposedInvalid");
+                DefType type = _testModule.GetType("IsByRefLike", "InvalidStruct");
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }

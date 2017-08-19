@@ -1498,7 +1498,7 @@ namespace Internal.JitInterface
 
             // we shouldn't allow boxing of types that contains stack pointers
             // csc and vbc already disallow it.
-            if (type.IsValueType && ((DefType)type).IsByRefLike)
+            if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;

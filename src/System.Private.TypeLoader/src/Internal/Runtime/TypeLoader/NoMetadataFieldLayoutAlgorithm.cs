@@ -23,11 +23,6 @@ namespace Internal.Runtime.TypeLoader
             return type.RuntimeTypeHandle.ToEETypePtr()->HasGCPointers;
         }
 
-        public unsafe override bool ComputeIsByRefLike(DefType type)
-        {
-            return type.RuntimeTypeHandle.ToEETypePtr()->IsByRefLike;
-        }
-
         /// <summary>
         /// Reads the minimal information about type layout encoded in the 
         /// EEType. That doesn't include field information.
