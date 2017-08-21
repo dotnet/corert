@@ -410,6 +410,17 @@ namespace ILCompiler
             return MetadataCategory.RuntimeMapping;
         }
 
+        private bool IsMethodSupportedInPrecomputedReflection(MethodDesc method)
+        {
+            if (!IsMethodSupportedInReflectionInvoke(method))
+                return false;
+
+            MethodDesc typicalInvokeTarget = method.GetTypicalMethodDefinition();
+            MethodDesc typicalDynamicInvokeStub;
+
+            return _dynamicInvokeStubs.Value.TryGetValue(typicalInvokeTarget, out typicalDynamicInvokeStub);
+        }
+
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
@@ -419,6 +430,9 @@ namespace ILCompiler
             foreach (var method in loadedMetadata.MethodMappings.Keys)
             {
                 if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    continue;
+
+                if (!IsMethodSupportedInPrecomputedReflection(method))
                     continue;
 
                 if (method.IsVirtual)
@@ -438,6 +452,9 @@ namespace ILCompiler
             // Virtual methods need special handling (e.g. with dependency tracking) since they can be abstract.
             foreach (var method in loadedMetadata.RequiredGenericMethods)
             {
+                if (!IsMethodSupportedInPrecomputedReflection(method))
+                    continue;
+
                 if (method.IsVirtual)
                     rootProvider.RootVirtualMethodForReflection(method, "Required generic method");
                 else
