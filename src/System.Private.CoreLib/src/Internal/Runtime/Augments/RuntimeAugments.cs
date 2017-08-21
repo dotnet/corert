@@ -277,6 +277,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhBox(fieldType.ToEETypePtr(), *(void**)&address);
         }
 
+        public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
+        {
+            return Pointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
+        }
+
         public static unsafe void StoreValueTypeField(ref byte address, Object fieldValue, RuntimeTypeHandle fieldType)
         {
             RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
@@ -299,6 +304,16 @@ namespace Internal.Runtime.Augments
                 IntPtr pData = (IntPtr)pObj;
                 IntPtr pField = pData + fieldOffset;
                 return LoadValueTypeField(pField, fieldType);
+            }
+        }
+
+        public static unsafe Object LoadPointerTypeField(Object obj, int fieldOffset, RuntimeTypeHandle fieldType)
+        {
+            fixed (IntPtr* pObj = &obj.m_pEEType)
+            {
+                IntPtr pData = (IntPtr)pObj;
+                IntPtr pField = pData + fieldOffset;
+                return LoadPointerTypeField(pField, fieldType);
             }
         }
 
@@ -363,6 +378,19 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
 
             return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsPointer);
+
+            IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            unsafe
+            {
+                return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+            }
         }
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
