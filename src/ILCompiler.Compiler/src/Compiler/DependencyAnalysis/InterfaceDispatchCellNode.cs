@@ -72,7 +72,9 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialAlignment(_targetMethod.Context.Target.PointerSize * 2);
             objData.AddSymbol(this);
 
-            if (factory.Target.Architecture == TargetArchitecture.ARM)
+            TargetArchitecture targetArchitecture = factory.Target.Architecture;
+            if (targetArchitecture == TargetArchitecture.ARM ||
+                targetArchitecture == TargetArchitecture.ARMEL)
             {
                 objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
             }
