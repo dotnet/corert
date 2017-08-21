@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-using System;
-
-namespace Microsoft.Win32
+namespace Microsoft.Win32.SafeHandles
 {
     sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
@@ -13,7 +10,7 @@ namespace Microsoft.Win32
 
         override protected bool ReleaseHandle()
         {
-            return Interop.mincore.FreeLibrary(handle);
+            return Interop.Kernel32.FreeLibrary(handle);
         }
     }
 }
