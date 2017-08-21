@@ -111,8 +111,13 @@ namespace Internal.IL
                 if (!_isFallbackBodyCompilation &&
                     (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
                 {
-                    // For beforefieldinit, we can wait for field access.
-                    if (!((MetadataType)owningType).IsBeforeFieldInit)
+                    // For beforefieldinit, we can wait for field access...
+                    bool runCctor = !((MetadataType)owningType).IsBeforeFieldInit;
+
+                    // ...unless this is a PInvoke, in which case we run it regardless
+                    runCctor |= _canonMethod.IsPInvoke;
+
+                    if (runCctor)
                     {
                         MethodDesc method = _methodIL.OwningMethod;
                         if (method.OwningType.IsRuntimeDeterminedSubtype)
