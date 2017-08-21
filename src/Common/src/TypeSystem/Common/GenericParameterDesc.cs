@@ -164,6 +164,8 @@ namespace Internal.TypeSystem
 
             flags |= TypeFlags.HasGenericVarianceComputed;
 
+            flags |= TypeFlags.IsByRefLikeComputed;
+
             return flags;
         }
 

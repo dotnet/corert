@@ -22,11 +22,6 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        public override bool ComputeIsByRefLike(DefType type)
-        {
-            return false;
-        }
-
         public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
         {
             return null;
