@@ -241,6 +241,15 @@ typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;
 
+enum ThreadType
+{
+    ThreadType_GC = 137,
+};
+
+#undef ClrFlsSetThreadType
+#define ClrFlsSetThreadType(threadType) SetGCSpecialThread(threadType)
+void SetGCSpecialThread(ThreadType threadType);
+
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 // Note this is not updated in a thread safe way so the value may not be accurate. We get
 // it accurately in full GCs if the handle count is requested.
