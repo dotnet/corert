@@ -417,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal void ParseNativeLayoutInfo(InstantiatedMethod method)
         {
-            TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + ToString() + " ...");
+            TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + method.ToString() + " ...");
 
             Debug.Assert(method.Dictionary == null);
 
@@ -1867,6 +1867,103 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        //
+        // This method is used to build the floating portion of a generic dictionary.
+        // 
+        private unsafe IntPtr BuildFloatingDictionary(TypeSystemContext typeSystemContext, IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
+        {
+            isNewlyAllocatedDictionary = true;
+
+            NativeParser nativeLayoutParser;
+            NativeLayoutInfoLoadContext nlilContext;
+
+            if (isTypeContext)
+            {
+                TypeDesc typeContext = typeSystemContext.ResolveRuntimeTypeHandle(*(RuntimeTypeHandle*)&context);
+
+                TypeLoaderLogger.WriteLine("Building floating dictionary layout for type " + typeContext.ToString() + "...");
+
+                // We should only perform updates to floating dictionaries for types that share normal canonical code
+                Debug.Assert(typeContext.CanShareNormalGenericCode());
+
+                // Computing the template will throw if no template is found.
+                typeContext.ComputeTemplate();
+
+                TypeBuilderState state = typeContext.GetOrCreateTypeBuilderState();
+                nativeLayoutParser = state.GetParserForNativeLayoutInfo();
+                nlilContext = state.NativeLayoutInfo.LoadContext;
+            }
+            else
+            {
+                RuntimeTypeHandle declaringTypeHandle;
+                MethodNameAndSignature nameAndSignature;
+                RuntimeTypeHandle[] genericMethodArgHandles;
+                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
+                Debug.Assert(success);
+
+                DefType declaringType = (DefType)typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
+                InstantiatedMethod methodContext = (InstantiatedMethod)typeSystemContext.ResolveGenericMethodInstantiation(
+                    false, 
+                    declaringType, 
+                    nameAndSignature, 
+                    typeSystemContext.ResolveRuntimeTypeHandles(genericMethodArgHandles), 
+                    IntPtr.Zero, 
+                    false);
+
+                TypeLoaderLogger.WriteLine("Building floating dictionary layout for method " + methodContext.ToString() + "...");
+
+                // We should only perform updates to floating dictionaries for gemeric methods that share normal canonical code
+                Debug.Assert(!methodContext.IsNonSharableMethod);
+
+                uint nativeLayoutInfoToken;
+                NativeFormatModuleInfo nativeLayoutModule;
+                MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
+                if (templateMethod == null)
+                    throw new TypeBuilder.MissingTemplateException();
+
+                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+
+                nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
+                nlilContext = new NativeLayoutInfoLoadContext
+                {
+                    _typeSystemContext = methodContext.Context,
+                    _typeArgumentHandles = methodContext.OwningType.Instantiation,
+                    _methodArgumentHandles = methodContext.Instantiation,
+                    _module = nativeLayoutModule
+                };
+            }
+
+            NativeParser dictionaryLayoutParser = nativeLayoutParser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
+            if (dictionaryLayoutParser.IsNull)
+                return IntPtr.Zero;
+
+            int floatingVersionCellIndex, floatingVersionInLayout;
+            GenericDictionaryCell[] floatingCells = GenericDictionaryCell.BuildFloatingDictionary(this, nlilContext, dictionaryLayoutParser, out floatingVersionCellIndex, out floatingVersionInLayout);
+            if (floatingCells == null)
+                return IntPtr.Zero;
+
+            // First, check if the current version of the existing floating dictionary matches the version in the native layout. If so, there
+            // is no need to allocate anything new, and we can just use the existing statically compiled floating portion of the input dictionary.
+            int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
+            if(currentFloatingVersion == floatingVersionInLayout)
+            {
+                isNewlyAllocatedDictionary = false;
+                return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+            }
+
+            GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);
+
+            IntPtr result = floatingDict.Allocate();
+
+            ProcessTypesNeedingPreparation();
+
+            FinishTypeAndMethodBuilding();
+
+            floatingDict.Finish(this);
+
+            return result;
+        }
+
         public static bool TryBuildGenericType(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             Debug.Assert(!genericTypeDefinitionHandle.IsNull() && genericTypeArgumentHandles != null && genericTypeArgumentHandles.Length > 0);
@@ -2141,6 +2238,33 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContextFactory.Recycle(context);
 
             return success;
+        }
+
+        //
+        // This method is used to build the floating portion of a generic dictionary.
+        // 
+        internal static IntPtr TryBuildFloatingDictionary(IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
+        {
+            isNewlyAllocatedDictionary = true;
+
+            try
+            {
+                TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
+
+                IntPtr ret = new TypeBuilder().BuildFloatingDictionary(typeSystemContext, context, isTypeContext, fixedDictionary, out isNewlyAllocatedDictionary);
+
+                TypeSystemContextFactory.Recycle(typeSystemContext);
+
+                return ret;
+            }
+            catch (MissingTemplateException e)
+            {
+                // This should not ever happen. The static compiler should ensure that the templates are always
+                // available for types and methods that have floating dictionaries
+                Environment.FailFast("MissingTemplateException thrown during dictionary update", e);
+
+                return IntPtr.Zero;
+            }
         }
     }
 }

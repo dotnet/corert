@@ -86,6 +86,11 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
         }
 
+        public override IntPtr UpdateFloatingDictionary(IntPtr context, bool isTypeContext)
+        {
+            return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, isTypeContext);
+        }
+
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>
@@ -511,6 +516,67 @@ namespace Internal.Runtime.TypeLoader
             {
                 return TypeBuilder.TryGetFieldOffset(declaringTypeHandle, fieldOrdinal, out fieldOffset);
             }
+        }
+
+        public unsafe IntPtr UpdateFloatingDictionary(IntPtr context, bool isTypeContext)
+        {
+            IntPtr dictionaryPtr;
+            if (isTypeContext)
+            {
+                EEType* pEEType = (EEType*)context.ToPointer();
+                dictionaryPtr = EETypeCreator.GetDictionary(pEEType);
+            }
+            else
+            {
+                dictionaryPtr = context;
+            }
+
+            IntPtr newFloatingDictionary;
+            bool isNewlyAllocatedDictionary;
+            using (LockHolder.Hold(_typeLoaderLock))
+            {
+                // Check if some other thread already allocated a floating dictionary and updated the fixed portion
+                if(*(IntPtr*)dictionaryPtr != IntPtr.Zero)
+                    return *(IntPtr*)dictionaryPtr;
+
+                try
+                {
+                    if (t_isReentrant)
+                        Environment.FailFast("Reentrant update to floating dictionary");
+                    t_isReentrant = true;
+
+                    newFloatingDictionary = TypeBuilder.TryBuildFloatingDictionary(context, isTypeContext, dictionaryPtr, out isNewlyAllocatedDictionary);
+
+                    t_isReentrant = false;
+                }
+                catch
+                {
+                    // Catch and rethrow any exceptions instead of using finally block. Otherwise, filters that are run during 
+                    // the first pass of exception unwind may hit the re-entrancy fail fast above.
+
+                    // TODO: Convert this to filter for better diagnostics once we switch to Roslyn
+
+                    t_isReentrant = false;
+                    throw;
+                }
+            }
+
+            if (newFloatingDictionary == IntPtr.Zero)
+            {
+                Environment.FailFast("Unable to update floating dictionary");
+                return IntPtr.Zero;
+            }
+
+            // The pointer to the floating dictionary is the first slot of the fixed dictionary.
+            if (Interlocked.CompareExchange(ref *(IntPtr*)dictionaryPtr, newFloatingDictionary, IntPtr.Zero) != IntPtr.Zero)
+            {
+                // Some other thread beat us and updated the pointer to the floating dictionary.
+                // Free the one allocated by the current thread
+                if (isNewlyAllocatedDictionary)
+                    MemoryHelpers.FreeMemory(newFloatingDictionary);
+            }
+
+            return *(IntPtr*)dictionaryPtr;
         }
 
         public bool CanInstantiationsShareCode(RuntimeTypeHandle[] genericArgHandles1, RuntimeTypeHandle[] genericArgHandles2, CanonicalFormKind kind)
