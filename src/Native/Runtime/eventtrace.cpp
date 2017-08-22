@@ -1065,7 +1065,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
 
         ThreadStore::AttachCurrentThread();
-        Thread * pThread = GetThread();
+        Thread * pThread = ThreadStore::GetCurrentThread();
 
         // Doing this prevents the GC from trying to walk this thread's stack for roots.
         pThread->SetGCSpecial(true);

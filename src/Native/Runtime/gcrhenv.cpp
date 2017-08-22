@@ -651,7 +651,7 @@ void RedhawkGCInterface::StressGc()
     // restored after the GC operation;
     Int32 lastErrorOnEntry = PalGetLastError();
 
-    if (g_fGcStressStarted && !GetThread()->IsSuppressGcStressSet() && !GetThread()->IsDoNotTriggerGcSet())
+    if (g_fGcStressStarted && !ThreadStore::GetCurrentThread()->IsSuppressGcStressSet() && !ThreadStore::GetCurrentThread()->IsDoNotTriggerGcSet())
     {
         GCHeapUtilities::GetGCHeap()->GarbageCollect();
     }
@@ -1659,40 +1659,6 @@ bool IsGCThread()
 
 void LogSpewAlways(const char * /*fmt*/, ...)
 {
-}
-
-uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
-{
-    switch (eType)
-    {
-    case UNSUPPORTED_BGCSpinCount:
-        return 140;
-
-    case UNSUPPORTED_BGCSpin:
-        return 2;
-
-    case UNSUPPORTED_GCLogEnabled:
-    case UNSUPPORTED_GCLogFile:
-    case UNSUPPORTED_GCLogFileSize:
-    case EXTERNAL_GCStressStart:
-    case INTERNAL_GCStressStartAtJit:
-    case INTERNAL_DbgDACSkipVerifyDlls:
-        return 0;
-
-    case Config_COUNT:
-    default:
-#ifdef _MSC_VER
-#pragma warning(suppress:4127) // Constant conditional expression in ASSERT below
-#endif
-        ASSERT(!"Unknown config value type");
-        return 0;
-    }
-}
-
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z TCHAR * * outVal)
-{
-    *outVal = NULL;
-    return 0;
 }
 
 bool NumaNodeInfo::CanEnableGCNumaAware() 
