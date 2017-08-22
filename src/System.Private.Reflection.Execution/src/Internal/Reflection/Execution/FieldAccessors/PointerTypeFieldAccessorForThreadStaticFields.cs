@@ -7,9 +7,9 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ReferenceTypeFieldAccessorForThreadStaticFields : ThreadStaticFieldAccessor
+    internal sealed class PointerTypeFieldAccessorForThreadStaticFields : ThreadStaticFieldAccessor
     {
-        public ReferenceTypeFieldAccessorForThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, int threadStaticsBlockOffset, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        public PointerTypeFieldAccessorForThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, int threadStaticsBlockOffset, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, declaringTypeHandle, threadStaticsBlockOffset, fieldOffset, fieldTypeHandle)
         {
         }
@@ -17,13 +17,13 @@ namespace Internal.Reflection.Execution.FieldAccessors
         protected sealed override Object GetFieldBypassCctor()
         {
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
-            return RuntimeAugments.LoadReferenceTypeField(fieldAddress);
+            return RuntimeAugments.LoadPointerTypeField(fieldAddress, FieldTypeHandle);
         }
 
         protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
             IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
-            RuntimeAugments.StoreReferenceTypeField(fieldAddress, value);
+            RuntimeAugments.StoreValueTypeField(fieldAddress, value, typeof(IntPtr).TypeHandle);
         }
     }
 }

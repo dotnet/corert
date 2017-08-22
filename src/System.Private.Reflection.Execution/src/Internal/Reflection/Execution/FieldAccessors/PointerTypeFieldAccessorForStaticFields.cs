@@ -7,9 +7,9 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ReferenceTypeFieldAccessorForStaticFields : RegularStaticFieldAccessor
+    internal sealed class PointerTypeFieldAccessorForStaticFields : RegularStaticFieldAccessor
     {
-        public ReferenceTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr staticsBase, int fieldOffset, bool isGcStatic, RuntimeTypeHandle fieldTypeHandle)
+        public PointerTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr staticsBase, int fieldOffset, bool isGcStatic, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle)
         {
         }
@@ -22,10 +22,10 @@ namespace Internal.Reflection.Execution.FieldAccessors
                 // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.
                 // We need to perform a double indirection in a GC-safe manner.
                 object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)StaticsBase);
-                return RuntimeAugments.LoadReferenceTypeField(gcStaticsRegion, FieldOffset);
+                return RuntimeAugments.LoadPointerTypeField(gcStaticsRegion, FieldOffset, FieldTypeHandle);
             }
 #endif
-            return RuntimeAugments.LoadReferenceTypeField(StaticsBase + FieldOffset);
+            return RuntimeAugments.LoadPointerTypeField(StaticsBase + FieldOffset, FieldTypeHandle);
         }
 
         unsafe protected sealed override void UncheckedSetFieldBypassCctor(Object value)
@@ -37,11 +37,11 @@ namespace Internal.Reflection.Execution.FieldAccessors
                 // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.
                 // We need to perform a double indirection in a GC-safe manner.
                 object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)StaticsBase);
-                RuntimeAugments.StoreReferenceTypeField(gcStaticsRegion, FieldOffset, value);
+                RuntimeAugments.StoreValueTypeField(gcStaticsRegion, FieldOffset, value, typeof(IntPtr).TypeHandle);
                 return;
             }
 #endif
-            RuntimeAugments.StoreReferenceTypeField(StaticsBase + FieldOffset, value);
+            RuntimeAugments.StoreValueTypeField(StaticsBase + FieldOffset, value, typeof(IntPtr).TypeHandle);
         }
     }
 }

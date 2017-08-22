@@ -17,6 +17,8 @@ using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 using Internal.Runtime.DebuggerSupport;
 
+using IRC=Internal.Runtime.CallConverter;
+
 namespace Internal.Runtime.DebuggerSupport
 {
     [McgIntrinsics]
@@ -31,6 +33,7 @@ namespace Internal.Runtime.DebuggerSupport
         private struct InvokeFunctionData
         {
             public object thisObj;
+            public IRC.CallingConvention callingConvention;
             public RuntimeTypeHandle[] types;
             public byte[][] parameterValues;
             public FuncEvalResult result;
@@ -219,6 +222,7 @@ namespace Internal.Runtime.DebuggerSupport
                 );
 
             invokeFunctionData.types = new RuntimeTypeHandle[parameters.Length];
+            invokeFunctionData.callingConvention = hasThis ? IRC.CallingConvention.ManagedInstance : IRC.CallingConvention.ManagedStatic;
 
             for (int i = 0; i < invokeFunctionData.types.Length; i++)
             {
@@ -365,8 +369,7 @@ namespace Internal.Runtime.DebuggerSupport
                 returnAndArgumentTypes[i] = new LocalVariableType(invokeFunctionData.types[i], false, false);
             }
 
-            // Hard coding static here
-            DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(Internal.Runtime.CallConverter.CallingConvention.ManagedStatic, returnAndArgumentTypes, returnAndArgumentTypes.Length);
+            DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(invokeFunctionData.callingConvention, returnAndArgumentTypes, returnAndArgumentTypes.Length);
 
             // Invoke the target method
             Exception ex = null;
