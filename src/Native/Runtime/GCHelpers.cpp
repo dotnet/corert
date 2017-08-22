@@ -29,7 +29,7 @@ EXTERN_C REDHAWK_API void __cdecl RhpCollect(UInt32 uGeneration, UInt32 uMode)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    Thread * pCurThread = GetThread();
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
 
     pCurThread->SetupHackPInvokeTunnel();
     pCurThread->DisablePreemptiveMode();
@@ -44,7 +44,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    Thread * pCurThread = GetThread();
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
 
     pCurThread->SetupHackPInvokeTunnel();
     pCurThread->DisablePreemptiveMode();
@@ -58,7 +58,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpStartNoGCRegion(Int64 totalSize, Boolean hasLohSize, Int64 lohSize, Boolean disallowFullBlockingGC)
 {
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
 
     pCurThread->SetupHackPInvokeTunnel();
@@ -73,7 +73,7 @@ EXTERN_C REDHAWK_API Int32 __cdecl RhpStartNoGCRegion(Int64 totalSize, Boolean h
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpEndNoGCRegion()
 {
-    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     return GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
 }
@@ -183,7 +183,7 @@ COOP_PINVOKE_HELPER(Boolean, RhCancelFullGCNotification, ())
 COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCApproach, (Int32 millisecondsTimeout))
 {
     ASSERT(millisecondsTimeout >= -1);
-    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(millisecondsTimeout);
@@ -192,7 +192,7 @@ COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCApproach, (Int32 millisecondsTimeout))
 COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCComplete, (Int32 millisecondsTimeout))
 {
     ASSERT(millisecondsTimeout >= -1);
-    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(millisecondsTimeout);
@@ -208,7 +208,7 @@ COOP_PINVOKE_HELPER(Int64, RhGetGCSegmentSize, ())
 
 COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
 {
-    Thread *pThread = GetThread();
+    Thread *pThread = ThreadStore::GetCurrentThread();
     gc_alloc_context *ac = pThread->GetAllocContext();
     Int64 currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
     return currentAllocated;

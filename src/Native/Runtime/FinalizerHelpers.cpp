@@ -42,7 +42,7 @@ UInt32 WINAPI FinalizerStart(void* pContext)
     HANDLE hFinalizerEvent = (HANDLE)pContext;
 
     ThreadStore::AttachCurrentThread();
-    Thread * pThread = GetThread();
+    Thread * pThread = ThreadStore::GetCurrentThread();
 
     // Disallow gcstress on this thread to work around the current implementation's limitation that it will 
     // get into an infinite loop if performed on the finalizer thread.
@@ -145,10 +145,10 @@ EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowRe
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
     // called in cooperative mode.
-    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     // Can't call this from the finalizer thread itself.
-    if (GetThread() != g_pFinalizerThread)
+    if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
         // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
         // (if there's no work to do it'll set the done event immediately).
