@@ -194,7 +194,7 @@ namespace Internal.IL
                 case TypeFlags.UIntPtr: return type.Context.GetWellKnownType(WellKnownType.IntPtr);
 
                 default:
-                    return type; //Reduced type is type itself
+                    return type.UnderlyingType; //Reduced type is type itself
             }
         }
 
@@ -263,6 +263,10 @@ namespace Internal.IL
         bool IsCompatibleWith(TypeDesc src, TypeDesc dst, bool allowSizeEquivalence = false)
         {
             if (src == dst)
+                return true;
+
+            // Everything is compatible to object through transitivity
+            if (dst.IsObject)
                 return true;
 
             if (!src.IsValueType && src.CanCastTo(dst))
@@ -340,8 +344,15 @@ namespace Internal.IL
 
         bool IsBinaryComparable(StackValue src, StackValue dst, ILOpcode op)
         {
-            if (src.Kind == dst.Kind && src.Type == dst.Type)
-                return true;
+            if (src.Kind == dst.Kind)
+            {
+                if (src.Type == dst.Type)
+                    return true;
+
+                if ((src.Type != null && dst.Type != null) &&
+                    src.Type.IsPrimitive && dst.Type.IsPrimitive)
+                    return true;
+            }
 
             switch (src.Kind)
             {
