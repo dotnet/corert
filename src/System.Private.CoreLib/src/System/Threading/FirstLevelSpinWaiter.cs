@@ -27,7 +27,7 @@ namespace System.Threading
 
         private static int s_spinningThreadCount;
 
-        public static bool SpinWaitForCondition(Func<bool> condition)
+        public static bool SpinWaitForCondition<T>(Func<T, bool> condition, T obj)
         {
             Debug.Assert(condition != null);
 
@@ -56,7 +56,7 @@ namespace System.Threading
                     // The caller should check the condition in a fast path before calling this method, so wait first
                     Wait(spinIndex);
 
-                    if (condition())
+                    if (condition(obj))
                     {
                         return true;
                     }
