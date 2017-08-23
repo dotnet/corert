@@ -419,7 +419,7 @@ namespace Internal.IL
 
         void CheckIsObjRef(TypeDesc type)
         {
-            if (!IsCompatibleWith(type, GetWellKnownType(WellKnownType.Object), false))
+            if (type.Category != TypeFlags.Class)
             {
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
@@ -1345,7 +1345,7 @@ namespace Internal.IL
 
             Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
 
-            CheckIsAssignable(type, value.Type.GetParameterType());
+            CheckIsAssignable(type, value.Type);
         }
 
         void ImportBox(int token)
