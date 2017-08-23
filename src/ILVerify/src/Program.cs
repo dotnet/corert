@@ -133,6 +133,17 @@ namespace ILVerify
                     message.Append(((EcmaType)method.OwningType).Name);
                     message.Append("::");
                     message.Append(method.Name);
+                    message.Append("(");
+                    if (method.Signature._parameters != null && method.Signature._parameters.Length > 0)
+                    {
+                        foreach (TypeDesc parameter in method.Signature._parameters)
+                        {
+                            message.Append(parameter.ToString());
+                            message.Append(", ");
+                        }
+                        message.Remove(message.Length - 2, 2);
+                    }
+                    message.Append(")");
                     message.Append("]");
 
                     message.Append("[offset 0x");
