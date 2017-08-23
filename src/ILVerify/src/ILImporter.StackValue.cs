@@ -269,7 +269,7 @@ namespace Internal.IL
             if (dst.IsObject)
                 return true;
 
-            if (!src.IsValueType && src.CanCastTo(dst))
+            if (!src.IsPrimitive && src.CanCastTo(dst))
                 return true;
 
             if (src.IsValueType || dst.IsValueType)
