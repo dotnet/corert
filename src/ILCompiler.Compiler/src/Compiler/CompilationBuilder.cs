@@ -77,13 +77,9 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
+        public CompilationBuilder UseDebugInfoProvider(DebugInformationProvider provider)
         {
-            if (generateDebugInfo)
-                _debugInformationProvider = new DebugInformationProvider();
-            else
-                _debugInformationProvider = new NullDebugInformationProvider();
-
+            _debugInformationProvider = provider;
             return this;
         }
 
