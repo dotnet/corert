@@ -75,7 +75,7 @@ namespace ILCompiler
                     break;
             }
 
-            if (_generateDebugInfo)
+            if (!_debugInformationProvider.IsNull)
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
             if (_context.Target.MaximumSimdVectorLength != SimdVectorLength.None)
@@ -90,7 +90,7 @@ namespace ILCompiler
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
-            return new RyuJitCompilation(graph, factory, _compilationRoots, _logger, jitConfig);
+            return new RyuJitCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, jitConfig);
         }
     }
 }

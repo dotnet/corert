@@ -22,10 +22,10 @@ namespace ILCompiler
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
-        protected bool _generateDebugInfo = false;
         protected MetadataManager _metadataManager;
         protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
+        protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -79,7 +79,11 @@ namespace ILCompiler
 
         public CompilationBuilder UseDebugInfo(bool generateDebugInfo)
         {
-            _generateDebugInfo = generateDebugInfo;
+            if (generateDebugInfo)
+                _debugInformationProvider = new DebugInformationProvider();
+            else
+                _debugInformationProvider = new NullDebugInformationProvider();
+
             return this;
         }
 
