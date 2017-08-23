@@ -357,13 +357,13 @@ namespace Internal.IL
         void CheckIsAssignable(TypeDesc src, TypeDesc dst)
         {
             if (!IsAssignable(src, dst))
-                VerificationError(VerifierError.StackUnexpected, src, dst);
+                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
         }
 
         void CheckIsVerifierAssignable(TypeDesc src, TypeDesc dst)
         {
             if (!IsVerifierAssignable(src, dst))
-                VerificationError(VerifierError.StackUnexpected, src, dst);
+                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
         }
 
         void CheckIsValidBranchTarget(BasicBlock src, BasicBlock target)
@@ -420,6 +420,9 @@ namespace Internal.IL
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
+            if (type == null)
+                return "Null";
+
             switch (type.Category)
             {
                 case TypeFlags.Boolean: return "Boolean";

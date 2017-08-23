@@ -183,6 +183,9 @@ namespace Internal.IL
         /// </summary>
         static TypeDesc GetReducedType(TypeDesc type)
         {
+            if (type == null)
+                return null;
+
             var category = type.UnderlyingType.Category;
 
             switch (type.Category)
@@ -203,6 +206,9 @@ namespace Internal.IL
         /// </summary>
         static TypeDesc GetVerificationType(TypeDesc type)
         {
+            if (type == null)
+                return null;
+
             if (type.IsByRef)
             {
                 var parameterVerificationType = GetVerificationType(type.GetParameterType());
@@ -231,6 +237,9 @@ namespace Internal.IL
         static public TypeDesc GetIntermediateType(TypeDesc type)
         {
             var verificationType = GetVerificationType(type);
+
+            if (verificationType == null)
+                return null;
 
             switch (verificationType.Category)
             {
@@ -264,6 +273,9 @@ namespace Internal.IL
         {
             if (src == dst)
                 return true;
+
+            if (src == null || dst == null)
+                return false;
 
             // Everything is compatible to object through transitivity
             if (dst.IsObject)
@@ -313,6 +325,9 @@ namespace Internal.IL
             var dstIntermediate = GetIntermediateType(dst);
             if (srcIntermediate == dstIntermediate)
                 return true;
+
+            if (srcIntermediate == null || dstIntermediate == null)
+                return false;
 
             if (srcIntermediate.Category == TypeFlags.IntPtr && dstIntermediate.Category == TypeFlags.Int32 ||
                 srcIntermediate.Category == TypeFlags.Int32 && dstIntermediate.Category == TypeFlags.IntPtr)
