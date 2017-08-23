@@ -226,7 +226,7 @@ namespace Internal.IL
                         return type.Context.GetWellKnownType(WellKnownType.Int16);
 
                     default:
-                        return reducedType; // Verifcation type is reduced type
+                        return reducedType; // Verification type is reduced type
                 }
             }
         }
