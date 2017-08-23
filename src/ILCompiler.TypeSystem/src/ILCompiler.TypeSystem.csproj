@@ -112,6 +112,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.Common.cs">
       <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameFormatter.cs">
+      <Link>Utilities\CustomAttributeTypeNameFormatter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
