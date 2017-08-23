@@ -167,7 +167,20 @@ namespace Internal.JitInterface
                         // If we captured a managed exception, rethrow that.
                         // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
                         // an inlining attempt with a type system problem in it...
+#if SUPPORT_JIT
                         _lastException.Throw();
+#else
+                        if (_lastException.SourceException is TypeSystemException)
+                        {
+                            // Type system exceptions can be turned into code that throws the exception at runtime.
+                            _lastException.Throw();
+                        }
+                        else
+                        {
+                            // This is just a bug somewhere.
+                            throw new CodeGenerationFailedException(_methodCodeNode.Method, _lastException.SourceException);
+                        }
+#endif
                     }
 
                     // This is a failure we don't know much about.
@@ -181,7 +194,12 @@ namespace Internal.JitInterface
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
-                    throw new Exception("JIT Failed");
+#if SUPPORT_JIT
+                    // FailFast?
+                    throw new Exception("JIT failed");
+#else
+                    throw new CodeGenerationFailedException(_methodCodeNode.Method);
+#endif
                 }
 
                 PublishCode();
