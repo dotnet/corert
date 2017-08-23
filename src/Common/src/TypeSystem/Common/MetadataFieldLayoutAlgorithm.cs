@@ -37,12 +37,9 @@ namespace Internal.TypeSystem
                 if (fieldType.IsByRef)
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
 
-                // ByRef-like instance fields on reference types are not allowed.
-                if (fieldType.IsValueType && !type.IsValueType)
-                {
-                    if (((DefType)fieldType).IsByRefLike)
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
+                // ByRef-like instance fields on non-byref-like types are not allowed.
+                if (fieldType.IsByRefLike && !type.IsByRefLike)
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
 
                 numInstanceFields++;
             }
@@ -621,34 +618,6 @@ namespace Internal.TypeSystem
                         return null;
                 }
             }
-        }
-
-        public override bool ComputeIsByRefLike(DefType type)
-        {
-            // Reference types can never be ByRef-like.
-            if (!type.IsValueType)
-                return false;
-
-            if (type.IsByReferenceOfT)
-                return true;
-
-            foreach (FieldDesc field in type.GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-
-                TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsValueType && !fieldType.IsPrimitive)
-                {
-                    DefType fieldDefType = (DefType)fieldType;
-                    if (fieldDefType.IsByRefLike)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private struct SizeAndAlignment

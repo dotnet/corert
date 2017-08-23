@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -95,10 +95,20 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager .cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugILImagesSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodMapSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugNeedTypeIndicesStoreNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugPseudoAssemblySection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeRecordsSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeSignatureMapSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNodeWithFuncletSymbols.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ISymbolNodeWithFuncletId.cs" />
     <Compile Include="Compiler\DependencyAnalysis\LoopHijackFlagNode.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
@@ -222,6 +232,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.WindowsDebugData.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
@@ -269,8 +280,10 @@
     <Compile Include="Compiler\LazyGenericsPolicy.cs" />
     <Compile Include="Compiler\LibraryRootProvider.cs" />
     <Compile Include="Compiler\MainMethodRootProvider.cs" />
+    <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\CompilerGeneratedMetadataManager.cs" />
+    <Compile Include="Compiler\MergedAssemblyRecords.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
@@ -355,6 +368,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs">
+      <Link>TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs</Link>

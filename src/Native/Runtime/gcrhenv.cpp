@@ -1259,11 +1259,13 @@ gc_alloc_context * Thread::GetAllocContext()
     return dac_cast<DPTR(gc_alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
 }
 
+#ifndef DACCESS_COMPILE
 bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC
-    return false;
+    return ThreadStore::GetCurrentThread()->IsGCSpecial();
 }
+#endif // DACCESS_COMPILE
 
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
@@ -1280,15 +1282,23 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
     return !!PalSwitchToThread();
 }
 
+void SetGCSpecialThread(ThreadType threadType)
+{
+    Thread *pThread = ThreadStore::RawGetCurrentThread();
+    pThread->SetGCSpecial(threadType == ThreadType_GC);
+}
+
 #endif // DACCESS_COMPILE
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 
+#ifndef DACCESS_COMPILE
 bool IsGCThread()
 {
-    return false;
+    return IsGCSpecialThread() || ThreadStore::GetSuspendingThread() == ThreadStore::GetCurrentThread();
 }
+#endif // DACCESS_COMPILE
 
 void LogSpewAlways(const char * /*fmt*/, ...)
 {

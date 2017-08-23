@@ -43,11 +43,6 @@ namespace Internal.TypeSystem
         /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
         /// </summary>
         public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
-
-        /// <summary>
-        /// Compute whether '<paramref name="type"/>' is a ByRef-like value type (TypedReference, Span&lt;T&gt;, etc.).
-        /// </summary>
-        public abstract bool ComputeIsByRefLike(DefType type);
     }
 
     /// <summary>

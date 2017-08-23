@@ -124,6 +124,7 @@ namespace Internal.TypeSystem
             }
 
             flags |= TypeFlags.HasFinalizerComputed;
+            flags |= TypeFlags.IsByRefLikeComputed;
 
             return flags;
         }
@@ -213,6 +214,7 @@ namespace Internal.TypeSystem
             }
 
             flags |= TypeFlags.HasFinalizerComputed;
+            flags |= TypeFlags.IsByRefLikeComputed;
 
             return flags;
         }

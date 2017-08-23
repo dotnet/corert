@@ -195,6 +195,20 @@ namespace Internal.TypeSystem.NoMetadata
                 }
             }
 
+            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            {
+                flags |= TypeFlags.IsByRefLikeComputed;
+
+                unsafe
+                {
+                    EEType* eetype = _genericTypeDefinition.ToEETypePtr();
+                    if (eetype->IsByRefLike)
+                    {
+                        flags |= TypeFlags.IsByRefLike;
+                    }
+                }
+            }
+
             return flags;
         }
 

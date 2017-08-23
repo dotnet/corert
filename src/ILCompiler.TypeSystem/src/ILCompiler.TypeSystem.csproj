@@ -421,6 +421,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
+      <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
     </Compile>

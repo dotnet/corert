@@ -748,7 +748,7 @@ namespace System.Resources
             Version ver;
             try
             {
-                ver = new Version(v);
+                ver = Version.Parse(v);
             }
             catch (ArgumentOutOfRangeException e)
             {

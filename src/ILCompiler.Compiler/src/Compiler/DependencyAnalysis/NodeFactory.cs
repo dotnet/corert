@@ -479,6 +479,7 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             NativeLayout = new NativeLayoutHelper(this);
+            WindowsDebugData = new WindowsDebugDataHelper(this);
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
