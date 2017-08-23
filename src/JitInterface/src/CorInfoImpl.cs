@@ -2125,7 +2125,7 @@ namespace Internal.JitInterface
                 SequencePoint s;
                 if (_sequencePoints.TryGetValue((int)ilOffset, out s))
                 {
-                    Debug.Assert(!string.IsNullOrEmpty(s.Document));
+                    Debug.Assert(s.Document != null);
                     DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
                     debugLocInfos.Add(loc);
                     previousNativeOffset = nativeOffset;

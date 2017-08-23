@@ -7,9 +7,9 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ReferenceTypeFieldAccessorForInstanceFields : InstanceFieldAccessor
+    internal sealed class PointerTypeFieldAccessorForInstanceFields : InstanceFieldAccessor
     {
-        public ReferenceTypeFieldAccessorForInstanceFields(int offsetPlusHeader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle)
+        public PointerTypeFieldAccessorForInstanceFields(int offsetPlusHeader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle)
             : base(declaringTypeHandle, fieldTypeHandle, offsetPlusHeader)
         {
         }
@@ -18,22 +18,22 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         protected sealed override Object UncheckedGetField(Object obj)
         {
-            return RuntimeAugments.LoadReferenceTypeField(obj, OffsetPlusHeader);
+            return RuntimeAugments.LoadPointerTypeField(obj, OffsetPlusHeader, this.FieldTypeHandle);
         }
 
         protected sealed override object UncheckedGetFieldDirectFromValueType(TypedReference typedReference)
         {
-            return RuntimeAugments.LoadReferenceTypeFieldValueFromValueType(typedReference, this.Offset);
+            return RuntimeAugments.LoadPointerTypeFieldValueFromValueType(typedReference, this.Offset, this.FieldTypeHandle);
         }
 
         protected sealed override void UncheckedSetField(Object obj, Object value)
         {
-            RuntimeAugments.StoreReferenceTypeField(obj, OffsetPlusHeader, value);
+            RuntimeAugments.StoreValueTypeField(obj, OffsetPlusHeader, value, typeof(IntPtr).TypeHandle);
         }
 
         protected sealed override void UncheckedSetFieldDirectIntoValueType(TypedReference typedReference, object value)
         {
-            RuntimeAugments.StoreReferenceTypeFieldValueIntoValueType(typedReference, this.Offset, value);
+            RuntimeAugments.StoreValueTypeFieldValueIntoValueType(typedReference, this.Offset, value, typeof(IntPtr).TypeHandle);
         }
     }
 }
