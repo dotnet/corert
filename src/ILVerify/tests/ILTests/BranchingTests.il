@@ -119,7 +119,7 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Branching.IntoTry_Invalid_BranchIntoTry() cil managed
+    .method static public hidebysig void Branching.IntoTryStart_Valid() cil managed
     {
         .maxstack 2
 
@@ -140,6 +140,149 @@
         {
             pop
             leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 2
+
+        ldc.i4.s  10
+        ldc.i4.s  5
+        bne.un.s  lbl_true
+
+        nop
+        br.s      lbl_ret
+
+        .try
+        {
+            nop
+            lbl_true: nop
+
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoNestedTryStart_Valid() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_leave
+            .try
+            {
+                lbl_true: nop
+
+                leave.s   lbl_leave
+            }
+            catch [System.Runtime]System.Object
+            {
+                pop
+                leave.s   lbl_leave
+            }
+
+            lbl_leave: leave.s lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoNestedTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_leave
+            .try
+            {
+                nop
+                lbl_true: nop
+
+                leave.s   lbl_leave
+            }
+            catch [System.Runtime]System.Object
+            {
+                pop
+                leave.s   lbl_leave
+            }
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry_BranchIntoFilter() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            lbl_true: nop
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoFinally_Invalid_BranchOutOfTry_BranchIntoHandler() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_finally
+
+            nop
+            leave.s   lbl_ret
+        }
+        finally
+        {
+            lbl_finally: nop
+            endfinally
         }
 
         lbl_ret: ret
