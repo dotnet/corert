@@ -20,6 +20,9 @@ namespace Internal.IL
         private StackValueFlags Flags;
 
         public readonly StackValueKind Kind;
+        /// <summary>
+        /// Corresponds to the intermediate type of the value pushed onto the stack.
+        /// </summary>
         public readonly TypeDesc Type;
 
         private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
@@ -55,27 +58,24 @@ namespace Internal.IL
             return new StackValue(StackValueKind.Unknown);
         }
 
-        static public StackValue CreatePrimitive(StackValueKind kind, TypeSystemContext typeSystemContext)
+        static public StackValue CreatePrimitive(TypeDesc type)
         {
-            switch (kind)
+            var intermediateType = ILImporter.GetIntermediateType(type);
+
+            switch (intermediateType.Category)
             {
-                case StackValueKind.Int32:
-                    return new StackValue(kind, typeSystemContext.GetWellKnownType(WellKnownType.Int32));
-                case StackValueKind.Int64:
-                    return new StackValue(kind, typeSystemContext.GetWellKnownType(WellKnownType.Int64));
-                case StackValueKind.NativeInt:
-                    return new StackValue(kind, typeSystemContext.GetWellKnownType(WellKnownType.IntPtr));
-                case StackValueKind.Float:
-                    return new StackValue(kind, typeSystemContext.GetWellKnownType(WellKnownType.Double));
+                case TypeFlags.Int32:
+                    return new StackValue(StackValueKind.Int32, intermediateType);
+                case TypeFlags.Int64:
+                    return new StackValue(StackValueKind.Int64, intermediateType);
+                case TypeFlags.IntPtr:
+                    return new StackValue(StackValueKind.NativeInt, intermediateType);
+                case TypeFlags.Double:
+                    return new StackValue(StackValueKind.Float, intermediateType);
                 default:
                     Debug.Assert(false);
-                    return new StackValue(kind);
+                    return new StackValue(StackValueKind.Unknown);
             }
-        }
-
-        static private StackValue CreatePrimitive(StackValueKind kind, TypeDesc type)
-        {
-            return new StackValue(kind, type);
         }
 
         static public StackValue CreateObjRef(TypeDesc type)
@@ -105,19 +105,15 @@ namespace Internal.IL
                 case TypeFlags.UInt16:
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    return CreatePrimitive(StackValueKind.Int32, type);
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    return CreatePrimitive(StackValueKind.Int64, type);
                 case TypeFlags.Single:
                 case TypeFlags.Double:
-                    return CreatePrimitive(StackValueKind.Float, type);
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
                 case TypeFlags.Pointer:
-                    return CreatePrimitive(StackValueKind.NativeInt, type);
                 case TypeFlags.Enum:
-                    return CreateFromType(type.UnderlyingType);
+                    return CreatePrimitive(type);
                 case TypeFlags.ByRef:
                     return CreateByRef(((ByRefType)type).ParameterType);
                 default:
@@ -181,20 +177,25 @@ namespace Internal.IL
         /// <summary>
         /// Returns the reduced type as defined in the ECMA-335 standard (I.8.7).
         /// </summary>
-        static TypeDesc GetReducedType(TypeDesc type)
+        public static TypeDesc GetReducedType(TypeDesc type)
         {
             if (type == null)
                 return null;
 
             var category = type.UnderlyingType.Category;
 
-            switch (type.Category)
+            switch (category)
             {
-                case TypeFlags.Byte: return type.Context.GetWellKnownType(WellKnownType.SByte);
-                case TypeFlags.UInt16: return type.Context.GetWellKnownType(WellKnownType.Int16);
-                case TypeFlags.UInt32: return type.Context.GetWellKnownType(WellKnownType.Int32);
-                case TypeFlags.UInt64: return type.Context.GetWellKnownType(WellKnownType.Int64);
-                case TypeFlags.UIntPtr: return type.Context.GetWellKnownType(WellKnownType.IntPtr);
+                case TypeFlags.Byte:
+                    return type.Context.GetWellKnownType(WellKnownType.SByte);
+                case TypeFlags.UInt16:
+                    return type.Context.GetWellKnownType(WellKnownType.Int16);
+                case TypeFlags.UInt32:
+                    return type.Context.GetWellKnownType(WellKnownType.Int32);
+                case TypeFlags.UInt64:
+                    return type.Context.GetWellKnownType(WellKnownType.Int64);
+                case TypeFlags.UIntPtr:
+                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
 
                 default:
                     return type.UnderlyingType; //Reduced type is type itself
@@ -204,7 +205,7 @@ namespace Internal.IL
         /// <summary>
         /// Returns the "verification type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
-        static TypeDesc GetVerificationType(TypeDesc type)
+        public static TypeDesc GetVerificationType(TypeDesc type)
         {
             if (type == null)
                 return null;
@@ -234,7 +235,7 @@ namespace Internal.IL
         /// <summary>
         /// Returns the "intermediate type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
-        static public TypeDesc GetIntermediateType(TypeDesc type)
+        public static TypeDesc GetIntermediateType(TypeDesc type)
         {
             var verificationType = GetVerificationType(type);
 
@@ -269,7 +270,7 @@ namespace Internal.IL
         /// Returns whether the given source type is compatible with the given destination type
         /// based on the definition of "compatible-with" in the ECMA-335 standard (I.8.7.1).
         /// </summary>
-        bool IsCompatibleWith(TypeDesc src, TypeDesc dst, bool allowSizeEquivalence = false)
+        bool IsCompatibleWith(TypeDesc src, TypeDesc dst)
         {
             if (src == dst)
                 return true;
@@ -284,15 +285,6 @@ namespace Internal.IL
             if (!src.IsPrimitive && src.CanCastTo(dst))
                 return true;
 
-            if (src.IsValueType || dst.IsValueType)
-            {
-                if (allowSizeEquivalence && IsSameVerificationType(src, dst))
-                    return true;
-
-                // TODO IsEquivalent
-                return false;
-            }
-
             return false;
         }
 
@@ -305,10 +297,10 @@ namespace Internal.IL
             src = src.UnderlyingType;
             dst = dst.UnderlyingType;
 
-            if (IsCompatibleWith(src, dst, true))
+            if (IsSameReducedType(src, dst))
                 return true;
 
-            return IsSameReducedType(src, dst);
+            return IsCompatibleWith(src, dst);
         }
 
         /// <summary>

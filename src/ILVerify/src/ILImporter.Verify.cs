@@ -981,12 +981,27 @@ namespace Internal.IL
 
         void ImportLoadInt(long value, StackValueKind kind)
         {
-            Push(StackValue.CreatePrimitive(kind, _typeSystemContext));
+            WellKnownType wellKnownType = WellKnownType.Unknown;
+            switch (kind)
+            {
+                case StackValueKind.Int32:
+                    wellKnownType = WellKnownType.Int32;
+                    break;
+                case StackValueKind.Int64:
+                    wellKnownType = WellKnownType.Int64;
+                    break;
+                case StackValueKind.NativeInt:
+                    wellKnownType = WellKnownType.IntPtr;
+                    break;
+            }
+            Debug.Assert(wellKnownType != WellKnownType.Unknown);
+
+            Push(StackValue.CreatePrimitive(GetWellKnownType(wellKnownType)));
         }
 
         void ImportLoadFloat(double value)
         {
-            Push(StackValue.CreatePrimitive(StackValueKind.Float, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Double)));
         }
 
         void ImportLoadNull()
@@ -1196,7 +1211,7 @@ namespace Internal.IL
             if ((result.Kind == StackValueKind.ByRef) &&
                     (opcode == ILOpcode.sub || opcode == ILOpcode.sub_ovf || opcode == ILOpcode.sub_ovf_un))
             {
-                result = StackValue.CreatePrimitive(StackValueKind.NativeInt, _typeSystemContext);
+                result = StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr));
             }
 
             Push(result);
@@ -1210,7 +1225,7 @@ namespace Internal.IL
             Check(shiftBy.Kind == StackValueKind.Int32 || shiftBy.Kind == StackValueKind.NativeInt, VerifierError.StackUnexpected, shiftBy);
             CheckIsInteger(toBeShifted);
 
-            Push(StackValue.CreatePrimitive(toBeShifted.Kind, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(toBeShifted.Type));
         }
 
         void ImportCompareOperation(ILOpcode opcode)
@@ -1220,7 +1235,7 @@ namespace Internal.IL
 
             CheckIsComparable(value1, value2, opcode);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.Int32, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Int32)));
         }
 
         void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
@@ -1489,7 +1504,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(GetVerificationType(actualElementType), elementType);
                 }
                 else
                 {
@@ -1521,7 +1536,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(elementType, actualElementType);
+                    CheckIsArrayElementCompatibleWith(elementType, GetVerificationType(actualElementType));
                 }
                 else
                 {
@@ -1532,11 +1547,7 @@ namespace Internal.IL
 
             if (elementType != null)
             {
-                // ECMA-335 standard defines that "the tracked type of value is 
-                // array-element-compatible-with typeTok", however this would fail
-                // for assigning a char (loaded with ldc.i4) to a char[], so we check 
-                // IsAssignable instead.
-                CheckIsAssignable(value.Type, elementType);
+                CheckIsArrayElementCompatibleWith(value.Type, GetIntermediateType(elementType));
             }
         }
 
@@ -1567,7 +1578,7 @@ namespace Internal.IL
 
             CheckIsArray(array);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.NativeInt, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr)));
         }
 
         void ImportUnaryOperation(ILOpcode opCode)
@@ -1587,7 +1598,7 @@ namespace Internal.IL
                     break;
             }
 
-            Push(StackValue.CreatePrimitive(operand.Kind, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(operand.Type));
         }
 
         void ImportCpOpj(int token)
@@ -1670,7 +1681,7 @@ namespace Internal.IL
 
             CheckIsInteger(size);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.NativeInt, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr)));
         }
 
         void ImportEndFilter()
@@ -1744,7 +1755,7 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.Int32, _typeSystemContext));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Int32)));
         }
 
         //
