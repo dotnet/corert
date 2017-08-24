@@ -175,8 +175,7 @@ namespace Internal.Reflection.Execution
 
             if (refName.Version != null)
             {
-                int compareResult = refName.Version.CompareTo(defName.Version);
-                if (compareResult > 0)
+                if (!AssemblyVersionMatches(refVersion: refName.Version, defVersion: defName.Version))
                     return false;
             }
 
@@ -202,6 +201,33 @@ namespace Internal.Reflection.Execution
                 if (!ArePktsEqual(refPublicKeyToken, defPublicKeyToken))
                     return false;
             }
+
+            return true;
+        }
+
+        private static bool AssemblyVersionMatches(Version refVersion, Version defVersion)
+        {
+            if (defVersion.Major < refVersion.Major)
+                return false;
+            if (defVersion.Major > refVersion.Major)
+                return true;
+
+            if (defVersion.Minor < refVersion.Minor)
+                return false;
+            if (defVersion.Minor > refVersion.Minor)
+                return true;
+
+            if (refVersion.Build == -1)
+                return true;
+            if (defVersion.Build < refVersion.Build)
+                return false;
+            if (defVersion.Build > refVersion.Build)
+                return true;
+
+            if (refVersion.Revision == -1)
+                return true;
+            if (defVersion.Revision < refVersion.Revision)
+                return false;
 
             return true;
         }

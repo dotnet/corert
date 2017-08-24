@@ -2611,4 +2611,7 @@
   <data name="StackTrace_EndStackTraceFromPreviousThrow" xml:space="preserve">
     <value>--- End of stack trace from previous location where exception was thrown ---</value>
   </data>
+  <data name="InvalidAssemblyName" xml:space="preserve">
+    <value>The given assembly name or codebase was invalid</value>
+  </data>
 </root>
