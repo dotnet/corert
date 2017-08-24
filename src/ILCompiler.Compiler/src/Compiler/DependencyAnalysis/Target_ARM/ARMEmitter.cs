@@ -53,6 +53,13 @@ namespace ILCompiler.DependencyAnalysis.ARM
             Builder.EmitByte(0xbf);
         }
 
+        // __debugbreak
+        public void EmitDebugBreak()
+        {
+            Builder.EmitByte(0xde);
+            Builder.EmitByte(0xfe);
+        }
+        
         // push reg
         public void EmitPUSH(Register reg)
         {

@@ -52,6 +52,7 @@ enum class ReadyToRunSectionType
     ThreadStaticGCDescRegion    = 209,
     ThreadStaticIndex           = 210,
     LoopHijackFlag              = 211,
+    UnboxingStubsRegion         = 212,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
     ReadonlyBlobRegionStart     = 300,

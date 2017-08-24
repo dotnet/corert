@@ -40,7 +40,12 @@ namespace ILCompiler.DependencyAnalysis.X86
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
             }
         }
-        
+
+        public void EmitINT3()
+        {
+            Builder.EmitByte(0xCC);
+        }
+
         private bool InSignedByteRange(int i)
         {
             return i == (int)(sbyte)i;
