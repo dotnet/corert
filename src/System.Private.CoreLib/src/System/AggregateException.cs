@@ -31,7 +31,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class AggregateException : Exception
     {
-        private ReadOnlyCollection<Exception> _innerExceptions; // Complete set of exceptions. Do not rename (binary serialization)
+        private ReadOnlyCollection<Exception> m_innerExceptions; // Complete set of exceptions. Do not rename (binary serialization)
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class.
@@ -39,7 +39,7 @@ namespace System
         public AggregateException()
             : base(SR.AggregateException_ctor_DefaultMessage)
         {
-            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace System
         public AggregateException(string message)
             : base(message)
         {
-            _innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
+            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace System
                 throw new ArgumentNullException(nameof(innerException));
             }
 
-            _innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
+            m_innerExceptions = new ReadOnlyCollection<Exception>(new Exception[] { innerException });
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace System
                 }
             }
 
-            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace System
                 }
             }
 
-            _innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
+            m_innerExceptions = new ReadOnlyCollection<Exception>(exceptionsCopy);
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace System
                 throw new SerializationException(SR.AggregateException_DeserializationFailure);
             }
 
-            _innerExceptions = new ReadOnlyCollection<Exception>(innerExceptions);
+            m_innerExceptions = new ReadOnlyCollection<Exception>(innerExceptions);
         }
 
         /// <summary>
@@ -280,8 +280,8 @@ namespace System
         {
             base.GetObjectData(info, context);
 
-            Exception[] innerExceptions = new Exception[_innerExceptions.Count];
-            _innerExceptions.CopyTo(innerExceptions, 0);
+            Exception[] innerExceptions = new Exception[m_innerExceptions.Count];
+            m_innerExceptions.CopyTo(innerExceptions, 0);
             info.AddValue("InnerExceptions", innerExceptions, typeof(Exception[]));
         }
 
@@ -309,7 +309,7 @@ namespace System
         /// </summary>
         public ReadOnlyCollection<Exception> InnerExceptions
         {
-            get { return _innerExceptions; }
+            get { return m_innerExceptions; }
         }
 
 
@@ -340,18 +340,18 @@ namespace System
             }
 
             LowLevelListWithIList<Exception> unhandledExceptions = null;
-            for (int i = 0; i < _innerExceptions.Count; i++)
+            for (int i = 0; i < m_innerExceptions.Count; i++)
             {
                 // If the exception was not handled, lazily allocate a list of unhandled
                 // exceptions (to be rethrown later) and add it.
-                if (!predicate(_innerExceptions[i]))
+                if (!predicate(m_innerExceptions[i]))
                 {
                     if (unhandledExceptions == null)
                     {
                         unhandledExceptions = new LowLevelListWithIList<Exception>();
                     }
 
-                    unhandledExceptions.Add(_innerExceptions[i]);
+                    unhandledExceptions.Add(m_innerExceptions[i]);
                 }
             }
 
@@ -423,7 +423,7 @@ namespace System
         {
             get
             {
-                if (_innerExceptions.Count == 0)
+                if (m_innerExceptions.Count == 0)
                 {
                     return base.Message;
                 }
@@ -431,10 +431,10 @@ namespace System
                 StringBuilder sb = new StringBuilder();
                 sb.Append(base.Message);
                 sb.Append(' ');
-                for (int i = 0; i < _innerExceptions.Count; i++)
+                for (int i = 0; i < m_innerExceptions.Count; i++)
                 {
                     sb.Append('(');
-                    sb.Append(_innerExceptions[i].Message);
+                    sb.Append(m_innerExceptions[i].Message);
                     sb.Append(") ");
                 }
                 sb.Length -= 1;
@@ -451,12 +451,12 @@ namespace System
             StringBuilder text = new StringBuilder();
             text.Append(base.ToString());
 
-            for (int i = 0; i < _innerExceptions.Count; i++)
+            for (int i = 0; i < m_innerExceptions.Count; i++)
             {
                 text.Append(Environment.NewLine);
                 text.Append("---> ");
                 text.Append(string.Format(CultureInfo.InvariantCulture, SR.AggregateException_InnerException, i));
-                text.Append(_innerExceptions[i].ToString());
+                text.Append(m_innerExceptions[i].ToString());
                 text.Append("<---");
                 text.Append(Environment.NewLine);
             }
