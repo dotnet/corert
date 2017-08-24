@@ -86,14 +86,14 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool foundMatch)
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool foundMatch)
         {
             lock(s_ecmaLoadedAssemblies)
             {
                 for (int i = 0; i < s_ecmaLoadedAssemblies.Count; i++)
                 {
                     PEInfo info = s_ecmaLoadedAssemblies[i];
-                    if (AssemblyNameMatches(refName, info.Name))
+                    if (AssemblyNameMatches(refName, info.Name, ref preferredException))
                     {
                         if (foundMatch)
                         {
@@ -146,7 +146,7 @@ namespace Internal.Reflection.Execution
                                 RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
 
                                 // If assembly name doesn't match, it isn't the one we're looking for. Continue to look for more assemblies
-                                if (!AssemblyNameMatches(refName, runtimeAssemblyName))
+                                if (!AssemblyNameMatches(refName, runtimeAssemblyName, ref preferredException))
                                     continue;
 
                                 // This is the one we are looking for, add it to the list of loaded assemblies
