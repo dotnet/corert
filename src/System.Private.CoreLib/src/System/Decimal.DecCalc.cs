@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -71,7 +67,7 @@ namespace System
         /// <summary>
         /// Class that contains all the mathematical calculations for decimal. Most of which have been ported from oleaut32.
         /// </summary>
-        private class DecCalc
+        private static unsafe class DecCalc
         {
             // Constant representing the negative number that is the closest possible
             // Decimal value to -0m.
@@ -250,7 +246,7 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div96By32(uint[] rgulNum, uint ulDen)
+            private static uint Div96By32(uint* rgulNum, uint ulDen)
             {
                 Split64 sdlTmp = new Split64();
 
@@ -301,7 +297,7 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div96By64(System.Collections.Generic.IList<uint> rgulNum, Split64 sdlDen)
+            private static uint Div96By64(uint* rgulNum, Split64 sdlDen)
             {
                 Split64 sdlQuo = new Split64();
                 Split64 sdlNum = new Split64();
@@ -389,7 +385,7 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div128By96(uint[] rgulNum, uint[] rgulDen)
+            private static uint Div128By96(uint* rgulNum, uint* rgulDen)
             {
                 Split64 sdlQuo = new Split64();
                 Split64 sdlNum = new Split64();
@@ -479,7 +475,7 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint IncreaseScale(uint[] rgulNum, uint ulPwr)
+            private static uint IncreaseScale(uint* rgulNum, uint ulPwr)
             {
                 Split64 sdlTmp = new Split64();
 
@@ -509,7 +505,7 @@ namespace System
             *   New scale factor returned, -1 if overflow error.
             *
             ***********************************************************************/
-            private static int ScaleResult(uint[] rgulRes, int iHiRes, int iScale)
+            private static int ScaleResult(uint* rgulRes, int iHiRes, int iScale)
             {
                 int iNewScale;
                 int iCur;
@@ -682,7 +678,7 @@ namespace System
 
             // Adjust the quotient to deal with an overflow. We need to divide by 10, 
             // feed in the high bit to undo the overflow and then round as required, 
-            private static void OverflowUnscale(uint[] rgulQuo, bool fRemainder)
+            private static void OverflowUnscale(uint* rgulQuo, bool fRemainder)
             {
                 Split64 sdlTmp = new Split64();
 
@@ -812,7 +808,7 @@ namespace System
 
             // Add a 32 bit unsigned long to an array of 3 unsigned longs representing a 96 integer
             // Returns false if there is an overflow
-            private static bool Add32To96(uint[] rgulNum, uint ulValue)
+            private static bool Add32To96(uint* rgulNum, uint ulValue)
             {
                 rgulNum[0] += ulValue;
                 if (rgulNum[0] < ulValue)
@@ -832,7 +828,8 @@ namespace System
             // Returns true if we overflow otherwise false.
             private static bool DecAddSub(ref Decimal d1, ref Decimal d2, bool bSign)
             {
-                uint[] rgulNum = new uint[6];
+                Buf24 bufNum;
+                uint* rgulNum = (uint*)&bufNum;
                 uint ulPwr;
                 int iScale;
                 int iHiProd;
@@ -1082,7 +1079,7 @@ namespace System
                 return false;
             }
 
-            private static bool LongSub(ref Decimal value, ref int iHiProd, uint[] rgulNum)
+            private static bool LongSub(ref Decimal value, ref int iHiProd, uint* rgulNum)
             {
                 // If rgulNum has more than 96 bits of precision, then we need to 
                 // carry the subtraction into the higher bits.  If it doesn't, 
@@ -1104,7 +1101,7 @@ namespace System
                 return false;
             }
 
-            private static void LongAdd(ref int iHiProd, uint[] rgulNum)
+            private static void LongAdd(ref int iHiProd, uint* rgulNum)
             {
                 int iCur = 3;
                 do
@@ -1173,7 +1170,7 @@ namespace System
                 return false;
             }
 
-            private static void RoundUp(uint[] rgulQuo, ref int iScale)
+            private static void RoundUp(uint* rgulQuo, ref int iScale)
             {
                 if (!Add32To96(rgulQuo, 1))
                 {
@@ -1212,7 +1209,8 @@ namespace System
 ***********************************************************************/
             private static uint DecFixInt(ref Decimal input, ref Decimal result)
             {
-                uint[] tmpNum = new uint[3];
+                Buf16 bufNum;
+                uint* tmpNum = (uint*)&bufNum;
                 uint remainder;
                 uint power;
                 int scale;
@@ -1435,7 +1433,8 @@ namespace System
                 uint ulPwr;
                 uint ulRemLo;
                 uint ulRemHi;
-                uint[] rgulProd = new uint[6];
+                Buf24 bufProd;
+                uint* rgulProd = (uint*)&bufProd;
 
                 pdecRes = new Decimal();
                 iScale = pdecL.Scale + pdecR.Scale;
@@ -1949,10 +1948,11 @@ namespace System
             // of the operation.
             internal static void VarDecDiv(ref Decimal d1, ref Decimal d2)
             {
-                uint[] rgulQuo = new uint[3];
-                uint[] rgulQuoSave = new uint[3];
-                uint[] rgulRem = new uint[4];
-                uint[] rgulDivisor = new uint[3];
+                Buf16 bufQuo, bufQuoSave, bufRem, bufDivisor;
+                uint* rgulQuo = (uint*)&bufQuo;
+                uint* rgulQuoSave = (uint*)&bufQuoSave;
+                uint* rgulRem = (uint*)&bufRem;
+                uint* rgulDivisor = (uint*)&bufDivisor;
                 uint ulPwr;
                 uint ulTmp;
                 uint ulTmp1;
@@ -2113,7 +2113,7 @@ namespace System
                         sdlTmp.High32 = rgulRem[3];
 
                         rgulQuo[2] = 0;
-                        rgulQuo[1] = Div96By64(new ArraySegment<uint>(rgulRem, 1, 3), sdlDivisor);
+                        rgulQuo[1] = Div96By64(rgulRem + 1, sdlDivisor);
                         rgulQuo[0] = Div96By64(rgulRem, sdlDivisor);
 
                         for (;;)
@@ -2377,7 +2377,8 @@ namespace System
             //**********************************************************************
             internal static void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
             {
-                uint[] tmpNum = new uint[3];
+                Buf16 bufNum;
+                uint* tmpNum = (uint*)&bufNum;
                 uint remainder;
                 uint sticky;
                 uint power;
@@ -2692,6 +2693,12 @@ namespace System
                     return s_powerOvfl[(index * 3) + 2];
                 }
             }
+
+            [StructLayout(LayoutKind.Explicit, Size = 16)]
+            private struct Buf16 { }
+
+            [StructLayout(LayoutKind.Explicit, Size = 24)]
+            private struct Buf24 { }
         }
     }
 }
