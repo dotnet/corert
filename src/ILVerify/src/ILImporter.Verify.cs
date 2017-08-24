@@ -365,17 +365,26 @@ namespace Internal.IL
             if (src.TryIndex != target.TryIndex)
             {
                 if (src.TryIndex == null)
-                    VerificationError(VerifierError.BranchIntoTry);
+                {
+                    if (target.StartOffset == _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
+                        return; // Branching to first instruction of try-block is valid
+                    else
+                        VerificationError(VerifierError.BranchIntoTry);
+                }
                 else if (target.TryIndex == null)
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
                     if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                        VerificationError(VerifierError.BranchIntoTry);
+                    {
+                        if (target.StartOffset == _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
+                            return; // Branching to first instruction of try-block is valid
+                        else
+                            VerificationError(VerifierError.BranchIntoTry);
+                    }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
                 }
-                return;
             }
 
             if (src.FilterIndex != target.FilterIndex)
@@ -391,7 +400,6 @@ namespace Internal.IL
                     else
                         VerificationError(VerifierError.BranchOutOfFilter);
                 }
-                return;
             }
 
             if (src.HandlerIndex != target.HandlerIndex)
@@ -407,7 +415,6 @@ namespace Internal.IL
                     else
                         VerificationError(VerifierError.BranchOutOfHandler);
                 }
-                return;
             }
         }
 
