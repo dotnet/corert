@@ -353,7 +353,7 @@ namespace ILCompiler
             var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
 
             DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
-                (_ilDump == null ? new DebugInformationProvider() : new SyntheticMethodDebugInfoProvider(_ilDump)) :
+                (_ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(_ilDump, new EcmaOnlyDebugInformationProvider())) :
                 new NullDebugInformationProvider();
 
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?

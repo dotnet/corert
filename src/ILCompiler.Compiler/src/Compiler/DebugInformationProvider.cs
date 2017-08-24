@@ -11,8 +11,6 @@ namespace ILCompiler
     /// </summary>
     public class DebugInformationProvider
     {
-        public virtual bool IsNull => false;
-
         public virtual MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
             return methodIL.GetDebugInfo();
@@ -24,8 +22,6 @@ namespace ILCompiler
     /// </summary>
     public sealed class NullDebugInformationProvider : DebugInformationProvider
     {
-        public override bool IsNull => true;
-
         public override MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
             return MethodDebugInformation.None;

@@ -12,27 +12,33 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     /// <summary>
-    /// Debug information provider that generates IL assembly listing for compiler-generated
-    /// IL stubs.
+    /// Debug information provider that wraps another provider and generates IL assembly listing
+    /// (and maps debug information to it) for all methods the wrapped provider doesn't provide
+    /// debug information for.
     /// </summary>
-    public class SyntheticMethodDebugInfoProvider : DebugInformationProvider, IDisposable
+    public class ILAssemblyGeneratingMethodDebugInfoProvider : DebugInformationProvider, IDisposable
     {
+        private readonly DebugInformationProvider _wrappedProvider;
         private readonly string _fileName;
         private readonly TextWriter _tw;
-        private int _currentLine;
-        private Dictionary<MethodDesc, MethodDebugInformation> _generatedInfos = new Dictionary<MethodDesc, MethodDebugInformation>();
+        private readonly Dictionary<MethodDesc, MethodDebugInformation> _generatedInfos = new Dictionary<MethodDesc, MethodDebugInformation>();
 
-        public SyntheticMethodDebugInfoProvider(string fileName)
+        private int _currentLine;
+
+        public ILAssemblyGeneratingMethodDebugInfoProvider(string fileName, DebugInformationProvider wrappedProvider = null)
         {
+            _wrappedProvider = wrappedProvider;
             _fileName = fileName;
             _tw = new StreamWriter(File.OpenWrite(fileName));
         }
 
         public override MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
+            MethodDebugInformation debugInfo = _wrappedProvider?.GetDebugInfo(methodIL);
+            if (debugInfo != null && debugInfo != MethodDebugInformation.None)
+                return debugInfo;
+
             MethodIL definitionIL = methodIL.GetMethodILDefinition();
-            if (definitionIL is EcmaMethodIL)
-                return methodIL.GetDebugInfo();
 
             // One file per compilation model has obvious stability problems in multithreaded
             // compilation. This would be fixable by e.g. generating multiple files, or preparing
@@ -40,7 +46,7 @@ namespace ILCompiler
             // we're going to ignore the stability concern here.
             lock (_generatedInfos)
             {
-                if (!_generatedInfos.TryGetValue(definitionIL.OwningMethod, out MethodDebugInformation debugInfo))
+                if (!_generatedInfos.TryGetValue(definitionIL.OwningMethod, out debugInfo))
                 {
                     debugInfo = GetDebugInformation(definitionIL);
                     _generatedInfos.Add(definitionIL.OwningMethod, debugInfo);

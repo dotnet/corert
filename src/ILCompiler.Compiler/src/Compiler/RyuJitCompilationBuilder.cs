@@ -75,7 +75,8 @@ namespace ILCompiler
                     break;
             }
 
-            if (!_debugInformationProvider.IsNull)
+            // Do not bother with debug information if the debug info provider never gives anything.
+            if (!(_debugInformationProvider is NullDebugInformationProvider))
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
 
             if (_context.Target.MaximumSimdVectorLength != SimdVectorLength.None)
