@@ -6,12 +6,28 @@ using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public partial class UnboxingStubNode
+    public partial class UnboxingStubsRegionNode
     {
-        protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
+        protected void EmitUnboxingStubsCode(NodeFactory factory, ref ARMEmitter encoder)
         {
-            encoder.EmitADD(encoder.TargetRegister.Arg0, (byte)factory.Target.PointerSize); // add r0, sizeof(void*);         
-            encoder.EmitJMP(factory.MethodEntrypoint(_target)); // b methodEntryPoint
+            encoder.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
+            encoder.Builder.AddSymbol(this);
+
+            foreach (var unboxingStub in factory.MetadataManager.GetCompiledUnboxingStubs())
+            {
+                // Padding to ensure proper stub alignment
+                while (encoder.Builder.CountBytes % factory.Target.MinimumFunctionAlignment != 0)
+                    encoder.EmitDebugBreak();
+
+                unboxingStub.SetSymbolDefinitionOffset(encoder.Builder.CountBytes);
+                encoder.Builder.AddSymbol(unboxingStub);
+
+                encoder.EmitADD(encoder.TargetRegister.Arg0, (byte)factory.Target.PointerSize); // add r0, sizeof(void*);         
+                encoder.EmitJMP(factory.MethodEntrypoint(unboxingStub.Method)); // b methodEntryPoint
+            }
+
+            _endSymbol.SetSymbolOffset(encoder.Builder.CountBytes);
+            encoder.Builder.AddSymbol(_endSymbol);
         }
     }
 }

@@ -149,6 +149,7 @@ namespace ILCompiler
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
+            graph.AddRoot(UnboxingStubsRegion, "UnboxingStubsRegion is always generated");
 
             // The native part of the MRT library links against CRT which defines _tls_index and _tls_used.
             if (!buildMRT)
@@ -166,6 +167,7 @@ namespace ILCompiler
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticOffsetRegion, ThreadStaticsOffsetRegion, ThreadStaticsOffsetRegion.StartSymbol, ThreadStaticsOffsetRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticGCDescRegion, ThreadStaticGCDescRegion, ThreadStaticGCDescRegion.StartSymbol, ThreadStaticGCDescRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.LoopHijackFlag, LoopHijackFlag, LoopHijackFlag);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.UnboxingStubsRegion, UnboxingStubsRegion, UnboxingStubsRegion, UnboxingStubsRegion.EndSymbol);
 
             if (!buildMRT)
             {
