@@ -378,11 +378,11 @@ namespace Internal.IL
                     var targetTryStart = _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset;
                     if (srcTryStart < targetTryStart)
                     {
-                        // Check if branching into try that is not is current try block
+                        // Check if branching into try that is not inside current try block
                         if (srcTryStart + _exceptionRegions[(int)src.TryIndex].ILRegion.TryLength < targetTryStart)
                             VerificationError(VerifierError.BranchOutOfTry);
                         // Branching to first instruction of try-block is valid
-                        else if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
+                        else if (target.StartOffset != targetTryStart)
                             VerificationError(VerifierError.BranchIntoTry);
                     }
                     else
