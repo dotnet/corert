@@ -56,6 +56,8 @@ extern void * __modules_a[] __asm("section$start$__DATA$__modules");
 extern void * __modules_z[] __asm("section$end$__DATA$__modules");
 extern char __managedcode_a __asm("section$start$__TEXT$__managedcode");
 extern char __managedcode_z __asm("section$end$__TEXT$__managedcode");
+extern char __unbox_a __asm("section$start$__TEXT$__unbox");
+extern char __unbox_z __asm("section$end$__TEXT$__unbox");
 
 #else // __APPLE__
 
