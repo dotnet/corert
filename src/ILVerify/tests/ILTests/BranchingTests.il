@@ -287,4 +287,72 @@
 
         lbl_ret: ret
     }
+
+    .method static public hidebysig void Branching.FromTryIntoOtherTryStart_Invalid_BranchOutOfTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_try2
+
+            nop
+            leave.s   lbl_try
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_try
+        }
+
+        lbl_try: nop
+        .try
+        {
+            lbl_try2: nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoOtherTryMiddle_Invalid_BranchOutOfTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_try2
+
+            nop
+            leave.s   lbl_try
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_try
+        }
+
+        lbl_try: nop
+        .try
+        {
+            nop
+            lbl_try2: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
 }
