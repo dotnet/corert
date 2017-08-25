@@ -59,7 +59,7 @@ namespace Internal.IL.Stubs.StartupCode
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            codeStream.BeginDebuggerGuidedStepThroughMethod();
+            codeStream.MarkDebuggerStepThroughPoint();
 
             // Allow the class library to run explicitly ordered class constructors first thing in start-up.
             if (_libraryInitializers != null)
@@ -218,7 +218,9 @@ namespace Internal.IL.Stubs.StartupCode
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                codeStream.BeginDebuggerGuidedStepThroughMethod();
+                // We only need the initial step over sequence point if there's any instructions before the call.
+                if (Signature.Length > 0)
+                    codeStream.MarkDebuggerStepThroughPoint();
 
                 for (int i = 0; i < Signature.Length; i++)
                     codeStream.EmitLdArg(i);
