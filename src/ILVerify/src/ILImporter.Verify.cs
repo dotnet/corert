@@ -366,9 +366,8 @@ namespace Internal.IL
             {
                 if (src.TryIndex == null)
                 {
-                    if (target.StartOffset == _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                        return; // Branching to first instruction of try-block is valid
-                    else
+                    // Branching to first instruction of try-block is valid
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
                         VerificationError(VerifierError.BranchIntoTry);
                 }
                 else if (target.TryIndex == null)
@@ -377,9 +376,8 @@ namespace Internal.IL
                 {
                     if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
                     {
-                        if (target.StartOffset == _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                            return; // Branching to first instruction of try-block is valid
-                        else
+                        // Branching to first instruction of try-block is valid
+                        if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
                             VerificationError(VerifierError.BranchIntoTry);
                     }
                     else
