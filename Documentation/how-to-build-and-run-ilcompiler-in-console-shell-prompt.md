@@ -96,6 +96,18 @@ libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' confl
 C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp1.0\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
 ```
 
+or 
+
+```
+Microsoft.NETCore.Native.targets(150,5): error MSB3073: The command "link  @"native\link.rsp"" exited with code 1.
+```
+
+or
+
+```
+Microsoft.NETCore.Native.targets(132,5): error MSB3073: The command "cl @"native\cl.rsp"" exited with code 9009.
+```
+
 Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2017` instead of a vanilla command prompt
 
 For more details see discussion in issue #2679
