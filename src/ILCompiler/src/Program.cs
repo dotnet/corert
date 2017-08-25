@@ -35,6 +35,7 @@ namespace ILCompiler
         private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private bool _enableDebugInfo;
+        private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
@@ -136,6 +137,7 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code");
+                syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -350,6 +352,10 @@ namespace ILCompiler
 
             var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
 
+            DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
+                (_ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(_ilDump, new EcmaOnlyDebugInformationProvider())) :
+                new NullDebugInformationProvider();
+
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
@@ -362,7 +368,7 @@ namespace ILCompiler
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
-                .UseDebugInfo(_enableDebugInfo);
+                .UseDebugInfoProvider(debugInfoProvider);
 
             if (scanResults != null)
             {
@@ -423,6 +429,9 @@ namespace ILCompiler
                 if (scanningFail)
                     throw new Exception("Scanning failure");
             }
+
+            if (debugInfoProvider is IDisposable)
+                ((IDisposable)debugInfoProvider).Dispose();
 
             return 0;
         }

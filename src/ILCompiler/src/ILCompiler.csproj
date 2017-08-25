@@ -27,6 +27,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="RdXmlRootProvider.cs" />
+    <Compile Include="EcmaOnlyDebugInformationProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">

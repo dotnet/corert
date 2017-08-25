@@ -51,7 +51,7 @@ namespace ILCompiler
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, metadataManager, interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _logger);
+            return new ILScanner(graph, nodeFactory, _compilationRoots, new NullDebugInformationProvider(), _logger);
         }
     }
 }

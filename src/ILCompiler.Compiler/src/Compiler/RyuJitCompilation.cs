@@ -23,19 +23,12 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            DebugInformationProvider debugInformationProvider,
             Logger logger,
             JitConfigProvider configProvider)
-            : base(dependencyGraph, nodeFactory, roots, logger)
+            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, logger)
         {
             _jitConfigProvider = configProvider;
-        }
-
-        protected override bool GenerateDebugInfo
-        {
-            get
-            {
-                return _jitConfigProvider.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_INFO);
-            }
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
