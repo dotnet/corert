@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                if (_target.OperatingSystem == TargetOS.Apple)
+                if (_target.OperatingSystem == TargetOS.OSX)
                 {
                     UnboxingStubsRegionBegin = new ExternSymbolNode("section$start$__TEXT$__unboxing");
                     UnboxingStubsRegionEnd = new ExternSymbolNode("section$end$__TEXT$__unboxing");
