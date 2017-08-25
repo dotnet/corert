@@ -33,6 +33,9 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSetHighLevelDebugFuncEvalHelper")]
         internal static extern void RhpSetHighLevelDebugFuncEvalHelper(IntPtr highLevelDebugFuncEvalHelper);
 
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpSetHighLevelDebugFuncEvalAbortHelper(IntPtr highLevelDebugFuncEvalAbortHelper);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpSendCustomEventToDebugger")]
         internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
@@ -341,10 +344,9 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         internal static extern Array RhNewArray(EETypePtr pEEType, int length);
 
-        // @todo: Should we just have a proper export for this?
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        internal static extern String RhNewArrayAsString(EETypePtr pEEType, int length);
+        [RuntimeImport(RuntimeLibrary, "RhNewString")]
+        internal static extern String RhNewString(EETypePtr pEEType, int length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBox")]

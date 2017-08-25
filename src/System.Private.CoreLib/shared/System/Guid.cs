@@ -2,19 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 
 namespace System
 {
     // Represents a Globally Unique Identifier.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
     {
         public static readonly Guid Empty = new Guid();
+
         ////////////////////////////////////////////////////////////////////////////////
         //  Member variables
         ////////////////////////////////////////////////////////////////////////////////
@@ -25,11 +28,11 @@ namespace System
         private byte _e; // Do not rename (binary serialization)
         private byte _f; // Do not rename (binary serialization)
         private byte _g; // Do not rename (binary serialization)
-
         private byte _h; // Do not rename (binary serialization)
         private byte _i; // Do not rename (binary serialization)
         private byte _j; // Do not rename (binary serialization)
         private byte _k; // Do not rename (binary serialization)
+
 
         ////////////////////////////////////////////////////////////////////////////////
         //  Constructors
@@ -157,24 +160,23 @@ namespace System
         // This will store the result of the parsing.  And it will eventually be used to construct a Guid instance.
         private struct GuidResult
         {
-            internal Guid parsedGuid;
-            internal GuidParseThrowStyle throwStyle;
+            internal Guid _parsedGuid;
+            internal GuidParseThrowStyle _throwStyle;
 
-            internal ParseFailureKind m_failure;
-            internal string m_resourceMessageFormat;
-            internal object m_failureMessageFormatArgument;
-            internal string m_failureArgumentName;
-            internal Exception m_innerException;
+            private ParseFailureKind _failure;
+            private string _failureMessageID;
+            private object _failureMessageFormatArgument;
+            private string _failureArgumentName;
+            private Exception _innerException;
 
             internal void Init(GuidParseThrowStyle canThrow)
             {
-                parsedGuid = Guid.Empty;
-                throwStyle = canThrow;
+                _throwStyle = canThrow;
             }
             internal void SetFailure(Exception nativeException)
             {
-                m_failure = ParseFailureKind.NativeException;
-                m_innerException = nativeException;
+                _failure = ParseFailureKind.NativeException;
+                _innerException = nativeException;
             }
             internal void SetFailure(ParseFailureKind failure, string failureMessageID)
             {
@@ -184,16 +186,16 @@ namespace System
             {
                 SetFailure(failure, failureMessageID, failureMessageFormatArgument, null, null);
             }
-            internal void SetFailure(ParseFailureKind failure, string failureMessageFormat, object failureMessageFormatArgument,
+            internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument,
                                      string failureArgumentName, Exception innerException)
             {
                 Debug.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
-                m_failure = failure;
-                m_resourceMessageFormat = failureMessageFormat;
-                m_failureMessageFormatArgument = failureMessageFormatArgument;
-                m_failureArgumentName = failureArgumentName;
-                m_innerException = innerException;
-                if (throwStyle != GuidParseThrowStyle.None)
+                _failure = failure;
+                _failureMessageID = failureMessageID;
+                _failureMessageFormatArgument = failureMessageFormatArgument;
+                _failureArgumentName = failureArgumentName;
+                _innerException = innerException;
+                if (_throwStyle != GuidParseThrowStyle.None)
                 {
                     throw GetGuidParseException();
                 }
@@ -201,25 +203,25 @@ namespace System
 
             internal Exception GetGuidParseException()
             {
-                switch (m_failure)
+                switch (_failure)
                 {
                     case ParseFailureKind.ArgumentNull:
-                        return new ArgumentNullException(m_failureArgumentName, m_resourceMessageFormat);
+                        return new ArgumentNullException(_failureArgumentName, SR.GetResourceString(_failureMessageID));
 
                     case ParseFailureKind.FormatWithInnerException:
-                        return new FormatException(m_resourceMessageFormat, m_innerException);
+                        return new FormatException(SR.GetResourceString(_failureMessageID), _innerException);
 
                     case ParseFailureKind.FormatWithParameter:
-                        return new FormatException(SR.Format(m_resourceMessageFormat, m_failureMessageFormatArgument));
+                        return new FormatException(SR.Format(SR.GetResourceString(_failureMessageID), _failureMessageFormatArgument));
 
                     case ParseFailureKind.Format:
-                        return new FormatException(m_resourceMessageFormat);
+                        return new FormatException(SR.GetResourceString(_failureMessageID));
 
                     case ParseFailureKind.NativeException:
-                        return m_innerException;
+                        return _innerException;
 
                     default:
-                        Debug.Assert(false, "Unknown GuidParseFailure: " + m_failure);
+                        Debug.Assert(false, "Unknown GuidParseFailure: " + _failure);
                         return new FormatException(SR.Format_GuidUnrecognized);
                 }
             }
@@ -246,7 +248,7 @@ namespace System
             result.Init(GuidParseThrowStyle.All);
             if (TryParseGuid(g, GuidStyles.Any, ref result))
             {
-                this = result.parsedGuid;
+                this = result._parsedGuid;
             }
             else
             {
@@ -267,7 +269,7 @@ namespace System
             result.Init(GuidParseThrowStyle.AllButOverflow);
             if (TryParseGuid(input, GuidStyles.Any, ref result))
             {
-                return result.parsedGuid;
+                return result._parsedGuid;
             }
             else
             {
@@ -281,7 +283,7 @@ namespace System
             parseResult.Init(GuidParseThrowStyle.None);
             if (TryParseGuid(input, GuidStyles.Any, ref parseResult))
             {
-                result = parseResult.parsedGuid;
+                result = parseResult._parsedGuid;
                 return true;
             }
             else
@@ -336,7 +338,7 @@ namespace System
             result.Init(GuidParseThrowStyle.AllButOverflow);
             if (TryParseGuid(input, style, ref result))
             {
-                return result.parsedGuid;
+                return result._parsedGuid;
             }
             else
             {
@@ -386,7 +388,7 @@ namespace System
             parseResult.Init(GuidParseThrowStyle.None);
             if (TryParseGuid(input, style, ref parseResult))
             {
-                result = parseResult.parsedGuid;
+                result = parseResult._parsedGuid;
                 return true;
             }
             else
@@ -401,14 +403,14 @@ namespace System
         {
             if (g == null)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                 return false;
             }
             String guidString = g.Trim();  //Remove Whitespace
 
             if (guidString.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                 return false;
             }
 
@@ -420,7 +422,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowDashes | GuidStyles.RequireDashes)) == 0)
                 {
                     // dashes are not allowed
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -429,7 +431,7 @@ namespace System
                 if ((flags & GuidStyles.RequireDashes) != 0)
                 {
                     // dashes are required
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -442,7 +444,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowBraces | GuidStyles.RequireBraces)) == 0)
                 {
                     // braces are not allowed
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -451,7 +453,7 @@ namespace System
                 if ((flags & GuidStyles.RequireBraces) != 0)
                 {
                     // braces are required
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -464,7 +466,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowParenthesis | GuidStyles.RequireParenthesis)) == 0)
                 {
                     // parenthesis are not allowed
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -473,7 +475,7 @@ namespace System
                 if ((flags & GuidStyles.RequireParenthesis) != 0)
                 {
                     // parenthesis are required
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidUnrecognized);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
                     return false;
                 }
             }
@@ -499,12 +501,12 @@ namespace System
             }
             catch (IndexOutOfRangeException ex)
             {
-                result.SetFailure(ParseFailureKind.FormatWithInnerException, SR.Format_GuidUnrecognized, null, null, ex);
+                result.SetFailure(ParseFailureKind.FormatWithInnerException, "Format_GuidUnrecognized", null, null, ex);
                 return false;
             }
             catch (ArgumentException ex)
             {
-                result.SetFailure(ParseFailureKind.FormatWithInnerException, SR.Format_GuidUnrecognized, null, null, ex);
+                result.SetFailure(ParseFailureKind.FormatWithInnerException, "Format_GuidUnrecognized", null, null, ex);
                 return false;
             }
         }
@@ -522,14 +524,14 @@ namespace System
             // Check for leading '{'
             if (String.IsNullOrEmpty(guidString) || guidString[0] != '{')
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidBrace);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidBrace");
                 return false;
             }
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, 1))
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidHexPrefix, "{0xdddddddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, etc}");
                 return false;
             }
 
@@ -538,18 +540,18 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidComma);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
                 return false;
             }
 
 
-            if (!StringToInt(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._a, ref result))
+            if (!StringToInt(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._a, ref result))
                 return false;
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidHexPrefix, "{0xdddddddd, 0xdddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, 0xdddd, etc}");
                 return false;
             }
             // +3 to get by ',0x'
@@ -557,17 +559,17 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidComma);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
                 return false;
             }
 
             // Read in the number
-            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._b, ref result))
+            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._b, ref result))
                 return false;
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidHexPrefix, "{0xdddddddd, 0xdddd, 0xdddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, 0xdddd, 0xdddd, etc}");
                 return false;
             }
             // +3 to get by ',0x'
@@ -575,18 +577,18 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidComma);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
                 return false;
             }
 
             // Read in the number
-            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._c, ref result))
+            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._c, ref result))
                 return false;
 
             // Check for '{'
             if (guidString.Length <= numStart + numLen + 1 || guidString[numStart + numLen + 1] != '{')
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidBrace);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidBrace");
                 return false;
             }
 
@@ -599,7 +601,7 @@ namespace System
                 // Check for '0x'
                 if (!IsHexPrefix(guidString, numStart + numLen + 1))
                 {
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidHexPrefix, "{... { ... 0xdd, ...}}");
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{... { ... 0xdd, ...}}");
                     return false;
                 }
 
@@ -612,7 +614,7 @@ namespace System
                     numLen = guidString.IndexOf(',', numStart) - numStart;
                     if (numLen <= 0)
                     {
-                        result.SetFailure(ParseFailureKind.Format, SR.Format_GuidComma);
+                        result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
                         return false;
                     }
                 }
@@ -621,42 +623,48 @@ namespace System
                     numLen = guidString.IndexOf('}', numStart) - numStart;
                     if (numLen <= 0)
                     {
-                        result.SetFailure(ParseFailureKind.Format, SR.Format_GuidBraceAfterLastNumber);
+                        result.SetFailure(ParseFailureKind.Format, "Format_GuidBraceAfterLastNumber");
                         return false;
                     }
                 }
 
                 // Read in the number
-                uint number = (uint)ParseNumbers.StringToInt(guidString.Substring(numStart, numLen), 16, ParseNumbers.IsTight);
+                int signedNumber;
+                if (!StringToInt(guidString.Substring(numStart, numLen), -1, ParseNumbers.IsTight, out signedNumber, ref result))
+                {
+                    return false;
+                }
+                uint number = (uint)signedNumber;
+
                 // check for overflow
                 if (number > 255)
                 {
-                    result.SetFailure(ParseFailureKind.Format, SR.Overflow_Byte);
+                    result.SetFailure(ParseFailureKind.Format, "Overflow_Byte");
                     return false;
                 }
                 bytes[i] = (byte)number;
             }
 
-            result.parsedGuid._d = bytes[0];
-            result.parsedGuid._e = bytes[1];
-            result.parsedGuid._f = bytes[2];
-            result.parsedGuid._g = bytes[3];
-            result.parsedGuid._h = bytes[4];
-            result.parsedGuid._i = bytes[5];
-            result.parsedGuid._j = bytes[6];
-            result.parsedGuid._k = bytes[7];
+            result._parsedGuid._d = bytes[0];
+            result._parsedGuid._e = bytes[1];
+            result._parsedGuid._f = bytes[2];
+            result._parsedGuid._g = bytes[3];
+            result._parsedGuid._h = bytes[4];
+            result._parsedGuid._i = bytes[5];
+            result._parsedGuid._j = bytes[6];
+            result._parsedGuid._k = bytes[7];
 
             // Check for last '}'
             if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != '}')
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidEndBrace);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidEndBrace");
                 return false;
             }
 
             // Check if we have extra characters at the end
             if (numStart + numLen + 1 != guidString.Length - 1)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_ExtraJunkAtEnd);
+                result.SetFailure(ParseFailureKind.Format, "Format_ExtraJunkAtEnd");
                 return false;
             }
 
@@ -673,7 +681,7 @@ namespace System
 
             if (guidString.Length != 32)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                 return false;
             }
 
@@ -693,19 +701,19 @@ namespace System
                     }
                 }
 
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvalidChar);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvalidChar");
                 return false;
             }
 
-            if (!StringToInt(guidString.Substring(startPos, 8) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._a, ref result))
+            if (!StringToInt(guidString.Substring(startPos, 8) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._a, ref result))
                 return false;
 
             startPos += 8;
-            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result.parsedGuid._b, ref result))
+            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result._parsedGuid._b, ref result))
                 return false;
 
             startPos += 4;
-            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result.parsedGuid._c, ref result))
+            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result._parsedGuid._c, ref result))
                 return false;
 
             startPos += 4;
@@ -720,20 +728,20 @@ namespace System
 
             if (currentPos - startPos != 12)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                 return false;
             }
 
-            result.parsedGuid._d = (byte)(temp >> 8);
-            result.parsedGuid._e = (byte)(temp);
+            result._parsedGuid._d = (byte)(temp >> 8);
+            result._parsedGuid._e = (byte)(temp);
             temp = (int)(templ >> 32);
-            result.parsedGuid._f = (byte)(temp >> 8);
-            result.parsedGuid._g = (byte)(temp);
+            result._parsedGuid._f = (byte)(temp >> 8);
+            result._parsedGuid._g = (byte)(temp);
             temp = (int)(templ);
-            result.parsedGuid._h = (byte)(temp >> 24);
-            result.parsedGuid._i = (byte)(temp >> 16);
-            result.parsedGuid._j = (byte)(temp >> 8);
-            result.parsedGuid._k = (byte)(temp);
+            result._parsedGuid._h = (byte)(temp >> 24);
+            result._parsedGuid._i = (byte)(temp >> 16);
+            result._parsedGuid._j = (byte)(temp >> 8);
+            result._parsedGuid._k = (byte)(temp);
 
             return true;
         }
@@ -752,7 +760,7 @@ namespace System
             {
                 if (guidString.Length != 38 || guidString[37] != '}')
                 {
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                     return false;
                 }
                 startPos = 1;
@@ -761,14 +769,14 @@ namespace System
             {
                 if (guidString.Length != 38 || guidString[37] != ')')
                 {
-                    result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                    result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                     return false;
                 }
                 startPos = 1;
             }
             else if (guidString.Length != 36)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                 return false;
             }
 
@@ -777,24 +785,24 @@ namespace System
                 guidString[18 + startPos] != '-' ||
                 guidString[23 + startPos] != '-')
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidDashes);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidDashes");
                 return false;
             }
 
             currentPos = startPos;
             if (!StringToInt(guidString, ref currentPos, 8, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._a = temp;
+            result._parsedGuid._a = temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._b = (short)temp;
+            result._parsedGuid._b = (short)temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._c = (short)temp;
+            result._parsedGuid._c = (short)temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
@@ -807,27 +815,23 @@ namespace System
 
             if (currentPos - startPos != 12)
             {
-                result.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvLen);
+                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                 return false;
             }
-            result.parsedGuid._d = (byte)(temp >> 8);
-            result.parsedGuid._e = (byte)(temp);
+            result._parsedGuid._d = (byte)(temp >> 8);
+            result._parsedGuid._e = (byte)(temp);
             temp = (int)(templ >> 32);
-            result.parsedGuid._f = (byte)(temp >> 8);
-            result.parsedGuid._g = (byte)(temp);
+            result._parsedGuid._f = (byte)(temp >> 8);
+            result._parsedGuid._g = (byte)(temp);
             temp = (int)(templ);
-            result.parsedGuid._h = (byte)(temp >> 24);
-            result.parsedGuid._i = (byte)(temp >> 16);
-            result.parsedGuid._j = (byte)(temp >> 8);
-            result.parsedGuid._k = (byte)(temp);
+            result._parsedGuid._h = (byte)(temp >> 24);
+            result._parsedGuid._i = (byte)(temp >> 16);
+            result._parsedGuid._j = (byte)(temp >> 8);
+            result._parsedGuid._k = (byte)(temp);
 
             return true;
         }
 
-
-        //
-        // StringToShort, StringToInt, and StringToLong are wrappers around COMUtilNative integer parsing routines;
-        //
 
         private static bool StringToShort(String str, int requiredLength, int flags, out short result, ref GuidResult parseResult)
         {
@@ -843,7 +847,6 @@ namespace System
             result = (short)x;
             return retValue;
         }
-
 
         private static bool StringToInt(String str, int requiredLength, int flags, out int result, ref GuidResult parseResult)
         {
@@ -862,11 +865,11 @@ namespace System
             }
             catch (OverflowException ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.All)
+                if (parseResult._throwStyle == GuidParseThrowStyle.All)
                 {
                     throw;
                 }
-                else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
+                else if (parseResult._throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
                     throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
@@ -878,7 +881,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.None)
+                if (parseResult._throwStyle == GuidParseThrowStyle.None)
                 {
                     parseResult.SetFailure(ex);
                     return false;
@@ -892,13 +895,13 @@ namespace System
             //If we didn't parse enough characters, there's clearly an error.
             if (requiredLength != -1 && parsePos - currStart != requiredLength)
             {
-                parseResult.SetFailure(ParseFailureKind.Format, SR.Format_GuidInvalidChar);
+                parseResult.SetFailure(ParseFailureKind.Format, "Format_GuidInvalidChar");
                 return false;
             }
             return true;
         }
 
-        private static bool StringToLong(String str, ref int parsePos, int flags, out long result, ref GuidResult parseResult)
+        private static unsafe bool StringToLong(String str, ref int parsePos, int flags, out long result, ref GuidResult parseResult)
         {
             result = 0;
 
@@ -908,11 +911,11 @@ namespace System
             }
             catch (OverflowException ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.All)
+                if (parseResult._throwStyle == GuidParseThrowStyle.All)
                 {
                     throw;
                 }
-                else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
+                else if (parseResult._throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
                     throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
@@ -924,7 +927,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.None)
+                if (parseResult._throwStyle == GuidParseThrowStyle.None)
                 {
                     parseResult.SetFailure(ex);
                     return false;
@@ -999,11 +1002,10 @@ namespace System
             return ToString("D", null);
         }
 
-        public unsafe override int GetHashCode()
+        public override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
-            fixed (int* ptr = &_a)
-                return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
+            return _a ^ Unsafe.Add(ref _a, 1) ^ Unsafe.Add(ref _a, 2) ^ Unsafe.Add(ref _a, 3);
         }
 
         // Returns true if and only if the guid represented
@@ -1017,88 +1019,19 @@ namespace System
             else g = (Guid)o;
 
             // Now compare each of the elements
-            if (g._a != _a)
-                return false;
-            if (g._b != _b)
-                return false;
-            if (g._c != _c)
-                return false;
-            if (g._d != _d)
-                return false;
-            if (g._e != _e)
-                return false;
-            if (g._f != _f)
-                return false;
-            if (g._g != _g)
-                return false;
-            if (g._h != _h)
-                return false;
-            if (g._i != _i)
-                return false;
-            if (g._j != _j)
-                return false;
-            if (g._k != _k)
-                return false;
-
-            return true;
+            return g._a == _a &&
+                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
+                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
+                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
         }
 
         public bool Equals(Guid g)
         {
             // Now compare each of the elements
-            if (g._a != _a)
-                return false;
-            if (g._b != _b)
-                return false;
-            if (g._c != _c)
-                return false;
-            if (g._d != _d)
-                return false;
-            if (g._e != _e)
-                return false;
-            if (g._f != _f)
-                return false;
-            if (g._g != _g)
-                return false;
-            if (g._h != _h)
-                return false;
-            if (g._i != _i)
-                return false;
-            if (g._j != _j)
-                return false;
-            if (g._k != _k)
-                return false;
-
-            return true;
-        }
-
-        internal bool Equals(ref Guid g)
-        {
-            // Now compare each of the elements
-            if (g._a != _a)
-                return false;
-            if (g._b != _b)
-                return false;
-            if (g._c != _c)
-                return false;
-            if (g._d != _d)
-                return false;
-            if (g._e != _e)
-                return false;
-            if (g._f != _f)
-                return false;
-            if (g._g != _g)
-                return false;
-            if (g._h != _h)
-                return false;
-            if (g._i != _i)
-                return false;
-            if (g._j != _j)
-                return false;
-            if (g._k != _k)
-                return false;
-
-            return true;
+            return g._a == _a &&
+                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
+                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
+                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
         }
 
         private int GetResult(uint me, uint them)
@@ -1243,35 +1176,19 @@ namespace System
         public static bool operator ==(Guid a, Guid b)
         {
             // Now compare each of the elements
-            if (a._a != b._a)
-                return false;
-            if (a._b != b._b)
-                return false;
-            if (a._c != b._c)
-                return false;
-            if (a._d != b._d)
-                return false;
-            if (a._e != b._e)
-                return false;
-            if (a._f != b._f)
-                return false;
-            if (a._g != b._g)
-                return false;
-            if (a._h != b._h)
-                return false;
-            if (a._i != b._i)
-                return false;
-            if (a._j != b._j)
-                return false;
-            if (a._k != b._k)
-                return false;
-
-            return true;
+            return a._a == b._a &&
+                Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
+                Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
+                Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
         }
 
         public static bool operator !=(Guid a, Guid b)
         {
-            return !(a == b);
+            // Now compare each of the elements
+            return a._a != b._a ||
+                Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
+                Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
+                Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
         }
 
         public String ToString(String format)
@@ -1279,35 +1196,40 @@ namespace System
             return ToString(format, null);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char HexToChar(int a)
         {
             a = a & 0xf;
             return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
-        unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b)
+        unsafe private static int HexsToChars(char* guidChars, int a, int b)
         {
-            return HexsToChars(guidChars, offset, a, b, false);
+            guidChars[0] = HexToChar(a >> 4);
+            guidChars[1] = HexToChar(a);
+
+            guidChars[2] = HexToChar(b >> 4);
+            guidChars[3] = HexToChar(b);
+
+            return 4;
         }
 
-        unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b, bool hex)
+        unsafe private static int HexsToCharsHexOutput(char* guidChars, int a, int b)
         {
-            if (hex)
-            {
-                guidChars[offset++] = '0';
-                guidChars[offset++] = 'x';
-            }
-            guidChars[offset++] = HexToChar(a >> 4);
-            guidChars[offset++] = HexToChar(a);
-            if (hex)
-            {
-                guidChars[offset++] = ',';
-                guidChars[offset++] = '0';
-                guidChars[offset++] = 'x';
-            }
-            guidChars[offset++] = HexToChar(b >> 4);
-            guidChars[offset++] = HexToChar(b);
-            return offset;
+            guidChars[0] = '0';
+            guidChars[1] = 'x';
+
+            guidChars[2] = HexToChar(a >> 4);
+            guidChars[3] = HexToChar(a);
+
+            guidChars[4] = ',';
+            guidChars[5] = '0';
+            guidChars[6] = 'x';
+
+            guidChars[7] = HexToChar(b >> 4);
+            guidChars[8] = HexToChar(b);
+
+            return 9;
         }
 
         // IFormattable interface
@@ -1390,42 +1312,42 @@ namespace System
                         // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _a >> 24, _a >> 16);
-                        offset = HexsToChars(guidChars, offset, _a >> 8, _a);
+                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
+                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _b >> 8, _b);
+                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '0';
                         guidChars[offset++] = 'x';
-                        offset = HexsToChars(guidChars, offset, _c >> 8, _c);
+                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
                         guidChars[offset++] = ',';
                         guidChars[offset++] = '{';
-                        offset = HexsToChars(guidChars, offset, _d, _e, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _d, _e);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _f, _g, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _f, _g);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _h, _i, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _h, _i);
                         guidChars[offset++] = ',';
-                        offset = HexsToChars(guidChars, offset, _j, _k, true);
+                        offset += HexsToCharsHexOutput(guidChars + offset, _j, _k);
                         guidChars[offset++] = '}';
                     }
                     else
                     {
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        offset = HexsToChars(guidChars, offset, _a >> 24, _a >> 16);
-                        offset = HexsToChars(guidChars, offset, _a >> 8, _a);
+                        offset += HexsToChars(guidChars + offset, _a >> 24, _a >> 16);
+                        offset += HexsToChars(guidChars + offset, _a >> 8, _a);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _b >> 8, _b);
+                        offset += HexsToChars(guidChars + offset, _b >> 8, _b);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _c >> 8, _c);
+                        offset += HexsToChars(guidChars + offset, _c >> 8, _c);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _d, _e);
+                        offset += HexsToChars(guidChars + offset, _d, _e);
                         if (dash) guidChars[offset++] = '-';
-                        offset = HexsToChars(guidChars, offset, _f, _g);
-                        offset = HexsToChars(guidChars, offset, _h, _i);
-                        offset = HexsToChars(guidChars, offset, _j, _k);
+                        offset += HexsToChars(guidChars + offset, _f, _g);
+                        offset += HexsToChars(guidChars + offset, _h, _i);
+                        offset += HexsToChars(guidChars + offset, _j, _k);
                     }
                 }
             }

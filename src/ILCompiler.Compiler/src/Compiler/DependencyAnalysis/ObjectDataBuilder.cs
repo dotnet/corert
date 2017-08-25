@@ -90,6 +90,14 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 24) & 0xFF));
         }
 
+        public void EmitUInt(uint emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+            EmitByte((byte)((emit >> 16) & 0xFF));
+            EmitByte((byte)((emit >> 24) & 0xFF));
+        }
+
         public void EmitLong(long emit)
         {
             EmitByte((byte)(emit & 0xFF));
@@ -167,6 +175,11 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitBytes(byte[] bytes, int offset, int length)
         {
             _data.Append(bytes, offset, length);
+        }
+
+        internal void EmitBytes(ArrayBuilder<byte> bytes)
+        {
+            _data.Append(bytes);
         }
 
         public void EmitZeroPointer()

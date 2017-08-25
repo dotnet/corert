@@ -97,8 +97,7 @@ namespace System.Runtime.InteropServices
         }
         public static IntPtr GetFunctionPointer(this Delegate del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
         {
-            bool dummyIsOpenInstanceFunction;
-            return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
+            return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool __);
         }
 
         //
@@ -112,10 +111,9 @@ namespace System.Runtime.InteropServices
             if (!del.IsOpenStatic)
                 return IntPtr.Zero;
 
-            bool dummyIsOpenInstanceFunction;
             RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
 
-            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
+            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool __);
 
             // if the function pointer points to a jump stub return the target
             return RuntimeImports.RhGetJmpStubCodeTarget(funcPtr);

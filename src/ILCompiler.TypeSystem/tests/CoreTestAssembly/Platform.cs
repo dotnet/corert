@@ -67,12 +67,14 @@ namespace System
 
     public class Exception { }
 
+    [System.Runtime.CompilerServices.IsByRefLike]
     public struct TypedReference
     {
         private readonly ByReference<byte> _value;
         private readonly RuntimeTypeHandle _typeHandle;
     }
 
+    [System.Runtime.CompilerServices.IsByRefLike]
     public struct ByReference<T> { }
 }
 
@@ -128,3 +130,9 @@ namespace System.Runtime.InteropServices
     }
 }
 
+namespace System.Runtime.CompilerServices
+{
+    public sealed class IsByRefLikeAttribute : Attribute
+    {
+    }
+}

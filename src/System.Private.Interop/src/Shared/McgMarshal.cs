@@ -692,10 +692,7 @@ namespace System.Runtime.InteropServices
 
             if (typeHnd.IsComClass())
             {
-                Debug.Assert(obj == null || obj is __ComObject);
-                ///
-                /// This code path should be executed only for WinRT classes
-                ///
+                // This code path should be executed only for WinRT classes
                 typeHnd = typeHnd.GetDefaultInterface();
                 Debug.Assert(!typeHnd.IsNull());
             }

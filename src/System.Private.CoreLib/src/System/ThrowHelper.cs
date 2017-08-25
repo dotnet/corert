@@ -63,6 +63,15 @@ namespace System
             throw new ArgumentOutOfRangeException();
         }
 
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
+        {
+            throw GetArgumentOutOfRangeException(argument);
+        }
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument)
+        {
+            return new ArgumentOutOfRangeException(GetArgumentName(argument));
+        }
+
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, resource);
@@ -113,6 +122,8 @@ namespace System
                     return "startIndex";
                 case ExceptionArgument.task:
                     return "task";
+                case ExceptionArgument.s:
+                    return "s";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -147,7 +158,8 @@ namespace System
         obj,
         value,
         startIndex,
-        task
+        task,
+        s
     }
 
     //

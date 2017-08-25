@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     ///    2) Variant-interfaces GVMs
     /// This analysis node will ensure that the proper GVM instantiations are compiled on types.
     /// </summary>
-    internal class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
+    public class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
 

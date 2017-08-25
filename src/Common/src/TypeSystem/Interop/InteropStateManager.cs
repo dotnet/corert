@@ -21,6 +21,7 @@ namespace Internal.TypeSystem
         private readonly ForwardDelegateCreationStubHashtable _forwardDelegateCreationStubHashtable;
         private readonly PInvokeDelegateWrapperHashtable _pInvokeDelegateWrapperHashtable;
         private readonly InlineArrayHashTable _inlineArrayHashtable;
+        private readonly PInvokeLazyFixupFieldHashtable _pInvokeLazyFixupFieldHashtable;
 
         public InteropStateManager(ModuleDesc generatedAssembly)
         {
@@ -31,6 +32,7 @@ namespace Internal.TypeSystem
             _forwardDelegateCreationStubHashtable = new ForwardDelegateCreationStubHashtable(this, _generatedAssembly.GetGlobalModuleType());
             _pInvokeDelegateWrapperHashtable = new PInvokeDelegateWrapperHashtable(this, _generatedAssembly);
             _inlineArrayHashtable = new InlineArrayHashTable(this, _generatedAssembly);
+            _pInvokeLazyFixupFieldHashtable = new PInvokeLazyFixupFieldHashtable(_generatedAssembly.GetGlobalModuleType());
         }
         //
         // Delegate Marshalling Stubs
@@ -180,6 +182,10 @@ namespace Internal.TypeSystem
             return _inlineArrayHashtable.GetOrCreateValue(candidate);
         }
 
+        public FieldDesc GetPInvokeLazyFixupField(MethodDesc method)
+        {
+            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(method);
+        }
 
         private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
         {
@@ -433,6 +439,39 @@ namespace Internal.TypeSystem
             }
         }
 
+        private class PInvokeLazyFixupFieldHashtable : LockFreeReaderHashtable<MethodDesc, PInvokeLazyFixupField>
+        {
+            protected override int GetKeyHashCode(MethodDesc key)
+            {
+                return key.GetHashCode();
+            }
 
+            protected override int GetValueHashCode(PInvokeLazyFixupField value)
+            {
+                return value.TargetMethod.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MethodDesc key, PInvokeLazyFixupField value)
+            {
+                return key == value.TargetMethod;
+            }
+
+            protected override bool CompareValueToValue(PInvokeLazyFixupField value1, PInvokeLazyFixupField value2)
+            {
+                return value1.TargetMethod == value2.TargetMethod;
+            }
+
+            protected override PInvokeLazyFixupField CreateValueFromKey(MethodDesc key)
+            {
+                return new PInvokeLazyFixupField(_owningType, key);
+            }
+
+            private readonly DefType _owningType;
+
+            public PInvokeLazyFixupFieldHashtable(DefType owningType)
+            {
+                _owningType = owningType;
+            }
+        }
     }
 }

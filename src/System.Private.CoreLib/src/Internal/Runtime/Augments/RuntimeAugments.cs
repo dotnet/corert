@@ -209,9 +209,9 @@ namespace Internal.Runtime.Augments
         //
         // Helper to extract the artifact that uniquely identifies a method in the runtime mapping tables.
         //
-        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
+        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
         {
-            return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver);
+            return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
         }
 
         public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
@@ -277,6 +277,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhBox(fieldType.ToEETypePtr(), *(void**)&address);
         }
 
+        public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
+        {
+            return Pointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
+        }
+
         public static unsafe void StoreValueTypeField(ref byte address, Object fieldValue, RuntimeTypeHandle fieldType)
         {
             RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
@@ -299,6 +304,16 @@ namespace Internal.Runtime.Augments
                 IntPtr pData = (IntPtr)pObj;
                 IntPtr pField = pData + fieldOffset;
                 return LoadValueTypeField(pField, fieldType);
+            }
+        }
+
+        public static unsafe Object LoadPointerTypeField(Object obj, int fieldOffset, RuntimeTypeHandle fieldType)
+        {
+            fixed (IntPtr* pObj = &obj.m_pEEType)
+            {
+                IntPtr pData = (IntPtr)pObj;
+                IntPtr pField = pData + fieldOffset;
+                return LoadPointerTypeField(pField, fieldType);
             }
         }
 
@@ -363,6 +378,19 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
 
             return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsPointer);
+
+            IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            unsafe
+            {
+                return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+            }
         }
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
@@ -732,9 +760,7 @@ namespace Internal.Runtime.Augments
         public static String TryGetFullPathToMainApplication()
         {
             Func<String> delegateToAnythingInsideMergedApp = TryGetFullPathToMainApplication;
-            RuntimeTypeHandle thDummy;
-            bool boolDummy;
-            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out thDummy, out boolDummy);
+            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out RuntimeTypeHandle _, out bool __, out bool ___);
             IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ipToAnywhereInsideMergedApp);
             return TryGetFullPathToApplicationModule(moduleBase);
         }
@@ -1063,6 +1089,11 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhpSetHighLevelDebugFuncEvalHelper(highLevelDebugFuncEvalHelper);
         }
 
+        public static void RhpSetHighLevelDebugFuncEvalAbortHelper(IntPtr highLevelDebugFuncEvalAbortHelper)
+        {
+            RuntimeImports.RhpSetHighLevelDebugFuncEvalAbortHelper(highLevelDebugFuncEvalAbortHelper);
+        }
+
         public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
         {
             RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
@@ -1129,9 +1160,13 @@ namespace Internal.Runtime.Augments
 
         public static void RhpCancelThreadAbort(IntPtr thread)
         {
-            RuntimeImports.RhpCancelThreadAbort(thread);   
+            RuntimeImports.RhpCancelThreadAbort(thread);
         }
 
+        public static void RhYield()
+        {
+            RuntimeImports.RhYield();
+        }
     }
 }
 
@@ -1144,4 +1179,3 @@ namespace System.Runtime.InteropServices
         internal static IntPtr AddrOf<T>(T ftn) { throw new PlatformNotSupportedException(); }
     }
 }
-

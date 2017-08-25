@@ -1315,8 +1315,11 @@ namespace Internal.Reflection.Execution
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForInstanceFields(
                                 fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(
-                                fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForInstanceFields(
+                                    fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(
+                                    fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
                     }
 
                 case FieldTableFlags.Static:
@@ -1363,7 +1366,9 @@ namespace Internal.Reflection.Execution
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
                     }
 
                 case FieldTableFlags.ThreadStatic:
@@ -1375,12 +1380,19 @@ namespace Internal.Reflection.Execution
                                 (int)fieldAccessMetadata.Cookie,
                                 fieldAccessMetadata.Offset,
                                 fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
-                                TryGetStaticClassConstructionContext(declaringTypeHandle), 
-                                declaringTypeHandle,
-                                (int)fieldAccessMetadata.Cookie,
-                                fieldAccessMetadata.Offset,
-                                fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForThreadStaticFields(
+                                    TryGetStaticClassConstructionContext(declaringTypeHandle),
+                                    declaringTypeHandle,
+                                    (int)fieldAccessMetadata.Cookie,
+                                    fieldAccessMetadata.Offset,
+                                    fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
+                                    TryGetStaticClassConstructionContext(declaringTypeHandle), 
+                                    declaringTypeHandle,
+                                    (int)fieldAccessMetadata.Cookie,
+                                    fieldAccessMetadata.Offset,
+                                    fieldTypeHandle);
                     }
             }
 

@@ -538,7 +538,7 @@ namespace ILCompiler.DependencyAnalysis
                 // SyncBlock + EETypePtr + length + firstChar
                 objectSize = 2 * pointerSize +
                     sizeof(int) +
-                    sizeof(char);
+                    StringComponentSize.Value;
             }
 
             objData.EmitInt(objectSize);
@@ -771,7 +771,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
             }
 
-            if (metadataType != null && metadataType.IsByRefLike)
+            if (_type.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
             }
@@ -851,12 +851,12 @@ namespace ILCompiler.DependencyAnalysis
 
             if (defType.InstanceByteCount.IsIndeterminate)
             {
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1);
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1, _type.Context.Target.PointerSize);
             }
             else
             {
                 uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt);
+                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt, _type.Context.Target.PointerSize);
             }
 
             if (valueTypeFieldPaddingEncoded != 0)
@@ -935,7 +935,7 @@ namespace ILCompiler.DependencyAnalysis
                         || typeArg.IsPointer
                         || typeArg.IsFunctionPointer
                         || typeArg.IsVoid
-                        || (typeArg.IsValueType && ((DefType)typeArg).IsByRefLike))
+                        || typeArg.IsByRefLike)
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
@@ -976,7 +976,7 @@ namespace ILCompiler.DependencyAnalysis
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
                     }
 
-                    if ((parameterType.IsDefType) && ((DefType)parameterType).IsByRefLike)
+                    if (parameterType.IsByRefLike)
                     {
                         // Arrays of byref-like types are not allowed
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);

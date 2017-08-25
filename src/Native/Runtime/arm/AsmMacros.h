@@ -236,6 +236,13 @@ $Name
 #endif
     MEND
 
+;; Loads a 32bit constant into destination register
+    MACRO
+        MOV32   $destReg, $constant
+
+        movw    $destReg, #(($constant) & 0xFFFF)
+        movt    $destReg, #(($constant) >> 16)
+    MEND
 
 ;;
 ;; CONSTANTS -- SYMBOLS

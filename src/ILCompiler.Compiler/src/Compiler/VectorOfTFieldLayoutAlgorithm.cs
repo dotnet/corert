@@ -63,11 +63,6 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool ComputeIsByRefLike(DefType type)
-        {
-            return false;
-        }
-
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);

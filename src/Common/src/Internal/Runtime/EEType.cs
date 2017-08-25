@@ -1219,33 +1219,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
-        {
-            // For the default case, return 0
-            if ((padding == 0) && (alignment == IntPtr.Size))
-                return 0;
-
-            UInt32 alignmentLog2 = 0;
-            Debug.Assert(alignment != 0);
-
-            while ((alignment & 1) == 0)
-            {
-                alignmentLog2++;
-                alignment = alignment >> 1;
-            }
-            Debug.Assert(alignment == 1);
-
-            Debug.Assert(ValueTypePaddingMax >= padding);
-
-            alignmentLog2++; // Our alignment values here are adjusted by one to allow for a default of 0
-
-            UInt32 paddingLowBits = padding & ValueTypePaddingLowMask;
-            UInt32 paddingHighBits = ((padding & ~ValueTypePaddingLowMask) >> ValueTypePaddingAlignmentShift) << ValueTypePaddingHighShift;
-            UInt32 alignmentLog2Bits = alignmentLog2 << ValueTypePaddingAlignmentShift;
-            Debug.Assert((alignmentLog2Bits & ~ValueTypePaddingAlignmentMask) == 0);
-            return paddingLowBits | paddingHighBits | alignmentLog2Bits;
-        }
-
         internal CorElementType CorElementType
         {
             get

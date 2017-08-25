@@ -242,10 +242,10 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    return FormatProvider.OrdinalIndexOf(this, value, startIndex, count);
+                    return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.Ordinal);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return FormatProvider.OrdinalIndexOfIgnoreCase(this, value, startIndex, count);
+                    return TextInfo.IndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
@@ -447,10 +447,10 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    return FormatProvider.OrdinalLastIndexOf(this, value, startIndex, count);
+                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return FormatProvider.OrdinalLastIndexOfIgnoreCase(this, value, startIndex, count);
+                    return TextInfo.LastIndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));

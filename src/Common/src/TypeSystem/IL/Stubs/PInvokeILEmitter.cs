@@ -238,8 +238,8 @@ namespace Internal.IL.Stubs
                 _importMetadata.Module,
                 _pInvokeILEmitterConfiguration))
             {
-                MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
-                FieldDesc lazyDispatchCell = new PInvokeLazyFixupField(_targetMethod);
+                MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
+                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod);
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
@@ -251,7 +251,7 @@ namespace Internal.IL.Stubs
                     _targetMethod.Signature.Flags | unmanagedCallConv, 0, nativeReturnType,
                     nativeParameterTypes);
 
-                ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(_targetMethod.Context
+                ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(context
                     .GetWellKnownType(WellKnownType.IntPtr));
 
                 fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);

@@ -9,6 +9,7 @@
 .class private auto ansi beforefieldinit Details
        extends [mscorlib]System.Object
 {
+  .field private static valuetype '<PrivateImplementationDetails>'/'__StaticDataSize=4'  PreInitializedInt32Field_DataBlob at Data_Int32 
   .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=16'  PreInitializedField_DataBlob at Data_IntArray
 
   .field private static valuetype '<PrivateImplementationDetails>'/'__StaticArrayInitTypeSize=32' PreInitializedTypeField_DataBlob at Data_TypeArray
@@ -82,6 +83,14 @@
                                                                                      string) = ( 01 00 07 44 65 74 61 69 6C 73 22 50 72 65 49 6E   // ...Details.PreIn
                                                                                                  69 74 69 61 6C 69 7A 65 64 4D 65 74 68 6F 64 46   // itializedMethodF
                                                                                                  69 65 6C 64 5F 44 61 74 61 42 6C 6F 62 00 00 )    // ield_DataBlob..   
+
+  .field static assembly int32 PreInitializedInt32Field
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.PreInitializedAttribute::.ctor() = ( 01 00 00 00 )
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.InitDataBlobAttribute::.ctor(class [mscorlib]System.Type,
+                                                                                     string) = ( 01 00 07 44 65 74 61 69 6C 73 21 50 72 65 49 6E   // ...Details!PreIn
+                                                                                                 69 74 69 61 6C 69 7A 65 64 49 6E 74 33 32 46 69   // itializedInt32Fi
+                                                                                                 65 6C 64 5F 44 61 74 61 42 6C 6F 62 00 00 )       // eld_DataBlob..  
+
   //===================================================================
 
   .field private static string StaticStringFieldAfter
@@ -103,6 +112,12 @@
        extends [mscorlib]System.Object
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+  .class explicit ansi sealed nested private '__StaticDataSize=4'
+         extends [mscorlib]System.ValueType
+  {
+    .pack 1
+    .size 4
+  } // end of class '__StaticDataSize=4'
   .class explicit ansi sealed nested private '__StaticArrayInitTypeSize=16'
          extends [mscorlib]System.ValueType
   {
@@ -148,4 +163,5 @@
 
 .data cil Data_IntArray = bytearray ( 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00) 
 .data cil Data_TypeArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
-.data cil Data_MethodArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00) 
+.data cil Data_MethodArray = bytearray ( 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00)
+.data cil Data_Int32 = bytearray ( 78 56 34 12 )

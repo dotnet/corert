@@ -343,7 +343,8 @@ namespace System.Reflection.Runtime.General
                 case RuntimeConstructorInfo constructorInfo:
                     return constructorInfo.LdFtnResult;
                 default:
-                    throw new PlatformNotSupportedException();
+                    Debug.Fail("RuntimeMethodHandle should only return a methodbase implemented by the runtime.");
+                    throw new NotSupportedException();
             }
         }
 

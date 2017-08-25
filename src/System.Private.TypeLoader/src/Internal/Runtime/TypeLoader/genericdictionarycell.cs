@@ -1071,10 +1071,14 @@ namespace Internal.Runtime.TypeLoader
 
             for (uint i = 0; i < count; i++)
             {
+                TypeLoaderLogger.WriteLine("  -> DictionaryCell[" + i.LowLevelToString() + "] = ");
+
                 GenericDictionaryCell cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
-                cell.Prepare(typeBuilder);
                 dictionary[i] = cell;
             }
+
+            for (uint i = 0; i < count; i++)
+                dictionary[i].Prepare(typeBuilder);
 
             return dictionary;
         }
@@ -1815,15 +1819,7 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser sigParser = parser.GetParserFromRelativeOffset();
                         RuntimeSignature signature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._module.Handle, sigParser.Offset);
 
-#if TYPE_LOADER_TRACE
-                        TypeLoaderLogger.WriteLine("CallingConventionConverter on: ");
-                        TypeLoaderLogger.WriteLine("     -> Flags: " + ((int)flags).LowLevelToString());
-                        TypeLoaderLogger.WriteLine("     -> Signature: " + signature.NativeLayoutSignature().LowLevelToString());
-                        for (int i = 0; !nativeLayoutInfoLoadContext._typeArgumentHandles.IsNull && i < nativeLayoutInfoLoadContext._typeArgumentHandles.Length; i++)
-                            TypeLoaderLogger.WriteLine("     -> TypeArg[" + i.LowLevelToString() + "]: " + nativeLayoutInfoLoadContext._typeArgumentHandles[i]);
-                        for (int i = 0; !nativeLayoutInfoLoadContext._methodArgumentHandles.IsNull && i < nativeLayoutInfoLoadContext._methodArgumentHandles.Length; i++)
-                            TypeLoaderLogger.WriteLine("     -> MethodArg[" + i.LowLevelToString() + "]: " + nativeLayoutInfoLoadContext._methodArgumentHandles[i]);
-#endif
+                        TypeLoaderLogger.WriteLine("CallingConventionConverter: Flags=" + ((int)flags).LowLevelToString() + " Signature=" + signature.NativeLayoutSignature().LowLevelToString());
 
                         cell = new CallingConventionConverterCell
                         {
@@ -1844,6 +1840,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         OtherDictionarySlot = parser.GetUnsigned()
                     };
+                    TypeLoaderLogger.WriteLine("PointerToOtherSlot: " + ((PointerToOtherDictionarySlotCell)cell).OtherDictionarySlot.LowLevelToString());
                     break;
 
                 case FixupSignatureKind.IntValue:
@@ -1851,6 +1848,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         Value = new IntPtr((int)parser.GetUnsigned())
                     };
+                    TypeLoaderLogger.WriteLine("IntValue: " + ((IntPtrCell)cell).Value.LowLevelToString());
                     break;
 
                 default:

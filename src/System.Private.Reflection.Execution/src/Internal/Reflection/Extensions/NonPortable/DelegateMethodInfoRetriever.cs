@@ -24,9 +24,16 @@ namespace Internal.Reflection.Extensions.NonPortable
                 throw new ArgumentException();
             Delegate[] invokeList = del.GetInvocationList();
             del = invokeList[invokeList.Length - 1];
-            RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-            bool isOpenResolver;
-            IntPtr originalLdFtnResult = RuntimeAugments.GetDelegateLdFtnResult(del, out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver);
+            IntPtr originalLdFtnResult = RuntimeAugments.GetDelegateLdFtnResult(del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint);
+
+            if (isInterpreterEntrypoint)
+            {
+                // This is a special kind of delegate where the invoke method is "ObjectArrayThunk". Typically,
+                // this will be a delegate that points the the LINQ Expression interpreter. We could manufacture
+                // a MethodInfo based on the delegate's Invoke signature, but let's just throw for now.
+                throw new PlatformNotSupportedException(SR.DelegateGetMethodInfo_ObjectArrayDelegate);
+            }
+
             if (originalLdFtnResult == (IntPtr)0)
                 return null;
 

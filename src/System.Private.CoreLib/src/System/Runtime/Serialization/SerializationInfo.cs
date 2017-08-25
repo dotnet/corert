@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
         private object[] _values;
         private Type[] _types;
         private int _count;
-        private LowLevelListDictionary _nameToIndex; // TODO: Replace with Dictionary<string, int>
+        private Dictionary<string, int> _nameToIndex;
 
         private IFormatterConverter _converter;
         private string _rootTypeName;
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
             _types = new Type[DefaultSize];
-            _nameToIndex = new LowLevelListDictionary();
+            _nameToIndex = new Dictionary<string, int>();
             _converter = converter;
         }
 
@@ -266,7 +266,7 @@ namespace System.Runtime.Serialization
 
         internal void AddValueInternal(string name, object value, Type type)
         {
-            if (_nameToIndex.Contains(name))
+            if (_nameToIndex.ContainsKey(name))
             {
                 throw new SerializationException(SR.Serialization_SameNameTwice);
             }
@@ -292,8 +292,12 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            object indexObj = _nameToIndex[name];
-            return indexObj is int ? (int)indexObj : -1;
+            int index;
+            if (_nameToIndex.TryGetValue(name, out index))
+            {
+                return index;
+            }
+            return -1;
         }
 
         private object GetElement(string name, out Type foundType)

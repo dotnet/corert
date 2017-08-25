@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
-            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type);
+            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type, hasGCStaticBase: true);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
