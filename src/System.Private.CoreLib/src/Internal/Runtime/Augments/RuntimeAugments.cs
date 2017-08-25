@@ -806,6 +806,7 @@ namespace Internal.Runtime.Augments
         {
             // TODO: Move low level elements of ModuleList and enumerators to CoreLib, for better layering, and
             // avoiding the unnecessary allocation caused by IEnumerable.
+            // TODO: remote loop after linker folding into comdat
             foreach (TypeManagerHandle module in TypeLoaderCallbacks.GetLoadedModules())
             {
                 IntPtr target = RuntimeImports.RhGetCodeTarget(module, functionPointer);
