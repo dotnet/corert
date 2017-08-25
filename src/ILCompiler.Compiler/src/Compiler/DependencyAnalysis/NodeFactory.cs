@@ -47,24 +47,6 @@ namespace ILCompiler.DependencyAnalysis
             CreateNodeCaches();
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
-            if (_target.IsWindows)
-            {
-                UnboxingStubsRegionBegin = new WindowsUnboxingStubsRegionNode(false);
-                UnboxingStubsRegionEnd = new WindowsUnboxingStubsRegionNode(true);
-            }
-            else
-            {
-                if (_target.OperatingSystem == TargetOS.OSX)
-                {
-                    UnboxingStubsRegionBegin = new ExternSymbolNode("section$start$__TEXT$__unboxing");
-                    UnboxingStubsRegionEnd = new ExternSymbolNode("section$end$__TEXT$__unboxing");
-                }
-                else
-                {
-                    UnboxingStubsRegionBegin = new ExternSymbolNode("__start___unbox");
-                    UnboxingStubsRegionEnd = new ExternSymbolNode("__stop___unbox");
-                }
-            }
         }
 
         public void SetMarkingComplete()
@@ -1016,9 +998,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        protected internal ISymbolNode UnboxingStubsRegionBegin;
-        protected internal ISymbolNode UnboxingStubsRegionEnd;
-
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
@@ -1032,8 +1011,11 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
-            graph.AddRoot(UnboxingStubsRegionBegin, "UnboxingStubsRegion is always generated");
-            graph.AddRoot(UnboxingStubsRegionEnd, "UnboxingStubsRegion is always generated");
+            if (Target.IsWindows)
+            {
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(false), "UnboxingStubsRegion delimiter for Windows platform");
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(true), "UnboxingStubsRegion delimiter for Windows platform");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
@@ -1041,7 +1023,6 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.UnboxingStubsRegion, null, UnboxingStubsRegionBegin, UnboxingStubsRegionEnd);
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);

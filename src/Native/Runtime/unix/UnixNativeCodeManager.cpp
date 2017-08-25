@@ -359,7 +359,8 @@ extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_V
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
-                        void * pvStartRange, UInt32 cbRange,
+                        void * pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                        void * pvUnboxingStubsStartRange, UInt32 cbUnboxingStubsRange,
                         void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     UnixNativeCodeManager * pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
@@ -372,6 +373,11 @@ bool RhRegisterOSModule(void * pModule,
     if (!RegisterCodeManager(pUnixNativeCodeManager, pvStartRange, cbRange))
     {
         delete pUnixNativeCodeManager;
+        return false;
+    }
+
+    if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
+    {
         return false;
     }
 

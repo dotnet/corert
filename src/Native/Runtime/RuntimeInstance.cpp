@@ -430,6 +430,31 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
 }
 #endif
 
+bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    if (m_unboxingStubsRegion.m_pRegionStart != PTR_NULL && m_unboxingStubsRegion.m_cbRegion != 0)
+        return false;
+
+    m_unboxingStubsRegion.m_pRegionStart = pvStartRange;
+    m_unboxingStubsRegion.m_cbRegion = cbRange;
+
+    return true;
+}
+
+bool RuntimeInstance::IsUnboxingStub(UInt8* pCode)
+{
+    if (m_unboxingStubsRegion.m_pRegionStart == PTR_NULL || m_unboxingStubsRegion.m_cbRegion == 0)
+        return false;
+
+    UInt8* pUnboxingStubsRegion = dac_cast<UInt8*>(m_unboxingStubsRegion.m_pRegionStart);
+    return pCode >= pUnboxingStubsRegion && pCode < (pUnboxingStubsRegion + m_unboxingStubsRegion.m_cbRegion);
+}
+
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    return GetRuntimeInstance()->RegisterUnboxingStubs(pvStartRange, cbRange);
+}
+
 bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
 {
     TypeManagerEntry * pEntry = new (nothrow) TypeManagerEntry();

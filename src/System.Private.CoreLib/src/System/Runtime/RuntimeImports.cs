@@ -605,11 +605,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
-        private static extern IntPtr RhGetCodeTarget(ref TypeManagerHandle module, IntPtr pCode);
-        internal static IntPtr RhGetCodeTarget(TypeManagerHandle module, IntPtr pCode)
-        {
-            return RhGetCodeTarget(ref module, pCode);
-        }
+        public static extern IntPtr RhGetCodeTarget(IntPtr pCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]

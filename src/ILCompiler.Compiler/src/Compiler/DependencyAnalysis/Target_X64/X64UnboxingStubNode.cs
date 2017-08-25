@@ -8,11 +8,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public partial class UnboxingStubNode
     {
-        protected void EmitUnboxingStubCode(NodeFactory factory, ref X64Emitter encoder)
+        protected override void EmitCode(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {
-            encoder.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
-            encoder.Builder.AddSymbol(this);
-
             AddrMode thisPtr = new AddrMode(
                 Register.RegDirect | encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
             encoder.EmitADD(ref thisPtr, (sbyte)factory.Target.PointerSize);

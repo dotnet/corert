@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents an unboxing stub that supports calling instance methods on boxed valuetypes.
     /// </summary>
-    public partial class UnboxingStubNode : ObjectNode, IMethodNode, IExportableSymbolNode
+    public partial class UnboxingStubNode : AssemblyStubNode, IMethodNode, IExportableSymbolNode
     {
         // Section name has to be alphabetically less than the ending UnboxingStubsRegionNode node, and larger than
         // the begining UnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly TargetDetails _targetDetails;
 
-        public MethodDesc Method { private set; get; }
+        public MethodDesc Method { get; }
 
         public override ObjectNodeSection Section
         {
@@ -38,8 +38,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         public override bool IsShareable => true;
-        public override bool StaticDependenciesAreComputed => true;
-        public int Offset => 0;
 
         public bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(Method);
 
@@ -51,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             _targetDetails = targetDetails;
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(Method));
         }
@@ -62,31 +60,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-        {
-            switch (factory.Target.Architecture)
-            {
-                case TargetArchitecture.X64:
-                    X64.X64Emitter x64Emitter = new X64.X64Emitter(factory, relocsOnly);
-                    EmitUnboxingStubCode(factory, ref x64Emitter);
-                    return x64Emitter.Builder.ToObjectData();
-
-                case TargetArchitecture.X86:
-                    X86.X86Emitter x86Emitter = new X86.X86Emitter(factory, relocsOnly);
-                    EmitUnboxingStubCode(factory, ref x86Emitter);
-                    return x86Emitter.Builder.ToObjectData();
-
-                case TargetArchitecture.ARM:
-                case TargetArchitecture.ARMEL:
-                    ARM.ARMEmitter armEmitter = new ARM.ARMEmitter(factory, relocsOnly);
-                    EmitUnboxingStubCode(factory, ref armEmitter);
-                    return armEmitter.Builder.ToObjectData();
-
-                default:
-                    throw new NotImplementedException();
-            }
-        }
     }
 
     //
@@ -98,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly bool _isEndSymbol;
 
-        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox" + (_isEndSymbol? "Z" : "A"), SectionType.Executable);
+        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox$" + (_isEndSymbol? "Z" : "A"), SectionType.Executable);
         public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
         public int Offset => 0;
@@ -110,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("unbox_stubs_region_" + (_isEndSymbol ? "End" : "Start"));
+            sb.Append("__unbox_" + (_isEndSymbol ? "z" : "a"));
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
