@@ -17,6 +17,8 @@ EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpDbl2ULng(double val)
 
 // CORERT Specific - on Project N the arguments to these helpers are inverted
 #ifdef CORERT
+#undef min
+#undef max
 #include <cmath>
 
 EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
