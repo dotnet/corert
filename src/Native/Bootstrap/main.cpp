@@ -39,6 +39,12 @@ __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 //
 #pragma comment(linker, "/merge:.modules=.rdata")
 
+// 
+// Unboxing stubs need to be merged, folded and sorted. They are delimited by two special sections (.unbox$A
+// and .unbox$Z) so that they can be referred to by a ReadyToRun section type. All unboxing stubs are in .unbox$M sections.
+//
+#pragma comment(linker, "/merge:.unbox=.text")
+
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
 
