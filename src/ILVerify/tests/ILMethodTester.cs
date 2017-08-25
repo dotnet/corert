@@ -13,8 +13,9 @@ namespace ILVerify.Tests
 {
     public class ILMethodTester
     {
-        [Theory]
+        [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithValidIL), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Valid IL Tests")]
         void TestMethodsWithValidIL(ValidILTestCase validILTestCase)
         {
             ILImporter importer = ConstructILImporter(validILTestCase);
@@ -29,8 +30,9 @@ namespace ILVerify.Tests
             Assert.Equal(0, verifierErrors.Count);
         }
 
-        [Theory]
+        [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithInvalidIL), MemberType = typeof(TestDataLoader))]
+        [Trait("", "Invalid IL Tests")]
         void TestMethodsWithInvalidIL(InvalidILTestCase invalidILTestCase)
         {
             ILImporter importer = ConstructILImporter(invalidILTestCase);
