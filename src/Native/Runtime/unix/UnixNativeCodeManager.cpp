@@ -356,6 +356,7 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
