@@ -370,7 +370,7 @@ bool RhRegisterOSModule(void * pModule,
         return false;
     }
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvStartRange, cbRange))
+    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
     {
         delete pUnixNativeCodeManager;
         return false;
