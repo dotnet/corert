@@ -134,13 +134,14 @@ private:
 
     struct  UnboxingStubsRegion
     {
-        PTR_VOID    m_pRegionStart;
-        UInt32      m_cbRegion;
+        PTR_VOID                m_pRegionStart;
+        UInt32                  m_cbRegion;
+        UnboxingStubsRegion*    m_pNextRegion;
 
-        UnboxingStubsRegion() : m_pRegionStart(0), m_cbRegion(0) {}
+        UnboxingStubsRegion() : m_pRegionStart(0), m_cbRegion(0), m_pNextRegion(NULL) { }
     };
 
-    UnboxingStubsRegion         m_unboxingStubsRegion;
+    UnboxingStubsRegion*        m_pUnboxingStubsRegion;
 
     RuntimeInstance();
 
