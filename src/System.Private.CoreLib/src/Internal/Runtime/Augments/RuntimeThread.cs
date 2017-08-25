@@ -371,6 +371,15 @@ namespace Internal.Runtime.Augments
         }
 
         public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
+        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
+        /// appropriate for the processor.
+        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
+        /// </summary>
+        internal static readonly int OptimalMaxSpinWaitsPerSpinIteration = 64;
+
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
         public static bool Yield() => RuntimeImports.RhYield();
 
