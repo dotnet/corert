@@ -171,7 +171,7 @@ namespace ILVerify.Tests
 
         public override string ToString()
         {
-            return $"{ModuleName} - {MethodName}";
+            return $"{MethodName}";
         }
     }
 
