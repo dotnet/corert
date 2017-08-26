@@ -6,7 +6,7 @@ namespace Internal.IL.Stubs
 {
     public static class DebuggerSteppingHelpers
     {
-        public static void BeginDebuggerGuidedStepThroughMethod(this ILCodeStream codeStream)
+        public static void MarkDebuggerStepThroughPoint(this ILCodeStream codeStream)
         {
             codeStream.DefineSequencePoint("", 0xF00F00);
         }

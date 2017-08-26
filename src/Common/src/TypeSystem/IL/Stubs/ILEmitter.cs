@@ -442,6 +442,7 @@ namespace Internal.IL.Stubs
 
         public void DefineSequencePoint(string document, int lineNumber)
         {
+            Debug.Assert(_sequencePoints.Count == 0 || _sequencePoints[_sequencePoints.Count - 1].Offset < _length);
             _sequencePoints.Add(new ILSequencePoint(_length, document, lineNumber));
         }
     }
