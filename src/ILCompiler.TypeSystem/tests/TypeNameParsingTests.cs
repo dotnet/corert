@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
@@ -239,6 +240,60 @@ namespace TypeSystemTests
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+Nested+NestedTwiceNotThere", throwIfNotFound: false));
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Simple+Nested+NonNamespaceQualifiedType", throwIfNotFound: false));
             Assert.Null(_testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.SimpleButNotThere]", throwIfNotFound: false));
+        }
+
+        public IEnumerable<TypeDesc> GetTypesForRoundtripTest()
+        {
+            yield return _simpleType;
+            yield return _nestedType;
+            yield return _nestedTwiceType;
+            yield return _context.GetWellKnownType(WellKnownType.Int32);
+            yield return _veryGenericType;
+            yield return _simpleType.MakeArrayType();
+            yield return _simpleType.MakeArrayType().MakeArrayType();
+            yield return _simpleType.MakeArrayType(2).MakeArrayType(3);
+            yield return _context.GetWellKnownType(WellKnownType.Int32).MakeArrayType();
+            yield return _structType.MakePointerType();
+            yield return _context.GetWellKnownType(WellKnownType.Int32).MakePointerType().MakePointerType();
+            yield return _genericType.MakeInstantiatedType(_simpleType);
+            yield return _veryGenericType.MakeInstantiatedType(
+                    _simpleType,
+                    _genericType.MakeInstantiatedType(_simpleType),
+                    _structType
+                );
+            yield return _genericType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Object));
+            yield return _veryGenericType.MakeInstantiatedType(
+                    _context.GetWellKnownType(WellKnownType.Object),
+                    _simpleType,
+                    _context.GetWellKnownType(WellKnownType.Int32)
+                );
+            yield return ((MetadataType)_context.GetWellKnownType(WellKnownType.Nullable)).MakeInstantiatedType(_structType);
+            yield return _genericType.MakeInstantiatedType(_structType.MakePointerType().MakeArrayType());
+            yield return _nestedGenericType.MakeInstantiatedType(
+                    ((MetadataType)_context.GetWellKnownType(WellKnownType.Nullable)).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32)),
+                    _nestedType.MakeArrayType()
+                );
+        }
+
+        [Fact]
+        public void TestRoundtripping()
+        {
+            foreach (TypeDesc type in GetTypesForRoundtripTest())
+            {
+                {
+                    var fmt = new CustomAttributeTypeNameFormatter((IAssemblyDesc)_testModule);
+                    string formatted = fmt.FormatName(type);
+                    TypeDesc roundTripped = _testModule.GetTypeByCustomAttributeTypeName(formatted);
+                    Assert.Equal(type, roundTripped);
+                }
+
+                {
+                    var fmt = new CustomAttributeTypeNameFormatter();
+                    string formatted = fmt.FormatName(type);
+                    TypeDesc roundTripped = _testModule.GetTypeByCustomAttributeTypeName(formatted);
+                    Assert.Equal(type, roundTripped);
+                }
+            }
         }
     }
 }
