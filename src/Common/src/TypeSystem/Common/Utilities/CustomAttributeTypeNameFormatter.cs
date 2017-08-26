@@ -50,7 +50,7 @@ namespace Internal.TypeSystem
             else
             {
                 sb.Append('[');
-                sb.Append(',', type.Rank);
+                sb.Append(',', type.Rank - 1);
                 sb.Append(']');
             }
 
@@ -112,13 +112,11 @@ namespace Internal.TypeSystem
 
             for (int i = 0; i < type.Instantiation.Length; i++)
             {
-                sb.Append('[');
-
                 if (i != 0)
                     sb.Append(',');
 
+                sb.Append('[');
                 AppendName(sb, type.Instantiation[i], true);
-
                 sb.Append(']');
             }
 
