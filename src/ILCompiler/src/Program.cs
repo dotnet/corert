@@ -509,10 +509,34 @@ namespace ILCompiler
             return method;
         }
 
+        private static bool DumpReproArguments(CodeGenerationFailedException ex)
+        {
+            Console.WriteLine("To repro, add following arguments to the command line:");
+
+            MethodDesc failingMethod = ex.Method;
+
+            var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
+
+            Console.Write($"--singlemethodtypename {formatter.FormatName(failingMethod.OwningType)}");
+            Console.Write($" --singlemethodname {failingMethod.Name}");
+
+            for (int i = 0; i < failingMethod.Instantiation.Length; i++)
+                Console.Write($" --singlemethodgenericarg {formatter.FormatName(failingMethod.Instantiation[i])}");
+
+            return false;
+        }
+
         private static int Main(string[] args)
         {
 #if DEBUG
-            return new Program().Run(args);
+            try
+            {
+                return new Program().Run(args);
+            }
+            catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
+            {
+                throw new NotSupportedException(); // Unreachable
+            }
 #else
             try
             {

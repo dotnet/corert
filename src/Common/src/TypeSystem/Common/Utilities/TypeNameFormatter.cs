@@ -75,71 +75,74 @@ namespace Internal.TypeSystem
         protected abstract void AppendNameForNamespaceType(StringBuilder sb, DefType type);
         protected abstract void AppendNameForInstantiatedType(StringBuilder sb, DefType type);
 
-        #region Convenience methods
-
         public string FormatName(TypeDesc type)
         {
             StringBuilder sb = new StringBuilder();
             AppendName(sb, type);
             return sb.ToString();
         }
+    }
 
-        public string FormatName(DefType type)
+    public abstract class TypeNameFormatter<TState, TOptions>
+    {
+        public TState AppendName(StringBuilder sb, TypeDesc type, TOptions options)
         {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
+            switch (type.Category)
+            {
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    return AppendName(sb, (ArrayType)type, options);
+                case TypeFlags.ByRef:
+                    return AppendName(sb, (ByRefType)type, options);
+                case TypeFlags.Pointer:
+                    return AppendName(sb, (PointerType)type, options);
+                case TypeFlags.FunctionPointer:
+                    return AppendName(sb, (FunctionPointerType)type, options);
+                case TypeFlags.GenericParameter:
+                    return AppendName(sb, (GenericParameterDesc)type, options);
+                case TypeFlags.SignatureTypeVariable:
+                    return AppendName(sb, (SignatureTypeVariable)type, options);
+                case TypeFlags.SignatureMethodVariable:
+                    return AppendName(sb, (SignatureMethodVariable)type, options);
+                default:
+                    Debug.Assert(type.IsDefType);
+                    return AppendName(sb, (DefType)type, options);
+            }
         }
 
-        public string FormatName(ArrayType type)
+        public TState AppendName(StringBuilder sb, DefType type, TOptions options)
         {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
+            if (!type.IsTypeDefinition)
+            {
+                return AppendNameForInstantiatedType(sb, type, options);
+            }
+            else
+            {
+                DefType containingType = type.ContainingType;
+                if (containingType != null)
+                    return AppendNameForNestedType(sb, type, containingType, options);
+                else
+                    return AppendNameForNamespaceType(sb, type, options);
+            }
         }
 
-        public string FormatName(ByRefType type)
+        public abstract TState AppendName(StringBuilder sb, ArrayType type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, ByRefType type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, PointerType type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, FunctionPointerType type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, GenericParameterDesc type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, SignatureMethodVariable type, TOptions options);
+        public abstract TState AppendName(StringBuilder sb, SignatureTypeVariable type, TOptions options);
+
+        protected abstract TState AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, TOptions options);
+        protected abstract TState AppendNameForNamespaceType(StringBuilder sb, DefType type, TOptions options);
+        protected abstract TState AppendNameForInstantiatedType(StringBuilder sb, DefType type, TOptions options);
+
+        public string FormatName(TypeDesc type)
         {
             StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
+            AppendName(sb, type, default(TOptions));
             return sb.ToString();
         }
-
-        public string FormatName(PointerType type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
-        }
-
-        public string FormatName(InstantiatedType type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendNameForInstantiatedType(sb, type);
-            return sb.ToString();
-        }
-
-        public string FormatName(GenericParameterDesc type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
-        }
-
-        public string FormatName(SignatureMethodVariable type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
-        }
-
-        public string FormatName(SignatureTypeVariable type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
-        }
-
-        #endregion
     }
 }
