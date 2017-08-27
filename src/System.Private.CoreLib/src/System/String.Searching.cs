@@ -177,19 +177,32 @@ namespace System
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
+            return IndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
+        }
+
+        private unsafe int IndexOfCharArrayFilter(char[] anyOf, int startIndex, uint* charMap, int count)
+        {
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
-                for (int i = 0; i < count; i++)
-                {
-                    char thisChar = *pCh++;
-                    if (ProbablyContains(charMap, thisChar))
-                        if (ArrayContains(thisChar, anyOf) >= 0)
-                            return i + startIndex;
-                }
-            }
 
-            return -1;
+                while (count > 0)
+                {
+                    char thisChar = *pCh;
+
+                    if (IsCharBitSet(charMap, (byte)thisChar) &&
+                        IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
+                        ArrayContains(thisChar, anyOf))
+                    {
+                        return (int)(pCh - pChars);
+                    }
+
+                    count--;
+                    pCh++;
+                }
+
+                return -1;
+            }
         }
 
         private const int PROBABILISTICMAP_BLOCK_INDEX_MASK = 0x7;
@@ -212,22 +225,21 @@ namespace System
 
             for (int i = 0; i < anyOf.Length; ++i)
             {
-                uint hi, lo;
-                uint c = anyOf[i];
-                lo = c & 0xFF;
-                hi = (c >> 8) & 0xFF;
+                int c = anyOf[i];
 
-                uint* value = &charMap[lo & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-                *value |= (1u << (int)(lo >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT));
+                // Map low bit
+                SetCharBit(charMap, (byte)c);
 
-                if (hi > 0)
+                // Map high bit
+                c >>= 8;
+
+                if (c == 0)
                 {
-                    value = &charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-                    *value |= (1u << (int)(hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT));
+                    hasAscii = true;
                 }
                 else
                 {
-                    hasAscii = true;
+                    SetCharBit(charMap, (byte)c);
                 }
             }
 
@@ -238,35 +250,25 @@ namespace System
             }
         }
 
-        // Use the probabilistic map to decide if the character value exists in the
-        // map. When this method return false, we are certain the character doesn't
-        // exist, however a true return means it *may* exist.
-        private static unsafe bool ProbablyContains(uint* charMap, char searchValue)
+        private static bool ArrayContains(char searchChar, char[] anyOf)
         {
-            uint lo, hi;
-
-            lo = (uint)searchValue & 0xFF;
-            uint value = charMap[lo & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-
-            if ((value & (1u << (int)(lo >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT))) != 0)
+            for (int i = 0; i < anyOf.Length; i++)
             {
-                hi = ((uint)searchValue >> 8) & 0xFF;
-                value = charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-
-                return (value & (1u << (int)(hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT))) != 0;
+                if (anyOf[i] == searchChar)
+                    return true;
             }
 
             return false;
         }
 
-        private static int ArrayContains(char searchChar, char[] anyOf)
+        private unsafe static bool IsCharBitSet(uint* charMap, byte value)
         {
-            for (int i = 0; i < anyOf.Length; i++)
-            {
-                if (anyOf[i] == searchChar)
-                    return i;
-            }
-            return -1;
+            return (charMap[value & PROBABILISTICMAP_BLOCK_INDEX_MASK] & (1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT))) != 0;
+        }
+
+        private unsafe static void SetCharBit(uint* charMap, byte value)
+        {
+            charMap[value & PROBABILISTICMAP_BLOCK_INDEX_MASK] |= 1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
         }
 
         public int IndexOf(String value)
@@ -429,32 +431,62 @@ namespace System
             if (Length == 0)
                 return -1;
 
-            if ((startIndex < 0) || (startIndex >= Length))
+            if ((uint)startIndex >= (uint)Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+            }
 
             if ((count < 0) || ((count - 1) > startIndex))
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
             }
 
+            if (anyOf.Length > 1)
+            {
+                return LastIndexOfCharArray(anyOf, startIndex, count);
+            }
+            else if (anyOf.Length == 1)
+            {
+                return LastIndexOf(anyOf[0], startIndex, count);
+            }
+            else // anyOf.Length == 0
+            {
+                return -1;
+            }
+        }
+
+        private unsafe int LastIndexOfCharArray(char[] anyOf, int startIndex, int count)
+        {
             // use probabilistic map, see InitializeProbabilisticMap
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
+            return LastIndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
+        }
+
+        private unsafe int LastIndexOfCharArrayFilter(char[] anyOf, int startIndex, uint* charMap, int count)
+        {
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
 
-                for (int i = 0; i < count; i++)
+                while (count > 0)
                 {
-                    char thisChar = *pCh--;
-                    if (ProbablyContains(charMap, thisChar))
-                        if (ArrayContains(thisChar, anyOf) >= 0)
-                            return startIndex - i;
-                }
-            }
+                    char thisChar = *pCh;
 
-            return -1;
+                    if (IsCharBitSet(charMap, (byte)thisChar) &&
+                        IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
+                        ArrayContains(thisChar, anyOf))
+                    {
+                        return (int)(pCh - pChars);
+                    }
+
+                    count--;
+                    pCh--;
+                }
+
+                return -1;
+            }
         }
 
         // Returns the index of the last occurrence of any character in value in the current instance.
