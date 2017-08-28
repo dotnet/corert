@@ -512,7 +512,7 @@ namespace System
         public static Decimal Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), NumberStyles.Number, null);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null);
         }
 
         internal const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
@@ -539,20 +539,20 @@ namespace System
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), style, null);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, null);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), NumberStyles.Number, provider);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, provider);
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), style, provider);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, provider);
         }
 
         public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
@@ -564,14 +564,14 @@ namespace System
         public static Boolean TryParse(String s, out Decimal result)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.TryParseDecimal(s.AsSpan(), NumberStyles.Number, null, out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.TryParseDecimal(s.AsSpan(), style, provider, out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
         }
 
         public static Boolean TryParse(ReadOnlySpan<char> s, out Decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
