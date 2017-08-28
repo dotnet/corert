@@ -10,6 +10,15 @@
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
     <AssemblyKey>MSFT</AssemblyKey>
   </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm64'" />  
   <ItemGroup>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
