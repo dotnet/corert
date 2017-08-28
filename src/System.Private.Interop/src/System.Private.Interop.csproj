@@ -204,7 +204,9 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\vardesc.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />
-    <Compile Include="System\__HResults.cs" />
+    <Compile Include="..\..\Common\src\System\__HResults.cs">
+      <Link>System\__HResults.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Interop\Interop.String.Windows.cs" />
