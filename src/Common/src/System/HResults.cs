@@ -227,11 +227,11 @@ namespace System
         internal const int SECURITY_E_INCOMPATIBLE_SHARE = unchecked((int)0x80131401);
         internal const int SECURITY_E_UNVERIFIABLE = unchecked((int)0x80131402);
         internal const int STG_E_PATHNOTFOUND = unchecked((int)0x80030003);
-        public const int COR_E_DIRECTORYNOTFOUND = unchecked((int)0x80070003);
-        public const int COR_E_ENDOFSTREAM = unchecked((int)0x80070026);  // OS defined
-        public const int COR_E_FILELOAD = unchecked((int)0x80131621);
-        public const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);
-        public const int COR_E_IO = unchecked((int)0x80131620);
-        public const int COR_E_PATHTOOLONG = unchecked((int)0x800700CE);
+        internal const int COR_E_DIRECTORYNOTFOUND = unchecked((int)0x80070003);
+        internal const int COR_E_ENDOFSTREAM = unchecked((int)0x80070026);  // OS defined
+        internal const int COR_E_FILELOAD = unchecked((int)0x80131621);
+        internal const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);
+        internal const int COR_E_IO = unchecked((int)0x80131620);
+        internal const int COR_E_PATHTOOLONG = unchecked((int)0x800700CE);
     }
 }
