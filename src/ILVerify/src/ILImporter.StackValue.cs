@@ -20,6 +20,9 @@ namespace Internal.IL
         private StackValueFlags Flags;
 
         public readonly StackValueKind Kind;
+        /// <summary>
+        /// Corresponds to the intermediate type of the value pushed onto the stack.
+        /// </summary>
         public readonly TypeDesc Type;
 
         private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
@@ -55,14 +58,24 @@ namespace Internal.IL
             return new StackValue(StackValueKind.Unknown);
         }
 
-        static public StackValue CreatePrimitive(StackValueKind kind)
+        static public StackValue CreatePrimitive(TypeDesc type)
         {
-            Debug.Assert(kind == StackValueKind.Int32 || 
-                         kind == StackValueKind.Int64 || 
-                         kind == StackValueKind.NativeInt ||
-                         kind == StackValueKind.Float);
+            var intermediateType = ILImporter.GetIntermediateType(type);
 
-            return new StackValue(kind);
+            switch (intermediateType.Category)
+            {
+                case TypeFlags.Int32:
+                    return new StackValue(StackValueKind.Int32, intermediateType);
+                case TypeFlags.Int64:
+                    return new StackValue(StackValueKind.Int64, intermediateType);
+                case TypeFlags.IntPtr:
+                    return new StackValue(StackValueKind.NativeInt, intermediateType);
+                case TypeFlags.Double:
+                    return new StackValue(StackValueKind.Float, intermediateType);
+                default:
+                    Debug.Assert(false);
+                    return new StackValue(StackValueKind.Unknown);
+            }
         }
 
         static public StackValue CreateObjRef(TypeDesc type)
@@ -92,19 +105,15 @@ namespace Internal.IL
                 case TypeFlags.UInt16:
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    return CreatePrimitive(StackValueKind.Int32);
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    return CreatePrimitive(StackValueKind.Int64);
                 case TypeFlags.Single:
                 case TypeFlags.Double:
-                    return CreatePrimitive(StackValueKind.Float);
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
                 case TypeFlags.Pointer:
-                    return CreatePrimitive(StackValueKind.NativeInt);
                 case TypeFlags.Enum:
-                    return CreateFromType(type.UnderlyingType);
+                    return CreatePrimitive(type);
                 case TypeFlags.ByRef:
                     return CreateByRef(((ByRefType)type).ParameterType);
                 default:
@@ -165,194 +174,192 @@ namespace Internal.IL
 
     partial class ILImporter
     {
-        static TypeFlags GetReducedTypeCategory(TypeDesc type)
+        /// <summary>
+        /// Returns the reduced type as defined in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetReducedType(TypeDesc type)
         {
-            var category = type.Category;
+            if (type == null)
+                return null;
 
-            switch (type.Category)
+            var category = type.UnderlyingType.Category;
+
+            switch (category)
             {
-                case TypeFlags.Byte: return TypeFlags.SByte;
-                case TypeFlags.UInt16: return TypeFlags.Int16;
-                case TypeFlags.UInt32: return TypeFlags.Int32;
-                case TypeFlags.UInt64: return TypeFlags.Int64;
-                case TypeFlags.UIntPtr: return TypeFlags.IntPtr;
+                case TypeFlags.Byte:
+                    return type.Context.GetWellKnownType(WellKnownType.SByte);
+                case TypeFlags.UInt16:
+                    return type.Context.GetWellKnownType(WellKnownType.Int16);
+                case TypeFlags.UInt32:
+                    return type.Context.GetWellKnownType(WellKnownType.Int32);
+                case TypeFlags.UInt64:
+                    return type.Context.GetWellKnownType(WellKnownType.Int64);
+                case TypeFlags.UIntPtr:
+                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
 
+                default:
+                    return type.UnderlyingType; //Reduced type is type itself
+            }
+        }
+
+        /// <summary>
+        /// Returns the "verification type" based on the definition in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetVerificationType(TypeDesc type)
+        {
+            if (type == null)
+                return null;
+
+            if (type.IsByRef)
+            {
+                var parameterVerificationType = GetVerificationType(type.GetParameterType());
+                return type.Context.GetByRefType(parameterVerificationType);
+            }
+            else
+            {
+                var reducedType = GetReducedType(type);
+                switch (reducedType.Category)
+                {
+                    case TypeFlags.Boolean:
+                        return type.Context.GetWellKnownType(WellKnownType.SByte);
+
+                    case TypeFlags.Char:
+                        return type.Context.GetWellKnownType(WellKnownType.Int16);
+
+                    default:
+                        return reducedType; // Verification type is reduced type
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the "intermediate type" based on the definition in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetIntermediateType(TypeDesc type)
+        {
+            var verificationType = GetVerificationType(type);
+
+            if (verificationType == null)
+                return null;
+
+            switch (verificationType.Category)
+            {
                 case TypeFlags.SByte:
                 case TypeFlags.Int16:
                 case TypeFlags.Int32:
-                case TypeFlags.Int64:
-                case TypeFlags.IntPtr:
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
+                    return type.Context.GetWellKnownType(WellKnownType.Int32);
                 case TypeFlags.Single:
                 case TypeFlags.Double:
-                    return category;
+                    return type.Context.GetWellKnownType(WellKnownType.Double);
+                default:
+                    return verificationType;
             }
-
-            return TypeFlags.Unknown;
         }
 
         static bool IsSameReducedType(TypeDesc src, TypeDesc dst)
         {
-            var srcCategory = GetReducedTypeCategory(src);
-            if (srcCategory == TypeFlags.Unknown)
-                return false;
-            return srcCategory == GetReducedTypeCategory(dst);
+            return GetReducedType(src) == GetReducedType(dst);
         }
 
-        bool IsAssignable(TypeDesc src, TypeDesc dst, bool allowSizeEquivalence = false)
+        static bool IsSameVerificationType(TypeDesc src, TypeDesc dst)
+        {
+            return GetVerificationType(src) == GetVerificationType(dst);
+        }
+
+        /// <summary>
+        /// Returns whether the given source type is compatible with the given destination type
+        /// based on the definition of "compatible-with" in the ECMA-335 standard (I.8.7.1).
+        /// </summary>
+        bool IsCompatibleWith(TypeDesc src, TypeDesc dst)
         {
             if (src == dst)
                 return true;
 
-            if (src.IsValueType || dst.IsValueType)
-            {
-                if (allowSizeEquivalence && IsSameReducedType(src, dst))
-                    return true;
-
-                // TODO IsEquivalent
+            if (src == null || dst == null)
                 return false;
-            }
 
-            return CastingHelper.CanCastTo(src, dst);
-        }
-
-        bool IsAssignable(StackValue src, StackValue dst)
-        {
-            if (src.Kind == dst.Kind && src.Type == dst.Type)
+            // Everything is compatible to object through transitivity
+            if (dst.IsObject)
                 return true;
 
-            switch (src.Kind)
-            {
-            case StackValueKind.ObjRef:
-                if (dst.Kind != StackValueKind.ObjRef)
-                    return false;
+            if (!src.IsPrimitive && src.CanCastTo(dst))
+                return true;
 
-                // null is always assignable
-                if (src.Type == null)
-                    return true;
-
-                return CastingHelper.CanCastTo(src.Type, dst.Type);
-
-            case StackValueKind.ValueType:
-
-                // TODO: Other cases - variance, etc.
-
-                return false;
-
-            case StackValueKind.ByRef:
-
-                // TODO: Other cases - variance, etc.
-
-                return false;
-
-            case StackValueKind.Int32:
-                return (dst.Kind == StackValueKind.Int64 || dst.Kind == StackValueKind.NativeInt);
-
-            case StackValueKind.Int64:
-                return false;
-
-            case StackValueKind.NativeInt:
-                return (dst.Kind == StackValueKind.Int64);
-
-            case StackValueKind.Float:
-                return false;
-
-            default:
-                // TODO:
-                // return false;
-                throw new NotImplementedException();
-            }
-
-#if false
-    if (child == parent)
-    {
-        return(TRUE);
-    }
-
-    // Normally we just let the runtime sort it out but we wish to be more strict
-    // than the runtime wants to be.  For backwards compatibility, the runtime considers 
-    // int32[] and nativeInt[] to be the same on 32-bit machines.  It also is OK with
-    // int64[] and nativeInt[] on a 64-bit machine.  
-
-    if (child.IsType(TI_REF) && parent.IsType(TI_REF)
-        && jitInfo->isSDArray(child.GetClassHandleForObjRef())
-        && jitInfo->isSDArray(parent.GetClassHandleForObjRef()))
-    {
-        BOOL runtime_OK;
-
-        // never be more lenient than the runtime
-        runtime_OK = jitInfo->canCast(child.m_cls, parent.m_cls);
-        if (!runtime_OK)
             return false;
-
-        CORINFO_CLASS_HANDLE handle;
-        CorInfoType pType = jitInfo->getChildType(child.GetClassHandleForObjRef(),  &handle);
-        CorInfoType cType = jitInfo->getChildType(parent.GetClassHandleForObjRef(), &handle);
-
-        // don't care whether it is signed
-        if (cType == CORINFO_TYPE_NATIVEUINT)
-            cType = CORINFO_TYPE_NATIVEINT;
-        if (pType == CORINFO_TYPE_NATIVEUINT)
-            pType = CORINFO_TYPE_NATIVEINT;
-        
-        if (cType == CORINFO_TYPE_NATIVEINT)
-            return pType == CORINFO_TYPE_NATIVEINT;
-            
-        if (pType == CORINFO_TYPE_NATIVEINT)
-            return cType == CORINFO_TYPE_NATIVEINT;
-
-        return runtime_OK;
-    }
-   
-    if (parent.IsUnboxedGenericTypeVar() || child.IsUnboxedGenericTypeVar())
-    {
-        return (FALSE);  // need to have had child == parent
-    }
-    else if (parent.IsType(TI_REF))
-    {
-        // An uninitialized objRef is not compatible to initialized.
-        if (child.IsUninitialisedObjRef() && !parent.IsUninitialisedObjRef())
-            return FALSE;
-
-        if (child.IsNullObjRef())                   // NULL can be any reference type
-            return TRUE;
-        if (!child.IsType(TI_REF))
-            return FALSE;
-
-        return jitInfo->canCast(child.m_cls, parent.m_cls);
-
-    }
-    else if (parent.IsType(TI_METHOD))
-    {
-        if (!child.IsType(TI_METHOD))
-            return FALSE;
-
-        // Right now we don't bother merging method handles
-        return FALSE;
-    }
-    else if (parent.IsType(TI_STRUCT))
-    {
-        if (!child.IsType(TI_STRUCT))
-            return FALSE;
-
-        // Structures are compatible if they are equivalent
-        return jitInfo->areTypesEquivalent(child.m_cls, parent.m_cls);
-    }
-    else if (parent.IsByRef())
-    {
-        return tiCompatibleWithByRef(jitInfo, child, parent);
-    }
-
-    return FALSE;
-#endif 
         }
 
+        /// <summary>
+        /// Returns whether the given source type is array-element-compatible with the given destination type
+        /// based on the definition of "array-element-compatible-with" in the ECMA-335 standard(I.8.7.1).
+        /// </summary>
+        bool IsArrayElementCompatibleWith(TypeDesc src, TypeDesc dst)
+        {
+            src = src.UnderlyingType;
+            dst = dst.UnderlyingType;
+
+            if (IsSameReducedType(src, dst))
+                return true;
+
+            return IsCompatibleWith(src, dst);
+        }
+
+        /// <summary>
+        /// Returns whether the given source type is assignable to the given destination type based on
+        /// the definition of "assignable-to" in the ECMA-355 standard (I.8.7.3).
+        /// </summary>
+        bool IsAssignable(TypeDesc src, TypeDesc dst)
+        {
+            if (src == dst)
+                return true;
+
+            // Check intermediate types
+            var srcIntermediate = GetIntermediateType(src);
+            var dstIntermediate = GetIntermediateType(dst);
+            if (srcIntermediate == dstIntermediate)
+                return true;
+
+            if (srcIntermediate == null || dstIntermediate == null)
+                return false;
+
+            if (srcIntermediate.Category == TypeFlags.IntPtr && dstIntermediate.Category == TypeFlags.Int32 ||
+                srcIntermediate.Category == TypeFlags.Int32 && dstIntermediate.Category == TypeFlags.IntPtr)
+                return true;
+
+            // Transitivity check already performed by IsCompatibleWith
+            return IsCompatibleWith(src, dst);
+        }
+
+        /// <summary>
+        /// Returns whether the given source type is assignable to the given destination type based
+        /// on the definition of "verifier-assignable-to" in the ECMA-355 standard (I.8.1.2.3).
+        /// </summary>
+        bool IsVerifierAssignable(TypeDesc src, TypeDesc dst)
+        {
+            // null is always assignable to reference types
+            if (!dst.IsValueType && src == null)
+                return true;
+
+            var srcVerType = GetVerificationType(src);
+            var dstVerType = GetVerificationType(dst);
+
+            if (IsAssignable(srcVerType, dstVerType))
+                return true;
+
+            // TODO: Handle other cases: controlled-mutability pointer types, boxed types
+            return false;
+        }
 
         bool IsBinaryComparable(StackValue src, StackValue dst, ILOpcode op)
         {
-            if (src.Kind == dst.Kind && src.Type == dst.Type)
-                return true;
+            if (src.Kind == dst.Kind)
+            {
+                if (src.Type == dst.Type)
+                    return true;
+
+                if ((src.Type != null && dst.Type != null) &&
+                    src.Type.IsPrimitive && dst.Type.IsPrimitive)
+                    return true;
+            }
 
             switch (src.Kind)
             {

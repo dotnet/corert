@@ -354,10 +354,16 @@ namespace Internal.IL
                 VerifierError.ExpectedArray /* , value */);
         }
 
-        void CheckIsAssignable(StackValue src, StackValue dst)
+        void CheckIsAssignable(TypeDesc src, TypeDesc dst)
         {
             if (!IsAssignable(src, dst))
-                VerificationError(VerifierError.StackUnexpected, src, dst);
+                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
+        }
+
+        void CheckIsVerifierAssignable(TypeDesc src, TypeDesc dst)
+        {
+            if (!IsVerifierAssignable(src, dst))
+                VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
         }
 
         void CheckIsValidBranchTarget(BasicBlock src, BasicBlock target)
@@ -414,6 +420,9 @@ namespace Internal.IL
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
+            if (type == null)
+                return "Null";
+
             switch (type.Category)
             {
                 case TypeFlags.Boolean: return "Boolean";
@@ -435,9 +444,9 @@ namespace Internal.IL
             return StackValue.CreateFromType(type).ToString();
         }
 
-        void CheckIsAssignable(TypeDesc src, TypeDesc dst)
+        void CheckIsCompatibleWith(TypeDesc src, TypeDesc dst)
         {
-            if (!IsAssignable(src, dst))
+            if (!IsCompatibleWith(src, dst))
             {
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
             }
@@ -445,7 +454,7 @@ namespace Internal.IL
 
         void CheckIsArrayElementCompatibleWith(TypeDesc src, TypeDesc dst)
         {
-            if (!IsAssignable(src, dst, true))
+            if (!IsArrayElementCompatibleWith(src, dst))
             {
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
@@ -464,7 +473,7 @@ namespace Internal.IL
 
         void CheckIsObjRef(TypeDesc type)
         {
-            if (!IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
+            if (type.Category != TypeFlags.Class)
             {
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
@@ -671,7 +680,7 @@ namespace Internal.IL
 
             var value = Pop();
 
-            CheckIsAssignable(value, StackValue.CreateFromType(varType));
+            CheckIsVerifierAssignable(value.Type, varType);
         }
 
         void ImportAddressOfVar(int index, bool argument)
@@ -768,7 +777,7 @@ namespace Internal.IL
                 var actual = Pop();
                 var declared = StackValue.CreateFromType(sig[i]);
 
-                CheckIsAssignable(actual, declared);
+                CheckIsVerifierAssignable(actual.Type, declared.Type);
 
                 // check that the argument is not a byref for tailcalls
                 if (tailCall)
@@ -833,7 +842,7 @@ namespace Internal.IL
                 }
 #endif
 
-                CheckIsAssignable(actualThis, declaredThis);
+                CheckIsVerifierAssignable(actualThis.Type, declaredThis.Type);
 
 #if false
                 // Rules for non-virtual call to a non-final virtual method:
@@ -912,7 +921,7 @@ namespace Internal.IL
                 // }
                 else
                 {
-                    CheckIsAssignable(StackValue.CreateFromType(returnType), StackValue.CreateFromType(callerReturnType));
+                    CheckIsVerifierAssignable(returnType, callerReturnType);
                 }
 
                 // for tailcall, stack must be empty
@@ -972,12 +981,27 @@ namespace Internal.IL
 
         void ImportLoadInt(long value, StackValueKind kind)
         {
-            Push(StackValue.CreatePrimitive(kind));
+            WellKnownType wellKnownType = WellKnownType.Unknown;
+            switch (kind)
+            {
+                case StackValueKind.Int32:
+                    wellKnownType = WellKnownType.Int32;
+                    break;
+                case StackValueKind.Int64:
+                    wellKnownType = WellKnownType.Int64;
+                    break;
+                case StackValueKind.NativeInt:
+                    wellKnownType = WellKnownType.IntPtr;
+                    break;
+            }
+            Debug.Assert(wellKnownType != WellKnownType.Unknown);
+
+            Push(StackValue.CreatePrimitive(GetWellKnownType(wellKnownType)));
         }
 
         void ImportLoadFloat(double value)
         {
-            Push(StackValue.CreatePrimitive(StackValueKind.Float));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Double)));
         }
 
         void ImportLoadNull()
@@ -1088,7 +1112,7 @@ namespace Internal.IL
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
             var value = Pop();
-            CheckIsAssignable(value, StackValue.CreatePrimitive(StackValueKind.Int32));
+            CheckIsAssignable(value.Type, GetWellKnownType(WellKnownType.Int32));
 
             for (int i = 0; i < jmpDelta.Length; i++)
             {
@@ -1187,7 +1211,7 @@ namespace Internal.IL
             if ((result.Kind == StackValueKind.ByRef) &&
                     (opcode == ILOpcode.sub || opcode == ILOpcode.sub_ovf || opcode == ILOpcode.sub_ovf_un))
             {
-                result = StackValue.CreatePrimitive(StackValueKind.NativeInt);
+                result = StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr));
             }
 
             Push(result);
@@ -1201,7 +1225,7 @@ namespace Internal.IL
             Check(shiftBy.Kind == StackValueKind.Int32 || shiftBy.Kind == StackValueKind.NativeInt, VerifierError.StackUnexpected, shiftBy);
             CheckIsInteger(toBeShifted);
 
-            Push(StackValue.CreatePrimitive(toBeShifted.Kind));
+            Push(StackValue.CreatePrimitive(toBeShifted.Type));
         }
 
         void ImportCompareOperation(ILOpcode opcode)
@@ -1211,7 +1235,7 @@ namespace Internal.IL
 
             CheckIsComparable(value1, value2, opcode);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.Int32));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Int32)));
         }
 
         void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
@@ -1248,7 +1272,7 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);               
+                CheckIsVerifierAssignable(actualThis.Type, declaredThis.Type);
             }
 
             Push(StackValue.CreateFromType(field.FieldType));
@@ -1276,7 +1300,7 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);
+                CheckIsVerifierAssignable(actualThis.Type, declaredThis.Type);
             }
 
             Push(StackValue.CreateByRef(field.FieldType));
@@ -1309,10 +1333,10 @@ namespace Internal.IL
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);
+                CheckIsVerifierAssignable(actualThis.Type, declaredThis.Type);
             }
 
-            CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));
+            CheckIsVerifierAssignable(value.Type, field.FieldType);
         }
 
         void ImportLoadIndirect(int token)
@@ -1363,9 +1387,9 @@ namespace Internal.IL
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
             if (!value.IsNullReference)
-                CheckIsAssignable(typeVal, addressVal);
+                CheckIsVerifierAssignable(typeVal.Type, addressVal.Type);
 
-            CheckIsAssignable(value, typeVal);
+            CheckIsVerifierAssignable(value.Type, typeVal.Type);
         }
 
         void ImportThrow()
@@ -1394,7 +1418,7 @@ namespace Internal.IL
 
             Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value);
 
-            CheckIsAssignable(value, StackValue.CreateByRef(type));
+            CheckIsAssignable(type, value.Type);
         }
 
         void ImportBox(int token)
@@ -1419,7 +1443,7 @@ namespace Internal.IL
             verCheckClassAccess(pResolvedToken);
 #endif
 
-            CheckIsAssignable(value, targetType);
+            CheckIsVerifierAssignable(value.Type, type);
 
             // for nullable<T> we push T
             var typeForBox = type.IsNullable ? type.Instantiation[0] : type;
@@ -1480,7 +1504,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(GetVerificationType(actualElementType), elementType);
                 }
                 else
                 {
@@ -1512,7 +1536,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(elementType, GetVerificationType(actualElementType));
                 }
                 else
                 {
@@ -1523,7 +1547,7 @@ namespace Internal.IL
 
             if (elementType != null)
             {
-                CheckIsAssignable(value, StackValue.CreateFromType(elementType));
+                CheckIsArrayElementCompatibleWith(value.Type, GetIntermediateType(elementType));
             }
         }
 
@@ -1554,7 +1578,7 @@ namespace Internal.IL
 
             CheckIsArray(array);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr)));
         }
 
         void ImportUnaryOperation(ILOpcode opCode)
@@ -1574,7 +1598,7 @@ namespace Internal.IL
                     break;
             }
 
-            Push(StackValue.CreatePrimitive(operand.Kind));
+            Push(StackValue.CreatePrimitive(operand.Type));
         }
 
         void ImportCpOpj(int token)
@@ -1657,7 +1681,7 @@ namespace Internal.IL
 
             CheckIsInteger(size);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.NativeInt));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.IntPtr)));
         }
 
         void ImportEndFilter()
@@ -1731,7 +1755,7 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            Push(StackValue.CreatePrimitive(StackValueKind.Int32));
+            Push(StackValue.CreatePrimitive(GetWellKnownType(WellKnownType.Int32)));
         }
 
         //
