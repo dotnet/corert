@@ -18,19 +18,19 @@ namespace System
         public MissingFieldException()
             : base(SR.Arg_MissingFieldException)
         {
-            HResult = __HResults.COR_E_MISSINGFIELD;
+            HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         public MissingFieldException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MISSINGFIELD;
+            HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         public MissingFieldException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MISSINGFIELD;
+            HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         public MissingFieldException(string className, string methodName)

@@ -11,19 +11,19 @@ namespace System
         public TypeLoadException()
             : base(SR.Arg_TypeLoadException)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(string message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         protected TypeLoadException(SerializationInfo info, StreamingContext context)
