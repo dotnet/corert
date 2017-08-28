@@ -1480,7 +1480,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(GetVerificationType(actualElementType), elementType);
                 }
                 else
                 {
@@ -1512,7 +1512,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(elementType, GetVerificationType(actualElementType));
                 }
                 else
                 {
@@ -1523,6 +1523,7 @@ namespace Internal.IL
 
             if (elementType != null)
             {
+                // TODO: Change to CheckIsArrayElementCompatibleWith for two intermediate types
                 CheckIsAssignable(value, StackValue.CreateFromType(elementType));
             }
         }
