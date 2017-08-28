@@ -21,7 +21,7 @@ namespace System
         private void Init()
         {
             _message = null;
-            HResult = __HResults.COR_E_EXCEPTION;
+            HResult = HResults.COR_E_EXCEPTION;
         }
 
         public Exception()
