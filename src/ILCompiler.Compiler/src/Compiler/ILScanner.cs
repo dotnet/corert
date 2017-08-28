@@ -28,12 +28,11 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             ILScanNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
+            DebugInformationProvider debugInformationProvider,
             Logger logger)
-            : base(dependencyGraph, nodeFactory, roots, logger)
+            : base(dependencyGraph, nodeFactory, roots, debugInformationProvider, logger)
         {
         }
-
-        protected override bool GenerateDebugInfo => false;
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {

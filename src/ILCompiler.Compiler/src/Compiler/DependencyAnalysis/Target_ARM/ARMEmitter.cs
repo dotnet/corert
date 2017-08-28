@@ -169,16 +169,5 @@ namespace ILCompiler.DependencyAnalysis.ARM
             EmitBNE(4);
             EmitRET();
         }
-
-        // bne label(+8): pop(4) + ret(2) + next(2)
-        // pop {reg}
-        // bx lr
-        // label: ...
-        public void EmitRETIfEqualPOP(Register reg)
-        {
-            EmitBNE(8);
-            EmitPOP(reg);
-            EmitRET();
-        }
     }
 }

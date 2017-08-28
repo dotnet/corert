@@ -37,17 +37,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public unsafe override bool ComputeIsByRefLike(DefType type)
-        {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                return type.RuntimeTypeHandle.ToEETypePtr()->IsByRefLike;
-            }
-
-            // Being ByRefLike is a property of the uninstantiated form of a type (so its set on all kinds of templates reliably)
-            return type.ComputeTemplate().RuntimeTypeHandle.ToEETypePtr()->IsByRefLike;
-        }
-
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             if (!type.IsTemplateUniversal() && (layoutKind == InstanceLayoutKind.TypeOnly))

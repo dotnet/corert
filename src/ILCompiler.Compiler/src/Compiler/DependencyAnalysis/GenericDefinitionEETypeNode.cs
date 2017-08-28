@@ -51,6 +51,8 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (short)EETypeFlags.IsInterfaceFlag;
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
                 rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
+            if (_type.IsByRefLike)
+                rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
             if (rareFlags != 0)
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);

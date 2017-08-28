@@ -261,13 +261,13 @@ namespace ILCompiler
             // Methods that return ByRef-like types or take them by reference can't be reflection invoked
             // ----------------------------------------------------------------
 
-            if (signature.ReturnType.IsDefType && ((DefType)signature.ReturnType).IsByRefLike)
+            if (signature.ReturnType.IsByRefLike)
                 return false;
 
             for (int i = 0; i < signature.Length; i++)
             {
                 ByRefType paramType = signature[i] as ByRefType;
-                if (paramType != null && paramType.ParameterType.IsDefType && ((DefType)paramType.ParameterType).IsByRefLike)
+                if (paramType != null && paramType.ParameterType.IsByRefLike)
                     return false;
             }
 

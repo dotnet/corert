@@ -617,5 +617,17 @@ namespace Internal.TypeSystem
                 return HasInstantiation && IsTypeDefinition;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a byref-like type
+        /// (a <code>TypedReference</code>, <code>Span&lt;T&gt;</code>, etc.).
+        /// </summary>
+        public bool IsByRefLike
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.IsByRefLikeComputed) & TypeFlags.IsByRefLike) != 0;
+            }
+        }
     }
 }

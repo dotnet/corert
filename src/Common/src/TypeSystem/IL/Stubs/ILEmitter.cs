@@ -28,6 +28,7 @@ namespace Internal.IL.Stubs
         internal byte[] _instructions;
         internal int _length;
         internal int _startOffsetForLinking;
+        internal ArrayBuilder<ILSequencePoint> _sequencePoints;
 
         private ArrayBuilder<LabelAndOffset> _offsetsNeedingPatching;
 
@@ -438,6 +439,12 @@ namespace Internal.IL.Stubs
                 _instructions[offset + 3] = (byte)(value >> 24);
             }
         }
+
+        public void DefineSequencePoint(string document, int lineNumber)
+        {
+            Debug.Assert(_sequencePoints.Count == 0 || _sequencePoints[_sequencePoints.Count - 1].Offset < _length);
+            _sequencePoints.Add(new ILSequencePoint(_length, document, lineNumber));
+        }
     }
 
     /// <summary>
@@ -453,17 +460,22 @@ namespace Internal.IL.Stubs
 
     public class ILStubMethodIL : MethodIL
     {
-        private byte[] _ilBytes;
-        private LocalVariableDefinition[] _locals;
-        private Object[] _tokens;
-        private MethodDesc _method;
+        private readonly byte[] _ilBytes;
+        private readonly LocalVariableDefinition[] _locals;
+        private readonly Object[] _tokens;
+        private readonly MethodDesc _method;
+        private readonly MethodDebugInformation _debugInformation;
 
-        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, MethodDebugInformation debugInfo = null)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
+
+            if (debugInfo == null)
+                debugInfo = MethodDebugInformation.None;
+            _debugInformation = debugInfo;
         }
 
         public ILStubMethodIL(ILStubMethodIL methodIL)
@@ -472,6 +484,7 @@ namespace Internal.IL.Stubs
             _locals = methodIL._locals;
             _tokens = methodIL._tokens;
             _method = methodIL._method;
+            _debugInformation = methodIL._debugInformation;
         }
 
         public override MethodDesc OwningMethod
@@ -486,6 +499,12 @@ namespace Internal.IL.Stubs
         {
             return _ilBytes;
         }
+
+        public override MethodDebugInformation GetDebugInfo()
+        {
+            return _debugInformation;
+        }
+
         public override int MaxStack
         {
             get
@@ -617,11 +636,14 @@ namespace Internal.IL.Stubs
         public MethodIL Link(MethodDesc owningMethod)
         {
             int totalLength = 0;
+            int numSequencePoints = 0;
+
             for (int i = 0; i < _codeStreams.Count; i++)
             {
                 ILCodeStream ilCodeStream = _codeStreams[i];
                 ilCodeStream._startOffsetForLinking = totalLength;
                 totalLength += ilCodeStream._length;
+                numSequencePoints += ilCodeStream._sequencePoints.Count;
             }
 
             byte[] ilInstructions = new byte[totalLength];
@@ -634,7 +656,45 @@ namespace Internal.IL.Stubs
                 copiedLength += ilCodeStream._length;
             }
 
-            return new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray());
+            MethodDebugInformation debugInfo = null;
+            if (numSequencePoints > 0)
+            {
+                ILSequencePoint[] sequencePoints = new ILSequencePoint[numSequencePoints];
+                int copiedSequencePointLength = 0;
+                for (int codeStreamIndex = 0; codeStreamIndex < _codeStreams.Count; codeStreamIndex++)
+                {
+                    ILCodeStream ilCodeStream = _codeStreams[codeStreamIndex];
+
+                    for (int sequencePointIndex = 0; sequencePointIndex < ilCodeStream._sequencePoints.Count; sequencePointIndex++)
+                    {
+                        ILSequencePoint sequencePoint = ilCodeStream._sequencePoints[sequencePointIndex];
+                        sequencePoints[copiedSequencePointLength] = new ILSequencePoint(
+                            ilCodeStream._startOffsetForLinking + sequencePoint.Offset,
+                            sequencePoint.Document,
+                            sequencePoint.LineNumber);
+                        copiedSequencePointLength++;
+                    }
+                }
+
+                debugInfo = new EmittedMethodDebugInformation(sequencePoints);
+            }
+
+            return new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+        }
+
+        private class EmittedMethodDebugInformation : MethodDebugInformation
+        {
+            private readonly ILSequencePoint[] _sequencePoints;
+
+            public EmittedMethodDebugInformation(ILSequencePoint[] sequencePoints)
+            {
+                _sequencePoints = sequencePoints;
+            }
+
+            public override IEnumerable<ILSequencePoint> GetSequencePoints()
+            {
+                return _sequencePoints;
+            }
         }
     }
 

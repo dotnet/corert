@@ -287,6 +287,14 @@ namespace Internal.TypeSystem.NativeFormat
                     flags |= TypeFlags.HasFinalizer;
             }
 
+            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            {
+                flags |= TypeFlags.IsByRefLikeComputed;
+
+                if (IsValueType && HasCustomAttribute("System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                    flags |= TypeFlags.IsByRefLike;
+            }
+
             return flags;
         }
 

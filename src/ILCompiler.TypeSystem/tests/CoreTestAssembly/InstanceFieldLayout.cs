@@ -148,14 +148,10 @@ namespace Sequential
 
 namespace IsByRefLike
 {
+    [System.Runtime.CompilerServices.IsByRefLike]
     public struct ByRefLikeStruct
     {
         ByReference<object> ByRef;
-    }
-
-    public struct ComposedStruct
-    {
-        ByRefLikeStruct ByRefLike;
     }
 
     public struct NotByRefLike
@@ -163,12 +159,13 @@ namespace IsByRefLike
         int X;
     }
 
-    public class Invalid
+    [System.Runtime.CompilerServices.IsByRefLike]
+    public class InvalidClass
     {
         ByReference<int> ByRef;
     }
 
-    public class ComposedInvalid
+    public struct InvalidStruct
     {
         ByRefLikeStruct ByRefLike;
     }

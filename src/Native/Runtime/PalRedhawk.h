@@ -494,11 +494,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define NULL_AREA_SIZE                   (64*1024)
 #endif
 
-#define GetExceptionCode            _exception_code
-#define GetExceptionInformation     (struct _EXCEPTION_POINTERS *)_exception_info
-EXTERN_C unsigned long __cdecl _exception_code(void);
-EXTERN_C void *        __cdecl _exception_info(void);
-
 //#endif // !DACCESS_COMPILE
 #endif // !_INC_WINDOWS
 

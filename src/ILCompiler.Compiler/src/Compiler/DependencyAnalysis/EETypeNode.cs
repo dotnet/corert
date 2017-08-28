@@ -771,7 +771,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
             }
 
-            if (metadataType != null && metadataType.IsByRefLike)
+            if (_type.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
             }
@@ -935,7 +935,7 @@ namespace ILCompiler.DependencyAnalysis
                         || typeArg.IsPointer
                         || typeArg.IsFunctionPointer
                         || typeArg.IsVoid
-                        || (typeArg.IsValueType && ((DefType)typeArg).IsByRefLike))
+                        || typeArg.IsByRefLike)
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
@@ -976,7 +976,7 @@ namespace ILCompiler.DependencyAnalysis
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
                     }
 
-                    if ((parameterType.IsDefType) && ((DefType)parameterType).IsByRefLike)
+                    if (parameterType.IsByRefLike)
                     {
                         // Arrays of byref-like types are not allowed
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);

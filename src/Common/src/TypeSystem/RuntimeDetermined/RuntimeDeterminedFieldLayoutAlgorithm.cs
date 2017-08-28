@@ -51,14 +51,6 @@ namespace Internal.TypeSystem
             return canonicalType.ContainsGCPointers;
         }
 
-        public override bool ComputeIsByRefLike(DefType type)
-        {
-            RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;
-            DefType canonicalType = runtimeDeterminedType.CanonicalType;
-
-            return canonicalType.IsByRefLike;
-        }
-
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;

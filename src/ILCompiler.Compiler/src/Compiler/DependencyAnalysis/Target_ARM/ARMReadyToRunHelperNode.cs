@@ -30,11 +30,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.VirtualCall:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.VirtualCall);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MethodDesc targetMethod = (MethodDesc)Target;
 
                         Debug.Assert(!targetMethod.OwningType.IsInterface);
@@ -52,7 +47,6 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLDR(encoder.TargetRegister.InterproceduralScratch, encoder.TargetRegister.InterproceduralScratch,
                                         (short)(EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize)));
                         encoder.EmitJMP(encoder.TargetRegister.InterproceduralScratch);
-                        */
                     }
                     break;
 
@@ -112,11 +106,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.GetThreadStaticBase);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MetadataType target = (MetadataType)Target;
                         encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
@@ -139,7 +128,6 @@ namespace ILCompiler.DependencyAnalysis
                             // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
-                        */
                     }
                     break;
 
@@ -174,11 +162,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.DelegateCtor);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         DelegateCreationInfo target = (DelegateCreationInfo)Target;
 
                         if (target.TargetNeedsVTableLookup)
@@ -210,7 +193,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         encoder.EmitJMP(target.Constructor);
-                        */
                     }
                     break;
 
