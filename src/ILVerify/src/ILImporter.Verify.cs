@@ -1335,7 +1335,7 @@ namespace Internal.IL
             }
             else
             {
-                CheckIsAssignable(address.Type, type);
+                CheckIsAssignable(GetVerificationType(address.Type), GetVerificationType(type));
             }
             Push(StackValue.CreateFromType(type));
         }
