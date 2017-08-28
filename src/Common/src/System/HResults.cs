@@ -46,7 +46,6 @@ namespace System
         internal const int COR_E_ASSEMBLYEXPECTED = unchecked((int)0x80131018);
         internal const int COR_E_BADIMAGEFORMAT = unchecked((int)0x8007000B);
         internal const int COR_E_CANNOTUNLOADAPPDOMAIN = unchecked((int)0x80131015);
-        internal const int COR_E_CODECONTRACTFAILED = unchecked((int)0x80131542);
         internal const int COR_E_CONTEXTMARSHAL = unchecked((int)0x80131504);
         internal const int COR_E_CUSTOMATTRIBUTEFORMAT = unchecked((int)0x80131605);
         internal const int COR_E_DATAMISALIGNED = unchecked((int)0x80131541);
