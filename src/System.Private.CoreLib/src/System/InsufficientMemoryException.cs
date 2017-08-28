@@ -28,19 +28,19 @@ namespace System
         public InsufficientMemoryException()
             : base(SR.Arg_OutOfMemoryException)
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
 
         public InsufficientMemoryException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
 
         public InsufficientMemoryException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_INSUFFICIENTMEMORY;
+            HResult = HResults.COR_E_INSUFFICIENTMEMORY;
         }
     }
 }

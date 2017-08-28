@@ -27,7 +27,7 @@ namespace System
 
     // There are __HResults files in the IO, Remoting, Reflection & 
     // Security/Util directories as well, so choose your HResults carefully.
-    internal static class __HResults
+    internal static class HResults
     {
         internal const int APPMODEL_ERROR_NO_PACKAGE = unchecked((int)0x80073D54);
         internal const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110e);
