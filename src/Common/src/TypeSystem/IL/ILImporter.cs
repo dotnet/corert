@@ -718,7 +718,7 @@ namespace Internal.IL
                         ImportStoreElement(WellKnownType.Int32);
                         break;
                     case ILOpcode.stelem_i8:
-                        ImportStoreElement(WellKnownType.Int32);
+                        ImportStoreElement(WellKnownType.Int64);
                         break;
                     case ILOpcode.stelem_r4:
                         ImportStoreElement(WellKnownType.Single);
