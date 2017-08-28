@@ -30,7 +30,7 @@ namespace System
     internal static class HResults
     {
         internal const int APPMODEL_ERROR_NO_PACKAGE = unchecked((int)0x80073D54);
-        internal const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110e);
+        internal const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110E);
         internal const int CLDB_E_FILE_OLDVER = unchecked((int)0x80131107);
         internal const int CLDB_E_INDEX_NOTFOUND = unchecked((int)0x80131124);
         internal const int CLR_E_BIND_ASSEMBLY_NOT_FOUND = unchecked((int)0x80132004);
@@ -64,13 +64,13 @@ namespace System
         internal const int COR_E_FORMAT = unchecked((int)0x80131537);
         internal const int COR_E_INDEXOUTOFRANGE = unchecked((int)0x80131508);
         internal const int COR_E_INSUFFICIENTEXECUTIONSTACK = unchecked((int)0x80131578);
-        internal const int COR_E_INSUFFICIENTMEMORY = unchecked((int)0x8013153d);
+        internal const int COR_E_INSUFFICIENTMEMORY = unchecked((int)0x8013153D);
         internal const int COR_E_INVALIDCAST = unchecked((int)0x80004002);
         internal const int COR_E_INVALIDCOMOBJECT = unchecked((int)0x80131527);
         internal const int COR_E_INVALIDFILTERCRITERIA = unchecked((int)0x80131601);
         internal const int COR_E_INVALIDOLEVARIANTTYPE = unchecked((int)0x80131531);
         internal const int COR_E_INVALIDOPERATION = unchecked((int)0x80131509);
-        internal const int COR_E_INVALIDPROGRAM = unchecked((int)0x8013153a);
+        internal const int COR_E_INVALIDPROGRAM = unchecked((int)0x8013153A);
         internal const int COR_E_KEYNOTFOUND = unchecked((int)0x80131577);
         internal const int COR_E_LOADING_REFERENCE_ASSEMBLY = unchecked((int)0x80131058);
         internal const int COR_E_MARSHALDIRECTIVE = unchecked((int)0x80131535);
@@ -83,7 +83,7 @@ namespace System
         internal const int COR_E_MISSINGSATELLITEASSEMBLY = unchecked((int)0x80131536);
         internal const int COR_E_MODULE_HASH_CHECK_FAILED = unchecked((int)0x80131039);
         internal const int COR_E_MULTICASTNOTSUPPORTED = unchecked((int)0x80131514);
-        internal const int COR_E_NEWER_RUNTIME = unchecked((int)0x8013101b);
+        internal const int COR_E_NEWER_RUNTIME = unchecked((int)0x8013101B);
         internal const int COR_E_NOTFINITENUMBER = unchecked((int)0x80131528);
         internal const int COR_E_NOTSUPPORTED = unchecked((int)0x80131515);
         internal const int COR_E_NULLREFERENCE = unchecked((int)0x80004003);
@@ -94,19 +94,19 @@ namespace System
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
         internal const int COR_E_RANK = unchecked((int)0x80131517);
         internal const int COR_E_REFLECTIONTYPELOAD = unchecked((int)0x80131602);
-        internal const int COR_E_REMOTING = unchecked((int)0x8013150b);
-        internal const int COR_E_RUNTIMEWRAPPED = unchecked((int)0x8013153e);
+        internal const int COR_E_REMOTING = unchecked((int)0x8013150B);
+        internal const int COR_E_RUNTIMEWRAPPED = unchecked((int)0x8013153E);
         internal const int COR_E_SAFEARRAYRANKMISMATCH = unchecked((int)0x80131538);
         internal const int COR_E_SAFEARRAYTYPEMISMATCH = unchecked((int)0x80131533);
         internal const int COR_E_SECURITY = unchecked((int)0x8013150A);
         internal const int COR_E_SERIALIZATION = unchecked((int)0x8013150C);
-        internal const int COR_E_SERVER = unchecked((int)0x8013150e);
+        internal const int COR_E_SERVER = unchecked((int)0x8013150E);
         internal const int COR_E_STACKOVERFLOW = unchecked((int)0x800703E9);
         internal const int COR_E_SYNCHRONIZATIONLOCK = unchecked((int)0x80131518);
         internal const int COR_E_SYSTEM = unchecked((int)0x80131501);
         internal const int COR_E_TARGET = unchecked((int)0x80131603);
         internal const int COR_E_TARGETINVOCATION = unchecked((int)0x80131604);
-        internal const int COR_E_TARGETPARAMCOUNT = unchecked((int)0x8002000e);
+        internal const int COR_E_TARGETPARAMCOUNT = unchecked((int)0x8002000E);
         internal const int COR_E_THREADABORTED = unchecked((int)0x80131530);
         internal const int COR_E_THREADINTERRUPTED = unchecked((int)0x80131519);
         internal const int COR_E_THREADSTART = unchecked((int)0x80131525);
@@ -121,11 +121,11 @@ namespace System
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
         internal const int CORSEC_E_CRYPTO = unchecked((int)0x80131430);
         internal const int CORSEC_E_CRYPTO_UNEX_OPER = unchecked((int)0x80131431);
-        internal const int CORSEC_E_INVALID_IMAGE_FORMAT = unchecked((int)0x8013141d);
-        internal const int CORSEC_E_INVALID_PUBLICKEY = unchecked((int)0x8013141e);
-        internal const int CORSEC_E_INVALID_STRONGNAME = unchecked((int)0x8013141a);
+        internal const int CORSEC_E_INVALID_IMAGE_FORMAT = unchecked((int)0x8013141D);
+        internal const int CORSEC_E_INVALID_PUBLICKEY = unchecked((int)0x8013141E);
+        internal const int CORSEC_E_INVALID_STRONGNAME = unchecked((int)0x8013141A);
         internal const int CORSEC_E_MIN_GRANT_FAIL = unchecked((int)0x80131417);
-        internal const int CORSEC_E_MISSING_STRONGNAME = unchecked((int)0x8013141b);
+        internal const int CORSEC_E_MISSING_STRONGNAME = unchecked((int)0x8013141B);
         internal const int CORSEC_E_NO_EXEC_PERM = unchecked((int)0x80131418);
         internal const int CORSEC_E_POLICY_EXCEPTION = unchecked((int)0x80131416);
         internal const int CORSEC_E_SIGNATURE_MISMATCH = unchecked((int)0x80131420);
@@ -166,7 +166,7 @@ namespace System
         internal const int ERROR_INVALID_PARAMETER = unchecked((int)0x80070057);
         internal const int ERROR_LOCK_VIOLATION = unchecked((int)0x80070021);
         internal const int ERROR_MOD_NOT_FOUND = unchecked((int)0x8007007E);
-        internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073b1f);
+        internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073B1F);
         internal const int ERROR_NO_UNICODE_TRANSLATION = unchecked((int)0x80070459);
         internal const int ERROR_NOACCESS = unchecked((int)0x800703E6);
         internal const int ERROR_NOT_READY = unchecked((int)0x80070015);
@@ -218,7 +218,7 @@ namespace System
         internal const int ISS_E_TABLE_ROW_NOT_FOUND = unchecked((int)0x80131486);
         internal const int ISS_E_USAGE_WILL_EXCEED_QUOTA = unchecked((int)0x80131485);
         internal const int META_E_BAD_SIGNATURE = unchecked((int)0x80131192);
-        internal const int META_E_CA_FRIENDS_SN_REQUIRED = unchecked((int)0x801311e6);
+        internal const int META_E_CA_FRIENDS_SN_REQUIRED = unchecked((int)0x801311E6);
         internal const int MSEE_E_ASSEMBLYLOADINPROGRESS = unchecked((int)0x80131016);
         internal const int RO_E_CLOSED = unchecked((int)0x80000013);
         internal const int E_BOUNDS = unchecked((int)0x8000000B);
