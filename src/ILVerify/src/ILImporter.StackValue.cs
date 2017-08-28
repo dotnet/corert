@@ -165,39 +165,91 @@ namespace Internal.IL
 
     partial class ILImporter
     {
-        static TypeFlags GetReducedTypeCategory(TypeDesc type)
+        /// <summary>
+        /// Returns the reduced type as defined in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetReducedType(TypeDesc type)
         {
-            var category = type.Category;
+            if (type == null)
+                return null;
 
-            switch (type.Category)
+            var category = type.UnderlyingType.Category;
+
+            switch (category)
             {
-                case TypeFlags.Byte: return TypeFlags.SByte;
-                case TypeFlags.UInt16: return TypeFlags.Int16;
-                case TypeFlags.UInt32: return TypeFlags.Int32;
-                case TypeFlags.UInt64: return TypeFlags.Int64;
-                case TypeFlags.UIntPtr: return TypeFlags.IntPtr;
+                case TypeFlags.Byte:
+                    return type.Context.GetWellKnownType(WellKnownType.SByte);
+                case TypeFlags.UInt16:
+                    return type.Context.GetWellKnownType(WellKnownType.Int16);
+                case TypeFlags.UInt32:
+                    return type.Context.GetWellKnownType(WellKnownType.Int32);
+                case TypeFlags.UInt64:
+                    return type.Context.GetWellKnownType(WellKnownType.Int64);
+                case TypeFlags.UIntPtr:
+                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
 
+                default:
+                    return type.UnderlyingType; //Reduced type is type itself
+            }
+        }
+
+        /// <summary>
+        /// Returns the "verification type" based on the definition in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetVerificationType(TypeDesc type)
+        {
+            if (type == null)
+                return null;
+
+            if (type.IsByRef)
+            {
+                var parameterVerificationType = GetVerificationType(type.GetParameterType());
+                return type.Context.GetByRefType(parameterVerificationType);
+            }
+            else
+            {
+                var reducedType = GetReducedType(type);
+                switch (reducedType.Category)
+                {
+                    case TypeFlags.Boolean:
+                        return type.Context.GetWellKnownType(WellKnownType.SByte);
+
+                    case TypeFlags.Char:
+                        return type.Context.GetWellKnownType(WellKnownType.Int16);
+
+                    default:
+                        return reducedType; // Verification type is reduced type
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the "intermediate type" based on the definition in the ECMA-335 standard (I.8.7).
+        /// </summary>
+        public static TypeDesc GetIntermediateType(TypeDesc type)
+        {
+            var verificationType = GetVerificationType(type);
+
+            if (verificationType == null)
+                return null;
+
+            switch (verificationType.Category)
+            {
                 case TypeFlags.SByte:
                 case TypeFlags.Int16:
                 case TypeFlags.Int32:
-                case TypeFlags.Int64:
-                case TypeFlags.IntPtr:
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
+                    return type.Context.GetWellKnownType(WellKnownType.Int32);
                 case TypeFlags.Single:
                 case TypeFlags.Double:
-                    return category;
+                    return type.Context.GetWellKnownType(WellKnownType.Double);
+                default:
+                    return verificationType;
             }
-
-            return TypeFlags.Unknown;
         }
 
         static bool IsSameReducedType(TypeDesc src, TypeDesc dst)
         {
-            var srcCategory = GetReducedTypeCategory(src);
-            if (srcCategory == TypeFlags.Unknown)
-                return false;
-            return srcCategory == GetReducedTypeCategory(dst);
+            return GetReducedType(src) == GetReducedType(dst);
         }
 
         bool IsAssignable(TypeDesc src, TypeDesc dst, bool allowSizeEquivalence = false)
