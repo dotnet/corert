@@ -469,7 +469,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     Module * pModule = NULL;
     bool unboxingStub = false;
 
-    // First, check the unboxing stubs region known by the runtime (if one exists)
+    // First, check the unboxing stubs regions known by the runtime (if any exist)
     if (!GetRuntimeInstance()->IsUnboxingStub(pCodeOrg))
     {
         // Search for the module containing the code

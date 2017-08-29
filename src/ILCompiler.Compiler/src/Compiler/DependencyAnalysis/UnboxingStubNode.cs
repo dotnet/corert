@@ -19,9 +19,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public partial class UnboxingStubNode : AssemblyStubNode, IMethodNode, IExportableSymbolNode
     {
-        // Section name has to be alphabetically less than the ending UnboxingStubsRegionNode node, and larger than
-        // the begining UnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
-        // stubs region, and refer to it using a ReadyToRunSection type.
+        // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
+        // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
+        // stubs region, in order for the runtime to know where the region starts and ends.
         static readonly string WindowsSectionName = ".unbox$M";
         static readonly string UnixSectionName = "__unbox";
 
@@ -64,14 +64,14 @@ namespace ILCompiler.DependencyAnalysis
 
     //
     // On Windows, we need to create special start/stop sections, in order to group all the unboxing stubs and
-    // have delimiters accessible through R2R sections. On Linux/Apple, the linker provides special names to the 
-    // begining and end of sections already.
+    // have delimiters accessible through extern "C" variables in the bootstrapper. On Linux/Apple, the linker provides 
+    // special names to the begining and end of sections already.
     //
     public class WindowsUnboxingStubsRegionNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly bool _isEndSymbol;
 
-        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox$" + (_isEndSymbol? "Z" : "A"), SectionType.Executable);
+        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox$" + (_isEndSymbol ? "Z" : "A"), SectionType.Executable);
         public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
         public int Offset => 0;

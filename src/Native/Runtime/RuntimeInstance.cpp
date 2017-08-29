@@ -297,7 +297,8 @@ RuntimeInstance::RuntimeInstance() :
     m_pStaticGCRefsDescChunkList(NULL),
     m_pThreadStaticGCRefsDescChunkList(NULL),
     m_pGenericUnificationHashtable(NULL),
-    m_conservativeStackReportingEnabled(false)
+    m_conservativeStackReportingEnabled(false),
+    m_pUnboxingStubsRegion(NULL)
 {
 }
 
@@ -432,22 +433,38 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
 {
-    if (m_unboxingStubsRegion.m_pRegionStart != PTR_NULL && m_unboxingStubsRegion.m_cbRegion != 0)
+    ASSERT(pvStartRange != NULL && cbRange > 0);
+
+    UnboxingStubsRegion * pEntry = new (nothrow) UnboxingStubsRegion();
+    if (NULL == pEntry)
         return false;
 
-    m_unboxingStubsRegion.m_pRegionStart = pvStartRange;
-    m_unboxingStubsRegion.m_cbRegion = cbRange;
+    pEntry->m_pRegionStart = pvStartRange;
+    pEntry->m_cbRegion = cbRange;
+    pEntry->m_pNextRegion = m_pUnboxingStubsRegion;
+
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&m_pUnboxingStubsRegion, pEntry, pEntry->m_pNextRegion) != pEntry->m_pNextRegion)
+    {
+        // This thread loses. Update next region pointer and try again
+        pEntry->m_pNextRegion = m_pUnboxingStubsRegion;
+    }
 
     return true;
 }
 
 bool RuntimeInstance::IsUnboxingStub(UInt8* pCode)
 {
-    if (m_unboxingStubsRegion.m_pRegionStart == PTR_NULL || m_unboxingStubsRegion.m_cbRegion == 0)
-        return false;
+    UnboxingStubsRegion * pCurrent = m_pUnboxingStubsRegion;
+    while (pCurrent != NULL)
+    {
+        UInt8* pUnboxingStubsRegion = dac_cast<UInt8*>(pCurrent->m_pRegionStart);
+        if (pCode >= pUnboxingStubsRegion && pCode < (pUnboxingStubsRegion + pCurrent->m_cbRegion))
+            return true;
 
-    UInt8* pUnboxingStubsRegion = dac_cast<UInt8*>(m_unboxingStubsRegion.m_pRegionStart);
-    return pCode >= pUnboxingStubsRegion && pCode < (pUnboxingStubsRegion + m_unboxingStubsRegion.m_cbRegion);
+        pCurrent = pCurrent->m_pNextRegion;
+    }
+
+    return false;
 }
 
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
