@@ -40,6 +40,7 @@ namespace ILCompiler
         private bool _multiFile;
         private bool _useSharedGenerics;
         private bool _useScanner;
+        private bool _noScanner;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -136,7 +137,8 @@ namespace ILCompiler
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
-                syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code");
+                syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
+                syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
@@ -336,8 +338,13 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            bool useScanner = _useScanner ||
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen);
+
+            useScanner &= !_noScanner;
+
             ILScanResults scanResults = null;
-            if (_useScanner && !_isCppCodegen)
+            if (useScanner)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots);
