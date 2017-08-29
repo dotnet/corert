@@ -86,9 +86,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
         }
 
-        public override IntPtr UpdateFloatingDictionary(IntPtr context, bool isTypeContext)
+        public override IntPtr UpdateFloatingDictionary(IntPtr context, IntPtr dictionaryPtr)
         {
-            return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, isTypeContext);
+            return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, dictionaryPtr);
         }
 
         public override IEnumerable<TypeManagerHandle> GetLoadedModules()
@@ -525,21 +525,31 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public unsafe IntPtr UpdateFloatingDictionary(IntPtr context, bool isTypeContext)
+        public unsafe IntPtr UpdateFloatingDictionary(IntPtr context, IntPtr dictionaryPtr)
         {
-            IntPtr dictionaryPtr;
+            IntPtr newFloatingDictionary;
+            bool isNewlyAllocatedDictionary;
+            bool isTypeContext = context != dictionaryPtr;
+
             if (isTypeContext)
             {
                 EEType* pEEType = (EEType*)context.ToPointer();
-                dictionaryPtr = EETypeCreator.GetDictionary(pEEType);
-            }
-            else
-            {
-                dictionaryPtr = context;
+                IntPtr curDictPtr = EETypeCreator.GetDictionary(pEEType);
+
+                // Look for the exact base type that owns the dictionary. We may be having
+                // a virtual method run on a derived type and the generic lookup are performed
+                // on the base type's dictionary.
+                while (curDictPtr != dictionaryPtr)
+                {
+                    pEEType = pEEType->BaseType;
+                    Debug.Assert(pEEType != null);
+                    curDictPtr = EETypeCreator.GetDictionary(pEEType);
+                    Debug.Assert(curDictPtr != IntPtr.Zero);
+                }
+
+                context = (IntPtr)pEEType;
             }
 
-            IntPtr newFloatingDictionary;
-            bool isNewlyAllocatedDictionary;
             using (LockHolder.Hold(_typeLoaderLock))
             {
                 // Check if some other thread already allocated a floating dictionary and updated the fixed portion

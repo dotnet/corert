@@ -430,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
-                    return new MethodGenericDictionaryNode(method);
+                    return new MethodGenericDictionaryNode(method, this);
                 }
                 else
                 {
@@ -443,7 +443,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (CompilationModuleGroup.ContainsType(type))
                 {
                     Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type);
+                    return new TypeGenericDictionaryNode(type, this);
                 }
                 else
                 {
