@@ -128,9 +128,9 @@
 
     .method public hidebysig  instance void Casting.StorePlainFieldInOtherGenericType_Valid(int32 v) cil managed
     {
-		.locals init (
-			class GenericOtherFieldsType`1<!T> V_0
-		)
+        .locals init (
+            class GenericOtherFieldsType`1<!T> V_0
+        )
 
         ldloc.0
         ldarg.1
@@ -149,9 +149,9 @@
 
     .method public hidebysig  instance void Casting.StoreGenericFieldInOtherGenericType_Valid(!T v) cil managed
     {
-		.locals init (
-			class GenericOtherFieldsType`1<!T> V_0
-		)
+        .locals init (
+            class GenericOtherFieldsType`1<!T> V_0
+        )
         ldloc.0
         ldarg.1
         stfld !0 class GenericOtherFieldsType`1<!T>::GenericField
@@ -176,9 +176,9 @@
 
     .method public hidebysig  instance void Casting.CallGenericFunctionFromOtherGenericType_Valid(!T v) cil managed
     {
-		.locals init (
-			class [System.Runtime]System.Func`1<!T> V_0
-		)
+        .locals init (
+            class [System.Runtime]System.Func`1<!T> V_0
+        )
         
         ldarg.0
         ldloc.0
@@ -188,21 +188,33 @@
 
     .method public hidebysig instance void Casting.AssignThisToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
     {
-		.locals init (
-			class GenericCastingTestsType`1<int32> V_0
-		)
+        .locals init (
+            class GenericCastingTestsType`1<int32> V_0
+        )
         
         ldarg.0
         stloc.0
         ret
     }
 
+    .method public hidebysig instance void Casting.AssignGenericToObject_Valid(!T v) cil managed
+    {
+        .locals init (
+            object
+        )
+
+        ldarg.1
+        box     !T
+        stloc.0
+        ret
+    }
+
     .method public hidebysig static void Casting.AssignToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
     {
-		.locals init (
-			class GenericCastingTestsType`1<int32> V_0,
+        .locals init (
+            class GenericCastingTestsType`1<int32> V_0,
             class GenericCastingTestsType`1<string> V_1
-		)
+        )
         
         ldloc.0
         stloc.1
