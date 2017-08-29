@@ -246,4 +246,22 @@
         stloc.0
         ret
     }
+
+
+}
+
+.class public auto ansi beforefieldinit CastingTestsType
+       extends [System.Runtime]System.Object
+{
+    .method public static void Casting.AssignPrimitiveToIComparable_Valid(int32 arg) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable
+        )
+
+        ldarg.0
+        box     [System.Runtime]System.Int32
+        stloc.0
+        ret
+    }
 }
