@@ -15,6 +15,7 @@
     <Compile Include="ILImporter.StackValue.cs" />
     <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="SimpleTypeSystemContext.cs" />
+    <Compile Include="TypeDescExtensions.cs" />
     <Compile Include="VerifierError.cs" />
   </ItemGroup>
 

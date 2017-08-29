@@ -266,7 +266,9 @@ namespace Internal.IL
                 return false;
             }
 
-            return CastingHelper.CanCastTo(src, dst);
+            return CastingHelper.CanCastTo(
+                    src.ResolveSignatureVariable(_method),
+                    dst.ResolveSignatureVariable(_method));
         }
 
         bool IsAssignable(StackValue src, StackValue dst)
@@ -284,7 +286,9 @@ namespace Internal.IL
                 if (src.Type == null)
                     return true;
 
-                return CastingHelper.CanCastTo(src.Type, dst.Type);
+                return CastingHelper.CanCastTo(
+                    src.Type.ResolveSignatureVariable(_method), 
+                    dst.Type.ResolveSignatureVariable(_method));
 
             case StackValueKind.ValueType:
 
