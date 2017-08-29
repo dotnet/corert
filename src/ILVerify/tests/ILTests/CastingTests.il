@@ -113,6 +113,20 @@
     .field int32 IntField;
 }
 
+.class public sequential ansi beforefieldinit GenericTypeWithConstrained<class ([System.Runtime]System.IComparable) TValueType>
+        extends [System.Runtime]System.Object
+{
+    .property !TValueType Value()
+    {
+        .get instance !0 GenericTypeWithConstrained::get_Value()
+    }
+    .method public !TValueType get_Value()
+    {
+        ldc.i4 0x00000000
+        ret
+    }
+}
+
 // Provides casting logic tests for stfld, ldfld, call, callvirt
 .class public auto ansi beforefieldinit GenericCastingTestsType`1<T>
        extends [System.Runtime]System.Object
@@ -218,6 +232,18 @@
         
         ldloc.0
         stloc.1
+        ret
+    }
+
+    .method public static void Casting.AssignReturnValueFromConstrainedProperty_Valid<class ([System.Runtime]System.IComparable) TValueType>(class GenericTypeWithConstrained<!!TValueType> wrapper) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable V_0
+        )
+
+        ldarg.0
+        callvirt instance !0 class GenericTypeWithConstrained<!!TValueType>::get_Value()
+        stloc.0
         ret
     }
 }
