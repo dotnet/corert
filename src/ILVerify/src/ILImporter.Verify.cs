@@ -1362,10 +1362,9 @@ namespace Internal.IL
 
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
-            if (!value.IsNullReference)
-                CheckIsAssignable(typeVal, addressVal);
 
             CheckIsAssignable(value, typeVal);
+            CheckIsAssignable(value, addressVal);
         }
 
         void ImportThrow()
@@ -1375,7 +1374,7 @@ namespace Internal.IL
             if (value.Kind != StackValueKind.ObjRef)
             {
                 VerificationError(VerifierError.StackObjRef);
-            }            
+            }
         }
 
         void ImportLoadString(int token)
