@@ -909,7 +909,7 @@ namespace System
             else
             {
                 RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool __, out bool ___);
+                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
                 if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
                 {
                     return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);
