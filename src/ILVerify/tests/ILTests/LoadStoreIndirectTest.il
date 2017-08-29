@@ -74,7 +74,7 @@
         ret
     }
 
-    .method static public hidebysig void StoreIndirect.AssignToRefString_Invalid_StackUnexpected_StackUnexpected(string&) cil managed
+    .method static public hidebysig void StoreIndirect.AssignToRefString_Invalid_StackUnexpected(string&) cil managed
     {
         .locals init (object V_0)
 

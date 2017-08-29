@@ -1365,7 +1365,6 @@ namespace Internal.IL
 
             CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
-            CheckIsAssignable(value, addressVal);
         }
 
         void ImportThrow()
