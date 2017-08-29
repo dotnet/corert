@@ -246,8 +246,6 @@
         stloc.0
         ret
     }
-
-
 }
 
 .class public auto ansi beforefieldinit CastingTestsType
