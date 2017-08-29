@@ -118,24 +118,31 @@ namespace Internal.IL
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
-            _method = method;
-            _methodSignature = method.Signature;
             _typeSystemContext = method.Context;
 
-            if (!_methodSignature.IsStatic)
+            _method = method;
+            if (method.HasInstantiation)
+                _method = _typeSystemContext.GetInstantiatedMethod(method.GetMethodDefinition(), method.Instantiation);
+
+            if (!_method.Signature.IsStatic)
             {
-                var thisType = method.OwningType.InstantiateAsOpen();
+                if (method.OwningType.HasInstantiation)
+                {
+                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
+                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
+                }
+                else
+                    _thisType = _method.OwningType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
                 // managed pointer(see Partition I) to an unboxed instance of the value type. ...
-                if (thisType.IsValueType)
-                    thisType = thisType.MakeByRefType();
-
-                _thisType = thisType;
+                if (_thisType.IsValueType)
+                    _thisType = _thisType.MakeByRefType();
             }
 
-            _methodIL = methodIL;
+            _methodSignature = _method.Signature;
+            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
 
             _initLocals = _methodIL.IsInitLocals;
 
