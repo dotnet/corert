@@ -1350,9 +1350,6 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
-
             var value = Pop();
             var address = Pop();
 
@@ -1360,9 +1357,13 @@ namespace Internal.IL
 
             CheckIsByRef(address);
 
+            if (type == null)
+                type = address.Type;
+
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
 
+            CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
             CheckIsAssignable(value, addressVal);
         }
