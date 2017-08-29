@@ -181,6 +181,15 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
+            public override bool Equals(Type o)
+            {
+                //
+                // We guarantee uniqueness in Mcg marshalling code
+                //
+
+                return Object.ReferenceEquals(this, o);
+            }
+
             public override int GetHashCode()
             {
                 return _fullTypeName.GetHashCode();
