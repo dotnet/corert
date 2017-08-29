@@ -118,15 +118,12 @@ namespace Internal.IL
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
-            _typeSystemContext = method.Context;
-
             _method = method;
-            if (method.HasInstantiation)
-                _method = _typeSystemContext.GetInstantiatedMethod(method.GetMethodDefinition(), method.Instantiation);
+            _typeSystemContext = method.Context;
 
             if (!_method.Signature.IsStatic)
             {
-                if (method.OwningType.HasInstantiation)
+                if (_method.OwningType.HasInstantiation)
                 {
                     _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
                     _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
@@ -140,6 +137,9 @@ namespace Internal.IL
                 if (_thisType.IsValueType)
                     _thisType = _thisType.MakeByRefType();
             }
+
+            if (_method.HasInstantiation)
+                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
 
             _methodSignature = _method.Signature;
             _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
