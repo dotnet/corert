@@ -95,6 +95,11 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
+        public static Type MakeGenericSignatureType(Type genericTypeDefinition, Type[] genericTypeArguments)
+        {
+            return new SignatureConstructedGenericType(genericTypeDefinition, genericTypeArguments);
+        }
+
         internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get

@@ -147,6 +147,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
         public sealed override bool IsSerializable => base.IsSerializable;
         public sealed override bool IsEquivalentTo(Type other) => base.IsEquivalentTo(other); // Note: If we enable COM type equivalence, this is no longer the correct implementation.
+        public sealed override bool IsSignatureType => base.IsSignatureType;
 
         public sealed override IEnumerable<ConstructorInfo> DeclaredConstructors => base.DeclaredConstructors;
         public sealed override IEnumerable<EventInfo> DeclaredEvents => base.DeclaredEvents;
