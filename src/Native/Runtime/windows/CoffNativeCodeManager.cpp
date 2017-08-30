@@ -634,10 +634,13 @@ void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
-                        void * pvStartRange, UInt32 cbRange,
+                        void * pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                        void * pvUnboxingStubsStartRange, UInt32 cbUnboxingStubsRange,
                         void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)pModule;
@@ -645,20 +648,24 @@ bool RhRegisterOSModule(void * pModule,
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctions = &(pNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION]);
 
-    CoffNativeCodeManager * pCoffNativeCodeManager = new (nothrow) CoffNativeCodeManager((TADDR)pModule,
+    NewHolder<CoffNativeCodeManager> pCoffNativeCodeManager = new (nothrow) CoffNativeCodeManager((TADDR)pModule,
         dac_cast<PTR_RUNTIME_FUNCTION>((TADDR)pModule + pRuntimeFunctions->VirtualAddress),
         pRuntimeFunctions->Size / sizeof(RUNTIME_FUNCTION),
         pClasslibFunctions, nClasslibFunctions);
+
     if (pCoffNativeCodeManager == nullptr)
+        return false;
+
+    if (!RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
+        return false;
+
+    if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
+        UnregisterCodeManager(pCoffNativeCodeManager);
         return false;
     }
 
-    if (!RegisterCodeManager(pCoffNativeCodeManager, pvStartRange, cbRange))
-    {
-        delete pCoffNativeCodeManager;
-        return false;
-    }
+    pCoffNativeCodeManager.SuppressRelease();
 
     return true;
 }

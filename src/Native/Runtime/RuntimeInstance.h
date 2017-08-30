@@ -132,6 +132,17 @@ private:
 
     bool                        m_conservativeStackReportingEnabled;
 
+    struct  UnboxingStubsRegion
+    {
+        PTR_VOID                m_pRegionStart;
+        UInt32                  m_cbRegion;
+        UnboxingStubsRegion*    m_pNextRegion;
+
+        UnboxingStubsRegion() : m_pRegionStart(0), m_cbRegion(0), m_pNextRegion(NULL) { }
+    };
+
+    UnboxingStubsRegion*        m_pUnboxingStubsRegion;
+
     RuntimeInstance();
 
     SList<Module>* GetModuleList();
@@ -176,6 +187,9 @@ public:
     TypeManagerList& GetTypeManagerList();
     OsModuleList* GetOsModuleList();
     ReaderWriterLock& GetTypeManagerLock();
+
+    bool RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
+    bool IsUnboxingStub(UInt8* pCode);
 
     // This will hold the module list lock over each callback. Make sure
     // the callback will not trigger any operation that needs to make use
