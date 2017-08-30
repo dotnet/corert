@@ -804,15 +804,7 @@ namespace Internal.Runtime.Augments
         // if functionPointer points at an import or unboxing stub, find the target of the stub
         public static IntPtr GetCodeTarget(IntPtr functionPointer)
         {
-            // TODO: Move low level elements of ModuleList and enumerators to CoreLib, for better layering, and
-            // avoiding the unnecessary allocation caused by IEnumerable.
-            foreach (TypeManagerHandle module in TypeLoaderCallbacks.GetLoadedModules())
-            {
-                IntPtr target = RuntimeImports.RhGetCodeTarget(module, functionPointer);
-                if (target != functionPointer)
-                    return target;
-            }
-            return functionPointer;
+            return RuntimeImports.RhGetCodeTarget(functionPointer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

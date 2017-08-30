@@ -464,27 +464,30 @@ inline Int32 GetThumb2BlRel24(UInt16 * p)
 
 // Given a pointer to code, find out if this points to an import stub
 // or unboxing stub, and if so, return the address that stub jumps to
-COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (TypeManagerHandle *pTypeManagerHandle, UInt8 * pCodeOrg))
+COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 {
     Module * pModule = NULL;
-    TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
-
-    if (typeManagerHandle.IsTypeManager())
-    {
-        Int32 length;
-        UInt8* pUnboxingStubsRegion = (UInt8*)typeManagerHandle.AsTypeManager()->GetModuleSection(ReadyToRunSectionType::UnboxingStubsRegion, &length);
-        if (pUnboxingStubsRegion == NULL || pCodeOrg < pUnboxingStubsRegion || pCodeOrg >= (pUnboxingStubsRegion + length))
-            return pCodeOrg;
-    }
-    else
-    {
-        pModule = GetRuntimeInstance()->FindModuleByOsHandle(typeManagerHandle.AsOsModule());
-
-        if (!pModule->ContainsStubAddress(pCodeOrg))
-            return pCodeOrg;
-    }
-
     bool unboxingStub = false;
+
+    // First, check the unboxing stubs regions known by the runtime (if any exist)
+    if (!GetRuntimeInstance()->IsUnboxingStub(pCodeOrg))
+    {
+        // Search for the module containing the code
+        FOREACH_MODULE(pCurrentModule)
+        {
+            // If the code pointer doesn't point to a module's stub range,
+            // it can't be pointing to a stub
+            if (pCurrentModule->ContainsStubAddress(pCodeOrg))
+            {
+                pModule = pCurrentModule;
+                break;
+            }
+        }
+        END_FOREACH_MODULE;
+
+        if (pModule == NULL)
+            return pCodeOrg;
+    }
 
 #ifdef _TARGET_AMD64_
     UInt8 * pCode = pCodeOrg;

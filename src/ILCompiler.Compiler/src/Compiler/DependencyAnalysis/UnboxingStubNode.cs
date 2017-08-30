@@ -17,50 +17,41 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents an unboxing stub that supports calling instance methods on boxed valuetypes.
     /// </summary>
-    public class UnboxingStubNode : DependencyNodeCore<NodeFactory>, IMethodNode, IExportableSymbolNode
+    public partial class UnboxingStubNode : AssemblyStubNode, IMethodNode, IExportableSymbolNode
     {
-        private MethodDesc _target;
-        private int _symDefinitionOffset;
+        // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
+        // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
+        // stubs region, in order for the runtime to know where the region starts and ends.
+        static readonly string WindowsSectionName = ".unbox$M";
+        static readonly string UnixSectionName = "__unbox";
 
-        public MethodDesc Method => _target;
+        private readonly TargetDetails _targetDetails;
 
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-        public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
-        public override bool StaticDependenciesAreComputed => true;
-        int ISymbolNode.Offset => 0;
-        int ISymbolDefinitionNode.Offset => _symDefinitionOffset;
-        public bool RepresentsIndirectionCell => false;
+        public MethodDesc Method { get; }
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                string sectionName = _targetDetails.IsWindows ? WindowsSectionName : UnixSectionName;
+                return new ObjectNodeSection(sectionName, SectionType.Executable);
+            }
+        }
+        public override bool IsShareable => true;
 
         public bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethod(Method);
 
-        public UnboxingStubNode(MethodDesc target)
+        public UnboxingStubNode(MethodDesc target, TargetDetails targetDetails)
         {
             Debug.Assert(target.GetCanonMethodTarget(CanonicalFormKind.Specific) == target);
             Debug.Assert(target.OwningType.IsValueType);
-            _target = target;
-            _symDefinitionOffset = -1;
+            Method = target;
+            _targetDetails = targetDetails;
         }
 
-        public void SetSymbolDefinitionOffset(int offset)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            Debug.Assert(_symDefinitionOffset == -1);
-            _symDefinitionOffset = offset;
-        }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            yield return new DependencyListEntry(factory.MethodEntrypoint(_target), "Non-unboxing target of unboxing stub");
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => 
-            Array.Empty<CombinedDependencyListEntry>();
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => 
-            Array.Empty<CombinedDependencyListEntry>();
-
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(_target));
+            sb.Append("unbox_").Append(nameMangler.GetMangledMethodName(Method));
         }
 
         public static string GetMangledName(NameMangler nameMangler, MethodDesc method)
@@ -71,55 +62,41 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
     }
 
-    public partial class UnboxingStubsRegionNode : ObjectNode, ISymbolDefinitionNode
+    //
+    // On Windows, we need to create special start/stop sections, in order to group all the unboxing stubs and
+    // have delimiters accessible through extern "C" variables in the bootstrapper. On Linux/Apple, the linker provides 
+    // special names to the begining and end of sections already.
+    //
+    public class WindowsUnboxingStubsRegionNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly bool _isEndSymbol;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
-        public override bool IsShareable => false;
+        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox$" + (_isEndSymbol? "Z" : "A"), SectionType.Executable);
+        public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
         public int Offset => 0;
 
-        public UnboxingStubsRegionNode()
+        public WindowsUnboxingStubsRegionNode(bool isEndSymbol)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__UnboxingStubsRegion__End", true);
+            _isEndSymbol = isEndSymbol;
         }
-
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__UnboxingStubsRegion__");
+            sb.Append("__unbox_" + (_isEndSymbol ? "z" : "a"));
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            if(relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+            Debug.Assert(factory.Target.IsWindows);
 
-            switch (factory.Target.Architecture)
-            {
-                case TargetArchitecture.X64:
-                    X64.X64Emitter x64Emitter = new X64.X64Emitter(factory, relocsOnly);
-                    EmitUnboxingStubsCode(factory, ref x64Emitter);
-                    return x64Emitter.Builder.ToObjectData();
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
+            objData.AddSymbol(this);
 
-                case TargetArchitecture.X86:
-                    X86.X86Emitter x86Emitter = new X86.X86Emitter(factory, relocsOnly);
-                    EmitUnboxingStubsCode(factory, ref x86Emitter);
-                    return x86Emitter.Builder.ToObjectData();
-
-                case TargetArchitecture.ARM:
-                case TargetArchitecture.ARMEL:
-                    ARM.ARMEmitter armEmitter = new ARM.ARMEmitter(factory, relocsOnly);
-                    EmitUnboxingStubsCode(factory, ref armEmitter);
-                    return armEmitter.Builder.ToObjectData();
-
-                default:
-                    throw new NotImplementedException();
-            }
+            return objData.ToObjectData();
         }
     }
 }

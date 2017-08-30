@@ -91,13 +91,6 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, dictionaryPtr);
         }
 
-        public override IEnumerable<TypeManagerHandle> GetLoadedModules()
-        {
-            ModuleHandleEnumerator moduleEnum = ModuleList.Enumerate().GetEnumerator();
-            while (moduleEnum.MoveNext())
-                yield return moduleEnum.Current;
-        }
-
         /// <summary>
         /// Register a new runtime-allocated code thunk in the diagnostic stream.
         /// </summary>
