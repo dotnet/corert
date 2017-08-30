@@ -11,6 +11,7 @@
 #include "ICodeManager.h"
 #include "UnixNativeCodeManager.h"
 #include "varint.h"
+#include "holder.h"
 
 #include "CommonMacros.inl"
 
