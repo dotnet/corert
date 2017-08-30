@@ -966,13 +966,22 @@ namespace Internal.IL
         void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc type = ResolveMethodToken(token);
+            Check(!type.IsConstructor, VerifierError.LdftnConstructor);
 
-            StackValue thisPtr = new StackValue();
+            if (opCode == ILOpcode.ldftn)
+            {
 
-            if (opCode == ILOpcode.ldvirtftn)
+            }
+            else if (opCode == ILOpcode.ldvirtftn)
+            {
+                StackValue thisPtr = new StackValue();
                 thisPtr = Pop();
-
-            // TODO
+            }
+            else
+            {
+                Debug.Assert(false, "Unexpected ldftn opcode: " + opCode.ToString());
+                return;
+            }
 
             throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
         }

@@ -84,7 +84,7 @@ namespace ILVerify
         //E_THIS_UNINIT_RET    "Return from .ctor when this is uninitialized."
         //E_THIS_UNINIT_V_RET  "Return from .ctor before all fields are initialized."
         //E_THIS_UNINIT_BR     "Branch back when this is uninitialized."
-        //E_LDFTN_CTOR         "ldftn/ldvirtftn not allowed on .ctor."
+        LdftnConstructor,       //"ldftn/ldvirtftn not allowed on .ctor."
         //StackNotEq,                     // "Non-compatible types on the stack."
         StackUnexpected,                // Unexpected type on the stack.
         StackUnexpectedArrayType,       // Unexpected array type on the stack.

@@ -192,6 +192,9 @@
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>
+  <data name="LdftnConstructor" xml:space="preserve">
+    <value>ldftn/ldvirtftn not allowed on .ctor.</value>
+  </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
   </data>
