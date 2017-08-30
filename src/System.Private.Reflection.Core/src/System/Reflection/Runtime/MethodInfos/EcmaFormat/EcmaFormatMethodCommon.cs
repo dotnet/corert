@@ -31,13 +31,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
     //
     internal struct EcmaFormatMethodCommon : IRuntimeMethodCommon<EcmaFormatMethodCommon>, IEquatable<EcmaFormatMethodCommon>
     {
-        public bool IsGenericMethodDefinition
-        {
-            get
-            {
-                return _method.GetGenericParameters().Count > 0;
-            }
-        }
+        public bool IsGenericMethodDefinition => GenericParameterCount != 0;
 
         public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
@@ -76,6 +70,8 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                         typeContext);
             }
         }
+
+        public int GenericParameterCount => _method.GetGenericParameters().Count;
 
         public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<EcmaFormatMethodCommon> owningMethod)
         {

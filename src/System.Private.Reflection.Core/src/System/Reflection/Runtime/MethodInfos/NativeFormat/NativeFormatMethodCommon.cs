@@ -28,14 +28,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
     //
     internal struct NativeFormatMethodCommon : IRuntimeMethodCommon<NativeFormatMethodCommon>, IEquatable<NativeFormatMethodCommon>
     {
-        public bool IsGenericMethodDefinition
-        {
-            get
-            {
-                Method method = MethodHandle.GetMethod(Reader);
-                return method.GenericParameters.GetEnumerator().MoveNext();
-            }
-        }
+        public bool IsGenericMethodDefinition => GenericParameterCount != 0;
 
         public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
@@ -84,6 +77,8 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                         typeContext);
             }
         }
+
+        public int GenericParameterCount => MethodHandle.GetMethod(Reader).GenericParameters.Count;
 
         public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<NativeFormatMethodCommon> owningMethod)
         {

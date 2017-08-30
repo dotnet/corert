@@ -430,17 +430,33 @@ namespace System.Reflection.Runtime.TypeInfos
             // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
             // the Type object for an inconsistent generic type - no EEType will ever match it so any attempt to "invoke" it
             // will throw an exception.
+            bool foundSignatureType = false;
             RuntimeTypeInfo[] runtimeTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                RuntimeTypeInfo runtimeTypeArgument = typeArguments[i] as RuntimeTypeInfo;
+                RuntimeTypeInfo runtimeTypeArgument = runtimeTypeArguments[i] = typeArguments[i] as RuntimeTypeInfo;
                 if (runtimeTypeArgument == null)
                 {
                     if (typeArguments[i] == null)
                         throw new ArgumentNullException();
+
+                    if (typeArguments[i].IsSignatureType)
+                    {
+                        foundSignatureType = true;
+                    }
                     else
+                    {
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
+                    }
                 }
+            }
+
+            if (foundSignatureType)
+                return ReflectionAugments.MakeGenericSignatureType(this, typeArguments);
+
+            for (int i = 0; i < typeArguments.Length; i++)
+            {
+                RuntimeTypeInfo runtimeTypeArgument = runtimeTypeArguments[i];
 
                 // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
                 if (runtimeTypeArgument.IsGenericTypeDefinition)
@@ -448,9 +464,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 if (runtimeTypeArgument.IsByRefLike)
                     throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);
-
-                runtimeTypeArguments[i] = runtimeTypeArgument;
             }
+
             return this.GetConstructedGenericType(runtimeTypeArguments);
         }
 
