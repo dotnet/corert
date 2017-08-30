@@ -207,6 +207,50 @@
         lbl_ret: ret
     }
 
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStart_Invalid_BranchIntoTry() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                nop
+
+                .try
+                {
+                    Inner:
+                    leave.s    A
+                }
+                catch [mscorlib]System.Object 
+                {
+                    pop
+                    leave.s    A
+                }
+                A:
+
+                leave.s    B
+            }
+            catch [mscorlib]System.Object 
+            {
+                pop
+                leave.s    B
+            }
+            B:
+
+            leave.s    C
+        }
+        catch [mscorlib]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
     .method static public hidebysig void Branching.IntoNestedTryMiddle_Invalid_BranchIntoTry() cil managed
     {
         .maxstack 2
