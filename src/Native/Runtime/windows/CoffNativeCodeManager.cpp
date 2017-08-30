@@ -13,6 +13,7 @@
 #include "ICodeManager.h"
 #include "CoffNativeCodeManager.h"
 #include "varint.h"
+#include "holder.h"
 
 #include "CommonMacros.inl"
 
