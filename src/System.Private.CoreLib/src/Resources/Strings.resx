@@ -2621,6 +2621,6 @@
     <value>This operation is only valid on generic types.</value>
   </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
-    <value>This method is not supported on Signature Types.</value>
+    <value>This method is not supported on signature types.</value>
   </data>
 </root>
