@@ -223,7 +223,7 @@
                     Inner:
                     leave.s    A
                 }
-                catch [mscorlib]System.Object 
+                catch [System.Runtime]System.Object 
                 {
                     pop
                     leave.s    A
@@ -232,7 +232,7 @@
 
                 leave.s    B
             }
-            catch [mscorlib]System.Object 
+            catch [System.Runtime]System.Object 
             {
                 pop
                 leave.s    B
@@ -241,7 +241,49 @@
 
             leave.s    C
         }
-        catch [mscorlib]System.Object 
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStartStart_Valid() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                .try
+                {
+                    Inner:
+                    leave.s    A
+                }
+                catch [System.Runtime]System.Object 
+                {
+                    pop
+                    leave.s    A
+                }
+                A:
+
+                leave.s    B
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    B
+            }
+            B:
+
+            leave.s    C
+        }
+        catch [System.Runtime]System.Object 
         {
             pop
             leave.s    C
