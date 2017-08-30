@@ -374,16 +374,36 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    var srcTryStart = _exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset;
-                    var targetTryStart = _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset;
-                    if (srcTryStart < targetTryStart)
+                    var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    if (srcRegion.TryOffset < targetRegion.TryOffset)
                     {
                         // Check if branching into try that is not inside current try block
-                        if (srcTryStart + _exceptionRegions[(int)src.TryIndex].ILRegion.TryLength < targetTryStart)
+                        if (srcRegion.TryOffset + srcRegion.TryLength < targetRegion.TryOffset)
                             VerificationError(VerifierError.BranchOutOfTry);
                         // Branching to first instruction of try-block is valid
-                        else if (target.StartOffset != targetTryStart)
+                        else if (target.StartOffset != targetRegion.TryOffset)
                             VerificationError(VerifierError.BranchIntoTry);
+                        // Check if branching into a nested try
+                        else
+                        {
+                            // Walk from target backwards and check each BasicBlock whether it is a try-start
+                            for (int i = target.StartOffset - 1; i > srcRegion.TryOffset; --i)
+                            {
+                                var block = _basicBlocks[i];
+                                if (block == null)
+                                    continue;
+
+                                if (block.TryStart && block.TryIndex != src.TryIndex)
+                                {
+                                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                                    // blockRegion is not starting at same instruction as targetRegion and is enclosing targetRegion
+                                    if (blockRegion.TryOffset != targetRegion.TryOffset && 
+                                        blockRegion.TryOffset + blockRegion.TryLength > targetRegion.TryOffset)
+                                        VerificationError(VerifierError.BranchIntoTry);
+                                }
+                            }
+                        }
                     }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
