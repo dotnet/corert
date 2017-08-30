@@ -293,6 +293,48 @@
         ret
     }
 
+    .method static public hidebysig void Branching.IntoTryStartWithPredecessor_Valid() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+
+            .try
+            {
+                Inner:
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+
+            A:
+
+            leave.s    C
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
     .method static public hidebysig void Branching.IntoNestedTryMiddle_Invalid_BranchIntoTry() cil managed
     {
         .maxstack 2
