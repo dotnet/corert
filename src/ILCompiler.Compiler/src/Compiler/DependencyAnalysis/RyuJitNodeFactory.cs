@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 // Otherwise we just unbox 'this' and don't touch anything else.
-                return new UnboxingStubNode(method);
+                return new UnboxingStubNode(method, Target);
             }
         }
 

@@ -598,12 +598,17 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because a
 // static 
 void RedhawkGCInterface::StressGc()
 {
-    if (!g_fGcStressStarted || GetThread()->IsSuppressGcStressSet() || GetThread()->IsDoNotTriggerGcSet())
+    // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the GC operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
+
+    if (g_fGcStressStarted && !GetThread()->IsSuppressGcStressSet() && !GetThread()->IsDoNotTriggerGcSet())
     {
-        return;
+        GCHeapUtilities::GetGCHeap()->GarbageCollect();
     }
 
-    GCHeapUtilities::GetGCHeap()->GarbageCollect();
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 #endif // FEATURE_GC_STRESS
 

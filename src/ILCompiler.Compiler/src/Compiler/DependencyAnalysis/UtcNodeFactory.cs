@@ -149,6 +149,11 @@ namespace ILCompiler
             graph.AddRoot(GCStaticDescRegion, "GC Static Desc is always generated");
             graph.AddRoot(ThreadStaticsOffsetRegion, "Thread Statics Offset Region is always generated");
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
+            if (Target.IsWindows)
+            {
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(false), "UnboxingStubsRegion delimiter for Windows platform");
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(true), "UnboxingStubsRegion delimiter for Windows platform");
+            }
 
             // The native part of the MRT library links against CRT which defines _tls_index and _tls_used.
             if (!buildMRT)
@@ -210,7 +215,7 @@ namespace ILCompiler
             else
             {
                 // Otherwise we just unbox 'this' and don't touch anything else.
-                return new UnboxingStubNode(method);
+                return new UnboxingStubNode(method, Target);
             }
         }
 

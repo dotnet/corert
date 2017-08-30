@@ -356,10 +356,12 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
-                        void * pvStartRange, UInt32 cbRange,
+                        void * pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                        void * pvUnboxingStubsStartRange, UInt32 cbUnboxingStubsRange,
                         void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     UnixNativeCodeManager * pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
@@ -369,9 +371,14 @@ bool RhRegisterOSModule(void * pModule,
         return false;
     }
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvStartRange, cbRange))
+    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
     {
         delete pUnixNativeCodeManager;
+        return false;
+    }
+
+    if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
+    {
         return false;
     }
 

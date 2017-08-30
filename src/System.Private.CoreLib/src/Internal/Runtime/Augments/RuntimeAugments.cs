@@ -60,6 +60,7 @@ namespace Internal.Runtime.Augments
         public static void InitializeLookups(TypeLoaderCallbacks callbacks)
         {
             s_typeLoaderCallbacks = callbacks;
+            GetCodeTarget(new IntPtr(0x1234));
         }
 
         [CLSCompliant(false)]

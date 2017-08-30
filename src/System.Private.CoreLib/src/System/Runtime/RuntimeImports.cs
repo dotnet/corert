@@ -605,7 +605,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
-        internal static extern IntPtr RhGetCodeTarget(IntPtr pCode);
+        public static extern IntPtr RhGetCodeTarget(IntPtr pCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
