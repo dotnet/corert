@@ -1369,7 +1369,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Dictionary slot
-            if (canShareNormalCanonicalCode || templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
                 currentVTableIndex++;
 
             // Actual vtable slots follow
