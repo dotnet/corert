@@ -27,7 +27,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             _parameterTypes = parameterTypes;
         }
 
-        public override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             //@todo: This does not handle optional parameters (nor does it need to as today we're only using it for three synthetic array methods.)
             if (!(thisObject == null && 0 != (_options & InvokerOptions.AllowNullThis)))
@@ -46,12 +46,9 @@ namespace Internal.Reflection.Execution.MethodInvokers
             {
                 result = _invoker(thisObject, convertedArguments);
             }
-            catch (Exception e)
+            catch (Exception e) when (wrapInTargetInvocationException && ((_options & InvokerOptions.DontWrapException) == 0))
             {
-                if (0 != (_options & InvokerOptions.DontWrapException))
-                    throw;
-                else
-                    throw new TargetInvocationException(e);
+                throw new TargetInvocationException(e);
             }
             return result;
         }

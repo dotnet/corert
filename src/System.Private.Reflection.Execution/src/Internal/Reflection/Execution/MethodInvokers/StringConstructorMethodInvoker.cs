@@ -58,7 +58,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             switch (_id)
             {
