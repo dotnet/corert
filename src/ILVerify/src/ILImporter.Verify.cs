@@ -441,7 +441,7 @@ namespace Internal.IL
                 if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
                 {
                     var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
-                    // blockRegion is not starting at same instruction as targetRegion and is enclosing targetRegion
+                    // blockRegion is not starting at same instruction as enclosedRegion and is actually enclosing enclosedRegion
                     if (blockRegion.TryOffset != enclosedRegion.TryOffset &&
                         blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
                         return false;
