@@ -2611,4 +2611,16 @@
   <data name="StackTrace_EndStackTraceFromPreviousThrow" xml:space="preserve">
     <value>--- End of stack trace from previous location where exception was thrown ---</value>
   </data>
+  <data name="InvalidAssemblyName" xml:space="preserve">
+    <value>The given assembly name or codebase was invalid</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="InvalidOperation_NotGenericType" xml:space="preserve">
+    <value>This operation is only valid on generic types.</value>
+  </data>
+  <data name="NotSupported_SignatureType" xml:space="preserve">
+    <value>This method is not supported on signature types.</value>
+  </data>
 </root>

@@ -1369,7 +1369,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Dictionary slot
-            if (canShareNormalCanonicalCode || templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
                 currentVTableIndex++;
 
             // Actual vtable slots follow
@@ -1727,7 +1727,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             MethodDesc typicalSlotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetTypicalMethodDefinition());
-            _slotDefiningMethod = _method.OwningType.FindMethodOnTypeWithMatchingTypicalMethod(typicalSlotDefiningMethod).GetCanonMethodTarget(CanonicalFormKind.Specific);
+            _slotDefiningMethod = _method.OwningType.FindMethodOnTypeWithMatchingTypicalMethod(typicalSlotDefiningMethod);
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(!method.HasInstantiation);
             Debug.Assert(!method.OwningType.IsInterface);
             Debug.Assert(method.OwningType.IsDefType);

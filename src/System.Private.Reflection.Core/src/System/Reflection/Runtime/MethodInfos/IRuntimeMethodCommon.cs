@@ -49,6 +49,7 @@ namespace System.Reflection.Runtime.MethodInfos
         MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
 
         bool IsGenericMethodDefinition { get; }
+        int GenericParameterCount { get; }
 
         bool HasSameMetadataDefinitionAs(TRuntimeMethodCommon other);
 

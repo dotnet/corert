@@ -94,7 +94,6 @@ private static extern int System.Runtime.RuntimeImports.RhCompatibleReentrantWai
 internal static extern bool System.Runtime.RuntimeImports.RhCreateGenericInstanceDescForType2(System.EETypePtr pEEType, int arity, int nonGcStaticDataSize, int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags)
 private static extern bool System.Runtime.RuntimeImports.RhFindBlob(ref System.Runtime.TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhFindMethodStartAddress(System.IntPtr codeAddr)
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetCodeTarget(System.IntPtr pCode)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetJmpStubCodeTarget(System.IntPtr pCode)
 internal static extern long System.Runtime.RuntimeImports.RhGetCurrentObjSize()
 internal static extern int System.Runtime.RuntimeImports.RhGetCurrentThreadStackTrace(System.IntPtr[] outputBuffer)

@@ -1073,12 +1073,71 @@ namespace Internal.Runtime.TypeLoader
             {
                 TypeLoaderLogger.WriteLine("  -> DictionaryCell[" + i.LowLevelToString() + "] = ");
 
-                GenericDictionaryCell cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
-                dictionary[i] = cell;
+                dictionary[i] = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
             }
 
             for (uint i = 0; i < count; i++)
                 dictionary[i].Prepare(typeBuilder);
+
+            return dictionary;
+        }
+
+        internal static unsafe GenericDictionaryCell[] BuildFloatingDictionary(TypeBuilder typeBuilder, NativeLayoutInfoLoadContext nativeLayoutInfoLoadContext, NativeParser parser, out int floatingVersionCellIndex, out int floatingVersionInLayout)
+        {
+            //
+            // The format of a dictionary that has a floating portion is as follows:
+            //
+            // "Fixed" portion:
+            //      - First slot is a pointer to the first cell of the "floating" portion
+            //      - Followed by N various dictionary lookup cells
+            // "Floating" portion:
+            //      - Cell containing the version number of the floating portion
+            //      - Followed by N various dictionary lookup cells
+            //
+
+            floatingVersionCellIndex = floatingVersionInLayout = -1;
+
+            uint count = parser.GetSequenceCount();
+            Debug.Assert(count > 1);
+
+            GenericDictionaryCell cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
+            if (!(cell is PointerToOtherDictionarySlotCell))
+            {
+                // This is not a dictionary layout that has a floating portion
+                Debug.Assert(false, "Unreachable: we should never reach here if the target dictionary does not have a floating layout");
+                return null;
+            }
+
+            PointerToOtherDictionarySlotCell pointerToCell = (PointerToOtherDictionarySlotCell)cell;
+            floatingVersionCellIndex = (int)pointerToCell.OtherDictionarySlot;
+            Debug.Assert(count > pointerToCell.OtherDictionarySlot);
+
+            GenericDictionaryCell[] dictionary = new GenericDictionaryCell[count - pointerToCell.OtherDictionarySlot];
+
+            for (uint i = 1; i < pointerToCell.OtherDictionarySlot; i++)
+            {
+                // Parse and discard the fixed dictionary cells. We only need to build the cells of the floating portion
+                ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
+            }
+
+            for (uint i = pointerToCell.OtherDictionarySlot; i < count; i++)
+            {
+                TypeLoaderLogger.WriteLine("  -> FloatingDictionaryCell[" + (i - pointerToCell.OtherDictionarySlot).LowLevelToString() + "] (" + i.LowLevelToString() + " in all) = ");
+
+                cell = ParseAndCreateCell(nativeLayoutInfoLoadContext, ref parser);
+
+                if (i == pointerToCell.OtherDictionarySlot)
+                {
+                    // The first cell in the floating portion should always be the version number
+                    Debug.Assert(cell is IntPtrCell);
+                    floatingVersionInLayout = (int)((IntPtrCell)cell).Value;
+                }
+
+                dictionary[i - pointerToCell.OtherDictionarySlot] = cell;
+            }
+
+            for (uint i = pointerToCell.OtherDictionarySlot; i < count; i++)
+                dictionary[i - pointerToCell.OtherDictionarySlot].Prepare(typeBuilder);
 
             return dictionary;
         }

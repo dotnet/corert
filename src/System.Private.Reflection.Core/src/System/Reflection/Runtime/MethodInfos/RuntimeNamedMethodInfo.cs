@@ -115,6 +115,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int GenericParameterCount => _common.GenericParameterCount;
+
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
 #if ENABLE_REFLECTION_TRACE

@@ -55,12 +55,23 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
+            return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
+        protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        {
+            return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
+        private MethodInfo GetMethodImplCommon(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        {
             Debug.Assert(name != null);
 
             // GetMethodImpl() is a funnel for two groups of api. We can distinguish by comparing "types" to null.
             if (types == null)
             {
                 // Group #1: This group of api accept only a name and BindingFlags. The other parameters are hard-wired by the non-virtual api entrypoints. 
+                Debug.Assert(genericParameterCount == GenericParameterCountAny);
                 Debug.Assert(binder == null);
                 Debug.Assert(callConvention == CallingConventions.Any);
                 Debug.Assert(modifiers == null);
@@ -73,6 +84,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>();
                 foreach (MethodInfo candidate in queryResult)
                 {
+                    if (genericParameterCount != GenericParameterCountAny && genericParameterCount != candidate.GenericParameterCount)
+                        continue;
                     if (candidate.QualifiesBasedOnParameterCount(bindingAttr, callConvention, types))
                         candidates.Add(candidate);
                 }
@@ -186,6 +199,8 @@ namespace System.Reflection.Runtime.TypeInfos
         private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
 
         private volatile TypeComponentsCache _lazyCache;
+
+        private const int GenericParameterCountAny = -1;
     }
 }
 

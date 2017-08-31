@@ -11,6 +11,7 @@
 #include "ICodeManager.h"
 #include "UnixNativeCodeManager.h"
 #include "varint.h"
+#include "holder.h"
 
 #include "CommonMacros.inl"
 
@@ -356,24 +357,31 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
-                        void * pvStartRange, UInt32 cbRange,
+                        void * pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                        void * pvUnboxingStubsStartRange, UInt32 cbUnboxingStubsRange,
                         void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
-    UnixNativeCodeManager * pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
+    NewHolder<UnixNativeCodeManager> pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
         pClasslibFunctions, nClasslibFunctions);
+
     if (pUnixNativeCodeManager == nullptr)
+        return false;
+
+    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
+        return false;
+
+    if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
+        UnregisterCodeManager(pUnixNativeCodeManager);
         return false;
     }
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvStartRange, cbRange))
-    {
-        delete pUnixNativeCodeManager;
-        return false;
-    }
+    pUnixNativeCodeManager.SuppressRelease();
 
     return true;
 }
