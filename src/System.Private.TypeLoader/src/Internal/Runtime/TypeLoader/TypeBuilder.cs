@@ -505,9 +505,11 @@ namespace Internal.Runtime.TypeLoader
             // If so, use that, otherwise, run down the template type loader path with the universal template
             if ((state.TemplateType == null) || isTemplateUniversalCanon)
             {
+#if !CORERT
                 // CanonAlike types do not get dictionaries
                 if ((state.TemplateType == null) && (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray)))
                     return;
+#endif
 
                 // ReadyToRun case - Native Layout is just the dictionary
                 NativeParser readyToRunInfoParser = state.GetParserForReadyToRunNativeLayoutInfo();
@@ -641,12 +643,14 @@ namespace Internal.Runtime.TypeLoader
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
 
+#if !CORERT
                         if (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray))
                         {
                             TypeLoaderLogger.WriteLine("Type is CanonAlike, skip generation of dictionary");
                             typeInfoParser.SkipInteger();
                             break;
                         }
+#endif
 
                         Debug.Assert(state.Dictionary == null);
                         if (!state.TemplateType.RetrieveRuntimeTypeHandleIfPossible())

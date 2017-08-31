@@ -72,6 +72,12 @@ namespace Internal.IL
                             return EETypePtrOfIntrinsic.EmitIL(method);
                     }
                     break;
+                case "RuntimeAugments":
+                    {
+                        if (owningType.Namespace == "Internal.Runtime.Augments" && method.Name == "GetCanonType")
+                            return GetCanonTypeIntrinsic.EmitIL(method);
+                    }
+                    break;
             }
 
             return null;
