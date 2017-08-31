@@ -18,6 +18,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode
     {
+        private readonly NodeFactory _factory;
+
         protected abstract TypeSystemContext Context { get; }
 
         public abstract TypeSystemEntity OwningEntity { get; }
@@ -41,6 +43,13 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract int HeaderSize { get; }
 
         int ISymbolDefinitionNode.Offset => HeaderSize;
+
+        public override ObjectNodeSection Section => GetDictionaryLayout(_factory).DictionarySection(_factory);
+
+        public GenericDictionaryNode(NodeFactory factory)
+        {
+            _factory = factory;
+        }
 
         public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -92,7 +101,6 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation MethodInstantiation => new Instantiation();
         protected override TypeSystemContext Context => _owningType.Context;
         public override TypeSystemEntity OwningEntity => _owningType;
-        public override ObjectNodeSection Section { get; }
         public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsType(OwningType);
         public TypeDesc OwningType => _owningType;
 
@@ -166,6 +174,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public TypeGenericDictionaryNode(TypeDesc owningType, NodeFactory factory)
+            : base(factory)
         {
             Debug.Assert(!owningType.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(!owningType.IsRuntimeDeterminedSubtype);
@@ -173,7 +182,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(owningType.ConvertToCanonForm(CanonicalFormKind.Specific) != owningType);
 
             _owningType = owningType;
-            Section = GetDictionaryLayout(factory).DictionarySection(factory);
         }
     }
 
@@ -190,7 +198,6 @@ namespace ILCompiler.DependencyAnalysis
         public override Instantiation MethodInstantiation => _owningMethod.Instantiation;
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
-        public override ObjectNodeSection Section { get; }
         public override bool IsExported(NodeFactory factory) => factory.CompilationModuleGroup.ExportsMethodDictionary(OwningMethod);
         public MethodDesc OwningMethod => _owningMethod;
 
@@ -232,13 +239,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MethodGenericDictionaryNode(MethodDesc owningMethod, NodeFactory factory)
+            : base(factory)
         {
             Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
             Debug.Assert(owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != owningMethod);
 
             _owningMethod = owningMethod;
-            Section = GetDictionaryLayout(factory).DictionarySection(factory);
         }
     }
 }
