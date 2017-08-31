@@ -405,6 +405,7 @@ namespace Internal.Runtime.Augments
             object defaultParametersContext,
             object[] parameters,
             BinderBundle binderBundle,
+            bool wrapInTargetInvocationException,
             bool invokeMethodHelperIsThisCall,
             bool methodToCallIsThisCall)
         {
@@ -417,6 +418,7 @@ namespace Internal.Runtime.Augments
                 defaultParametersContext,
                 parameters,
                 binderBundle,
+                wrapInTargetInvocationException,
                 invokeMethodHelperIsThisCall,
                 methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
