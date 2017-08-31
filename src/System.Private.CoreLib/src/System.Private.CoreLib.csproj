@@ -176,7 +176,7 @@
     <Compile Include="System\Resources\ResourceSet.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
-    <Compile Include="System\__Canon.cs" />
+    <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\AccessViolationException.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\AggregateException.cs" />
@@ -758,6 +758,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CanonTypeKind.cs">
+      <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
       <Link>Internal\Runtime\EEType.cs</Link>

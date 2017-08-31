@@ -95,5 +95,18 @@ namespace Internal.TypeSystem
 
         public abstract bool SupportsCanon { get; }
         public abstract bool SupportsUniversalCanon { get; }
+
+        public DefType GetCanonType(string name)
+        {
+            switch (name)
+            {
+                case TypeSystem.CanonType.FullName:
+                    return CanonType;
+                case TypeSystem.UniversalCanonType.FullName:
+                    return UniversalCanonType;
+            }
+
+            return null;
+        }
     }
 }
