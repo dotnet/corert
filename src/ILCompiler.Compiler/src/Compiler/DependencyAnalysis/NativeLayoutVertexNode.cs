@@ -1858,7 +1858,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(SignatureKind == FixupSignatureKind.GenericConstrainedMethod);
                 Vertex constrainedMethodVertex = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod).WriteVertex(factory);
-                return writer.GetTuple(constraintType, constrainedMethodVertex);
+                Vertex relativeOffsetVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(constrainedMethodVertex);
+                return writer.GetTuple(constraintType, relativeOffsetVertex);
             }
             else
             {
