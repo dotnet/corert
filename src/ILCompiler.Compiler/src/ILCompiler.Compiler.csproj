@@ -55,6 +55,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\GetCanonTypeIntrinsic.cs">
+      <Link>IL\Stubs\GetCanonTypeIntrinsic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.cs</Link>
     </Compile>
@@ -324,6 +327,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CanonTypeKind.cs">
+      <Link>Common\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>Common\EEType.Constants.cs</Link>

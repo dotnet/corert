@@ -27,6 +27,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Runtime;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
 
@@ -34,12 +35,6 @@ using Volatile = System.Threading.Volatile;
 
 namespace Internal.Runtime.Augments
 {
-    public enum CanonTypeKind
-    {
-        NormalCanon,
-        UniversalCanon
-    }
-
     public static class RuntimeAugments
     {
         /// <summary>
@@ -597,8 +592,13 @@ namespace Internal.Runtime.Augments
             return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
+        [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
+#if CORERT
+            // Compiler needs to expand this. This is not expressible in IL.
+            throw new NotSupportedException();
+#else
             switch (kind)
             {
                 case CanonTypeKind.NormalCanon:
@@ -609,6 +609,7 @@ namespace Internal.Runtime.Augments
                     Debug.Assert(false);
                     return default(RuntimeTypeHandle);
             }
+#endif
         }
 
         public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)
