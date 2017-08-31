@@ -27,21 +27,29 @@ namespace Internal.IL.Stubs
             TypeDesc runtimeTypeHandleType = context.GetWellKnownType(WellKnownType.RuntimeTypeHandle);
             Debug.Assert(target.Signature.ReturnType == runtimeTypeHandleType);
 
-            ILCodeLabel lNotCanon = emitter.NewCodeLabel();
-            codeStream.Emit(ILOpcode.ldarg_0);
-            codeStream.EmitLdc((int)CanonTypeKind.NormalCanon);
-            codeStream.Emit(ILOpcode.bne_un, lNotCanon);
-            codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(context.CanonType));
-            codeStream.Emit(ILOpcode.ret);
-            codeStream.EmitLabel(lNotCanon);
+            if (context.SupportsCanon)
+            {
+                ILCodeLabel lNotCanon = emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.ldarg_0);
+                codeStream.EmitLdc((int)CanonTypeKind.NormalCanon);
+                codeStream.Emit(ILOpcode.bne_un, lNotCanon);
+                codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(context.CanonType));
+                codeStream.Emit(ILOpcode.ret);
+                codeStream.EmitLabel(lNotCanon);
 
-            ILCodeLabel lNotUniversalCanon = emitter.NewCodeLabel();
-            codeStream.Emit(ILOpcode.ldarg_0);
-            codeStream.EmitLdc((int)CanonTypeKind.UniversalCanon);
-            codeStream.Emit(ILOpcode.bne_un, lNotUniversalCanon);
-            codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(context.UniversalCanonType));
-            codeStream.Emit(ILOpcode.ret);
-            codeStream.EmitLabel(lNotUniversalCanon);
+                // We're not conditioning this on SupportsUniversalCanon because the runtime type loader
+                // does a lot of comparisons against UniversalCanon and not having a RuntimeTypeHandle
+                // for it makes these checks awkward.
+                // Would be nice if we didn't have to emit the EEType if universal canonical code wasn't enabled
+                // at the time of compilation.
+                ILCodeLabel lNotUniversalCanon = emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.ldarg_0);
+                codeStream.EmitLdc((int)CanonTypeKind.UniversalCanon);
+                codeStream.Emit(ILOpcode.bne_un, lNotUniversalCanon);
+                codeStream.Emit(ILOpcode.ldtoken, emitter.NewToken(context.UniversalCanonType));
+                codeStream.Emit(ILOpcode.ret);
+                codeStream.EmitLabel(lNotUniversalCanon);
+            }
 
             ILLocalVariable vNullTypeHandle = emitter.NewLocal(runtimeTypeHandleType);
             codeStream.EmitLdLoca(vNullTypeHandle);
