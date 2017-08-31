@@ -41,7 +41,6 @@ namespace ILCompiler
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
-        private HashSet<UnboxingStubNode> _unboxingStubsGenerated = new HashSet<UnboxingStubNode>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
@@ -154,13 +153,6 @@ namespace ILCompiler
                     _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
                 }
 
-                return;
-            }
-
-            var unboxingStubNode = obj as UnboxingStubNode;
-            if (unboxingStubNode != null)
-            {
-                _unboxingStubsGenerated.Add(unboxingStubNode);
                 return;
             }
 
@@ -586,11 +578,6 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithEETypes()
         {
             return _typesWithEETypesGenerated;
-        }
-
-        internal IEnumerable<UnboxingStubNode> GetCompiledUnboxingStubs()
-        {
-            return _unboxingStubsGenerated;
         }
 
         internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()
