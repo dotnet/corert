@@ -367,7 +367,7 @@ namespace Internal.IL
                 if (src.TryIndex == null)
                 {
                     // Branching to first instruction of try-block is valid
-                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
                         VerificationError(VerifierError.BranchIntoTry);
                 }
                 else if (target.TryIndex == null)
@@ -382,28 +382,8 @@ namespace Internal.IL
                         if (srcRegion.TryOffset + srcRegion.TryLength < targetRegion.TryOffset)
                             VerificationError(VerifierError.BranchOutOfTry);
                         // Branching to first instruction of try-block is valid
-                        else if (target.StartOffset != targetRegion.TryOffset)
+                        else if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
                             VerificationError(VerifierError.BranchIntoTry);
-                        // Check if branching into a nested try
-                        else
-                        {
-                            // Walk from target backwards and check each BasicBlock whether it is a try-start
-                            for (int i = target.StartOffset - 1; i > srcRegion.TryOffset; --i)
-                            {
-                                var block = _basicBlocks[i];
-                                if (block == null)
-                                    continue;
-
-                                if (block.TryStart && block.TryIndex != src.TryIndex)
-                                {
-                                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
-                                    // blockRegion is not starting at same instruction as targetRegion and is enclosing targetRegion
-                                    if (blockRegion.TryOffset != targetRegion.TryOffset && 
-                                        blockRegion.TryOffset + blockRegion.TryLength > targetRegion.TryOffset)
-                                        VerificationError(VerifierError.BranchIntoTry);
-                                }
-                            }
-                        }
                     }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
@@ -439,6 +419,36 @@ namespace Internal.IL
                         VerificationError(VerifierError.BranchOutOfHandler);
                 }
             }
+        }
+
+        bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
+        {
+            int enclosingRegionStart;
+            if (enclosingBlock.TryIndex == null)
+                enclosingRegionStart = enclosingBlock.StartOffset;
+            else
+                enclosingRegionStart = _exceptionRegions[(int)enclosingBlock.TryIndex].ILRegion.TryOffset;
+
+            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+
+            // Walk from enclosed start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedBlock.StartOffset - 1; i > enclosingRegionStart; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
+                {
+                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    // blockRegion is not starting at same instruction as targetRegion and is enclosing targetRegion
+                    if (blockRegion.TryOffset != enclosedRegion.TryOffset &&
+                        blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         // For now, match PEVerify type formating to make it easy to compare with baseline

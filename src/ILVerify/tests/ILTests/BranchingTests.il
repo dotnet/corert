@@ -293,6 +293,38 @@
         ret
     }
 
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStartFromOutside_Invalid_BranchIntoTry() cil managed
+    {
+        br    Inner
+
+        .try
+        {
+            nop
+
+            .try
+            {
+                Inner:
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+            A:
+
+            leave.s    B
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    B
+        }
+        B:
+
+        ret
+    }
+
     .method static public hidebysig void Branching.IntoTryStartWithPredecessor_Valid() cil managed
     {
         .try
