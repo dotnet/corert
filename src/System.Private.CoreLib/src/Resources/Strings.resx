@@ -2623,4 +2623,10 @@
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
+  <data name="Memory_ThrowIfDisposed" xml:space="preserve">
+    <value>Memory&lt;T&gt; has been disposed.</value>
+  </data>
+  <data name="Memory_OutstandingReferences" xml:space="preserve">
+    <value>Release all references before disposing this instance.</value>
+  </data>
 </root>
