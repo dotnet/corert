@@ -104,6 +104,16 @@ namespace System
             return new ArgumentNullException(GetArgumentName(argument));
         }
 
+        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
+        {
+            throw new ObjectDisposedException(objectName, GetResourceString(resource));
+        }
+
+        internal static void ThrowInvalidOperationException(ExceptionResource resource)
+        {
+            throw new InvalidOperationException(GetResourceString(resource));
+        }
+
         private static string GetArgumentName(ExceptionArgument argument)
         {
             switch (argument)
@@ -126,6 +136,8 @@ namespace System
                     return "s";
                 case ExceptionArgument.input:
                     return "input";
+                case ExceptionArgument.ownedMemory:
+                    return "ownedMemory";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -141,6 +153,10 @@ namespace System
                     return SR.ArgumentOutOfRange_Index;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
+                case ExceptionResource.Memory_ThrowIfDisposed:
+                    return SR.Memory_ThrowIfDisposed;
+                case ExceptionResource.Memory_OutstandingReferences:
+                    return SR.Memory_OutstandingReferences;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -162,7 +178,8 @@ namespace System
         startIndex,
         task,
         s,
-        input
+        input,
+        ownedMemory,
     }
 
     //
@@ -172,5 +189,7 @@ namespace System
     {
         ArgumentOutOfRange_Index,
         Arg_ArrayPlusOffTooSmall,
+        Memory_ThrowIfDisposed,
+        Memory_OutstandingReferences,
     }
 }
