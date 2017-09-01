@@ -376,13 +376,12 @@ namespace Internal.IL
                 {
                     var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
                     var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
-                    if (srcRegion.TryOffset < targetRegion.TryOffset)
+                    // If target is inside source region
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                        target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
                     {
-                        // Check if branching into try that is not inside current try block
-                        if (srcRegion.TryOffset + srcRegion.TryLength < targetRegion.TryOffset)
-                            VerificationError(VerifierError.BranchOutOfTry);
-                        // Branching to first instruction of try-block is valid
-                        else if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
+                        // Only branching to first instruction of try-block is valid
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
                             VerificationError(VerifierError.BranchIntoTry);
                     }
                     else
@@ -398,7 +397,9 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    if (_exceptionRegions[(int)src.FilterIndex].ILRegion.FilterOffset < _exceptionRegions[(int)target.FilterIndex].ILRegion.FilterOffset)
+                    var srcRegion = _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
                         VerificationError(VerifierError.BranchOutOfFilter);
@@ -413,7 +414,9 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    if (_exceptionRegions[(int)src.HandlerIndex].ILRegion.HandlerOffset < _exceptionRegions[(int)target.HandlerIndex].ILRegion.HandlerOffset)
+                    var srcRegion = _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
                         VerificationError(VerifierError.BranchOutOfHandler);
@@ -421,18 +424,19 @@ namespace Internal.IL
             }
         }
 
+        /// <summary>
+        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// the given enclosing try block.
+        /// </summary>
+        /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
+        /// <param name="enclosedBlock">The block to check whether it is a direct child try-region of <paramref name="enclosingBlock"/>.</param>
+        /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
         bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
         {
-            int enclosingRegionStart;
-            if (enclosingBlock.TryIndex == null)
-                enclosingRegionStart = enclosingBlock.StartOffset;
-            else
-                enclosingRegionStart = _exceptionRegions[(int)enclosingBlock.TryIndex].ILRegion.TryOffset;
-
             var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
 
-            // Walk from enclosed start backwards and check each BasicBlock whether it is a try-start
-            for (int i = enclosedBlock.StartOffset - 1; i > enclosingRegionStart; --i)
+            // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
             {
                 var block = _basicBlocks[i];
                 if (block == null)
@@ -441,9 +445,8 @@ namespace Internal.IL
                 if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
                 {
                     var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
-                    // blockRegion is not starting at same instruction as enclosedRegion and is actually enclosing enclosedRegion
-                    if (blockRegion.TryOffset != enclosedRegion.TryOffset &&
-                        blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                    // blockRegion is actually enclosing enclosedRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
                         return false;
                 }
             }

@@ -482,6 +482,35 @@
         lbl_ret: ret
     }
 
+    .method static public hidebysig void Branching.OutOfTrySameStart_Invalid_BranchOutOfTry() cil managed
+    {
+        .try
+        {
+            .try
+            {
+                br    A
+
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+            A:
+
+            leave.s    B
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    B
+        }
+        B:
+
+        ret
+    }
+
     .method static public hidebysig void Branching.FromTryIntoOtherTryMiddle_Invalid_BranchOutOfTry() cil managed
     {
         .maxstack 2
