@@ -119,7 +119,7 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Branching.IntoTry_Invalid_BranchIntoTry() cil managed
+    .method static public hidebysig void Branching.IntoTryStart_Valid() cil managed
     {
         .maxstack 2
 
@@ -135,6 +135,406 @@
             lbl_true: nop
 
             leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 2
+
+        ldc.i4.s  10
+        ldc.i4.s  5
+        bne.un.s  lbl_true
+
+        nop
+        br.s      lbl_ret
+
+        .try
+        {
+            nop
+            lbl_true: nop
+
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoNestedTryStart_Valid() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_leave
+            .try
+            {
+                lbl_true: nop
+
+                leave.s   lbl_leave
+            }
+            catch [System.Runtime]System.Object
+            {
+                pop
+                leave.s   lbl_leave
+            }
+
+            lbl_leave: leave.s lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStart_Invalid_BranchIntoTry() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                nop
+
+                .try
+                {
+                    Inner:
+                    leave.s    A
+                }
+                catch [System.Runtime]System.Object 
+                {
+                    pop
+                    leave.s    A
+                }
+                A:
+
+                leave.s    B
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    B
+            }
+            B:
+
+            leave.s    C
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStartStart_Valid() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                .try
+                {
+                    Inner:
+                    leave.s    A
+                }
+                catch [System.Runtime]System.Object 
+                {
+                    pop
+                    leave.s    A
+                }
+                A:
+
+                leave.s    B
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    B
+            }
+            B:
+
+            leave.s    C
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.IntoDoubleNestedTryStartFromOutside_Invalid_BranchIntoTry() cil managed
+    {
+        br    Inner
+
+        .try
+        {
+            nop
+
+            .try
+            {
+                Inner:
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+            A:
+
+            leave.s    B
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    B
+        }
+        B:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.IntoTryStartWithPredecessor_Valid() cil managed
+    {
+        .try
+        {
+            nop
+            br    Inner
+
+            .try
+            {
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+
+            .try
+            {
+                Inner:
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+
+            A:
+
+            leave.s    C
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    C
+        }
+        C:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.IntoNestedTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            br.s      lbl_leave
+            .try
+            {
+                nop
+                lbl_true: nop
+
+                leave.s   lbl_leave
+            }
+            catch [System.Runtime]System.Object
+            {
+                pop
+                leave.s   lbl_leave
+            }
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry_BranchIntoFilter() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_true
+
+            nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            lbl_true: nop
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoFinally_Invalid_BranchOutOfTry_BranchIntoHandler() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_finally
+
+            nop
+            leave.s   lbl_ret
+        }
+        finally
+        {
+            lbl_finally: nop
+            endfinally
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoOtherTryStart_Invalid_BranchOutOfTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_try2
+
+            nop
+            leave.s   lbl_try
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_try
+        }
+
+        lbl_try: nop
+        .try
+        {
+            lbl_try2: nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.OutOfTrySameStart_Invalid_BranchOutOfTry() cil managed
+    {
+        .try
+        {
+            .try
+            {
+                br    A
+
+                leave.s    A
+            }
+            catch [System.Runtime]System.Object 
+            {
+                pop
+                leave.s    A
+            }
+            A:
+
+            leave.s    B
+        }
+        catch [System.Runtime]System.Object 
+        {
+            pop
+            leave.s    B
+        }
+        B:
+
+        ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoOtherTryMiddle_Invalid_BranchOutOfTry() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            ldc.i4.s  10
+            ldc.i4.s  5
+            bne.un.s  lbl_try2
+
+            nop
+            leave.s   lbl_try
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_try
+        }
+
+        lbl_try: nop
+        .try
+        {
+            nop
+            lbl_try2: leave.s   lbl_ret
         }
         catch [System.Runtime]System.Object
         {

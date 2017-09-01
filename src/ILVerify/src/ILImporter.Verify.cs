@@ -372,17 +372,28 @@ namespace Internal.IL
             if (src.TryIndex != target.TryIndex)
             {
                 if (src.TryIndex == null)
-                    VerificationError(VerifierError.BranchIntoTry);
+                {
+                    // Branching to first instruction of try-block is valid
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
+                        VerificationError(VerifierError.BranchIntoTry);
+                }
                 else if (target.TryIndex == null)
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                        VerificationError(VerifierError.BranchIntoTry);
+                    var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    // If target is inside source region
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                        target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
+                    {
+                        // Only branching to first instruction of try-block is valid
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
+                            VerificationError(VerifierError.BranchIntoTry);
+                    }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
                 }
-                return;
             }
 
             if (src.FilterIndex != target.FilterIndex)
@@ -393,12 +404,13 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    if (_exceptionRegions[(int)src.FilterIndex].ILRegion.FilterOffset < _exceptionRegions[(int)target.FilterIndex].ILRegion.FilterOffset)
+                    var srcRegion = _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
                         VerificationError(VerifierError.BranchOutOfFilter);
                 }
-                return;
             }
 
             if (src.HandlerIndex != target.HandlerIndex)
@@ -409,13 +421,44 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    if (_exceptionRegions[(int)src.HandlerIndex].ILRegion.HandlerOffset < _exceptionRegions[(int)target.HandlerIndex].ILRegion.HandlerOffset)
+                    var srcRegion = _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
                         VerificationError(VerifierError.BranchOutOfHandler);
                 }
-                return;
             }
+        }
+
+        /// <summary>
+        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// the given enclosing try block.
+        /// </summary>
+        /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
+        /// <param name="enclosedBlock">The block to check whether it is a direct child try-region of <paramref name="enclosingBlock"/>.</param>
+        /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
+        bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
+        {
+            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+
+            // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
+                {
+                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    // blockRegion is actually enclosing enclosedRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         // For now, match PEVerify type formating to make it easy to compare with baseline
