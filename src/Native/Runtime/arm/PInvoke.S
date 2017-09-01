@@ -36,7 +36,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         ldr     r3, =C_FUNC(RhpTrapThreads)
         ldr     r3, [r3]
-        cbnz    r3, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
+        cbnz    r3, LOCAL_LABEL(InvokeRareTrapThread)  // TrapThreadsFlags_None = 0
 
         EPILOG_POP "{r5,pc}"
 
