@@ -61,7 +61,7 @@ namespace Internal.Runtime.Augments
                         // which is not accurate.
                         throw new ArgumentException(SR.Argument_LongEnvVarValue);
                     default:
-                        throw new ArgumentException(Win32Marshal.GetMessage(errorCode));
+                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }
             }
         }
