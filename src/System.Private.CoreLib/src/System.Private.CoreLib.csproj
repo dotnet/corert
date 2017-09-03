@@ -747,9 +747,6 @@
     <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs">
       <Link>System\CommonRuntimeTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\__HResults.cs">
-      <Link>System\__HResults.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
     </Compile>
