@@ -10,6 +10,40 @@
 {
 }
 
+// Custom Comparer class implementing IEqualityComparer for testing
+.class private auto ansi beforefieldinit CustomComparer
+    extends [System.Runtime]System.Object
+    implements [System.Runtime]System.Collections.IEqualityComparer
+{
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        ldarg.0
+        call      instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public final hidebysig newslot virtual 
+        instance bool Equals (
+            object x,
+            object y
+        ) cil managed 
+    {
+        ldc.i4.0
+        ret
+    }
+
+    .method public final hidebysig newslot virtual 
+        instance int32 GetHashCode (
+            object obj
+        ) cil managed 
+    {
+        ldarg.1
+        callvirt  instance int32 [System.Runtime]System.Object::GetHashCode()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit BranchingTestsType
        extends [System.Runtime]System.Object
 {
@@ -65,6 +99,28 @@
         IL_000E: call      valuetype [System.Runtime]System.TypeCode [System.Runtime]System.Type::GetTypeCode(class [System.Runtime]System.Type)
         IL_0013: pop
         IL_0014: ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMerge_Valid(class [System.Runtime]System.Collections.IEqualityComparer equalityComparer,
+        class CustomComparer customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
+        )
+
+        ldarg.0
+        brfalse.s   lbl_sComp
+
+        ldarg.0
+        br.s        lbl_store
+
+        lbl_sComp:
+        ldarg.1
+
+        lbl_store:
+        stloc.0
+        ret
     }
 
     .method static public hidebysig void Branching.InsideTry_Valid() cil managed
