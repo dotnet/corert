@@ -96,6 +96,16 @@ namespace Internal.IL
             public int? TryIndex;
             public int? HandlerIndex;
             public int? FilterIndex;
+
+            public int ErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementErrorCount()
+            {
+                ErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -271,12 +281,18 @@ namespace Internal.IL
         // If not, report verification error and continue verification.
         void VerificationError(VerifierError error)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
             ReportVerificationError(args);
         }
 
         void VerificationError(VerifierError error, object found)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error,
@@ -288,6 +304,9 @@ namespace Internal.IL
 
         void VerificationError(VerifierError error, object found, object expected)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error, 
@@ -381,8 +400,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
                     // If target is inside source region
                     if (srcRegion.TryOffset <= targetRegion.TryOffset && 
                         target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
@@ -404,8 +423,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.FilterIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
@@ -421,8 +440,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.HandlerIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
@@ -664,11 +683,15 @@ namespace Internal.IL
                     Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
                 _stackTop = basicBlock.EntryStack.Length;
+
+                basicBlock.EntryStack = null;
             }
             else
             {
                 _stackTop = 0;
             }
+
+            basicBlock.EndOffset = 0;
         }
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
@@ -1116,9 +1139,11 @@ namespace Internal.IL
                     
                     if (entryStack[i].Type != _stack[i].Type)
                     {
-                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
-                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
+                        StackValue mergedValue;
+                        if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
                             FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                        entryStack[i] = mergedValue;
                     }
                 }
             }

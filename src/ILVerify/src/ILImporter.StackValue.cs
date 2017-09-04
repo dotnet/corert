@@ -247,6 +247,217 @@ namespace Internal.IL
             }
         }
 
+        /// <summary>
+        /// Merges two stack values to a common stack value as defined in the ECMA-335 
+        /// standard III.1.8.1.3 (Merging stack states).
+        /// </summary>
+        /// <param name="valueA">The value to be merged with <paramref name="valueB"/>.</param>
+        /// <param name="valueB">The value to be merged with <paramref name="valueA"/>.</param>
+        /// <param name="merged">The resulting type of merging <paramref name="valueA"/> and <paramref name="valueB"/>.</param>
+        /// <returns>True if merge operation was successful, false if the merge operation failed.</returns>
+        public static bool TryMergeStackValues(StackValue valueA, StackValue valueB, out StackValue merged)
+        {
+            merged = valueA;
+
+            if (valueB.IsReadOnly)
+                merged.SetIsReadOnly();
+
+            // Same type
+            if (valueA.Kind == valueB.Kind && valueA.Type == valueB.Type)
+                return true;
+
+            // One of the two types is a (unboxed) generic parameter (only valid if a == b)
+            if ((valueA.Type != null && valueA.Type.IsGenericParameter && valueA.Kind != StackValueKind.ObjRef) ||
+                (valueB.Type != null && valueB.Type.IsGenericParameter && valueB.Kind != StackValueKind.ObjRef))
+                return false;
+
+            if (valueA.IsNullReference)
+            {
+                //Null can be any reference type
+                if (valueB.Kind == StackValueKind.ObjRef)
+                {
+                    merged = valueB;
+                    return true;
+                }
+            }
+            else if (valueA.Kind == StackValueKind.ObjRef)
+            {
+                if (valueB.Kind != StackValueKind.ObjRef)
+                    return false;
+
+                // Null can be any reference type
+                if (valueB.IsNullReference)
+                    return true;
+
+                // Merging classes always succeeds since System.Object always works
+                merged = StackValue.CreateFromType(MergeClasses(valueA.Type, valueB.Type)); 
+                return true;
+            }
+
+            return false;
+        }
+
+        // Used to merge stack states.
+        static TypeDesc MergeClasses(TypeDesc classA, TypeDesc classB)
+        {
+            if (classA == classB)
+                return classA;
+
+            // Array case
+            if (classA.IsArray)
+            {
+                if (classB.IsArray)
+                {
+                    return MergeArrayTypes((ArrayType)classA, (ArrayType)classB);
+                }
+            }
+
+            // Assumes generic parameters are boxed at this point.
+            // Return supertype, if related, otherwhise object
+            if (classA.IsGenericParameter || classB.IsGenericParameter)
+            {
+                if (classA.CanCastTo(classB))
+                    return classB;
+                if (classB.CanCastTo(classA))
+                    return classA;
+
+                return classA.Context.GetWellKnownType(WellKnownType.Object);
+            }
+
+            if (classB.IsInterface)
+            {
+                if (classA.IsInterface)
+                {
+                    foreach (var interf in classA.RuntimeInterfaces)
+                    {
+                        if (interf == classB)
+                            return classB; // Interface A extends interface B
+                    }
+
+                    foreach (var interf in classB.RuntimeInterfaces)
+                    {
+                        if (interf == classA)
+                            return classA; // Interface B extends interface A
+                    }
+
+                    // Get common supertype
+                    foreach (var interfB in classB.RuntimeInterfaces)
+                    {
+                        foreach (var interfA in classA.RuntimeInterfaces)
+                        {
+                            if (interfA == interfB)
+                                return interfA;
+                        }
+                    }
+
+                    // No compatible interface found, return Object
+                    return classA.Context.GetWellKnownType(WellKnownType.Object);
+                }
+                else
+                    return MergeClassWithInterface(classA, classB);
+            }
+            else if (classA.IsInterface)
+                return MergeClassWithInterface(classB, classA);
+
+            // Find class hierarchy depth for both classes
+            int aDepth = 0;
+            int bDepth = 0;
+            TypeDesc curType;
+
+            for (curType = classA; curType != null; curType = curType.BaseType)
+                aDepth++;
+
+            for (curType = classB; curType != null; curType = curType.BaseType)
+                bDepth++;
+
+            // Walk up superclass chain until both classes at same level
+            while (aDepth > bDepth)
+            {
+                classA = classA.BaseType;
+                aDepth--;
+            }
+
+            while (bDepth > aDepth)
+            {
+                classB = classB.BaseType;
+                bDepth--;
+            }
+
+            while (classA != classB)
+            {
+                classA = classA.BaseType;
+                classB = classB.BaseType;
+            }
+
+            // At this point we should either have found a common supertype or end up at System.Object
+            Debug.Assert(classA != null);
+
+            return classA;
+        }
+
+        static TypeDesc MergeClassWithInterface(TypeDesc classType, TypeDesc interfaceType)
+        {
+            // Check if class implements interface
+            foreach (var interf in classType.RuntimeInterfaces)
+            {
+                if (interf == interfaceType)
+                    return interfaceType;
+            }
+
+            // Check if class and interface implement common interface
+            foreach (var iInterf in interfaceType.RuntimeInterfaces)
+            {
+                foreach (var cInterf in classType.RuntimeInterfaces)
+                {
+                    if (iInterf == cInterf)
+                        return iInterf;
+                }
+            }
+
+            // No compatible merge, return Object
+            return classType.Context.GetWellKnownType(WellKnownType.Object);
+        }
+
+        static TypeDesc MergeArrayTypes(ArrayType arrayTypeA, ArrayType arrayTypeB)
+        {
+            if (arrayTypeA == arrayTypeB)
+                return arrayTypeA;
+
+            var basicArrayType = arrayTypeA.Context.GetWellKnownType(WellKnownType.Array);
+
+            if (arrayTypeA == basicArrayType || arrayTypeB == basicArrayType)
+                return basicArrayType;
+
+            // If non matching rank, common ancestor = System.Array
+            var rank = arrayTypeA.Rank;
+            if (rank != arrayTypeB.Rank)
+                return basicArrayType;
+
+            // Determine merged array element type
+            TypeDesc mergedElementType;
+            if (arrayTypeA.ElementType == arrayTypeB.ElementType)
+                mergedElementType = arrayTypeA.ElementType;
+            else if (arrayTypeA.ElementType.IsArray && arrayTypeB.ElementType.IsArray)
+            {
+                // Array of arrays -> find merged type
+                mergedElementType = MergeArrayTypes(arrayTypeA, arrayTypeB);
+            }
+            //Both array element types are ObjRefs
+            else if ((!arrayTypeA.ElementType.IsValueType && !arrayTypeA.ElementType.IsByRef) && 
+                     (!arrayTypeB.ElementType.IsValueType && !arrayTypeB.ElementType.IsByRef))
+            {
+                // Find common ancestor of the element types
+                mergedElementType = MergeClasses(arrayTypeA.ElementType, arrayTypeB.ElementType);
+            }
+            else
+            {
+                // Array element types have nothing in common
+                return basicArrayType;
+            }
+
+            return arrayTypeA.Context.GetArrayType(mergedElementType, rank);
+        }
+
         static bool IsSameReducedType(TypeDesc src, TypeDesc dst)
         {
             return GetReducedType(src) == GetReducedType(dst);
@@ -397,7 +608,7 @@ namespace Internal.IL
     }
 
     return FALSE;
-#endif 
+#endif
         }
 
 
