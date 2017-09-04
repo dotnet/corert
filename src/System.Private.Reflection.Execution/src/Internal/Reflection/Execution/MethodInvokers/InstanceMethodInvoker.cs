@@ -30,7 +30,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
         [DebuggerGuidedStepThroughAttribute]
         protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
+            ValidateThis(thisObject, _declaringTypeHandle);
             object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,

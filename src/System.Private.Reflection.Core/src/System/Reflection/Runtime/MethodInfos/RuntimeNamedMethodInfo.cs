@@ -307,6 +307,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
+
                 return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
         }

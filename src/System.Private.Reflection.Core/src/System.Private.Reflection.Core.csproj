@@ -127,6 +127,12 @@
     <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
     <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvokerAction.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.Nullable.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.String.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\InvokerOptions.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeClsIdNullaryConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
@@ -195,7 +201,6 @@
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
-    <Compile Include="Internal\Reflection\Core\Execution\InvokerOptions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
