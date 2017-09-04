@@ -74,7 +74,7 @@
         IL_0014: ret
     }
 
-    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected.PathStackUnexpected() cil managed
+    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected() cil managed
     {
         //object o = null;
         //Type t = o != null ? o.GetType() : o;
@@ -110,13 +110,37 @@
         )
 
         ldarg.0
-        brfalse.s   lbl_sComp
+        brfalse.s   lbl_cComp
 
         ldarg.0
         br.s        lbl_store
 
-        lbl_sComp:
+        lbl_cComp:
         ldarg.1
+
+        lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeConstrained_Valid<([System.Runtime]System.Collections.IEqualityComparer) T>(class [System.Runtime]System.Collections.IEqualityComparer equalityComparer,
+        !!T customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
+        )
+
+        ldarg.1
+        box     !!T
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+        lbl_cComp:
+        ldarg.1
+        box     !!T
 
         lbl_store:
         stloc.0
