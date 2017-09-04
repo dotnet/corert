@@ -109,40 +109,83 @@
             [0] class [System.Runtime]System.Collections.IEqualityComparer
         )
 
-        ldarg.0
+        ldc.i4.0
         brfalse.s   lbl_cComp
 
         ldarg.0
         br.s        lbl_store
 
-        lbl_cComp:
+    lbl_cComp:
         ldarg.1
 
-        lbl_store:
+    lbl_store:
         stloc.0
         ret
     }
 
-    .method static public hidebysig void Branching.UnequalStackMergeConstrained_Valid<([System.Runtime]System.Collections.IEqualityComparer) T>(class [System.Runtime]System.Collections.IEqualityComparer equalityComparer,
-        !!T customComparer) cil managed
+    .method static public hidebysig void Branching.UnequalStackMergeConstrained_Valid<([System.Runtime]System.Collections.IEqualityComparer) T>
+        (class [System.Runtime]System.Collections.IEqualityComparer equalityComparer, !!T customComparer) cil managed
     {
         .maxstack 1
         .locals init(
             [0] class [System.Runtime]System.Collections.IEqualityComparer
         )
 
-        ldarg.1
-        box     !!T
+        ldc.i4.0
         brfalse.s   lbl_cComp
 
         ldarg.0
         br.s        lbl_store
 
-        lbl_cComp:
+    lbl_cComp:
         ldarg.1
         box     !!T
 
-        lbl_store:
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeArrays_Valid(class CustomComparer[] comparers,
+        class [System.Runtime]System.Collections.IEqualityComparer[] customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer[]
+        )
+
+        ldarg.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeArrays_Invalid_StackUnexpected(class CustomComparer[] comparers,
+        class [System.Runtime]System.Collections.IEqualityComparer[] customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class CustomComparer[]
+        )
+
+        ldarg.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+
+    lbl_store:
         stloc.0
         ret
     }
