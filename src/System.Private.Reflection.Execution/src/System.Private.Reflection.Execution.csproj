@@ -88,11 +88,6 @@
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\InstanceMethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\StaticMethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\VirtualMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\StringConstructorMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\IntPtrConstructorMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\NullableInstanceMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\SyntheticMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerUtils.cs" />
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.cs" />
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\MissingMetadataExceptionCreator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />

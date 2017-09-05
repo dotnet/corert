@@ -61,11 +61,6 @@ namespace Internal.Reflection.Execution
             return RuntimeAugments.TryGetImplementedInterfaces(typeHandle);
         }
 
-        public sealed override MethodInvoker GetSyntheticMethodInvoker(RuntimeTypeHandle thisType, RuntimeTypeHandle[] parameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
-        {
-            return new SyntheticMethodInvoker(thisType, parameterTypes, options, invoker);
-        }
-
         public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
         {
             return RuntimeAugments.GetLastResortString(typeHandle);

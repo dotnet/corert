@@ -19,13 +19,13 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo, IRuntimeMemberInfoWithNoMetadataDefinition
     {
-        private RuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] parameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] parameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, CustomMethodInvokerAction action)
         {
             _syntheticMethodId = syntheticMethodId;
             _name = name;
             _declaringType = declaringType;
             _options = options;
-            _invoker = invoker;
+            _action = action;
             _runtimeParameterTypes = parameterTypes;
             _returnType = returnType;
         }
@@ -171,21 +171,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker
-        {
-            get
-            {
-                RuntimeTypeInfo[] runtimeParameterTypes = _runtimeParameterTypes;
-                RuntimeTypeHandle[] runtimeParameterTypeHandles = new RuntimeTypeHandle[runtimeParameterTypes.Length];
-                for (int i = 0; i < runtimeParameterTypes.Length; i++)
-                    runtimeParameterTypeHandles[i] = runtimeParameterTypes[i].TypeHandle;
-                return ReflectionCoreExecution.ExecutionEnvironment.GetSyntheticMethodInvoker(
-                    _declaringType.TypeHandle,
-                    runtimeParameterTypeHandles,
-                    _options,
-                    _invoker);
-            }
-        }
+        protected sealed override MethodInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {
@@ -238,6 +224,6 @@ namespace System.Reflection.Runtime.MethodInfos
         private readonly RuntimeTypeInfo[] _runtimeParameterTypes;
         private readonly RuntimeTypeInfo _returnType;
         private readonly InvokerOptions _options;
-        private readonly Func<Object, Object[], Object> _invoker;
+        private readonly CustomMethodInvokerAction _action;
     }
 }

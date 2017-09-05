@@ -195,6 +195,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
+
                 return _common.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
         }

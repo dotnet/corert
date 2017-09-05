@@ -376,4 +376,13 @@
   <data name="CannotUseByRefLikeTypeInInstantiation" xml:space="preserve">
     <value>Cannot instantiate a generic type on a byref-like type.</value>
   </data>
+  <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
+    <value>Non-static method requires a target.</value>
+  </data>
+  <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
+    <value>Object does not match target type.</value>
+  </data>
+  <data name="InvalidOperation_NoValue" xml:space="preserve">
+    <value>Nullable object must have a value.</value>
+  </data>
 </root>

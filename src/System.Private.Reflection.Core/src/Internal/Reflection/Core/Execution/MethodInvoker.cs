@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Runtime.General;
 
+using Internal.Runtime.Augments;
+
 namespace Internal.Reflection.Core.Execution
 {
     //
@@ -32,6 +34,24 @@ namespace Internal.Reflection.Core.Execution
 
         // This property is used to retrieve the target method pointer. It is used by the RuntimeMethodHandle.GetFunctionPointer API
         public abstract IntPtr LdFtnResult { get; }
+
+        protected static void ValidateThis(object thisObject, RuntimeTypeHandle declaringTypeHandle)
+        {
+            if (thisObject == null)
+                throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
+
+            RuntimeTypeHandle srcTypeHandle = thisObject.GetType().TypeHandle;
+            if (RuntimeAugments.IsAssignableFrom(declaringTypeHandle, srcTypeHandle))
+                return;
+
+            if (RuntimeAugments.IsInterface(declaringTypeHandle))
+            {
+                if (RuntimeAugments.IsInstanceOfInterface(thisObject, declaringTypeHandle))
+                    return;
+            }
+
+            throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+        }
     }
 }
 
