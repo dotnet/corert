@@ -307,10 +307,11 @@ namespace Internal.IL
             if (classA.IsArray)
             {
                 if (classB.IsArray)
-                {
                     return MergeArrayTypes((ArrayType)classA, (ArrayType)classB);
-                }
+                classA = classA.Context.GetWellKnownType(WellKnownType.Array);
             }
+            else if (classB.IsArray)
+                classB = classB.Context.GetWellKnownType(WellKnownType.Array);
 
             // Assumes generic parameters are boxed at this point.
             // Return supertype, if related, otherwhise object
@@ -430,8 +431,17 @@ namespace Internal.IL
 
             // If non matching rank, common ancestor = System.Array
             var rank = arrayTypeA.Rank;
+            var mergeCategory = arrayTypeA.Category;
             if (rank != arrayTypeB.Rank)
                 return basicArrayType;
+
+            if (arrayTypeA.Category != arrayTypeB.Category)
+            {
+                if (rank == 1)
+                    mergeCategory = TypeFlags.Array;
+                else
+                    return basicArrayType;
+            }
 
             // Determine merged array element type
             TypeDesc mergedElementType;
@@ -455,7 +465,12 @@ namespace Internal.IL
                 return basicArrayType;
             }
 
-            return arrayTypeA.Context.GetArrayType(mergedElementType, rank);
+            Debug.Assert(mergeCategory == TypeFlags.Array || mergeCategory == TypeFlags.SzArray);
+
+            if (mergeCategory == TypeFlags.SzArray)
+                return arrayTypeA.Context.GetArrayType(mergedElementType);
+            else
+                return arrayTypeA.Context.GetArrayType(mergedElementType, rank);
         }
 
         static bool IsSameReducedType(TypeDesc src, TypeDesc dst)
@@ -484,6 +499,9 @@ namespace Internal.IL
         {
             if (src.Kind == dst.Kind && src.Type == dst.Type)
                 return true;
+
+            if (dst.Type == null)
+                return false;
 
             switch (src.Kind)
             {

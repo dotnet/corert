@@ -683,15 +683,11 @@ namespace Internal.IL
                     Array.Resize(ref _stack, basicBlock.EntryStack.Length);
                 Array.Copy(basicBlock.EntryStack, _stack, basicBlock.EntryStack.Length);
                 _stackTop = basicBlock.EntryStack.Length;
-
-                basicBlock.EntryStack = null;
             }
             else
             {
                 _stackTop = 0;
             }
-
-            basicBlock.EndOffset = 0;
         }
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
@@ -1139,11 +1135,19 @@ namespace Internal.IL
                     
                     if (entryStack[i].Type != _stack[i].Type)
                     {
-                        StackValue mergedValue;
-                        if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
-                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                        if (!IsAssignable(_stack[i], entryStack[i]))
+                        {
+                            StackValue mergedValue;
+                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
 
-                        entryStack[i] = mergedValue;
+                            // If merge actually changed entry stack
+                            if (mergedValue.Kind != entryStack[i].Kind || mergedValue.Type != entryStack[i].Type)
+                            {
+                                entryStack[i] = mergedValue;
+                                next.EndOffset = 0; // Make sure block is reverified
+                            }
+                        }
                     }
                 }
             }
