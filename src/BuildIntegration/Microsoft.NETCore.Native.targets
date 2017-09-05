@@ -165,8 +165,17 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <CustomLibArg Include="-crs $(NativeBinary)" Condition="'$(OS)' != 'Windows_NT'" />
+      <CustomLibArg Include="/OUT:$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <CustomLibArg Include="$(NativeObject)" />
+    </ItemGroup>
+
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
-    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+
+    <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' != 'Static'" />
+    <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' == 'Static'" />
+
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeCodeGen)' != 'wasm'" />
     <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot;  &quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
