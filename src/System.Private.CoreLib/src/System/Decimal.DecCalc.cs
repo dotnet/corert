@@ -35,14 +35,19 @@ namespace System
 
         internal int Scale
         {
-            get { return (int)((uflags & ScaleMask) >> ScaleShift); }
+            get { return (byte)(uflags >> ScaleShift); }
             set { uflags = (uflags & ~ScaleMask) | ((uint)value << ScaleShift); }
         }
 
         private ulong Low64
         {
+#if BIGENDIAN || DEBUG // On Debug builds, include the big-endian compatible code to help deter bitrot
             get { return ((ulong)umid << 32) | ulo; }
             set { umid = (uint)(value >> 32); ulo = (uint)value; }
+#else
+            get => ulomidLE;
+            set => ulomidLE = value;
+#endif
         }
 
         #region APIs need by number formatting.
@@ -96,7 +101,7 @@ namespace System
             private const Int32 MaxInt32Scale = 9;
 
             // Fast access for 10^n where n is 0-9        
-            private static UInt32[] s_powers10 = new UInt32[] {
+            private static readonly UInt32[] s_powers10 = new UInt32[] {
                 1,
                 10,
                 100,
@@ -109,7 +114,7 @@ namespace System
                 1000000000
             };
 
-            private static double[] s_doublePowers10 = new double[] {
+            private static readonly double[] s_doublePowers10 = new double[] {
                 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
                 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
                 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29,

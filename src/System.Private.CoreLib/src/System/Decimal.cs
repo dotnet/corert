@@ -123,13 +123,11 @@ namespace System
         [FieldOffset(12), NonSerialized]
         private uint umid;
 
-        // Constructs a zero Decimal.
-        //public Decimal() {
-        //    lo = 0;
-        //    mid = 0;
-        //    hi = 0;
-        //    flags = 0;
-        //}
+        /// <summary>
+        /// The low and mid fields combined in little-endian order
+        /// </summary>
+        [FieldOffset(8), NonSerialized]
+        private ulong ulomidLE;
 
         // Constructs a Decimal from an integer value.
         //
@@ -179,8 +177,7 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            ulo = (uint)value_copy;
-            umid = (uint)(value_copy >> 32);
+            Low64 = (ulong)value;
             uhi = 0;
         }
 
@@ -190,8 +187,7 @@ namespace System
         public Decimal(ulong value)
         {
             uflags = 0;
-            ulo = (uint)value;
-            umid = (uint)(value >> 32);
+            Low64 = value;
             uhi = 0;
         }
 
@@ -280,10 +276,6 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            lo = 0;
-            mid = 0;
-            hi = 0;
-            flags = 0;
             SetBits(bits);
         }
 
