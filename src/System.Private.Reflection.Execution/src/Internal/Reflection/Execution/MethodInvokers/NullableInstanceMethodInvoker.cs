@@ -83,7 +83,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             Object value = thisObject;
             bool hasValue = (thisObject != null);

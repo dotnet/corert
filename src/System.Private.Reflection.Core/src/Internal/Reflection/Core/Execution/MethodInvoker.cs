@@ -22,11 +22,12 @@ namespace Internal.Reflection.Core.Execution
         public Object Invoke(Object thisObject, Object[] arguments, Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
         {
             BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, cultureInfo);
-            Object result = Invoke(thisObject, arguments, binderBundle);
+            bool wrapInTargetInvocationException = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            Object result = Invoke(thisObject, arguments, binderBundle, wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
-        public abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle);
+        protected abstract Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen);
 
         // This property is used to retrieve the target method pointer. It is used by the RuntimeMethodHandle.GetFunctionPointer API

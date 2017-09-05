@@ -64,7 +64,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             switch (_id)
             {
@@ -76,7 +76,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         {
                             return new IntPtr(value);
                         }
-                        catch (Exception inner)
+                        catch (Exception inner) when (wrapInTargetInvocationException)
                         {
                             throw new TargetInvocationException(inner);
                         }
@@ -90,7 +90,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         {
                             return new IntPtr(value);
                         }
-                        catch (Exception inner)
+                        catch (Exception inner) when (wrapInTargetInvocationException)
                         {
                             throw new TargetInvocationException(inner);
                         }
@@ -104,7 +104,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         {
                             return new UIntPtr(value);
                         }
-                        catch (Exception inner)
+                        catch (Exception inner) when (wrapInTargetInvocationException)
                         {
                             throw new TargetInvocationException(inner);
                         }
@@ -118,7 +118,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         {
                             return new UIntPtr(value);
                         }
-                        catch (Exception inner)
+                        catch (Exception inner) when (wrapInTargetInvocationException)
                         {
                             throw new TargetInvocationException(inner);
                         }

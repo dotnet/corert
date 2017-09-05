@@ -365,6 +365,7 @@ namespace System
             object targetMethodOrDelegate,
             object[] parameters,
             BinderBundle binderBundle,
+            bool wrapInTargetInvocationException,
             bool invokeMethodHelperIsThisCall = true,
             bool methodToCallIsThisCall = true)
         {
@@ -373,7 +374,6 @@ namespace System
             // isn't always the exact type (byref stripped off, enums converted to int, etc.)
             Debug.Assert(!(binderBundle != null && !(targetMethodOrDelegate is MethodBase)), "The only callers that can pass a custom binder are those servicing MethodBase.Invoke() apis.");
 
-            bool fDontWrapInTargetInvocationException = false;
             bool parametersNeedCopyBack = false;
             ArgSetupState argSetupState = default(ArgSetupState);
 
@@ -431,6 +431,10 @@ namespace System
 
                     return result;
                 }
+                catch (Exception e) when (wrapInTargetInvocationException && argSetupState.fComplete)
+                {
+                    throw new TargetInvocationException(e);
+                }
                 finally
                 {
                     if (parametersNeedCopyBack)
@@ -438,11 +442,7 @@ namespace System
                         Array.Copy(s_parameters, parameters, parameters.Length);
                     }
 
-                    if (!argSetupState.fComplete)
-                    {
-                        fDontWrapInTargetInvocationException = true;
-                    }
-                    else
+                    if (argSetupState.fComplete)
                     {
                         // Nullable objects can't take advantage of the ability to update the boxed value on the heap directly, so perform
                         // an update of the parameters array now.
@@ -457,17 +457,6 @@ namespace System
                             }
                         }
                     }
-                }
-            }
-            catch (Exception e)
-            {
-                if (fDontWrapInTargetInvocationException)
-                {
-                    throw;
-                }
-                else
-                {
-                    throw new System.Reflection.TargetInvocationException(e);
                 }
             }
             finally
