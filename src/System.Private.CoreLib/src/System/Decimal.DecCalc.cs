@@ -1395,34 +1395,79 @@ namespace System
             //**********************************************************************
             internal static int VarDecCmp(ref Decimal pdecL, ref Decimal pdecR)
             {
-                int signLeft = 0;
-                int signRight = 0;
-
-                if (pdecL.Low != 0 || pdecL.Mid != 0 || pdecL.High != 0)
-                    signLeft = pdecL.IsNegative ? -1 : 1;
-
-                if (pdecR.Low != 0 || pdecR.Mid != 0 || pdecR.High != 0)
-                    signRight = pdecR.IsNegative ? -1 : 1;
-
-                if (signLeft == signRight)
+                if ((pdecR.Low | pdecR.Mid | pdecR.High) == 0)
                 {
-                    if (signLeft == 0)    // both are zero
-                        return 0; // return equal
-
-                    Decimal decLAndResult = pdecL; // Copy the left and pass that to AddSub because it gets mutated.
-                    DecAddSub(ref decLAndResult, ref pdecR, true); // Call DecAddSub instead of VarDecSub to avoid exceptions
-                    if (decLAndResult.Low == 0 && decLAndResult.Mid == 0 && decLAndResult.High == 0)
+                    if ((pdecL.Low | pdecL.Mid | pdecL.High) == 0)
                         return 0;
-                    if (decLAndResult.IsNegative)
-                        return -1;
-                    return 1;
+                    return (pdecL.flags >> 31) | 1;
+                }
+                if ((pdecL.Low | pdecL.Mid | pdecL.High) == 0)
+                    return -((pdecR.flags >> 31) | 1);
+
+                int sign = (pdecL.flags >> 31) - (pdecR.flags >> 31);
+                if (sign != 0)
+                    return sign;
+                return VarDecCmpSub(ref pdecL, ref pdecR);
+            }
+
+            private static int VarDecCmpSub(ref Decimal d1, ref Decimal d2)
+            {
+                int flags = d2.flags;
+                int sign = (flags >> 31) | 1;
+                int iScale = flags - d1.flags;
+
+                ulong low64 = d1.Low64;
+                uint high = d1.High;
+
+                if (iScale != 0)
+                {
+                    iScale >>= ScaleShift;
+
+                    // Scale factors are not equal. Assume that a larger scale factor (more decimal places) is likely to mean that number is smaller.
+                    // Start by guessing that the right operand has the larger scale factor.
+                    if (iScale < 0)
+                    {
+                        // Guessed scale factor wrong. Swap operands.
+                        iScale = -iScale;
+                        sign = -sign;
+                        low64 = d2.Low64;
+                        high = d2.High;
+                        d2 = d1;
+                    }
+
+                    // d1 will need to be multiplied by 10^iScale so it will have the same scale as d2.
+                    // Scaling loop, up to 10^9 at a time.
+                    do
+                    {
+                        uint ulPwr = iScale >= MaxInt32Scale ? TenToPowerNine : s_powers10[iScale];
+                        ulong tmpLow = UInt32x32To64((uint)low64, ulPwr);
+                        ulong tmp = (low64 >> 32) * ulPwr + (tmpLow >> 32);
+                        low64 = (uint)tmpLow + (tmp << 32);
+                        tmp >>= 32;
+                        tmp += UInt32x32To64(high, ulPwr);
+                        // If the scaled value has more than 96 significant bits then it's greater than d2
+                        if (tmp > uint.MaxValue)
+                            return sign;
+                        high = (uint)tmp;
+                    } while ((iScale -= MaxInt32Scale) > 0);
                 }
 
-                // Signs are different.  Used signed byte compares
-                //
-                if (signLeft > signRight)
-                    return 1;
-                return -1;
+                uint cmpHigh = high - d2.High;
+                if (cmpHigh != 0)
+                {
+                    // check for overflow
+                    if (cmpHigh > high)
+                        sign = -sign;
+                    return sign;
+                }
+
+                ulong cmpLow64 = low64 - d2.Low64;
+                if (cmpLow64 == 0)
+                    sign = 0;
+                // check for overflow
+                else if (cmpLow64 > low64)
+                    sign = -sign;
+                return sign;
             }
 
             //**********************************************************************
