@@ -373,10 +373,10 @@ extern "C" int InitializeRuntime()
 #ifndef CPPCODEGEN
 #ifndef CORERT_DLL
     void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
-    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
 #else
     void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Startup);
 #endif // CORERT_DLL
+    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
