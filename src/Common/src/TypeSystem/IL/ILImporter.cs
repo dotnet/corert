@@ -317,7 +317,7 @@ namespace Internal.IL
 
         private void MarkBasicBlock(BasicBlock basicBlock)
         {
-            if (basicBlock.EndOffset == 0 && basicBlock.ErrorCount == 0)
+            if (basicBlock.EndOffset == 0)
             {
                 // Link
                 basicBlock.Next = _pendingBasicBlocks;

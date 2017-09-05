@@ -1145,7 +1145,9 @@ namespace Internal.IL
                             if (mergedValue.Kind != entryStack[i].Kind || mergedValue.Type != entryStack[i].Type)
                             {
                                 entryStack[i] = mergedValue;
-                                next.EndOffset = 0; // Make sure block is reverified
+
+                                if (next.ErrorCount == 0)
+                                    next.EndOffset = 0; // Make sure block is reverified
                             }
                         }
                     }
