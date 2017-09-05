@@ -81,9 +81,6 @@ namespace Internal.Runtime.Augments
         //    Strings: The .ctor performs both the construction and initialization
         //      and compiler special cases these.
         //
-        //    IntPtr/UIntPtr: These have intrinsic constructors and it happens, special-casing these in the class library
-        //      is the lesser evil compared to special-casing them in the toolchain.
-        //
         //    Nullable<T>: the boxed result is the underlying type rather than Nullable so the constructor
         //      cannot truly initialize it.
         //
@@ -94,8 +91,6 @@ namespace Internal.Runtime.Augments
             EETypePtr eeType = typeHandle.ToEETypePtr();
             if (eeType.IsNullable
                 || eeType == EETypePtr.EETypePtrOf<String>()
-                || eeType == EETypePtr.EETypePtrOf<IntPtr>()
-                || eeType == EETypePtr.EETypePtrOf<UIntPtr>()
                )
                 return null;
             return RuntimeImports.RhNewObject(eeType);

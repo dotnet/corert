@@ -361,37 +361,6 @@ namespace Internal.Reflection.Execution
 
         public sealed override MethodInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            if (RuntimeAugments.IsNullable(declaringTypeHandle))
-                return new NullableInstanceMethodInvoker(methodHandle.NativeFormatReader, methodHandle.NativeFormatHandle, declaringTypeHandle, null);
-            else if (declaringTypeHandle.Equals(typeof(String).TypeHandle))
-            {
-                MetadataReader reader = methodHandle.NativeFormatReader;
-                MethodHandle nativeFormatHandle = methodHandle.NativeFormatHandle;
-
-                Method method = nativeFormatHandle.GetMethod(reader);
-                MethodAttributes methodAttributes = method.Flags;
-                if (((method.Flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public) &&
-                    ((method.Flags & MethodAttributes.SpecialName) == MethodAttributes.SpecialName) &&
-                    (method.Name.GetConstantStringValue(reader).Value == ".ctor"))
-                {
-                    return new StringConstructorMethodInvoker(reader, nativeFormatHandle);
-                }
-            }
-            else if (declaringTypeHandle.Equals(typeof(IntPtr).TypeHandle) || declaringTypeHandle.Equals(typeof(UIntPtr).TypeHandle))
-            {
-                MetadataReader reader = methodHandle.NativeFormatReader;
-                MethodHandle nativeFormatHandle = methodHandle.NativeFormatHandle;
-
-                Method method = nativeFormatHandle.GetMethod(reader);
-                MethodAttributes methodAttributes = method.Flags;
-                if (((method.Flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public) &&
-                    ((method.Flags & MethodAttributes.SpecialName) == MethodAttributes.SpecialName) &&
-                    (method.Name.GetConstantStringValue(reader).Value == ".ctor"))
-                {
-                    return new IntPtrConstructorMethodInvoker(reader, nativeFormatHandle);
-                }
-            }
-
             MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
             // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
