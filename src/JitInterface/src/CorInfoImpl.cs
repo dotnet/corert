@@ -2281,7 +2281,11 @@ namespace Internal.JitInterface
         }
 
         private CorInfoType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
-        { throw new NotImplementedException("getHFAType"); }
+        {
+            var type = (DefType)HandleToObject(hClass);
+            return type.IsHfa ? asCorInfoType(type.HfaElementType) : CorInfoType.CORINFO_TYPE_UNDEF;
+        }
+
         private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
         { throw new NotImplementedException("GetErrorHRESULT"); }
         private uint GetErrorMessage(short* buffer, uint bufferLength)
@@ -2321,6 +2325,9 @@ namespace Internal.JitInterface
             get
             {
                 // struct PInvokeTransitionFrame:
+                // #ifdef _TARGET_ARM_
+                //  m_ChainPointer
+                // #endif
                 //  m_RIP
                 //  m_FramePointer
                 //  m_pThread
@@ -2328,7 +2335,10 @@ namespace Internal.JitInterface
                 //  m_PreserverRegs - RSP
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
-                return (uint)(this.PointerSize * 5);
+                int size = 5 * this.PointerSize;
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    size += this.PointerSize; // m_ChainPointer
+                return (uint)size;
             }
         }
 

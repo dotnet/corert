@@ -119,23 +119,30 @@ namespace Internal.IL
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
             _method = method;
-            _methodSignature = method.Signature;
             _typeSystemContext = method.Context;
 
-            if (!_methodSignature.IsStatic)
+            if (!_method.Signature.IsStatic)
             {
-                var thisType = method.OwningType.InstantiateAsOpen();
+                if (_method.OwningType.HasInstantiation)
+                {
+                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
+                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
+                }
+                else
+                    _thisType = _method.OwningType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
                 // managed pointer(see Partition I) to an unboxed instance of the value type. ...
-                if (thisType.IsValueType)
-                    thisType = thisType.MakeByRefType();
-
-                _thisType = thisType;
+                if (_thisType.IsValueType)
+                    _thisType = _thisType.MakeByRefType();
             }
 
-            _methodIL = methodIL;
+            if (_method.HasInstantiation)
+                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
+
+            _methodSignature = _method.Signature;
+            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
 
             _initLocals = _methodIL.IsInitLocals;
 
@@ -365,17 +372,28 @@ namespace Internal.IL
             if (src.TryIndex != target.TryIndex)
             {
                 if (src.TryIndex == null)
-                    VerificationError(VerifierError.BranchIntoTry);
+                {
+                    // Branching to first instruction of try-block is valid
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
+                        VerificationError(VerifierError.BranchIntoTry);
+                }
                 else if (target.TryIndex == null)
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                        VerificationError(VerifierError.BranchIntoTry);
+                    var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    // If target is inside source region
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                        target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
+                    {
+                        // Only branching to first instruction of try-block is valid
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
+                            VerificationError(VerifierError.BranchIntoTry);
+                    }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
                 }
-                return;
             }
 
             if (src.FilterIndex != target.FilterIndex)
@@ -386,12 +404,13 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    if (_exceptionRegions[(int)src.FilterIndex].ILRegion.FilterOffset < _exceptionRegions[(int)target.FilterIndex].ILRegion.FilterOffset)
+                    var srcRegion = _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
                         VerificationError(VerifierError.BranchOutOfFilter);
                 }
-                return;
             }
 
             if (src.HandlerIndex != target.HandlerIndex)
@@ -402,13 +421,44 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    if (_exceptionRegions[(int)src.HandlerIndex].ILRegion.HandlerOffset < _exceptionRegions[(int)target.HandlerIndex].ILRegion.HandlerOffset)
+                    var srcRegion = _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    var targetRegion = _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
                         VerificationError(VerifierError.BranchOutOfHandler);
                 }
-                return;
             }
+        }
+
+        /// <summary>
+        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// the given enclosing try block.
+        /// </summary>
+        /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
+        /// <param name="enclosedBlock">The block to check whether it is a direct child try-region of <paramref name="enclosingBlock"/>.</param>
+        /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
+        bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
+        {
+            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+
+            // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
+                {
+                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    // blockRegion is actually enclosing enclosedRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         // For now, match PEVerify type formating to make it easy to compare with baseline
@@ -1350,9 +1400,6 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
-
             var value = Pop();
             var address = Pop();
 
@@ -1360,11 +1407,13 @@ namespace Internal.IL
 
             CheckIsByRef(address);
 
+            if (type == null)
+                type = address.Type;
+
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
-            if (!value.IsNullReference)
-                CheckIsAssignable(typeVal, addressVal);
 
+            CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
         }
 
@@ -1375,7 +1424,7 @@ namespace Internal.IL
             if (value.Kind != StackValueKind.ObjRef)
             {
                 VerificationError(VerifierError.StackObjRef);
-            }            
+            }
         }
 
         void ImportLoadString(int token)

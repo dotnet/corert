@@ -758,7 +758,7 @@ namespace Internal.Runtime.Augments
         public static String TryGetFullPathToMainApplication()
         {
             Func<String> delegateToAnythingInsideMergedApp = TryGetFullPathToMainApplication;
-            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out RuntimeTypeHandle _, out bool __, out bool ___);
+            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
             IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ipToAnywhereInsideMergedApp);
             return TryGetFullPathToApplicationModule(moduleBase);
         }

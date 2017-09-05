@@ -99,6 +99,30 @@
         ret
     }
 
+    .method static public hidebysig void StoreIndirect.AssignStringToRefString_Valid(string&) cil managed
+    {
+        // ref string x;
+        // string y = "a";
+        // x = y;
+
+        ldarg.0
+        ldstr   "a"
+        stind.ref
+        ret
+    }
+
+    .method static public hidebysig void StoreObject.AssignStringToRefStringAsObject_Invalid_StackUnexpected(string&) cil managed
+    {
+        // ref string x;
+        // string y = "a";
+        // x = y;
+
+        ldarg.0
+        ldstr   "a"
+        stobj   [System.Runtime]System.Object
+        ret
+    }
+
     .method static public hidebysig void StoreIndirect.AssignByteToBoolRef_Valid(bool&) cil managed
     {
         ldarg.0

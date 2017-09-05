@@ -207,6 +207,16 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Adds an element offset to the given pointer.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void* Add<T>(void* source, int elementOffset)
+        {
+            return (byte*)source + (elementOffset * (nint)SizeOf<T>());
+        }
+
+        /// <summary>
         /// Determines whether the specified references point to the same location.
         /// </summary>
         [Intrinsic]
