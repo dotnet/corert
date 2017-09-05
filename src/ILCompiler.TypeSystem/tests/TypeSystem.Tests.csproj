@@ -5,6 +5,8 @@
     <AssemblyName>TypeSystem.Tests</AssemblyName>
     <RootNamespace>TypeSystem.Tests</RootNamespace>
     <TargetFramework>netstandard1.3</TargetFramework>
+    <!-- Don't warn if some dependencies were rolled forward -->
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
