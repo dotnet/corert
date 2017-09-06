@@ -381,8 +381,8 @@ PTR_VOID UnixNativeCodeManager::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID
     if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) == 0)
         return NULL;
 
-    UInt32 unboxingTargetRVA = *dac_cast<PTR_UInt32>(p);
-    return dac_cast<PTR_VOID>(m_moduleBase + unboxingTargetRVA);
+    UInt32 unboxingTargetRelAddr = *dac_cast<PTR_UInt32>(p);
+    return dac_cast<PTR_VOID>(p + unboxingTargetRelAddr);
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
