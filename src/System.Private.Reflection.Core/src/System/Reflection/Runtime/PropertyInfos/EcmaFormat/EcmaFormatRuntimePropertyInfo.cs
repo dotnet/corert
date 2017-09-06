@@ -79,8 +79,7 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.GetCustomAttributes()))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.GetCustomAttributes());
             }
         }
 

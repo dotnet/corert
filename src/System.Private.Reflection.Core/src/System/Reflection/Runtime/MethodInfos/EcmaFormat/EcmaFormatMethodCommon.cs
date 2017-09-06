@@ -157,19 +157,6 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             }
         }
 
-        public IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.GetCustomAttributes());
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-
-                if (0 != (_method.ImplAttributes & MethodImplAttributes.PreserveSig))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(PreserveSigAttribute), null, null);
-            }
-        }
-
         public RuntimeTypeInfo DeclaringType
         {
             get
@@ -316,6 +303,8 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                 return false;
             return true;
         }
+
+        public IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.GetCustomAttributes());
 
         public override bool Equals(Object obj)
         {

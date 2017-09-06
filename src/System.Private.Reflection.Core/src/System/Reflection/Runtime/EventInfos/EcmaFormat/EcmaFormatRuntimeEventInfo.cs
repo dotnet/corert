@@ -108,8 +108,7 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.GetCustomAttributes()))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.GetCustomAttributes());
             }
         }
 

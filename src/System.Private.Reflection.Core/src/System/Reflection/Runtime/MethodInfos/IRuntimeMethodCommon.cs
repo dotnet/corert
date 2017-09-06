@@ -26,7 +26,6 @@ namespace System.Reflection.Runtime.MethodInfos
         CallingConventions CallingConvention { get; }
 
         RuntimeTypeInfo ContextTypeInfo { get; }
-        IEnumerable<CustomAttributeData> CustomAttributes { get; }
         RuntimeTypeInfo DeclaringType { get; }
         RuntimeNamedTypeInfo DefiningTypeInfo { get; }
         MethodImplAttributes MethodImplementationFlags { get; }
@@ -36,6 +35,7 @@ namespace System.Reflection.Runtime.MethodInfos
         /// Return an array of the types of the return value and parameter types.
         /// </summary>
         QSignatureTypeHandle[] QualifiedMethodSignature { get; }
+        IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         /// <summary>
         /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
