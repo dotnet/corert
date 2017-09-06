@@ -644,9 +644,8 @@ namespace System
         //
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
-            Decimal decRes;
-            DecCalc.VarDecMul(ref d1, ref d2, out decRes);
-            return decRes;
+            DecCalc.VarDecMul(ref d1, ref d2);
+            return d1;
         }
 
         // Returns the negated value of the given Decimal. If d is non-zero,
