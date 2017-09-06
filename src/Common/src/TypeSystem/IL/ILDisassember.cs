@@ -248,6 +248,14 @@ namespace Internal.IL
             }
         }
 
+        public int Offset
+        {
+            get
+            {
+                return _currentOffset;
+            }
+        }
+
         public int CodeSize
         {
             get
@@ -423,7 +431,7 @@ namespace Internal.IL
         #endregion
 
         #region Helpers
-        private class ILTypeNameFormatter : TypeNameFormatter
+        public class ILTypeNameFormatter : TypeNameFormatter
         {
             private ModuleDesc _thisModule;
 

@@ -112,6 +112,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThrowHelper.Common.cs">
       <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameFormatter.cs">
+      <Link>Utilities\CustomAttributeTypeNameFormatter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
@@ -420,6 +423,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
+      <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
       <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>

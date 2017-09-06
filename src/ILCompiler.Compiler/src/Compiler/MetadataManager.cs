@@ -42,6 +42,7 @@ namespace ILCompiler
         private HashSet<TypeDesc> _typesWithConstructedEETypesGenerated = new HashSet<TypeDesc>();
         private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
+        private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
 
@@ -155,6 +156,12 @@ namespace ILCompiler
                 return;
             }
 
+            IMethodBodyNode methodBodyNode = obj as IMethodBodyNode;
+            if (methodBodyNode != null)
+            {
+                _methodBodiesGenerated.Add(methodBodyNode);
+            }
+
             IMethodNode methodNode = obj as MethodCodeNode;
             if (methodNode == null)
                 methodNode = obj as ShadowConcreteMethodNode;
@@ -246,13 +253,13 @@ namespace ILCompiler
             // Methods that return ByRef-like types or take them by reference can't be reflection invoked
             // ----------------------------------------------------------------
 
-            if (signature.ReturnType.IsDefType && ((DefType)signature.ReturnType).IsByRefLike)
+            if (signature.ReturnType.IsByRefLike)
                 return false;
 
             for (int i = 0; i < signature.Length; i++)
             {
                 ByRefType paramType = signature[i] as ByRefType;
-                if (paramType != null && paramType.ParameterType.IsDefType && ((DefType)paramType.ParameterType).IsByRefLike)
+                if (paramType != null && paramType.ParameterType.IsByRefLike)
                     return false;
             }
 
@@ -548,7 +555,7 @@ namespace ILCompiler
             return _typeGVMEntries;
         }
 
-        internal IEnumerable<GenericDictionaryNode> GetCompiledGenericDictionaries()
+        internal IReadOnlyCollection<GenericDictionaryNode> GetCompiledGenericDictionaries()
         {
             return _genericDictionariesGenerated;
         }
@@ -556,6 +563,11 @@ namespace ILCompiler
         internal IEnumerable<MethodDesc> GetCompiledMethods()
         {
             return _methodsGenerated;
+        }
+
+        internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
+        {
+            return _methodBodiesGenerated;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)

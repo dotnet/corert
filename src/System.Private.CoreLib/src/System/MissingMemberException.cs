@@ -21,19 +21,19 @@ namespace System
         public MissingMemberException()
             : base(SR.Arg_MissingMemberException)
         {
-            HResult = __HResults.COR_E_MISSINGMEMBER;
+            HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_MISSINGMEMBER;
+            HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_MISSINGMEMBER;
+            HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(string className, string memberName)

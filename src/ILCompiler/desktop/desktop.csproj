@@ -67,6 +67,9 @@
     <Compile Include="..\src\RdXmlRootProvider.cs">
       <Link>RdXmlRootProvider.cs</Link>
     </Compile>
+    <Compile Include="..\src\EcmaOnlyDebugInformationProvider.cs">
+      <Link>EcmaOnlyDebugInformationProvider.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">

@@ -48,6 +48,15 @@ namespace System.Collections.Generic
             _count += length; 
         }
 
+        public void Append(ArrayBuilder<T> newItems)
+        {
+            if (newItems.Count == 0)
+                return;
+            EnsureCapacity(_count + newItems.Count);
+            Array.Copy(newItems._items, 0, _items, _count, newItems.Count);
+            _count += newItems.Count;
+        }
+
         public void ZeroExtend(int numItems)
         {
             Debug.Assert(numItems >= 0);

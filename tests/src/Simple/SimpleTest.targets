@@ -5,6 +5,7 @@
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
     <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
   </PropertyGroup>
 
   <PropertyGroup>

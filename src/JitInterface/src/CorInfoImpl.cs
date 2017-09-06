@@ -167,7 +167,20 @@ namespace Internal.JitInterface
                         // If we captured a managed exception, rethrow that.
                         // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
                         // an inlining attempt with a type system problem in it...
+#if SUPPORT_JIT
                         _lastException.Throw();
+#else
+                        if (_lastException.SourceException is TypeSystemException)
+                        {
+                            // Type system exceptions can be turned into code that throws the exception at runtime.
+                            _lastException.Throw();
+                        }
+                        else
+                        {
+                            // This is just a bug somewhere.
+                            throw new CodeGenerationFailedException(_methodCodeNode.Method, _lastException.SourceException);
+                        }
+#endif
                     }
 
                     // This is a failure we don't know much about.
@@ -181,7 +194,12 @@ namespace Internal.JitInterface
                 }
                 if (result != CorJitResult.CORJIT_OK)
                 {
-                    throw new Exception("JIT Failed");
+#if SUPPORT_JIT
+                    // FailFast?
+                    throw new Exception("JIT failed");
+#else
+                    throw new CodeGenerationFailedException(_methodCodeNode.Method);
+#endif
                 }
 
                 PublishCode();
@@ -1498,7 +1516,7 @@ namespace Internal.JitInterface
 
             // we shouldn't allow boxing of types that contains stack pointers
             // csc and vbc already disallow it.
-            if (type.IsValueType && ((DefType)type).IsByRefLike)
+            if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
@@ -2125,7 +2143,7 @@ namespace Internal.JitInterface
                 SequencePoint s;
                 if (_sequencePoints.TryGetValue((int)ilOffset, out s))
                 {
-                    Debug.Assert(!string.IsNullOrEmpty(s.Document));
+                    Debug.Assert(s.Document != null);
                     DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
                     debugLocInfos.Add(loc);
                     previousNativeOffset = nativeOffset;
@@ -2263,7 +2281,11 @@ namespace Internal.JitInterface
         }
 
         private CorInfoType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
-        { throw new NotImplementedException("getHFAType"); }
+        {
+            var type = (DefType)HandleToObject(hClass);
+            return type.IsHfa ? asCorInfoType(type.HfaElementType) : CorInfoType.CORINFO_TYPE_UNDEF;
+        }
+
         private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
         { throw new NotImplementedException("GetErrorHRESULT"); }
         private uint GetErrorMessage(short* buffer, uint bufferLength)
@@ -2303,6 +2325,9 @@ namespace Internal.JitInterface
             get
             {
                 // struct PInvokeTransitionFrame:
+                // #ifdef _TARGET_ARM_
+                //  m_ChainPointer
+                // #endif
                 //  m_RIP
                 //  m_FramePointer
                 //  m_pThread
@@ -2310,7 +2335,10 @@ namespace Internal.JitInterface
                 //  m_PreserverRegs - RSP
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
-                return (uint)(this.PointerSize * 5);
+                int size = 5 * this.PointerSize;
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    size += this.PointerSize; // m_ChainPointer
+                return (uint)size;
             }
         }
 

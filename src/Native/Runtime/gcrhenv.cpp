@@ -598,12 +598,17 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because a
 // static 
 void RedhawkGCInterface::StressGc()
 {
-    if (!g_fGcStressStarted || GetThread()->IsSuppressGcStressSet() || GetThread()->IsDoNotTriggerGcSet())
+    // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the GC operation;
+    Int32 lastErrorOnEntry = PalGetLastError();
+
+    if (g_fGcStressStarted && !GetThread()->IsSuppressGcStressSet() && !GetThread()->IsDoNotTriggerGcSet())
     {
-        return;
+        GCHeapUtilities::GetGCHeap()->GarbageCollect();
     }
 
-    GCHeapUtilities::GetGCHeap()->GarbageCollect();
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 #endif // FEATURE_GC_STRESS
 
@@ -1259,11 +1264,13 @@ gc_alloc_context * Thread::GetAllocContext()
     return dac_cast<DPTR(gc_alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
 }
 
+#ifndef DACCESS_COMPILE
 bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC
-    return false;
+    return ThreadStore::GetCurrentThread()->IsGCSpecial();
 }
+#endif // DACCESS_COMPILE
 
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
@@ -1280,15 +1287,23 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
     return !!PalSwitchToThread();
 }
 
+void SetGCSpecialThread(ThreadType threadType)
+{
+    Thread *pThread = ThreadStore::RawGetCurrentThread();
+    pThread->SetGCSpecial(threadType == ThreadType_GC);
+}
+
 #endif // DACCESS_COMPILE
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 
+#ifndef DACCESS_COMPILE
 bool IsGCThread()
 {
-    return false;
+    return IsGCSpecialThread() || ThreadStore::GetSuspendingThread() == ThreadStore::GetCurrentThread();
 }
+#endif // DACCESS_COMPILE
 
 void LogSpewAlways(const char * /*fmt*/, ...)
 {

@@ -150,12 +150,6 @@
   <data name="PlatformNotSupported_PointerArguments" xml:space="preserve">
     <value>Passing or returning pointers through Invoke is not supported on this platform.</value>
   </data>
-  <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
-    <value>Object does not match target type.</value>
-  </data>
-  <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
-    <value>Non-static method requires a target.</value>
-  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
   </data>
@@ -236,5 +230,8 @@
   </data>
   <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+  </data>
+  <data name="DelegateGetMethodInfo_ObjectArrayDelegate" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the delegate target is an interpreted LINQ expression.</value>
   </data>
 </root>

@@ -15,12 +15,22 @@ namespace Internal.IL.Stubs
     /// </summary>
     public sealed partial class PInvokeLazyFixupField : FieldDesc
     {
-        private MethodDesc _targetMethod;
+        private readonly DefType _owningType;
+        private readonly MethodDesc _targetMethod;
 
-        public PInvokeLazyFixupField(MethodDesc targetMethod)
+        public PInvokeLazyFixupField(DefType owningType, MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
+            _owningType = owningType;
             _targetMethod = targetMethod;
+        }
+
+        public MethodDesc TargetMethod
+        {
+            get
+            {
+                return _targetMethod;
+            }
         }
 
         public PInvokeMetadata PInvokeMetadata
@@ -91,7 +101,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return (DefType)_targetMethod.OwningType;
+                return _owningType;
             }
         }
 

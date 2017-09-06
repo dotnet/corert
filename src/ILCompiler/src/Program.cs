@@ -35,10 +35,12 @@ namespace ILCompiler
         private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private bool _enableDebugInfo;
+        private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
         private bool _useSharedGenerics;
         private bool _useScanner;
+        private bool _noScanner;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -135,7 +137,9 @@ namespace ILCompiler
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
-                syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code");
+                syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
+                syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
+                syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -334,8 +338,13 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            bool useScanner = _useScanner ||
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen);
+
+            useScanner &= !_noScanner;
+
             ILScanResults scanResults = null;
-            if (_useScanner && !_isCppCodegen)
+            if (useScanner)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots);
@@ -350,6 +359,10 @@ namespace ILCompiler
 
             var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
 
+            DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
+                (_ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(_ilDump, new EcmaOnlyDebugInformationProvider())) :
+                new NullDebugInformationProvider();
+
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
@@ -362,7 +375,7 @@ namespace ILCompiler
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
-                .UseDebugInfo(_enableDebugInfo);
+                .UseDebugInfoProvider(debugInfoProvider);
 
             if (scanResults != null)
             {
@@ -424,6 +437,9 @@ namespace ILCompiler
                     throw new Exception("Scanning failure");
             }
 
+            if (debugInfoProvider is IDisposable)
+                ((IDisposable)debugInfoProvider).Dispose();
+
             return 0;
         }
 
@@ -455,16 +471,15 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName);
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
+            {
+                return (MetadataType)context.GetCanonType(typeDefName)
+                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
+            });
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 
-            TypeDesc classLibCanon = systemModule.GetType("System", "__Canon", false);
-            TypeDesc classLibUniCanon = systemModule.GetType("System", "__UniversalCanon", false);
-
-            return foundType.ReplaceTypesInConstructionOfType(
-                new TypeDesc[] { classLibCanon, classLibUniCanon },
-                new TypeDesc[] { context.CanonType, context.UniversalCanonType });
+            return foundType;
         }
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
@@ -500,10 +515,34 @@ namespace ILCompiler
             return method;
         }
 
+        private static bool DumpReproArguments(CodeGenerationFailedException ex)
+        {
+            Console.WriteLine("To repro, add following arguments to the command line:");
+
+            MethodDesc failingMethod = ex.Method;
+
+            var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
+
+            Console.Write($"--singlemethodtypename {formatter.FormatName(failingMethod.OwningType)}");
+            Console.Write($" --singlemethodname {failingMethod.Name}");
+
+            for (int i = 0; i < failingMethod.Instantiation.Length; i++)
+                Console.Write($" --singlemethodgenericarg {formatter.FormatName(failingMethod.Instantiation[i])}");
+
+            return false;
+        }
+
         private static int Main(string[] args)
         {
 #if DEBUG
-            return new Program().Run(args);
+            try
+            {
+                return new Program().Run(args);
+            }
+            catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
+            {
+                throw new NotSupportedException(); // Unreachable
+            }
 #else
             try
             {

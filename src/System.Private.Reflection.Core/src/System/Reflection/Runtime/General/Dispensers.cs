@@ -67,20 +67,30 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
         {
-            return s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            object runtimeAssemblyOrException = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            if (runtimeAssemblyOrException is RuntimeAssembly runtimeAssembly)
+                return runtimeAssembly;
+            return null;
         }
 
         internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            result = GetRuntimeAssemblyIfExists(assemblyRefName);
-            if (result != null)
+            object runtimeAssemblyOrException = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            if (runtimeAssemblyOrException is RuntimeAssembly runtimeAssembly)
+            {
+                result = runtimeAssembly;
                 return null;
+            }
             else
-                return new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, assemblyRefName.FullName));
+            {
+                result = null;
+                return (Exception)runtimeAssemblyOrException;
+            }
         }
 
-        private static readonly Dispenser<RuntimeAssemblyName, RuntimeAssembly> s_assemblyRefNameToAssemblyDispenser =
-            DispenserFactory.CreateDispenser<RuntimeAssemblyName, RuntimeAssembly>(
+        // The "object" here is either a RuntimeAssembly or an Exception.
+        private static readonly Dispenser<RuntimeAssemblyName, object> s_assemblyRefNameToAssemblyDispenser =
+            DispenserFactory.CreateDispenser<RuntimeAssemblyName, object>(
                 DispenserScenario.AssemblyRefName_Assembly,
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
@@ -88,7 +98,7 @@ namespace System.Reflection.Runtime.Assemblies
                     AssemblyBindResult bindResult;
                     Exception exception;
                     if (!binder.Bind(assemblyRefName, out bindResult, out exception))
-                        return null;
+                        return exception;
 
                     return GetRuntimeAssembly(bindResult);
                 }
@@ -133,9 +143,9 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, CustomMethodInvokerAction action)
         {
-            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, invoker);
+            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, action);
         }
     }
 
@@ -179,9 +189,9 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, CustomMethodInvokerAction action)
         {
-            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, invoker).WithDebugName();
+            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, action).WithDebugName();
         }
     }
 }

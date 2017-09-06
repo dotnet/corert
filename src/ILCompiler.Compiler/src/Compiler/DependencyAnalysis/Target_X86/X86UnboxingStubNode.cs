@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
             AddrMode thisPtr = new AddrMode(
                 Register.RegDirect | encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
             encoder.EmitADD(ref thisPtr, (sbyte)factory.Target.PointerSize);
-            encoder.EmitJMP(factory.MethodEntrypoint(_target));
+            encoder.EmitJMP(factory.MethodEntrypoint(Method));
         }
     }
 }

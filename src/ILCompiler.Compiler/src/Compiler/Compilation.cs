@@ -24,14 +24,13 @@ namespace ILCompiler
         protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
+        private readonly DebugInformationProvider _debugInformationProvider;
 
         public NameMangler NameMangler => _nodeFactory.NameMangler;
         public NodeFactory NodeFactory => _nodeFactory;
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
         internal PInvokeILProvider PInvokeILProvider { get; }
-
-        protected abstract bool GenerateDebugInfo { get; }
 
         private readonly TypeGetTypeMethodThunkCache _typeGetTypeMethodThunks;
         private readonly AssemblyGetExecutingAssemblyMethodThunkCache _assemblyGetExecutingAssemblyMethodThunks;
@@ -41,11 +40,13 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> compilationRoots,
+            DebugInformationProvider debugInformationProvider,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
+            _debugInformationProvider = debugInformationProvider;
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
@@ -116,12 +117,7 @@ namespace ILCompiler
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)
         {
-            if (!GenerateDebugInfo)
-                return MethodDebugInformation.None;
-
-            // This method looks odd right now, but it's an extensibility point that lets us generate
-            // fake debugging information for things that don't have physical symbols.
-            return methodIL.GetDebugInfo();
+            return _debugInformationProvider.GetDebugInfo(methodIL);
         }
 
         /// <summary>

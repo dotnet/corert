@@ -977,36 +977,50 @@ class Program
 
     class TestConstrainedMethodCalls
     {
+        class Atom1 { }
+        class Atom2 { }
+
         interface IFoo<T>
         {
-            void Frob();
+            bool Frob(object o);
         }
 
         struct Foo<T> : IFoo<T>
         {
             public int FrobbedValue;
 
-            public void Frob()
+            public bool Frob(object o)
             {
                 FrobbedValue = 12345;
+                return o is T[,,];
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void DoFrob<T, U>(ref T t) where T : IFoo<U>
+        static bool DoFrob<T, U>(ref T t, object o) where T : IFoo<U>
         {
             // Perform a constrained interface call from shared code.
             // This should have been resolved to a direct call at compile time.
-            t.Frob();
+            return t.Frob(o);
         }
 
         public static void Run()
         {
-            var foo = new Foo<object>();
-            DoFrob<Foo<object>, object>(ref foo);
+            var foo1 = new Foo<Atom1>();
+            bool result = DoFrob<Foo<Atom1>, Atom1>(ref foo1, new Atom1[0,0,0]);
 
             // If the FrobbedValue doesn't change when we frob, we must have done box+interface call.
-            if (foo.FrobbedValue != 12345)
+            if (foo1.FrobbedValue != 12345)
+                throw new Exception();
+
+            // Also check we passed the right generic context to Foo.Frob
+            if (!result)
+                throw new Exception();
+
+            // Also check dependency analysis:
+            // EEType for Atom2[,,] that we'll check for was never allocated.
+            var foo2 = new Foo<Atom2>();
+            if (DoFrob<Foo<Atom2>, Atom2>(ref foo2, new object()))
                 throw new Exception();
         }
     }

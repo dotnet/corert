@@ -334,6 +334,8 @@ bool Thread::IsInitialized()
 //
 void Thread::SetGCSpecial(bool isGCSpecial)
 {
+    if (!IsInitialized())
+        Construct();
     if (isGCSpecial)
         SetState(TSF_IsGcSpecialThread);
     else

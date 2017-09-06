@@ -43,6 +43,12 @@ namespace Internal.IL.Stubs
                     return EmitReadWrite(method, write: false, unaligned: true);
                 case "WriteUnaligned":
                     return EmitReadWrite(method, write: true, unaligned: true);
+                case "AreSame":
+                    return new ILStubMethodIL(method, new byte[]
+                    {
+                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
+                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
+                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
 
             return null;

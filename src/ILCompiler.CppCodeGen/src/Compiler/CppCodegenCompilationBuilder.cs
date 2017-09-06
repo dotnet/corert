@@ -35,7 +35,7 @@ namespace ILCompiler
             CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
-            return new CppCodegenCompilation(graph, factory, _compilationRoots, _logger, _config);
+            return new CppCodegenCompilation(graph, factory, _compilationRoots, _debugInformationProvider, _logger, _config);
         }
     }
 

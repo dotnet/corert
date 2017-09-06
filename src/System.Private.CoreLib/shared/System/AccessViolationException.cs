@@ -21,24 +21,30 @@ namespace System
         public AccessViolationException()
             : base(SR.Arg_AccessViolationException)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         public AccessViolationException(String message)
             : base(message)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         public AccessViolationException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             throw new PlatformNotSupportedException();
         }
+
+#pragma warning disable 169  // Field is not used from managed.
+        private IntPtr _ip;             // Address of faulting instruction.
+        private IntPtr _target;         // Address that could not be accessed.
+        private int _accessType;        // 0:read, 1:write
+#pragma warning restore 169
     }
 }

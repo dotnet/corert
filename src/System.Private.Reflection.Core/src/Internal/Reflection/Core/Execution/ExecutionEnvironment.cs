@@ -101,7 +101,6 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Other
         //==============================================================================================
-        public abstract MethodInvoker GetSyntheticMethodInvoker(RuntimeTypeHandle thisType, RuntimeTypeHandle[] parameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker);
         public abstract bool IsCOMObject(Type type);
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
 

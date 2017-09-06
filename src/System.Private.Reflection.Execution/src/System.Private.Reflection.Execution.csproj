@@ -71,10 +71,15 @@
     <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\InstanceFieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\LiteralFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\PointerTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\PointerTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\PointerTypeFieldAccessorForThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\RegularStaticFieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForInstanceFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForThreadStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\StaticFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ThreadStaticFieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForInstanceFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForStaticFields.cs" />
     <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForThreadStaticFields.cs" />
@@ -83,11 +88,6 @@
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\InstanceMethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\StaticMethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Execution\MethodInvokers\VirtualMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\StringConstructorMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\IntPtrConstructorMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\NullableInstanceMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\SyntheticMethodInvoker.cs" />
-    <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerUtils.cs" />
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.cs" />
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\MissingMetadataExceptionCreator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
