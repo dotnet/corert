@@ -49,24 +49,6 @@ namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.GetCustomAttributes());
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-
-                ParameterAttributes attributes = Attributes;
-                if (0 != (attributes & ParameterAttributes.In))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(InAttribute), null, null);
-                if (0 != (attributes & ParameterAttributes.Out))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(OutAttribute), null, null);
-                if (0 != (attributes & ParameterAttributes.Optional))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(OptionalAttribute), null, null);
-            }
-        }
-
         public sealed override String Name
         {
             get
@@ -82,6 +64,8 @@ namespace System.Reflection.Runtime.ParameterInfos.EcmaFormat
                 return MetadataTokens.GetToken(_parameterHandle);
             }
         }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.GetCustomAttributes());
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object defaultValue)
         {

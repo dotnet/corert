@@ -11,7 +11,6 @@ using global::Internal.Runtime.CompilerServices;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
 using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Extensions.NonPortable

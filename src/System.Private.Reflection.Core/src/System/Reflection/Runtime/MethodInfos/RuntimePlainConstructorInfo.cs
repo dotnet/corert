@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                return _common.TrueCustomAttributes;
             }
         }
 

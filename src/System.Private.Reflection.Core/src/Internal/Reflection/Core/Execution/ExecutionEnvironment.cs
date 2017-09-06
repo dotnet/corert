@@ -72,17 +72,6 @@ namespace Internal.Reflection.Core.Execution
         public abstract FieldAccessor TryGetFieldAccessor(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
 
         //==============================================================================================
-        // Pseudo Custom Attributes
-        //==============================================================================================
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, MethodHandle methodHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, ParameterHandle parameterHandle, MethodHandle declaringMethodHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, FieldHandle fieldHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, PropertyHandle propertyHandle, TypeDefinitionHandle declaringTypeHandle);
-        public abstract IEnumerable<CustomAttributeData> GetPseudoCustomAttributes(MetadataReader reader, EventHandle eventHandle, TypeDefinitionHandle declaringTypeHandle);
-
-        //==============================================================================================
         // RuntimeMethodHandle and RuntimeFieldHandle support.
         //==============================================================================================
         public abstract bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles);

@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
@@ -43,25 +38,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
                 return RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
-            }
-        }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _typeDefinitionHandle))
-                {
-                    yield return cad;
-                }
             }
         }
 
@@ -209,6 +185,8 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
             return name.EscapeTypeNameIdentifier();
         }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
