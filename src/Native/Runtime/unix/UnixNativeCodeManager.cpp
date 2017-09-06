@@ -25,9 +25,9 @@
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
-#define UBF_FUNC_HAS_EHINFO     0x04
-
-#define UBF_FUNC_REVERSE_PINVOKE 0x08
+#define UBF_FUNC_HAS_EHINFO         0x04
+#define UBF_FUNC_REVERSE_PINVOKE    0x08
+#define UBF_FUNC_HAS_UNBOX_TARGET   0x10
 
 struct UnixNativeMethodInfo
 {
@@ -68,6 +68,9 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->pLSDA = p;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
 
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
@@ -130,6 +133,9 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
@@ -175,6 +181,9 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
@@ -265,6 +274,9 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
+
     // return if there is no EH info associated with this method
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
     {
@@ -354,6 +366,23 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     }
 
     return m_pClasslibFunctions[id];
+}
+
+PTR_VOID UnixNativeCodeManager::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress)
+{
+    UIntNative lsda;
+    UIntNative startAddress;
+    if (!FindProcInfo((UIntNative)pUnboxingStubStartAddress, &startAddress, &lsda))
+        return NULL;
+
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(lsda);
+
+    uint8_t unwindBlockFlags = *p++;
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) == 0)
+        return NULL;
+
+    UInt32 unboxingTargetRVA = *dac_cast<PTR_UInt32>(p);
+    return dac_cast<PTR_VOID>(m_moduleBase + unboxingTargetRVA);
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);

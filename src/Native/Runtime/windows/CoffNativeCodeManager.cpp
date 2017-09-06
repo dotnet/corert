@@ -25,9 +25,9 @@
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
-#define UBF_FUNC_HAS_EHINFO     0x04
-
-#define UBF_FUNC_REVERSE_PINVOKE 0x08
+#define UBF_FUNC_HAS_EHINFO         0x04
+#define UBF_FUNC_REVERSE_PINVOKE    0x08
+#define UBF_FUNC_HAS_UNBOX_TARGET   0x10
 
 #if defined(_TARGET_AMD64_)
 
@@ -297,6 +297,9 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
@@ -346,6 +349,9 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
@@ -455,6 +461,9 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
+
     // Check whether this is a funclet
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
         return false;
@@ -550,6 +559,9 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) != 0)
+        p += sizeof(int32_t);
+
     // return if there is no EH info associated with this method
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
     {
@@ -632,6 +644,29 @@ void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
         return nullptr;
 
     return m_pClasslibFunctions[id];
+}
+
+PTR_VOID CoffNativeCodeManager::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress)
+{
+    TADDR relativePC = dac_cast<TADDR>(pUnboxingStubStartAddress) - m_moduleBase;
+
+    int MethodIndex = LookupUnwindInfoForMethod((UInt32)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
+    if (MethodIndex < 0)
+        return NULL;
+
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctionTable + MethodIndex;
+
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pRuntimeFunction, &unwindDataBlobSize);
+
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
+    if ((unwindBlockFlags & UBF_FUNC_HAS_UNBOX_TARGET) == 0)
+        return NULL;
+
+    UInt32 unboxingTargetRVA = *dac_cast<PTR_UInt32>(p);
+    return dac_cast<PTR_VOID>(m_moduleBase + unboxingTargetRVA);
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);

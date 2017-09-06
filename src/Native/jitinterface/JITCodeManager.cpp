@@ -730,3 +730,11 @@ void * JITCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     assert(false);
     return false;
 }
+
+PTR_VOID JITCodeManager::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress)
+{
+    // @TODO: CORERT: GetTargetOfUnboxingAndInstantiatingStub
+    // Implement by delegating to corelib code manager
+    assert(false);
+    return NULL;
+}

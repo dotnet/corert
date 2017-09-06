@@ -119,4 +119,6 @@ public:
     virtual PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo) = 0;
 
     virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
+    
+    virtual PTR_VOID GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress) = 0;
 };

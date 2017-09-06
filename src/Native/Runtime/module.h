@@ -113,6 +113,8 @@ public:
 
     void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader);
 
+    PTR_VOID GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress);
+
 private:
     Module(ModuleHeader * pModuleHeader);
 #ifdef FEATURE_CUSTOM_IMPORTS

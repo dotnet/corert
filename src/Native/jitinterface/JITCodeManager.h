@@ -276,4 +276,6 @@ public:
     PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
 
     void * GetClasslibFunction(ClasslibFunctionId functionId);
+
+    PTR_VOID GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress);
 };

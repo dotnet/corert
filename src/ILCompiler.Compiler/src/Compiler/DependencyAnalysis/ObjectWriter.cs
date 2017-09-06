@@ -429,9 +429,21 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            MethodCodeNode methodCodeNode = node as MethodCodeNode;
+
             FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
+                if (node is MethodCodeNode)
+                {
+                    MethodCodeNode methodCode = (MethodCodeNode)node;
+                    MethodDesc method = methodCode.Method;
+                    if (_nodeFactory.TypeSystemContext.IsSpecialUnboxingThunk(method))
+                    {
+                        int a = 0;
+                        int b = 45 / a;
+                    }
+                }
                 return;
             }
 
@@ -463,9 +475,24 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= FrameInfoFlags.HasEHInfo;
                 }
 
+                if (methodCodeNode != null && _nodeFactory.TypeSystemContext.IsSpecialUnboxingThunk(methodCodeNode.Method))
+                {
+                    flags |= FrameInfoFlags.HasUnboxingTarget;
+                }
+
                 EmitBlob(blob);
 
                 EmitIntValue((byte)flags, 1);
+
+                if((flags & FrameInfoFlags.HasUnboxingTarget) != 0)
+                {
+                    MethodDesc unboxingStubTarget = _nodeFactory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(methodCodeNode.Method);
+                    ISymbolNode unboxingStubTargetNode = _nodeFactory.MethodEntrypoint(unboxingStubTarget, false);
+                    Debug.Assert(unboxingStubTargetNode.Marked);
+
+                    EmitSymbolRef(_sb.Clear().Append(unboxingStubTargetNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    methodCodeNode = null;
+                }
 
                 if (ehInfo != null)
                 {
@@ -515,6 +542,8 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            MethodCodeNode methodCodeNode = node as MethodCodeNode;
+
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
 
@@ -543,7 +572,22 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     flags |= FrameInfoFlags.HasEHInfo;
                 }
+                if (methodCodeNode != null && _nodeFactory.TypeSystemContext.IsSpecialUnboxingThunk(methodCodeNode.Method))
+                {
+                    flags |= FrameInfoFlags.HasUnboxingTarget;
+                }
+
                 EmitIntValue((byte)flags, 1);
+
+                if ((flags & FrameInfoFlags.HasUnboxingTarget) != 0)
+                {
+                    MethodDesc unboxingStubTarget = _nodeFactory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(methodCodeNode.Method);
+                    ISymbolNode unboxingStubTargetNode = _nodeFactory.MethodEntrypoint(unboxingStubTarget, false);
+                    Debug.Assert(unboxingStubTargetNode.Marked);
+
+                    EmitSymbolRef(_sb.Clear().Append(unboxingStubTargetNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    methodCodeNode = null;
+                }
 
                 if (i != 0)
                 {

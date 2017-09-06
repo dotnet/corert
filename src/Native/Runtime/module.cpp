@@ -832,6 +832,16 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     return pMethod;
 }
 
+PTR_VOID Module::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID pUnboxingStubStartAddress)
+{
+    UNREFERENCED_PARAMETER(pUnboxingStubStartAddress);
+
+    // Not supported for ProjectN
+    RhFailFast();
+
+    return NULL;
+}
+
 // Get classlib-defined helper for running deferred static class constructors. Returns NULL if this is not the
 // classlib module or the classlib doesn't implement this callback.
 void * Module::GetClasslibCheckStaticClassConstruction()
