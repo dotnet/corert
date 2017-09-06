@@ -108,7 +108,7 @@ namespace Internal.IL
                 case TypeFlags.ByRef:
                     return CreateByRef(((ByRefType)type).ParameterType);
                 default:
-                    if (type.IsValueType)
+                    if (type.IsValueType || type.IsGenericParameter)
                         return CreateValueType(type);
                     else
                         return CreateObjRef(type);
@@ -301,11 +301,6 @@ namespace Internal.IL
             if (valueA.Kind == valueB.Kind && valueA.Type == valueB.Type)
                 return true;
 
-            // One of the two types is a (unboxed) generic parameter (only valid if a == b)
-            if ((valueA.Type != null && valueA.Type.IsGenericParameter && valueA.Kind != StackValueKind.ObjRef) ||
-                (valueB.Type != null && valueB.Type.IsGenericParameter && valueB.Kind != StackValueKind.ObjRef))
-                return false;
-
             if (valueA.IsNullReference)
             {
                 //Null can be any reference type
@@ -363,38 +358,46 @@ namespace Internal.IL
             if (classB.IsInterface)
             {
                 if (classA.IsInterface)
-                {
-                    foreach (var interf in classA.RuntimeInterfaces)
-                    {
-                        if (interf == classB)
-                            return classB; // Interface A extends interface B
-                    }
-
-                    foreach (var interf in classB.RuntimeInterfaces)
-                    {
-                        if (interf == classA)
-                            return classA; // Interface B extends interface A
-                    }
-
-                    // Get common supertype
-                    foreach (var interfB in classB.RuntimeInterfaces)
-                    {
-                        foreach (var interfA in classA.RuntimeInterfaces)
-                        {
-                            if (interfA == interfB)
-                                return interfA;
-                        }
-                    }
-
-                    // No compatible interface found, return Object
-                    return classA.Context.GetWellKnownType(WellKnownType.Object);
-                }
+                    return MergeInterfaceWithInterface(classA, classB);
                 else
                     return MergeClassWithInterface(classA, classB);
             }
             else if (classA.IsInterface)
                 return MergeClassWithInterface(classB, classA);
 
+            return MergeClassWithClass(classA, classB);
+        }
+
+        static TypeDesc MergeInterfaceWithInterface(TypeDesc interfA, TypeDesc interfB)
+        {
+            foreach (var interf in interfA.RuntimeInterfaces)
+            {
+                if (interf == interfB)
+                    return interfB; // Interface A extends interface B
+            }
+
+            foreach (var interf in interfB.RuntimeInterfaces)
+            {
+                if (interf == interfA)
+                    return interfA; // Interface B extends interface A
+            }
+
+            // Get common supertype
+            foreach (var subInterfB in interfB.RuntimeInterfaces)
+            {
+                foreach (var subInterfA in interfA.RuntimeInterfaces)
+                {
+                    if (subInterfA == subInterfB)
+                        return subInterfA;
+                }
+            }
+
+            // No compatible interface found, return Object
+            return interfA.Context.GetWellKnownType(WellKnownType.Object);
+        }
+
+        static TypeDesc MergeClassWithClass(TypeDesc classA, TypeDesc classB)
+        {
             // Find class hierarchy depth for both classes
             int aDepth = 0;
             int bDepth = 0;
@@ -460,9 +463,6 @@ namespace Internal.IL
                 return arrayTypeA;
 
             var basicArrayType = arrayTypeA.Context.GetWellKnownType(WellKnownType.Array);
-
-            if (arrayTypeA == basicArrayType || arrayTypeB == basicArrayType)
-                return basicArrayType;
 
             // If non matching rank, common ancestor = System.Array
             var rank = arrayTypeA.Rank;

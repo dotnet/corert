@@ -1142,7 +1142,7 @@ namespace Internal.IL
                                 FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
 
                             // If merge actually changed entry stack
-                            if (mergedValue.Kind != entryStack[i].Kind || mergedValue.Type != entryStack[i].Type)
+                            if (mergedValue != entryStack[i])
                             {
                                 entryStack[i] = mergedValue;
 
