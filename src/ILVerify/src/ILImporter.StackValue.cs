@@ -115,6 +115,41 @@ namespace Internal.IL
             }
         }
 
+        public override bool Equals(object obj)
+        {
+            if (Object.ReferenceEquals(this, obj))
+                return true;
+
+            if (!(obj is StackValue))
+                return false;
+
+            var value = (StackValue)obj;
+            return this.Kind == value.Kind && this.Flags == value.Flags && this.Type == value.Type;
+        }
+
+        public static bool operator ==(StackValue left, StackValue right)
+        {
+            if (left == null)
+                return right == null;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(StackValue left, StackValue right)
+        {
+            return !(left == right);
+        }
+
+        public override int GetHashCode()
+        {
+                const int prime = 17;
+                int hash = 23;
+                hash = (hash * prime) ^ Type.GetHashCode();
+                hash = (hash * prime) ^ Kind.GetHashCode();
+                hash = (hash * prime) ^ Flags.GetHashCode();
+                return hash;
+        }
+
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForByRef(TypeDesc type)
         {
