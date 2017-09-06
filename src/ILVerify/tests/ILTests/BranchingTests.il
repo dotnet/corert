@@ -190,6 +190,28 @@
         ret
     }
 
+    .method static public hidebysig void Branching.UnequalStackMergeGeneric_Invalid_PathStackUnexpected<T>(!!T generic,
+        object obj) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] object obj
+        )
+
+        ldarg.1
+        brfalse.s   lbl_gen
+
+        ldarg.1
+        br.s        lbl_store
+
+    lbl_gen:
+        ldarg.0
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
     .method static public hidebysig void Branching.InsideTry_Valid() cil managed
     {
         .maxstack 2
