@@ -31,6 +31,13 @@ namespace System.Threading
         }
 
         /// <summary>
+        /// Gets the <see cref="CancellationToken"/> with which this registration is associated.  If the
+        /// registration isn't associated with a token (such as after the registration has been disposed),
+        /// this will return a default token.
+        /// </summary>
+        internal CancellationToken Token => m_callbackInfo?.CancellationTokenSource.Token ?? default(CancellationToken);
+
+        /// <summary>
         /// Attempts to deregister the item. If it's already being run, this may fail.
         /// Entails a full memory fence.
         /// </summary>
