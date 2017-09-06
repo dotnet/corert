@@ -585,7 +585,10 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode unboxingStubTargetNode = _nodeFactory.MethodEntrypoint(unboxingStubTarget, false);
                     Debug.Assert(unboxingStubTargetNode.Marked);
 
-                    EmitSymbolRef(_sb.Clear().Append(unboxingStubTargetNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    _sb.Clear().Append("_lsda0");
+                    AppendExternCPrefix(_sb);
+                    EmitSymbolRef(_sb.Append(unboxingStubTargetNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
+
                     methodCodeNode = null;
                 }
 
