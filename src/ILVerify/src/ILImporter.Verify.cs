@@ -400,8 +400,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
-                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
                     // If target is inside source region
                     if (srcRegion.TryOffset <= targetRegion.TryOffset && 
                         target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
@@ -423,8 +423,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
-                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
@@ -440,8 +440,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    ref ILExceptionRegion srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
-                    ref ILExceptionRegion targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
