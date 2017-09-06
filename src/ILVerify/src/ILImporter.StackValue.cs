@@ -129,9 +129,6 @@ namespace Internal.IL
 
         public static bool operator ==(StackValue left, StackValue right)
         {
-            if (left == null)
-                return right == null;
-
             return left.Equals(right);
         }
 
@@ -320,7 +317,7 @@ namespace Internal.IL
                     return true;
 
                 // Merging classes always succeeds since System.Object always works
-                merged = StackValue.CreateFromType(MergeClasses(valueA.Type, valueB.Type)); 
+                merged = StackValue.CreateFromType(MergeObjectReferences(valueA.Type, valueB.Type)); 
                 return true;
             }
 
@@ -328,7 +325,7 @@ namespace Internal.IL
         }
 
         // Used to merge stack states.
-        static TypeDesc MergeClasses(TypeDesc classA, TypeDesc classB)
+        static TypeDesc MergeObjectReferences(TypeDesc classA, TypeDesc classB)
         {
             if (classA == classB)
                 return classA;
@@ -492,7 +489,7 @@ namespace Internal.IL
                      (!arrayTypeB.ElementType.IsValueType && !arrayTypeB.ElementType.IsByRef))
             {
                 // Find common ancestor of the element types
-                mergedElementType = MergeClasses(arrayTypeA.ElementType, arrayTypeB.ElementType);
+                mergedElementType = MergeObjectReferences(arrayTypeA.ElementType, arrayTypeB.ElementType);
             }
             else
             {
