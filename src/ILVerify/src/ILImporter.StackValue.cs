@@ -335,10 +335,7 @@ namespace Internal.IL
             {
                 if (classB.IsArray)
                     return MergeArrayTypes((ArrayType)classA, (ArrayType)classB);
-                classA = classA.Context.GetWellKnownType(WellKnownType.Array);
             }
-            else if (classB.IsArray)
-                classB = classB.Context.GetWellKnownType(WellKnownType.Array);
 
             // Assumes generic parameters are boxed at this point.
             // Return supertype, if related, otherwhise object

@@ -212,6 +212,29 @@
         ret
     }
 
+    .method static public hidebysig void Branching.UnequalStackMergeGenericArrayConstrain_Valid<(int32[]) T>(!!T generic,
+        int32[] arr) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] int32[] dest
+        )
+
+        ldarg.1
+        brfalse.s   lbl_arr
+
+        ldarg.0
+        box     !!T
+        br.s        lbl_store
+
+    lbl_arr:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
     .method static public hidebysig void Branching.InsideTry_Valid() cil managed
     {
         .maxstack 2
