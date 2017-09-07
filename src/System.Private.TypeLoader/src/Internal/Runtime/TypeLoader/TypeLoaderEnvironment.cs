@@ -675,8 +675,11 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
         {
-            targetMethod = IntPtr.Zero;
-
+            targetMethod = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(maybeInstantiatingAndUnboxingStub);
+            if (targetMethod != IntPtr.Zero)
+            {
+                return true;
+            }
             // Get module
             IntPtr associatedModule = RuntimeAugments.GetOSModuleFromPointer(maybeInstantiatingAndUnboxingStub);
             if (associatedModule == IntPtr.Zero)
