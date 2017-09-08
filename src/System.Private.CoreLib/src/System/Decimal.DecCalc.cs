@@ -85,17 +85,10 @@ namespace System
 
             private const int DEC_SCALE_MAX = 28;
 
-            private const uint OVFL_MAX_9_HI = 4;
-            private const uint OVFL_MAX_9_MID = 1266874889;
-            private const uint OVFL_MAX_9_LO = 3047500985;
-            private const uint OVFL_MAX_5_HI = 42949;
-            private const uint OVFL_MAX_1_HI = 429496729;
-
             private const uint SNGBIAS = 126;
             private const uint DBLBIAS = 1022;
 
             private const uint TenToPowerNine = 1000000000;
-            private const uint TenToPowerTenDiv4 = 2500000000;
             private static readonly Split64 s_tenToPowerEighteen = new Split64() { int64 = 1000000000000000000 };
 
             // The maximum power of 10 that a 32 bit integer can store
@@ -208,30 +201,6 @@ namespace System
                 return sdl.int64;
             }
 
-            private static uint FullDiv64By32(ref ulong pdlNum, uint ulDen)
-            {
-                Split64 sdlTmp = new Split64();
-                Split64 sdlRes = new Split64();
-
-                sdlTmp.int64 = pdlNum;
-                sdlRes.High32 = 0;
-
-                if (sdlTmp.High32 >= ulDen)
-                {
-                    // DivMod64by32 returns quotient in Lo, remainder in Hi.
-                    //
-                    sdlRes.Low32 = sdlTmp.High32;
-                    sdlRes.int64 = DivMod64by32(sdlRes.int64, ulDen);
-                    sdlTmp.High32 = sdlRes.High32;
-                    sdlRes.High32 = sdlRes.Low32;
-                }
-
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, ulDen);
-                sdlRes.Low32 = sdlTmp.Low32;
-                pdlNum = sdlRes.int64;
-                return sdlTmp.High32;
-            }
-
             private static ulong UInt32x32To64(uint a, uint b)
             {
                 return (ulong)a * (ulong)b;
@@ -263,7 +232,7 @@ namespace System
              * Div96By32
              *
              * Entry:
-             *   rgulNum - Pointer to 96-bit dividend as array of ULONGs, least-sig first
+             *   bufNum - 96-bit dividend as array of ULONGs, least-sig first
              *   ulDen   - 32-bit divisor.
              *
              * Purpose:
@@ -277,43 +246,80 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div96By32(uint* rgulNum, uint ulDen)
+            private static uint Div96By32(ref Buf12 bufNum, uint ulDen)
             {
-                Split64 sdlTmp = new Split64();
+                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                ulong tmp, div;
+                if (bufNum.U2 != 0)
+                {
+                    tmp = bufNum.High64;
+                    div = tmp / ulDen;
+                    bufNum.High64 = div;
+                    tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                    uint div32 = (uint)(tmp / ulDen);
+                    bufNum.U0 = div32;
+                    return (uint)tmp - div32 * ulDen;
+                }
 
-                sdlTmp.High32 = 0;
+                tmp = bufNum.Low64;
+                div = tmp / ulDen;
+                bufNum.Low64 = div;
+                return (uint)(tmp - div * ulDen);
+            }
 
-                if (rgulNum[2] != 0)
-                    goto Div3Word;
+            private static uint Div96ByConst100000000(ref Buf12 bufNum)
+            {
+                const uint ulDen = 100000000;
+                ulong tmp = bufNum.High64;
+                ulong div = tmp / ulDen;
+                bufNum.High64 = div;
+                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                uint div32 = (uint)(tmp / ulDen);
+                bufNum.U0 = div32;
+                return (uint)tmp - div32 * ulDen;
+            }
 
-                if (rgulNum[1] >= ulDen)
-                    goto Div2Word;
+            private static uint Div96ByConst10000(ref Buf12 bufNum)
+            {
+                const uint ulDen = 10000;
+                ulong tmp = bufNum.High64;
+                ulong div = tmp / ulDen;
+                bufNum.High64 = div;
+                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                uint div32 = (uint)(tmp / ulDen);
+                bufNum.U0 = div32;
+                return (uint)tmp - div32 * ulDen;
+            }
 
-                sdlTmp.High32 = rgulNum[1];
-                rgulNum[1] = 0;
-                goto Div1Word;
+            private static uint Div96ByConst100(ref Buf12 bufNum)
+            {
+                const uint ulDen = 100;
+                ulong tmp = bufNum.High64;
+                ulong div = tmp / ulDen;
+                bufNum.High64 = div;
+                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                uint div32 = (uint)(tmp / ulDen);
+                bufNum.U0 = div32;
+                return (uint)tmp - div32 * ulDen;
+            }
 
-            Div3Word:
-                sdlTmp.Low32 = rgulNum[2];
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, ulDen);
-                rgulNum[2] = sdlTmp.Low32;
-            Div2Word:
-                sdlTmp.Low32 = rgulNum[1];
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, ulDen);
-                rgulNum[1] = sdlTmp.Low32;
-            Div1Word:
-                sdlTmp.Low32 = rgulNum[0];
-                sdlTmp.int64 = DivMod64by32(sdlTmp.int64, ulDen);
-                rgulNum[0] = sdlTmp.Low32;
-
-                return sdlTmp.High32;
+            private static uint Div96ByConst10(ref Buf12 bufNum)
+            {
+                const uint ulDen = 10;
+                ulong tmp = bufNum.High64;
+                ulong div = tmp / ulDen;
+                bufNum.High64 = div;
+                tmp = ((tmp - div * ulDen) << 32) | bufNum.U0;
+                uint div32 = (uint)(tmp / ulDen);
+                bufNum.U0 = div32;
+                return (uint)tmp - div32 * ulDen;
             }
 
             /***
              * Div96By64
              *
              * Entry:
-             *   rgulNum - Pointer to 96-bit dividend as array of ULONGs, least-sig first
+             *   bufNum - 96-bit dividend as array of ULONGs, least-sig first
              *   sdlDen  - 64-bit divisor.
              *
              * Purpose:
@@ -328,77 +334,87 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div96By64(uint* rgulNum, Split64 sdlDen)
+            private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
-                Split64 sdlQuo = new Split64();
-                Split64 sdlNum = new Split64();
-                Split64 sdlProd = new Split64();
+                uint quo;
+                ulong num;
+                uint num2 = bufNum.U2;
+                if (num2 == 0)
+                {
+                    num = bufNum.Low64;
+                    if (num < den)
+                        // Result is zero.  Entire dividend is remainder.
+                        return 0;
 
-                sdlNum.Low32 = rgulNum[0];
+                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    quo = (uint)(num / den);
+                    num -= quo * den; // remainder
+                    bufNum.Low64 = num;
+                    return quo;
+                }
 
-                if (rgulNum[2] >= sdlDen.High32)
+                uint denHigh32 = (uint)(den >> 32);
+                if (num2 >= denHigh32)
                 {
                     // Divide would overflow.  Assume a quotient of 2^32, and set
                     // up remainder accordingly.
                     //
-                    sdlNum.High32 = rgulNum[1] - sdlDen.Low32;
-                    sdlQuo.Low32 = 0;
+                    num = bufNum.Low64;
+                    num -= den << 32;
+                    quo = 0;
 
                     // Remainder went negative.  Add divisor back in until it's positive,
                     // a max of 2 times.
                     //
                     do
                     {
-                        sdlQuo.Low32--;
-                        sdlNum.int64 += sdlDen.int64;
-                    } while (sdlNum.int64 >= sdlDen.int64);
+                        quo--;
+                        num += den;
+                    } while (num >= den);
 
-                    goto Done;
+                    bufNum.Low64 = num;
+                    return quo;
                 }
 
                 // Hardware divide won't overflow
                 //
-                if (rgulNum[2] == 0 && rgulNum[1] < sdlDen.High32)
+                ulong num64 = bufNum.High64;
+                if (num64 < denHigh32)
                     // Result is zero.  Entire dividend is remainder.
                     //
                     return 0;
 
-                // DivMod64by32 returns quotient in Lo, remainder in Hi.
-                //
-                sdlQuo.Low32 = rgulNum[1];
-                sdlQuo.High32 = rgulNum[2];
-                sdlQuo.int64 = DivMod64by32(sdlQuo.int64, sdlDen.High32);
-                sdlNum.High32 = sdlQuo.High32; // remainder
+                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                quo = (uint)(num64 / denHigh32);
+                num = bufNum.U0 | ((num64 - quo * denHigh32) << 32); // remainder
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                sdlProd.int64 = UInt32x32To64(sdlQuo.Low32, sdlDen.Low32); // quo * lo divisor
-                sdlNum.int64 -= sdlProd.int64;
+                ulong prod = UInt32x32To64(quo, (uint)den); // quo * lo divisor
+                num -= prod;
 
-                if (sdlNum.int64 > ~sdlProd.int64)
+                if (num > ~prod)
                 {
                     // Remainder went negative.  Add divisor back in until it's positive,
                     // a max of 2 times.
                     //
                     do
                     {
-                        sdlQuo.Low32--;
-                        sdlNum.int64 += sdlDen.int64;
-                    } while (sdlNum.int64 >= sdlDen.int64);
+                        quo--;
+                        num += den;
+                    } while (num >= den);
                 }
 
-            Done:
-                rgulNum[0] = sdlNum.Low32;
-                rgulNum[1] = sdlNum.High32;
-                return sdlQuo.Low32;
+                bufNum.Low64 = num;
+                return quo;
             }
 
             /***
              * Div128By96
              *
              * Entry:
-             *   rgulNum - Pointer to 128-bit dividend as array of ULONGs, least-sig first
-             *   rgulDen - Pointer to 96-bit divisor.
+             *   bufNum - 128-bit dividend as array of ULONGs, least-sig first
+             *   bufDen - 96-bit divisor.
              *
              * Purpose:
              *   Do partial divide, yielding 32-bit result and 96-bit remainder.
@@ -416,83 +432,77 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint Div128By96(uint* rgulNum, uint* rgulDen)
+            private static uint Div128By96(ref Buf16 bufNum, ref Buf12 bufDen)
             {
-                Split64 sdlQuo = new Split64();
-                Split64 sdlNum = new Split64();
-                Split64 sdlProd1 = new Split64();
-                Split64 sdlProd2 = new Split64();
-
-                sdlNum.Low32 = rgulNum[0];
-                sdlNum.High32 = rgulNum[1];
-
-                if (rgulNum[3] == 0 && rgulNum[2] < rgulDen[2])
+                ulong dividend = bufNum.High64;
+                uint den = bufDen.U2;
+                if (dividend < den)
                     // Result is zero.  Entire dividend is remainder.
                     //
                     return 0;
 
-                // DivMod64by32 returns quotient in Lo, remainder in Hi.
-                //
-                sdlQuo.Low32 = rgulNum[2];
-                sdlQuo.High32 = rgulNum[3];
-                sdlQuo.int64 = DivMod64by32(sdlQuo.int64, rgulDen[2]);
+                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                uint quo = (uint)(dividend / den);
+                uint remainder = (uint)dividend - quo * den;
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                sdlProd1.int64 = UInt32x32To64(sdlQuo.Low32, rgulDen[0]); // quo * lo divisor
-                sdlProd2.int64 = UInt32x32To64(sdlQuo.Low32, rgulDen[1]); // quo * mid divisor
-                sdlProd2.int64 += sdlProd1.High32;
-                sdlProd1.High32 = sdlProd2.Low32;
+                ulong prod1 = UInt32x32To64(quo, bufDen.U0); // quo * lo divisor
+                ulong prod2 = UInt32x32To64(quo, bufDen.U1); // quo * mid divisor
+                prod2 += prod1 >> 32;
+                prod1 = (uint)prod1 | (prod2 << 32);
+                prod2 >>= 32;
 
-                sdlNum.int64 -= sdlProd1.int64;
-                rgulNum[2] = sdlQuo.High32 - sdlProd2.High32; // sdlQuo.Hi is remainder
+                ulong num = bufNum.Low64;
+                num -= prod1;
+                remainder -= (uint)prod2;
 
                 // Propagate carries
                 //
-                bool fallthru = false;
-                if (sdlNum.int64 > ~sdlProd1.int64)
+                if (num > ~prod1)
                 {
-                    rgulNum[2]--;
-                    if (rgulNum[2] >= ~sdlProd2.High32)
-                        fallthru = true;
+                    remainder--;
+                    if (remainder < ~(uint)prod2)
+                        goto PosRem;
                 }
-                if (fallthru || rgulNum[2] > ~sdlProd2.High32)
+                else if (remainder <= ~(uint)prod2)
+                    goto PosRem;
                 {
                     // Remainder went negative.  Add divisor back in until it's positive,
                     // a max of 2 times.
                     //
-                    sdlProd1.Low32 = rgulDen[0];
-                    sdlProd1.High32 = rgulDen[1];
+                    prod1 = bufDen.Low64;
 
                     for (;;)
                     {
-                        sdlQuo.Low32--;
-                        sdlNum.int64 += sdlProd1.int64;
-                        rgulNum[2] += rgulDen[2];
+                        quo--;
+                        num += prod1;
+                        remainder += den;
 
-                        if (sdlNum.int64 < sdlProd1.int64)
+                        if (num < prod1)
                         {
                             // Detected carry. Check for carry out of top
                             // before adding it in.
                             //
-                            if (rgulNum[2]++ < rgulDen[2])
+                            if (remainder++ < den)
                                 break;
                         }
-                        if (rgulNum[2] < rgulDen[2])
+                        if (remainder < den)
                             break; // detected carry
                     }
                 }
+PosRem:
 
-                rgulNum[0] = sdlNum.Low32;
-                rgulNum[1] = sdlNum.High32;
-                return sdlQuo.Low32;
+                bufNum.Low64 = num;
+                bufNum.U2 = remainder;
+                return quo;
             }
 
             /***
              * IncreaseScale
              *
              * Entry:
-             *   rgulNum - Pointer to 96-bit number as array of ULONGs, least-sig first
+             *   bufNum - 96-bit number as array of ULONGs, least-sig first
              *   ulPwr   - Scale factor to multiply by
              *
              * Purpose:
@@ -506,17 +516,26 @@ namespace System
              *   None.
              *
              ***********************************************************************/
-            private static uint IncreaseScale(uint* rgulNum, uint ulPwr)
+            private static uint IncreaseScale(ref Buf12 bufNum, uint ulPwr)
             {
-                Split64 sdlTmp = new Split64();
+                ulong tmp = UInt32x32To64(bufNum.U0, ulPwr);
+                bufNum.U0 = (uint)tmp;
+                tmp >>= 32;
+                tmp += UInt32x32To64(bufNum.U1, ulPwr);
+                bufNum.U1 = (uint)tmp;
+                tmp >>= 32;
+                tmp += UInt32x32To64(bufNum.U2, ulPwr);
+                bufNum.U2 = (uint)tmp;
+                return (uint)(tmp >> 32);
+            }
 
-                sdlTmp.int64 = UInt32x32To64(rgulNum[0], ulPwr);
-                rgulNum[0] = sdlTmp.Low32;
-                sdlTmp.int64 = UInt32x32To64(rgulNum[1], ulPwr) + sdlTmp.High32;
-                rgulNum[1] = sdlTmp.Low32;
-                sdlTmp.int64 = UInt32x32To64(rgulNum[2], ulPwr) + sdlTmp.High32;
-                rgulNum[2] = sdlTmp.Low32;
-                return sdlTmp.High32;
+            private static void IncreaseScale64(ref Buf12 bufNum, uint ulPwr)
+            {
+                ulong tmp = UInt32x32To64(bufNum.U0, ulPwr);
+                bufNum.U0 = (uint)tmp;
+                tmp >>= 32;
+                tmp += UInt32x32To64(bufNum.U1, ulPwr);
+                bufNum.High64 = tmp;
             }
 
             /***
@@ -794,55 +813,70 @@ ThrowOverflow:
 
             // Adjust the quotient to deal with an overflow. We need to divide by 10, 
             // feed in the high bit to undo the overflow and then round as required, 
-            private static void OverflowUnscale(uint* rgulQuo, bool fRemainder)
+            private static int OverflowUnscale(ref Buf12 bufQuo, int iScale, bool fRemainder)
             {
+                if (--iScale < 0)
+                    throw new OverflowException(SR.Overflow_Decimal);
+
                 Split64 sdlTmp = new Split64();
 
                 // We have overflown, so load the high bit with a one.
                 sdlTmp.High32 = 1;
-                sdlTmp.Low32 = rgulQuo[2];
+                sdlTmp.Low32 = bufQuo.U2;
                 sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                rgulQuo[2] = sdlTmp.Low32;
-                sdlTmp.Low32 = rgulQuo[1];
+                bufQuo.U2 = sdlTmp.Low32;
+                sdlTmp.Low32 = bufQuo.U1;
                 sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                rgulQuo[1] = sdlTmp.Low32;
-                sdlTmp.Low32 = rgulQuo[0];
+                bufQuo.U1 = sdlTmp.Low32;
+                sdlTmp.Low32 = bufQuo.U0;
                 sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
-                rgulQuo[0] = sdlTmp.Low32;
+                bufQuo.U0 = sdlTmp.Low32;
                 // The remainder is the last digit that does not fit, so we can use it to work out if we need to round up
-                if ((sdlTmp.High32 > 5) || ((sdlTmp.High32 == 5) && (fRemainder || (rgulQuo[0] & 1) != 0)))
-                    Add32To96(rgulQuo, 1);
+                if ((sdlTmp.High32 > 5) || ((sdlTmp.High32 == 5) && (fRemainder || (bufQuo.U0 & 1) != 0)))
+                    Add32To96(ref bufQuo, 1);
+                return iScale;
             }
 
             /***
             * SearchScale
             *
             * Entry:
-            *   ulResHi - Top ULONG of quotient
-            *   ulResMid - Middle ULONG of quotient
-            *   ulResLo - Lower ULONG of quotient
-            *   iScale  - Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX
+            *   bufQuo - 96-bit quotient
+            *   iScale  - Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX-1
             *
             * Purpose:
             *   Determine the max power of 10, <= 9, that the quotient can be scaled
             *   up by and still fit in 96 bits.
             *
             * Exit:
-            *   Returns power of 10 to scale by, -1 if overflow error.
+            *   Returns power of 10 to scale by.
             *
             ***********************************************************************/
-            private static int SearchScale(uint ulResHi, uint ulResMid, uint ulResLo, int iScale)
+            private static int SearchScale(ref Buf12 bufQuo, int iScale)
             {
-                int iCurScale;
+                const uint OVFL_MAX_9_HI = 4;
+                const uint OVFL_MAX_8_HI = 42;
+                const uint OVFL_MAX_7_HI = 429;
+                const uint OVFL_MAX_6_HI = 4294;
+                const uint OVFL_MAX_5_HI = 42949;
+                const uint OVFL_MAX_4_HI = 429496;
+                const uint OVFL_MAX_3_HI = 4294967;
+                const uint OVFL_MAX_2_HI = 42949672;
+                const uint OVFL_MAX_1_HI = 429496729;
+                const ulong OVFL_MAX_9_MIDLO = 5441186219426131129;
+
+                uint ulResHi = bufQuo.U2;
+                ulong ulResMidLo = bufQuo.Low64;
+                int iCurScale = 0;
 
                 // Quick check to stop us from trying to scale any more.
                 //
-                if (ulResHi > OVFL_MAX_1_HI || iScale >= DEC_SCALE_MAX)
+                if (ulResHi > OVFL_MAX_1_HI)
                 {
-                    iCurScale = 0;
                     goto HaveScale;
                 }
 
+                var powerOvfl = PowerOvflValues;
                 if (iScale > DEC_SCALE_MAX - 9)
                 {
                     // We can't scale by 10^9 without exceeding the max scale factor.
@@ -850,57 +884,52 @@ ThrowOverflow:
                     // standard search for scale factor.
                     //
                     iCurScale = DEC_SCALE_MAX - iScale;
-                    if (ulResHi < PowerOvfl.Hi(iCurScale - 1))
+                    if (ulResHi < powerOvfl[iCurScale - 1].Hi)
                         goto HaveScale;
-
-                    if (ulResHi == PowerOvfl.Hi(iCurScale - 1))
-                    {
-                        UpperEq(ulResMid, ulResLo, ref iCurScale);
-                        goto HaveScale;
-                    }
                 }
-                else if (ulResHi < OVFL_MAX_9_HI || (ulResHi == OVFL_MAX_9_HI &&
-                                                     ulResMid < OVFL_MAX_9_MID) || (ulResHi == OVFL_MAX_9_HI && ulResMid == OVFL_MAX_9_MID && ulResLo <= OVFL_MAX_9_LO))
+                else if (ulResHi < OVFL_MAX_9_HI || ulResHi == OVFL_MAX_9_HI && ulResMidLo <= OVFL_MAX_9_MIDLO)
                     return 9;
 
-                // Search for a power to scale by < 9.  Do a binary search
-                // on PowerOvfl[].
+                // Search for a power to scale by < 9.  Do a binary search.
                 //
-                iCurScale = 5;
-                if (ulResHi < OVFL_MAX_5_HI)
-                    iCurScale = 7;
-                else if (ulResHi > OVFL_MAX_5_HI)
-                    iCurScale = 3;
+                if (ulResHi > OVFL_MAX_5_HI)
+                {
+                    if (ulResHi > OVFL_MAX_3_HI)
+                    {
+                        iCurScale = 2;
+                        if (ulResHi > OVFL_MAX_2_HI)
+                            iCurScale--;
+                    }
+                    else
+                    {
+                        iCurScale = 4;
+                        if (ulResHi > OVFL_MAX_4_HI)
+                            iCurScale--;
+                    }
+                }
                 else
                 {
-                    UpperEq(ulResMid, ulResLo, ref iCurScale);
-                    goto HaveScale;
+                    if (ulResHi > OVFL_MAX_7_HI)
+                    {
+                        iCurScale = 6;
+                        if (ulResHi > OVFL_MAX_6_HI)
+                            iCurScale--;
+                    }
+                    else
+                    {
+                        iCurScale = 8;
+                        if (ulResHi > OVFL_MAX_8_HI)
+                            iCurScale--;
+                    }
                 }
 
-                // iCurScale is 3 or 7.
-                //
-                if (ulResHi < PowerOvfl.Hi(iCurScale - 1))
-                    iCurScale++;
-                else if (ulResHi > PowerOvfl.Hi(iCurScale - 1))
-                    iCurScale--;
-                else
-                {
-                    UpperEq(ulResMid, ulResLo, ref iCurScale);
-                    goto HaveScale;
-                }
-
-                // iCurScale is 2, 4, 6, or 8.
-                //
                 // In all cases, we already found we could not use the power one larger.
                 // So if we can use this power, it is the biggest, and we're done.  If
                 // we can't use this power, the one below it is correct for all cases 
                 // unless it's 10^1 -- we might have to go to 10^0 (no scaling).
                 // 
-                if (ulResHi > PowerOvfl.Hi(iCurScale - 1))
+                if (ulResHi == powerOvfl[iCurScale - 1].Hi && ulResMidLo > powerOvfl[iCurScale - 1].MidLo)
                     iCurScale--;
-
-                if (ulResHi == PowerOvfl.Hi(iCurScale - 1))
-                    UpperEq(ulResMid, ulResLo, ref iCurScale);
 
                 HaveScale:
                 // iCurScale = largest power of 10 we can scale by without overflow, 
@@ -908,32 +937,19 @@ ThrowOverflow:
                 // positive if it isn't already.
                 // 
                 if (iCurScale + iScale < 0)
-                    iCurScale = -1;
+                    throw new OverflowException(SR.Overflow_Decimal);
 
                 return iCurScale;
             }
 
-            private static void UpperEq(uint ulResMid, uint ulResLo, ref int iCurScale)
-            {
-                if (ulResMid > PowerOvfl.Mid(iCurScale - 1) ||
-                    (ulResMid == PowerOvfl.Mid(iCurScale - 1) && ulResLo > PowerOvfl.Lo(iCurScale - 1)))
-                {
-                    iCurScale--;
-                }
-            }
-
             // Add a 32 bit unsigned long to an array of 3 unsigned longs representing a 96 integer
             // Returns false if there is an overflow
-            private static bool Add32To96(uint* rgulNum, uint ulValue)
+            private static bool Add32To96(ref Buf12 bufNum, uint ulValue)
             {
-                rgulNum[0] += ulValue;
-                if (rgulNum[0] < ulValue)
+                if ((bufNum.Low64 += ulValue) < ulValue)
                 {
-                    if (++rgulNum[1] == 0)
-                    {
-                        if (++rgulNum[2] == 0)
-                            return false;
-                    }
+                    if (++bufNum.U2 == 0)
+                        return false;
                 }
                 return true;
             }
@@ -1257,17 +1273,6 @@ ReturnResult:
                 return;
             }
 
-            private static void RoundUp(uint* rgulQuo, ref int iScale)
-            {
-                if (!Add32To96(rgulQuo, 1))
-                {
-                    if (iScale == 0)
-                        throw new OverflowException(SR.Overflow_Decimal);
-                    iScale--;
-                    OverflowUnscale(rgulQuo, true);
-                }
-            }
-
             // Returns the absolute value of the given Decimal. If d is
             // positive, the result is d. If d is negative, the result
             // is -d.
@@ -1296,17 +1301,17 @@ ReturnResult:
 ***********************************************************************/
             private static uint DecFixInt(ref Decimal input, ref Decimal result)
             {
-                Buf16 bufNum;
-                uint* tmpNum = (uint*)&bufNum;
+                Buf12 bufNum;
+                _ = &bufNum; // workaround for CS0165
                 uint remainder;
                 uint power;
                 int scale;
 
                 if (input.Scale > 0)
                 {
-                    tmpNum[0] = input.ulo;
-                    tmpNum[1] = input.umid;
-                    tmpNum[2] = input.uhi;
+                    bufNum.U0 = input.ulo;
+                    bufNum.U1 = input.umid;
+                    bufNum.U2 = input.uhi;
                     scale = input.Scale;
                     result.IsNegative = input.IsNegative;
                     remainder = 0;
@@ -1318,13 +1323,13 @@ ReturnResult:
                         else
                             power = s_powers10[scale];
 
-                        remainder |= Div96By32(tmpNum, power);
+                        remainder |= Div96By32(ref bufNum, power);
                         scale -= MaxInt32Scale;
                     } while (scale > 0);
 
-                    result.ulo = tmpNum[0];
-                    result.umid = tmpNum[1];
-                    result.uhi = tmpNum[2];
+                    result.ulo = bufNum.U0;
+                    result.umid = bufNum.U1;
+                    result.uhi = bufNum.U2;
                     result.Scale = 0;
 
                     return remainder;
@@ -1680,7 +1685,7 @@ ReturnResult:
 
                     // Check for leading zero ULONGs on the product
                     //
-                    var rgulProd = (uint*)&bufProd;
+                    uint* rgulProd = (uint*)&bufProd;
                     while (rgulProd[iHiProd] == 0)
                     {
                         if (iHiProd == 0)
@@ -2057,41 +2062,31 @@ ReturnZero:
             // of the operation.
             internal static void VarDecDiv(ref Decimal d1, ref Decimal d2)
             {
-                Buf16 bufQuo, bufQuoSave, bufRem, bufDivisor;
-                uint* rgulQuo = (uint*)&bufQuo;
-                uint* rgulQuoSave = (uint*)&bufQuoSave;
-                uint* rgulRem = (uint*)&bufRem;
-                uint* rgulDivisor = (uint*)&bufDivisor;
+                Buf12 bufQuo, bufDivisor;
+                _ = &bufQuo; // workaround for CS0165
+                _ = &bufDivisor; // workaround for CS0165
                 uint ulPwr;
-                uint ulTmp;
-                uint ulTmp1;
-                Split64 sdlTmp = new Split64();
-                Split64 sdlDivisor = new Split64();
-                int iScale;
                 int iCurScale;
-                bool fUnscale;
 
-                iScale = d1.Scale - d2.Scale;
-                fUnscale = false;
-                rgulDivisor[0] = d2.Low;
-                rgulDivisor[1] = d2.Mid;
-                rgulDivisor[2] = d2.High;
+                int iScale = (sbyte)(d1.uflags - d2.uflags >> ScaleShift);
+                bool fUnscale = false;
+                uint ulTmp;
 
-                if (rgulDivisor[1] == 0 && rgulDivisor[2] == 0)
+                if (d2.High == 0 && d2.Mid == 0)
                 {
                     // Divisor is only 32 bits.  Easy divide.
                     //
-                    if (rgulDivisor[0] == 0)
+                    uint den = d2.Low;
+                    if (den == 0)
                         throw new DivideByZeroException(SR.Overflow_Decimal);
 
-                    rgulQuo[0] = d1.Low;
-                    rgulQuo[1] = d1.Mid;
-                    rgulQuo[2] = d1.High;
-                    rgulRem[0] = Div96By32(rgulQuo, rgulDivisor[0]);
+                    bufQuo.Low64 = d1.Low64;
+                    bufQuo.U2 = d1.High;
+                    uint remainder = Div96By32(ref bufQuo, den);
 
                     for (;;)
                     {
-                        if (rgulRem[0] == 0)
+                        if (remainder == 0)
                         {
                             if (iScale < 0)
                             {
@@ -2121,38 +2116,32 @@ ReturnZero:
                         // is the largest value in rgulQuo[1] (when rgulQuo[2] == 4) that is 
                         // assured not to overflow.
                         // 
-                        iCurScale = SearchScale(rgulQuo[2], rgulQuo[1], rgulQuo[0], iScale);
-                        if (iCurScale == 0)
+                        if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
                         {
                             // No more scaling to be done, but remainder is non-zero.
                             // Round quotient.
                             //
-                            ulTmp = rgulRem[0] << 1;
-                            if (ulTmp < rgulRem[0] || (ulTmp >= rgulDivisor[0] &&
-                                                       (ulTmp > rgulDivisor[0] || (rgulQuo[0] & 1) != 0)))
-                                RoundUp(rgulQuo, ref iScale);
+                            ulTmp = remainder << 1;
+                            if (ulTmp < remainder || ulTmp >= den && (ulTmp > den || (bufQuo.U0 & 1) != 0))
+                                goto RoundUp;
                             break;
                         }
-
-                        if (iCurScale < 0)
-                            throw new OverflowException(SR.Overflow_Decimal);
 
                         HaveScale:
                         ulPwr = s_powers10[iCurScale];
                         iScale += iCurScale;
 
-                        if (IncreaseScale(rgulQuo, ulPwr) != 0)
-                            throw new OverflowException(SR.Overflow_Decimal);
+                        if (IncreaseScale(ref bufQuo, ulPwr) != 0)
+                            goto ThrowOverflow;
 
-                        sdlTmp.int64 = DivMod64by32(UInt32x32To64(rgulRem[0], ulPwr), rgulDivisor[0]);
-                        rgulRem[0] = sdlTmp.High32;
+                        ulong num = UInt32x32To64(remainder, ulPwr);
+                        // TODO: https://github.com/dotnet/coreclr/issues/3439
+                        uint div = (uint)(num / den);
+                        remainder = (uint)num - div * den;
 
-                        if (!Add32To96(rgulQuo, sdlTmp.Low32))
+                        if (!Add32To96(ref bufQuo, div))
                         {
-                            if (iScale == 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
-                            iScale--;
-                            OverflowUnscale(rgulQuo, (rgulRem[0] != 0));
+                            iScale = OverflowUnscale(ref bufQuo, iScale, remainder != 0);
                             break;
                         }
                     } // for (;;)
@@ -2166,68 +2155,56 @@ ReturnZero:
                     // normalize by.  The dividend will be shifted by the same amount so 
                     // the quotient is not changed.
                     //
-                    if (rgulDivisor[2] == 0)
-                        ulTmp = rgulDivisor[1];
-                    else
-                        ulTmp = rgulDivisor[2];
+                    bufDivisor.Low64 = d2.Low64;
+                    ulTmp = d2.High;
+                    bufDivisor.U2 = ulTmp;
+                    if (ulTmp == 0)
+                        ulTmp = d2.Mid;
 
-                    iCurScale = 0;
+                    iCurScale = 1;
                     if ((ulTmp & 0xFFFF0000) == 0)
                     {
-                        iCurScale += 16;
                         ulTmp <<= 16;
+                        iCurScale += 16;
                     }
                     if ((ulTmp & 0xFF000000) == 0)
                     {
-                        iCurScale += 8;
                         ulTmp <<= 8;
+                        iCurScale += 8;
                     }
                     if ((ulTmp & 0xF0000000) == 0)
                     {
-                        iCurScale += 4;
                         ulTmp <<= 4;
+                        iCurScale += 4;
                     }
                     if ((ulTmp & 0xC0000000) == 0)
                     {
-                        iCurScale += 2;
                         ulTmp <<= 2;
+                        iCurScale += 2;
                     }
-                    if ((ulTmp & 0x80000000) == 0)
-                    {
-                        iCurScale++;
-                        ulTmp <<= 1;
-                    }
+                    iCurScale += (int)ulTmp >> 31;
 
                     // Shift both dividend and divisor left by iCurScale.
                     // 
-                    sdlTmp.int64 = d1.Low64 << iCurScale;
-                    rgulRem[0] = sdlTmp.Low32;
-                    rgulRem[1] = sdlTmp.High32;
-                    sdlTmp.Low32 = d1.Mid;
-                    sdlTmp.High32 = d1.High;
-                    sdlTmp.int64 <<= iCurScale;
-                    rgulRem[2] = sdlTmp.High32;
-                    rgulRem[3] = (d1.High >> (31 - iCurScale)) >> 1;
+                    Buf16 bufRem;
+                    _ = &bufRem; // workaround for CS0165
+                    bufRem.Low64 = d1.Low64 << iCurScale;
+                    bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (31 - iCurScale) >> 1;
 
-                    sdlDivisor.Low32 = rgulDivisor[0];
-                    sdlDivisor.High32 = rgulDivisor[1];
-                    sdlDivisor.int64 <<= iCurScale;
+                    ulong divisor = bufDivisor.Low64 << iCurScale;
 
-                    if (rgulDivisor[2] == 0)
+                    if (bufDivisor.U2 == 0)
                     {
                         // Have a 64-bit divisor in sdlDivisor.  The remainder 
                         // (currently 96 bits spread over 4 ULONGs) will be < divisor.
                         // 
-                        sdlTmp.Low32 = rgulRem[2];
-                        sdlTmp.High32 = rgulRem[3];
 
-                        rgulQuo[2] = 0;
-                        rgulQuo[1] = Div96By64(rgulRem + 1, sdlDivisor);
-                        rgulQuo[0] = Div96By64(rgulRem, sdlDivisor);
+                        bufQuo.U1 = Div96By64(ref *(Buf12*)&bufRem.U1, divisor);
+                        bufQuo.U0 = Div96By64(ref *(Buf12*)&bufRem, divisor);
 
                         for (;;)
                         {
-                            if ((rgulRem[0] | rgulRem[1]) == 0)
+                            if (bufRem.Low64 == 0)
                             {
                                 if (iScale < 0)
                                 {
@@ -2243,39 +2220,30 @@ ReturnZero:
                             // Remainder is non-zero.  Scale up quotient and remainder by 
                             // powers of 10 so we can compute more significant bits.
                             // 
-                            iCurScale = SearchScale(rgulQuo[2], rgulQuo[1], rgulQuo[0], iScale);
-                            if (iCurScale == 0)
+                            if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
                             {
                                 // No more scaling to be done, but remainder is non-zero.
                                 // Round quotient.
                                 //
-                                sdlTmp.Low32 = rgulRem[0];
-                                sdlTmp.High32 = rgulRem[1];
-                                if (sdlTmp.High32 >= 0x80000000 || (sdlTmp.int64 <<= 1) > sdlDivisor.int64 ||
-                                    (sdlTmp.int64 == sdlDivisor.int64 && (rgulQuo[0] & 1) != 0))
-                                    RoundUp(rgulQuo, ref iScale);
+                                ulong tmp = bufRem.Low64;
+                                if ((long)tmp < 0 || (tmp <<= 1) > divisor ||
+                                  (tmp == divisor && (bufQuo.U0 & 1) != 0))
+                                    goto RoundUp;
                                 break;
                             }
-
-                            if (iCurScale < 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
 
                             HaveScale64:
                             ulPwr = s_powers10[iCurScale];
                             iScale += iCurScale;
 
-                            if (IncreaseScale(rgulQuo, ulPwr) != 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
+                            if (IncreaseScale(ref bufQuo, ulPwr) != 0)
+                                goto ThrowOverflow;
 
-                            rgulRem[2] = 0;  // rem is 64 bits, IncreaseScale uses 96
-                            IncreaseScale(rgulRem, ulPwr);
-                            ulTmp = Div96By64(rgulRem, sdlDivisor);
-                            if (!Add32To96(rgulQuo, ulTmp))
+                            IncreaseScale64(ref *(Buf12*)&bufRem, ulPwr);
+                            ulTmp = Div96By64(ref *(Buf12*)&bufRem, divisor);
+                            if (!Add32To96(ref bufQuo, ulTmp))
                             {
-                                if (iScale == 0)
-                                    throw new OverflowException(SR.Overflow_Decimal);
-                                iScale--;
-                                OverflowUnscale(rgulQuo, (rgulRem[0] != 0 || rgulRem[1] != 0));
+                                iScale = OverflowUnscale(ref bufQuo, iScale, bufRem.Low64 != 0);
                                 break;
                             }
                         } // for (;;)
@@ -2286,23 +2254,18 @@ ReturnZero:
                         //
                         // Start by finishing the shift left by iCurScale.
                         //
-                        sdlTmp.Low32 = rgulDivisor[1];
-                        sdlTmp.High32 = rgulDivisor[2];
-                        sdlTmp.int64 <<= iCurScale;
-                        rgulDivisor[0] = sdlDivisor.Low32;
-                        rgulDivisor[1] = sdlDivisor.High32;
-                        rgulDivisor[2] = sdlTmp.High32;
+                        uint tmp = (uint)(bufDivisor.High64 >> (31 - iCurScale) >> 1);
+                        bufDivisor.Low64 = divisor;
+                        bufDivisor.U2 = tmp;
 
                         // The remainder (currently 96 bits spread over 4 ULONGs) 
                         // will be < divisor.
                         //
-                        rgulQuo[2] = 0;
-                        rgulQuo[1] = 0;
-                        rgulQuo[0] = Div128By96(rgulRem, rgulDivisor);
+                        bufQuo.Low64 = Div128By96(ref bufRem, ref bufDivisor);
 
                         for (;;)
                         {
-                            if ((rgulRem[0] | rgulRem[1] | rgulRem[2]) == 0)
+                            if ((bufRem.Low64 | bufRem.U2) == 0)
                             {
                                 if (iScale < 0)
                                 {
@@ -2318,56 +2281,48 @@ ReturnZero:
                             // Remainder is non-zero.  Scale up quotient and remainder by 
                             // powers of 10 so we can compute more significant bits.
                             //
-                            iCurScale = SearchScale(rgulQuo[2], rgulQuo[1], rgulQuo[0], iScale);
-                            if (iCurScale == 0)
+                            if (iScale == DEC_SCALE_MAX || (iCurScale = SearchScale(ref bufQuo, iScale)) == 0)
                             {
                                 // No more scaling to be done, but remainder is non-zero.
                                 // Round quotient.
                                 //
-                                if (rgulRem[2] >= 0x80000000)
+                                if ((int)bufRem.U2 < 0)
                                 {
-                                    RoundUp(rgulQuo, ref iScale);
-                                    break;
+                                    goto RoundUp;
                                 }
 
-                                ulTmp = (rgulRem[0] > 0x80000000) ? 1u : 0u;
-                                ulTmp1 = (rgulRem[1] > 0x80000000) ? 1u : 0u;
-                                rgulRem[0] <<= 1;
-                                rgulRem[1] = (rgulRem[1] << 1) + ulTmp;
-                                rgulRem[2] = (rgulRem[2] << 1) + ulTmp1;
+                                ulTmp = bufRem.U1 >> 31;
+                                bufRem.Low64 <<= 1;
+                                bufRem.U2 = (bufRem.U2 << 1) + ulTmp;
 
-                                if (rgulRem[2] > rgulDivisor[2] || rgulRem[2] == rgulDivisor[2] &&
-                                    (rgulRem[1] > rgulDivisor[1] || rgulRem[1] == rgulDivisor[1] &&
-                                     (rgulRem[0] > rgulDivisor[0] || rgulRem[0] == rgulDivisor[0] &&
-                                      (rgulQuo[0] & 1) != 0)))
-                                    RoundUp(rgulQuo, ref iScale);
+                                if (bufRem.U2 > bufDivisor.U2 || bufRem.U2 == bufDivisor.U2 &&
+                                  (bufRem.Low64 > bufDivisor.Low64 || bufRem.Low64 == bufDivisor.Low64 &&
+                                  (bufQuo.U0 & 1) != 0))
+                                    goto RoundUp;
                                 break;
                             }
-
-                            if (iCurScale < 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
 
                             HaveScale96:
                             ulPwr = s_powers10[iCurScale];
                             iScale += iCurScale;
 
-                            if (IncreaseScale(rgulQuo, ulPwr) != 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
+                            if (IncreaseScale(ref bufQuo, ulPwr) != 0)
+                                goto ThrowOverflow;
 
-                            rgulRem[3] = IncreaseScale(rgulRem, ulPwr);
-                            ulTmp = Div128By96(rgulRem, rgulDivisor);
-                            if (!Add32To96(rgulQuo, ulTmp))
+                            bufRem.U3 = IncreaseScale(ref *(Buf12*)&bufRem, ulPwr);
+                            ulTmp = Div128By96(ref bufRem, ref bufDivisor);
+                            if (!Add32To96(ref bufQuo, ulTmp))
                             {
-                                if (iScale == 0)
-                                    throw new OverflowException(SR.Overflow_Decimal);
-                                iScale--;
-                                OverflowUnscale(rgulQuo, (rgulRem[0] != 0 || rgulRem[1] != 0 || rgulRem[2] != 0 || rgulRem[3] != 0));
+                                iScale = OverflowUnscale(ref bufQuo, iScale, (bufRem.Low64 | bufRem.High64) != 0);
                                 break;
                             }
                         } // for (;;)
                     }
                 }
 
+Unscale:
+                ulong low64 = bufQuo.Low64;
+                uint high = bufQuo.U2;
                 // We need to unscale if and only if we have a non-zero remainder
                 if (fUnscale)
                 {
@@ -2381,74 +2336,79 @@ ReturnZero:
                     // we can extract.  We use this as a quick test on whether to try a
                     // given power.
                     // 
-                    while ((rgulQuo[0] & 0xFF) == 0 && iScale >= 8)
+                    while (((uint)low64 & 0xFF) == 0 && iScale >= 8)
                     {
-                        rgulQuoSave[0] = rgulQuo[0];
-                        rgulQuoSave[1] = rgulQuo[1];
-                        rgulQuoSave[2] = rgulQuo[2];
-
-                        if (Div96By32(rgulQuoSave, 100000000) == 0)
+                        if (Div96ByConst100000000(ref bufQuo) == 0)
                         {
-                            rgulQuo[0] = rgulQuoSave[0];
-                            rgulQuo[1] = rgulQuoSave[1];
-                            rgulQuo[2] = rgulQuoSave[2];
+                            low64 = bufQuo.Low64;
+                            high = bufQuo.U2;
                             iScale -= 8;
                         }
                         else
+                        {
+                            bufQuo.Low64 = low64;
+                            bufQuo.U2 = high;
                             break;
+                        }
                     }
 
-                    if ((rgulQuo[0] & 0xF) == 0 && iScale >= 4)
+                    if (((uint)low64 & 0xF) == 0 && iScale >= 4)
                     {
-                        rgulQuoSave[0] = rgulQuo[0];
-                        rgulQuoSave[1] = rgulQuo[1];
-                        rgulQuoSave[2] = rgulQuo[2];
-
-                        if (Div96By32(rgulQuoSave, 10000) == 0)
+                        if (Div96ByConst10000(ref bufQuo) == 0)
                         {
-                            rgulQuo[0] = rgulQuoSave[0];
-                            rgulQuo[1] = rgulQuoSave[1];
-                            rgulQuo[2] = rgulQuoSave[2];
+                            low64 = bufQuo.Low64;
+                            high = bufQuo.U2;
                             iScale -= 4;
                         }
+                        else
+                        {
+                            bufQuo.Low64 = low64;
+                            bufQuo.U2 = high;
+                        }
                     }
 
-                    if ((rgulQuo[0] & 3) == 0 && iScale >= 2)
+                    if (((uint)low64 & 3) == 0 && iScale >= 2)
                     {
-                        rgulQuoSave[0] = rgulQuo[0];
-                        rgulQuoSave[1] = rgulQuo[1];
-                        rgulQuoSave[2] = rgulQuo[2];
-
-                        if (Div96By32(rgulQuoSave, 100) == 0)
+                        if (Div96ByConst100(ref bufQuo) == 0)
                         {
-                            rgulQuo[0] = rgulQuoSave[0];
-                            rgulQuo[1] = rgulQuoSave[1];
-                            rgulQuo[2] = rgulQuoSave[2];
+                            low64 = bufQuo.Low64;
+                            high = bufQuo.U2;
                             iScale -= 2;
                         }
+                        else
+                        {
+                            bufQuo.Low64 = low64;
+                            bufQuo.U2 = high;
+                        }
                     }
 
-                    if ((rgulQuo[0] & 1) == 0 && iScale >= 1)
+                    if (((uint)low64 & 1) == 0 && iScale >= 1 && Div96ByConst10(ref bufQuo) == 0)
                     {
-                        rgulQuoSave[0] = rgulQuo[0];
-                        rgulQuoSave[1] = rgulQuo[1];
-                        rgulQuoSave[2] = rgulQuo[2];
-
-                        if (Div96By32(rgulQuoSave, 10) == 0)
-                        {
-                            rgulQuo[0] = rgulQuoSave[0];
-                            rgulQuo[1] = rgulQuoSave[1];
-                            rgulQuo[2] = rgulQuoSave[2];
-                            iScale -= 1;
-                        }
+                        low64 = bufQuo.Low64;
+                        high = bufQuo.U2;
+                        iScale -= 1;
                     }
                 }
 
-                d1.IsNegative = d1.IsNegative ^ d2.IsNegative;
-                d1.High = rgulQuo[2];
-                d1.Mid = rgulQuo[1];
-                d1.Low = rgulQuo[0];
-                d1.Scale = iScale;
+                d1.uflags = ((d1.uflags ^ d2.uflags) & SignMask) | ((uint)iScale << ScaleShift);
+                d1.High = high;
+                d1.Low64 = low64;
+                return;
+
+RoundUp:
+                {
+                    if (++bufQuo.Low64 == 0)
+                    {
+                        if (++bufQuo.U2 == 0)
+                        {
+                            iScale = OverflowUnscale(ref bufQuo, iScale, true);
+                        }
+                    }
+                    goto Unscale;
+                }
+
+ThrowOverflow:
+                throw new OverflowException(SR.Overflow_Decimal);
             }
 
             //**********************************************************************
@@ -2486,8 +2446,8 @@ ReturnZero:
             //**********************************************************************
             internal static void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
             {
-                Buf16 bufNum;
-                uint* tmpNum = (uint*)&bufNum;
+                Buf12 bufNum;
+                _ = &bufNum; // workaround for CS0165
                 uint remainder;
                 uint sticky;
                 uint power;
@@ -2498,9 +2458,9 @@ ReturnZero:
                 scale = input.Scale - decimals;
                 if (scale > 0)
                 {
-                    tmpNum[0] = input.ulo;
-                    tmpNum[1] = input.umid;
-                    tmpNum[2] = input.uhi;
+                    bufNum.U0 = input.ulo;
+                    bufNum.U1 = input.umid;
+                    bufNum.U2 = input.uhi;
                     result.IsNegative = input.IsNegative;
                     remainder = sticky = 0;
 
@@ -2512,23 +2472,23 @@ ReturnZero:
                         else
                             power = s_powers10[scale];
 
-                        remainder = Div96By32(tmpNum, power);
+                        remainder = Div96By32(ref bufNum, power);
                         scale -= MaxInt32Scale;
                     } while (scale > 0);
 
                     // Now round.  ulRem has last remainder, ulSticky has sticky bits.        
                     // To do IEEE rounding, we add LSB of result to sticky bits so        
                     // either causes round up if remainder * 2 == last divisor.        
-                    sticky |= tmpNum[0] & 1;
+                    sticky |= bufNum.U0 & 1;
                     remainder = (remainder << 1) + (uint)(sticky != 0 ? 1 : 0);
                     if (power < remainder
-                        && ++tmpNum[0] == 0
-                        && ++tmpNum[1] == 0)
-                        ++tmpNum[2];
+                        && ++bufNum.U0 == 0
+                        && ++bufNum.U1 == 0)
+                        ++bufNum.U2;
 
-                    result.ulo = tmpNum[0];
-                    result.umid = tmpNum[1];
-                    result.uhi = tmpNum[2];
+                    result.ulo = bufNum.U0;
+                    result.umid = bufNum.U1;
+                    result.uhi = bufNum.U2;
                     result.Scale = decimals;
                     return;
                 }
@@ -2761,50 +2721,116 @@ ReturnZero:
                 }
             }
 
-            private static class PowerOvfl
+            struct PowerOvfl
             {
-                private static uint[] s_powerOvfl =
-                {
-                    // This is a table of the largest values that can be in the upper two
-                    // ULONGs of a 96-bit number that will not overflow when multiplied
-                    // by a given power.  For the upper word, this is a table of 
-                    // 2^32 / 10^n for 1 <= n <= 9.  For the lower word, this is the
-                    // remaining fraction part * 2^32.  2^32 = 4294967296.
-                    //
-                    // Table logically consists of three components for each entry (high,
-                    // mid and low) but we declare it as a flat array of uints since that's
-                    // all C# will support. We hide this via the accessor methods on this
-                    // class.
-                    //
-                    429496729, 2576980377, 2576980377,  // 10^1 remainder 0.6
-                    42949672,  4123168604, 687194767,   // 10^2 remainder 0.16
-                    4294967,   1271310319, 2645699854,  // 10^3 remainder 0.616
-                    429496,    3133608139, 694066715,   // 10^4 remainder 0.1616
-                    42949,     2890341191, 2216890319,  // 10^5 remainder 0.51616
-                    4294,      4154504685, 2369172679,  // 10^6 remainder 0.551616
-                    429,       2133437386, 4102387834,  // 10^7 remainder 0.9551616
-                    42,        4078814305, 410238783,   // 10^8 remainder 0.09991616
-                    4,         1266874889, 3047500985,  // 10^9 remainder 0.709551616
-                };
+                public readonly uint Hi;
+                public readonly ulong MidLo;
 
-                public static uint Hi(int index)
+                public PowerOvfl(uint hi, uint mid, uint lo)
                 {
-                    return s_powerOvfl[index * 3];
-                }
-
-                public static uint Mid(int index)
-                {
-                    return s_powerOvfl[(index * 3) + 1];
-                }
-
-                public static uint Lo(int index)
-                {
-                    return s_powerOvfl[(index * 3) + 2];
+                    Hi = hi;
+                    MidLo = ((ulong)mid << 32) + lo;
                 }
             }
 
-            [StructLayout(LayoutKind.Explicit, Size = 16)]
-            private struct Buf16 { }
+            static readonly PowerOvfl[] PowerOvflValues = new[]
+            {
+                // This is a table of the largest values that can be in the upper two
+                // ULONGs of a 96-bit number that will not overflow when multiplied
+                // by a given power.  For the upper word, this is a table of 
+                // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
+                // remaining fraction part * 2^32.  2^32 = 4294967296.
+                //
+                new PowerOvfl(429496729, 2576980377, 2576980377),  // 10^1 remainder 0.6
+                new PowerOvfl(42949672,  4123168604, 687194767),   // 10^2 remainder 0.16
+                new PowerOvfl(4294967,   1271310319, 2645699854),  // 10^3 remainder 0.616
+                new PowerOvfl(429496,    3133608139, 694066715),   // 10^4 remainder 0.1616
+                new PowerOvfl(42949,     2890341191, 2216890319),  // 10^5 remainder 0.51616
+                new PowerOvfl(4294,      4154504685, 2369172679),  // 10^6 remainder 0.551616
+                new PowerOvfl(429,       2133437386, 4102387834),  // 10^7 remainder 0.9551616
+                new PowerOvfl(42,        4078814305, 410238783),   // 10^8 remainder 0.09991616
+            };
+
+            [StructLayout(LayoutKind.Explicit)]
+            private struct Buf12
+            {
+                [FieldOffset(0 * 4)]
+                public uint U0;
+                [FieldOffset(1 * 4)]
+                public uint U1;
+                [FieldOffset(2 * 4)]
+                public uint U2;
+
+                [FieldOffset(0)]
+                private ulong ulo64LE;
+                [FieldOffset(4)]
+                private ulong uhigh64LE;
+
+                public ulong Low64
+                {
+#if BIGENDIAN
+                    get => ((ulong)U1 << 32) | U0;
+                    set { U1 = (uint)(value >> 32); U0 = (uint)value; }
+#else
+                    get => ulo64LE;
+                    set => ulo64LE = value;
+#endif
+                }
+
+                /// <summary>
+                /// U1-U2 combined (overlaps with Low64)
+                /// </summary>
+                public ulong High64
+                {
+#if BIGENDIAN
+                    get => ((ulong)U2 << 32) | U1;
+                    set { U2 = (uint)(value >> 32); U1 = (uint)value; }
+#else
+                    get => uhigh64LE;
+                    set => uhigh64LE = value;
+#endif
+                }
+            }
+
+            [StructLayout(LayoutKind.Explicit)]
+            private struct Buf16
+            {
+                [FieldOffset(0 * 4)]
+                public uint U0;
+                [FieldOffset(1 * 4)]
+                public uint U1;
+                [FieldOffset(2 * 4)]
+                public uint U2;
+                [FieldOffset(3 * 4)]
+                public uint U3;
+
+                [FieldOffset(0 * 8)]
+                private ulong ulo64LE;
+                [FieldOffset(1 * 8)]
+                private ulong uhigh64LE;
+
+                public ulong Low64
+                {
+#if BIGENDIAN
+                    get => ((ulong)U1 << 32) | U0;
+                    set { U1 = (uint)(value >> 32); U0 = (uint)value; }
+#else
+                    get => ulo64LE;
+                    set => ulo64LE = value;
+#endif
+                }
+
+                public ulong High64
+                {
+#if BIGENDIAN
+                    get => ((ulong)U3 << 32) | U2;
+                    set { U3 = (uint)(value >> 32); U2 = (uint)value; }
+#else
+                    get => uhigh64LE;
+                    set => uhigh64LE = value;
+#endif
+                }
+            }
 
             [StructLayout(LayoutKind.Explicit)]
             private struct Buf24
