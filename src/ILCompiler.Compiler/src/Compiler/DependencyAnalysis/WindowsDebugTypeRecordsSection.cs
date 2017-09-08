@@ -44,10 +44,9 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            Debug.Assert(_dbgInfoWriter == null); // Type records should all be written and writing shutdown before reaching this point
-
             byte[] typeRecords = _dbgInfo.GetRawBlob().ToArray();
             _dbgInfo = null; // Neuter the section so that it cannot grow any larger
+            Neuter(); // Neuter the writer so that nothing else can attempt to add new types
 
             return new ObjectData(typeRecords, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

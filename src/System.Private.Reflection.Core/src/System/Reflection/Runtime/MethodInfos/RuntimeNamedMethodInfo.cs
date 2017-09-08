@@ -6,9 +6,11 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
 
@@ -80,7 +82,14 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
+                {
+                    yield return cad;
+                }
+
+                MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
+                if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
+                    yield return new RuntimePseudoCustomAttributeData(typeof(PreserveSigAttribute), null, null);
             }
         }
 

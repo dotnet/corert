@@ -104,10 +104,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes))
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes);
             }
         }
 

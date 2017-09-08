@@ -175,17 +175,6 @@ namespace Internal.Reflection.Core.Execution
             }
         }
 
-        //
-        // Get or create a CustomAttributeData object for a specific type and arguments. 
-        //
-        public CustomAttributeData GetCustomAttributeData(Type attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
-        {
-            if (!attributeType.IsRuntimeImplemented())
-                throw new InvalidOperationException();
-            RuntimeTypeInfo runtimeAttributeType = attributeType.CastToRuntimeTypeInfo();
-            return new RuntimePseudoCustomAttributeData(runtimeAttributeType, constructorArguments, namedArguments);
-        }
-
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.

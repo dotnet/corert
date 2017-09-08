@@ -42,24 +42,6 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.GetCustomAttributes());
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-
-                if (0 != (_typeDefinition.Attributes & TypeAttributes.Import))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(ComImportAttribute), null, null);
-            }
-        }
-
         protected sealed override Guid? ComputeGuidFromCustomAttributes()
         {
             //
@@ -217,6 +199,8 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             string name = _typeDefinition.Name.GetString(_reader);
             return name.EscapeTypeNameIdentifier();
         }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.GetCustomAttributes());
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
