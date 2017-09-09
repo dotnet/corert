@@ -7,13 +7,11 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public sealed class FieldOffsetAttribute : Attribute
     {
-        private int _val;
-
         public FieldOffsetAttribute(int offset)
         {
-            _val = offset;
+            Value = offset;
         }
 
-        public int Value => _val;
+        public int Value { get; }
     }
 }
