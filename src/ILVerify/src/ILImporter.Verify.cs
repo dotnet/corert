@@ -96,6 +96,16 @@ namespace Internal.IL
             public int? TryIndex;
             public int? HandlerIndex;
             public int? FilterIndex;
+
+            public int ErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementErrorCount()
+            {
+                ErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -271,12 +281,18 @@ namespace Internal.IL
         // If not, report verification error and continue verification.
         void VerificationError(VerifierError error)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
             ReportVerificationError(args);
         }
 
         void VerificationError(VerifierError error, object found)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error,
@@ -288,6 +304,9 @@ namespace Internal.IL
 
         void VerificationError(VerifierError error, object found, object expected)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error, 
@@ -381,8 +400,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.TryIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
                     // If target is inside source region
                     if (srcRegion.TryOffset <= targetRegion.TryOffset && 
                         target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
@@ -404,8 +423,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.FilterIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
@@ -421,8 +440,8 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    var srcRegion = _exceptionRegions[(int)src.HandlerIndex].ILRegion;
-                    var targetRegion = _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
@@ -1116,9 +1135,21 @@ namespace Internal.IL
                     
                     if (entryStack[i].Type != _stack[i].Type)
                     {
-                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
-                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
-                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                        if (!IsAssignable(_stack[i], entryStack[i]))
+                        {
+                            StackValue mergedValue;
+                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                            // If merge actually changed entry stack
+                            if (mergedValue != entryStack[i])
+                            {
+                                entryStack[i] = mergedValue;
+
+                                if (next.ErrorCount == 0)
+                                    next.EndOffset = 0; // Make sure block is reverified
+                            }
+                        }
                     }
                 }
             }

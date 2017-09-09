@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime;
 
 namespace System.Collections.ObjectModel
 {
+    [Serializable]
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>
     {
@@ -24,7 +21,7 @@ namespace System.Collections.ObjectModel
         {
             if (list == null)
             {
-                throw new ArgumentNullException(nameof(list));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
             }
             this.list = list;
         }
@@ -77,33 +74,34 @@ namespace System.Collections.ObjectModel
             get { return list[index]; }
             set
             {
-                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
             }
         }
 
         void ICollection<T>.Add(T value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void ICollection<T>.Clear()
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void IList<T>.Insert(int index, T value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         bool ICollection<T>.Remove(T value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
+            return false;
         }
 
         void IList<T>.RemoveAt(int index)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -140,27 +138,27 @@ namespace System.Collections.ObjectModel
         {
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
             if (array.Rank != 1)
             {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
 
             if (array.GetLowerBound(0) != 0)
             {
-                throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
             }
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (array.Length - index < Count)
             {
-                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
 
             T[] items = array as T[];
@@ -170,19 +168,18 @@ namespace System.Collections.ObjectModel
             }
             else
             {
-                /* ProjectN port note: IsAssignable no longer available on Type surface area. This is a non-reliable check so we should be able to do without.
                 //
                 // Catch the obvious case assignment will fail.
-                // We can found all possible problems by doing the check though.
+                // We can't find all possible problems by doing the check though.
                 // For example, if the element type of the Array is derived from T,
                 // we can't figure out if we can successfully copy the element beforehand.
                 //
-                IResolvedRuntimeType targetType = array.GetType().GetElementType().ResolvedType;
-                IResolvedRuntimeType sourceType = typeof(T).ResolvedType;
-                if(!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType))) {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType);
+                Type targetType = array.GetType().GetElementType();
+                Type sourceType = typeof(T);
+                if (!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType)))
+                {
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
-                */
 
                 //
                 // We can't cast array of value type to object[], so we don't support 
@@ -191,7 +188,7 @@ namespace System.Collections.ObjectModel
                 object[] objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
 
                 int count = list.Count;
@@ -204,7 +201,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
             }
         }
@@ -224,18 +221,19 @@ namespace System.Collections.ObjectModel
             get { return list[index]; }
             set
             {
-                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
             }
         }
 
         int IList.Add(object value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
+            return -1;
         }
 
         void IList.Clear()
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         private static bool IsCompatibleObject(object value)
@@ -265,17 +263,17 @@ namespace System.Collections.ObjectModel
 
         void IList.Insert(int index, object value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void IList.Remove(object value)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
         void IList.RemoveAt(int index)
         {
-            throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
     }
 }

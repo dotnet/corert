@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, Inherited = false)]
-    public unsafe sealed class MarshalAsAttribute : Attribute
+    public sealed class MarshalAsAttribute : Attribute
     {
-        internal UnmanagedType _val;
+        private UnmanagedType _val;
+
         public MarshalAsAttribute(UnmanagedType unmanagedType)
         {
             _val = unmanagedType;
@@ -18,7 +17,8 @@ namespace System.Runtime.InteropServices
         {
             _val = (UnmanagedType)unmanagedType;
         }
-        public UnmanagedType Value { get { return _val; } }
+
+        public UnmanagedType Value => _val;
 
         // Fields used with SubType = SafeArray.
         public VarEnum SafeArraySubType;
@@ -34,8 +34,8 @@ namespace System.Runtime.InteropServices
         public int SizeConst;                // constant C
 
         // Fields used with SubType = CustomMarshaler
-        public String MarshalType;              // Name of marshaler class
+        public string MarshalType;              // Name of marshaler class
         public Type MarshalTypeRef;           // Type of marshaler class
-        public String MarshalCookie;            // cookie to pass to marshaler
+        public string MarshalCookie;            // cookie to pass to marshaler
     }
 }

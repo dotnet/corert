@@ -37,6 +37,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -65,11 +66,7 @@ namespace System
 
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
         {
-            throw GetArgumentOutOfRangeException(argument);
-        }
-        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument)
-        {
-            return new ArgumentOutOfRangeException(GetArgumentName(argument));
+            throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
@@ -85,6 +82,21 @@ namespace System
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort);
         }
+        internal static void ThrowArgumentOutOfRange_IndexException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_Index);
+        }
+        internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        internal static void ThrowArgumentException(ExceptionResource resource)
+        {
+            throw new ArgumentException(GetResourceString(resource));
+        }
 
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
@@ -95,13 +107,24 @@ namespace System
             return new ArgumentException(GetResourceString(resource), GetArgumentName(argument));
         }
 
+        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        {
+            throw new ArgumentException(GetResourceString(ExceptionResource.Argument_InvalidArrayType));
+        }
+
+        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
+        }
+
+        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            throw GetWrongValueTypeArgumentException(value, targetType);
+        }
+
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
-            throw GetArgumentNullException(argument);
-        }
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
-        {
-            return new ArgumentNullException(GetArgumentName(argument));
+            throw new ArgumentNullException(GetArgumentName(argument));
         }
 
         internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
@@ -112,6 +135,22 @@ namespace System
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw new InvalidOperationException(GetResourceString(resource));
+        }
+
+        internal static void ThrowNotSupportedException(ExceptionResource resource)
+        {
+            throw new NotSupportedException(GetResourceString(resource));
+        }
+
+        // Allow nulls for reference types and Nullable<U>, but not for value types.
+        // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
+        // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName)
+        {
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            if (!(default(T) == null) && value == null)
+                ThrowHelper.ThrowArgumentNullException(argName);
         }
 
         private static string GetArgumentName(ExceptionArgument argument)
@@ -138,6 +177,10 @@ namespace System
                     return "input";
                 case ExceptionArgument.ownedMemory:
                     return "ownedMemory";
+                case ExceptionArgument.list:
+                    return "list";
+                case ExceptionArgument.index:
+                    return "index";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -157,6 +200,18 @@ namespace System
                     return SR.Memory_ThrowIfDisposed;
                 case ExceptionResource.Memory_OutstandingReferences:
                     return SR.Memory_OutstandingReferences;
+                case ExceptionResource.NotSupported_ReadOnlyCollection:
+                    return SR.NotSupported_ReadOnlyCollection;
+                case ExceptionResource.Arg_RankMultiDimNotSupported:
+                    return SR.Arg_RankMultiDimNotSupported;
+                case ExceptionResource.Arg_NonZeroLowerBound:
+                    return SR.Arg_NonZeroLowerBound;
+                case ExceptionResource.ArgumentOutOfRange_ListInsert:
+                    return SR.ArgumentOutOfRange_ListInsert;
+                case ExceptionResource.Argument_InvalidArrayType:
+                    return SR.Argument_InvalidArrayType;
+                case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
+                    return SR.ArgumentOutOfRange_NeedNonNegNum;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -180,6 +235,8 @@ namespace System
         s,
         input,
         ownedMemory,
+        list,
+        index,
     }
 
     //
@@ -191,5 +248,11 @@ namespace System
         Arg_ArrayPlusOffTooSmall,
         Memory_ThrowIfDisposed,
         Memory_OutstandingReferences,
+        NotSupported_ReadOnlyCollection,
+        Arg_RankMultiDimNotSupported,
+        Arg_NonZeroLowerBound,
+        ArgumentOutOfRange_ListInsert,
+        Argument_InvalidArrayType,
+        ArgumentOutOfRange_NeedNonNegNum,
     }
 }

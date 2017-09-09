@@ -10,6 +10,40 @@
 {
 }
 
+// Custom Comparer class implementing IEqualityComparer for testing
+.class private auto ansi beforefieldinit CustomComparer
+    extends [System.Runtime]System.Object
+    implements [System.Runtime]System.Collections.IEqualityComparer
+{
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        ldarg.0
+        call      instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public final hidebysig newslot virtual 
+        instance bool Equals (
+            object x,
+            object y
+        ) cil managed 
+    {
+        ldc.i4.0
+        ret
+    }
+
+    .method public final hidebysig newslot virtual 
+        instance int32 GetHashCode (
+            object obj
+        ) cil managed 
+    {
+        ldarg.1
+        callvirt  instance int32 [System.Runtime]System.Object::GetHashCode()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit BranchingTestsType
        extends [System.Runtime]System.Object
 {
@@ -40,7 +74,7 @@
         IL_0014: ret
     }
 
-    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected.PathStackUnexpected() cil managed
+    .method static public hidebysig void Branching.NullConditional_Invalid_StackUnexpected() cil managed
     {
         //object o = null;
         //Type t = o != null ? o.GetType() : o;
@@ -65,6 +99,140 @@
         IL_000E: call      valuetype [System.Runtime]System.TypeCode [System.Runtime]System.Type::GetTypeCode(class [System.Runtime]System.Type)
         IL_0013: pop
         IL_0014: ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMerge_Valid(class [System.Runtime]System.Collections.IEqualityComparer equalityComparer,
+        class CustomComparer customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
+        )
+
+        ldc.i4.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeConstrained_Valid<([System.Runtime]System.Collections.IEqualityComparer) T>
+        (class [System.Runtime]System.Collections.IEqualityComparer equalityComparer, !!T customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer
+        )
+
+        ldc.i4.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+        box     !!T
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeArrays_Valid(class CustomComparer[] comparers,
+        class [System.Runtime]System.Collections.IEqualityComparer[] customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class [System.Runtime]System.Collections.IEqualityComparer[]
+        )
+
+        ldarg.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeArrays_Invalid_StackUnexpected(class CustomComparer[] comparers,
+        class [System.Runtime]System.Collections.IEqualityComparer[] customComparer) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] class CustomComparer[]
+        )
+
+        ldarg.0
+        brfalse.s   lbl_cComp
+
+        ldarg.0
+        br.s        lbl_store
+
+    lbl_cComp:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeGeneric_Invalid_PathStackUnexpected<T>(!!T generic,
+        object obj) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] object obj
+        )
+
+        ldarg.1
+        brfalse.s   lbl_gen
+
+        ldarg.1
+        br.s        lbl_store
+
+    lbl_gen:
+        ldarg.0
+
+    lbl_store:
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Branching.UnequalStackMergeGenericArrayConstrain_Valid<(int32[]) T>(!!T generic,
+        int32[] arr) cil managed
+    {
+        .maxstack 1
+        .locals init(
+            [0] int32[] dest
+        )
+
+        ldarg.1
+        brfalse.s   lbl_arr
+
+        ldarg.0
+        box     !!T
+        br.s        lbl_store
+
+    lbl_arr:
+        ldarg.1
+
+    lbl_store:
+        stloc.0
+        ret
     }
 
     .method static public hidebysig void Branching.InsideTry_Valid() cil managed
