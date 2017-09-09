@@ -4,13 +4,13 @@
 
 // Note: If you add a new ctor overloads you need to update ParameterInfo.RawDefaultValue
 
-using System.Collections.Generic;
-
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed class DecimalConstantAttribute : Attribute
     {
+        private Decimal _dec;
+
         [CLSCompliant(false)]
         public DecimalConstantAttribute(
             byte scale,
@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
             uint low
         )
         {
-            _dec = new System.Decimal((int)low, (int)mid, (int)hi, (sign != 0), scale);
+            _dec = new Decimal((int)low, (int)mid, (int)hi, (sign != 0), scale);
         }
 
         public DecimalConstantAttribute(
@@ -31,18 +31,9 @@ namespace System.Runtime.CompilerServices
             int low
         )
         {
-            _dec = new System.Decimal(low, mid, hi, (sign != 0), scale);
+            _dec = new Decimal(low, mid, hi, (sign != 0), scale);
         }
 
-        public System.Decimal Value
-        {
-            get
-            {
-                return _dec;
-            }
-        }
-
-        private System.Decimal _dec;
+        public Decimal Value => _dec;
     }
 }
-
