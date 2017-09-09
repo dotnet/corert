@@ -27,12 +27,13 @@ See the LICENSE file in the project root for more information.
   <PropertyGroup>
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
 
     <IlcOutputFileExt>$(NativeObjectExt)</IlcOutputFileExt>
     <IlcOutputFileExt Condition="$(NativeCodeGen) == 'cpp'">.cpp</IlcOutputFileExt>
-    <IlcOutputFileExt Condition="$(NativeCodeGen) == 'wasm'">.wasm</IlcOutputFileExt>
+    <IlcOutputFileExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</IlcOutputFileExt>
 
 
     <NativeBinaryExt Condition="'$(OutputType)' ==  'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
@@ -40,17 +41,17 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'OSX'">.dylib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(TargetOS)' !=  'OSX'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
-    <IlcCompileOutput Condition="$(NativeCodeGen) == 'wasm'">$(NativeIntermediateOutputPath)$(TargetName).wasm</IlcCompileOutput>
 
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
-    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'wasm'">WasmCompile</LinkNativeDependsOn>
+    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'wasm'">IlcCompile</LinkNativeDependsOn>
 
     <FrameworkLibPath Condition="'$(FrameworkLibPath)' == ''">$(NativeOutputPath)</FrameworkLibPath>
     <FrameworkObjPath Condition="'$(FrameworkObjPath)' == ''">$(NativeIntermediateOutputPath)</FrameworkObjPath>
@@ -135,26 +136,7 @@ See the LICENSE file in the project root for more information.
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)cl.rsp" Lines="@(CompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
     <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
   </Target>
-
-  <Target Name="WasmCompile"
-      Inputs="$(IlcCompileOutput)"
-      Outputs="$(NativeObject)"
-      DependsOnTargets="IlcCompile">
-<!-- TODO : Figure out how to compile wasm
-    <ItemGroup>
-      <CompilerArg Include="$(IlcCompileOutput)" />
-      <CompilerArg Include="/Fo$(NativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
-      <CompilerArg Include="-o $(NativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
-      <CompilerArg Include="@(CppCompilerAndLinkerArg)" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <Exec Command="$(CppCompiler) @(CompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)cl.rsp" Lines="@(CompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
-    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
-  -->
-  </Target>
-
+  
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"
@@ -170,7 +152,10 @@ See the LICENSE file in the project root for more information.
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
-    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeCodeGen)' != 'wasm'" />
+    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot;  &quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
+    <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSCRIPTEN environment variable points to the directory containing emcc.bat"
+             Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' == ''" />
   </Target>
 
   <Target Name="CreateLib"

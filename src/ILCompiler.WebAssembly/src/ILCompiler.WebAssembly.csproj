@@ -18,6 +18,9 @@
     <PackageReference Include="LLVMSharp">
       <Version>3.9.1-rc3</Version>
     </PackageReference>
+    <PackageReference Include="libLLVM">
+      <Version>3.9.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
