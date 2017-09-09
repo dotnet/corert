@@ -8,10 +8,12 @@ namespace System.Runtime.InteropServices
     public sealed class FieldOffsetAttribute : Attribute
     {
         private int _val;
+
         public FieldOffsetAttribute(int offset)
         {
             _val = offset;
         }
-        public int Value { get { return _val; } }
+
+        public int Value => _val;
     }
 }

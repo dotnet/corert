@@ -4,10 +4,18 @@
 
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class DllImportAttribute : Attribute
     {
         private string _dllName;
+
+        public DllImportAttribute(string dllName)
+        {
+            _dllName = dllName;
+        }
+
+        public string Value => _dllName;
+
         public string EntryPoint;
         public CharSet CharSet;
         public bool SetLastError;
@@ -16,18 +24,5 @@ namespace System.Runtime.InteropServices
         public bool BestFitMapping;
         public bool PreserveSig;
         public bool ThrowOnUnmappableChar;
-
-        public DllImportAttribute(string dllName)
-        {
-            _dllName = dllName;
-        }
-
-        public string Value
-        {
-            get
-            {
-                return _dllName;
-            }
-        }
     }
 }
