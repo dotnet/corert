@@ -592,9 +592,6 @@ typedef IntNative (WINAPI *FARPROC)();
 
 #define NOERROR                 0x0
 
-#define TLS_OUT_OF_INDEXES      0xFFFFFFFF
-#define TLS_NUM_INLINE_SLOTS    64
-
 #define SUSPENDTHREAD_FAILED    0xFFFFFFFF
 #define RESUMETHREAD_FAILED     0xFFFFFFFF
 

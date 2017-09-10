@@ -482,6 +482,13 @@ namespace System.IO
 
             return Read(buffer, offset, count);
         }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return Read(destination.Span);
+        }
 #pragma warning restore 1998
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
@@ -822,6 +829,13 @@ namespace System.IO
             cancellationToken.ThrowIfCancellationRequested();
 
             Write(buffer, offset, count);
+        }
+
+        public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Write(source.Span);
         }
 #pragma warning restore 1998
 

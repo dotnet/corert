@@ -47,19 +47,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                MethodHandle declaringMethodHandle = _methodHandle;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
-                    yield return cad;
-            }
-        }
-
         public sealed override String Name
         {
             get
@@ -75,6 +62,8 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
                 throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
             }
         }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object defaultValue)
         {

@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    public sealed class OutAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
+    public sealed class FieldOffsetAttribute : Attribute
     {
-        public OutAttribute()
+        public FieldOffsetAttribute(int offset)
         {
+            Value = offset;
         }
+
+        public int Value { get; }
     }
 }

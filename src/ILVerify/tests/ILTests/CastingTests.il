@@ -243,6 +243,7 @@
 
         ldarg.0
         callvirt instance !0 class GenericTypeWithConstrained<!!TValueType>::get_Value()
+        box      !!TValueType
         stloc.0
         ret
     }

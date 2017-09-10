@@ -79,10 +79,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
             }
         }
 
