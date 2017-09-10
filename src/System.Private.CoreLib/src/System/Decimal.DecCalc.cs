@@ -73,7 +73,7 @@ namespace System
         /// <summary>
         /// Class that contains all the mathematical calculations for decimal. Most of which have been ported from oleaut32.
         /// </summary>
-        private static unsafe class DecCalc
+        private static class DecCalc
         {
             // Constant representing the negative number that is the closest possible
             // Decimal value to -0m.
@@ -555,7 +555,7 @@ PosRem:
             *   New scale factor returned.
             *
             ***********************************************************************/
-            private static int ScaleResult(Buf24* bufRes, uint iHiRes, int iScale)
+            private static unsafe int ScaleResult(Buf24* bufRes, uint iHiRes, int iScale)
             {
                 Debug.Assert(iHiRes < bufRes->Length);
                 uint* rgulRes = (uint*)bufRes;
@@ -956,7 +956,7 @@ ThrowOverflow:
 
             // DecAddSub adds or subtracts two decimal values.  On return, d1 contains the result
             // of the operation.  Passing in true for bSign means subtract and false means add.
-            private static void DecAddSub(ref Decimal d1, ref Decimal d2, bool bSign)
+            private static unsafe void DecAddSub(ref Decimal d1, ref Decimal d2, bool bSign)
             {
                 ulong low64 = d1.Low64;
                 uint high = d1.High, flags = d1.uflags, d2flags = d2.uflags;
@@ -1299,7 +1299,7 @@ ReturnResult:
 *   None.
 *
 ***********************************************************************/
-            private static uint DecFixInt(ref Decimal input, ref Decimal result)
+            private static unsafe uint DecFixInt(ref Decimal input, ref Decimal result)
             {
                 Buf12 bufNum;
                 _ = &bufNum; // workaround for CS0165
@@ -1560,7 +1560,7 @@ ReturnResult:
             //**********************************************************************
             // VarDecMul - Decimal Multiply
             //**********************************************************************
-            internal static void VarDecMul(ref Decimal pdecL, ref Decimal pdecR)
+            internal static unsafe void VarDecMul(ref Decimal pdecL, ref Decimal pdecR)
             {
                 int iScale = (byte)(pdecL.uflags + pdecR.uflags >> ScaleShift);
 
@@ -2060,7 +2060,7 @@ ReturnZero:
 
             // VarDecDiv divides two decimal values.  On return, d1 contains the result
             // of the operation.
-            internal static void VarDecDiv(ref Decimal d1, ref Decimal d2)
+            internal static unsafe void VarDecDiv(ref Decimal d1, ref Decimal d2)
             {
                 Buf12 bufQuo, bufDivisor;
                 _ = &bufQuo; // workaround for CS0165
@@ -2444,7 +2444,7 @@ ThrowOverflow:
             //**********************************************************************
             // VarDecRound - Decimal Round
             //**********************************************************************
-            internal static void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
+            internal static unsafe void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
             {
                 Buf12 bufNum;
                 _ = &bufNum; // workaround for CS0165
