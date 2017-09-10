@@ -125,7 +125,7 @@ namespace ILCompiler
                 syntax.DefineOption("O", ref optimize, "Enable optimizations");
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
-                syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for C++ code-generation");
+                syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -288,6 +288,7 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
+                    // TODO: Wasm fails to compile some of the exported methods due to missing opcodes
                     if (!_isWasmCodegen)
                     {
                         compilationRoots.Add(new ExportedMethodsRootProvider(module));
@@ -296,10 +297,11 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
+                    // TODO: Wasm fails to compile some of the library initializers
                     if (!_isWasmCodegen)
                     {
                         LibraryInitializers libraryInitializers =
-                            new LibraryInitializers(typeSystemContext, _isCppCodegen, _isWasmCodegen);
+                            new LibraryInitializers(typeSystemContext, _isCppCodegen);
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
                     }
                     else
@@ -331,6 +333,7 @@ namespace ILCompiler
                     if (entrypointModule == null)
                         throw new Exception("No entrypoint module");
 
+                    // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
                     if (!_isWasmCodegen)
                     {
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));

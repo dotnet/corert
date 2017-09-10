@@ -47,16 +47,16 @@ namespace Internal.IL
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 
-                MethodDebugInformation debugInfo = compilation.GetDebugInfo(methodIL);
+                //MethodDebugInformation debugInfo = compilation.GetDebugInfo(methodIL);
 
                /* if (!compilation.Options.HasOption(CppCodegenConfigProvider.NoLineNumbersString))*/
                 {
-                    IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
+                    //IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
                     /*if (sequencePoints != null)
                         ilImporter.SetSequencePoints(sequencePoints);*/
                 }
 
-                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
+                //IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
                 /*if (localVariables != null)
                     ilImporter.SetLocalVariables(localVariables);*/
 

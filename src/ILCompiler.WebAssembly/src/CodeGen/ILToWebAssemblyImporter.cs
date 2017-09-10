@@ -530,7 +530,7 @@ namespace Internal.IL
             MethodDesc callee = (MethodDesc)_methodIL.GetObject(token);
             if (callee.IsPInvoke)
             {
-                ImportRawPInvoke(method);
+                ImportRawPInvoke(callee);
                 return;
             }
 

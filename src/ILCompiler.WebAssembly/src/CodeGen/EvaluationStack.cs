@@ -268,11 +268,6 @@ namespace Internal.IL
             Value = value;
         }
 
-        /*public override void Append(CppGenerationBuffer _builder)
-        {
-            _builder.Append(Value.ToStringInvariant());
-        }*/
-
         protected override void BuildRepresentation(StringBuilder s)
         {
             base.BuildRepresentation(s);
@@ -289,22 +284,6 @@ namespace Internal.IL
         public Int32ConstantEntry(int value, TypeDesc type = null) : base(StackValueKind.Int32, value, LLVM.ConstInt(LLVM.Int32Type(), (ulong)value, LLVMMisc.False), type)
         {
         }
-
-        /*public override void Append(CppGenerationBuffer _builder)
-        {
-            if (Value == Int32.MinValue)
-            {
-                // Special case as if we were to print int.MinValue in decimal it would be
-                // -2147483648 but C does not understand it this way, it understands
-                // -(2147483648) and 2147483648 does not fit onto a 32-bit integer.
-                // We use an hex value instead.
-                _builder.Append("(int32_t)(0x80000000)");
-            }
-            else
-            {
-                _builder.Append(Value.ToStringInvariant());
-            }
-        }*/
 
         public override StackEntry Duplicate()
         {
@@ -340,21 +319,6 @@ namespace Internal.IL
         public Int64ConstantEntry(long value, TypeDesc type = null) : base(StackValueKind.Int64, value, LLVM.ConstInt(LLVM.Int64Type(), (ulong)value, LLVMMisc.False), type)
         {
         }
-
-        /*public override void Append(CppGenerationBuffer _builder)
-        {
-            if (Value == long.MinValue)
-            {
-                // See comment on Int32ConstantEntry.Append
-                _builder.Append("(int64_t)(INT64VAL(0x8000000000000000))");
-            }
-            else
-            {
-                _builder.Append("INT64VAL(");
-                _builder.Append(Value.ToStringInvariant());
-                _builder.Append(')');
-            }
-        }*/
 
         public override StackEntry Duplicate()
         {
@@ -395,33 +359,6 @@ namespace Internal.IL
         {
         }
 
-        /*public override void Append(CppGenerationBuffer _builder)
-        {
-            long val = BitConverter.DoubleToInt64Bits(Value);
-            _builder.Append("__uint64_to_double(0x");
-            _builder.Append(val.ToStringInvariant("x8"));
-            _builder.Append(')');
-            // Let's print the actual value as comment.
-            _builder.Append("/* ");
-            if (Double.IsNaN(Value))
-            {
-                _builder.Append("NaN");
-            }
-            else if (Double.IsPositiveInfinity(Value))
-            {
-                _builder.Append("+Inf");
-            }
-            else if (Double.IsNegativeInfinity(Value))
-            {
-                _builder.Append("-Inf");
-            }
-            else
-            {
-                _builder.Append(Value.ToStringInvariant());
-            }
-            _builder.Append(" */ //");
-        //}
-
         public override StackEntry Duplicate()
         {
             return new FloatConstantEntry(Value, Type);
@@ -448,10 +385,6 @@ namespace Internal.IL
         {
             Name = name;
         }
-       /* public override void Append(CppGenerationBuffer _builder)
-        {
-            _builder.Append(Name);
-        }*/
 
         public override StackEntry Duplicate()
         {
@@ -504,12 +437,6 @@ namespace Internal.IL
         protected InvalidEntry() : base(StackValueKind.Unknown, default(LLVMValueRef), null)
         {
         }
-
-        /*public override void Append(CppGenerationBuffer _builder)
-        {
-            _builder.Append("// FIXME: An invalid value was pushed onto the evaluation stack.");
-            Debug.Assert(false, "Invalid stack values shouldn't be appended.");
-        }*/
 
         public override StackEntry Duplicate()
         {
