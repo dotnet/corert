@@ -1654,20 +1654,20 @@ ReturnResult:
                         tmp += tmp2; // this could generate carry
                         bufProd.U2 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
-                            tmp3 <<= 1;
-                        tmp3 += tmp >> 32;
+                            tmp3 += 1UL << 32;
+                        tmp2 = tmp3 + (tmp >> 32);
 
                         tmp = UInt32x32To64(pdecL.Mid, pdecR.High);
-                        tmp += tmp3; // this could generate carry
+                        tmp += tmp2; // this could generate carry
                         tmp3 = 0;
-                        if (tmp < tmp3) // detect carry
+                        if (tmp < tmp2) // detect carry
                             tmp3 = 1UL << 32;
 
                         tmp2 = UInt32x32To64(pdecL.High, pdecR.Mid);
                         tmp += tmp2; // this could generate carry
                         bufProd.U3 = (uint)tmp;
                         if (tmp < tmp2) // detect carry
-                            tmp3 <<= 1;
+                            tmp3 += 1UL << 32;
                         tmp3 += tmp >> 32;
 
                         tmp = UInt32x32To64(pdecL.High, pdecR.High) + tmp3;
