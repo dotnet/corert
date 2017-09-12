@@ -647,6 +647,7 @@ namespace Internal.TypeSystem
             _typesToFlushTypeSystemStateFrom = null;
         }
 
+#if !CORERT
         private TypeDesc _canonAlikeType;
 
         public TypeDesc CanonAlikeType
@@ -681,6 +682,7 @@ namespace Internal.TypeSystem
                 return _canonTypeArray;
             }
         }
+#endif
 
 #if ECMA_METADATA_SUPPORT
         public class ModuleToEcmaModuleHashtable : LockFreeReaderHashtable<EcmaModuleInfo, Internal.TypeSystem.Ecma.EcmaModule>

@@ -48,8 +48,29 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public abstract int GetSlotForEntry(GenericLookupResult entry);
+        public virtual ObjectNodeSection DictionarySection(NodeFactory factory)
+        {
+            if (factory.Target.IsWindows)
+            {
+                if (_owningMethodOrType is TypeDesc)
+                {
+                    return ObjectNodeSection.FoldableReadOnlyDataSection;
+                }
+                else
+                {
+                    // Method dictionary serves as an identity at runtime which means they are not foldable.
+                    Debug.Assert(_owningMethodOrType is MethodDesc);
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                }
+            }
+            else
+            {
+                return ObjectNodeSection.DataSection;
+            }
+        }
 
+        public abstract int GetSlotForEntry(GenericLookupResult entry);
+        
         public abstract IEnumerable<GenericLookupResult> Entries
         {
             get;

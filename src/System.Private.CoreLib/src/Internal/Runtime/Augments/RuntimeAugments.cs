@@ -27,6 +27,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Runtime;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
 
@@ -34,12 +35,6 @@ using Volatile = System.Threading.Volatile;
 
 namespace Internal.Runtime.Augments
 {
-    public enum CanonTypeKind
-    {
-        NormalCanon,
-        UniversalCanon
-    }
-
     public static class RuntimeAugments
     {
         /// <summary>
@@ -86,9 +81,6 @@ namespace Internal.Runtime.Augments
         //    Strings: The .ctor performs both the construction and initialization
         //      and compiler special cases these.
         //
-        //    IntPtr/UIntPtr: These have intrinsic constructors and it happens, special-casing these in the class library
-        //      is the lesser evil compared to special-casing them in the toolchain.
-        //
         //    Nullable<T>: the boxed result is the underlying type rather than Nullable so the constructor
         //      cannot truly initialize it.
         //
@@ -99,8 +91,6 @@ namespace Internal.Runtime.Augments
             EETypePtr eeType = typeHandle.ToEETypePtr();
             if (eeType.IsNullable
                 || eeType == EETypePtr.EETypePtrOf<String>()
-                || eeType == EETypePtr.EETypePtrOf<IntPtr>()
-                || eeType == EETypePtr.EETypePtrOf<UIntPtr>()
                )
                 return null;
             return RuntimeImports.RhNewObject(eeType);
@@ -405,6 +395,7 @@ namespace Internal.Runtime.Augments
             object defaultParametersContext,
             object[] parameters,
             BinderBundle binderBundle,
+            bool wrapInTargetInvocationException,
             bool invokeMethodHelperIsThisCall,
             bool methodToCallIsThisCall)
         {
@@ -417,6 +408,7 @@ namespace Internal.Runtime.Augments
                 defaultParametersContext,
                 parameters,
                 binderBundle,
+                wrapInTargetInvocationException,
                 invokeMethodHelperIsThisCall,
                 methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -597,8 +589,13 @@ namespace Internal.Runtime.Augments
             return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
+        [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
+#if CORERT
+            // Compiler needs to expand this. This is not expressible in IL.
+            throw new NotSupportedException();
+#else
             switch (kind)
             {
                 case CanonTypeKind.NormalCanon:
@@ -609,6 +606,7 @@ namespace Internal.Runtime.Augments
                     Debug.Assert(false);
                     return default(RuntimeTypeHandle);
             }
+#endif
         }
 
         public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)

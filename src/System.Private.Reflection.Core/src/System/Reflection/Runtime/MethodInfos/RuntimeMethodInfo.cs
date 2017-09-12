@@ -149,6 +149,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
 
+        public abstract override int GenericParameterCount { get; }
+
         public abstract override MethodInfo GetGenericMethodDefinition();
 
         public sealed override MethodBody GetMethodBody()

@@ -67,6 +67,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMarshallingMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ForwardDelegateCreationThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\GetCanonTypeIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeLazyFixupField.cs" />

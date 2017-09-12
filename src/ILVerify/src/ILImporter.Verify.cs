@@ -96,6 +96,16 @@ namespace Internal.IL
             public int? TryIndex;
             public int? HandlerIndex;
             public int? FilterIndex;
+
+            public int ErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementErrorCount()
+            {
+                ErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -271,12 +281,18 @@ namespace Internal.IL
         // If not, report verification error and continue verification.
         void VerificationError(VerifierError error)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
             ReportVerificationError(args);
         }
 
         void VerificationError(VerifierError error, object found)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error,
@@ -288,6 +304,9 @@ namespace Internal.IL
 
         void VerificationError(VerifierError error, object found, object expected)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error, 
@@ -372,17 +391,28 @@ namespace Internal.IL
             if (src.TryIndex != target.TryIndex)
             {
                 if (src.TryIndex == null)
-                    VerificationError(VerifierError.BranchIntoTry);
+                {
+                    // Branching to first instruction of try-block is valid
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
+                        VerificationError(VerifierError.BranchIntoTry);
+                }
                 else if (target.TryIndex == null)
                     VerificationError(VerifierError.BranchOutOfTry);
                 else
                 {
-                    if (_exceptionRegions[(int)src.TryIndex].ILRegion.TryOffset < _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset)
-                        VerificationError(VerifierError.BranchIntoTry);
+                    ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    // If target is inside source region
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                        target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
+                    {
+                        // Only branching to first instruction of try-block is valid
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
+                            VerificationError(VerifierError.BranchIntoTry);
+                    }
                     else
                         VerificationError(VerifierError.BranchOutOfTry);
                 }
-                return;
             }
 
             if (src.FilterIndex != target.FilterIndex)
@@ -393,12 +423,13 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfFilter);
                 else
                 {
-                    if (_exceptionRegions[(int)src.FilterIndex].ILRegion.FilterOffset < _exceptionRegions[(int)target.FilterIndex].ILRegion.FilterOffset)
+                    ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                         VerificationError(VerifierError.BranchIntoFilter);
                     else
                         VerificationError(VerifierError.BranchOutOfFilter);
                 }
-                return;
             }
 
             if (src.HandlerIndex != target.HandlerIndex)
@@ -409,13 +440,44 @@ namespace Internal.IL
                     VerificationError(VerifierError.BranchOutOfHandler);
                 else
                 {
-                    if (_exceptionRegions[(int)src.HandlerIndex].ILRegion.HandlerOffset < _exceptionRegions[(int)target.HandlerIndex].ILRegion.HandlerOffset)
+                    ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                         VerificationError(VerifierError.BranchIntoHandler);
                     else
                         VerificationError(VerifierError.BranchOutOfHandler);
                 }
-                return;
             }
+        }
+
+        /// <summary>
+        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// the given enclosing try block.
+        /// </summary>
+        /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
+        /// <param name="enclosedBlock">The block to check whether it is a direct child try-region of <paramref name="enclosingBlock"/>.</param>
+        /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
+        bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
+        {
+            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+
+            // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
+                {
+                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    // blockRegion is actually enclosing enclosedRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         // For now, match PEVerify type formating to make it easy to compare with baseline
@@ -1082,9 +1144,21 @@ namespace Internal.IL
                     
                     if (entryStack[i].Type != _stack[i].Type)
                     {
-                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
-                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
-                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                        if (!IsAssignable(_stack[i], entryStack[i]))
+                        {
+                            StackValue mergedValue;
+                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                            // If merge actually changed entry stack
+                            if (mergedValue != entryStack[i])
+                            {
+                                entryStack[i] = mergedValue;
+
+                                if (next.ErrorCount == 0)
+                                    next.EndOffset = 0; // Make sure block is reverified
+                            }
+                        }
                     }
                 }
             }

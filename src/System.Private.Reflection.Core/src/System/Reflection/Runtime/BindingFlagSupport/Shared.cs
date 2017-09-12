@@ -128,7 +128,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         for (int i = 0; i < parameterInfos.Length; i++)
                         {
                             // a null argument type implies a null arg which is always a perfect match
-                            if ((object)argumentTypes[i] != null && !parameterInfos[i].ParameterType.Equals(argumentTypes[i]))
+                            if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
                                 return false;
                         }
                     }

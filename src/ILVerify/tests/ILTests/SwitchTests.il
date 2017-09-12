@@ -74,7 +74,7 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Switch.IntoTry_Invalid_BranchIntoTry() cil managed
+    .method static public hidebysig void Switch.IntoTryStart_Valid() cil managed
     {
         .maxstack 1
 
@@ -87,6 +87,31 @@
         {
             lbl_a: nop
             br.s     lbl_leave
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            nop
+            leave.s     lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Switch.IntoTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 1
+
+        ldc.i4.s   10
+        switch     (lbl_ret, lbl_a)
+
+        br.s       lbl_ret
+
+        .try
+        {
+            nop
+            lbl_a: br.s     lbl_leave
 
             lbl_leave: leave.s   lbl_ret
         }
@@ -159,7 +184,7 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Switch.NestedIntoTry_Invalid_BranchIntoTry() cil managed
+    .method static public hidebysig void Switch.NestedIntoTryStart_Valid() cil managed
     {
         .maxstack 1
 
@@ -177,6 +202,42 @@
             {
                 lbl_b: nop
                 leave.s   lbl_leave
+            }
+            catch [System.Runtime]System.Object
+            {
+                pop
+                leave.s   lbl_leave
+            }
+
+            lbl_leave: leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Switch.NestedIntoTryMiddle_Invalid_BranchIntoTry() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            ldc.i4.s  10
+            switch    (lbl_leave, lbl_a, lbl_b)
+
+            br.s      lbl_leave
+
+            lbl_a: nop
+            br.s      lbl_leave
+
+            .try
+            {
+                nop
+                lbl_b: leave.s   lbl_leave
             }
             catch [System.Runtime]System.Object
             {

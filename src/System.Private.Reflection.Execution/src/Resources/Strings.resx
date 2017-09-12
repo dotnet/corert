@@ -150,12 +150,6 @@
   <data name="PlatformNotSupported_PointerArguments" xml:space="preserve">
     <value>Passing or returning pointers through Invoke is not supported on this platform.</value>
   </data>
-  <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
-    <value>Object does not match target type.</value>
-  </data>
-  <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
-    <value>Non-static method requires a target.</value>
-  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
   </data>

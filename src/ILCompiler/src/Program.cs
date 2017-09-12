@@ -471,16 +471,15 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName);
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
+            {
+                return (MetadataType)context.GetCanonType(typeDefName)
+                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
+            });
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 
-            TypeDesc classLibCanon = systemModule.GetType("System", "__Canon", false);
-            TypeDesc classLibUniCanon = systemModule.GetType("System", "__UniversalCanon", false);
-
-            return foundType.ReplaceTypesInConstructionOfType(
-                new TypeDesc[] { classLibCanon, classLibUniCanon },
-                new TypeDesc[] { context.CanonType, context.UniversalCanonType });
+            return foundType;
         }
 
         private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)

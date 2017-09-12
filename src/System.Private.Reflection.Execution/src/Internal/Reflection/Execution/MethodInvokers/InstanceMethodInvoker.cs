@@ -28,9 +28,9 @@ namespace Internal.Reflection.Execution.MethodInvokers
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
+            ValidateThis(thisObject, _declaringTypeHandle);
             object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
@@ -40,6 +40,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 MethodInvokeInfo.MethodInfo,
                 arguments,
                 binderBundle,
+                wrapInTargetInvocationException: wrapInTargetInvocationException,
                 invokeMethodHelperIsThisCall: false, 
                 methodToCallIsThisCall: true);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();

@@ -76,6 +76,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.GetHashCode();
         }
 
+        public sealed override int GenericParameterCount => _genericMethodDefinition.GenericParameterCount;
+
         public sealed override MethodInfo GetGenericMethodDefinition()
         {
             return _genericMethodDefinition;
