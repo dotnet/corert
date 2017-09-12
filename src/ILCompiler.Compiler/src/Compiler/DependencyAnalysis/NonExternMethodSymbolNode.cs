@@ -17,9 +17,10 @@ namespace ILCompiler.DependencyAnalysis
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
     /// in the current compilation process
     /// </summary>
-    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols
+    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols, ISpecialUnboxThunkNode
     {
         private MethodDesc _method;
+        private bool _isUnboxing;
         private List<DependencyListEntry> _compilationDiscoveredDependencies;
         ISymbolNode[] _funcletSymbols = Array.Empty<ISymbolNode>();
         bool _dependenciesQueried;
@@ -29,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis
             : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
                   factory.NameMangler.GetMangledMethodName(method))
         {
+            _isUnboxing = isUnboxing;
             _method = method;
         }
 
@@ -40,6 +42,26 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _method;
             }
+        }
+
+        public bool IsSpecialUnboxingThunk
+        {
+            get
+            {
+                if (_isUnboxing)
+                {
+                    if (!_method.HasInstantiation && _method.OwningType.IsValueType && !_method.Signature.IsStatic)
+                        return _method.IsCanonicalMethod(CanonicalFormKind.Any);
+                }
+
+                return false;
+            }
+        }
+        public ISymbolNode GetUnboxingThunkTarget(NodeFactory factory)
+        {
+            Debug.Assert(IsSpecialUnboxingThunk);
+
+            return factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific), false);
         }
 
         public bool HasCompiledBody => _hasCompiledBody;
@@ -97,6 +119,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.AddRange(_compilationDiscoveredDependencies);
+            }
+
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
 
             return dependencies;
