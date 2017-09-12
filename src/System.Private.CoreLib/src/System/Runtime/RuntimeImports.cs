@@ -611,6 +611,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
         internal static extern IntPtr RhGetJmpStubCodeTarget(IntPtr pCode);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]
+        public static extern IntPtr RhGetTargetOfUnboxingAndInstantiatingStub(IntPtr pCode);
+
         //
         // EH helpers
         //

@@ -805,6 +805,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetCodeTarget(functionPointer);
         }
 
+        public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
+        {
+            return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
         {

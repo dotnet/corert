@@ -296,6 +296,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
+            {
+                return new MethodAssociatedDataNode(methodNode);
+            });
+
             _fatFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
             {
                 return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub);
@@ -707,6 +712,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
+        private NodeCache<IMethodNode, MethodAssociatedDataNode> _methodAssociatedData;
 
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
@@ -716,6 +722,11 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
+        {
+            return _methodAssociatedData.GetOrAdd(methodNode);
         }
 
         private NodeCache<MethodKey, FatFunctionPointerNode> _fatFunctionPointers;

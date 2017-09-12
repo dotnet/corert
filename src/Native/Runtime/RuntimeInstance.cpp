@@ -181,6 +181,24 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
     return NULL;
 }
 
+PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
+{
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    if (pCodeManager != NULL)
+    {
+        PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
+        if (pData != NULL)
+        {
+            UInt8 flags = *pData++;
+
+            if ((flags & (UInt8)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
+                return *((PTR_PTR_UInt8)pData);
+        }
+    }
+
+    return NULL;
+}
+
 GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
 
 PTR_RuntimeInstance GetRuntimeInstance()
