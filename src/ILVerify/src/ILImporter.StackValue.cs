@@ -21,11 +21,13 @@ namespace Internal.IL
 
         public readonly StackValueKind Kind;
         public readonly TypeDesc Type;
+        public readonly MethodDesc Method;
 
-        private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
+        private StackValue(StackValueKind kind, TypeDesc type = null, MethodDesc method = null, StackValueFlags flags = StackValueFlags.None)
         {
             this.Kind = kind;
             this.Type = type;
+            this.Method = method;
             this.Flags = flags;
         }
 
@@ -42,6 +44,11 @@ namespace Internal.IL
         public bool IsNullReference
         {
             get { return Kind == StackValueKind.ObjRef && Type == null; }
+        }
+
+        public bool IsMethod
+        {
+            get { return Kind == StackValueKind.NativeInt && Method != null; }
         }
 
         public StackValue DereferenceByRef()
@@ -77,7 +84,12 @@ namespace Internal.IL
 
         static public StackValue CreateByRef(TypeDesc type, bool readOnly = false)
         {
-            return new StackValue(StackValueKind.ByRef, type, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
+            return new StackValue(StackValueKind.ByRef, type, null, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
+        }
+
+        static public StackValue CreateMethod(MethodDesc method)
+        {
+            return new StackValue(StackValueKind.NativeInt, null, method);
         }
 
         static public StackValue CreateFromType(TypeDesc type)

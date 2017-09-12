@@ -540,6 +540,12 @@ namespace Internal.IL
             }
         }
 
+        void CheckIsObjRef(StackValue value)
+        {
+            if (value.Kind != StackValueKind.ObjRef)
+                VerificationError(VerifierError.StackObjRef, value);
+        }
+
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
         {
             if (!IsBinaryComparable(a, b, op))
@@ -832,20 +838,55 @@ namespace Internal.IL
                     Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
             }
 
-            for (int i = sig.Length - 1; i >= 0; i--)
+            if (!(opcode == ILOpcode.newobj && methodType.IsDelegate))
             {
-                var actual = Pop();
-                var declared = StackValue.CreateFromType(sig[i]);
+                for (int i = sig.Length - 1; i >= 0; i--)
+                {
+                    var actual = Pop();
+                    var declared = StackValue.CreateFromType(sig[i]);
 
-                CheckIsAssignable(actual, declared);
+                    CheckIsAssignable(actual, declared);
 
-                // check that the argument is not a byref for tailcalls
-                if (tailCall)
-                    Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                    // check that the argument is not a byref for tailcalls
+                    if (tailCall)
+                        Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                }
             }
 
             if (opcode == ILOpcode.newobj)
             {
+                if (methodType.IsDelegate)
+                {
+                    Check(sig.Length == 2, VerifierError.DelegateCtor);
+                    var declaredObj = StackValue.CreateFromType(sig[0]);
+                    var declaredFtn = StackValue.CreateFromType(sig[1]);
+
+                    Check(declaredFtn.Kind == StackValueKind.NativeInt, VerifierError.DelegateCtorSigI, declaredFtn);
+
+                    var actualFtn = Pop();
+                    var actualObj = Pop();
+
+                    Check(actualFtn.IsMethod, VerifierError.StackMethod);
+
+                    CheckIsAssignable(actualObj, declaredObj);
+                    Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
+
+#if false
+                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
+                                                    tiActualFtn, tiActualObj),
+                           MVER_E_DLGT_PATTERN);
+
+                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
+                                                           parentTypeHandle,
+                                                           tiActualFtn.GetMethod(),
+                                                           methodClassHnd,
+                                                           getCurrentModuleHandle(),
+                                                           delegateMethodRef,
+                                                           memberRef),
+                           MVER_E_DLGT_CTOR);
+#endif
+                }
+
                 // TODO:
             }
             else
@@ -1027,17 +1068,37 @@ namespace Internal.IL
 
         void ImportLdFtn(int token, ILOpcode opCode)
         {
-            MethodDesc type = ResolveMethodToken(token);
-            Check(!type.IsConstructor, VerifierError.LdftnConstructor);
+            MethodDesc method = ResolveMethodToken(token);
+            Check(!method.IsConstructor, VerifierError.LdftnCtor);
+
+#if false
+            if (sig.hasTypeArg())
+                NO_WAY("Currently do not support LDFTN of Parameterized functions");
+#endif
 
             if (opCode == ILOpcode.ldftn)
             {
-
+#if false
+                vstate->delegateCreateStart = codeAddr;
+#endif
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
-                StackValue thisPtr = new StackValue();
-                thisPtr = Pop();
+                Check(!method.Signature.IsStatic, VerifierError.LdvirtftnOnStatic);
+
+                StackValue declaredType;
+                if (method.OwningType.IsValueType)
+                {
+                    // Box value type for comparison
+                    declaredType = StackValue.CreateObjRef(method.OwningType);
+                }
+                else
+                    declaredType = StackValue.CreateFromType(method.OwningType);
+
+                var thisPtr = Pop();
+
+                CheckIsObjRef(thisPtr);
+                CheckIsAssignable(thisPtr, declaredType);
             }
             else
             {
@@ -1045,7 +1106,20 @@ namespace Internal.IL
                 return;
             }
 
-            throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
+#if false
+            Verify(m_jitInfo->satisfiesClassConstraints(methodClassHnd),
+                       MVER_E_UNSATISFIED_METHOD_PARENT_INST); //"method has unsatisfied class constraints"
+            Verify(m_jitInfo->satisfiesMethodConstraints(methodClassHnd,methHnd),
+                       MVER_E_UNSATISFIED_METHOD_INST); //"method has unsatisfied method constraints"
+
+            Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from
+                                            methodClassHnd, // in
+                                            methHnd, // what
+                                            instanceClassHnd),
+                   MVER_E_METHOD_ACCESS);
+#endif
+
+            Push(StackValue.CreateMethod(method));
         }
 
         void ImportLoadInt(long value, StackValueKind kind)
@@ -1461,10 +1535,7 @@ namespace Internal.IL
         {
             var value = Pop();
 
-            if (value.Kind != StackValueKind.ObjRef)
-            {
-                VerificationError(VerifierError.StackObjRef);
-            }
+            CheckIsObjRef(value);
         }
 
         void ImportLoadString(int token)

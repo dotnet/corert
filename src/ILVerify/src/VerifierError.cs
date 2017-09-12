@@ -84,7 +84,7 @@ namespace ILVerify
         //E_THIS_UNINIT_RET    "Return from .ctor when this is uninitialized."
         //E_THIS_UNINIT_V_RET  "Return from .ctor before all fields are initialized."
         //E_THIS_UNINIT_BR     "Branch back when this is uninitialized."
-        LdftnConstructor,       //"ldftn/ldvirtftn not allowed on .ctor."
+        LdftnCtor,       //"ldftn/ldvirtftn not allowed on .ctor."
         //StackNotEq,                     // "Non-compatible types on the stack."
         StackUnexpected,                // Unexpected type on the stack.
         StackUnexpectedArrayType,       // Unexpected array type on the stack.
@@ -100,7 +100,7 @@ namespace ILVerify
         StackObjRef,                    // "Expected an ObjRef on the stack."
         //E_STACK_P_OBJREF     "Expected address of an ObjRef on the stack."
         StackByRef,                     // Expected ByRef on the stack.
-        //E_STACK_METHOD       "Expected pointer to function on the stack."
+        StackMethod,            // Expected pointer to function on the stack.
         //E_STACK_ARRAY_SD     "Expected single dimension array on the stack."
         //E_STACK_VALCLASS     "Expected value type instance on the stack."
         //E_STACK_P_VALCLASS   "Expected address of value type on the stack."
@@ -176,7 +176,7 @@ namespace ILVerify
         CallAbstract,               // Call not allowed on abstract methods.
         //E_NOT_IN_GC_HEAP     "Value type with NotInGCHeap attribute being created on the GC heap."
         TryNonEmptyStack,           // Attempt to enter a try block with nonempty stack.
-        //E_DLGT_CTOR          "Unrecognized arguments for delegate .ctor."
+        DelegateCtor,           // Unrecognized arguments for delegate .ctor.
         //E_DLGT_BB            "Delegate .ctor not allowed at the start of a basic block when the function pointer argument is a virtual method."
         //E_DLGT_PATTERN       "Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block)."
         //E_DLGT_LDFTN         "Ldftn or ldvirtftn instruction required before call to a delegate .ctor."
@@ -187,15 +187,15 @@ namespace ILVerify
         //E_SIG_BYREF_TB_AH    "ByRef of TypedReference, ArgHandle, or ArgIterator."
         //E_SIG_ARRAY_TB_AH    "Array of TypedReference, ArgHandle, or ArgIterator."
         EndfilterStack,                 //"Stack not empty when leaving an exception filter."
-        //E_DLGT_SIG_I         "Unrecognized delegate .ctor signature; expected I."
-        //E_DLGT_SIG_O         "Unrecognized delegate .ctor signature; expected Object."
+        DelegateCtorSigI,        // Unrecognized delegate .ctor signature; expected Native Int.
+        DelegateCtorSigO,        // Unrecognized delegate .ctor signature; expected Object.
         //E_RA_PTR_TO_STACK    "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
         //E_CATCH_VALUE_TYPE   "Value type not allowed as catch type."
         //E_CATCH_BYREF        "ByRef not allowed as catch type."
         //E_FIL_PRECEED_HND    "filter block should immediately precede handler block"
-        //E_LDVIRTFTN_STATIC   "ldvirtftn on static"
-        CallVirtOnStatic,               // callvirt on static
-        InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
+        LdvirtftnOnStatic,      // ldvirtftn on static.
+        CallVirtOnStatic,       // callvirt on static.
+        InitLocals,             // initlocals must be set for verifiable methods with one or more local variables.
         //E_BR_TO_EXCEPTION    "branch/leave to the beginning of a catch/filter handler"
         //E_CALL_CTOR          "call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj." 
         
