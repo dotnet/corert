@@ -113,6 +113,8 @@ public:
 
     void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader);
 
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
 private:
     Module(ModuleHeader * pModuleHeader);
 #ifdef FEATURE_CUSTOM_IMPORTS

@@ -432,11 +432,15 @@ namespace ILCompiler.DependencyAnalysis
             FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
+                // Data should only be present if the method has unwind info
+                Debug.Assert(nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) == null);
+
                 return;
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory);
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -458,14 +462,18 @@ namespace ILCompiler.DependencyAnalysis
                 EmitSymbolDef(blobSymbolName);
 
                 FrameInfoFlags flags = frameInfo.Flags;
-                if (ehInfo != null)
-                {
-                    flags |= FrameInfoFlags.HasEHInfo;
-                }
+                flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
+                flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
                 EmitBlob(blob);
 
                 EmitIntValue((byte)flags, 1);
+
+                if (associatedDataNode != null)
+                {
+                    EmitSymbolRef(_sb.Clear().Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    associatedDataNode = null;
+                }
 
                 if (ehInfo != null)
                 {
@@ -512,11 +520,15 @@ namespace ILCompiler.DependencyAnalysis
             FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
+                // Data should only be present if the method has unwind info
+                Debug.Assert(nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) == null);
+
                 return;
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory);
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -539,10 +551,9 @@ namespace ILCompiler.DependencyAnalysis
                 EmitSymbolDef(blobSymbolName);
 
                 FrameInfoFlags flags = frameInfo.Flags;
-                if (ehInfo != null)
-                {
-                    flags |= FrameInfoFlags.HasEHInfo;
-                }
+                flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
+                flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
+
                 EmitIntValue((byte)flags, 1);
 
                 if (i != 0)
@@ -551,6 +562,12 @@ namespace ILCompiler.DependencyAnalysis
 
                     // emit relative offset from the main function
                     EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+                }
+
+                if (associatedDataNode != null)
+                {
+                    EmitSymbolRef(_sb.Clear().Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    associatedDataNode = null;
                 }
 
                 if (ehInfo != null)
