@@ -377,8 +377,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
         return NULL;
 
-    UInt32 dataRelAddr = *dac_cast<PTR_UInt32>(p);
-    return dac_cast<PTR_VOID>(p + dataRelAddr);
+    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
