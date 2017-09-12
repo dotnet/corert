@@ -566,7 +566,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (associatedDataNode != null)
                 {
-                    EmitSymbolRef(_sb.Clear().Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    _sb.Clear();
+                    AppendExternCPrefix(_sb);
+                    EmitSymbolRef(_sb.Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
                     associatedDataNode = null;
                 }
 
