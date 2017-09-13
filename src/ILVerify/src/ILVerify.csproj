@@ -16,6 +16,7 @@
     <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="SimpleTypeSystemContext.cs" />
     <Compile Include="VerifierError.cs" />
+    <Compile Include ="TypeSystemHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

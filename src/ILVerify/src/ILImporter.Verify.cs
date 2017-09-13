@@ -935,14 +935,11 @@ namespace Internal.IL
                     actualThis = StackValue.CreateObjRef(constrained);
                 }
 
-#if false
-                // To support direct calls on readonly byrefs, just pretend tiDeclaredThis is readonly too
-                if(tiDeclaredThis.IsByRef() && tiThis.IsReadonlyByRef())
+                // To support direct calls on readonly byrefs, just pretend declaredThis is readonly too
+                if(declaredThis.Kind == StackValueKind.ByRef && (actualThis.Kind == StackValueKind.ByRef && actualThis.IsReadOnly))
                 {
-                    tiDeclaredThis.SetIsReadonlyByRef();
+                    declaredThis.SetIsReadOnly();
                 }
-#endif
-
                 CheckIsAssignable(actualThis, declaredThis);
 
 #if false
@@ -987,14 +984,12 @@ namespace Internal.IL
                 }
             }
 
-#if false
-            // check any constraints on the callee's class and type parameters
-            Verify(m_jitInfo->satisfiesClassConstraints(methodClassHnd),
-                            MVER_E_UNSATISFIED_METHOD_PARENT_INST); //"method has unsatisfied class constraints"
-            Verify(m_jitInfo->satisfiesMethodConstraints(methodClassHnd,methodHnd),
-                            MVER_E_UNSATISFIED_METHOD_INST); //"method has unsatisfied method constraints"
-    
+            // Check any constraints on the callee's class and type parameters
+            Check(method.OwningType.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodParentInst);
+            Check(method.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodInst);
 
+#if false
+            // Access verifications
             handleMemberAccessForVerification(callInfo.accessAllowed, callInfo.callsiteCalloutHelper,
                                                 MVER_E_METHOD_ACCESS);
 
@@ -1106,12 +1101,11 @@ namespace Internal.IL
                 return;
             }
 
-#if false
-            Verify(m_jitInfo->satisfiesClassConstraints(methodClassHnd),
-                       MVER_E_UNSATISFIED_METHOD_PARENT_INST); //"method has unsatisfied class constraints"
-            Verify(m_jitInfo->satisfiesMethodConstraints(methodClassHnd,methHnd),
-                       MVER_E_UNSATISFIED_METHOD_INST); //"method has unsatisfied method constraints"
+            // Check any constraints on the callee's class and type parameters
+            Check(method.OwningType.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodParentInst);
+            Check(method.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodInst);
 
+#if false
             Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from
                                             methodClassHnd, // in
                                             methHnd, // what
@@ -1499,7 +1493,7 @@ namespace Internal.IL
             }
             else
             {
-                CheckIsAssignable(GetVerificationType(address.Type), GetVerificationType(type));
+                CheckIsAssignable(address.Type.GetVerificationType(), type.GetVerificationType());
             }
             Push(StackValue.CreateFromType(type));
         }
@@ -1640,7 +1634,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(GetVerificationType(actualElementType), elementType);
+                    CheckIsArrayElementCompatibleWith(actualElementType.GetVerificationType(), elementType);
                 }
                 else
                 {
@@ -1672,7 +1666,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(elementType, GetVerificationType(actualElementType));
+                    CheckIsArrayElementCompatibleWith(elementType, actualElementType.GetVerificationType());
                 }
                 else
                 {

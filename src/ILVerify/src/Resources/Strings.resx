@@ -273,6 +273,12 @@
   <data name="UnrecognizedLocalNumber" xml:space="preserve">
     <value>Unrecognized local variable number.</value>
   </data>
+  <data name="UnsatisfiedMethodInst" xml:space="preserve">
+    <value>Method instantiation has unsatisfied method type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedMethodParentInst" xml:space="preserve">
+    <value>Method parent instantiation has unsatisfied class type parameter constraints.</value>
+  </data>
   <data name="Unverifiable" xml:space="preserve">
     <value>Instruction cannot be verified.</value>
   </data>

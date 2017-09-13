@@ -218,14 +218,14 @@ namespace ILVerify
         //E_CIRCULAR_VAR_CONSTRAINTS "Method parent has circular class type parameter constraints."
         //E_CIRCULAR_MVAR_CONSTRAINTS "Method has circular method type parameter constraints."
 
-        //E_UNSATISFIED_METHOD_INST          "Method instantiation has unsatisfied method type parameter constraints."
-        //E_UNSATISFIED_METHOD_PARENT_INST   "Method parent instantiation has unsatisfied class type parameter constraints."
+        UnsatisfiedMethodInst,                // Method instantiation has unsatisfied method type parameter constraints.
+        UnsatisfiedMethodParentInst,          // Method parent instantiation has unsatisfied class type parameter constraints.
         //E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
         //E_UNSATISFIED_BOX_OPERAND          "Type operand of box instruction has unsatisfied class type parameter constraints."
-        ConstrainedCallWithNonByRefThis,    // The 'this' argument to a constrained call must have ByRef type.
+        ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
         //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
-        ReadOnlyIllegalWrite,               // "Illegal write to readonly ByRef."
+        ReadOnlyIllegalWrite,                 // "Illegal write to readonly ByRef."
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT      "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
         //E_TAILCALL_INSIDE_EH       "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
