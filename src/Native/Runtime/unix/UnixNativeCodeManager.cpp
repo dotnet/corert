@@ -368,7 +368,7 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
 PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
 {
     UnixNativeMethodInfo methodInfo;
-    if (!FindMethodInfo(ControlPC, &methodInfo))
+    if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
         return NULL;
 
     PTR_UInt8 p = methodInfo.pMainLSDA;

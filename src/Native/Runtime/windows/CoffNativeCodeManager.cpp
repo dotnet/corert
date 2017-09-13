@@ -657,7 +657,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctionTable + MethodIndex;
 
     size_t unwindDataBlobSize;
-    PTR_UInt8 pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pRuntimeFunction, &unwindDataBlobSize);
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pRuntimeFunction, &unwindDataBlobSize);
 
     PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
@@ -666,7 +666,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
         return NULL;
 
     UInt32 dataRVA = *(UInt32*)p;
-    return m_moduleBase + dataRVA;
+    return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
