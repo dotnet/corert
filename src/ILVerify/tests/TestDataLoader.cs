@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -101,7 +102,7 @@ namespace ILVerify.Tests
                 foreach (var methodHandle in testModule.MetadataReader.MethodDefinitions)
                 {
                     var method = (EcmaMethod)testModule.GetMethod(methodHandle);
-                    var methodName = method.ToString();
+                    var methodName = method.Name;
 
                     if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
                     {
@@ -110,6 +111,7 @@ namespace ILVerify.Tests
 
                         if (newItem != null)
                         {
+                            newItem.TestName = CreateTestNameFromParams(mparams);
                             newItem.MethodName = methodName;
                             newItem.ModuleName = testDllName;
 
@@ -132,6 +134,26 @@ namespace ILVerify.Tests
             }
         }
 
+        private static string CreateTestNameFromParams(string[] methodParams)
+        {
+            if (methodParams == null || methodParams.Length <= 0)
+                return String.Empty;
+
+            var testName = new StringBuilder(methodParams[0]);
+
+            if (methodParams.Length > 2)
+            {
+                testName.Append(" (");
+                for (int i = 2; i < methodParams.Length - 1; ++i)
+                    testName.Append(methodParams[i]).Append(", ");
+
+                testName.Append(methodParams[methodParams.Length - 1]);
+                testName.Append(")");
+            }
+
+            return testName.ToString();
+        }
+
         public static EcmaModule GetModuleForTestAssembly(string assemblyName)
         {
             var typeSystemContext = new SimpleTypeSystemContext();
@@ -151,12 +173,14 @@ namespace ILVerify.Tests
 
     abstract class TestCase : IXunitSerializable
     {
+        public string TestName { get; set; }
         public string MethodName { get; set; }
         public int MetadataToken { get; set; }
         public string ModuleName { get; set; }
 
         public virtual void Deserialize(IXunitSerializationInfo info)
         {
+            TestName = info.GetValue<string>(nameof(TestName));
             MethodName = info.GetValue<string>(nameof(MethodName));
             MetadataToken = info.GetValue<int>(nameof(MetadataToken));
             ModuleName = info.GetValue<string>(nameof(ModuleName));
@@ -164,6 +188,7 @@ namespace ILVerify.Tests
 
         public virtual void Serialize(IXunitSerializationInfo info)
         {
+            info.AddValue(nameof(TestName), TestName);
             info.AddValue(nameof(MethodName), MethodName);
             info.AddValue(nameof(MetadataToken), MetadataToken);
             info.AddValue(nameof(ModuleName), ModuleName);
@@ -171,7 +196,7 @@ namespace ILVerify.Tests
 
         public override string ToString()
         {
-            return $"{MethodName}";
+            return $"[{Path.GetFileNameWithoutExtension(ModuleName)}] {TestName}";
         }
     }
 
