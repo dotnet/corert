@@ -174,6 +174,7 @@ public:
     Module * FindModuleByReadOnlyDataAddress(PTR_VOID Data);
     Module * FindModuleByOsHandle(HANDLE hOsHandle);
     PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
+    PTR_UInt8 GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC);
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 

@@ -730,3 +730,10 @@ void * JITCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     assert(false);
     return false;
 }
+
+PTR_VOID JITCodeManager::GetAssociatedData(PTR_VOID ControlPC)
+{
+    // @TODO: CORERT: GetAssociatedData
+    assert(false);
+    return NULL;
+}
