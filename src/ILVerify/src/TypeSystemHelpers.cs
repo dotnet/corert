@@ -146,7 +146,7 @@ namespace Internal.IL
         }
 
         /// <summary>
-        /// Returns the reduced type as defined in the ECMA-335 standard (I.8.7).
+        /// Returns the "reduced type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
         public static TypeDesc GetReducedType(this TypeDesc type)
         {
