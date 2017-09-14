@@ -386,6 +386,23 @@ namespace ILCompiler
             return name;
         }
 
+        public string GetLinkageNameForPInvokeMethod(MethodDesc method, out int ordinal)
+        {
+            string methodName = method.GetPInvokeMethodMetadata().Name;
+
+            if (methodName.StartsWith("#"))
+            {
+                if (int.TryParse(methodName.Substring(1), out ordinal))
+                {
+                    string moduleName = method.GetPInvokeMethodMetadata().Module;
+                    return moduleName + methodName;
+                }
+            }
+
+            ordinal = -1;
+            return methodName;
+        }
+
         private Utf8String ComputeMangledNameMethodWithoutInstantiation(MethodDesc method)
         {
             Debug.Assert(method == method.GetMethodDefinition());
@@ -401,24 +418,34 @@ namespace ILCompiler
                 {
                     foreach (var m in method.OwningType.GetMethods())
                     {
-                        string name = SanitizeName(m.Name);
-                        uint ordinal;
+                        string name;
 
-                        // Ensure that name is unique and update our tables accordingly.
-                        if (GetMethodOrdinal(m, out ordinal))
+                        if (m.IsPInvoke)
                         {
-                            name += OrdinalPrefix + ordinal;
+                            int ordinal;
+                            name = GetLinkageNameForPInvokeMethod(m, out ordinal);
                         }
                         else
                         {
-                            name = DisambiguateName(name, deduplicator);
+                            name = SanitizeName(m.Name);
+                            uint ordinal;
+
+                            // Ensure that name is unique and update our tables accordingly.
+                            if (GetMethodOrdinal(m, out ordinal))
+                            {
+                                name += OrdinalPrefix + ordinal;
+                            }
+                            else
+                            {
+                                name = DisambiguateName(name, deduplicator);
+                            }
+
+                            Debug.Assert(!deduplicator.Contains(name));
+                            deduplicator.Add(name);
+
+                            if (prependTypeName != null)
+                                name = prependTypeName + "__" + name;
                         }
-
-                        Debug.Assert(!deduplicator.Contains(name));
-                        deduplicator.Add(name);
-
-                        if (prependTypeName != null)
-                            name = prependTypeName + "__" + name;
 
                         _mangledMethodNames = _mangledMethodNames.Add(m, name);
                     }

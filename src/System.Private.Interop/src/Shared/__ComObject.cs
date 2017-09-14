@@ -2149,7 +2149,7 @@ namespace System
             // We may not have QI'd for this interface yet.  Do so now, in case the object directly supports
             // the requested interface.  If we find it, call ourselves again so our fast path will pick it up.
             //
-            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr))
+            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr) && requestedType.HasDynamicAdapterClass())
                 return GetDynamicAdapterInternal(requestedType, default(RuntimeTypeHandle));
 
             return null;
