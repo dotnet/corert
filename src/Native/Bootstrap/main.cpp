@@ -305,11 +305,6 @@ int main(int argc, char* argv[])
     }
 #endif // !CPPCODEGEN
 
-#ifdef CPPCODEGEN
-    ReversePInvokeFrame frame;
-    __reverse_pinvoke(&frame);
-#endif
-
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #else // !CPPCODEGEN
@@ -330,10 +325,6 @@ int main(int argc, char* argv[])
         printf("Method: %s\n", e);
         retval = -1;
     }
-#endif
-
-#ifdef CPPCODEGEN
-    __reverse_pinvoke_return(&frame);
 #endif
 
     RhpShutdown();
