@@ -111,7 +111,7 @@ namespace ILVerify.Tests
 
                         if (newItem != null)
                         {
-                            newItem.TestName = CreateTestNameFromParams(mparams);
+                            newItem.TestName = mparams[0];
                             newItem.MethodName = methodName;
                             newItem.ModuleName = testDllName;
 
@@ -132,26 +132,6 @@ namespace ILVerify.Tests
                     yield return System.IO.Path.GetFileName(item);
                 }
             }
-        }
-
-        private static string CreateTestNameFromParams(string[] methodParams)
-        {
-            if (methodParams == null || methodParams.Length <= 0)
-                return String.Empty;
-
-            var testName = new StringBuilder(methodParams[0]);
-
-            if (methodParams.Length > 2)
-            {
-                testName.Append(" (");
-                for (int i = 2; i < methodParams.Length - 1; ++i)
-                    testName.Append(methodParams[i]).Append(", ");
-
-                testName.Append(methodParams[methodParams.Length - 1]);
-                testName.Append(")");
-            }
-
-            return testName.ToString();
         }
 
         public static EcmaModule GetModuleForTestAssembly(string assemblyName)
@@ -224,6 +204,27 @@ namespace ILVerify.Tests
             base.Deserialize(info);
             var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
             ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + GetErrorsString(ExpectedVerifierErrors);
+        }
+
+        private static string GetErrorsString(List<VerifierError> errors)
+        {
+            if (errors == null || errors.Count <= 0)
+                return String.Empty;
+
+            var errorsString = new StringBuilder(" (");
+
+            for (int i = 0; i < errors.Count - 1; ++i)
+                errorsString.Append(errors[i]).Append(", ");
+
+            errorsString.Append(errors[errors.Count - 1]);
+            errorsString.Append(")");
+
+            return errorsString.ToString();
         }
     }
 }
