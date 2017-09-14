@@ -832,6 +832,14 @@ void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
     return pMethod;
 }
 
+PTR_VOID Module::GetAssociatedData(PTR_VOID ControlPC)
+{
+    UNREFERENCED_PARAMETER(ControlPC);
+
+    // Not supported for ProjectN.
+    return NULL;
+}
+
 // Get classlib-defined helper for running deferred static class constructors. Returns NULL if this is not the
 // classlib module or the classlib doesn't implement this callback.
 void * Module::GetClasslibCheckStaticClassConstruction()
