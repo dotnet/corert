@@ -881,22 +881,15 @@ namespace System
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
 
-            int i = index;
-            int j = index + length - 1;
             Object[] objArray = array as Object[];
             if (objArray != null)
             {
-                while (i < j)
-                {
-                    Object temp = objArray[i];
-                    objArray[i] = objArray[j];
-                    objArray[j] = temp;
-                    i++;
-                    j--;
-                }
+                Array.Reverse<object>(objArray, index, length);
             }
             else
             {
+                int i = index;
+                int j = index + length - 1;
                 while (i < j)
                 {
                     Object temp = array.GetValue(i);
@@ -925,13 +918,14 @@ namespace System
             if (array.Length - index < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+            ref T p = ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData());
             int i = index;
             int j = index + length - 1;
             while (i < j)
             {
-                T temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
+                T temp = Unsafe.Add(ref p, i);
+                Unsafe.Add(ref p, i) = Unsafe.Add(ref p, j);
+                Unsafe.Add(ref p, j) = temp;
                 i++;
                 j--;
             }
