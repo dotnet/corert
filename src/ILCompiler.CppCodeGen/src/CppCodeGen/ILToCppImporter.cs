@@ -523,6 +523,17 @@ namespace Internal.IL
             Append("{");
             Indent();
 
+
+            if (_method.IsNativeCallable)
+            {
+                AppendLine();
+                Append("ReversePInvokeFrame __frame");
+                AppendSemicolon();
+                AppendLine();
+                Append("__reverse_pinvoke(&__frame)");
+                AppendSemicolon();
+            }
+
             bool initLocals = _methodIL.IsInitLocals;
             for (int i = 0; i < _locals.Length; i++)
             {
@@ -1339,6 +1350,13 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
+            if (_method.IsNativeCallable)
+            {
+                AppendLine();
+                Append("__reverse_pinvoke_return(&__frame)");
+                AppendSemicolon();
+            }
+
             var returnType = _methodSignature.ReturnType;
             AppendLine();
             if (returnType.IsVoid)
