@@ -985,9 +985,11 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            Check(method.OwningType.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodParentInst);
-            Check(method.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodInst);
-
+            var ecmaType = method.OwningType as EcmaType;
+            if (!method.OwningType.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+            else if (!method.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
             // Access verifications
             handleMemberAccessForVerification(callInfo.accessAllowed, callInfo.callsiteCalloutHelper,
@@ -1102,8 +1104,10 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            Check(method.OwningType.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodParentInst);
-            Check(method.SatisfiesConstraints(), VerifierError.UnsatisfiedMethodInst);
+            if (!method.OwningType.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+            else if (!method.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
 #if false
             Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from

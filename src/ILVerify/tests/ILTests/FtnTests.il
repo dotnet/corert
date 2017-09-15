@@ -324,6 +324,42 @@
         ret
     }
 
+    .method static public hidebysig void NewObj.RefGenericForRefConstraint_Valid<class T>() cil managed
+    {
+        // var c = new GenericTestClass`1<T>();
+
+        newobj      instance void class GenericTestClass`1<!!T>::.ctor()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void NewObj.ValueTypeGenericForValueTypeConstraint_Valid<valuetype T>() cil managed
+    {
+        // var c = new GenericValueType`1<T>();
+
+        newobj      instance void class GenericValueType`1<!!T>::.ctor()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void NewObj.CtorGenericForCtorConstraint_Valid<.ctor T>() cil managed
+    {
+        // var c = new GenericCtor`1<T>();
+
+        newobj      instance void class GenericCtor`1<!!T>::.ctor()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void NewObj.ValueTypeGenericForCtorConstraint_Valid<valuetype T>() cil managed
+    {
+        // var c = new GenericCtor`1<T>();
+
+        newobj      instance void class GenericCtor`1<!!T>::.ctor()
+        pop
+        ret
+    }
+
     .method static public hidebysig void NewObj.IntForRefConstraint_Invalid_UnsatisfiedMethodParentInst() cil managed
     {
         // GenericTestClass<int> c = new GenericTestClass<int>();
