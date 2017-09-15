@@ -176,8 +176,11 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' != 'Static'" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' == 'Static'" />
 
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT'" />
-    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeCodeGen)' != 'wasm'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static'" />
+    <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static'" />
+    <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
+    
     <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot;  &quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != ''" />
     <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSCRIPTEN environment variable points to the directory containing emcc.bat"
              Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' == ''" />
