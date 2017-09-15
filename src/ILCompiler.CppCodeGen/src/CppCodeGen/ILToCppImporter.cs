@@ -917,6 +917,17 @@ namespace Internal.IL
                     return;
             }
 
+            //this assumes that there will only ever be at most one RawPInvoke call in a given method
+            if (method.IsRawPInvoke())
+            {
+                AppendLine();
+                Append("PInvokeTransitionFrame __piframe");
+                AppendSemicolon();
+                AppendLine();
+                Append("__pinvoke(&__piframe)");
+                AppendSemicolon();
+            }
+
             TypeDesc constrained = null;
             if (opcode != ILOpcode.newobj)
             {
@@ -1216,6 +1227,13 @@ namespace Internal.IL
                 PushExpression(retKind, temp, retType);
             }
             AppendSemicolon();
+
+            if (method.IsRawPInvoke())
+            {
+                AppendLine();
+                Append("__pinvoke_return(&__piframe)");
+                AppendSemicolon();
+            }
         }
 
         private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument)
