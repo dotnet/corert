@@ -41,4 +41,19 @@ inline double __uint64_to_double(uint64_t v)
     return val.d;
 }
 
-#endif // __CPP_CODE_GEN_H
+struct ReversePInvokeFrame
+{
+    void*   m_savedPInvokeTransitionFrame;
+    void*   m_savedThread;
+};
+
+struct PInvokeTransitionFrame
+{
+    void*       m_RIP;
+    void*       m_FramePointer;
+    void*       m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
+                            // can be an invalid pointer in universal transition cases (which never need to call GetThread)
+    uint32_t    m_dwFlags;  // PInvokeTransitionFrameFlags
+    uint64_t    m_PreservedRegs[];
+};
+#endif

@@ -151,6 +151,19 @@ void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
     RhpReversePInvokeReturn2(pRevFrame);
 }
 
+extern "C" void RhpPInvoke2(PInvokeTransitionFrame* pFrame);
+extern "C" void RhpPInvokeReturn2(PInvokeTransitionFrame* pFrame);
+
+void __pinvoke(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvoke2(pFrame);
+}
+
+void __pinvoke_return(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvokeReturn2(pFrame);
+}
+
 namespace System_Private_CoreLib { namespace System { 
 
     class Object {

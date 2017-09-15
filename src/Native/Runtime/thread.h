@@ -255,6 +255,9 @@ public:
     bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
 
+    void InlinePInvoke(PInvokeTransitionFrame * pFrame);
+    void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
+
     Object * GetThreadAbortException();
     void SetThreadAbortException(Object *exception);
 
