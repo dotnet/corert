@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Internal.TypeSystem
 {
     public static class TypeSystemConstraintsHelpers
@@ -13,24 +15,24 @@ namespace Internal.TypeSystem
             // Check class constraint
             if ((constraints & GenericConstraints.ReferenceTypeConstraint) != 0)
             {
-                if (!instantiationParam.IsGCPointer && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.ReferenceTypeConstraint))
+                if (!instantiationParam.IsGCPointer
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.ReferenceTypeConstraint))
                     return false;
             }
 
             // Check default constructor constraint
             if ((constraints & GenericConstraints.DefaultConstructorConstraint) != 0)
             {
-                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor() && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.DefaultConstructorConstraint))
+                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor() 
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.DefaultConstructorConstraint))
                     return false;
             }
 
             // Check struct constraint
-            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0 && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
+            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
             {
-                if (!instantiationParam.IsValueType)
-                    return false;
-
-                if (instantiationParam.IsNullable)
+                if ((!instantiationParam.IsValueType || instantiationParam.IsNullable) 
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
                     return false;
             }
 
@@ -70,23 +72,25 @@ namespace Internal.TypeSystem
                 if (constraint.IsGenericParameter || constraint.IsInterface)
                     continue;
 
-                if (GenericConstraints.NotNullableValueTypeConstraint == specialConstraint)
+                switch (specialConstraint)
                 {
-                    if (constraint.IsValueType && !constraint.IsNullable)
-                        return true;
+                    case GenericConstraints.NotNullableValueTypeConstraint:
+                        if (constraint.IsValueType && !constraint.IsNullable)
+                            return true;
+                        break;
+                    case GenericConstraints.ReferenceTypeConstraint:
+                        if (!constraint.IsValueType)
+                            return true;
+                        break;
+                    case GenericConstraints.DefaultConstructorConstraint:
+                        // As constraint is only ancestor, can only be sure whether type has public default constructor if it is a value type
+                        if (constraint.IsValueType)
+                            return true;
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
                 }
-                else if (GenericConstraints.ReferenceTypeConstraint == specialConstraint)
-                {
-                    if (!constraint.IsValueType)
-                        return true;
-                }
-                else if (GenericConstraints.DefaultConstructorConstraint == specialConstraint)
-                {
-                    // As constraint is only ancestor, can only be sure whether type has public default constructor if it is a value type
-                    if (constraint.IsValueType)
-                        return true;
-                }
-
             }
 
             // type did not satisfy special constraint in any way

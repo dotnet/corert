@@ -4,7 +4,7 @@
 
 using Internal.TypeSystem;
 
-namespace Internal.IL
+namespace ILVerify
 {
     public static class TypeSystemHelpers
     {

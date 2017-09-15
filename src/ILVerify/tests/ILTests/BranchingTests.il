@@ -571,7 +571,7 @@
         lbl_ret: ret
     }
 
-    /* These tests currently yield an assert, due to a non-null entry stack to a catch/finally block; uncomment once fixed
+    /* These tests currently yield an assert (see issue #4537), due to a non-null entry stack to a catch/finally block; uncomment once fixed
     .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry.BranchIntoFilter() cil managed
     {
         .maxstack 2

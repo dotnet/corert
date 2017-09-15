@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using ILVerify;
 
 namespace Internal.IL
 {

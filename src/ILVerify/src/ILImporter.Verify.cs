@@ -838,7 +838,38 @@ namespace Internal.IL
                     Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
             }
 
-            if (!(opcode == ILOpcode.newobj && methodType.IsDelegate))
+            if (opcode == ILOpcode.newobj && methodType.IsDelegate)
+            {
+                Check(sig.Length == 2, VerifierError.DelegateCtor);
+                var declaredObj = StackValue.CreateFromType(sig[0]);
+                var declaredFtn = StackValue.CreateFromType(sig[1]);
+
+                Check(declaredFtn.Kind == StackValueKind.NativeInt, VerifierError.DelegateCtorSigI, declaredFtn);
+
+                var actualFtn = Pop();
+                var actualObj = Pop();
+
+                Check(actualFtn.IsMethod, VerifierError.StackMethod);
+
+                CheckIsAssignable(actualObj, declaredObj);
+                Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
+
+#if false
+                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
+                                                    tiActualFtn, tiActualObj),
+                           MVER_E_DLGT_PATTERN);
+
+                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
+                                                           parentTypeHandle,
+                                                           tiActualFtn.GetMethod(),
+                                                           methodClassHnd,
+                                                           getCurrentModuleHandle(),
+                                                           delegateMethodRef,
+                                                           memberRef),
+                           MVER_E_DLGT_CTOR);
+#endif
+            }
+            else
             {
                 for (int i = sig.Length - 1; i >= 0; i--)
                 {
@@ -855,38 +886,6 @@ namespace Internal.IL
 
             if (opcode == ILOpcode.newobj)
             {
-                if (methodType.IsDelegate)
-                {
-                    Check(sig.Length == 2, VerifierError.DelegateCtor);
-                    var declaredObj = StackValue.CreateFromType(sig[0]);
-                    var declaredFtn = StackValue.CreateFromType(sig[1]);
-
-                    Check(declaredFtn.Kind == StackValueKind.NativeInt, VerifierError.DelegateCtorSigI, declaredFtn);
-
-                    var actualFtn = Pop();
-                    var actualObj = Pop();
-
-                    Check(actualFtn.IsMethod, VerifierError.StackMethod);
-
-                    CheckIsAssignable(actualObj, declaredObj);
-                    Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
-
-#if false
-                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
-                                                    tiActualFtn, tiActualObj),
-                           MVER_E_DLGT_PATTERN);
-
-                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
-                                                           parentTypeHandle,
-                                                           tiActualFtn.GetMethod(),
-                                                           methodClassHnd,
-                                                           getCurrentModuleHandle(),
-                                                           delegateMethodRef,
-                                                           memberRef),
-                           MVER_E_DLGT_CTOR);
-#endif
-                }
-
                 // TODO:
             }
             else
