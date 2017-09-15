@@ -76,7 +76,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs" />

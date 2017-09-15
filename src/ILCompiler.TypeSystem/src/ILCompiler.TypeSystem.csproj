@@ -385,8 +385,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
       <Link>IL\MethodILDebugView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs">
-      <Link>IL\ILDisassember.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs">
+      <Link>IL\ILDisassembler.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
