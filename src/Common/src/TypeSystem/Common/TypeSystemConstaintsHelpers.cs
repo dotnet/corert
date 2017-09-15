@@ -8,22 +8,24 @@ namespace Internal.TypeSystem
     {
         private static bool VerifyGenericParamConstraint(Instantiation typeInstantiation, Instantiation methodInstantiation, GenericParameterDesc genericParam, TypeDesc instantiationParam)
         {
+            GenericConstraints constraints = genericParam.Constraints;
+
             // Check class constraint
-            if (genericParam.HasReferenceTypeConstraint)
+            if ((constraints & GenericConstraints.ReferenceTypeConstraint) != 0)
             {
                 if (!instantiationParam.IsGCPointer && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.ReferenceTypeConstraint))
                     return false;
             }
 
             // Check default constructor constraint
-            if (genericParam.HasDefaultConstructorConstraint)
+            if ((constraints & GenericConstraints.DefaultConstructorConstraint) != 0)
             {
                 if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor() && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.DefaultConstructorConstraint))
                     return false;
             }
 
             // Check struct constraint
-            if (genericParam.HasNotNullableValueTypeConstraint && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
+            if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0 && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
             {
                 if (!instantiationParam.IsValueType)
                     return false;
@@ -51,12 +53,14 @@ namespace Internal.TypeSystem
 
             var genericType = (GenericParameterDesc)type;
 
+            GenericConstraints constraints = genericType.Constraints;
+
             // Check if type has specialConstraint on its own
-            if ((genericType.Constraints & specialConstraint) != 0)
+            if ((constraints & specialConstraint) != 0)
                 return true;
 
             // Value type always has default constructor
-            if (specialConstraint == GenericConstraints.DefaultConstructorConstraint && genericType.HasNotNullableValueTypeConstraint)
+            if (specialConstraint == GenericConstraints.DefaultConstructorConstraint && (constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
                 return true;
 
             // The special constraints did not match, check if there is a primary type constraint,
