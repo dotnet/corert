@@ -296,10 +296,6 @@ static bool RUNTIME_INITIALIZED = false;
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 extern "C" int InitializeRuntime();
 
-#ifdef CPPCODEGEN
-ReversePInvokeFrame frame;
-#endif
-
 #ifdef CORERT_DLL
 #if defined(_WIN32)
 #define wmain CoreRT_wmain
@@ -348,10 +344,6 @@ int main(int argc, char* argv[])
     }
 #endif
 
-#ifdef CPPCODEGEN
-    __reverse_pinvoke_return(&frame);
-#endif
-
     RhpShutdown();
     RUNTIME_INITIALIZED = false;
 
@@ -388,10 +380,6 @@ extern "C" int InitializeRuntime()
 #endif // !CPPCODEGEN
 
     RUNTIME_INITIALIZED = true;
-
-#ifdef CPPCODEGEN
-    __reverse_pinvoke(&frame);
-#endif
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
