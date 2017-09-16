@@ -563,14 +563,23 @@ namespace System
 
         public static Boolean TryParse(String s, out Decimal result)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
             return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
             return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
         }
 
