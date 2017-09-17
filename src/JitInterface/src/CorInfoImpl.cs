@@ -2417,6 +2417,13 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(method.Name));
         }
 
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName)
+        {
+            // TODO: Implement JIT recognized intrinsics
+            // https://github.com/dotnet/corert/issues/4492
+            return null;
+        }
+
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
         {
             return (uint)HandleToObject(ftn).GetHashCode();

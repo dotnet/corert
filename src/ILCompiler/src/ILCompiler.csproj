@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
     <ProjectReference Include="..\..\ILCompiler.CppCodeGen\src\ILCompiler.CppCodeGen.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.WebAssembly\src\ILCompiler.WebAssembly.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine">

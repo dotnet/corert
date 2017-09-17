@@ -11,12 +11,17 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public interface IHasStartSymbol
+    {
+        ObjectAndOffsetSymbolNode StartSymbol { get; }
+    }
+
     /// <summary>
     /// Represents an array of <typeparamref name="TEmbedded"/> nodes. The contents of this node will be emitted
     /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
     /// sorted using provided comparer), followed by ending symbol.
     /// </summary>
-    public class ArrayOfEmbeddedDataNode<TEmbedded> : ObjectNode
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : ObjectNode, IHasStartSymbol
         where TEmbedded : EmbeddedObjectNode
     {
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
@@ -43,6 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     _nestedNodesList.Add(symbol);
                 }
+                symbol.ContainingNode = this;
             }
         }
 

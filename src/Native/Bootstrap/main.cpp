@@ -151,6 +151,19 @@ void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
     RhpReversePInvokeReturn2(pRevFrame);
 }
 
+extern "C" void RhpPInvoke2(PInvokeTransitionFrame* pFrame);
+extern "C" void RhpPInvokeReturn2(PInvokeTransitionFrame* pFrame);
+
+void __pinvoke(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvoke2(pFrame);
+}
+
+void __pinvoke_return(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvokeReturn2(pFrame);
+}
+
 namespace System_Private_CoreLib { namespace System { 
 
     class Object {
@@ -305,11 +318,6 @@ int main(int argc, char* argv[])
     }
 #endif // !CPPCODEGEN
 
-#ifdef CPPCODEGEN
-    ReversePInvokeFrame frame;
-    __reverse_pinvoke(&frame);
-#endif
-
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #else // !CPPCODEGEN
@@ -330,10 +338,6 @@ int main(int argc, char* argv[])
         printf("Method: %s\n", e);
         retval = -1;
     }
-#endif
-
-#ifdef CPPCODEGEN
-    __reverse_pinvoke_return(&frame);
 #endif
 
     RhpShutdown();

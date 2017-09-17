@@ -359,6 +359,8 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.UnicodeChar:
                     return new BlittableValueMarshaller();
+                case MarshallerKind.BlittableStructPtr:
+                    return new BlittableStructPtrMarshaller();
                 case MarshallerKind.AnsiChar:
                     return new AnsiCharMarshaller();
                 case MarshallerKind.Array:
@@ -935,6 +937,29 @@ namespace Internal.TypeSystem.Interop
             {
                 _ilCodeStreams.CallsiteSetupCodeStream.EmitLdArg(Index - 1);
             }
+        }
+    }
+
+    class BlittableStructPtrMarshaller : Marshaller
+    {
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            if (Out)
+            {
+                // TODO: https://github.com/dotnet/corert/issues/4466
+                throw new NotSupportedException("Marshalling an LPStruct argument not yet implemented");
+            }
+            else
+            {
+                LoadManagedAddr(codeStream);
+                StoreNativeValue(codeStream);
+            }
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            // TODO: https://github.com/dotnet/corert/issues/4466
+            throw new NotSupportedException("Marshalling an LPStruct argument not yet implemented");
         }
     }
 
