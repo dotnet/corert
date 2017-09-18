@@ -935,9 +935,9 @@ namespace Internal.IL
                 {
                     _pendingPrefix &= ~Prefix.Constrained;
                     constrained = _constrained;
-
                     bool forceUseRuntimeLookup;
-                    MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    var constrainedType = constrained.GetClosestDefType();
+                    MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
 
                     if (forceUseRuntimeLookup)
                         throw new NotImplementedException();
@@ -947,22 +947,16 @@ namespace Internal.IL
                         method = directMethod;
                         opcode = ILOpcode.call;
                     }
+                    //If constrainedType is a value type and constrainedType does not implement method (directMethod == null) then ptr is 
+                    //dereferenced, boxed, and passed as the 'this' pointer to the callvirt  method instruction. 
+                    else if (constrainedType.IsValueType)
+                    {
+                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
+                        _stack[thisPosition] = BoxValue(constrainedType, DereferenceThisPtr(method, constrainedType));
+                    }
                     else
                     {
-                        // Dereference "this"
-                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
-                        string tempName = NewTempName();
-
-                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
-                        Append(" ");
-                        Append(tempName);
-                        Append(" = *(");
-                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
-                        Append("*)");
-                        Append(_stack[thisPosition]);
-                        AppendSemicolon();
-
-                        _stack[thisPosition] = new ExpressionEntry(StackValueKind.ObjRef, tempName);
+                        DereferenceThisPtr(method);
                     }
                 }
             }
@@ -1205,6 +1199,29 @@ namespace Internal.IL
                 Append("__pinvoke_return(&__piframe)");
                 AppendSemicolon();
             }
+        }
+
+        private ExpressionEntry DereferenceThisPtr(MethodDesc method, TypeDesc type = null)
+        {
+            // Dereference "this"
+            int thisPosition = _stack.Top - (method.Signature.Length + 1);
+            string tempName = NewTempName();
+
+            StackValueKind valueKind = StackValueKind.ObjRef;
+            if (type != null && type.IsValueType)
+                valueKind = StackValueKind.ValueType;
+
+            Append(GetStackValueKindCPPTypeName(valueKind, type));
+            Append(" ");
+            Append(tempName);
+            Append(" = *(");
+            Append(GetStackValueKindCPPTypeName(valueKind, type));
+            Append("*)");
+            Append(_stack[thisPosition]);
+            AppendSemicolon();
+            var result = new ExpressionEntry(valueKind, tempName, type);
+            _stack[thisPosition] = result;
+            return result;
         }
 
         private void GetFunctionPointerForInterfaceMethod(MethodDesc method, ExpressionEntry v, string typeDefName)
@@ -2156,26 +2173,33 @@ namespace Internal.IL
                     throw new NotImplementedException();
 
                 var value = _stack.Pop();
-
-                PushTemp(StackValueKind.ObjRef, type);
-
-                AddTypeReference(type, true);
-
-                Append("__allocate_object(");
-                Append(_writer.GetCppTypeName(type));
-                Append("::__getMethodTable())");
-                AppendSemicolon();
-
-                string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-
-                // TODO: Write barrier as necessary
-                AppendLine();
-                Append("*(" + typeName + " *)((void **)");
-                Append(_stack.Peek());
-                Append(" + 1) = ");
-                Append(value);
-                AppendSemicolon();
+                _stack.Push(BoxValue(type, value));
             }
+        }
+
+        private ExpressionEntry BoxValue(TypeDesc type, StackEntry value)
+        {
+            string tempName = NewTempName();
+
+            AddTypeReference(type, true);
+            Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef, type));
+            Append(" ");
+            Append(tempName);
+            Append(" = __allocate_object(");
+            Append(_writer.GetCppTypeName(type));
+            Append("::__getMethodTable())");
+            AppendSemicolon();
+
+            string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
+
+            // TODO: Write barrier as necessary
+            AppendLine();
+            Append("*(" + typeName + " *)((void **)");
+            Append(tempName);
+            Append(" + 1) = ");
+            Append(value);
+            AppendSemicolon();
+            return new ExpressionEntry(StackValueKind.ObjRef, tempName, type);
         }
 
         private static bool IsOffsetContained(int offset, int start, int length)
