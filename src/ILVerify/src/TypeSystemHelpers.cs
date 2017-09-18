@@ -6,12 +6,12 @@ using Internal.TypeSystem;
 
 namespace ILVerify
 {
-    public static class TypeSystemHelpers
+    internal static class TypeSystemHelpers
     {
         /// <summary>
         /// Returns the "reduced type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
-        public static TypeDesc GetReducedType(this TypeDesc type)
+        internal static TypeDesc GetReducedType(this TypeDesc type)
         {
             if (type == null)
                 return null;
@@ -39,7 +39,7 @@ namespace ILVerify
         /// <summary>
         /// Returns the "verification type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
-        public static TypeDesc GetVerificationType(this TypeDesc type)
+        internal static TypeDesc GetVerificationType(this TypeDesc type)
         {
             if (type == null)
                 return null;
@@ -69,7 +69,7 @@ namespace ILVerify
         /// <summary>
         /// Returns the "intermediate type" based on the definition in the ECMA-335 standard (I.8.7).
         /// </summary>
-        public static TypeDesc GetIntermediateType(this TypeDesc type)
+        internal static TypeDesc GetIntermediateType(this TypeDesc type)
         {
             var verificationType = GetVerificationType(type);
 
