@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private IEETypeNode GetEETypeNode(NodeFactory factory)
         {
-            var fieldType = _preInitFieldInfo.Field.FieldType;
+            var fieldType = _preInitFieldInfo.Type;
             var node = factory.ConstructedTypeSymbol(fieldType);
             Debug.Assert(!node.RepresentsIndirectionCell);  // Array are always local
             return node;
