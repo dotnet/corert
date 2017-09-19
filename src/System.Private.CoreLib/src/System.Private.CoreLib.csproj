@@ -252,7 +252,6 @@
     <Compile Include="System\Number.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
-    <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
