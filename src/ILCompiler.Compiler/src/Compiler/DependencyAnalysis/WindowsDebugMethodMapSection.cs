@@ -91,12 +91,12 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (IMethodBodyNode emitted in emittedMethods)
             {
-                if (!(emitted.Method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod))
+                if (!(emitted.Method.GetMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod))
                 {
                     continue;
                 }
 
-                EntityHandle methodHandle = pseudoAssembly.EmitMetadataHandleForTypeSystemEntity(emitted.Method.GetTypicalMethodDefinition());
+                EntityHandle methodHandle = pseudoAssembly.EmitMetadataHandleForTypeSystemEntity(emitted.Method.GetMethodDefinition());
                 Debug.Assert(methodHandle.Kind == HandleKind.MemberReference);
                 uint methodToken = (uint)MetadataTokens.GetToken(methodHandle);
                 uint methodTokenRid = methodToken & 0xFFFFFF;
