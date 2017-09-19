@@ -218,7 +218,11 @@ namespace System
         private static unsafe float SplitFractionSingle(float* x)
         {
             //todo : https://github.com/dotnet/corert/issues/3167
-            return (float)RuntimeImports.modf(*x, (double*)x);
+            double d = *x;
+            double r = RuntimeImports.modf(d, &d);
+
+            *x = (float)d;
+            return (float)r;
         }
 
         private unsafe static float InternalTruncate(float x)
