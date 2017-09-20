@@ -16,6 +16,7 @@
     <Compile Include="SimpleArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="SimpleTypeSystemContext.cs" />
     <Compile Include="VerifierError.cs" />
+    <Compile Include="TypeSystemHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -241,8 +242,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
       <Link>IL\MethodILDebugView.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs">
-      <Link>IL\ILDisassember.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs">
+      <Link>IL\ILDisassembler.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
@@ -273,6 +274,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\System\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
+      <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

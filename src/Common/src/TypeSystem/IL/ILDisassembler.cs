@@ -22,14 +22,14 @@ namespace Internal.IL
     /// <summary>
     /// Helper struct to disassemble IL instructions into a textual representation.
     /// </summary>
-    public struct ILDisassember
+    public struct ILDisassembler
     {
         private byte[] _ilBytes;
         private MethodIL _methodIL;
         private ILTypeNameFormatter _typeNameFormatter;
         private int _currentOffset;
 
-        public ILDisassember(MethodIL methodIL)
+        public ILDisassembler(MethodIL methodIL)
         {
             _methodIL = methodIL;
             _ilBytes = methodIL.GetILBytes();
