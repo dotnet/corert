@@ -145,26 +145,22 @@ namespace System
         {
             // If the number has no fractional part do nothing
             // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
-            if (a == (double)(Int64)a)
+            if (a == (double)(long)a)
+            {
                 return a;
+            }
 
-            double tempVal = a + 0.5;
             // We had a number that was equally close to 2 integers. 
             // We need to return the even one.
-            double flrTempVal = RuntimeImports.floor(tempVal);
-            if (flrTempVal == tempVal)
+
+            double flrTempVal = Floor(a + 0.5);
+            
+            if ((a == (Floor(a) + 0.5)) && (RuntimeImports.fmod(flrTempVal, 2.0) != 0))
             {
-                if (0.0 != RuntimeImports.fmod(tempVal, 2.0))
-                {
-                    flrTempVal -= 1.0;
-                }
+                flrTempVal -= 1.0;
             }
 
-            if (flrTempVal == 0 && Double.IsNegative(a))
-            {
-                flrTempVal = Double.NegativeZero;
-            }
-            return flrTempVal;
+            return CopySign(flrTempVal, a);
         }
 
         public static double Round(double value, int digits)
@@ -219,9 +215,8 @@ namespace System
 
         public static unsafe double Truncate(double d)
         {
-            double intpart;
-            RuntimeImports.modf(d, &intpart);
-            return intpart;
+            RuntimeImports.modf(d, &d);
+            return d;
         }
 
         [Intrinsic]
@@ -303,6 +298,23 @@ namespace System
             }
         }
 
+        private static unsafe double CopySign(double x, double y)
+        {
+            var xbits = BitConverter.DoubleToInt64Bits(x);
+            var ybits = BitConverter.DoubleToInt64Bits(y);
+
+            // If the sign bits of x and y are not the same,
+            // flip the sign bit of x and return the new value;
+            // otherwise, just return x
+
+            if (((xbits ^ ybits) >> 63) != 0)
+            {
+                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
+            }
+
+            return x;
+        }
+
         /*================================Abs=========================================
         **Returns the absolute value of it's argument.
         ============================================================================*/
@@ -379,7 +391,7 @@ namespace System
         [Intrinsic]
         public static float Abs(float value)
         {
-            return (float)RuntimeImports.fabs(value);
+            return RuntimeImports.fabsf(value);
         }
 
         [Intrinsic]
