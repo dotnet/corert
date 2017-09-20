@@ -29,22 +29,6 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Set default references for netcoreapp1.1 -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-    <!-- This tells VS that this is .NET Core app - uses .NET Core debugger, etc. -->
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v1.1</TargetFrameworkVersion>
-    <NoWarn>$(NoWarn);1701;1702</NoWarn>
-    <!-- Force .dll extension even if output type is exe. -->
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <PackageReference Include="Microsoft.NETCore.App">
-      <Version>1.1.2</Version>
-    </PackageReference>
-  </ItemGroup>
-
   <!-- Set non-empty TargetFrameworkIdentifier to avoid defaulting to .NETPortable -->
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
