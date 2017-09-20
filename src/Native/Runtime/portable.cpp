@@ -208,19 +208,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
 }
 #endif
 
-//
-// PInvoke
-//
-COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
-{
-    // TODO: RhpPInvoke
-}
-
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
-{
-    // TODO: RhpPInvokeReturn
-}
-
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");

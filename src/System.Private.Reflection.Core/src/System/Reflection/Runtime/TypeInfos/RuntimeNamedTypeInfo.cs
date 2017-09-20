@@ -2,25 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.LowLevelLinq;
-using Internal.Reflection.Core.Execution;
-
 using Internal.Reflection.Tracing;
-
-using CharSet = System.Runtime.InteropServices.CharSet;
-using LayoutKind = System.Runtime.InteropServices.LayoutKind;
-using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -40,6 +29,23 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return IsGenericTypeDefinition;
+            }
+        }
+
+        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
+
+                foreach (CustomAttributeData cad in TrueCustomAttributes)
+                    yield return cad;
+
+                if (0 != (Attributes & TypeAttributes.Import))
+                    yield return new RuntimePseudoCustomAttributeData(typeof(ComImportAttribute), null, null);
             }
         }
 
@@ -163,6 +169,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 };
             }
         }
+
+        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.

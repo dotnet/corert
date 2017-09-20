@@ -36,6 +36,8 @@ See the LICENSE file in the project root for more information.
     <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\Runtime.lib" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
     <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+    <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
     <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
   </ItemGroup>
 

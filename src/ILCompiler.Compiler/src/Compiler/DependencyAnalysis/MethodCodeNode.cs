@@ -10,7 +10,7 @@ using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode, ISpecialUnboxThunkNode
     {
         public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
         public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
@@ -82,6 +82,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
+            }
+
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             return dependencies;
@@ -92,9 +98,27 @@ namespace ILCompiler.DependencyAnalysis
             return _methodCode;
         }
 
+        public bool IsSpecialUnboxingThunk => ((CompilerTypeSystemContext)Method.Context).IsSpecialUnboxingThunk(_method);
+
+        public ISymbolNode GetUnboxingThunkTarget(NodeFactory factory)
+        {
+            Debug.Assert(IsSpecialUnboxingThunk);
+
+            MethodDesc nonUnboxingMethod = ((CompilerTypeSystemContext)Method.Context).GetTargetOfSpecialUnboxingThunk(_method);
+            return factory.MethodEntrypoint(nonUnboxingMethod, false);
+        }
+
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
+
+        public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
+        {
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+                return factory.MethodAssociatedData(this);
+
+            return null;
+        }
 
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {

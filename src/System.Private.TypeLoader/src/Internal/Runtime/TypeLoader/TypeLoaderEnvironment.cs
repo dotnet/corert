@@ -675,7 +675,14 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
         {
-            targetMethod = IntPtr.Zero;
+            targetMethod = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(maybeInstantiatingAndUnboxingStub);
+            if (targetMethod != IntPtr.Zero)
+            {
+                return true;
+            }
+
+            // TODO: The rest of the code in this function is specific to ProjectN only. When we kill the binder, get rid of this
+            // linear search code (the only API that should be used for the lookup is the one above)
 
             // Get module
             IntPtr associatedModule = RuntimeAugments.GetOSModuleFromPointer(maybeInstantiatingAndUnboxingStub);

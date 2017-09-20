@@ -27,6 +27,11 @@ using System.Diagnostics.Contracts;
 using Internal.NativeFormat;
 using System.Runtime.CompilerServices;
 
+#if !RHTESTCL && !CORECLR && !CORERT
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
+#endif
+
 namespace System.Runtime.InteropServices
 {
     internal static class McgTypeHelpers
@@ -1106,6 +1111,13 @@ namespace System.Runtime.InteropServices
                 return mcgGenericArgumentMarshalInfo.IteratorType;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+                return DynamicInteropTypeHelper.ReplaceOpenGenericTypeInGenericInstantiation(
+                    interfaceType,
+                    typeof(global::Windows.Foundation.Collections.IIterator<>).TypeHandle
+                );
+#endif
             return default(RuntimeTypeHandle);
         }
 
@@ -1117,6 +1129,16 @@ namespace System.Runtime.InteropServices
                 return mcgGenericArgumentMarshalInfo.ElementClassType;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+            {
+                RuntimeTypeHandle[] genericTypeArgumentHandles;
+                RuntimeAugments.GetGenericInstantiation(interfaceType, out genericTypeArgumentHandles);
+                
+                if(genericTypeArgumentHandles.Length == 1)
+                    return genericTypeArgumentHandles[0];
+            }
+#endif
             return default(RuntimeTypeHandle);
         }
 
@@ -1128,6 +1150,15 @@ namespace System.Runtime.InteropServices
                 return mcgGenericArgumentMarshalInfo.ElementInterfaceType;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+            {
+                RuntimeTypeHandle[] genericTypeArgumentHandles;
+                RuntimeAugments.GetGenericInstantiation(interfaceType, out genericTypeArgumentHandles);
+                if(genericTypeArgumentHandles.Length == 1)
+                    return genericTypeArgumentHandles[0].GetDefaultInterface();
+            }
+#endif
             return default(RuntimeTypeHandle);
         }
 
@@ -1139,6 +1170,13 @@ namespace System.Runtime.InteropServices
                 return mcgGenericArgumentMarshalInfo.VectorViewType;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+                return DynamicInteropTypeHelper.ReplaceOpenGenericTypeInGenericInstantiation(
+                    interfaceType,
+                    typeof(System.Collections.Generic.IReadOnlyList<>).TypeHandle
+                );
+#endif
             return default(RuntimeTypeHandle);
         }
 
@@ -1150,6 +1188,13 @@ namespace System.Runtime.InteropServices
                 return mcgGenericArgumentMarshalInfo.AsyncOperationType;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+                return DynamicInteropTypeHelper.ReplaceOpenGenericTypeInGenericInstantiation(
+                    interfaceType,
+                    typeof(global::Windows.Foundation.IAsyncOperation<>).TypeHandle
+                );
+#endif
             return default(RuntimeTypeHandle);
         }
 
@@ -1161,6 +1206,15 @@ namespace System.Runtime.InteropServices
                 return (int)mcgGenericArgumentMarshalInfo.ElementSize;
             }
 
+#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+            if (McgModuleManager.UseDynamicInterop)
+            {
+                RuntimeTypeHandle[] genericTypeArgumentHandles;
+                RuntimeAugments.GetGenericInstantiation(interfaceType, out genericTypeArgumentHandles);
+                if (genericTypeArgumentHandles.Length == 1)
+                    return genericTypeArgumentHandles[0].GetValueTypeSize();
+            }
+#endif
             return -1;
         }
 #endregion

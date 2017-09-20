@@ -9,6 +9,7 @@
 **
 ===========================================================*/
 
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -412,6 +413,28 @@ namespace System
                 wstrcpy(dest, src, value.Length);
             }
             return result;
+        }
+
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            if (length > 0)
+            {
+                string result = FastAllocateString(length);
+                action(new Span<char>(ref result.GetRawStringData(), length), state);
+                return result;
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(length));
         }
 
         public object Clone()

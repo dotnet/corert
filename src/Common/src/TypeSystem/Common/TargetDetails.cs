@@ -18,6 +18,7 @@ namespace Internal.TypeSystem
         ARM64,
         X64,
         X86,
+        Wasm32
     }
 
     /// <summary>
@@ -92,6 +93,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.ARMEL:
                     case TargetArchitecture.X86:
+                    case TargetArchitecture.Wasm32:
                         return 4;
                     default:
                         throw new NotSupportedException();
@@ -201,6 +203,7 @@ namespace Internal.TypeSystem
             {
                 case TargetArchitecture.ARM:
                 case TargetArchitecture.ARMEL:
+                case TargetArchitecture.Wasm32:
                     // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
                     if (fieldAlignment.IsIndeterminate)
                         return LayoutInt.Indeterminate;

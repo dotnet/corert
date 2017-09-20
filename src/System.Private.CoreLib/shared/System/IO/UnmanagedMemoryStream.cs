@@ -471,6 +471,43 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Reads bytes from stream and puts them into the buffer
+        /// </summary>
+        /// <param name="destination">Buffer to read the bytes to.</param>
+        /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            try
+            {
+                // ReadAsync(Memory<byte>,...) needs to delegate to an existing virtual to do the work, in case an existing derived type
+                // has changed or augmented the logic associated with reads.  If the Memory wraps an array, we could delegate to
+                // ReadAsync(byte[], ...), but that would defeat part of the purpose, as ReadAsync(byte[], ...) often needs to allocate
+                // a Task<int> for the return value, so we want to delegate to one of the synchronous methods.  We could always
+                // delegate to the Read(Span<byte>) method, and that's the most efficient solution when dealing with a concrete
+                // UnmanagedMemoryStream, but if we're dealing with a type derived from UnmanagedMemoryStream, Read(Span<byte>) will end up delegating
+                // to Read(byte[], ...), which requires it to get a byte[] from ArrayPool and copy the data.  So, we special-case the
+                // very common case of the Memory<byte> wrapping an array: if it does, we delegate to Read(byte[], ...) with it,
+                // as that will be efficient in both cases, and we fall back to Read(Span<byte>) if the Memory<byte> wrapped something
+                // else; if this is a concrete UnmanagedMemoryStream, that'll be efficient, and only in the case where the Memory<byte> wrapped
+                // something other than an array and this is an UnmanagedMemoryStream-derived type that doesn't override Read(Span<byte>) will
+                // it then fall back to doing the ArrayPool/copy behavior.
+                return new ValueTask<int>(
+                    destination.TryGetArray(out ArraySegment<byte> destinationArray) ?
+                        Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
+                        Read(destination.Span));
+            }
+            catch (Exception ex)
+            {
+                return new ValueTask<int>(Task.FromException<int>(ex));
+            }
+        }
+
+        /// <summary>
         /// Returns the byte at the stream current Position and advances the Position.
         /// </summary>
         /// <returns></returns>
@@ -724,6 +761,38 @@ namespace System.IO
             catch (Exception ex)
             {
                 Debug.Assert(!(ex is OperationCanceledException));
+                return Task.FromException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Writes buffer into the stream. The operation completes synchronously.
+        /// </summary>
+        /// <param name="buffer">Buffer that will be written.</param>
+        /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
+                // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
+                if (source.DangerousTryGetArray(out ArraySegment<byte> sourceArray))
+                {
+                    Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
+                }
+                else
+                {
+                    Write(source.Span);
+                }
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
                 return Task.FromException(ex);
             }
         }

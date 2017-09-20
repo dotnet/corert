@@ -79,7 +79,7 @@ namespace System.Reflection.Runtime.MethodInfos
                             (object thisObject, object[] args, Type thisType) =>
                             {
                                 if (thisObject == null)
-                                    return RuntimeHelpers.GetUninitializedObject(thisType);
+                                    return RuntimeHelpers.GetUninitializedObject(thisType.GenericTypeArguments[0]);
 
                                 return thisObject;
                             }

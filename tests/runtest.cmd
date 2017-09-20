@@ -68,7 +68,7 @@ goto :Usage
 echo %ThisScript% [arch] [flavor] [/mode] [/runtest] [/coreclr ^<subset^>]
 echo     arch          : x64 / x86 / arm
 echo     flavor        : debug / release
-echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
+echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit/wasm. Default: all
 echo     /test         : Run a single test by folder name (ie, BasicThreading)
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
@@ -132,6 +132,8 @@ set /a __CppTotalTests=0
 set /a __CppPassedTests=0
 set /a __JitTotalTests=0
 set /a __JitPassedTests=0
+set /a __WasmTotalTests=0
+set /a __WasmPassedTests=0
 for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
@@ -145,24 +147,38 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
     )
     if NOT "!__SourceFileProj!" == "" (
         if /i not "%CoreRT_TestCompileMode%" == "cpp" (
-            set __Mode=Jit
-            call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-            set /a __JitTotalTests=!__JitTotalTests!+1
+            if /i not "%CoreRT_TestCompileMode%" == "wasm" (
+                    if not exist "!__SourceFolder!\no_ryujit" (
+                    set __Mode=Jit
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __JitTotalTests=!__JitTotalTests!+1
+                )
+            )
         )
         if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
-            if not exist "!__SourceFolder!\no_cpp" (
-                set __Mode=Cpp
-                call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                set /a __CppTotalTests=!__CppTotalTests!+1
+            if /i not "%CoreRT_TestCompileMode%" == "wasm" (
+                if not exist "!__SourceFolder!\no_cpp" (
+                    set __Mode=Cpp
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __CppTotalTests=!__CppTotalTests!+1
+                )
+            )
+            if /i not "%CoreRT_TestCompileMode%" == "cpp" (
+                if exist "!__SourceFolder!\wasm" (
+                    set __Mode=wasm
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __WasmTotalTests=!__WasmTotalTests!+1
+                )
             )
         )
     )
 )
 set /a __CppFailedTests=%__CppTotalTests%-%__CppPassedTests%
 set /a __JitFailedTests=%__JitTotalTests%-%__JitPassedTests%
-set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
-set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
-set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
+set /a __WasmFailedTests=%__WasmTotalTests%-%__WasmPassedTests%
+set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%+%__WasmTotalTests%
+set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%+%__WasmPassedTests%
+set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%+%__WasmFailedTests%
 
 echo ^<assemblies^>  > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
@@ -175,6 +191,7 @@ echo ^</assemblies^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo.
 set __JitStatusPassed=1
 set __CppStatusPassed=1
+set __WasmStatusPassed=1
 
 if /i not "%CoreRT_TestCompileMode%" == "cpp" (
     set __JitStatusPassed=0
@@ -190,8 +207,17 @@ if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
     call :PassFail !__CppStatusPassed! "CPP - TOTAL: %__CppTotalTests% PASSED: %__CppPassedTests%"
 )
 
+
+if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
+    set __WasmStatusPassed=0
+    if %__WasmTotalTests% EQU %__WasmPassedTests% (set __WasmStatusPassed=1)
+    if %__WasmTotalTests% EQU 0 (set __WasmStatusPassed=1)
+    call :PassFail !__WasmStatusPassed! "WASM - TOTAL: %__WasmTotalTests% PASSED: %__WasmPassedTests%"
+)
+
 if not !__JitStatusPassed! EQU 1 (exit /b 1)
 if not !__CppStatusPassed! EQU 1 (exit /b 1)
+if not !__WasmStatusPassed! EQU 1 (exit /b 1)
 exit /b 0
 
 :PassFail
@@ -227,6 +253,8 @@ goto :eof
         if /i "%CoreRT_BuildType%" == "debug" (
             set extraArgs=!extraArgs! /p:UseDebugCrt=true
         )
+    ) else if /i "%__Mode%" == "wasm" (
+        set extraArgs=!extraArgs! /p:NativeCodeGen=wasm
     ) else (
         if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
             set extraArgs=!extraArgs! "/p:IlcMultiModule=true"
@@ -240,6 +268,7 @@ goto :eof
 
     set __SavedErrorLevel=%ErrorLevel%
     if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
+    if "%__Mode%" == "wasm" (goto :SkipTestRun)
 
     if "%__SavedErrorLevel%"=="0" (
         echo.

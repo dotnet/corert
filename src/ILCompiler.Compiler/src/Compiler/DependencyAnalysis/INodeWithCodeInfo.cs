@@ -9,11 +9,12 @@ namespace ILCompiler.DependencyAnalysis
     [Flags]
     public enum FrameInfoFlags
     {
-        Handler         = 0x01,
-        Filter          = 0x02,
+        Handler             = 0x01,
+        Filter              = 0x02,
 
-        HasEHInfo       = 0x04,
-        ReversePInvoke  = 0x08,
+        HasEHInfo           = 0x04,
+        ReversePInvoke      = 0x08,
+        HasAssociatedData   = 0x10,
     }
 
     public struct FrameInfo
@@ -48,5 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get;
         }
+
+        ISymbolNode GetAssociatedDataNode(NodeFactory factory);
     }
 }

@@ -17,7 +17,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     internal sealed class RuntimePseudoCustomAttributeData : RuntimeCustomAttributeData
     {
-        public RuntimePseudoCustomAttributeData(RuntimeTypeInfo attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
+        public RuntimePseudoCustomAttributeData(Type attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
         {
             _attributeType = attributeType;
             if (constructorArguments == null)
@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.CustomAttributes
 
         // Equals/GetHashCode no need to override (they just implement reference equality but desktop never unified these things.)
 
-        private readonly RuntimeTypeInfo _attributeType;
+        private readonly Type _attributeType;
         private readonly ReadOnlyCollection<CustomAttributeTypedArgument> _constructorArguments;
         private readonly ReadOnlyCollection<CustomAttributeNamedArgument> _namedArguments;
     }
