@@ -935,9 +935,9 @@ namespace Internal.IL
                 {
                     _pendingPrefix &= ~Prefix.Constrained;
                     constrained = _constrained;
-
                     bool forceUseRuntimeLookup;
-                    MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    var constrainedType = constrained.GetClosestDefType();
+                    MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
 
                     if (forceUseRuntimeLookup)
                         throw new NotImplementedException();
@@ -947,22 +947,16 @@ namespace Internal.IL
                         method = directMethod;
                         opcode = ILOpcode.call;
                     }
+                    //If constrainedType is a value type and constrainedType does not implement method (directMethod == null) then ptr is 
+                    //dereferenced, boxed, and passed as the 'this' pointer to the callvirt  method instruction. 
+                    else if (constrainedType.IsValueType)
+                    {
+                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
+                        _stack[thisPosition] = BoxValue(constrainedType, DereferenceThisPtr(method, constrainedType));
+                    }
                     else
                     {
-                        // Dereference "this"
-                        int thisPosition = _stack.Top - (method.Signature.Length + 1);
-                        string tempName = NewTempName();
-
-                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
-                        Append(" ");
-                        Append(tempName);
-                        Append(" = *(");
-                        Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef));
-                        Append("*)");
-                        Append(_stack[thisPosition]);
-                        AppendSemicolon();
-
-                        _stack[thisPosition] = new ExpressionEntry(StackValueKind.ObjRef, tempName);
+                        DereferenceThisPtr(method);
                     }
                 }
             }
@@ -1046,44 +1040,15 @@ namespace Internal.IL
                 ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
 
                 string typeDefName = _writer.GetCppMethodName(method);
-                _writer.AppendSignatureTypeDef(_builder,  typeDefName, method.Signature, method.OwningType);
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, method.Signature, method.OwningType);
 
                 string functionPtr = NewTempName();
                 AppendEmptyLine();
 
                 Append("void*");
                 Append(functionPtr);
-                Append(" = (void*) ((");
-                Append(typeDefName);
-                // Call method to find implementation address
-                Append(") System_Private_CoreLib::System::Runtime::DispatchResolve::FindInterfaceMethodImplementationTarget(");
-
-                // Get EEType of current object (interface implementation)
-                Append("::System_Private_CoreLib::System::Object::get_EEType((::System_Private_CoreLib::System::Object*)");
-                Append(v.Name);
-                Append(")");
-
-                Append(", ");
-
-                // Get EEType of interface
-                Append("((::System_Private_CoreLib::Internal::Runtime::EEType *)(");
-                Append(_writer.GetCppTypeName(method.OwningType));
-                Append("::__getMethodTable()))");
-
-                Append(", ");
-
-                // Get slot of implementation
-                Append("(uint16_t)");
-                Append("(");
-                Append(_writer.GetCppTypeName(method.OwningType));
-                Append("::");
-                Append("__getslot__");
-                Append(_writer.GetCppMethodName(method));
-                Append("(");
-                Append(v.Name);
-                Append("))");
-
-                Append("));");
+                Append(" = (void*) ");
+                GetFunctionPointerForInterfaceMethod(method, v, typeDefName);
 
                 PushExpression(StackValueKind.ByRef, functionPtr);
             }
@@ -1236,6 +1201,64 @@ namespace Internal.IL
             }
         }
 
+        private ExpressionEntry DereferenceThisPtr(MethodDesc method, TypeDesc type = null)
+        {
+            // Dereference "this"
+            int thisPosition = _stack.Top - (method.Signature.Length + 1);
+            string tempName = NewTempName();
+
+            StackValueKind valueKind = StackValueKind.ObjRef;
+            if (type != null && type.IsValueType)
+                valueKind = StackValueKind.ValueType;
+
+            Append(GetStackValueKindCPPTypeName(valueKind, type));
+            Append(" ");
+            Append(tempName);
+            Append(" = *(");
+            Append(GetStackValueKindCPPTypeName(valueKind, type));
+            Append("*)");
+            Append(_stack[thisPosition]);
+            AppendSemicolon();
+            var result = new ExpressionEntry(valueKind, tempName, type);
+            _stack[thisPosition] = result;
+            return result;
+        }
+
+        private void GetFunctionPointerForInterfaceMethod(MethodDesc method, ExpressionEntry v, string typeDefName)
+        {
+            Append("((");
+            Append(typeDefName);
+            // Call method to find implementation address
+            Append(") System_Private_CoreLib::System::Runtime::DispatchResolve::FindInterfaceMethodImplementationTarget(");
+
+            // Get EEType of current object (interface implementation)
+            Append("::System_Private_CoreLib::System::Object::get_EEType((::System_Private_CoreLib::System::Object*)");
+            Append(v.Name);
+            Append(")");
+
+            Append(", ");
+
+            // Get EEType of interface
+            Append("((::System_Private_CoreLib::Internal::Runtime::EEType *)(");
+            Append(_writer.GetCppTypeName(method.OwningType));
+            Append("::__getMethodTable()))");
+
+            Append(", ");
+
+            // Get slot of implementation
+            Append("(uint16_t)");
+            Append("(");
+            Append(_writer.GetCppTypeName(method.OwningType));
+            Append("::");
+            Append("__getslot__");
+            Append(_writer.GetCppMethodName(method));
+            Append("(");
+            Append(v.Name);
+            Append("))");
+
+            Append("));");
+        }
+
         private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument)
         {
             int signatureLength = methodSignature.Length;
@@ -1325,22 +1348,51 @@ namespace Internal.IL
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
-            if (opCode == ILOpcode.ldvirtftn)
+            if (opCode == ILOpcode.ldvirtftn && method.IsVirtual && method.OwningType.IsInterface)
             {
-                if (method.IsVirtual)
-                    throw new NotImplementedException();
+                AddVirtualMethodReference(method);
+                var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, NewTempName(), method);
+                ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+                string typeDefName = _writer.GetCppMethodName(method);
+                _writer.AppendSignatureTypeDef(_builder, typeDefName, method.Signature, method.OwningType);
+
+                AppendEmptyLine();
+
+                PushTemp(entry);
+                Append("(intptr_t) ");
+                GetFunctionPointerForInterfaceMethod(method, v, typeDefName);
             }
+            else
+            {
+                AddMethodReference(method);
+                var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, NewTempName(), method);
+                
+                if (opCode == ILOpcode.ldvirtftn && method.IsVirtual)
+                {
+                    //ldvirtftn requires an object instance, we have to pop one off the stack
+                    //then call the associated getslot method passing in the object instance to get the real function pointer
+                    ExpressionEntry v = (ExpressionEntry)_stack.Pop();
+                    PushTemp(entry);
+                    Append("(intptr_t)");
+                    Append(_writer.GetCppTypeName(method.OwningType));
+                    Append("::__getslot__");
+                    Append(_writer.GetCppMethodName(method));
+                    Append("(");
+                    Append(v.Name);
+                    Append(")");
+                    AppendSemicolon();
+                }
+                else
+                {
+                    PushTemp(entry);
+                    Append("(intptr_t)&");
+                    Append(_writer.GetCppTypeName(method.OwningType));
+                    Append("::");
+                    Append(_writer.GetCppMethodName(method));
 
-            AddMethodReference(method);
-
-            var entry = new LdTokenEntry<MethodDesc>(StackValueKind.NativeInt, NewTempName(), method);
-            PushTemp(entry);
-            Append("(intptr_t)&");
-            Append(_writer.GetCppTypeName(method.OwningType));
-            Append("::");
-            Append(_writer.GetCppMethodName(method));
-
-            AppendSemicolon();
+                    AppendSemicolon();
+                }
+            }
         }
 
         private void ImportLoadInt(long value, StackValueKind kind)
@@ -2121,26 +2173,33 @@ namespace Internal.IL
                     throw new NotImplementedException();
 
                 var value = _stack.Pop();
-
-                PushTemp(StackValueKind.ObjRef, type);
-
-                AddTypeReference(type, true);
-
-                Append("__allocate_object(");
-                Append(_writer.GetCppTypeName(type));
-                Append("::__getMethodTable())");
-                AppendSemicolon();
-
-                string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
-
-                // TODO: Write barrier as necessary
-                AppendLine();
-                Append("*(" + typeName + " *)((void **)");
-                Append(_stack.Peek());
-                Append(" + 1) = ");
-                Append(value);
-                AppendSemicolon();
+                _stack.Push(BoxValue(type, value));
             }
+        }
+
+        private ExpressionEntry BoxValue(TypeDesc type, StackEntry value)
+        {
+            string tempName = NewTempName();
+
+            AddTypeReference(type, true);
+            Append(GetStackValueKindCPPTypeName(StackValueKind.ObjRef, type));
+            Append(" ");
+            Append(tempName);
+            Append(" = __allocate_object(");
+            Append(_writer.GetCppTypeName(type));
+            Append("::__getMethodTable())");
+            AppendSemicolon();
+
+            string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
+
+            // TODO: Write barrier as necessary
+            AppendLine();
+            Append("*(" + typeName + " *)((void **)");
+            Append(tempName);
+            Append(" + 1) = ");
+            Append(value);
+            AppendSemicolon();
+            return new ExpressionEntry(StackValueKind.ObjRef, tempName, type);
         }
 
         private static bool IsOffsetContained(int offset, int start, int length)
@@ -2673,6 +2732,11 @@ namespace Internal.IL
         private void AddMethodReference(MethodDesc method)
         {
             _dependencies.Add(_nodeFactory.MethodEntrypoint(method));
+        }
+
+        private void AddVirtualMethodReference(MethodDesc method)
+        {
+            _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
         }
 
         private void AddFieldReference(FieldDesc field)
