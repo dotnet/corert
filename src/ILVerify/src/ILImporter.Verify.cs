@@ -112,7 +112,7 @@ namespace Internal.IL
                 return EndOffset == -2;
             }
 
-            public bool IsEnqueued()
+            public bool IsPending()
             {
                 return EndOffset == -1;
             }
@@ -1157,7 +1157,7 @@ namespace Internal.IL
                             {
                                 entryStack[i] = mergedValue;
 
-                                if (next.ErrorCount == 0 && !next.WasVerified())
+                                if (next.ErrorCount == 0 && !next.IsPending())
                                     next.EndOffset = 0; // Make sure block is reverified
                             }
                         }
