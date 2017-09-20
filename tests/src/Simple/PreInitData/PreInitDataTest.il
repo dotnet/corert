@@ -312,107 +312,86 @@
     IL_0040:  ret
   } // end of method PreInitDataTest::TestPreInitIntData
 
-  .method private hidebysig static bool  TestPreInitTypeData() cil managed
-  {
-    // Code size       225 (0xe1)
-    .maxstack  2
-    .locals init (bool V_0,
-             valuetype [mscorlib]System.RuntimeTypeHandle V_1,
-             bool V_2,
-             bool V_3,
-             bool V_4,
-             bool V_5)
-    IL_0000:  nop
-    IL_0001:  ldstr      "Testing preinitialized type array..."
-    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
-    IL_000b:  nop
-    IL_000c:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_0011:  ldc.i4.0
-    IL_0012:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_0017:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_001c:  stloc.1
-    IL_001d:  ldloca.s   V_1
-    IL_001f:  ldtoken    [mscorlib]System.Int32
-    IL_0024:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0029:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_002e:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0033:  ldc.i4.0
-    IL_0034:  ceq
-    IL_0036:  stloc.0
-    IL_0037:  ldloc.0
-    IL_0038:  brfalse.s  IL_0041
+.method private hidebysig static bool  TestPreInitTypeData() cil managed
+{
+  // Code size       191 (0xbf)
+  .maxstack  2
+  .locals init (bool V_0,
+           bool V_1,
+           bool V_2,
+           bool V_3,
+           bool V_4)
+  IL_0000:  nop
+  IL_0001:  ldstr      "Testing preinitialized type array..."
+  IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+  IL_000b:  nop
+  IL_000c:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+  IL_0011:  ldc.i4.0
+  IL_0012:  ldelema    [mscorlib]System.RuntimeTypeHandle
+  IL_0017:  ldtoken    [mscorlib]System.Int32
+  IL_001c:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_0021:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+  IL_0026:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_002b:  ldc.i4.0
+  IL_002c:  ceq
+  IL_002e:  stloc.0
+  IL_002f:  ldloc.0
+  IL_0030:  brfalse.s  IL_0039
+  IL_0032:  ldc.i4.0
+  IL_0033:  stloc.1
+  IL_0034:  br         IL_00bd
+  IL_0039:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+  IL_003e:  ldc.i4.1
+  IL_003f:  ldelema    [mscorlib]System.RuntimeTypeHandle
+  IL_0044:  ldtoken    [mscorlib]System.Int16
+  IL_0049:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_004e:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+  IL_0053:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_0058:  ldc.i4.0
+  IL_0059:  ceq
+  IL_005b:  stloc.2
+  IL_005c:  ldloc.2
+  IL_005d:  brfalse.s  IL_0063
+  IL_005f:  ldc.i4.0
+  IL_0060:  stloc.1
+  IL_0061:  br.s       IL_00bd
+  IL_0063:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+  IL_0068:  ldc.i4.2
+  IL_0069:  ldelema    [mscorlib]System.RuntimeTypeHandle
+  IL_006e:  ldtoken    [mscorlib]System.Int64
+  IL_0073:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_0078:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+  IL_007d:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_0082:  ldc.i4.0
+  IL_0083:  ceq
+  IL_0085:  stloc.3
+  IL_0086:  ldloc.3
+  IL_0087:  brfalse.s  IL_008d
+  IL_0089:  ldc.i4.0
+  IL_008a:  stloc.1
+  IL_008b:  br.s       IL_00bd
+  IL_008d:  ldsfld     valuetype [mscorlib]System.RuntimeTypeHandle[] PreInitData::PreInitializedTypeField
+  IL_0092:  ldc.i4.3
+  IL_0093:  ldelema    [mscorlib]System.RuntimeTypeHandle
+  IL_0098:  ldtoken    [mscorlib]System.String
+  IL_009d:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_00a2:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
+  IL_00a7:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
+  IL_00ac:  ldc.i4.0
+  IL_00ad:  ceq
+  IL_00af:  stloc.s    V_4
+  IL_00b1:  ldloc.s    V_4
+  IL_00b3:  brfalse.s  IL_00b9
+  IL_00b5:  ldc.i4.0
+  IL_00b6:  stloc.1
+  IL_00b7:  br.s       IL_00bd
+  IL_00b9:  ldc.i4.1
+  IL_00ba:  stloc.1
+  IL_00bb:  br.s       IL_00bd
+  IL_00bd:  ldloc.1
+  IL_00be:  ret
+} // end of method PreInitDataTest::TestPreInitTypeData
 
-    IL_003a:  ldc.i4.0
-    IL_003b:  stloc.2
-    IL_003c:  br         IL_00df
-
-    IL_0041:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_0046:  ldc.i4.1
-    IL_0047:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_004c:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_0051:  stloc.1
-    IL_0052:  ldloca.s   V_1
-    IL_0054:  ldtoken    [mscorlib]System.Int16
-    IL_0059:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_005e:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_0063:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0068:  ldc.i4.0
-    IL_0069:  ceq
-    IL_006b:  stloc.3
-    IL_006c:  ldloc.3
-    IL_006d:  brfalse.s  IL_0073
-
-    IL_006f:  ldc.i4.0
-    IL_0070:  stloc.2
-    IL_0071:  br.s       IL_00df
-
-    IL_0073:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_0078:  ldc.i4.2
-    IL_0079:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_007e:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_0083:  stloc.1
-    IL_0084:  ldloca.s   V_1
-    IL_0086:  ldtoken    [mscorlib]System.Int64
-    IL_008b:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0090:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_0095:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_009a:  ldc.i4.0
-    IL_009b:  ceq
-    IL_009d:  stloc.s    V_4
-    IL_009f:  ldloc.s    V_4
-    IL_00a1:  brfalse.s  IL_00a7
-
-    IL_00a3:  ldc.i4.0
-    IL_00a4:  stloc.2
-    IL_00a5:  br.s       IL_00df
-
-    IL_00a7:  ldsfld     valuetype [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle[] PreInitData::PreInitializedTypeField
-    IL_00ac:  ldc.i4.3
-    IL_00ad:  ldelema    [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle
-    IL_00b2:  call       instance valuetype [mscorlib]System.RuntimeTypeHandle [System.Private.CoreLib]Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle::get_RuntimeTypeHandle()
-    IL_00b7:  stloc.1
-    IL_00b8:  ldloca.s   V_1
-    IL_00ba:  ldtoken    [mscorlib]System.String
-    IL_00bf:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00c4:  callvirt   instance valuetype [mscorlib]System.RuntimeTypeHandle [mscorlib]System.Type::get_TypeHandle()
-    IL_00c9:  call       instance bool [mscorlib]System.RuntimeTypeHandle::Equals(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_00ce:  ldc.i4.0
-    IL_00cf:  ceq
-    IL_00d1:  stloc.s    V_5
-    IL_00d3:  ldloc.s    V_5
-    IL_00d5:  brfalse.s  IL_00db
-
-    IL_00d7:  ldc.i4.0
-    IL_00d8:  stloc.2
-    IL_00d9:  br.s       IL_00df
-
-    IL_00db:  ldc.i4.1
-    IL_00dc:  stloc.2
-    IL_00dd:  br.s       IL_00df
-
-    IL_00df:  ldloc.2
-    IL_00e0:  ret
-  } // end of method PreInitDataTest::TestPreInitTypeData
 
   .method private hidebysig static bool  TestPreInitMethodData() cil managed
   {
