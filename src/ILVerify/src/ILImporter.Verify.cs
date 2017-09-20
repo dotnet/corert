@@ -106,6 +106,16 @@ namespace Internal.IL
             {
                 ErrorCount++;
             }
+
+            public bool WasVerified()
+            {
+                return EndOffset == -2;
+            }
+
+            public bool IsEnqueued()
+            {
+                return EndOffset == -1;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -692,6 +702,7 @@ namespace Internal.IL
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
         {
+            basicBlock.EndOffset = -2; // Mark as already verified
         }
 
         void ImportNop()
@@ -1146,7 +1157,7 @@ namespace Internal.IL
                             {
                                 entryStack[i] = mergedValue;
 
-                                if (next.ErrorCount == 0)
+                                if (next.ErrorCount == 0 && !next.WasVerified())
                                     next.EndOffset = 0; // Make sure block is reverified
                             }
                         }
