@@ -2234,7 +2234,7 @@ namespace System
         /// </summary>
         private unsafe object GetDynamicAdapterInternal(RuntimeTypeHandle requestedType, RuntimeTypeHandle targetType)
         {
-            Debug.Assert(requestedType.HasDynamicAdapterClass());
+            Debug.Assert(requestedType.HasDynamicAdapterClass() || requestedType.IsGenericType());
 
             Debug.Assert(targetType.IsNull() || targetType.HasDynamicAdapterClass());
 
