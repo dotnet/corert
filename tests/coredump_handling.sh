@@ -24,7 +24,7 @@ function set_up_core_dump_generation {
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when
             # inspecting the contents of the dump. See 'man core' for details.
-            echo 0x3F > /proc/self/coredump_filter
+            echo -n 0x3F > /proc/self/coredump_filter
         fi
     fi
 }
