@@ -81,7 +81,7 @@ namespace Internal.IL
 
         private class BasicBlock
         {
-            public enum BlockState : int
+            public enum ImportState : int
             {
                 Unmarked = 0, IsPending = -1,
             }
@@ -90,7 +90,7 @@ namespace Internal.IL
             public BasicBlock Next;
 
             public int StartOffset;
-            public BlockState State = BlockState.Unmarked;
+            public ImportState State = ImportState.Unmarked;
 
             public EvaluationStack<StackEntry> EntryStack;
 
