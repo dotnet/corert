@@ -84,7 +84,7 @@ namespace Internal.IL
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public int EndOffset = UNMARKED;
 
             public StackValue[] EntryStack;
 
@@ -107,14 +107,18 @@ namespace Internal.IL
                 ErrorCount++;
             }
 
+            public const int WAS_VERIFIED = -2;
+            public const int IS_PENDING = -1;
+            public const int UNMARKED = 0;
+
             public bool WasVerified()
             {
-                return EndOffset == -2;
+                return EndOffset == WAS_VERIFIED;
             }
 
             public bool IsPending()
             {
-                return EndOffset == -1;
+                return EndOffset == IS_PENDING;
             }
         };
 
@@ -702,7 +706,7 @@ namespace Internal.IL
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
         {
-            basicBlock.EndOffset = -2; // Mark as already verified
+            basicBlock.EndOffset = BasicBlock.WAS_VERIFIED;
         }
 
         void ImportNop()
@@ -1158,7 +1162,7 @@ namespace Internal.IL
                                 entryStack[i] = mergedValue;
 
                                 if (next.ErrorCount == 0 && !next.IsPending())
-                                    next.EndOffset = 0; // Make sure block is reverified
+                                    next.EndOffset = BasicBlock.UNMARKED; // Make sure block is reverified
                             }
                         }
                     }
