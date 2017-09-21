@@ -48,9 +48,9 @@ namespace ILCompiler.DependencyAnalysis
 
             int IComparable<EmittedMethodWithILToken>.CompareTo(EmittedMethodWithILToken other)
             {
-                if (other.IlTokenRid == IlTokenRid)
+                if (IlTokenRid == other.IlTokenRid)
                     return 0;
-                if (other.IlTokenRid < IlTokenRid)
+                if (IlTokenRid < other.IlTokenRid)
                     return -1;
                 return 1;
             }
