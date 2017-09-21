@@ -149,7 +149,7 @@ static int LookupUnwindInfoForMethod(UInt32 relativePc,
                                      int low,
                                      int high)
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     relativePc |= THUMB_CODE;
 #endif 
 
