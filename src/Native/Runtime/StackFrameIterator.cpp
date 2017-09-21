@@ -167,6 +167,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     // properly walk it in parallel.
     ResetNextExInfoForSP((UIntNative)dac_cast<TADDR>(pFrame));
 
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
@@ -249,6 +250,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
 #endif // _TARGET_ARM_
+
+#endif // defined(USE_PORTABLE_HELPERS)
 
     // @TODO: currently, we always save all registers -- how do we handle the onese we don't save once we 
     //        start only saving those that weren't already saved?
