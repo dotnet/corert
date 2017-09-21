@@ -200,6 +200,17 @@
         ret
     }
 
+    .method public hidebysig instance void Casting.AssignVariantInterfaceToObject_Valid(class [System.Runtime]System.Collections.Generic.IEnumerable`1<string> e) cil managed
+    {
+        .locals init (
+            object o
+        )
+
+        ldarg.1
+        stloc.0
+        ret
+    }
+
     .method public hidebysig instance void Casting.AssignThisToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
     {
         .locals init (
