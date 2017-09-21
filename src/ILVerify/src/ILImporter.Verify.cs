@@ -81,10 +81,15 @@ namespace Internal.IL
         class BasicBlock
         {
             // Common fields
+            public enum ImportState : int
+            {
+                Unmarked = 0, IsPending = -1, WasVerified = -2
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset = UNMARKED;
+            public ImportState State = ImportState.Unmarked;
 
             public StackValue[] EntryStack;
 
@@ -105,20 +110,6 @@ namespace Internal.IL
             public void IncrementErrorCount()
             {
                 ErrorCount++;
-            }
-
-            public const int WAS_VERIFIED = -2;
-            public const int IS_PENDING = -1;
-            public const int UNMARKED = 0;
-
-            public bool WasVerified()
-            {
-                return EndOffset == WAS_VERIFIED;
-            }
-
-            public bool IsPending()
-            {
-                return EndOffset == IS_PENDING;
             }
         };
 
@@ -706,7 +697,7 @@ namespace Internal.IL
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
         {
-            basicBlock.EndOffset = BasicBlock.WAS_VERIFIED;
+            basicBlock.State = BasicBlock.ImportState.WasVerified;
         }
 
         void ImportNop()
@@ -1161,8 +1152,8 @@ namespace Internal.IL
                             {
                                 entryStack[i] = mergedValue;
 
-                                if (next.ErrorCount == 0 && !next.IsPending())
-                                    next.EndOffset = BasicBlock.UNMARKED; // Make sure block is reverified
+                                if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                    next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
                             }
                         }
                     }

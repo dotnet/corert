@@ -81,11 +81,16 @@ namespace Internal.IL
 
         private class BasicBlock
         {
+            public enum BlockState : int
+            {
+                Unmarked = 0, IsPending = -1,
+            }
+
             // Common fields
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public BlockState State = BlockState.Unmarked;
 
             public EvaluationStack<StackEntry> EntryStack;
 

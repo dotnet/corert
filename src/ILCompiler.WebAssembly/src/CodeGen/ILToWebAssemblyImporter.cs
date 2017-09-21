@@ -44,10 +44,15 @@ namespace Internal.IL
         private class BasicBlock
         {
             // Common fields
+            public enum ImportState : int
+            {
+                Unmarked = 0, IsPending = -1
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public ImportState State = ImportState.Unmarked;
 
             public EvaluationStack<StackEntry> EntryStack;
 
