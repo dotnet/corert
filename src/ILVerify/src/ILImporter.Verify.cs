@@ -81,9 +81,11 @@ namespace Internal.IL
         class BasicBlock
         {
             // Common fields
-            public enum ImportState : int
+            public enum ImportState : byte
             {
-                Unmarked = 0, IsPending = -1, WasVerified = -2
+                Unmarked,
+                IsPending,
+                WasVerified
             }
 
             public BasicBlock Next;

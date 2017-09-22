@@ -81,12 +81,13 @@ namespace Internal.IL
 
         private class BasicBlock
         {
-            public enum ImportState : int
+            // Common fields
+            public enum ImportState : byte
             {
-                Unmarked = 0, IsPending = -1,
+                Unmarked,
+                IsPending
             }
 
-            // Common fields
             public BasicBlock Next;
 
             public int StartOffset;
