@@ -70,26 +70,6 @@ namespace Internal.IL
             }
             catch (Exception e)
             {
-                // Change the function body to trap
-                if (ilImporter != null)
-                {
-                    foreach(BasicBlock block in ilImporter._basicBlocks)
-                    {
-                        if (block != null && block.Block.Pointer != IntPtr.Zero)
-                        {
-                            LLVM.DeleteBasicBlock(block.Block);
-                        }
-                    }
-                    LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(ilImporter._llvmFunction, "Trap");
-                    LLVM.PositionBuilderAtEnd(ilImporter._builder, trapBlock);
-                    if (TrapFunction.Pointer == IntPtr.Zero)
-                    {
-                        TrapFunction = LLVM.AddFunction(ilImporter.Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
-                    }
-                    //LLVMValueRef trapFunction = LLVM.GetNamedFunction(ilImporter.Module, "llvm.trap");
-                    LLVM.BuildCall(ilImporter._builder, TrapFunction, Array.Empty<LLVMValueRef>(), String.Empty);
-                    LLVM.BuildRetVoid(ilImporter._builder);
-                }
                 compilation.Logger.Writer.WriteLine(e.Message + " (" + method + ")");
 
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
@@ -98,7 +78,7 @@ namespace Internal.IL
                 //methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
             }
 
-            // Ensure dependencies still show up to avoid breaking LLVM
+            // Ensure dependencies show up regardless of exceptions to avoid breaking LLVM
             methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
         }
 
