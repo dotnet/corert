@@ -157,6 +157,7 @@ namespace System.Runtime.CompilerServices
 
         public static int OffsetToStringData
         {
+            [Intrinsic] // Workaround to allow WebAssembly to define a size here without a special CoreLib build
             get
             {
                 // Number of bytes from the address pointed to by a reference to
