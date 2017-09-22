@@ -317,13 +317,13 @@ namespace Internal.IL
 
         private void MarkBasicBlock(BasicBlock basicBlock)
         {
-            if (basicBlock.EndOffset == 0)
+            if (basicBlock.State == BasicBlock.ImportState.Unmarked)
             {
                 // Link
                 basicBlock.Next = _pendingBasicBlocks;
                 _pendingBasicBlocks = basicBlock;
 
-                basicBlock.EndOffset = -1;
+                basicBlock.State = BasicBlock.ImportState.IsPending;
             }
         }
 
