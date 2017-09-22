@@ -46,6 +46,8 @@ set(COMMON_RUNTIME_SOURCES
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp
     ../gc/gcwks.cpp
+    ../gc/gceesvr.cpp
+    ../gc/gcsvr.cpp
     ../gc/gcscan.cpp
     ../gc/handletable.cpp
     ../gc/handletablecache.cpp
@@ -154,6 +156,7 @@ convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 
 add_definitions(-DFEATURE_BACKGROUND_GC)
+add_definitions(-DFEATURE_SVR_GC)
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
