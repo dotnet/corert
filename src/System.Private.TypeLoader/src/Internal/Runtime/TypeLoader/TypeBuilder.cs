@@ -34,9 +34,9 @@ namespace Internal.Runtime.TypeLoader
     using ThunkKind = CallConverterThunk.ThunkKind;
     using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
-    internal static class LowLevelListExtensions
+    internal static class ListExtensions
     {
-        public static void Expand<T>(this LowLevelList<T> list, int count)
+        public static void Expand<T>(this List<T> list, int count)
         {
             if (list.Capacity < count)
                 list.Capacity = count;
@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
                 list.Add(default(T));
         }
 
-        public static bool HasSetBits(this LowLevelList<bool> list)
+        public static bool HasSetBits(this List<bool> list)
         {
             for (int index = 0; index < list.Count; index++)
             {
@@ -89,11 +89,11 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
-        private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
+        private List<TypeDesc> _typesThatNeedTypeHandles = new List<TypeDesc>();
 
-        private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
+        private List<InstantiatedMethod> _methodsThatNeedDictionaries = new List<InstantiatedMethod>();
 
-        private LowLevelList<TypeDesc> _typesThatNeedPreparation = null;
+        private List<TypeDesc> _typesThatNeedPreparation = null;
 
         private Object _epoch = new Object();
 
@@ -179,7 +179,7 @@ namespace Internal.Runtime.TypeLoader
                 return;
 
             if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+                _typesThatNeedPreparation = new List<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -841,17 +841,17 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal unsafe struct GCLayout
         {
-            private LowLevelList<bool> _bitfield;
+            private List<bool> _bitfield;
             private unsafe void* _gcdesc;
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
             public static GCLayout None { get { return new GCLayout(); } }
-            public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
+            public static GCLayout SingleReference { get; } = new GCLayout(new List<bool>(new bool[1] { true }), false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
 
-            public GCLayout(LowLevelList<bool> bitfield, bool isReferenceTypeGCLayout)
+            public GCLayout(List<bool> bitfield, bool isReferenceTypeGCLayout)
             {
                 Debug.Assert(bitfield != null);
 
@@ -867,7 +867,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(eeType != null);
 
                 _bitfield = null;
-                _isReferenceTypeGCLayout = false; // This field is only used for the LowLevelList<bool> path
+                _isReferenceTypeGCLayout = false; // This field is only used for the List<bool> path
                 _gcdesc = eeType->HasGCPointers ? (void**)eeType - 1 : null;
                 _size = (int)eeType->BaseSize;
             }
@@ -878,7 +878,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="bitfield">The bitfield to write a layout to (may be null, at which
             /// point it will be created and assigned).</param>
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
-            public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
+            public void WriteToBitfield(List<bool> bitfield, int offset)
             {
                 if (bitfield == null)
                     throw new ArgumentNullException(nameof(bitfield));
@@ -895,7 +895,7 @@ namespace Internal.Runtime.TypeLoader
                     WriteGCDescToBitfield(bitfield, offset);
             }
 
-            private unsafe void WriteGCDescToBitfield(LowLevelList<bool> bitfield, int offset)
+            private unsafe void WriteGCDescToBitfield(List<bool> bitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
@@ -923,12 +923,12 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            private void MergeBitfields(LowLevelList<bool> outputBitfield, int offset)
+            private void MergeBitfields(List<bool> outputBitfield, int offset)
             {
                 int startIndex = offset / IntPtr.Size;
 
                 // These routines represent the GC layout after the EEType pointer
-                // in an object, but the LowLevelList<bool> bitfield logically contains 
+                // in an object, but the List<bool> bitfield logically contains 
                 // the EETypepointer if it is describing a reference type. So, skip the
                 // first value.
                 int itemsToSkip = _isReferenceTypeGCLayout ? 1 : 0;

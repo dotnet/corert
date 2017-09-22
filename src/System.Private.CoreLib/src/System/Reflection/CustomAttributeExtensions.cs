@@ -337,7 +337,7 @@ namespace System.Reflection
         //==============================================================================================================================
         private static IEnumerable<Attribute> Instantiate(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
-            LowLevelList<Attribute> attributes = new LowLevelList<Attribute>();
+            List<Attribute> attributes = new List<Attribute>();
             foreach (CustomAttributeData cad in cads)
             {
                 Attribute instantiatedAttribute = cad.Instantiate();

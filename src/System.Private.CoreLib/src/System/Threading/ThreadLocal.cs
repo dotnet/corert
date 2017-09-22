@@ -464,9 +464,9 @@ namespace System.Threading
         }
 
         /// <summary>Gets all of the threads' values in a list.</summary>
-        private LowLevelListWithIList<T> GetValuesAsList()
+        private List<T> GetValuesAsList()
         {
-            LowLevelListWithIList<T> valueList = new LowLevelListWithIList<T>();
+            List<T> valueList = new List<T>();
             int id = ~m_idComplement;
             if (id == -1)
             {
@@ -671,7 +671,7 @@ namespace System.Threading
             private int m_nextIdToTry = 0;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
-            private LowLevelList<bool> m_freeIds = new LowLevelList<bool>();
+            private List<bool> m_freeIds = new List<bool>();
 
             internal Lock m_lock = new Lock();
 

@@ -105,7 +105,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         {
             int index = 0;
             Handle[] lazyCtorTypeHandles = null;
-            LowLevelListWithIList<CustomAttributeTypedArgument> customAttributeTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+            List<CustomAttributeTypedArgument> customAttributeTypedArguments = new List<CustomAttributeTypedArgument>();
 
             foreach (FixedArgumentHandle fixedArgumentHandle in _customAttribute.FixedArguments)
             {
@@ -167,7 +167,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         //
         internal sealed override IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata)
         {
-            LowLevelListWithIList<CustomAttributeNamedArgument> customAttributeNamedArguments = new LowLevelListWithIList<CustomAttributeNamedArgument>();
+            List<CustomAttributeNamedArgument> customAttributeNamedArguments = new List<CustomAttributeNamedArgument>();
             foreach (NamedArgumentHandle namedArgumentHandle in _customAttribute.NamedArguments)
             {
                 NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(_reader);

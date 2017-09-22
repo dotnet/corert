@@ -82,7 +82,7 @@ namespace Internal.Reflection.Execution
         //
         public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
         {
-            LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+            List<String> defaultAssemblies = new List<String>();
             defaultAssemblies.Add(callingAssemblyName);
             defaultAssemblies.AddRange(DefaultAssemblyNamesForGetType);
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);

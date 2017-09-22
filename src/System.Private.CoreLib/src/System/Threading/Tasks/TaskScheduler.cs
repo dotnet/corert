@@ -517,7 +517,7 @@ namespace System.Threading.Tasks
             Task[] activeTasksArray = activeTasksSource as Task[];
             if (activeTasksArray == null)
             {
-                activeTasksArray = (new LowLevelList<Task>(activeTasksSource)).ToArray();
+                activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
             }
 
             // touch all Task.Id fields so that the debugger doesn't need to do a lot of cross-proc calls to generate them
@@ -546,7 +546,7 @@ namespace System.Threading.Tasks
                 return new TaskScheduler[] { s_defaultTaskScheduler };
             }
 
-            LowLevelList<TaskScheduler> schedulers = new LowLevelList<TaskScheduler>();
+            List<TaskScheduler> schedulers = new List<TaskScheduler>();
             foreach (var item in s_activeTaskSchedulers)
             {
                 schedulers.Add(item.Key);

@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 MetadataReader reader = Reader;
-                LowLevelList<QTypeDefRefOrSpec> constraints = new LowLevelList<QTypeDefRefOrSpec>();
+                List<QTypeDefRefOrSpec> constraints = new List<QTypeDefRefOrSpec>();
                 foreach (Handle constraintHandle in _genericParameter.Constraints)
                 {
                     constraints.Add(new QTypeDefRefOrSpec(reader, constraintHandle));

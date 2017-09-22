@@ -61,7 +61,7 @@ namespace Internal.Runtime.TypeLoader
 {
     public class CallConverterThunk
     {
-        private static LowLevelList<IntPtr> s_allocatedThunks = new LowLevelList<IntPtr>();
+        private static List<IntPtr> s_allocatedThunks = new List<IntPtr>();
 
         private static volatile object s_thunkPoolHeap;
 

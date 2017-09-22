@@ -678,9 +678,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>

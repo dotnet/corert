@@ -272,7 +272,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 #region Lookup Methods
                 MethodInfo[] semiFinalists = GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[];
-                LowLevelListWithIList<MethodInfo> results = null;
+                List<MethodInfo> results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
                 {
@@ -290,7 +290,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         if (results == null)
                         {
-                            results = new LowLevelListWithIList<MethodInfo>(semiFinalists.Length);
+                            results = new List<MethodInfo>(semiFinalists.Length);
                             results.Add(finalist);
                         }
 
@@ -315,7 +315,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 #region Lookup Property
                 PropertyInfo[] semiFinalists = GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];
-                LowLevelListWithIList<MethodInfo> results = null;
+                List<MethodInfo> results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
                 {
@@ -348,7 +348,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         if (results == null)
                         {
-                            results = new LowLevelListWithIList<MethodInfo>(semiFinalists.Length);
+                            results = new List<MethodInfo>(semiFinalists.Length);
                             results.Add(finalist);
                         }
 

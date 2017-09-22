@@ -669,7 +669,7 @@ namespace Internal.Runtime.TypeLoader
                 int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
                 Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
 
-                LowLevelList<TypeManagerHandle> newModuleHandles = new LowLevelList<TypeManagerHandle>(loadedModuleHandles.Length);
+                List<TypeManagerHandle> newModuleHandles = new List<TypeManagerHandle>(loadedModuleHandles.Length);
                 foreach (TypeManagerHandle moduleHandle in loadedModuleHandles)
                 {
                     // Skip already registered modules.

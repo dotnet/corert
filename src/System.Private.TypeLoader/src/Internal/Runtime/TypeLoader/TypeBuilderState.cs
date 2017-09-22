@@ -523,9 +523,9 @@ namespace Internal.Runtime.TypeLoader
 
         // Sentinel static to allow us to initializae _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
-        private static LowLevelList<bool> s_emptyLayout = new LowLevelList<bool>();
+        private static List<bool> s_emptyLayout = new List<bool>();
 
-        private LowLevelList<bool> _instanceGCLayout;
+        private List<bool> _instanceGCLayout;
 
         /// <summary>
         /// The instance gc layout of a dynamically laid out type.
@@ -541,13 +541,13 @@ namespace Internal.Runtime.TypeLoader
         /// If the type is a valuetype array, this is the layout of the valuetype held in the array if the type has GC reference fields
         /// Otherwise, it is the layout of the fields in the type.
         /// </summary>
-        public LowLevelList<bool> InstanceGCLayout
+        public List<bool> InstanceGCLayout
         {
             get
             {
                 if (_instanceGCLayout == null)
                 {
-                    LowLevelList<bool> instanceGCLayout = null;
+                    List<bool> instanceGCLayout = null;
 
                     if (TypeBeingBuilt is ArrayType)
                     {
@@ -557,7 +557,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                instanceGCLayout = new LowLevelList<bool>();
+                                instanceGCLayout = new List<bool>();
                                 elementGcLayout.WriteToBitfield(instanceGCLayout, 0);
                                 _instanceGCLayout = instanceGCLayout;
                             }
@@ -589,7 +589,7 @@ namespace Internal.Runtime.TypeLoader
                                 TypeBuilder.GCLayout baseTypeLayout = GetInstanceGCLayout(baseType);
                                 if (!baseTypeLayout.IsNone)
                                 {
-                                    instanceGCLayout = new LowLevelList<bool>();
+                                    instanceGCLayout = new List<bool>();
                                     baseTypeLayout.WriteToBitfield(instanceGCLayout, IntPtr.Size /* account for the EEType pointer */);
                                 }
                             }
@@ -606,7 +606,7 @@ namespace Internal.Runtime.TypeLoader
                                 if (!fieldGcLayout.IsNone)
                                 {
                                     if (instanceGCLayout == null)
-                                        instanceGCLayout = new LowLevelList<bool>();
+                                        instanceGCLayout = new List<bool>();
 
                                     fieldGcLayout.WriteToBitfield(instanceGCLayout, field.Offset.AsInt);
                                 }
@@ -646,8 +646,8 @@ namespace Internal.Runtime.TypeLoader
         }
 
 
-        public LowLevelList<bool> StaticGCLayout;
-        public LowLevelList<bool> ThreadStaticGCLayout;
+        public List<bool> StaticGCLayout;
+        public List<bool> ThreadStaticGCLayout;
 
         private bool _staticGCLayoutPrepared;
 
@@ -701,8 +701,8 @@ namespace Internal.Runtime.TypeLoader
                 {
                     // Compute GC layout boolean array from field information.
                     IEnumerable<FieldDesc> fields = GetFieldsForGCLayout();
-                    LowLevelList<bool> threadStaticLayout = null;
-                    LowLevelList<bool> gcStaticLayout = null;
+                    List<bool> threadStaticLayout = null;
+                    List<bool> gcStaticLayout = null;
 
                     foreach (FieldDesc field in fields)
                     {
@@ -712,17 +712,17 @@ namespace Internal.Runtime.TypeLoader
                         if (field.IsLiteral)
                             continue;
 
-                        LowLevelList<bool> gcLayoutInfo = null;
+                        List<bool> gcLayoutInfo = null;
                         if (field.IsThreadStatic)
                         {
                             if (threadStaticLayout == null)
-                                threadStaticLayout = new LowLevelList<bool>();
+                                threadStaticLayout = new List<bool>();
                             gcLayoutInfo = threadStaticLayout;
                         }
                         else if (field.HasGCStaticBase)
                         {
                             if (gcStaticLayout == null)
-                                gcStaticLayout = new LowLevelList<bool>();
+                                gcStaticLayout = new List<bool>();
                             gcLayoutInfo = gcStaticLayout;
                         }
                         else

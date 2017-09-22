@@ -184,7 +184,7 @@ namespace System.Reflection.Runtime.General
         // need not derive from System.Attribute. (In particular, it can be an interface or System.Object.)
         public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
-            LowLevelList<object> attributes = new LowLevelList<object>();
+            List<object> attributes = new List<object>();
             foreach (CustomAttributeData cad in cads)
             {
                 object instantiatedAttribute = cad.Instantiate();

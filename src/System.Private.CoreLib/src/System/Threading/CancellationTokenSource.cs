@@ -728,7 +728,7 @@ namespace System.Threading
 
             // Design decision: call the delegates in LIFO order so that callbacks fire 'deepest first'.
             // This is intended to help with nesting scenarios so that child enlisters cancel before their parents.
-            LowLevelListWithIList<Exception> exceptionList = null;
+            List<Exception> exceptionList = null;
             SparselyPopulatedArray<CancellationCallbackInfo>[] callbackLists = m_registeredCallbacksLists;
 
             // If there are no callbacks to run, we can safely exit.  Any race conditions to lazy initialize it
@@ -789,7 +789,7 @@ namespace System.Threading
 
                                         // Otherwise, log it and proceed.
                                         if (exceptionList == null)
-                                            exceptionList = new LowLevelListWithIList<Exception>();
+                                            exceptionList = new List<Exception>();
                                         exceptionList.Add(ex);
                                     }
                                 }

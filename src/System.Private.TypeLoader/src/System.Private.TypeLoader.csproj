@@ -192,7 +192,6 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\UniversalGenericParameterLayout.cs">
       <Link>UniversalGenericParameterLayout.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>MetadataBlob.cs</Link>
     </Compile>

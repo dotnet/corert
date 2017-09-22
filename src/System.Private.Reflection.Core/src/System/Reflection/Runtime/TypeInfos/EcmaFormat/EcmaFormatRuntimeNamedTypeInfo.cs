@@ -206,7 +206,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
         {
             get
             {
-                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
+                List<RuntimeTypeInfo> genericTypeParameters = new List<RuntimeTypeInfo>();
 
                 foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GetGenericParameters())
                 {
@@ -240,7 +240,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> directlyImplementedInterfaces = new LowLevelList<QTypeDefRefOrSpec>();
+                List<QTypeDefRefOrSpec> directlyImplementedInterfaces = new List<QTypeDefRefOrSpec>();
                 foreach (InterfaceImplementationHandle ifcHandle in _typeDefinition.GetInterfaceImplementations())
                 {
                     InterfaceImplementation interfaceImp = _reader.GetInterfaceImplementation(ifcHandle);

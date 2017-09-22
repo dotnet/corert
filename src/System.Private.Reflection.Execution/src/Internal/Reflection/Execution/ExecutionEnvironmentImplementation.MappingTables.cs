@@ -504,7 +504,7 @@ namespace Internal.Reflection.Execution
             // Prepare the list of arguments so that we can use it to instantiate the method.
 
             MethodParametersInfo methodParamsInfo = new MethodParametersInfo(reflectionMethodBase);
-            LowLevelList<RuntimeTypeHandle> dynamicInvokeMethodGenArguments = methodParamsInfo.ParameterTypeHandles;
+            List<RuntimeTypeHandle> dynamicInvokeMethodGenArguments = methodParamsInfo.ParameterTypeHandles;
 
             // This is either a constructor ("returns" void) or an instance method
             MethodInfo reflectionMethodInfo = reflectionMethodBase as MethodInfo;
@@ -1002,7 +1002,7 @@ namespace Internal.Reflection.Execution
             NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
             NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
 
-            LowLevelList<FunctionPointerOffsetPair> functionPointers = new LowLevelList<FunctionPointerOffsetPair>();
+            List<FunctionPointerOffsetPair> functionPointers = new List<FunctionPointerOffsetPair>();
 
             var lookup = invokeHashtable.EnumerateAllEntries();
             NativeParser entryParser;
@@ -1164,7 +1164,7 @@ namespace Internal.Reflection.Execution
             NativeParser methodTemplateMapParser = new NativeParser(methodTemplateMapReader, 0);
             NativeHashtable invokeHashtable = new NativeHashtable(methodTemplateMapParser);
 
-            LowLevelList<FunctionPointerOffsetPair> functionPointers = new LowLevelList<FunctionPointerOffsetPair>();
+            List<FunctionPointerOffsetPair> functionPointers = new List<FunctionPointerOffsetPair>();
 
             var lookup = invokeHashtable.EnumerateAllEntries();
             NativeParser entryParser;
@@ -1474,12 +1474,12 @@ namespace Internal.Reflection.Execution
                 _returnTypeAndParametersTypesCache = null;
             }
 
-            public LowLevelList<RuntimeTypeHandle> ParameterTypeHandles
+            public List<RuntimeTypeHandle> ParameterTypeHandles
             {
                 get
                 {
                     ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
-                    LowLevelList<RuntimeTypeHandle> result = new LowLevelList<RuntimeTypeHandle>(parameters.Length);
+                    List<RuntimeTypeHandle> result = new List<RuntimeTypeHandle>(parameters.Length);
 
                     for (int i = 0; i < parameters.Length; i++)
                     {
@@ -1500,11 +1500,11 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            public LowLevelList<RuntimeTypeHandle> ReturnTypeAndParameterTypeHandles
+            public List<RuntimeTypeHandle> ReturnTypeAndParameterTypeHandles
             {
                 get
                 {
-                    LowLevelList<RuntimeTypeHandle> result = ParameterTypeHandles;
+                    List<RuntimeTypeHandle> result = ParameterTypeHandles;
 
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
                     Type returnType = reflectionMethodInfo != null ? reflectionMethodInfo.ReturnType : CommonRuntimeTypes.Void;

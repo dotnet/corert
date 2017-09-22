@@ -47,7 +47,7 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Only needed for universal generics, or when looking up an offset for a field for a universal generic
-            LowLevelList<LayoutInt> fieldOffsets;
+            List<LayoutInt> fieldOffsets;
             LayoutInt[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Instance, out fieldOffsets);
 
             int numInstanceFields = 0;
@@ -100,7 +100,7 @@ namespace Internal.Runtime.TypeLoader
                 return ParseStaticRegionSizesFromNativeLayout(type);
             }
 
-            LowLevelList<LayoutInt> fieldOffsets;
+            List<LayoutInt> fieldOffsets;
             LayoutInt[] position = ComputeTypeSizeAndAlignment(type, FieldLoadState.Statics, out fieldOffsets);
 
             int numStaticFields = 0;
@@ -314,7 +314,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // The layout algorithm should probably compute results and let the caller set things
-        internal unsafe LayoutInt[] ComputeTypeSizeAndAlignment(TypeDesc type, FieldLoadState loadRequested, out LowLevelList<LayoutInt> fieldOffsets)
+        internal unsafe LayoutInt[] ComputeTypeSizeAndAlignment(TypeDesc type, FieldLoadState loadRequested, out List<LayoutInt> fieldOffsets)
         {
             fieldOffsets = null;
             TypeLoaderLogger.WriteLine("Laying out type " + type.ToString() + ". IsValueType: " + (type.IsValueType ? "true" : "false") + ". LoadRequested = " + ((int)loadRequested).LowLevelToString());
@@ -343,7 +343,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (!isArray && type.NativeLayoutFields.Length > 0)
             {
-                fieldOffsets = new LowLevelList<LayoutInt>(type.NativeLayoutFields.Length);
+                fieldOffsets = new List<LayoutInt>(type.NativeLayoutFields.Length);
                 for (int i = 0; i < type.NativeLayoutFields.Length; i++)
                 {
                     TypeDesc fieldType = type.NativeLayoutFields[i].FieldType;

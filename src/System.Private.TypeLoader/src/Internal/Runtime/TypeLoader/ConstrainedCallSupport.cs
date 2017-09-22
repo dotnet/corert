@@ -112,7 +112,7 @@ namespace Internal.Runtime.TypeLoader
             private static IntPtr s_boxAndEqualsFuncPtr;
             private static int s_resolveCallOnReferenceTypeCacheMissFunc;
 
-            private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_nonGenericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
+            private static LowLevelDictionary<RuntimeTypeHandle, List<IntPtr>> s_nonGenericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, List<IntPtr>>();
 
             public static unsafe IntPtr GetDirectConstrainedCallPtr(RuntimeTypeHandle constraintType, RuntimeTypeHandle constrainedMethodType, int constrainedMethodSlot)
             {
@@ -142,10 +142,10 @@ namespace Internal.Runtime.TypeLoader
                 lock (s_nonGenericConstrainedCallDescs)
                 {
                     // Get list of constrained call descs associated with a given type
-                    LowLevelList<IntPtr> associatedCallDescs;
+                    List<IntPtr> associatedCallDescs;
                     if (!s_nonGenericConstrainedCallDescs.TryGetValue(constraintType, out associatedCallDescs))
                     {
-                        associatedCallDescs = new LowLevelList<IntPtr>();
+                        associatedCallDescs = new List<IntPtr>();
                         s_nonGenericConstrainedCallDescs.Add(constraintType, associatedCallDescs);
                     }
 
@@ -397,17 +397,17 @@ namespace Internal.Runtime.TypeLoader
             private static int s_resolveCallOnReferenceTypeCacheMissFunc;
             private static IntPtr s_resolveCallOnValueTypeFuncPtr;
 
-            private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_genericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
+            private static LowLevelDictionary<RuntimeTypeHandle, List<IntPtr>> s_genericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, List<IntPtr>>();
 
             public static unsafe IntPtr Get(RuntimeTypeHandle constraintType, RuntimeMethodHandle constrainedMethod)
             {
                 lock (s_genericConstrainedCallDescs)
                 {
                     // Get list of constrained call descs associated with a given type
-                    LowLevelList<IntPtr> associatedCallDescs;
+                    List<IntPtr> associatedCallDescs;
                     if (!s_genericConstrainedCallDescs.TryGetValue(constraintType, out associatedCallDescs))
                     {
-                        associatedCallDescs = new LowLevelList<IntPtr>();
+                        associatedCallDescs = new List<IntPtr>();
                         s_genericConstrainedCallDescs.Add(constraintType, associatedCallDescs);
                     }
 

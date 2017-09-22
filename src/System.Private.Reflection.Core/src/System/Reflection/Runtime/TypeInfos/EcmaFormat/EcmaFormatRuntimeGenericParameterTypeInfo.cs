@@ -79,7 +79,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             get
             {
                 MetadataReader reader = Reader;
-                LowLevelList<QTypeDefRefOrSpec> constraints = new LowLevelList<QTypeDefRefOrSpec>();
+                List<QTypeDefRefOrSpec> constraints = new List<QTypeDefRefOrSpec>();
                 foreach (GenericParameterConstraintHandle constraintHandle in _genericParameter.GetConstraints())
                 {
                     GenericParameterConstraint constraint = Reader.GetGenericParameterConstraint(constraintHandle);

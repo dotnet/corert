@@ -127,8 +127,8 @@ namespace System.Reflection.Runtime.CustomAttributes.EcmaFormat
 
         private void LoadArgumentInfo(bool throwIfMissingMetadata, out IList<CustomAttributeNamedArgument> namedArguments, out IList<CustomAttributeTypedArgument> fixedArguments, out bool metadataWasMissing)
         {
-            LowLevelListWithIList<CustomAttributeNamedArgument> newNamedArguments = new LowLevelListWithIList<CustomAttributeNamedArgument>();
-            LowLevelListWithIList<CustomAttributeTypedArgument> newFixedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+            List<CustomAttributeNamedArgument> newNamedArguments = new List<CustomAttributeNamedArgument>();
+            List<CustomAttributeTypedArgument> newFixedArguments = new List<CustomAttributeTypedArgument>();
             ReflectionTypeProvider typeProvider = new ReflectionTypeProvider(throwIfMissingMetadata);
 
             CustomAttributeValue<RuntimeTypeInfo> customAttributeValue = _customAttribute.DecodeValue(typeProvider);

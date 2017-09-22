@@ -14,7 +14,7 @@ namespace Internal.LowLevelLinq
         {
             Debug.Assert(values != null);
 
-            LowLevelList<T> list = new LowLevelList<T>();
+            List<T> list = new List<T>();
             foreach (T value in values)
             {
                 list.Add(value);

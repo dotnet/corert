@@ -39,7 +39,7 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+                List<String> defaultAssemblies = new List<String>();
                 defaultAssemblies.Add(defaultAssemblyName);
                 defaultAssemblies.AddRange(ReflectionExecution.DefaultAssemblyNamesForGetType);
                 return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);

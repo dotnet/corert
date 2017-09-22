@@ -528,7 +528,7 @@ namespace System.Threading.Tasks
             {
                 get
                 {
-                    LowLevelList<T> list = new LowLevelList<T>();
+                    List<T> list = new List<T>();
                     foreach (T item in m_queue)
                         list.Add(item);
                     return list.ToArray();

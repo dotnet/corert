@@ -213,7 +213,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                LowLevelListWithIList<Type> result = new LowLevelListWithIList<Type>();
+                List<Type> result = new List<Type>();
 
                 bool done = false;
 

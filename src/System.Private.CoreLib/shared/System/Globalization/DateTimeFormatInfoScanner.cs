@@ -30,7 +30,7 @@ namespace System.Globalization
     using StringList = List<string>;
 #else
     using StringStringDictionary = LowLevelDictionary<string, string>;
-    using StringList = LowLevelList<string>;
+    using StringList = List<string>;
 #endif
 
     //
