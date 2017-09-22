@@ -92,7 +92,31 @@ namespace Internal.IL
         public void Import()
         {
             FindBasicBlocks();
-            ImportBasicBlocks();
+
+            try
+            {
+                ImportBasicBlocks();
+            }
+            catch
+            {
+                // Change the function body to trap
+                foreach (BasicBlock block in _basicBlocks)
+                {
+                    if (block != null && block.Block.Pointer != IntPtr.Zero)
+                    {
+                        LLVM.DeleteBasicBlock(block.Block);
+                    }
+                }
+                LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
+                LLVM.PositionBuilderAtEnd(_builder, trapBlock);
+                if (TrapFunction.Pointer == IntPtr.Zero)
+                {
+                    TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+                }
+                LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), String.Empty);
+                LLVM.BuildRetVoid(_builder);
+                throw;
+            }
         }
 
         private void GenerateProlog()
