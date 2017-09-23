@@ -731,7 +731,7 @@ namespace Internal.IL
 
             var returnValue = LLVM.BuildCall(_builder, nativeFunc, arguments, "call");
 
-            // todo void returns
+            // TODO: void returns
             PushExpression(GetStackValueKind(method.Signature.ReturnType), String.Empty, returnValue, method.Signature.ReturnType);
         }
 
