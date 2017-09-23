@@ -40,21 +40,24 @@ set "NUGET_PACKAGES=%__PackagesDir%"
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
 
-"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=win7-x64 /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+set __NugetRuntimeId=win7-x64
+if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
+
+"%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=%__NugetRuntimeId% /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
 rem Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
 rem the standalone app that the build injects actual binaries into later.
-"%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r win7-x64
+"%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
-"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r win7-x64 -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
+"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
 :: Set the environment for the managed build
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=win7-x64 /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
+%_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild

@@ -78,13 +78,16 @@ if(WIN32)
     windows/PalRedhawkMinWin.cpp
   )
 
-  list(APPEND FULL_RUNTIME_SOURCES 
+  list(APPEND FULL_RUNTIME_SOURCES
     windows/CoffNativeCodeManager.cpp
   )
 
+  set(ASM_SUFFIX asm)
+
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
-    set(ASM_SUFFIX asm)
+  elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+    set(ARCH_SOURCES_DIR i386)
   endif()
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM

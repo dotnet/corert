@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t EndAddress;
