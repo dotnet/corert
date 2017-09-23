@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System
@@ -188,11 +189,11 @@ namespace System
 
                 while (count > 0)
                 {
-                    char thisChar = *pCh;
+                    int thisChar = *pCh;
 
                     if (IsCharBitSet(charMap, (byte)thisChar) &&
                         IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
-                        ArrayContains(thisChar, anyOf))
+                        ArrayContains((char)thisChar, anyOf))
                     {
                         return (int)(pCh - pChars);
                     }
@@ -222,6 +223,16 @@ namespace System
         private static unsafe void InitializeProbabilisticMap(uint* charMap, char[] anyOf)
         {
             bool hasAscii = false;
+
+            charMap[0] = 0;
+            charMap[1] = 0;
+            charMap[2] = 0;
+            charMap[3] = 0;
+            charMap[4] = 0;
+            charMap[5] = 0;
+            charMap[6] = 0;
+            charMap[7] = 0;
+            Debug.Assert(PROBABILISTICMAP_SIZE == 0x8);
 
             for (int i = 0; i < anyOf.Length; ++i)
             {
@@ -472,11 +483,11 @@ namespace System
 
                 while (count > 0)
                 {
-                    char thisChar = *pCh;
+                    int thisChar = *pCh;
 
                     if (IsCharBitSet(charMap, (byte)thisChar) &&
                         IsCharBitSet(charMap, (byte)(thisChar >> 8)) &&
-                        ArrayContains(thisChar, anyOf))
+                        ArrayContains((char)thisChar, anyOf))
                     {
                         return (int)(pCh - pChars);
                     }
