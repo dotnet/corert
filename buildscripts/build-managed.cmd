@@ -33,15 +33,8 @@ set Platform=
 :: Restore the Tools directory
 call  "%__ProjectDir%\init-tools.cmd"
 
-rem Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
-rem argument, but there are a few commands in publish and tests that do not.
-set "NUGET_PACKAGES=%__PackagesDir%"
-
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
-
-set __NugetRuntimeId=win7-x64
-if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
 
 "%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile=build-restore.log /p:NuPkgRid=%__NugetRuntimeId% /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%

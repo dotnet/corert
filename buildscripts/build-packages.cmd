@@ -27,8 +27,5 @@ exit /b %ERRORLEVEL%
 
 :AfterVarSetup
 
-set __NugetRuntimeId=win7-x64
-if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
-
 %_msbuildexe% "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=%__NugetRuntimeId% /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 exit /b %ERRORLEVEL%

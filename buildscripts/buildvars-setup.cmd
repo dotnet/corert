@@ -8,7 +8,6 @@ set "__ProjectDir=%~dp0.."
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__SourceDir=%__ProjectDir%\src"
-set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __SkipTestBuild=
@@ -166,9 +165,8 @@ set Platform=
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-rem Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
-rem argument, but there are a few commands in publish and tests that do not.
-set "NUGET_PACKAGES=%__PackagesDir%"
+set __NugetRuntimeId=win7-x64
+if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
 
 set BUILDVARS_DONE=1
 exit /b 0

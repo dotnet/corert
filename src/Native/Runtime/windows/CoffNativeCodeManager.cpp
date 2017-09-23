@@ -29,11 +29,6 @@
 #define UBF_FUNC_REVERSE_PINVOKE        0x08
 #define UBF_FUNC_HAS_ASSOCIATED_DATA    0x10
 
-//
-// The following structures are defined in Windows x64 unwind info specification
-// http://www.bing.com/search?q=msdn+Exception+Handling+x64
-//
-
 #ifdef _TARGET_X86_
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
@@ -65,13 +60,17 @@ typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#else // _TARGET_X86_
+#elif defined(_TARGET_AMD64_)
 
 #define UNW_FLAG_NHANDLER 0x0
 #define UNW_FLAG_EHANDLER 0x1
 #define UNW_FLAG_UHANDLER 0x2
 #define UNW_FLAG_CHAININFO 0x4
 
+//
+// The following structures are defined in Windows x64 unwind info specification
+// http://www.bing.com/search?q=msdn+Exception+Handling+x64
+//
 typedef union _UNWIND_CODE {
     struct {
         uint8_t CodeOffset;
@@ -165,7 +164,9 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     *pSize = size;
     return xdata;
 #else
-    #error unexpected target architecture
+    PORTABILITY_ASSERT("GetUnwindDataBlob");
+    *pSize = 0;
+    return NULL;
 #endif
 }
 
@@ -448,7 +449,9 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     FOR_EACH_NONVOLATILE_REGISTER(REGDISPLAY_TO_CONTEXT);
 
-#ifndef _TARGET_X86_
+#ifdef _TARGET_X86_
+    PORTABILITY_ASSERT("CoffNativeCodeManager::UnwindStackFrame");
+#else // _TARGET_X86_
     memcpy(&context.Xmm6, pRegisterSet->Xmm, sizeof(pRegisterSet->Xmm));
 
     context.Rsp = pRegisterSet->SP;
@@ -472,7 +475,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     pRegisterSet->pIP = PTR_PCODE(pRegisterSet->SP - sizeof(TADDR));
 
     memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
-#endif // !_TARGET_X86_
+#endif // _TARGET_X86_
 
     FOR_EACH_NONVOLATILE_REGISTER(CONTEXT_TO_REGDISPLAY);
 
