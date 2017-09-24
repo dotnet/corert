@@ -222,7 +222,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetPDBInfo(HANDLE hOsHandle, _Out_ GUID
     }
 }
 
-REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
+REDHAWK_PALEXPORT Int32 REDHAWK_PALAPI PalGetProcessCpuCount()
 {
     static int CpuCount = 0;
 
@@ -246,7 +246,7 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrData;
 
@@ -282,7 +282,7 @@ REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than 
 // the maximum bounds.
-REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     // VirtualQuery on the address of a local variable to get the allocation 
     // base of the stack.  Then use the StackBase field in the TEB to give 

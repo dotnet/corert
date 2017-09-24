@@ -84,7 +84,6 @@ get_current_linux_rid() {
 
 export __scriptpath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export __ProjectRoot=$__scriptpath/..
-export __packageroot=$__ProjectRoot/packages
 export __sourceroot=$__ProjectRoot/src
 export __rootbinpath="$__ProjectRoot/bin"
 export __buildmanaged=false
