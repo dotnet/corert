@@ -10,10 +10,6 @@ namespace System
 {
     public static class MathF
     {
-        public const float PI = (float)Math.PI;
-
-        public const float E = 2.71828183f;
-
         private static float singleRoundLimit = 1e8f;
 
         private const int maxRoundingDigits = 6;
@@ -23,62 +19,76 @@ namespace System
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
         };
 
+        public const float PI = 3.14159265f;
+
+        public const float E = 2.71828183f;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
             return Math.Abs(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Acos(float x)
         {
-            return (float)Math.Acos(x);
+            return RuntimeImports.acosf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Asin(float x)
         {
-            return (float)Math.Asin(x);
+            return RuntimeImports.asinf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Atan(float x)
         {
-            return (float)Math.Atan(x);
+            return RuntimeImports.atanf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Atan2(float y, float x)
         {
-            return (float)Math.Atan2(y, x);
+            return RuntimeImports.atan2f(y, x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Cos(float x)
         {
-            return (float)Math.Cos(x);
+            return RuntimeImports.cosf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Ceiling(float x)
         {
-            return (float)Math.Ceiling(x);
+            return RuntimeImports.ceilf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Cosh(float x) { return (float)Math.Cosh(x); }
+        [Intrinsic]
+        public static float Cosh(float x)
+        {
+            return RuntimeImports.coshf(x);
+        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Exp(float x) { return (float)Math.Exp(x); }
+        [Intrinsic]
+        public static float Exp(float x)
+        {
+            return RuntimeImports.expf(x);
+        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Floor(float x) { return (float)Math.Floor(x); }
+        [Intrinsic]
+        public static float Floor(float x)
+        {
+            return RuntimeImports.floorf(x);
+        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Log(float x)
         {
-            return (float)Math.Log(x);
+            return RuntimeImports.logf(x);
         }
+
         public static float Log(float x, float y)
         {
             if (float.IsNaN(x))
@@ -104,10 +114,10 @@ namespace System
             return Log(x) / Log(y);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Log10(float x)
         {
-            return (float)Math.Log10(x);
+            return RuntimeImports.log10f(x);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -122,16 +132,33 @@ namespace System
             return Math.Min(x, y);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Pow(float x, float y)
         {
-            return (float)Math.Pow(x, y);
+            return RuntimeImports.powf(x, y);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Round(float x)
         {
-            return (float)Math.Round(x);
+            // If the number has no fractional part do nothing
+            // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+            if (x == (float)((int)x))
+            {
+                return x;
+            }
+
+            // We had a number that was equally close to 2 integers.
+            // We need to return the even one.
+
+            float flrTempVal = Floor(x + 0.5f);
+
+            if ((x == (Floor(x) + 0.5f)) && (RuntimeImports.fmodf(flrTempVal, 2.0f) != 0))
+            {
+                flrTempVal -= 1.0f;
+            }
+
+            return CopySign(flrTempVal, x);
         }
 
         public static float Round(float x, int digits)
@@ -169,28 +196,73 @@ namespace System
             return InternalRound(x, 0, mode);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float IEEERemainder(float x, float y)
         {
-            return (float)Math.IEEERemainder(x, y);
+            if (float.IsNaN(x))
+            {
+                return x; // IEEE 754-2008: NaN payload must be preserved
+            }
+ 
+            if (float.IsNaN(y))
+            {
+                return y; // IEEE 754-2008: NaN payload must be preserved
+            }
+ 
+            var regularMod = x % y;
+ 
+            if (float.IsNaN(regularMod))
+            {
+                return float.NaN;
+            }
+ 
+            if ((regularMod == 0) && float.IsNegative(x))
+            {
+                return float.NegativeZero;
+            }
+ 
+            var alternativeResult = (regularMod - (Abs(y) * Sign(x)));
+ 
+            if (Abs(alternativeResult) == Abs(regularMod))
+            {
+                var divisionResult = x / y;
+                var roundedResult = Round(divisionResult);
+ 
+                if (Abs(roundedResult) > Abs(divisionResult))
+                {
+                    return alternativeResult;
+                }
+                else
+                {
+                    return regularMod;
+                }
+            }
+ 
+            if (Abs(alternativeResult) < Abs(regularMod))
+            {
+                return alternativeResult;
+            }
+            else
+            {
+                return regularMod;
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Sin(float x)
         {
-            return (float)Math.Sin(x);
+            return RuntimeImports.sinf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Sqrt(float x)
         {
-            return (float)Math.Sqrt(x);
+            return RuntimeImports.sqrtf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Tan(float x)
         {
-            return (float)Math.Tan(x);
+            return RuntimeImports.tanf(x);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,35 +271,21 @@ namespace System
             return Math.Sign(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Sinh(float x)
         {
-            return (float)Math.Sinh(x);
+            return RuntimeImports.sinhf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static float Tanh(float x)
         {
-            return (float)Math.Tanh(x);
+            return RuntimeImports.tanhf(x);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Truncate(float x) => InternalTruncate(x);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe float SplitFractionSingle(float* x)
+        public static unsafe float Truncate(float x)
         {
-            //todo : https://github.com/dotnet/corert/issues/3167
-            double d = *x;
-            double r = RuntimeImports.modf(d, &d);
-
-            *x = (float)d;
-            return (float)r;
-        }
-
-        private unsafe static float InternalTruncate(float x)
-        {
-            SplitFractionSingle(&x);
+            RuntimeImports.modff(x, &x);
             return x;
         }
 
@@ -241,7 +299,7 @@ namespace System
 
                 if (mode == MidpointRounding.AwayFromZero)
                 {
-                    var fraction = SplitFractionSingle(&x);
+                    var fraction = RuntimeImports.modff(x, &x);
 
                     if (Abs(fraction) >= 0.5f)
                     {
@@ -254,6 +312,23 @@ namespace System
                 }
 
                 x /= power10;
+            }
+
+            return x;
+        }
+        
+        private static unsafe float CopySign(float x, float y)
+        {
+            var xbits = BitConverter.SingleToInt32Bits(x);
+            var ybits = BitConverter.SingleToInt32Bits(y);
+
+            // If the sign bits of x and y are not the same,
+            // flip the sign bit of x and return the new value;
+            // otherwise, just return x
+
+            if (((xbits ^ ybits) >> 31) != 0)
+            {
+                return BitConverter.Int32BitsToSingle(xbits ^ int.MinValue);
             }
 
             return x;
