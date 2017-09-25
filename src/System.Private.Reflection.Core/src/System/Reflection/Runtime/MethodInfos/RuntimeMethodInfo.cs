@@ -86,8 +86,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));
 
-            RuntimeTypeInfo runtimeDelegateType = delegateType as RuntimeTypeInfo;
-            if (runtimeDelegateType == null)
+            if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
 
             if (!runtimeDelegateType.IsDelegate)

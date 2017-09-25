@@ -56,8 +56,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeConstructedGenericMethodInfo other = obj as RuntimeConstructedGenericMethodInfo;
-            if (other == null)
+            if (!(obj is RuntimeConstructedGenericMethodInfo other))
                 return false;
             if (!_genericMethodDefinition.Equals(other._genericMethodDefinition))
                 return false;

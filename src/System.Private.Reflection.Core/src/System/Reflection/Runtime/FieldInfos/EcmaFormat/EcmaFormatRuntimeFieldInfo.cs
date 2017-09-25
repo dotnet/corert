@@ -115,8 +115,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            EcmaFormatRuntimeFieldInfo otherField = other as EcmaFormatRuntimeFieldInfo;
-            if (otherField == null)
+            if (!(other is EcmaFormatRuntimeFieldInfo otherField))
                 return false;
             if (!(_reader == otherField._reader))
                 return false;
@@ -127,8 +126,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
 
         public sealed override bool Equals(Object obj)
         {
-            EcmaFormatRuntimeFieldInfo other = obj as EcmaFormatRuntimeFieldInfo;
-            if (other == null)
+            if (!(obj is EcmaFormatRuntimeFieldInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

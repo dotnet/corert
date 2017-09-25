@@ -62,8 +62,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     if (fahEnumerator.MoveNext())
                         continue;
                     FixedArgument guidStringArgument = guidStringArgumentHandle.GetFixedArgument(_reader);
-                    String guidString = guidStringArgument.Value.ParseConstantValue(_reader) as String;
-                    if (guidString == null)
+                    if (!(guidStringArgument.Value.ParseConstantValue(_reader) is string guidString))
                         continue;
                     return new Guid(guidString);
                 }

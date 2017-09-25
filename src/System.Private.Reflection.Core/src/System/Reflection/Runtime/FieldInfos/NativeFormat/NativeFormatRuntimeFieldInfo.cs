@@ -101,8 +101,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            NativeFormatRuntimeFieldInfo otherField = other as NativeFormatRuntimeFieldInfo;
-            if (otherField == null)
+            if (!(other is NativeFormatRuntimeFieldInfo otherField))
                 return false;
             if (!(_reader == otherField._reader))
                 return false;
@@ -115,8 +114,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimeFieldInfo other = obj as NativeFormatRuntimeFieldInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimeFieldInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

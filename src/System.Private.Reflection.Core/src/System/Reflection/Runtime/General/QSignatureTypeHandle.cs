@@ -36,10 +36,9 @@ namespace System.Reflection.Runtime.General
             {
                 return _handle.TryResolve((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, ref exception);
             }
-            
+
 #if ECMA_METADATA_SUPPORT
-            global::System.Reflection.Metadata.MetadataReader ecmaReader = Reader as global::System.Reflection.Metadata.MetadataReader;
-            if (ecmaReader != null)
+            if (Reader is global::System.Reflection.Metadata.MetadataReader ecmaReader)
             {
                 return TryResolveSignature(typeContext, ref exception);
             }

@@ -48,9 +48,8 @@ namespace Internal.Reflection.Execution
         {
             String resourceName = SR.Object_NotInvokable;
 
-            if (pertainant is MethodBase)
+            if (pertainant is MethodBase methodBase)
             {
-                MethodBase methodBase = (MethodBase)pertainant;
                 resourceName = methodBase.IsConstructedGenericMethod ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
                 if (methodBase is ConstructorInfo)
                 {

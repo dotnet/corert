@@ -97,8 +97,7 @@ namespace System.Reflection.Runtime.General
 
         public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
         {
-            RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly != null)
+            if (assembly is RuntimeAssembly runtimeAssembly)
             {
                 // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
                 return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);

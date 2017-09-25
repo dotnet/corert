@@ -308,9 +308,9 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
 
         public override bool Equals(Object obj)
         {
-            if (!(obj is EcmaFormatMethodCommon))
+            if (!(obj is EcmaFormatMethodCommon other))
                 return false;
-            return Equals((EcmaFormatMethodCommon)obj);
+            return Equals(other);
         }
 
         public bool Equals(EcmaFormatMethodCommon other)
