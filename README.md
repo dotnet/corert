@@ -1,5 +1,5 @@
 # .NET Core Runtime (CoreRT)
-This repo contains the .NET Core runtime optimized for AOT compilation
+This repo contains the .NET Core runtime optimized for AOT compilation, targeting all plattforms who support C++
 
 |         |Ubuntu 14.04 |Windows |Mac OS X |
 |---------|:------:|:------:|:------:|
