@@ -241,8 +241,8 @@
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Marvin.cs" />
-    <Compile Include="System\Math.cs" />
-    <Compile Include="System\MathF.cs" />
+    <Compile Include="System\Math.CoreRT.cs" />
+    <Compile Include="System\MathF.CoreRT.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
