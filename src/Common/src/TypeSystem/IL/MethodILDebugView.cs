@@ -21,7 +21,7 @@ namespace Internal.IL
         {
             get
             {
-                ILDisassember disasm = new ILDisassember(_methodIL);
+                ILDisassembler disasm = new ILDisassembler(_methodIL);
 
                 StringBuilder sb = new StringBuilder();
 

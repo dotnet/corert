@@ -2336,8 +2336,11 @@ namespace Internal.JitInterface
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 int size = 5 * this.PointerSize;
-                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM ||
+                    _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARMEL)
                     size += this.PointerSize; // m_ChainPointer
+
                 return (uint)size;
             }
         }

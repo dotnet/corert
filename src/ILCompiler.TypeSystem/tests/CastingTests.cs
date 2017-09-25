@@ -184,6 +184,13 @@ namespace TypeSystemTests
 
             Assert.True(stringSzArrayType.CanCastTo(iEnumerableOfObjectType));
             Assert.False(stringSzArrayType.CanCastTo(iEnumerableOfExceptionType));
+
+            MetadataType iContravariantOfTType = _testModule.GetType("Casting", "IContravariant`1");
+            InstantiatedType iContravariantOfObjectType = iContravariantOfTType.MakeInstantiatedType(objectType);
+            InstantiatedType iEnumerableOfStringType = iEnumerableOfTType.MakeInstantiatedType(stringType);
+
+            Assert.True(iContravariantOfObjectType.CanCastTo(objectType));
+            Assert.True(iEnumerableOfStringType.CanCastTo(objectType));
         }
 
         [Fact]

@@ -112,7 +112,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 // or if the thread was already registered with a different fiber.
 // Parameters:
 //  thread        - thread to attach
-extern "C" void PalAttachThread(void* thread)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
 {
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
 
@@ -134,7 +134,7 @@ extern "C" void PalAttachThread(void* thread)
 //  thread        - thread to detach
 // Return:
 //  true if the thread was detached, false if there was no attached thread
-extern "C" bool PalDetachThread(void* thread)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
@@ -188,8 +188,6 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
         }                                               \
     }                                                   \
     WHILE_0;
-
-extern "C" int __stdcall PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {

@@ -125,9 +125,14 @@ namespace Internal.Reflection.Execution
         {
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
-
             var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+
+            //make sure the module is actually NativeFormatModuleInfo, if the module
+            //doesnt have reflection enabled it wont be a NativeFormatModuleInfo
+            if (!(ModuleList.Instance.TryGetModuleInfoByHandle(moduleHandle, out ModuleInfo untypedModuleInfo) && (untypedModuleInfo is NativeFormatModuleInfo module)))
+            {
+                return true;
+            }
 
             NativeReader blockedReflectionReader = GetNativeReaderForBlob(module, ReflectionMapBlob.BlockReflectionTypeMap);
             NativeParser blockedReflectionParser = new NativeParser(blockedReflectionReader, 0);

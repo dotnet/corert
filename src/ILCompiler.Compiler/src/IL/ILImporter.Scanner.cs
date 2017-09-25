@@ -34,10 +34,16 @@ namespace Internal.IL
         private class BasicBlock
         {
             // Common fields
+            public enum ImportState : byte
+            {
+                Unmarked,
+                IsPending
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public ImportState State = ImportState.Unmarked;
 
             public bool TryStart;
             public bool FilterStart;

@@ -4,13 +4,17 @@ _Note_:
 
 * Instructions below assume `c:\corert` is the repo root.
 
-# Build ILCompiler #
 
-Build your repo by issuing the following command at repo root:
+# Building ILCompiler in Visual Studio 2017 #
+
+First, build your repo by issuing the following command at repo root, by default this builds Debug x64:
 
 ```
 build.cmd
 ```
+Then when building ILCompiler.sln in Visual Studio, remember to select the appropriate configuration that you built. By default, `build.cmd` builds Debug x64 and so `Debug` and `x64` must be selected in the solution build configuration drop downs.
+
+---
 
 If you changed `c:\corert\src\ILCompiler\repro\repro.csproj`
 

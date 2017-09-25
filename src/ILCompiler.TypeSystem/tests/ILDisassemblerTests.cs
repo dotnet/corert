@@ -54,7 +54,7 @@ namespace TypeSystemTests
                 { 50, "IL_0084:  initobj     ILDisassembler.TestStruct" }
             };
 
-            ILDisassember disasm = new ILDisassember(methodIL);
+            ILDisassembler disasm = new ILDisassembler(methodIL);
 
             int numLines = 1;
             while (disasm.HasNextInstruction)

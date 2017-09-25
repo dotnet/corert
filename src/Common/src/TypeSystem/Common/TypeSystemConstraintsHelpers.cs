@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -16,24 +15,24 @@ namespace Internal.TypeSystem
             // Check class constraint
             if ((constraints & GenericConstraints.ReferenceTypeConstraint) != 0)
             {
-                if (!instantiationParam.IsGCPointer)
+                if (!instantiationParam.IsGCPointer
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.ReferenceTypeConstraint))
                     return false;
             }
 
             // Check default constructor constraint
             if ((constraints & GenericConstraints.DefaultConstructorConstraint) != 0)
             {
-                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor())
+                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor() 
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.DefaultConstructorConstraint))
                     return false;
             }
 
             // Check struct constraint
             if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
             {
-                if (!instantiationParam.IsValueType)
-                    return false;
-
-                if (instantiationParam.IsNullable)
+                if ((!instantiationParam.IsValueType || instantiationParam.IsNullable) 
+                    && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
                     return false;
             }
 
@@ -45,6 +44,57 @@ namespace Internal.TypeSystem
             }
 
             return true;
+        }
+
+        // Used to determine whether a type parameter used to instantiate another type parameter with a specific special 
+        // constraint satisfies that constraint.
+        private static bool CheckGenericSpecialConstraint(TypeDesc type, GenericConstraints specialConstraint)
+        {
+            if (!type.IsGenericParameter)
+                return false;
+
+            var genericType = (GenericParameterDesc)type;
+
+            GenericConstraints constraints = genericType.Constraints;
+
+            // Check if type has specialConstraint on its own
+            if ((constraints & specialConstraint) != 0)
+                return true;
+
+            // Value type always has default constructor
+            if (specialConstraint == GenericConstraints.DefaultConstructorConstraint && (constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
+                return true;
+
+            // The special constraints did not match, check if there is a primary type constraint,
+            // that would always satisfy the special constraint
+            foreach (var constraint in genericType.TypeConstraints)
+            {
+                if (constraint.IsGenericParameter || constraint.IsInterface)
+                    continue;
+
+                switch (specialConstraint)
+                {
+                    case GenericConstraints.NotNullableValueTypeConstraint:
+                        if (constraint.IsValueType && !constraint.IsNullable)
+                            return true;
+                        break;
+                    case GenericConstraints.ReferenceTypeConstraint:
+                        if (!constraint.IsValueType)
+                            return true;
+                        break;
+                    case GenericConstraints.DefaultConstructorConstraint:
+                        // As constraint is only ancestor, can only be sure whether type has public default constructor if it is a value type
+                        if (constraint.IsValueType)
+                            return true;
+                        break;
+                    default:
+                        Debug.Assert(false);
+                        break;
+                }
+            }
+
+            // type did not satisfy special constraint in any way
+            return false;
         }
 
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
