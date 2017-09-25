@@ -213,7 +213,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to an EEType.
     /// </summary>
-    internal sealed class TypeHandleGenericLookupResult : GenericLookupResult
+    public sealed class TypeHandleGenericLookupResult : GenericLookupResult
     {
         private TypeDesc _type;
 
@@ -238,6 +238,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
+        public TypeDesc Type => _type;
         public override string ToString() => $"TypeHandle: {_type}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
@@ -932,7 +933,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to the GC static base of a type.
     /// </summary>
-    internal sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
+    public sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
     {
         private MetadataType _type;
 
@@ -957,6 +958,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
+        public MetadataType Type => _type;
         public override string ToString() => $"GCStaticBase: {_type}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
@@ -1290,7 +1292,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    internal sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
+    public sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
     {
         private TypeDesc _type;
 
@@ -1317,6 +1319,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
+        public TypeDesc Type => _type;
         public override string ToString() => $"ThreadStaticOffset: {_type}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
