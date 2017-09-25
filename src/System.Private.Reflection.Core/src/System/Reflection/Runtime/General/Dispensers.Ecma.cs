@@ -68,9 +68,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 
             public override bool Equals(Object obj)
             {
-                if (!(obj is EcmaRuntimeAssemblyKey))
+                if (!(obj is EcmaRuntimeAssemblyKey other))
                     return false;
-                return Equals((EcmaRuntimeAssemblyKey)obj);
+                return Equals(other);
             }
 
 

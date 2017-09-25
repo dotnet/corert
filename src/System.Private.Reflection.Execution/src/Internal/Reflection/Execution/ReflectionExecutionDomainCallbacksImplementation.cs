@@ -299,13 +299,12 @@ namespace Internal.Reflection.Execution
         {
             defaultValue = null;
 
-            MethodBase methodInfo = defaultParametersContext as MethodBase;
-            if (methodInfo == null)
+            if (!(defaultParametersContext is MethodBase methodBase))
             {
                 return false;
             }
 
-            ParameterInfo parameterInfo = methodInfo.GetParametersNoCopy()[argIndex];
+            ParameterInfo parameterInfo = methodBase.GetParametersNoCopy()[argIndex];
             if (!parameterInfo.HasDefaultValue)
             {
                 // If the parameter is optional, with no default value and we're asked for its default value,

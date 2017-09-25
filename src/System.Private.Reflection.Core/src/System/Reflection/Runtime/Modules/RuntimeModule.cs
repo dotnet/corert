@@ -35,10 +35,9 @@ namespace System.Reflection.Runtime.Modules
 
         public abstract override string Name { get; }
 
-        public sealed override bool Equals(object o)
+        public sealed override bool Equals(object obj)
         {
-            RuntimeModule other = o as RuntimeModule;
-            if (other == null)
+            if (!(obj is RuntimeModule other))
                 return false;
             return Assembly.Equals(other.Assembly);
         }

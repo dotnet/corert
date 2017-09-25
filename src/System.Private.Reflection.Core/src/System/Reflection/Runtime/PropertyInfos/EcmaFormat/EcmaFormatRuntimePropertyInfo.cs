@@ -88,8 +88,7 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            EcmaFormatRuntimePropertyInfo otherProperty = other as EcmaFormatRuntimePropertyInfo;
-            if (otherProperty == null)
+            if (!(other is EcmaFormatRuntimePropertyInfo otherProperty))
                 return false;
             if (!(_reader == otherProperty._reader))
                 return false;
@@ -100,8 +99,7 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
 
         public sealed override bool Equals(Object obj)
         {
-            EcmaFormatRuntimePropertyInfo other = obj as EcmaFormatRuntimePropertyInfo;
-            if (other == null)
+            if (!(obj is EcmaFormatRuntimePropertyInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

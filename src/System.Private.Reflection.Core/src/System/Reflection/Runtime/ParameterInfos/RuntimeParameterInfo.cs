@@ -27,8 +27,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeParameterInfo other = obj as RuntimeParameterInfo;
-            if (other == null)
+            if (!(obj is RuntimeParameterInfo other))
                 return false;
             if (_position != other._position)
                 return false;
