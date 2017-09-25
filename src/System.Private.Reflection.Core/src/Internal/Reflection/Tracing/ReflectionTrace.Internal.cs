@@ -52,8 +52,7 @@ namespace Internal.Reflection.Tracing
         {
             try
             {
-                RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
-                if (runtimeAssembly == null)
+                if (!(assembly is RuntimeAssembly runtimeAssembly))
                     return null;
                 return runtimeAssembly.RuntimeAssemblyName.FullName;
             }
@@ -70,8 +69,7 @@ namespace Internal.Reflection.Tracing
         {
             try
             {
-                RuntimeCustomAttributeData runtimeCustomAttributeData = customAttributeData as RuntimeCustomAttributeData;
-                if (runtimeCustomAttributeData == null)
+                if (!(customAttributeData is RuntimeCustomAttributeData runtimeCustomAttributeData))
                     return null;
                 return runtimeCustomAttributeData.AttributeType.NameString();
             }
@@ -88,8 +86,7 @@ namespace Internal.Reflection.Tracing
         {
             try
             {
-                ITraceableTypeMember traceableTypeMember = memberInfo as ITraceableTypeMember;
-                if (traceableTypeMember == null)
+                if (!(memberInfo is ITraceableTypeMember traceableTypeMember))
                     return null;
                 return traceableTypeMember.ContainingType.NameString();
             }
@@ -106,13 +103,12 @@ namespace Internal.Reflection.Tracing
         {
             try
             {
-                TypeInfo typeInfo = memberInfo as TypeInfo;
-                if (typeInfo != null)
+                if (memberInfo is TypeInfo typeInfo)
                     return typeInfo.AsType().NameString();
 
-                ITraceableTypeMember traceableTypeMember = memberInfo as ITraceableTypeMember;
-                if (traceableTypeMember == null)
+                if (!(memberInfo is ITraceableTypeMember traceableTypeMember))
                     return null;
+
                 return traceableTypeMember.MemberName;
             }
             catch
@@ -195,8 +191,7 @@ namespace Internal.Reflection.Tracing
             }
             else
             {
-                RuntimeNamedTypeInfo runtimeNamedTypeInfo = type.GetTypeInfo() as RuntimeNamedTypeInfo;
-                if (runtimeNamedTypeInfo == null)
+                if (!(type.GetTypeInfo() is RuntimeNamedTypeInfo runtimeNamedTypeInfo))
                     return null;
 
                 return runtimeNamedTypeInfo.TraceableTypeName;

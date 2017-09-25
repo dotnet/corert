@@ -88,8 +88,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            NativeFormatRuntimePropertyInfo otherProperty = other as NativeFormatRuntimePropertyInfo;
-            if (otherProperty == null)
+            if (!(other is NativeFormatRuntimePropertyInfo otherProperty))
                 return false;
             if (!(_reader == otherProperty._reader))
                 return false;
@@ -102,8 +101,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimePropertyInfo other = obj as NativeFormatRuntimePropertyInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimePropertyInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

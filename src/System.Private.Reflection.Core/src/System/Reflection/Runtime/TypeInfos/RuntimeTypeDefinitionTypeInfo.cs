@@ -49,8 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new ArgumentNullException(nameof(other));
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
-            RuntimeConstructedGenericTypeInfo otherConstructedGenericType = other as RuntimeConstructedGenericTypeInfo;
-            if (otherConstructedGenericType != null)
+            if (other is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
                 other = otherConstructedGenericType.GetGenericTypeDefinition();
 
             // Unlike most other MemberInfo objects, types never get cloned due to containing generic types being instantiated.

@@ -75,8 +75,7 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
                             if (firstArg.Value == null)
                                 continue;
 
-                            string guidString = firstArg.Value as string;
-                            if (guidString == null)
+                            if (!(firstArg.Value is string guidString))
                                 continue;
 
                             return new Guid(guidString);

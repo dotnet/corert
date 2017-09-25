@@ -113,8 +113,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            NativeFormatRuntimeEventInfo otherEvent = other as NativeFormatRuntimeEventInfo;
-            if (otherEvent == null)
+            if (!(other is NativeFormatRuntimeEventInfo otherEvent))
                 return false;
             if (!(_reader == otherEvent._reader))
                 return false;
@@ -127,8 +126,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimeEventInfo other = obj as NativeFormatRuntimeEventInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimeEventInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

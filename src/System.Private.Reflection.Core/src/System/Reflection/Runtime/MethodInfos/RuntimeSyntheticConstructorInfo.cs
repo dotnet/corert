@@ -115,8 +115,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(object obj)
         {
-            RuntimeSyntheticConstructorInfo other = obj as RuntimeSyntheticConstructorInfo;
-            if (other == null)
+            if (!(obj is RuntimeSyntheticConstructorInfo other))
                 return false;
             if (_syntheticMethodId != other._syntheticMethodId)
                 return false;

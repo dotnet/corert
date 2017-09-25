@@ -42,8 +42,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(object obj)
         {
-            RuntimeCLSIDNullaryConstructorInfo other = obj as RuntimeCLSIDNullaryConstructorInfo;
-            if (other == null)
+            if (!(obj is RuntimeCLSIDNullaryConstructorInfo other))
                 return false;
             if (!(_declaringType.Equals(other._declaringType)))
                 return false;
