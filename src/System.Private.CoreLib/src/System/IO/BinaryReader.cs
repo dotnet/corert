@@ -381,7 +381,6 @@ namespace System.IO
 
         private int InternalReadChars(Span<char> buffer)
         {
-            Debug.Assert(buffer != null);
             Debug.Assert(_stream != null);
 
             int numBytes = 0;
