@@ -223,7 +223,7 @@ namespace System
             ulong absoluteCy; // has to be ulong to accommodate the case where cy == long.MinValue.
             if (cy < 0)
             {
-                d.Sign = true;
+                d.IsNegative = true;
                 absoluteCy = (ulong)(-cy);
             }
             else
@@ -717,6 +717,8 @@ namespace System
             return d;
         }
 
+        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
+
         // Subtracts two Decimal values.
         //
         public static Decimal Subtract(Decimal d1, Decimal d2)
@@ -801,7 +803,7 @@ namespace System
             if (d.hi == 0 && d.mid == 0)
             {
                 int i = d.lo;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (i >= 0) return i;
                 }
@@ -824,7 +826,7 @@ namespace System
             if (d.uhi == 0)
             {
                 long l = d.ulo | (long)(int)d.umid << 32;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (l >= 0) return l;
                 }
@@ -867,7 +869,7 @@ namespace System
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
             if (d.uhi == 0 && d.umid == 0)
             {
-                if (!d.Sign || d.ulo == 0)
+                if (!d.IsNegative || d.ulo == 0)
                     return d.ulo;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -884,7 +886,7 @@ namespace System
             if (d.uhi == 0)
             {
                 ulong l = (ulong)d.ulo | ((ulong)d.umid << 32);
-                if (!d.Sign || l == 0)
+                if (!d.IsNegative || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);

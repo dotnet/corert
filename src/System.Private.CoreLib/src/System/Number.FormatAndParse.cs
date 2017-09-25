@@ -1135,7 +1135,7 @@ namespace System
             {
                 d.Scale = -e;
             }
-            d.Sign = number.sign;
+            d.IsNegative = number.sign;
 
             value = d;
             return true;
@@ -1147,7 +1147,7 @@ namespace System
 
             char* buffer = number.digits;
             number.precision = DECIMAL_PRECISION;
-            number.sign = d.Sign;
+            number.sign = d.IsNegative;
 
             int index = DECIMAL_PRECISION;
             while (d.Mid != 0 | d.High != 0)

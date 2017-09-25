@@ -31,7 +31,7 @@ namespace System
             set { umid = value; }
         }
 
-        internal bool Sign
+        internal bool IsNegative
         {
             get { return (uflags & SignMask) != 0; }
             set { uflags = (uflags & ~SignMask) | (value ? SignMask : 0); }
@@ -841,13 +841,13 @@ namespace System
                 Decimal result = new Decimal();
                 Decimal tmp = new Decimal();
 
-                bSign ^= d2.Sign ^ d1.Sign;
+                bSign ^= d2.IsNegative ^ d1.IsNegative;
 
                 if (d2.Scale == d1.Scale)
                 {
                     // Scale factors are equal, no alignment necessary.
                     //
-                    result.Sign = d1.Sign;
+                    result.IsNegative = d1.IsNegative;
                     result.Scale = d1.Scale;
 
                     if (AlignedAdd(ref result, ref d1, ref d2, bSign))
@@ -862,7 +862,7 @@ namespace System
                     // scale factor.
                     //
                     result.Scale = d2.Scale;  // scale factor of "smaller"
-                    result.Sign = d1.Sign;    // but sign of "larger"
+                    result.IsNegative = d1.IsNegative;    // but sign of "larger"
                     iScale = result.Scale - d1.Scale;
 
                     if (iScale < 0)
@@ -871,7 +871,7 @@ namespace System
                         //
                         iScale = -iScale;
                         result.Scale = d1.Scale;
-                        result.Sign ^= bSign;
+                        result.IsNegative ^= bSign;
                         tmp = d2;
                         d2 = d1;
                         d1 = tmp;
@@ -934,7 +934,7 @@ namespace System
                                     //
                                     result.Low64 = d2.Low64;
                                     result.High = d2.High;
-                                    result.Sign ^= bSign;
+                                    result.IsNegative ^= bSign;
                                     d1 = result;
                                     return false;
                                 }
@@ -1044,7 +1044,7 @@ namespace System
                 value.High = ~value.High;
                 if (value.Low64 == 0)
                     value.High++;
-                value.Sign ^= true;
+                value.IsNegative ^= true;
             }
 
             // Returns true if we overflowed
@@ -1223,7 +1223,7 @@ namespace System
                     tmpNum[1] = input.umid;
                     tmpNum[2] = input.uhi;
                     scale = input.Scale;
-                    result.Sign = input.Sign;
+                    result.IsNegative = input.IsNegative;
                     remainder = 0;
 
                     do
@@ -1265,13 +1265,13 @@ namespace System
                 {
                     if (pdecIn.High != 0 ||
                         (pdecIn.Mid >= 0x80000000U &&
-                        (pdecIn.Mid != 0x80000000U || pdecIn.Low != 0 || !pdecIn.Sign)))
+                        (pdecIn.Mid != 0x80000000U || pdecIn.Low != 0 || !pdecIn.IsNegative)))
                         throw new OverflowException(SR.Overflow_Currency);
 
                     sdlTmp.Low32 = pdecIn.Low;
                     sdlTmp.High32 = pdecIn.Mid;
 
-                    if (pdecIn.Sign)
+                    if (pdecIn.IsNegative)
                         pcyOut = -(long)sdlTmp.int64;
                     else
                         pcyOut = (long)sdlTmp.int64;
@@ -1378,10 +1378,10 @@ namespace System
                 }
 
                 if (sdlTmp.High32 >= 0x80000000U &&
-                   (sdlTmp.int64 != 0x8000000000000000LU || !pdecIn.Sign))
+                   (sdlTmp.int64 != 0x8000000000000000LU || !pdecIn.IsNegative))
                     throw new OverflowException(SR.Overflow_Currency);
 
-                if (pdecIn.Sign)
+                if (pdecIn.IsNegative)
                     sdlTmp.int64 = (ulong)(-(long)sdlTmp.int64);
 
                 pcyOut = (long)sdlTmp.int64;
@@ -1396,10 +1396,10 @@ namespace System
                 int signRight = 0;
 
                 if (pdecL.Low != 0 || pdecL.Mid != 0 || pdecL.High != 0)
-                    signLeft = pdecL.Sign ? -1 : 1;
+                    signLeft = pdecL.IsNegative ? -1 : 1;
 
                 if (pdecR.Low != 0 || pdecR.Mid != 0 || pdecR.High != 0)
-                    signRight = pdecR.Sign ? -1 : 1;
+                    signRight = pdecR.IsNegative ? -1 : 1;
 
                 if (signLeft == signRight)
                 {
@@ -1410,7 +1410,7 @@ namespace System
                     DecAddSub(ref decLAndResult, ref pdecR, true); // Call DecAddSub instead of VarDecSub to avoid exceptions
                     if (decLAndResult.Low == 0 && decLAndResult.Mid == 0 && decLAndResult.High == 0)
                         return 0;
-                    if (decLAndResult.Sign)
+                    if (decLAndResult.IsNegative)
                         return -1;
                     return 1;
                 }
@@ -1590,7 +1590,7 @@ namespace System
                     pdecRes.High = rgulProd[2];
                 }
 
-                pdecRes.Sign = pdecR.Sign ^ pdecL.Sign;
+                pdecRes.IsNegative = pdecR.IsNegative ^ pdecL.IsNegative;
                 pdecRes.Scale = (char)iScale;
             }
 
@@ -1743,7 +1743,7 @@ namespace System
                     pdecOut.Scale = iPower;
                 }
 
-                pdecOut.Sign = input < 0;
+                pdecOut.IsNegative = input < 0;
             }
 
             //**********************************************************************
@@ -1904,7 +1904,7 @@ namespace System
                     pdecOut.Low64 = sdlMant.int64;
                 }
 
-                pdecOut.Sign = input < 0;
+                pdecOut.IsNegative = input < 0;
             }
 
             //**********************************************************************
@@ -1923,7 +1923,7 @@ namespace System
                 double dbl = ((double)pdecIn.Low64 +
                     (double)pdecIn.High * ds2to64) / GetDoublePower10(pdecIn.Scale);
 
-                if (pdecIn.Sign)
+                if (pdecIn.IsNegative)
                     dbl = -dbl;
 
                 return dbl;
@@ -2335,7 +2335,7 @@ namespace System
                     }
                 }
 
-                d1.Sign = d1.Sign ^ d2.Sign;
+                d1.IsNegative = d1.IsNegative ^ d2.IsNegative;
                 d1.High = rgulQuo[2];
                 d1.Mid = rgulQuo[1];
                 d1.Low = rgulQuo[0];
@@ -2349,7 +2349,7 @@ namespace System
             {
                 Decimal result = new Decimal();
 
-                if (DecCalc.DecFixInt(ref d, ref result) != 0 && result.Sign)
+                if (DecCalc.DecFixInt(ref d, ref result) != 0 && result.IsNegative)
                     // We have chopped off a non-zero amount from a negative value.  Since
                     // we round toward -infinity, we must increase the integer result by
                     // 1 to make it more negative.  This will never overflow because
@@ -2391,7 +2391,7 @@ namespace System
                     tmpNum[0] = input.ulo;
                     tmpNum[1] = input.umid;
                     tmpNum[2] = input.uhi;
-                    result.Sign = input.Sign;
+                    result.IsNegative = input.IsNegative;
                     remainder = sticky = 0;
 
                     do
