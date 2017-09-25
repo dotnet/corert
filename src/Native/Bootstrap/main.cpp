@@ -292,7 +292,7 @@ extern "C" void InitializeModules(void* osModule, void ** modules, int count, vo
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-int wmain(int argc, wchar_t* argv[])
+int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 int main(int argc, char* argv[])

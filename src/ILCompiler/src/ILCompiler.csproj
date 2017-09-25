@@ -8,8 +8,10 @@
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ilc</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <CopyNugetImplementations>false</CopyNugetImplementations>
+    <!-- Force .dll extension even if output type is exe. -->
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />

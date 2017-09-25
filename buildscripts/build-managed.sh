@@ -13,10 +13,6 @@ prepare_managed_build()
     # Run Init-Tools to restore BuildTools and ToolRuntime
     $__ProjectRoot/init-tools.sh
 
-    # Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
-    # argument, but there are a few commands in publish and tests that do not.
-    export NUGET_PACKAGES=$__packageroot
-
     echo "Using CLI tools version:"
     ls "$__dotnetclipath/sdk"
 }

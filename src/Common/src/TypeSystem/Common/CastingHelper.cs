@@ -317,6 +317,11 @@ namespace Internal.TypeSystem
         {
             TypeDesc curType = thisType;
 
+            if (curType.IsInterface && otherType.IsObject)
+            {
+                return true;
+            }
+
             // If the target type has variant type parameters, we take a slower path
             if (curType.HasVariance)
             {
@@ -350,11 +355,6 @@ namespace Internal.TypeSystem
                 if (otherType.IsNullable && !curType.IsNullable)
                 {
                     return thisType.CanCastTo(otherType.Instantiation[0]);
-                }
-
-                if (curType.IsInterface)
-                {
-                    return otherType.IsObject;
                 }
 
                 do

@@ -142,7 +142,7 @@
     <value>Call not allowed on abstract methods.</value>
   </data>
   <data name="CallVirtOnStatic" xml:space="preserve">
-    <value>callvirt on static</value>
+    <value>callvirt on static.</value>
   </data>
   <data name="CallVirtOnValueType" xml:space="preserve">
     <value>Callvirt on a value type method.</value>
@@ -152,6 +152,15 @@
   </data>
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
+  </data>
+  <data name="DelegateCtor" xml:space="preserve">
+    <value>Unrecognized arguments for delegate .ctor.</value>
+  </data>
+  <data name="DelegateCtorSigI" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Native Int.</value>
+  </data>
+  <data name="DelegateCtorSigO" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Object.</value>
   </data>
   <data name="Endfilter" xml:space="preserve">
     <value>Endfilter from outside an exception filter block.</value>
@@ -192,6 +201,12 @@
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>
+  <data name="LdftnConstructor" xml:space="preserve">
+    <value>ldftn/ldvirtftn not allowed on .ctor.</value>
+  </data>
+  <data name="LdvirtftnOnStatic" xml:space="preserve">
+    <value>ldvirtftn on static.</value>
+  </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
   </data>
@@ -209,6 +224,9 @@
   </data>
   <data name="StackByRef" xml:space="preserve">
     <value>Expected ByRef on the stack.</value>
+  </data>
+  <data name="StackMethod" xml:space="preserve">
+    <value>Expected pointer to function on the stack.</value>
   </data>
   <data name="StackNotEq" xml:space="preserve">
     <value>Non-compatible types on the stack.</value>
@@ -254,6 +272,12 @@
   </data>
   <data name="UnrecognizedLocalNumber" xml:space="preserve">
     <value>Unrecognized local variable number.</value>
+  </data>
+  <data name="UnsatisfiedMethodInst" xml:space="preserve">
+    <value>Method instantiation has unsatisfied method type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedMethodParentInst" xml:space="preserve">
+    <value>Method parent instantiation has unsatisfied class type parameter constraints.</value>
   </data>
   <data name="Unverifiable" xml:space="preserve">
     <value>Instruction cannot be verified.</value>
