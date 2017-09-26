@@ -50,6 +50,13 @@ namespace ILCompiler.DependencyAnalysis
                     armEmitter.Builder.AddSymbol(this);
                     return armEmitter.Builder.ToObjectData();
 
+                case TargetArchitecture.ARM64:
+                    ARM64.ARM64Emitter arm64Emitter = new ARM64.ARM64Emitter(factory, relocsOnly);
+                    EmitCode(factory, ref arm64Emitter, relocsOnly);
+                    arm64Emitter.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
+                    arm64Emitter.Builder.AddSymbol(this);
+                    return arm64Emitter.Builder.ToObjectData();
+
                 default:
                     throw new NotImplementedException();
             }
@@ -58,5 +65,6 @@ namespace ILCompiler.DependencyAnalysis
         protected abstract void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly);
         protected abstract void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly);
         protected abstract void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly);
+        protected abstract void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly);
     }
 }

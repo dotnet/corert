@@ -113,23 +113,80 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 template <CalleeSavedRegNum regNum>
 PTR_PTR_Object GetRegObjectAddr(REGDISPLAY * pContext)
 {
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    switch (regNum)
+    {
+    case CSR_NUM_X19:    return (PTR_PTR_Object)pContext->pX19;
+    case CSR_NUM_X20:    return (PTR_PTR_Object)pContext->pX20;
+    case CSR_NUM_X21:    return (PTR_PTR_Object)pContext->pX21;
+    case CSR_NUM_X22:    return (PTR_PTR_Object)pContext->pX22;
+    case CSR_NUM_X23:    return (PTR_PTR_Object)pContext->pX23;
+    case CSR_NUM_X24:    return (PTR_PTR_Object)pContext->pX24;
+    case CSR_NUM_X25:    return (PTR_PTR_Object)pContext->pX25;
+    case CSR_NUM_X26:    return (PTR_PTR_Object)pContext->pX26;
+    case CSR_NUM_X27:    return (PTR_PTR_Object)pContext->pX27;
+    case CSR_NUM_X28:    return (PTR_PTR_Object)pContext->pX28;
+    }
+    UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
 #pragma warning(pop)
 
 PTR_PTR_Object GetRegObjectAddr(CalleeSavedRegNum regNum, REGDISPLAY * pContext)
 {
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    switch (regNum)
+    {
+    case CSR_NUM_X19:    return (PTR_PTR_Object)pContext->pX19;
+    case CSR_NUM_X20:    return (PTR_PTR_Object)pContext->pX20;
+    case CSR_NUM_X21:    return (PTR_PTR_Object)pContext->pX21;
+    case CSR_NUM_X22:    return (PTR_PTR_Object)pContext->pX22;
+    case CSR_NUM_X23:    return (PTR_PTR_Object)pContext->pX23;
+    case CSR_NUM_X24:    return (PTR_PTR_Object)pContext->pX24;
+    case CSR_NUM_X25:    return (PTR_PTR_Object)pContext->pX25;
+    case CSR_NUM_X26:    return (PTR_PTR_Object)pContext->pX26;
+    case CSR_NUM_X27:    return (PTR_PTR_Object)pContext->pX27;
+    case CSR_NUM_X28:    return (PTR_PTR_Object)pContext->pX28;
+    }
+    UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
 
 PTR_PTR_Object GetScratchRegObjectAddr(ScratchRegNum regNum, REGDISPLAY * pContext)
 {
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    switch (regNum)
+    {
+    case SR_NUM_X0:     return (PTR_PTR_Object)pContext->pX0;
+    case SR_NUM_X1:     return (PTR_PTR_Object)pContext->pX1;
+    case SR_NUM_X2:     return (PTR_PTR_Object)pContext->pX2;
+    case SR_NUM_X3:     return (PTR_PTR_Object)pContext->pX3;
+    case SR_NUM_X4:     return (PTR_PTR_Object)pContext->pX4;
+    case SR_NUM_X5:     return (PTR_PTR_Object)pContext->pX5;
+    case SR_NUM_X6:     return (PTR_PTR_Object)pContext->pX6;
+    case SR_NUM_X7:     return (PTR_PTR_Object)pContext->pX7;
+    case SR_NUM_X8:     return (PTR_PTR_Object)pContext->pX8;
+    case SR_NUM_X9:     return (PTR_PTR_Object)pContext->pX9;
+    case SR_NUM_X10:     return (PTR_PTR_Object)pContext->pX10;
+    case SR_NUM_X11:     return (PTR_PTR_Object)pContext->pX11;
+    case SR_NUM_X12:     return (PTR_PTR_Object)pContext->pX12;
+    case SR_NUM_X13:     return (PTR_PTR_Object)pContext->pX13;
+    case SR_NUM_X14:     return (PTR_PTR_Object)pContext->pX14;
+    case SR_NUM_X15:     return (PTR_PTR_Object)pContext->pX15;
+    case SR_NUM_XIP0:     return (PTR_PTR_Object)pContext->pX16;
+    case SR_NUM_XIP1:     return (PTR_PTR_Object)pContext->pX17;
+    }
+    UNREACHABLE_MSG("unexpected ScratchRegNum");
 }
 
 void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCallback)
 {
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    // ARM64TODO: All these won't fit into 8 bits. FIX IT!
+    if (regSet & CSR_MASK_X19) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X19>(pContext), 0); }
+    if (regSet & CSR_MASK_X20) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X20>(pContext), 0); }
+    if (regSet & CSR_MASK_X21) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X21>(pContext), 0); }
+    if (regSet & CSR_MASK_X22) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X22>(pContext), 0); }
+    if (regSet & CSR_MASK_X23) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X23>(pContext), 0); }
+    if (regSet & CSR_MASK_X24) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X24>(pContext), 0); }
+    if (regSet & CSR_MASK_X25) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X25>(pContext), 0); }
+    if (regSet & CSR_MASK_X26) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X26>(pContext), 0); }
+    if (regSet & CSR_MASK_X27) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X27>(pContext), 0); }
+    if (regSet & CSR_MASK_X28) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X28>(pContext), 0); }
 }
 
 
@@ -767,6 +824,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
         if (regMask & CSR_MASK_R10) { pContext->pR10 = RSP++; }
         if (regMask & CSR_MASK_R11) { pContext->pR11 = RSP++; }
 #elif defined(_TARGET_ARM64_)
+        UNREFERENCED_PARAMETER(regMask);
         PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif // _TARGET_AMD64_
     }
@@ -947,7 +1005,13 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     if (!pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
 #elif defined(_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    // ARM64TODO: for now no gc:
+    UNREFERENCED_PARAMETER(pGCInfoHeader);
+    UNREFERENCED_PARAMETER(cbMethodCodeSize);
+    UNREFERENCED_PARAMETER(pbEpilogTable);
+    UNREFERENCED_PARAMETER(codeOffset);
+    UNREFERENCED_PARAMETER(pContext);
+    return NULL;
 #endif // _ARM_
 
     void ** ppvResult;
@@ -1496,6 +1560,7 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
     return NULL;
 
 #elif defined(_ARM64_)
+    UNREFERENCED_PARAMETER(pbEpilog);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #endif
@@ -1579,6 +1644,7 @@ void CheckHijackInEpilog(GCInfoHeader * pInfoHeader, Code * pEpilog, Code * pEpi
     context.pR11 = &RBP_TEST_VAL;
     context.SP = RSP_TEST_VAL; 
 #elif defined(_ARM64_)
+    UNREFERENCED_PARAMETER(RBP_TEST_VAL);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif
 
@@ -2229,6 +2295,9 @@ bool VerifyEpilogBytesARM(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt3
 #elif defined(_ARM64_)
 bool VerifyEpilogBytesARM64(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
 {
+    UNREFERENCED_PARAMETER(pInfoHeader);
+    UNREFERENCED_PARAMETER(pEpilogStart);
+    UNREFERENCED_PARAMETER(epilogSize);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 }
 #endif // _ARM_

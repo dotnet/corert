@@ -209,6 +209,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
 #elif defined(_TARGET_ARM64_)
+    UNREFERENCED_PARAMETER(pPreservedRegsCursor);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #else // _TARGET_ARM_
@@ -730,6 +731,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR11 = SP++;
     
 #elif defined(_TARGET_ARM64_)
+    UNREFERENCED_PARAMETER(isFilterInvoke);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #else
@@ -847,6 +849,20 @@ public:
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
     }
 
+#elif defined(_TARGET_ARM64_)
+private:
+    // ARM64TODO: #error NYI for this arch
+    UIntNative m_stackPassedArgs[1];        // Placeholder
+public:
+    PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    }
 #else
 #error NYI for this arch
 #endif
@@ -983,6 +999,12 @@ void StackFrameIterator::UnwindCallDescrThunk()
     newSP += sizeof(CALL_DESCR_CONTEXT);
 
 #elif defined(_TARGET_ARM64_)
+    // ARM64TODO: pFP points to the SP that we want to capture? (This arrangement allows for
+    // the arguments from this function to be loaded into memory with an adjustment
+    // to SP, like an alloca
+    newSP = *(PTR_UIntNative)m_RegDisplay.pFP;
+    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
+
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #elif defined(_TARGET_X86_)

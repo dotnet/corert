@@ -330,6 +330,14 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     pCtx->R11 = win32ctx.R11;
     pCtx->SP = win32ctx.Sp;
     pCtx->LR = win32ctx.Lr;
+#elif defined(_ARM64_)
+    for (int i = 0; i < GEN_REG_COUNT; ++i) {
+        pCtx->X[i] = win32ctx.X[i];
+    }
+    pCtx->SP = win32ctx.Sp;
+    pCtx->LR = win32ctx.Lr;
+    pCtx->FP = win32ctx.Fp;
+    pCtx->IP = win32ctx.Pc;
 #else
 #error Unsupported platform
 #endif
@@ -1063,7 +1071,8 @@ UInt32 CountBits(size_t bfBitfield)
 // 'answers' between the current implementation and the CLR implementation.
 //
 //#define TRACE_CACHE_TOPOLOGY
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(_ARM64_)
+// ARM64TODO: restore
 void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     printf("----------------\n");
@@ -1115,7 +1124,7 @@ void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(c
     printf("        g_cbLargestOnDieCache: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
     printf("g_cbLargestOnDieCacheAdjusted: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
 }
-#endif // _DEBUG
+#endif // defined(_DEBUG) && !defined(_ARM64_)
 
 // Method used to initialize the above values.
 bool PalQueryProcessorTopology()
@@ -1288,18 +1297,21 @@ bool PalQueryProcessorTopology()
         g_cbLargestOnDieCache = cbCache;
         g_cbLargestOnDieCacheAdjusted = cbCacheAdjusted;
 
-#ifdef _DEBUG
-#ifdef TRACE_CACHE_TOPOLOGY
+#if defined(_DEBUG)
+#if defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
+// ARM64TODO: restore
         DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
-#endif // TRACE_CACHE_TOPOLOGY
+#endif // defined(TRACE_CACHE_TOPOLOGY) && !defined(_ARM64_)
         if ((CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords) != g_cbLargestOnDieCache) ||
             (CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords) != g_cbLargestOnDieCacheAdjusted) ||
             (CLR_GetLogicalCpuCount(pProcInfos, cRecords) != g_cLogicalCpus))
         {
+#if !defined(_ARM64_)
             DumpCacheTopologyResults(maxCpuId, cpuVendor, pProcInfos, cRecords);
+#endif
             assert(!"QueryProcessorTopology doesn't match CLR's results.  See stdout for more info.");
         }
-#endif // TRACE_CACHE_TOPOLOGY
+#endif
     }
 
     if (pProcInfos)

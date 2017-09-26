@@ -153,6 +153,17 @@ private:
         PTR_UIntNative pR9;
         PTR_UIntNative pR10;
         PTR_UIntNative pR11;
+#elif defined(_TARGET_ARM64_)
+        PTR_UIntNative pX19;
+        PTR_UIntNative pX20;
+        PTR_UIntNative pX21;
+        PTR_UIntNative pX22;
+        PTR_UIntNative pX23;
+        PTR_UIntNative pX24;
+        PTR_UIntNative pX25;
+        PTR_UIntNative pX26;
+        PTR_UIntNative pX27;
+        PTR_UIntNative pX28;
 #elif defined(UNIX_AMD64_ABI)
         PTR_UIntNative pRbp;
         PTR_UIntNative pRbx;
