@@ -123,13 +123,11 @@ namespace System
         [FieldOffset(12), NonSerialized]
         private uint umid;
 
-        // Constructs a zero Decimal.
-        //public Decimal() {
-        //    lo = 0;
-        //    mid = 0;
-        //    hi = 0;
-        //    flags = 0;
-        //}
+        /// <summary>
+        /// The low and mid fields combined in little-endian order
+        /// </summary>
+        [FieldOffset(8), NonSerialized]
+        private ulong ulomidLE;
 
         // Constructs a Decimal from an integer value.
         //
@@ -179,8 +177,7 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            ulo = (uint)value_copy;
-            umid = (uint)(value_copy >> 32);
+            Low64 = (ulong)value;
             uhi = 0;
         }
 
@@ -190,8 +187,7 @@ namespace System
         public Decimal(ulong value)
         {
             uflags = 0;
-            ulo = (uint)value;
-            umid = (uint)(value >> 32);
+            Low64 = value;
             uhi = 0;
         }
 
@@ -223,7 +219,7 @@ namespace System
             ulong absoluteCy; // has to be ulong to accommodate the case where cy == long.MinValue.
             if (cy < 0)
             {
-                d.Sign = true;
+                d.IsNegative = true;
                 absoluteCy = (ulong)(-cy);
             }
             else
@@ -280,10 +276,6 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            lo = 0;
-            mid = 0;
-            hi = 0;
-            flags = 0;
             SetBits(bits);
         }
 
@@ -480,25 +472,25 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDecimal(this, null, null);
+            return Number.FormatDecimal(this, null, null);
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDecimal(this, format, null);
+            return Number.FormatDecimal(this, format, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDecimal(this, null, provider);
+            return Number.FormatDecimal(this, null, provider);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return FormatProvider.FormatDecimal(this, format, provider);
+            return Number.FormatDecimal(this, format, provider);
         }
 
 
@@ -511,7 +503,8 @@ namespace System
         //
         public static Decimal Parse(String s)
         {
-            return FormatProvider.ParseDecimal(s, NumberStyles.Number, null);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null);
         }
 
         internal const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
@@ -537,29 +530,55 @@ namespace System
         public static Decimal Parse(String s, NumberStyles style)
         {
             ValidateParseStyleFloatingPoint(style);
-            return FormatProvider.ParseDecimal(s, style, null);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, null);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
-            return FormatProvider.ParseDecimal(s, NumberStyles.Number, provider);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, provider);
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
-            return FormatProvider.ParseDecimal(s, style, provider);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, provider);
+        }
+
+        public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
+        {
+            ValidateParseStyleFloatingPoint(style);
+            return Number.ParseDecimal(s, style, provider);
         }
 
         public static Boolean TryParse(String s, out Decimal result)
         {
-            return FormatProvider.TryParseDecimal(s, NumberStyles.Number, null, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
-            return FormatProvider.TryParseDecimal(s, style, provider, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
+        }
+
+        public static Boolean TryParse(ReadOnlySpan<char> s, out Decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseDecimal(s, style, provider, out result);
         }
 
         // Returns a binary representation of a Decimal. The return value is an
@@ -625,9 +644,8 @@ namespace System
         //
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
-            Decimal decRes;
-            DecCalc.VarDecMul(ref d1, ref d2, out decRes);
-            return decRes;
+            DecCalc.VarDecMul(ref d1, ref d2);
+            return d1;
         }
 
         // Returns the negated value of the given Decimal. If d is non-zero,
@@ -689,6 +707,8 @@ namespace System
             }
             return d;
         }
+
+        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //
@@ -774,7 +794,7 @@ namespace System
             if (d.hi == 0 && d.mid == 0)
             {
                 int i = d.lo;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (i >= 0) return i;
                 }
@@ -797,7 +817,7 @@ namespace System
             if (d.uhi == 0)
             {
                 long l = d.ulo | (long)(int)d.umid << 32;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (l >= 0) return l;
                 }
@@ -840,7 +860,7 @@ namespace System
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
             if (d.uhi == 0 && d.umid == 0)
             {
-                if (!d.Sign || d.ulo == 0)
+                if (!d.IsNegative || d.ulo == 0)
                     return d.ulo;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -857,7 +877,7 @@ namespace System
             if (d.uhi == 0)
             {
                 ulong l = (ulong)d.ulo | ((ulong)d.umid << 32);
-                if (!d.Sign || l == 0)
+                if (!d.IsNegative || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);

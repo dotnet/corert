@@ -39,8 +39,17 @@ __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 //
 #pragma comment(linker, "/merge:.modules=.rdata")
 
+// 
+// Unboxing stubs need to be merged, folded and sorted. They are delimited by two special sections (.unbox$A
+// and .unbox$Z). All unboxing stubs are in .unbox$M sections.
+//
+#pragma comment(linker, "/merge:.unbox=.text")
+
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
+
+extern "C" void __unbox_a();
+extern "C" void __unbox_z();
 
 #else // _MSC_VER
 
@@ -50,6 +59,8 @@ extern void * __modules_a[] __asm("section$start$__DATA$__modules");
 extern void * __modules_z[] __asm("section$end$__DATA$__modules");
 extern char __managedcode_a __asm("section$start$__TEXT$__managedcode");
 extern char __managedcode_z __asm("section$end$__TEXT$__managedcode");
+extern char __unbox_a __asm("section$start$__TEXT$__unbox");
+extern char __unbox_z __asm("section$end$__TEXT$__unbox");
 
 #else // __APPLE__
 
@@ -62,6 +73,11 @@ extern "C" char __start___managedcode;
 extern "C" char __stop___managedcode;
 static char& __managedcode_a = __start___managedcode;
 static char& __managedcode_z = __stop___managedcode;
+
+extern "C" char __start___unbox;
+extern "C" char __stop___unbox;
+static char& __unbox_a = __start___unbox;
+static char& __unbox_z = __stop___unbox;
 
 #endif // __APPLE__
 
@@ -133,6 +149,19 @@ void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 {
     RhpReversePInvokeReturn2(pRevFrame);
+}
+
+extern "C" void RhpPInvoke2(PInvokeTransitionFrame* pFrame);
+extern "C" void RhpPInvokeReturn2(PInvokeTransitionFrame* pFrame);
+
+void __pinvoke(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvoke2(pFrame);
+}
+
+void __pinvoke_return(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvokeReturn2(pFrame);
 }
 
 namespace System_Private_CoreLib { namespace System { 
@@ -233,7 +262,8 @@ extern "C" void RhpShutdown();
 #ifndef CPPCODEGEN
 
 extern "C" bool RhRegisterOSModule(void * pModule,
-    void * pvStartRange, uint32_t cbRange,
+    void * pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
+    void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
@@ -262,7 +292,7 @@ extern "C" void InitializeModules(void* osModule, void ** modules, int count, vo
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-int wmain(int argc, wchar_t* argv[])
+int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 int main(int argc, char* argv[])
@@ -277,19 +307,16 @@ int main(int argc, char* argv[])
 
 #ifndef CPPCODEGEN
     void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
+    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
         (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {
         return -1;
     }
 #endif // !CPPCODEGEN
-
-#ifdef CPPCODEGEN
-    ReversePInvokeFrame frame;
-    __reverse_pinvoke(&frame);
-#endif
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
@@ -311,10 +338,6 @@ int main(int argc, char* argv[])
         printf("Method: %s\n", e);
         retval = -1;
     }
-#endif
-
-#ifdef CPPCODEGEN
-    __reverse_pinvoke_return(&frame);
 #endif
 
     RhpShutdown();

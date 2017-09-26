@@ -6,9 +6,11 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
 
@@ -80,7 +82,14 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
+                {
+                    yield return cad;
+                }
+
+                MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
+                if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
+                    yield return new RuntimePseudoCustomAttributeData(typeof(PreserveSigAttribute), null, null);
             }
         }
 
@@ -114,6 +123,8 @@ namespace System.Reflection.Runtime.MethodInfos
                 return _common.IsGenericMethodDefinition;
             }
         }
+
+        public sealed override int GenericParameterCount => _common.GenericParameterCount;
 
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
@@ -199,12 +210,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw new ArgumentNullException(nameof(other));
 
             // Do not rewrite as a call to IsConstructedGenericMethod - we haven't yet established that "other" is a runtime-implemented member yet!
-            RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod = other as RuntimeConstructedGenericMethodInfo;
-            if (otherConstructedGenericMethod != null)
+            if (other is RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod)
                 other = otherConstructedGenericMethod.GetGenericMethodDefinition();
 
-            RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod = other as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
-            if (otherMethod == null)
+            if (!(other is RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod))
                 return false;
 
             return _common.HasSameMetadataDefinitionAs(otherMethod._common);
@@ -212,8 +221,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeNamedMethodInfo<TRuntimeMethodCommon> other = obj as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
-            if (other == null)
+            if (!(obj is RuntimeNamedMethodInfo<TRuntimeMethodCommon> other))
                 return false;
             if (!_common.Equals(other._common))
                 return false;
@@ -305,6 +313,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
+
                 return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
         }

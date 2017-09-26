@@ -109,14 +109,24 @@ namespace System
         /// <param name="isOpenResolver"> 
         ///   This value indicates if the returned pointer is an open resolver structure.
         /// </param>
+        /// <param name="isInterpreterEntrypoint"> 
+        ///   Delegate points to an object array thunk (the delegate wraps a Func<object[], object> delegate). This
+        ///   is typically a delegate pointing to the LINQ expression interpreter.
+        /// </param>
         /// <returns></returns>
-        unsafe internal IntPtr GetFunctionPointer(out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
+        unsafe internal IntPtr GetFunctionPointer(out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
         {
             typeOfFirstParameterIfInstanceDelegate = default(RuntimeTypeHandle);
             isOpenResolver = false;
+            isInterpreterEntrypoint = false;
 
             if (GetThunk(MulticastThunk) == m_functionPointer)
             {
+                return IntPtr.Zero;
+            }
+            else if (GetThunk(ObjectArrayThunk) == m_functionPointer)
+            {
+                isInterpreterEntrypoint = true;
                 return IntPtr.Zero;
             }
             else if (m_extraFunctionPointerOrData != IntPtr.Zero)
@@ -363,7 +373,7 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null);
+                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
@@ -899,8 +909,7 @@ namespace System
             else
             {
                 RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                bool isOpenThunk;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenThunk);
+                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
                 if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
                 {
                     return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);

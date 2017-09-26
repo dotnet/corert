@@ -95,9 +95,10 @@ public:
 
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
-#ifdef _TARGET_AMD64_
-#define USE_GROWABLE_FUNCTION_TABLE 1
-#endif
+// TODO: Not compatible with Windows 7
+// #ifdef _TARGET_AMD64_
+// #define USE_GROWABLE_FUNCTION_TABLE 1
+// #endif
 
 class CodeHeader
 {
@@ -275,4 +276,6 @@ public:
     PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
 
     void * GetClasslibFunction(ClasslibFunctionId functionId);
+
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
 };

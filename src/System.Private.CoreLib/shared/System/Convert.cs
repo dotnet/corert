@@ -2276,7 +2276,13 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
+
+            if (value == null)
+            {
+                return 0;
+            }
+
+            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < Byte.MinValue || r > Byte.MaxValue)
                 ThrowByteOverflowException();
             return (byte)r;
@@ -2294,7 +2300,13 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI1);
+
+            if (value == null)
+            {
+                return 0;
+            }
+
+            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI1);
             if (fromBase != 10 && r <= Byte.MaxValue)
                 return (sbyte)r;
 
@@ -2314,7 +2326,13 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI2);
+
+            if (value == null)
+            {
+                return 0;
+            }
+
+            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI2);
             if (fromBase != 10 && r <= UInt16.MaxValue)
                 return (short)r;
 
@@ -2335,7 +2353,13 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
+
+            if (value == null)
+            {
+                return 0;
+            }
+
+            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < UInt16.MinValue || r > UInt16.MaxValue)
                 ThrowUInt16OverflowException();
             return (ushort)r;
@@ -2352,7 +2376,9 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            return ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight);
+            return value != null ?
+                ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight) :
+                0;
         }
 
         // Parses value in base fromBase.  fromBase can only
@@ -2367,7 +2393,9 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            return (uint)ParseNumbers.StringToInt(value, fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight);
+            return value != null ?
+                (uint)ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
+                0;
         }
 
         // Parses value in base fromBase.  fromBase can only
@@ -2381,7 +2409,9 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            return ParseNumbers.StringToLong(value, fromBase, ParseNumbers.IsTight);
+            return value != null ?
+                ParseNumbers.StringToLong(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight) :
+                0;
         }
 
         // Parses value in base fromBase.  fromBase can only
@@ -2396,7 +2426,9 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
-            return (ulong)ParseNumbers.StringToLong(value, fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight);
+            return value != null ?
+                (ulong)ParseNumbers.StringToLong(value.AsReadOnlySpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
+                0;
         }
 
         // Convert the byte value to a string in base fromBase
@@ -2670,7 +2702,7 @@ namespace System
         /// Converts the specified string, which encodes binary data as Base64 digits, to the equivalent byte array.
         /// </summary>
         /// <param name="s">The string to convert</param>
-        /// <returns>The array of bytes represented by the specifed Base64 string.</returns>
+        /// <returns>The array of bytes represented by the specified Base64 string.</returns>
         public static Byte[] FromBase64String(String s)
         {
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.

@@ -10,14 +10,12 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Runtime.CompilerServices;
 using global::Internal.Runtime.TypeLoader;
 
-using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
 using global::Internal.Reflection.Execution.MethodInvokers;
 using global::Internal.Reflection.Execution.FieldAccessors;
 
 using global::Internal.Metadata.NativeFormat;
 
-using global::System.Runtime.CompilerServices;
 using global::System.Runtime.InteropServices;
 
 using global::Internal.Runtime;
@@ -127,9 +125,14 @@ namespace Internal.Reflection.Execution
         {
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
-
             var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle);
-            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+
+            //make sure the module is actually NativeFormatModuleInfo, if the module
+            //doesnt have reflection enabled it wont be a NativeFormatModuleInfo
+            if (!(ModuleList.Instance.TryGetModuleInfoByHandle(moduleHandle, out ModuleInfo untypedModuleInfo) && (untypedModuleInfo is NativeFormatModuleInfo module)))
+            {
+                return true;
+            }
 
             NativeReader blockedReflectionReader = GetNativeReaderForBlob(module, ReflectionMapBlob.BlockReflectionTypeMap);
             NativeParser blockedReflectionParser = new NativeParser(blockedReflectionReader, 0);
@@ -361,37 +364,6 @@ namespace Internal.Reflection.Execution
 
         public sealed override MethodInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            if (RuntimeAugments.IsNullable(declaringTypeHandle))
-                return new NullableInstanceMethodInvoker(methodHandle.NativeFormatReader, methodHandle.NativeFormatHandle, declaringTypeHandle, null);
-            else if (declaringTypeHandle.Equals(typeof(String).TypeHandle))
-            {
-                MetadataReader reader = methodHandle.NativeFormatReader;
-                MethodHandle nativeFormatHandle = methodHandle.NativeFormatHandle;
-
-                Method method = nativeFormatHandle.GetMethod(reader);
-                MethodAttributes methodAttributes = method.Flags;
-                if (((method.Flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public) &&
-                    ((method.Flags & MethodAttributes.SpecialName) == MethodAttributes.SpecialName) &&
-                    (method.Name.GetConstantStringValue(reader).Value == ".ctor"))
-                {
-                    return new StringConstructorMethodInvoker(reader, nativeFormatHandle);
-                }
-            }
-            else if (declaringTypeHandle.Equals(typeof(IntPtr).TypeHandle) || declaringTypeHandle.Equals(typeof(UIntPtr).TypeHandle))
-            {
-                MetadataReader reader = methodHandle.NativeFormatReader;
-                MethodHandle nativeFormatHandle = methodHandle.NativeFormatHandle;
-
-                Method method = nativeFormatHandle.GetMethod(reader);
-                MethodAttributes methodAttributes = method.Flags;
-                if (((method.Flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public) &&
-                    ((method.Flags & MethodAttributes.SpecialName) == MethodAttributes.SpecialName) &&
-                    (method.Name.GetConstantStringValue(reader).Value == ".ctor"))
-                {
-                    return new IntPtrConstructorMethodInvoker(reader, nativeFormatHandle);
-                }
-            }
-
             MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
             // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
@@ -1315,8 +1287,11 @@ namespace Internal.Reflection.Execution
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForInstanceFields(
                                 fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(
-                                fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForInstanceFields(
+                                    fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForInstanceFields(
+                                    fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
                     }
 
                 case FieldTableFlags.Static:
@@ -1363,7 +1338,9 @@ namespace Internal.Reflection.Execution
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                             (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
                     }
 
                 case FieldTableFlags.ThreadStatic:
@@ -1375,12 +1352,19 @@ namespace Internal.Reflection.Execution
                                 (int)fieldAccessMetadata.Cookie,
                                 fieldAccessMetadata.Offset,
                                 fieldTypeHandle) :
-                            (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
-                                TryGetStaticClassConstructionContext(declaringTypeHandle), 
-                                declaringTypeHandle,
-                                (int)fieldAccessMetadata.Cookie,
-                                fieldAccessMetadata.Offset,
-                                fieldTypeHandle);
+                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
+                                (FieldAccessor)new PointerTypeFieldAccessorForThreadStaticFields(
+                                    TryGetStaticClassConstructionContext(declaringTypeHandle),
+                                    declaringTypeHandle,
+                                    (int)fieldAccessMetadata.Cookie,
+                                    fieldAccessMetadata.Offset,
+                                    fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
+                                    TryGetStaticClassConstructionContext(declaringTypeHandle), 
+                                    declaringTypeHandle,
+                                    (int)fieldAccessMetadata.Cookie,
+                                    fieldAccessMetadata.Offset,
+                                    fieldTypeHandle);
                     }
             }
 

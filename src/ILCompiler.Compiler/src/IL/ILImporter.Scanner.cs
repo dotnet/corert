@@ -34,10 +34,16 @@ namespace Internal.IL
         private class BasicBlock
         {
             // Common fields
+            public enum ImportState : byte
+            {
+                Unmarked,
+                IsPending
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public ImportState State = ImportState.Unmarked;
 
             public bool TryStart;
             public bool FilterStart;
@@ -559,14 +565,12 @@ namespace Internal.IL
                         Debug.Assert(!forceUseRuntimeLookup);
                         _dependencies.Add(_factory.MethodEntrypoint(targetMethod), reason);
 
-                        // Compensate for an issue where we use the wrong typehandle as the generic context
-                        // https://github.com/dotnet/corert/issues/3608
-                        if (resolvedConstraint)
+                        if (targetMethod.RequiresInstMethodTableArg() && resolvedConstraint)
                         {
-                            if (runtimeDeterminedMethod.OwningType.IsRuntimeDeterminedSubtype)
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
+                            if (_constrained.IsRuntimeDeterminedSubtype)
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, _constrained), reason);
                             else
-                                _dependencies.Add(_factory.ConstructedTypeSymbol(runtimeDeterminedMethod.OwningType), reason);
+                                _dependencies.Add(_factory.ConstructedTypeSymbol(_constrained), reason);
                         }
                         
                         if (referencingArrayAddressMethod && !_isReadOnly)

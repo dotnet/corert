@@ -113,6 +113,71 @@ NewOutOfMemory
         NESTED_END RhpNewObject
 
 
+;; Allocate a string.
+;;  r0 == EEType
+;;  r1 == element/character count
+        LEAF_ENTRY RhNewString
+
+        ; Make sure computing the overall allocation size won't overflow
+        MOV32       r2, ((0xFFFFFFFF - STRING_BASE_SIZE - 3) / STRING_COMPONENT_SIZE)
+        cmp         r1, r2
+        bhs         StringSizeOverflow
+
+        ; Compute overall allocation size (align(base size + (element size * elements), 4)).
+        mov         r2, #(STRING_BASE_SIZE + 3)
+#if STRING_COMPONENT_SIZE == 2
+        add         r2, r2, r1, lsl #1                  ; r2 += characters * 2
+#else
+        NotImplementedComponentSize
+#endif
+        bic         r2, r2, #3
+
+        ; r0 == EEType
+        ; r1 == element count
+        ; r2 == string size
+
+        INLINE_GETTHREAD        r3, r12
+
+        ;; Load potential new object address into r12.
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        adds        r2, r12
+        bcs         RhpNewArrayRare ; if we get a carry here, the array is too large to fit below 4 GB
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         r2, r12
+        bhi         RhpNewArrayRare
+
+        ;; Reload new object address into r12.
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Update the alloc pointer to account for the allocation.
+        str         r2, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Set the new object's EEType pointer and element count.
+        str         r0, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r1, [r12, #OFFSETOF__String__m_Length]
+
+        ;; Return the object allocated in r0.
+        mov         r0, r12
+
+        bx          lr
+
+StringSizeOverflow
+        ; We get here if the size of the final string object can't be represented as an unsigned 
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
+        ; an OOM exception that the caller of this allocator understands.
+
+        ; r0 holds EEType pointer already
+        mov         r1, #0                  ; Indicate that we should throw OOM.
+        b           RhExceptionHandling_FailedAllocation
+
+        LEAF_END    RhNewString
+
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  r0 == EEType
 ;;  r1 == element count
@@ -121,7 +186,7 @@ NewOutOfMemory
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
         ; if the element count is <= 0x10000, no overflow is possible because the component
         ; size is <= 0xffff (it's an unsigned 16-bit value) and thus the product is <= 0xffff0000
-        ; and the base size is only 12 bytes.
+        ; and the base size for the worst case (32 dimensional MdArray) is less than 0xffff.
         ldrh        r2, [r0, #OFFSETOF__EEType__m_usComponentSize]
         cmp         r1, #0x10000
         bhi         ArraySizeBig

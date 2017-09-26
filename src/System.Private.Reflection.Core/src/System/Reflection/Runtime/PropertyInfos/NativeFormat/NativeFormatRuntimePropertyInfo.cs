@@ -79,10 +79,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
             }
         }
 
@@ -91,8 +88,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            NativeFormatRuntimePropertyInfo otherProperty = other as NativeFormatRuntimePropertyInfo;
-            if (otherProperty == null)
+            if (!(other is NativeFormatRuntimePropertyInfo otherProperty))
                 return false;
             if (!(_reader == otherProperty._reader))
                 return false;
@@ -105,8 +101,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimePropertyInfo other = obj as NativeFormatRuntimePropertyInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimePropertyInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

@@ -283,6 +283,10 @@ namespace Internal.JitInterface
 
         public byte _indirectFirstOffset;
         public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
+
+        public byte _indirectSecondOffset;
+        public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
+
     }
 
     // Result of calling embedGenericHandle
@@ -616,7 +620,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_NOSECURITYWRAP = 0x04000000, // The method requires no security checks
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-        //  CORINFO_FLG_UNUSED                = 0x40000000,
+        CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
@@ -1478,6 +1482,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
+        CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
     }
 
     public struct CORJIT_FLAGS

@@ -64,28 +64,6 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             _field = _reader.GetFieldDefinition(fieldHandle);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.GetCustomAttributes());
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                
-                if (_definingTypeInfo.IsExplicitLayout)
-                {
-                    int offset = _field.GetOffset();
-                    CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(Int32), offset);
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(System.Runtime.InteropServices.FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument }, null);
-                }
-            }
-        }
-
         public sealed override FieldAttributes Attributes
         {
             get
@@ -137,8 +115,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            EcmaFormatRuntimeFieldInfo otherField = other as EcmaFormatRuntimeFieldInfo;
-            if (otherField == null)
+            if (!(other is EcmaFormatRuntimeFieldInfo otherField))
                 return false;
             if (!(_reader == otherField._reader))
                 return false;
@@ -149,8 +126,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
 
         public sealed override bool Equals(Object obj)
         {
-            EcmaFormatRuntimeFieldInfo other = obj as EcmaFormatRuntimeFieldInfo;
-            if (other == null)
+            if (!(obj is EcmaFormatRuntimeFieldInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;
@@ -203,6 +179,10 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
         }
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.GetCustomAttributes());
+
+        protected sealed override int ExplicitLayoutFieldOffsetData => _field.GetOffset();
 
         private readonly EcmaFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldDefinitionHandle _fieldHandle;

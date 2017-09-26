@@ -203,12 +203,10 @@ namespace System.Reflection.Runtime.General
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
-            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
-            if (runtimeDelegateType == null)
+            if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            RuntimeMethodInfo runtimeMethodInfo = method as RuntimeMethodInfo;
-            if (runtimeMethodInfo == null)
+            if (!(method is RuntimeMethodInfo runtimeMethodInfo))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
             if (!runtimeDelegateType.IsDelegate)
@@ -234,8 +232,7 @@ namespace System.Reflection.Runtime.General
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
-            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
-            if (runtimeDelegateType == null)
+            if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!runtimeDelegateType.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
@@ -263,12 +260,10 @@ namespace System.Reflection.Runtime.General
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
 
-            RuntimeTypeInfo runtimeDelegateType = type as RuntimeTypeInfo;
-            if (runtimeDelegateType == null)
+            if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            RuntimeTypeInfo runtimeContainingType = target as RuntimeTypeInfo;
-            if (runtimeContainingType == null)
+            if (!(target is RuntimeTypeInfo runtimeContainingType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             if (!runtimeDelegateType.IsDelegate)
@@ -316,7 +311,7 @@ namespace System.Reflection.Runtime.General
 
             while (containingType != null)
             {
-                MethodInfo methodInfo = containingType.GetMethod(method, bindingFlags, null, parameterTypes, null);
+                MethodInfo methodInfo = containingType.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
@@ -343,7 +338,8 @@ namespace System.Reflection.Runtime.General
                 case RuntimeConstructorInfo constructorInfo:
                     return constructorInfo.LdFtnResult;
                 default:
-                    throw new PlatformNotSupportedException();
+                    Debug.Fail("RuntimeMethodHandle should only return a methodbase implemented by the runtime.");
+                    throw new NotSupportedException();
             }
         }
 
@@ -366,8 +362,7 @@ namespace System.Reflection.Runtime.General
             Type targetType = target.GetType();
             for (int i = 0; i < flds.Length; i++)
             {
-                RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo;
-                if (field == null)
+                if (!(flds[i] is RuntimeFieldInfo field))
                     throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
                 if (field.IsInitOnly || field.IsStatic)
                     throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);

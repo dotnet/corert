@@ -20,6 +20,7 @@ namespace System.Runtime.CompilerServices
     public abstract class CastableObject : ICastableObject
     {
         // THIS FIELD IS USED BY THE RUNTIME DIRECTLY! IT MUST NOT BE REMOVED BY THE REDUCER
+        [System.Diagnostics.DebuggerBrowsable(Diagnostics.DebuggerBrowsableState.Never)]
         private object _hiddenCacheField;
 
         object ICastableObject.CastToInterface(EETypePtr interfaceType, bool produceCastErrorException, out Exception castError)

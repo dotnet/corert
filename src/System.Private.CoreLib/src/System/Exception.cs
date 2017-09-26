@@ -21,7 +21,7 @@ namespace System
         private void Init()
         {
             _message = null;
-            HResult = __HResults.COR_E_EXCEPTION;
+            HResult = HResults.COR_E_EXCEPTION;
         }
 
         public Exception()
@@ -86,7 +86,7 @@ namespace System
             get
             {
                 if (_data == null)
-                    _data = new LowLevelListDictionary();
+                    _data = new ListDictionaryInternal();
 
                 return _data;
             }

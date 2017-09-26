@@ -67,6 +67,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMarshallingMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ForwardDelegateCreationThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\GetCanonTypeIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeLazyFixupField.cs" />
@@ -94,6 +95,11 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\AddrMode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\Register.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunHelperNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\Register.cs" />

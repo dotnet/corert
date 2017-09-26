@@ -332,6 +332,11 @@ COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
     return pCallback;
 }
 
+COOP_PINVOKE_HELPER(void *, RhGetTargetOfUnboxingAndInstantiatingStub, (void * pUnboxStub))
+{
+    return GetRuntimeInstance()->GetTargetOfUnboxingAndInstantiatingStub(pUnboxStub);
+}
+
 COOP_PINVOKE_HELPER(Boolean, RhpHasDispatchMap, (EEType * pEEType))
 {
     return pEEType->HasDispatchMap();
@@ -466,115 +471,127 @@ inline Int32 GetThumb2BlRel24(UInt16 * p)
 // or unboxing stub, and if so, return the address that stub jumps to
 COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 {
-    // Search for the module containing the code
-    FOREACH_MODULE(pModule)
-    {
-        // If the code pointer doesn't point to a module's stub range,
-        // it can't be pointing to a stub
-        if (!pModule->ContainsStubAddress(pCodeOrg))
-            continue;
+    Module * pModule = NULL;
+    bool unboxingStub = false;
 
-        bool unboxingStub = false;
+    // First, check the unboxing stubs regions known by the runtime (if any exist)
+    if (!GetRuntimeInstance()->IsUnboxingStub(pCodeOrg))
+    {
+        // Search for the module containing the code
+        FOREACH_MODULE(pCurrentModule)
+        {
+            // If the code pointer doesn't point to a module's stub range,
+            // it can't be pointing to a stub
+            if (pCurrentModule->ContainsStubAddress(pCodeOrg))
+            {
+                pModule = pCurrentModule;
+                break;
+            }
+        }
+        END_FOREACH_MODULE;
+
+        if (pModule == NULL)
+            return pCodeOrg;
+    }
 
 #ifdef _TARGET_AMD64_
-        UInt8 * pCode = pCodeOrg;
+    UInt8 * pCode = pCodeOrg;
 
-        // is this "add rcx,8"?
-        if (pCode[0] == 0x48 && pCode[1] == 0x83 && pCode[2] == 0xc1 && pCode[3] == 0x08)
-        {
-            // unboxing sequence
-            unboxingStub = true;
-            pCode += 4;
-        }
-        // is this an indirect jump?
-        if (pCode[0] == 0xff && pCode[1] == 0x25)
-        {
-            // normal import stub - dist to IAT cell is relative to the point *after* the instruction
-            Int32 distToIatCell = *(Int32 *)&pCode[2];
-            UInt8 ** pIatCell = (UInt8 **)(pCode + 6 + distToIatCell);
-            ASSERT(pModule->ContainsDataAddress(pIatCell));
-            return *pIatCell;
-        }
-        // is this an unboxing stub followed by a relative jump?
-        else if (unboxingStub && pCode[0] == 0xe9)
-        {
-            // relatie jump - dist is relative to the point *after* the instruction
-            Int32 distToTarget = *(Int32 *)&pCode[1];
-            UInt8 * target = pCode + 5 + distToTarget;
-            return target;
-        }
-        return pCodeOrg;
+    // is this "add rcx,8"?
+    if (pCode[0] == 0x48 && pCode[1] == 0x83 && pCode[2] == 0xc1 && pCode[3] == 0x08)
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode += 4;
+    }
+    // is this an indirect jump?
+    if (pCode[0] == 0xff && pCode[1] == 0x25)
+    {
+        // normal import stub - dist to IAT cell is relative to the point *after* the instruction
+        Int32 distToIatCell = *(Int32 *)&pCode[2];
+        UInt8 ** pIatCell = (UInt8 **)(pCode + 6 + distToIatCell);
+        ASSERT(pModule == NULL || pModule->ContainsDataAddress(pIatCell));
+        return *pIatCell;
+    }
+    // is this an unboxing stub followed by a relative jump?
+    else if (unboxingStub && pCode[0] == 0xe9)
+    {
+        // relatie jump - dist is relative to the point *after* the instruction
+        Int32 distToTarget = *(Int32 *)&pCode[1];
+        UInt8 * target = pCode + 5 + distToTarget;
+        return target;
+    }
 
 #elif _TARGET_X86_
-        UInt8 * pCode = pCodeOrg;
+    UInt8 * pCode = pCodeOrg;
 
-        // is this "add ecx,4"?
-        if (pCode[0] == 0x83 && pCode[1] == 0xc1 && pCode[2] == 0x04)
-        {
-            // unboxing sequence
-            unboxingStub = true;
-            pCode += 3;
-        }
-        // is this an indirect jump?
-        if (pCode[0] == 0xff && pCode[1] == 0x25)
-        {
-            // normal import stub - address of IAT follows
-            UInt8 **pIatCell = *(UInt8 ***)&pCode[2];
-            ASSERT(pModule->ContainsDataAddress(pIatCell));
-            return *pIatCell;
-        }
-        // is this an unboxing stub followed by a relative jump?
-        else if (unboxingStub && pCode[0] == 0xe9)
-        {
-            // relatie jump - dist is relative to the point *after* the instruction
-            Int32 distToTarget = *(Int32 *)&pCode[1];
-            UInt8 * pTarget = pCode + 5 + distToTarget;
-            return pTarget;
-        }
-        return pCodeOrg;
+    // is this "add ecx,4"?
+    if (pCode[0] == 0x83 && pCode[1] == 0xc1 && pCode[2] == 0x04)
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode += 3;
+    }
+    // is this an indirect jump?
+    if (pCode[0] == 0xff && pCode[1] == 0x25)
+    {
+        // normal import stub - address of IAT follows
+        UInt8 **pIatCell = *(UInt8 ***)&pCode[2];
+        ASSERT(pModule == NULL || pModule->ContainsDataAddress(pIatCell));
+        return *pIatCell;
+    }
+    // is this an unboxing stub followed by a relative jump?
+    else if (unboxingStub && pCode[0] == 0xe9)
+    {
+        // relatie jump - dist is relative to the point *after* the instruction
+        Int32 distToTarget = *(Int32 *)&pCode[1];
+        UInt8 * pTarget = pCode + 5 + distToTarget;
+        return pTarget;
+    }
 
 #elif _TARGET_ARM_
-        const UInt16 THUMB_BIT = 1;
-        UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
-        // is this "adds r0,4"?
-        if (pCode[0] == 0x3004)
+    const UInt16 THUMB_BIT = 1;
+    UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
+    // is this "adds r0,4"?
+    if (pCode[0] == 0x3004)
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode += 1;
+    }
+    // is this movw r12,#imm16; movt r12,#imm16; ldr pc,[r12]
+    // or movw r12,#imm16; movt r12,#imm16; bx r12
+    if  ((pCode[0] & 0xfbf0) == 0xf240 && (pCode[1] & 0x0f00) == 0x0c00
+        && (pCode[2] & 0xfbf0) == 0xf2c0 && (pCode[3] & 0x0f00) == 0x0c00
+        && ((pCode[4] == 0xf8dc && pCode[5] == 0xf000) || pCode[4] == 0x4760))
+    {
+        if (pCode[4] == 0xf8dc && pCode[5] == 0xf000)
         {
-            // unboxing sequence
-            unboxingStub = true;
-            pCode += 1;
+            // ldr pc,[r12]
+            UInt8 **pIatCell = (UInt8 **)GetThumb2Mov32(pCode);
+            return *pIatCell;
         }
-        // is this movw r12,#imm16; movt r12,#imm16; ldr pc,[r12]
-        // or movw r12,#imm16; movt r12,#imm16; bx r12
-        if  ((pCode[0] & 0xfbf0) == 0xf240 && (pCode[1] & 0x0f00) == 0x0c00
-          && (pCode[2] & 0xfbf0) == 0xf2c0 && (pCode[3] & 0x0f00) == 0x0c00
-          && ((pCode[4] == 0xf8dc && pCode[5] == 0xf000) || pCode[4] == 0x4760))
+        else if (pCode[4] == 0x4760)
         {
-            if (pCode[4] == 0xf8dc && pCode[5] == 0xf000)
-            {
-                // ldr pc,[r12]
-                UInt8 **pIatCell = (UInt8 **)GetThumb2Mov32(pCode);
-                return *pIatCell;
-            }
-            else if (pCode[4] == 0x4760)
-            {
-                // bx r12
-                return (UInt8 *)GetThumb2Mov32(pCode);
-            }
+            // bx r12
+            return (UInt8 *)GetThumb2Mov32(pCode);
         }
-        // is this an unboxing stub followed by a relative jump?
-        else if (unboxingStub && (pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
-        {
-            Int32 distToTarget = GetThumb2BlRel24(pCode);
-            UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
-            return (UInt8 *)pTarget;
-        }
+    }
+    // is this an unboxing stub followed by a relative jump?
+    else if (unboxingStub && (pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
+    {
+        Int32 distToTarget = GetThumb2BlRel24(pCode);
+        UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
+        return (UInt8 *)pTarget;
+    }
+
 #elif _TARGET_ARM64_
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+        UNREFERENCED_PARAMETER(unboxingStub);
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #else
 #error 'Unsupported Architecture'
 #endif
-    }
-    END_FOREACH_MODULE;
 
     return pCodeOrg;
 }

@@ -20,8 +20,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
+        /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
-        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true)
+        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true, Func<string, ModuleDesc, bool, MetadataType> resolver = null)
         {
             TypeDesc loadedType;
 
@@ -71,7 +72,8 @@ namespace Internal.TypeSystem
             {
                 homeModule = module.Context.ResolveAssembly(homeAssembly);
             }
-            MetadataType typeDef = ResolveCustomAttributeTypeNameToTypeDesc(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
+            MetadataType typeDef = resolver != null ? resolver(genericTypeDefName.ToString(), homeModule, throwIfNotFound) :
+                ResolveCustomAttributeTypeDefinitionName(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
             if (typeDef == null)
                 return null;
 
@@ -103,7 +105,7 @@ namespace Internal.TypeSystem
                         ch += argLen;
                     }
 
-                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName, throwIfNotFound);
+                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName, throwIfNotFound, resolver);
                     if (argType == null)
                         return null;
                     genericArgs.Add(argType);
@@ -189,7 +191,7 @@ namespace Internal.TypeSystem
         }
 
 
-        private static MetadataType ResolveCustomAttributeTypeNameToTypeDesc(string name, ModuleDesc module, bool throwIfNotFound)
+        public static MetadataType ResolveCustomAttributeTypeDefinitionName(string name, ModuleDesc module, bool throwIfNotFound)
         {
             MetadataType containingType = null;
             StringBuilder typeName = new StringBuilder(name.Length);

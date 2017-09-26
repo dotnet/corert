@@ -334,6 +334,8 @@ bool Thread::IsInitialized()
 //
 void Thread::SetGCSpecial(bool isGCSpecial)
 {
+    if (!IsInitialized())
+        Construct();
     if (isGCSpecial)
         SetState(TSF_IsGcSpecialThread);
     else
@@ -1156,6 +1158,31 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
     }
 }
 
+FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
+{
+    pFrame->m_pThread = this;
+    // set our mode to preemptive
+    m_pTransitionFrame = pFrame;
+
+    // We need to prevent compiler reordering between above write and below read.
+    _ReadWriteBarrier();
+
+    // now check if we need to trap the thread
+    if (ThreadStore::IsTrapThreadsRequested())
+    {
+        RhpWaitForSuspend2();
+    }
+}
+
+FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
+{
+    m_pTransitionFrame = NULL;
+    if (ThreadStore::IsTrapThreadsRequested())
+    {
+        RhpWaitForGC2(pFrame);
+    }
+}
+
 Object * Thread::GetThreadAbortException()
 {
     return m_threadAbortException;
@@ -1284,5 +1311,21 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn2, (ReversePInvokeFrame * pFram
 {
     pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
+
+#ifdef USE_PORTABLE_HELPERS
+
+COOP_PINVOKE_HELPER(void, RhpPInvoke2, (PInvokeTransitionFrame* pFrame))
+{
+    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
+    pCurThread->InlinePInvoke(pFrame);
+}
+
+COOP_PINVOKE_HELPER(void, RhpPInvokeReturn2, (PInvokeTransitionFrame* pFrame))
+{
+    //reenter cooperative mode
+    pFrame->m_pThread->InlinePInvokeReturn(pFrame);
+}
+
+#endif //USE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE

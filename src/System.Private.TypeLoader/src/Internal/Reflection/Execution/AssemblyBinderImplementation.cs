@@ -35,7 +35,7 @@ namespace Internal.Reflection.Execution
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
-        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref bool resultBoolean);
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
 
         public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
@@ -59,6 +59,8 @@ namespace Internal.Reflection.Execution
             result = default(AssemblyBindResult);
             exception = null;
 
+            Exception preferredException = null;
+
             refName = refName.CanonicalizePublicKeyToken();
 
             // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
@@ -80,7 +82,7 @@ namespace Internal.Reflection.Execution
                 }
                 else
                 {
-                    nameMatches = AssemblyNameMatches(refName, group.Key);
+                    nameMatches = AssemblyNameMatches(refName, group.Key, ref preferredException);
                 }
 
                 if (nameMatches)
@@ -100,13 +102,13 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            BindEcmaAssemblyName(refName, ref result, ref exception, ref foundMatch);
+            BindEcmaAssemblyName(refName, ref result, ref exception, ref preferredException, ref foundMatch);
             if (exception != null)
                 return false;
 
             if (!foundMatch)
             {
-                exception = new IOException(SR.Format(SR.FileNotFound_AssemblyNotFound, refName.FullName));
+                exception = preferredException ?? new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, refName.FullName));
                 return false;
             }
 
@@ -159,7 +161,7 @@ namespace Internal.Reflection.Execution
         //
         // Encapsulates the assembly ref->def matching policy.
         //
-        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName)
+        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
@@ -175,9 +177,11 @@ namespace Internal.Reflection.Execution
 
             if (refName.Version != null)
             {
-                int compareResult = refName.Version.CompareTo(defName.Version);
-                if (compareResult > 0)
+                if (!AssemblyVersionMatches(refVersion: refName.Version, defVersion: defName.Version))
+                {
+                    preferredException = new FileLoadException(SR.Format(SR.FileLoadException_RefDefMismatch, refName.FullName, defName.Version, refName.Version));
                     return false;
+                }
             }
 
             if (refName.CultureName != null)
@@ -202,6 +206,33 @@ namespace Internal.Reflection.Execution
                 if (!ArePktsEqual(refPublicKeyToken, defPublicKeyToken))
                     return false;
             }
+
+            return true;
+        }
+
+        private static bool AssemblyVersionMatches(Version refVersion, Version defVersion)
+        {
+            if (defVersion.Major < refVersion.Major)
+                return false;
+            if (defVersion.Major > refVersion.Major)
+                return true;
+
+            if (defVersion.Minor < refVersion.Minor)
+                return false;
+            if (defVersion.Minor > refVersion.Minor)
+                return true;
+
+            if (refVersion.Build == -1)
+                return true;
+            if (defVersion.Build < refVersion.Build)
+                return false;
+            if (defVersion.Build > refVersion.Build)
+                return true;
+
+            if (refVersion.Revision == -1)
+                return true;
+            if (defVersion.Revision < refVersion.Revision)
+                return false;
 
             return true;
         }

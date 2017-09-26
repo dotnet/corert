@@ -56,28 +56,34 @@ check_native_prereqs()
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
 }
 
+get_current_linux_rid() {
+    # Construct RID for current distro
 
-get_current_linux_distro() {
-    # Detect Distro
-    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
-            echo "ubuntu.16.04"
-            return 0
+    rid=linux
+
+    if [ -e /etc/os-release ]; then
+        source /etc/os-release
+        if [[ $ID == "alpine" ]]; then
+            # remove the last version digit
+            VERSION_ID=${VERSION_ID%.*}
+            rid=alpine.$VERSION_ID
+        elif [[ $ID == "ubuntu" ]]; then
+            rid=$ID.$VERSION_ID
         fi
 
-        echo "ubuntu.14.04"
-        return 0
+    elif [ -e /etc/redhat-release ]; then
+          redhatRelease=$(</etc/redhat-release)
+          if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+              rid=rhel.6
+          fi
     fi
 
-    # Cannot determine Linux distribution, assuming Ubuntu 14.04.
-    echo "ubuntu.14.04"
-    return 0
+    echo $rid
 }
 
 
 export __scriptpath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export __ProjectRoot=$__scriptpath/..
-export __packageroot=$__ProjectRoot/packages
 export __sourceroot=$__ProjectRoot/src
 export __rootbinpath="$__ProjectRoot/bin"
 export __buildmanaged=false
@@ -134,7 +140,7 @@ case $OSName in
 
     Linux)
         export __BuildOS=Linux
-        export __NugetRuntimeId=$(get_current_linux_distro)-x64
+        export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
         ;;
 
     NetBSD)

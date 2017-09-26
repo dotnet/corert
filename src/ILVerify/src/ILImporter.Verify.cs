@@ -81,10 +81,17 @@ namespace Internal.IL
         class BasicBlock
         {
             // Common fields
+            public enum ImportState : byte
+            {
+                Unmarked,
+                IsPending,
+                WasVerified
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public ImportState State = ImportState.Unmarked;
 
             public StackValue[] EntryStack;
 
@@ -96,6 +103,16 @@ namespace Internal.IL
             public int? TryIndex;
             public int? HandlerIndex;
             public int? FilterIndex;
+
+            public int ErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementErrorCount()
+            {
+                ErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -119,23 +136,30 @@ namespace Internal.IL
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
             _method = method;
-            _methodSignature = method.Signature;
             _typeSystemContext = method.Context;
 
-            if (!_methodSignature.IsStatic)
+            if (!_method.Signature.IsStatic)
             {
-                var thisType = method.OwningType.InstantiateAsOpen();
+                if (_method.OwningType.HasInstantiation)
+                {
+                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
+                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
+                }
+                else
+                    _thisType = _method.OwningType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
                 // managed pointer(see Partition I) to an unboxed instance of the value type. ...
-                if (thisType.IsValueType)
-                    thisType = thisType.MakeByRefType();
-
-                _thisType = thisType;
+                if (_thisType.IsValueType)
+                    _thisType = _thisType.MakeByRefType();
             }
 
-            _methodIL = methodIL;
+            if (_method.HasInstantiation)
+                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
+
+            _methodSignature = _method.Signature;
+            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
 
             _initLocals = _methodIL.IsInitLocals;
 
@@ -264,12 +288,18 @@ namespace Internal.IL
         // If not, report verification error and continue verification.
         void VerificationError(VerifierError error)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs() { Code = error, Offset = _currentInstructionOffset };
             ReportVerificationError(args);
         }
 
         void VerificationError(VerifierError error, object found)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error,
@@ -281,6 +311,9 @@ namespace Internal.IL
 
         void VerificationError(VerifierError error, object found, object expected)
         {
+            if (_currentBasicBlock != null)
+                _currentBasicBlock.IncrementErrorCount();
+
             var args = new VerificationErrorArgs()
             {
                 Code = error, 
@@ -360,6 +393,100 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
+        void CheckIsValidBranchTarget(BasicBlock src, BasicBlock target)
+        {
+            if (src.TryIndex != target.TryIndex)
+            {
+                if (src.TryIndex == null)
+                {
+                    // Branching to first instruction of try-block is valid
+                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
+                        VerificationError(VerifierError.BranchIntoTry);
+                }
+                else if (target.TryIndex == null)
+                    VerificationError(VerifierError.BranchOutOfTry);
+                else
+                {
+                    ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    // If target is inside source region
+                    if (srcRegion.TryOffset <= targetRegion.TryOffset && 
+                        target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
+                    {
+                        // Only branching to first instruction of try-block is valid
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
+                            VerificationError(VerifierError.BranchIntoTry);
+                    }
+                    else
+                        VerificationError(VerifierError.BranchOutOfTry);
+                }
+            }
+
+            if (src.FilterIndex != target.FilterIndex)
+            {
+                if (src.FilterIndex == null)
+                    VerificationError(VerifierError.BranchIntoFilter);
+                else if (target.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchOutOfFilter);
+                else
+                {
+                    ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
+                        VerificationError(VerifierError.BranchIntoFilter);
+                    else
+                        VerificationError(VerifierError.BranchOutOfFilter);
+                }
+            }
+
+            if (src.HandlerIndex != target.HandlerIndex)
+            {
+                if (src.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchIntoHandler);
+                else if (target.HandlerIndex == null)
+                    VerificationError(VerifierError.BranchOutOfHandler);
+                else
+                {
+                    ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
+                        VerificationError(VerifierError.BranchIntoHandler);
+                    else
+                        VerificationError(VerifierError.BranchOutOfHandler);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the given enclosed try block is a direct child try-region of 
+        /// the given enclosing try block.
+        /// </summary>
+        /// <param name="enclosingBlock">The block enclosing the try block given by <paramref name="enclosedBlock"/>.</param>
+        /// <param name="enclosedBlock">The block to check whether it is a direct child try-region of <paramref name="enclosingBlock"/>.</param>
+        /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
+        bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
+        {
+            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+
+            // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
+            for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
+                {
+                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    // blockRegion is actually enclosing enclosedRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         // For now, match PEVerify type formating to make it easy to compare with baseline
         static string TypeToStringForIsAssignable(TypeDesc type)
         {
@@ -418,6 +545,12 @@ namespace Internal.IL
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
             }
+        }
+
+        void CheckIsObjRef(StackValue value)
+        {
+            if (value.Kind != StackValueKind.ObjRef)
+                VerificationError(VerifierError.StackObjRef, value);
         }
 
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
@@ -572,6 +705,7 @@ namespace Internal.IL
 
         void EndImportingBasicBlock(BasicBlock basicBlock)
         {
+            basicBlock.State = BasicBlock.ImportState.WasVerified;
         }
 
         void ImportNop()
@@ -712,16 +846,50 @@ namespace Internal.IL
                     Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
             }
 
-            for (int i = sig.Length - 1; i >= 0; i--)
+            if (opcode == ILOpcode.newobj && methodType.IsDelegate)
             {
-                var actual = Pop();
-                var declared = StackValue.CreateFromType(sig[i]);
+                Check(sig.Length == 2, VerifierError.DelegateCtor);
+                var declaredObj = StackValue.CreateFromType(sig[0]);
+                var declaredFtn = StackValue.CreateFromType(sig[1]);
 
-                CheckIsAssignable(actual, declared);
+                Check(declaredFtn.Kind == StackValueKind.NativeInt, VerifierError.DelegateCtorSigI, declaredFtn);
 
-                // check that the argument is not a byref for tailcalls
-                if (tailCall)
-                    Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                var actualFtn = Pop();
+                var actualObj = Pop();
+
+                Check(actualFtn.IsMethod, VerifierError.StackMethod);
+
+                CheckIsAssignable(actualObj, declaredObj);
+                Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
+
+#if false
+                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
+                                                    tiActualFtn, tiActualObj),
+                           MVER_E_DLGT_PATTERN);
+
+                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
+                                                           parentTypeHandle,
+                                                           tiActualFtn.GetMethod(),
+                                                           methodClassHnd,
+                                                           getCurrentModuleHandle(),
+                                                           delegateMethodRef,
+                                                           memberRef),
+                           MVER_E_DLGT_CTOR);
+#endif
+            }
+            else
+            {
+                for (int i = sig.Length - 1; i >= 0; i--)
+                {
+                    var actual = Pop();
+                    var declared = StackValue.CreateFromType(sig[i]);
+
+                    CheckIsAssignable(actual, declared);
+
+                    // check that the argument is not a byref for tailcalls
+                    if (tailCall)
+                        Check(!IsByRefLike(declared), VerifierError.TailByRef, declared);
+                }
             }
 
             if (opcode == ILOpcode.newobj)
@@ -774,14 +942,11 @@ namespace Internal.IL
                     actualThis = StackValue.CreateObjRef(constrained);
                 }
 
-#if false
-                // To support direct calls on readonly byrefs, just pretend tiDeclaredThis is readonly too
-                if(tiDeclaredThis.IsByRef() && tiThis.IsReadonlyByRef())
+                // To support direct calls on readonly byrefs, just pretend declaredThis is readonly too
+                if(declaredThis.Kind == StackValueKind.ByRef && (actualThis.Kind == StackValueKind.ByRef && actualThis.IsReadOnly))
                 {
-                    tiDeclaredThis.SetIsReadonlyByRef();
+                    declaredThis.SetIsReadOnly();
                 }
-#endif
-
                 CheckIsAssignable(actualThis, declaredThis);
 
 #if false
@@ -826,14 +991,14 @@ namespace Internal.IL
                 }
             }
 
+            // Check any constraints on the callee's class and type parameters
+            var ecmaType = method.OwningType as EcmaType;
+            if (!method.OwningType.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+            else if (!method.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
-            // check any constraints on the callee's class and type parameters
-            Verify(m_jitInfo->satisfiesClassConstraints(methodClassHnd),
-                            MVER_E_UNSATISFIED_METHOD_PARENT_INST); //"method has unsatisfied class constraints"
-            Verify(m_jitInfo->satisfiesMethodConstraints(methodClassHnd,methodHnd),
-                            MVER_E_UNSATISFIED_METHOD_INST); //"method has unsatisfied method constraints"
-    
-
+            // Access verifications
             handleMemberAccessForVerification(callInfo.accessAllowed, callInfo.callsiteCalloutHelper,
                                                 MVER_E_METHOD_ACCESS);
 
@@ -907,16 +1072,59 @@ namespace Internal.IL
 
         void ImportLdFtn(int token, ILOpcode opCode)
         {
-            MethodDesc type = ResolveMethodToken(token);
+            MethodDesc method = ResolveMethodToken(token);
+            Check(!method.IsConstructor, VerifierError.LdftnCtor);
 
-            StackValue thisPtr = new StackValue();
+#if false
+            if (sig.hasTypeArg())
+                NO_WAY("Currently do not support LDFTN of Parameterized functions");
+#endif
 
-            if (opCode == ILOpcode.ldvirtftn)
-                thisPtr = Pop();
+            if (opCode == ILOpcode.ldftn)
+            {
+#if false
+                vstate->delegateCreateStart = codeAddr;
+#endif
+            }
+            else if (opCode == ILOpcode.ldvirtftn)
+            {
+                Check(!method.Signature.IsStatic, VerifierError.LdvirtftnOnStatic);
 
-            // TODO
+                StackValue declaredType;
+                if (method.OwningType.IsValueType)
+                {
+                    // Box value type for comparison
+                    declaredType = StackValue.CreateObjRef(method.OwningType);
+                }
+                else
+                    declaredType = StackValue.CreateFromType(method.OwningType);
 
-            throw new NotImplementedException($"{nameof(ImportLdFtn)} not implemented");
+                var thisPtr = Pop();
+
+                CheckIsObjRef(thisPtr);
+                CheckIsAssignable(thisPtr, declaredType);
+            }
+            else
+            {
+                Debug.Assert(false, "Unexpected ldftn opcode: " + opCode.ToString());
+                return;
+            }
+
+            // Check any constraints on the callee's class and type parameters
+            if (!method.OwningType.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
+            else if (!method.CheckConstraints())
+                VerificationError(VerifierError.UnsatisfiedMethodInst, method);
+
+#if false
+            Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from
+                                            methodClassHnd, // in
+                                            methHnd, // what
+                                            instanceClassHnd),
+                   MVER_E_METHOD_ACCESS);
+#endif
+
+            Push(StackValue.CreateMethod(method));
         }
 
         void ImportLoadInt(long value, StackValueKind kind)
@@ -1015,9 +1223,21 @@ namespace Internal.IL
                     
                     if (entryStack[i].Type != _stack[i].Type)
                     {
-                        // if we have two object references and one of them has a null type, then this is no error (see test Branching.NullConditional_Valid)
-                        if (_stack[i].Kind == StackValueKind.ObjRef && entryStack[i].Type != null && _stack[i].Type != null)
-                            FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+                        if (!IsAssignable(_stack[i], entryStack[i]))
+                        {
+                            StackValue mergedValue;
+                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                            // If merge actually changed entry stack
+                            if (mergedValue != entryStack[i])
+                            {
+                                entryStack[i] = mergedValue;
+
+                                if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                    next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                            }
+                        }
                     }
                 }
             }
@@ -1036,20 +1256,24 @@ namespace Internal.IL
 
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
+            var value = Pop();
+            CheckIsAssignable(value, StackValue.CreatePrimitive(StackValueKind.Int32));
+
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
+                CheckIsValidBranchTarget(_currentBasicBlock, target);
                 ImportFallthrough(target);
             }
 
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
-
-            throw new NotImplementedException($"{nameof(ImportSwitchJump)} not implemented");
         }
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            CheckIsValidBranchTarget(_currentBasicBlock, target);
+
             switch (opcode)
             {
                 case ILOpcode.br:
@@ -1280,7 +1504,7 @@ namespace Internal.IL
             }
             else
             {
-                CheckIsAssignable(address.Type, type);
+                CheckIsAssignable(address.Type.GetVerificationType(), type.GetVerificationType());
             }
             Push(StackValue.CreateFromType(type));
         }
@@ -1295,9 +1519,6 @@ namespace Internal.IL
             ClearPendingPrefix(Prefix.Unaligned);
             ClearPendingPrefix(Prefix.Volatile);
 
-            if (type == null)
-                type = GetWellKnownType(WellKnownType.Object);
-
             var value = Pop();
             var address = Pop();
 
@@ -1305,11 +1526,13 @@ namespace Internal.IL
 
             CheckIsByRef(address);
 
+            if (type == null)
+                type = address.Type;
+
             var typeVal = StackValue.CreateFromType(type);
             var addressVal = StackValue.CreateFromType(address.Type);
-            if (!value.IsNullReference)
-                CheckIsAssignable(typeVal, addressVal);
 
+            CheckIsAssignable(typeVal, addressVal);
             CheckIsAssignable(value, typeVal);
         }
 
@@ -1317,10 +1540,7 @@ namespace Internal.IL
         {
             var value = Pop();
 
-            if (value.Kind != StackValueKind.ObjRef)
-            {
-                VerificationError(VerifierError.StackObjRef);
-            }            
+            CheckIsObjRef(value);
         }
 
         void ImportLoadString(int token)
@@ -1425,7 +1645,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(actualElementType.GetVerificationType(), elementType);
                 }
                 else
                 {
@@ -1457,7 +1677,7 @@ namespace Internal.IL
 
                 if (elementType != null)
                 {
-                    CheckIsArrayElementCompatibleWith(actualElementType, elementType);
+                    CheckIsArrayElementCompatibleWith(elementType, actualElementType.GetVerificationType());
                 }
                 else
                 {
@@ -1468,6 +1688,7 @@ namespace Internal.IL
 
             if (elementType != null)
             {
+                // TODO: Change to CheckIsArrayElementCompatibleWith for two intermediate types
                 CheckIsAssignable(value, StackValue.CreateFromType(elementType));
             }
         }

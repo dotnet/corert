@@ -151,6 +151,20 @@ namespace System.Runtime
             return RawCalliHelper.Call<Object>(entry.Result, arg, entry.AuxResult);
         }
 
+        [RuntimeExport("UpdateTypeFloatingDictionary")]
+        public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
+        {
+            // No caching needed. Update is in-place, and happens once per dictionary
+            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
+        }
+
+        [RuntimeExport("UpdateMethodFloatingDictionary")]
+        public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
+        {
+            // No caching needed. Update is in-place, and happens once per dictionary
+            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
+        }
+
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
             Entry entry = LookupInCache(s_cache, delegateObj.m_pEEType, new IntPtr(whichThunk));

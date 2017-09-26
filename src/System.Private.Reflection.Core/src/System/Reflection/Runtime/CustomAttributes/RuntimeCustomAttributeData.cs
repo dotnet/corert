@@ -186,8 +186,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
 
             // Handle the array case
-            IEnumerable enumerableValue = value as IEnumerable;
-            if (enumerableValue != null && !(value is String))
+            if (value is IEnumerable enumerableValue && !(value is string))
             {
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();

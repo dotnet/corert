@@ -182,7 +182,7 @@ namespace System
     /// using parameters to the type's constructors.
     /// </para>
     /// </remarks>
-    [DebuggerTypeProxy(typeof(System_LazyDebugView<>))]
+    [DebuggerTypeProxy(typeof(LazyDebugView<>))]
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     public class Lazy<T>
     {
@@ -261,7 +261,7 @@ namespace System
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/>
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
-        /// <param name="mode">The lazy thread-safety mode mode</param>
+        /// <param name="mode">The lazy thread-safety mode</param>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor:true)
@@ -520,14 +520,14 @@ namespace System
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and 
     /// to ensure that the Lazy&lt;T&gt; does not become initialized if it was not already.</summary>
-    internal sealed class System_LazyDebugView<T>
+    internal sealed class LazyDebugView<T>
     {
         //The Lazy object being viewed.
         private readonly Lazy<T> _lazy;
 
         /// <summary>Constructs a new debugger view object for the provided Lazy object.</summary>
         /// <param name="lazy">A Lazy object to browse in the debugger.</param>
-        public System_LazyDebugView(Lazy<T> lazy)
+        public LazyDebugView(Lazy<T> lazy)
         {
             _lazy = lazy;
         }

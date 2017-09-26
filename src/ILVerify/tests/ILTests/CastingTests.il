@@ -113,6 +113,20 @@
     .field int32 IntField;
 }
 
+.class public sequential ansi beforefieldinit GenericTypeWithConstrained<class ([System.Runtime]System.IComparable) TValueType>
+        extends [System.Runtime]System.Object
+{
+    .property !TValueType Value()
+    {
+        .get instance !0 GenericTypeWithConstrained::get_Value()
+    }
+    .method public !TValueType get_Value()
+    {
+        ldc.i4 0x00000000
+        ret
+    }
+}
+
 // Provides casting logic tests for stfld, ldfld, call, callvirt
 .class public auto ansi beforefieldinit GenericCastingTestsType`1<T>
        extends [System.Runtime]System.Object
@@ -128,9 +142,9 @@
 
     .method public hidebysig  instance void Casting.StorePlainFieldInOtherGenericType_Valid(int32 v) cil managed
     {
-		.locals init (
-			class GenericOtherFieldsType`1<!T> V_0
-		)
+        .locals init (
+            class GenericOtherFieldsType`1<!T> V_0
+        )
 
         ldloc.0
         ldarg.1
@@ -149,9 +163,9 @@
 
     .method public hidebysig  instance void Casting.StoreGenericFieldInOtherGenericType_Valid(!T v) cil managed
     {
-		.locals init (
-			class GenericOtherFieldsType`1<!T> V_0
-		)
+        .locals init (
+            class GenericOtherFieldsType`1<!T> V_0
+        )
         ldloc.0
         ldarg.1
         stfld !0 class GenericOtherFieldsType`1<!T>::GenericField
@@ -176,9 +190,9 @@
 
     .method public hidebysig  instance void Casting.CallGenericFunctionFromOtherGenericType_Valid(!T v) cil managed
     {
-		.locals init (
-			class [System.Runtime]System.Func`1<!T> V_0
-		)
+        .locals init (
+            class [System.Runtime]System.Func`1<!T> V_0
+        )
         
         ldarg.0
         ldloc.0
@@ -186,26 +200,78 @@
         ret
     }
 
+    .method public hidebysig instance void Casting.AssignVariantInterfaceToObject_Valid(class [System.Runtime]System.Collections.Generic.IEnumerable`1<string> e) cil managed
+    {
+        .locals init (
+            object o
+        )
+
+        ldarg.1
+        stloc.0
+        ret
+    }
+
     .method public hidebysig instance void Casting.AssignThisToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
     {
-		.locals init (
-			class GenericCastingTestsType`1<int32> V_0
-		)
+        .locals init (
+            class GenericCastingTestsType`1<int32> V_0
+        )
         
         ldarg.0
         stloc.0
         ret
     }
 
+    .method public hidebysig instance void Casting.AssignGenericToObject_Valid(!T v) cil managed
+    {
+        .locals init (
+            object
+        )
+
+        ldarg.1
+        box     !T
+        stloc.0
+        ret
+    }
+
     .method public hidebysig static void Casting.AssignToSameTypeWithOtherGenericArgs_Invalid_StackUnexpected() cil managed
     {
-		.locals init (
-			class GenericCastingTestsType`1<int32> V_0,
+        .locals init (
+            class GenericCastingTestsType`1<int32> V_0,
             class GenericCastingTestsType`1<string> V_1
-		)
+        )
         
         ldloc.0
         stloc.1
+        ret
+    }
+
+    .method public static void Casting.AssignReturnValueFromConstrainedProperty_Valid<class ([System.Runtime]System.IComparable) TValueType>(class GenericTypeWithConstrained<!!TValueType> wrapper) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable V_0
+        )
+
+        ldarg.0
+        callvirt instance !0 class GenericTypeWithConstrained<!!TValueType>::get_Value()
+        box      !!TValueType
+        stloc.0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit CastingTestsType
+       extends [System.Runtime]System.Object
+{
+    .method public static void Casting.AssignPrimitiveToIComparable_Valid(int32 arg) cil managed
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable
+        )
+
+        ldarg.0
+        box     [System.Runtime]System.Int32
+        stloc.0
         ret
     }
 }

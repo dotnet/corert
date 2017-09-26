@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Load the generic dictionary cell
-            encoder.EmitLDR(result, context, ((short)(dictionarySlot * factory.Target.PointerSize)));
+            encoder.EmitLDR(result, context, dictionarySlot * factory.Target.PointerSize);
 
             switch (lookup.LookupResultReferenceType(factory))
             {
@@ -90,17 +90,10 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
                             encoder.EmitSUB(encoder.TargetRegister.Arg0, ((byte)(cctorContextSize)));
-                            // If we get the required state it will be necessary to restore the original value before returning
-                            encoder.EmitPUSH(encoder.TargetRegister.Arg0);
-
                             // cmp [r0 + ptrSize], 1
-                            encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, ((short)factory.Target.PointerSize));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg0, ((byte)1));
-                            // return with restoring register
-                            encoder.EmitRETIfEqualPOP(encoder.TargetRegister.Arg0);
-
-                            // just restore after cmp
-                            encoder.EmitPOP(encoder.TargetRegister.Arg0);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg0, ((short)factory.Target.PointerSize));
+                            encoder.EmitCMP(encoder.TargetRegister.Arg2, ((byte)1));
+                            encoder.EmitRETIfEqual();
 
                             encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0);
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -112,11 +105,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
-                        ARMDebug.EmitNYIAssert(factory, ref encoder, "GetGCStaticBase EmitCode is not implemented");
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
 
                         MetadataType target = (MetadataType)_target;
@@ -137,34 +125,21 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, nonGcRegionLookup, relocsOnly);
 
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg0, ((byte)(cctorContextSize)));
-                            // If we get the required state it will be necessary to restore the original value before returning
-                            encoder.EmitPUSH(encoder.TargetRegister.Arg0);
-
+                            encoder.EmitSUB(encoder.TargetRegister.Arg0, cctorContextSize);
                             // cmp [r0 + ptrSize], 1
-                            encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0, ((short)factory.Target.PointerSize));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg0, ((byte)1));
-                            // return with restoring register
-                            encoder.EmitRETIfEqualPOP(encoder.TargetRegister.Arg0);
-
-                            // just restore after cmp
-                            encoder.EmitPOP(encoder.TargetRegister.Arg0);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg0, factory.Target.PointerSize);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg2, 1);
+                            encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg0);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                         }
-                        */
                     }
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        ARMDebug.EmitNYIAssert(factory, ref encoder, "GetThreadStaticBase EmitCode is not implemented");
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         Debug.Assert(contextRegister == encoder.TargetRegister.Arg0);
 
                         MetadataType target = (MetadataType)_target;
@@ -180,7 +155,7 @@ namespace ILCompiler.DependencyAnalysis
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg2, ((byte)(cctorContextSize)));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg2, cctorContextSize);
                             encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2);
 
                             helperEntrypoint = factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase);
@@ -196,10 +171,9 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1);
 
                         // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1, ((short)(factory.Target.PointerSize)));
+                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1, factory.Target.PointerSize);
 
                         encoder.EmitJMP(helperEntrypoint);
-                        */
                     }
                     break;
 
@@ -245,14 +219,8 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.VirtualDispatchCell:
                 case ReadyToRunHelperId.DefaultConstructor:
                     {
-                        ARMDebug.EmitNYIAssert(factory, ref encoder, "general EmitCode is not implemented");
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                         encoder.EmitRET();
-                        */
                     }
                     break;
                 default:
@@ -285,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
             int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
 
             // Load the dictionary pointer from the VTable
-            encoder.EmitLDR(contextRegister, contextRegister, ((short)(slotOffset)));
+            encoder.EmitLDR(contextRegister, contextRegister, slotOffset);
         }
     }
 }

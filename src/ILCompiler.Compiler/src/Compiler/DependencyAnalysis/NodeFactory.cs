@@ -296,6 +296,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
+            {
+                return new MethodAssociatedDataNode(methodNode);
+            });
+
             _fatFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
             {
                 return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub);
@@ -430,7 +435,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
-                    return new MethodGenericDictionaryNode(method);
+                    return new MethodGenericDictionaryNode(method, this);
                 }
                 else
                 {
@@ -443,7 +448,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (CompilationModuleGroup.ContainsType(type))
                 {
                     Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type);
+                    return new TypeGenericDictionaryNode(type, this);
                 }
                 else
                 {
@@ -479,6 +484,7 @@ namespace ILCompiler.DependencyAnalysis
             });
 
             NativeLayout = new NativeLayoutHelper(this);
+            WindowsDebugData = new WindowsDebugDataHelper(this);
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -706,6 +712,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
+        private NodeCache<IMethodNode, MethodAssociatedDataNode> _methodAssociatedData;
 
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
@@ -715,6 +722,11 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
+        {
+            return _methodAssociatedData.GetOrAdd(methodNode);
         }
 
         private NodeCache<MethodKey, FatFunctionPointerNode> _fatFunctionPointers;
@@ -743,7 +755,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
-        internal GVMDependenciesNode GVMDependencies(MethodDesc method)
+        public GVMDependenciesNode GVMDependencies(MethodDesc method)
         {
             return _gvmDependenciesNode.GetOrAdd(method);
         }
@@ -1010,6 +1022,15 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
+            if (Target.IsWindows)
+            {
+                // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are
+                // accessed using extern "C" variables in the bootstrapper)
+                // On non-Windows platforms, the linker emits special symbols with special names at the begining/end of a section
+                // so we do not need to emit them ourselves.
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(false), "UnboxingStubsRegion delimiter for Windows platform");
+                graph.AddRoot(new WindowsUnboxingStubsRegionNode(true), "UnboxingStubsRegion delimiter for Windows platform");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);

@@ -275,7 +275,7 @@ namespace System.Threading
         ** signalled or timeout milliseonds have elapsed.
         ========================================================================*/
 
-        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) => WaitAny(waitHandles, waitHandles.Length, millisecondsTimeout);
+        public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) => WaitAny(waitHandles, waitHandles?.Length ?? 0, millisecondsTimeout);
 
         internal static int WaitAny(WaitHandle[] waitHandles, int numWaitHandles, int millisecondsTimeout)
         {
@@ -411,7 +411,7 @@ namespace System.Threading
         internal static void ThrowInvalidHandleException()
         {
             var ex = new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
-            ex.SetErrorCode(__HResults.ERROR_INVALID_HANDLE);
+            ex.SetErrorCode(HResults.E_HANDLE);
             throw ex;
         }
     }

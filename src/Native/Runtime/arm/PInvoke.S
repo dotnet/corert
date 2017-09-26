@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <unixasmmacros.inc>
 #include <AsmOffsets.inc>
+#include <unixasmmacros.inc>
 
 .syntax unified
 .thumb
@@ -36,7 +36,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         ldr     r3, =C_FUNC(RhpTrapThreads)
         ldr     r3, [r3]
-        cbnz    r3, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
+        cbnz    r3, LOCAL_LABEL(InvokeRareTrapThread)  // TrapThreadsFlags_None = 0
 
         EPILOG_POP "{r5,pc}"
 

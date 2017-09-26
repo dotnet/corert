@@ -30,6 +30,11 @@ ASM_OFFSET(    0,     0, Object, m_pEEType)
 
 ASM_OFFSET(    4,     8, Array, m_Length)
 
+ASM_OFFSET(    4,     8, String, m_Length)
+ASM_OFFSET(    8,     C, String, m_FirstChar)
+ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
+ASM_CONST(     E,    16, STRING_BASE_SIZE)
+
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
@@ -108,6 +113,10 @@ private:
 void BogusFunction()
 {
     // Sample usage to generate the error
-    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
+    FindCompileTimeConstant<sizeof(ExInfo)> bogus_variable;
+    FindCompileTimeConstant<offsetof(ExInfo, m_notifyDebuggerSP)> bogus_variable2;
+    FindCompileTimeConstant<sizeof(StackFrameIterator)> bogus_variable3;
+    FindCompileTimeConstant<sizeof(PAL_LIMITED_CONTEXT)> bogus_variable4;
+    FindCompileTimeConstant<offsetof(PAL_LIMITED_CONTEXT, IP)> bogus_variable5;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

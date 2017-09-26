@@ -30,11 +30,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.VirtualCall:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.VirtualCall);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MethodDesc targetMethod = (MethodDesc)Target;
 
                         Debug.Assert(!targetMethod.OwningType.IsInterface);
@@ -50,9 +45,8 @@ namespace ILCompiler.DependencyAnalysis
 
                         encoder.EmitLDR(encoder.TargetRegister.InterproceduralScratch, encoder.TargetRegister.Arg0, 0);
                         encoder.EmitLDR(encoder.TargetRegister.InterproceduralScratch, encoder.TargetRegister.InterproceduralScratch,
-                                        (short)(EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize)));
+                                        EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize));
                         encoder.EmitJMP(encoder.TargetRegister.InterproceduralScratch);
-                        */
                     }
                     break;
 
@@ -95,11 +89,11 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitSUB(encoder.TargetRegister.Arg2, ((byte)NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target)));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
 
                             // cmp [r2 + ptrSize], 1
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, ((short)factory.Target.PointerSize));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, ((byte)1));
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
                             // return if cmp
                             encoder.EmitRETIfEqual();
 
@@ -112,11 +106,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.GetThreadStaticBase);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MetadataType target = (MetadataType)Target;
                         encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
@@ -126,7 +115,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
 
                         // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, ((short)factory.Target.PointerSize));
+                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
 
                         if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
@@ -135,11 +124,10 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitSUB(encoder.TargetRegister.Arg2, (byte)(NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target)));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
                             // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
-                        */
                     }
                     break;
 
@@ -158,10 +146,10 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             // Get cctor pointer: offset is usually equal to the double size of the pointer, therefore we can use arm sub imm
-                            encoder.EmitSUB(encoder.TargetRegister.Arg2, (byte)(NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target)));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
                             // cmp [r2 + ptrSize], 1
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, ((short)factory.Target.PointerSize));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, (byte)1);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
                             // return if cmp
                             encoder.EmitRETIfEqual();
 
@@ -174,11 +162,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.DelegateCtor);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         DelegateCreationInfo target = (DelegateCreationInfo)Target;
 
                         if (target.TargetNeedsVTableLookup)
@@ -191,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             Debug.Assert(slot != -1);
                             encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2,
-                                            ((short)(EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize))));
+                                            EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize));
                         }
                         else
                         {
@@ -210,7 +193,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         encoder.EmitJMP(target.Constructor);
-                        */
                     }
                     break;
 

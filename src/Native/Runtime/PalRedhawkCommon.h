@@ -41,6 +41,7 @@ struct AMD64_ALIGN_16 Fp128 {
 
 struct PAL_LIMITED_CONTEXT
 {
+    // Includes special registers, callee saved registers and general purpose registers used to return values from functions (not floating point return registers)
 #ifdef _TARGET_ARM_
     UIntNative  R0;
     UIntNative  R4;
@@ -65,12 +66,27 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { SP = sp; }
 #elif defined(_TARGET_ARM64_)
-    // @TODO: Add ARM64 registers
-    UIntNative IP;
-    UIntNative GetIp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-    UIntNative GetSp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-    UIntNative GetFp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-    UIntNative GetLr() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
+#if !defined(GEN_REG_COUNT)
+#define GEN_REG_COUNT 29
+#endif
+
+    // ARM64TODO: we don't need to save X9-X15
+    // ARM64TODO: do we need X16 (IP0), X17 (IP1), X18 or can we skip them? 
+    UIntNative  X[GEN_REG_COUNT];
+
+    UIntNative  FP;
+    UIntNative  LR;
+    UIntNative  SP;
+    UIntNative  IP;
+
+    UIntNative   D[16 - 8]; // Only the bottom 64-bit value of the V registers V8..V15 needs to be preserved
+                            // (V0-V7 and V16-V31 are not preserved according to the ABI spec).
+
+
+    UIntNative GetIp() const { return IP; }
+    UIntNative GetSp() const { return SP; }
+    UIntNative GetFp() const { return FP; }
+    UIntNative GetLr() const { return LR; }
 #elif defined(UNIX_AMD64_ABI)
     // Param regs: rdi, rsi, rdx, rcx, r8, r9, scratch: rax, rdx (both return val), preserved: rbp, rbx, r12-r15
     UIntNative  IP;

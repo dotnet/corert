@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime;
@@ -15,7 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.ParameterInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
@@ -28,14 +24,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
     //
     internal struct NativeFormatMethodCommon : IRuntimeMethodCommon<NativeFormatMethodCommon>, IEquatable<NativeFormatMethodCommon>
     {
-        public bool IsGenericMethodDefinition
-        {
-            get
-            {
-                Method method = MethodHandle.GetMethod(Reader);
-                return method.GenericParameters.GetEnumerator().MoveNext();
-            }
-        }
+        public bool IsGenericMethodDefinition => GenericParameterCount != 0;
 
         public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
@@ -84,6 +73,8 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                         typeContext);
             }
         }
+
+        public int GenericParameterCount => MethodHandle.GetMethod(Reader).GenericParameters.Count;
 
         public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<NativeFormatMethodCommon> owningMethod)
         {
@@ -151,18 +142,6 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             get
             {
                 return _contextTypeInfo;
-            }
-        }
-
-        public IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _methodHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
             }
         }
 
@@ -322,11 +301,13 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             return true;
         }
 
+        public IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.CustomAttributes);
+
         public override bool Equals(Object obj)
         {
-            if (!(obj is NativeFormatMethodCommon))
+            if (!(obj is NativeFormatMethodCommon other))
                 return false;
-            return Equals((NativeFormatMethodCommon)obj);
+            return Equals(other);
         }
 
         public bool Equals(NativeFormatMethodCommon other)

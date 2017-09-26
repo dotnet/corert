@@ -84,6 +84,7 @@ namespace ILCompiler.DependencyAnalysis.X64
             {
                 Builder.EmitByte(0xE9);
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+
             }
         }
 

@@ -241,6 +241,14 @@ namespace Internal.TypeSystem.Ecma
                     flags |= TypeFlags.HasFinalizer;
             }
 
+            if ((mask & TypeFlags.IsByRefLikeComputed) != 0)
+            {
+                flags |= TypeFlags.IsByRefLikeComputed;
+
+                if (IsValueType && HasCustomAttribute("System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                    flags |= TypeFlags.IsByRefLike;
+            }
+
             return flags;
         }
 
@@ -422,7 +430,20 @@ namespace Internal.TypeSystem.Ecma
 
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
-                if (stringComparer.Equals(metadataReader.GetTypeDefinition(handle).Name, name))
+                bool nameMatched;
+                TypeDefinition type = metadataReader.GetTypeDefinition(handle);
+                if (type.Namespace.IsNil)
+                {
+                    nameMatched = stringComparer.Equals(type.Name, name);
+                }
+                else
+                {
+                    string typeName = metadataReader.GetString(type.Name);
+                    typeName = metadataReader.GetString(type.Namespace) + "." + typeName;
+                    nameMatched = typeName == name;
+                }
+
+                if (nameMatched)
                     return (MetadataType)_module.GetObject(handle);
             }
 

@@ -287,7 +287,7 @@ namespace System
             return true;
         }
 
-        internal static Decimal ParseDecimal(String value, NumberStyles options, IFormatProvider provider)
+        internal static Decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
@@ -301,13 +301,8 @@ namespace System
             return result;
         }
 
-        internal static unsafe Double ParseDouble(String value, NumberStyles options, IFormatProvider provider)
+        internal static unsafe Double ParseDouble(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
             Double d = 0;
@@ -317,16 +312,16 @@ namespace System
                 //If we failed TryStringToNumber, it may be from one of our special strings.
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
-                String sTrim = value.Trim();
-                if (sTrim.Equals(numfmt.PositiveInfinitySymbol))
+                ReadOnlySpan<char> sTrim = StringSpanHelpers.Trim(value);
+                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
                 {
                     return Double.PositiveInfinity;
                 }
-                if (sTrim.Equals(numfmt.NegativeInfinitySymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
                 {
                     return Double.NegativeInfinity;
                 }
-                if (sTrim.Equals(numfmt.NaNSymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
                 {
                     return Double.NaN;
                 }
@@ -341,7 +336,7 @@ namespace System
             return d;
         }
 
-        internal static unsafe Int32 ParseInt32(String s, NumberStyles style, IFormatProvider provider)
+        internal static unsafe Int32 ParseInt32(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -367,7 +362,7 @@ namespace System
             return i;
         }
 
-        internal static unsafe Int64 ParseInt64(String value, NumberStyles options, IFormatProvider provider)
+        internal static unsafe Int64 ParseInt64(ReadOnlySpan<Char> value, NumberStyles options, IFormatProvider provider)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -393,13 +388,8 @@ namespace System
             return i;
         }
 
-        internal static unsafe Single ParseSingle(String value, NumberStyles options, IFormatProvider provider)
+        internal static unsafe Single ParseSingle(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
             Double d = 0;
@@ -409,16 +399,16 @@ namespace System
                 //If we failed TryStringToNumber, it may be from one of our special strings.
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
-                String sTrim = value.Trim();
-                if (sTrim.Equals(numfmt.PositiveInfinitySymbol))
+                ReadOnlySpan<char> sTrim = StringSpanHelpers.Trim(value);
+                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
                 {
                     return Single.PositiveInfinity;
                 }
-                if (sTrim.Equals(numfmt.NegativeInfinitySymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
                 {
                     return Single.NegativeInfinity;
                 }
-                if (sTrim.Equals(numfmt.NaNSymbol))
+                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
                 {
                     return Single.NaN;
                 }
@@ -437,7 +427,7 @@ namespace System
             return castSingle;
         }
 
-        internal static unsafe UInt32 ParseUInt32(String value, NumberStyles options, IFormatProvider provider)
+        internal static unsafe UInt32 ParseUInt32(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -464,7 +454,7 @@ namespace System
             return i;
         }
 
-        internal static unsafe UInt64 ParseUInt64(String value, NumberStyles options, IFormatProvider provider)
+        internal static unsafe UInt64 ParseUInt64(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
@@ -488,15 +478,11 @@ namespace System
             return i;
         }
 
-        private static unsafe void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
+        private static unsafe void StringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException("String");
-            }
             Contract.EndContractBlock();
             Debug.Assert(info != null, "");
-            fixed (char* stringPointer = str)
+            fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {
                 char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
@@ -507,7 +493,7 @@ namespace System
             }
         }
 
-        internal static unsafe Boolean TryParseDecimal(String value, NumberStyles options, IFormatProvider provider, out Decimal result)
+        internal static unsafe Boolean TryParseDecimal(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider, out Decimal result)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -526,7 +512,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseDouble(String value, NumberStyles options, IFormatProvider provider, out Double result)
+        internal static unsafe Boolean TryParseDouble(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider, out Double result)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
@@ -544,7 +530,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseInt32(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
+        internal static unsafe Boolean TryParseInt32(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out Int32 result)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -573,7 +559,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseInt64(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
+        internal static unsafe Boolean TryParseInt64(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out Int64 result)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -602,7 +588,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseSingle(String value, NumberStyles options, IFormatProvider provider, out Single result)
+        internal static unsafe Boolean TryParseSingle(ReadOnlySpan<char> value, NumberStyles options, IFormatProvider provider, out Single result)
         {
             NumberFormatInfo numfmt = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
             NumberBuffer number = new NumberBuffer();
@@ -627,7 +613,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseUInt32(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
+        internal static unsafe Boolean TryParseUInt32(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out UInt32 result)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -656,7 +642,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe Boolean TryParseUInt64(String s, NumberStyles style, IFormatProvider provider, out UInt64 result)
+        internal static unsafe Boolean TryParseUInt64(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out UInt64 result)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
 
@@ -685,7 +671,7 @@ namespace System
             return true;
         }
 
-        internal static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, Boolean parseDecimal)
+        internal static Boolean TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, Boolean parseDecimal)
         {
             return TryStringToNumber(str, options, ref number, null, numfmt, parseDecimal);
         }
@@ -1149,7 +1135,7 @@ namespace System
             {
                 d.Scale = -e;
             }
-            d.Sign = number.sign;
+            d.IsNegative = number.sign;
 
             value = d;
             return true;
@@ -1161,7 +1147,7 @@ namespace System
 
             char* buffer = number.digits;
             number.precision = DECIMAL_PRECISION;
-            number.sign = d.Sign;
+            number.sign = d.IsNegative;
 
             int index = DECIMAL_PRECISION;
             while (d.Mid != 0 | d.High != 0)

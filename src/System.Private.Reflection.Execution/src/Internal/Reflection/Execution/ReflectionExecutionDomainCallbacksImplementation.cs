@@ -8,10 +8,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Internal.Metadata.NativeFormat;
-
 using Internal.Runtime.Augments;
-using Internal.Runtime.TypeLoader;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.PayForPlayExperience;
@@ -186,44 +183,6 @@ namespace Internal.Reflection.Execution
             return fullMethodName.ToString();
         }
 
-        private String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader)
-        {
-            String s = "";
-
-            TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
-            s = typeReference.TypeName.GetString(reader);
-            Handle parentHandle = typeReference.ParentNamespaceOrType;
-            HandleType parentHandleType = parentHandle.HandleType;
-            if (parentHandleType == HandleType.TypeReference)
-            {
-                String containingTypeName = GetTypeFullNameFromTypeRef(parentHandle.ToTypeReferenceHandle(reader), reader);
-                s = containingTypeName + "+" + s;
-            }
-            else if (parentHandleType == HandleType.NamespaceReference)
-            {
-                NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
-                for (;;)
-                {
-                    NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
-                    String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
-                    if (namespacePart == null)
-                        break; // Reached the root namespace.
-                    s = namespacePart + "." + s;
-                    if (namespaceReference.ParentScopeOrNamespace.HandleType != HandleType.NamespaceReference)
-                        break; // Should have reached the root namespace first but this helper is for ToString() - better to
-                    // return partial information than crash.
-                    namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToNamespaceReferenceHandle(reader);
-                }
-            }
-            else
-            {
-                // If we got here, the metadata is illegal but this helper is for ToString() - better to 
-                // return something partial than throw.
-            }
-
-            return s;
-        }
-
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
         {
             return _executionEnvironment.TryGetStaticClassConstructionContext(runtimeTypeHandle);
@@ -340,13 +299,12 @@ namespace Internal.Reflection.Execution
         {
             defaultValue = null;
 
-            MethodBase methodInfo = defaultParametersContext as MethodBase;
-            if (methodInfo == null)
+            if (!(defaultParametersContext is MethodBase methodBase))
             {
                 return false;
             }
 
-            ParameterInfo parameterInfo = methodInfo.GetParametersNoCopy()[argIndex];
+            ParameterInfo parameterInfo = methodBase.GetParametersNoCopy()[argIndex];
             if (!parameterInfo.HasDefaultValue)
             {
                 // If the parameter is optional, with no default value and we're asked for its default value,

@@ -317,13 +317,13 @@ namespace Internal.IL
 
         private void MarkBasicBlock(BasicBlock basicBlock)
         {
-            if (basicBlock.EndOffset == 0)
+            if (basicBlock.State == BasicBlock.ImportState.Unmarked)
             {
                 // Link
                 basicBlock.Next = _pendingBasicBlocks;
                 _pendingBasicBlocks = basicBlock;
 
-                basicBlock.EndOffset = -1;
+                basicBlock.State = BasicBlock.ImportState.IsPending;
             }
         }
 
@@ -718,7 +718,7 @@ namespace Internal.IL
                         ImportStoreElement(WellKnownType.Int32);
                         break;
                     case ILOpcode.stelem_i8:
-                        ImportStoreElement(WellKnownType.Int32);
+                        ImportStoreElement(WellKnownType.Int64);
                         break;
                     case ILOpcode.stelem_r4:
                         ImportStoreElement(WellKnownType.Single);

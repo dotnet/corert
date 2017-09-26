@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -180,14 +180,11 @@
     <Compile Include="System\Resources\ResourceSet.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="System\Text\CodePageDataItem.cs" />
-    <Compile Include="System\__Canon.cs" />
-    <Compile Include="System\AccessViolationException.cs" />
+    <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Activator.cs" />
-    <Compile Include="System\AggregateException.cs" />
     <Compile Include="System\AppContext.cs" />
     <Compile Include="System\AppContextConfigHelper.cs" />
     <Compile Include="System\AppContextDefaultValues.cs" />
-    <Compile Include="System\ArgIterator.cs" />
     <Compile Include="System\ArraySegment.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\ByReference.cs" />
@@ -195,38 +192,27 @@
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\Comparer.cs" />
     <Compile Include="System\Collections\Generic\CompatibilityEqualityComparers.cs" />
-    <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
-    <Compile Include="System\Collections\Generic\List.cs" />
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
-    <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
-    <Compile Include="System\Collections\ListDictionaryInternal.cs" />
-    <Compile Include="System\Collections\LowLevelListDictionary.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\Collections\ObjectEqualityComparer.cs" />
-    <Compile Include="System\Collections\ObjectModel\Collection.cs" />
-    <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
     <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Diagnostics\Contracts\ContractsBCL.cs" />
     <Compile Include="System\Empty.cs" />
-    <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
-    <Compile Include="System\Globalization\TimeSpanFormat.cs" />
-    <Compile Include="System\Globalization\TimeSpanParse.cs" />
+    <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
     <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
-    <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
@@ -253,15 +239,14 @@
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Guid.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\IntPtr.cs" />
     <Compile Include="System\Marvin.cs" />
-    <Compile Include="System\Math.cs" />
-    <Compile Include="System\MathF.cs" />
+    <Compile Include="System\Math.CoreRT.cs" />
+    <Compile Include="System\MathF.CoreRT.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
@@ -271,13 +256,9 @@
     <Compile Include="System\Number.FormatAndParse.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
-    <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionConditionallyDependentAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionRootAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\DependencyReductionTypeRemoved.cs" />
@@ -289,7 +270,6 @@
     <Compile Include="System\Runtime\CompilerServices\InitializedDataAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\InternalCompilerAttributes.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
@@ -297,18 +277,14 @@
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
-    <Compile Include="System\Runtime\ExceptionServices\ExceptionAttributes.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
@@ -318,8 +294,6 @@
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
-    <Compile Include="System\SerializableAttribute.cs" />
-    <Compile Include="System\NonSerializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\String.Comparison.cs" />
@@ -415,17 +389,11 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\Registry.cs" />
@@ -784,11 +752,11 @@
     <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs">
       <Link>System\CommonRuntimeTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\__HResults.cs">
-      <Link>System\__HResults.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CanonTypeKind.cs">
+      <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
       <Link>Internal\Runtime\EEType.cs</Link>

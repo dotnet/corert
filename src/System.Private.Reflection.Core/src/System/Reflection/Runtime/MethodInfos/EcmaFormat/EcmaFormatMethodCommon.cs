@@ -31,13 +31,7 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
     //
     internal struct EcmaFormatMethodCommon : IRuntimeMethodCommon<EcmaFormatMethodCommon>, IEquatable<EcmaFormatMethodCommon>
     {
-        public bool IsGenericMethodDefinition
-        {
-            get
-            {
-                return _method.GetGenericParameters().Count > 0;
-            }
-        }
+        public bool IsGenericMethodDefinition => GenericParameterCount != 0;
 
         public MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
@@ -76,6 +70,8 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
                         typeContext);
             }
         }
+
+        public int GenericParameterCount => _method.GetGenericParameters().Count;
 
         public RuntimeTypeInfo[] GetGenericTypeParametersWithSpecifiedOwningMethod(RuntimeNamedMethodInfo<EcmaFormatMethodCommon> owningMethod)
         {
@@ -158,19 +154,6 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             get
             {
                 return _contextTypeInfo;
-            }
-        }
-
-        public IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.GetCustomAttributes());
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-
-                if (0 != (_method.ImplAttributes & MethodImplAttributes.PreserveSig))
-                    yield return ReflectionCoreExecution.ExecutionDomain.GetCustomAttributeData(typeof(PreserveSigAttribute), null, null);
             }
         }
 
@@ -321,11 +304,13 @@ namespace System.Reflection.Runtime.MethodInfos.EcmaFormat
             return true;
         }
 
+        public IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.GetCustomAttributes());
+
         public override bool Equals(Object obj)
         {
-            if (!(obj is EcmaFormatMethodCommon))
+            if (!(obj is EcmaFormatMethodCommon other))
                 return false;
-            return Equals((EcmaFormatMethodCommon)obj);
+            return Equals(other);
         }
 
         public bool Equals(EcmaFormatMethodCommon other)

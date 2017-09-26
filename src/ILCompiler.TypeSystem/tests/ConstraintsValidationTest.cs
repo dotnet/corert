@@ -134,6 +134,39 @@ namespace TypeSystemTests
                 Assert.False(instantiatedType.CheckConstraints());
             }
 
+            // Special constraints instantiated with generic parameter
+            {
+                instantiatedType = _referenceTypeConstraintType.MakeInstantiatedType(_referenceTypeConstraintType.Instantiation[0]);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_defaultConstructorConstraintType.Instantiation[0]);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _notNullableValueTypeConstraintType.MakeInstantiatedType(_notNullableValueTypeConstraintType.Instantiation[0]);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_notNullableValueTypeConstraintType.Instantiation[0]);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _referenceTypeConstraintType.MakeInstantiatedType(_arg2Type.Instantiation[0]);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_arg2Type.Instantiation[0]);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                instantiatedType = _notNullableValueTypeConstraintType.MakeInstantiatedType(_arg2Type.Instantiation[0]);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                instantiatedType = _referenceTypeConstraintType.MakeInstantiatedType(_simpleTypeConstraintType.Instantiation[0]);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(_simpleTypeConstraintType.Instantiation[0]);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                instantiatedType = _notNullableValueTypeConstraintType.MakeInstantiatedType(_simpleTypeConstraintType.Instantiation[0]);
+                Assert.False(instantiatedType.CheckConstraints());
+            }
+
             // SimpleTypeConstraint and DoubleSimpleTypeConstraint
             foreach(var genType in new MetadataType[] { _simpleTypeConstraintType , _doubleSimpleTypeConstraintType })
             {

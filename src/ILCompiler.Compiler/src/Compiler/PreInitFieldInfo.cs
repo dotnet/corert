@@ -48,7 +48,7 @@ namespace ILCompiler
 
         public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
-            builder.EmitPointerReloc(factory.NecessaryTypeSymbol(TypeFixup));
+            builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(TypeFixup));
         }
     }
 
@@ -59,15 +59,35 @@ namespace ILCompiler
         public PreInitMethodFixupInfo(int offset, MethodDesc method)
             : base(offset)
         {
-            if (method.HasInstantiation || method.OwningType.HasInstantiation)
-                throw new BadImageFormatException();
-
             MethodFixup = method;
         }
 
         public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
-            builder.EmitPointerReloc(factory.MethodEntrypoint(MethodFixup));
+            builder.EmitPointerReloc(factory.ExactCallableAddress(MethodFixup));
+        }
+    }
+
+    public class PreInitFieldFixupInfo : PreInitFixupInfo
+    {
+        public FieldDesc FieldFixup { get; }
+
+        public PreInitFieldFixupInfo(int offset, FieldDesc field)
+            : base(offset)
+        {
+            FieldFixup = field;
+        }
+
+        public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        {
+            MetadataType type = (MetadataType)FieldFixup.OwningType;
+
+            // Do not support fixing up fields from external modules
+            if (!factory.CompilationModuleGroup.ContainsType(type))
+                throw new BadImageFormatException();
+
+            ISymbolNode staticBase = FieldFixup.HasGCStaticBase ? factory.TypeGCStaticsSymbol(type) : factory.TypeNonGCStaticsSymbol(type);
+            builder.EmitPointerReloc(staticBase, FieldFixup.Offset.AsInt);
         }
     }
 
@@ -76,9 +96,19 @@ namespace ILCompiler
         public FieldDesc Field { get; }
 
         /// <summary>
+        /// The type of the real field data. This could be a subtype of the field type.
+        /// </summary>
+        public TypeDesc Type { get; }
+
+        /// <summary>
         /// Points to the underlying contents of the data.
         /// </summary>
         public byte[] Data { get; }
+
+        /// <summary>
+        /// Start offset of the real contents in the data.
+        /// </summary>
+        public int Offset { get; }
 
         /// <summary>
         /// Number of elements, if this is a frozen array.
@@ -91,10 +121,12 @@ namespace ILCompiler
         /// </summary>
         private List<PreInitFixupInfo> FixupInfos;
 
-        public PreInitFieldInfo(FieldDesc field, byte[] data, int length, List<PreInitFixupInfo> fixups)
+        public PreInitFieldInfo(FieldDesc field, TypeDesc type, byte[] data, int offset, int length, List<PreInitFixupInfo> fixups)
         {
             Field = field;
+            Type = type;
             Data = data;
+            Offset = offset;
             Length = length;
             FixupInfos = fixups;
 
@@ -104,7 +136,7 @@ namespace ILCompiler
 
         public void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
-            int offset = 0;
+            int offset = Offset;
 
             if (FixupInfos != null)
             {
@@ -125,7 +157,7 @@ namespace ILCompiler
                     FixupInfos[i].WriteData(ref builder, factory);
 
                     // move pointer past the fixup
-                    offset = builder.CountBytes - startOffset;
+                    offset = Offset + builder.CountBytes - startOffset;
                 }
             }
 
@@ -136,13 +168,16 @@ namespace ILCompiler
             builder.EmitBytes(Data, offset, Data.Length - offset);
         }
 
-        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type)
+        public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool hasGCStaticBase)
         {
             List<PreInitFieldInfo> list = null;
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic)
+                if (!field.IsStatic || field.IsThreadStatic)
+                    continue;
+
+                if (field.HasGCStaticBase != hasGCStaticBase)
                     continue;
 
                 var dataField = GetPreInitDataField(field);
@@ -168,12 +203,9 @@ namespace ILCompiler
             if (field == null)
                 return null;
 
-            if (!field.HasCustomAttribute("System.Runtime.CompilerServices", "PreInitializedAttribute"))
-                return null;
-
             var decoded = field.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "InitDataBlobAttribute");
             if (decoded == null)
-                return null; 
+                return null;
 
             var decodedValue = decoded.Value;
             if (decodedValue.FixedArguments.Length != 2)
@@ -199,31 +231,23 @@ namespace ILCompiler
         /// </summary>
         private static PreInitFieldInfo ConstructPreInitFieldInfo(FieldDesc field, FieldDesc dataField)
         {
-            var arrType = field.FieldType as ArrayType;
-            if (arrType == null || !arrType.IsSzArray)
-            {
-                // We only support single dimensional arrays
-                throw new NotSupportedException();
-            }
-
             if (!dataField.HasRva)
                 throw new BadImageFormatException();
-            
+
             var ecmaDataField = dataField as EcmaField;
             if (ecmaDataField == null)
                 throw new NotSupportedException();
-            
-            var rvaData = ecmaDataField.GetFieldRvaData();
 
-            int elementSize = arrType.ElementType.GetElementSize().AsInt;
-            if (rvaData.Length % elementSize != 0)
-                throw new BadImageFormatException();
-            int elementCount = rvaData.Length / elementSize;
+            var rvaData = ecmaDataField.GetFieldRvaData();
+            var fieldType = field.FieldType;
+            int elementCount;
+            int realDataOffset;
+            TypeDesc realDataType = null;
 
             //
             // Construct fixups
             //
-            List<PreInitFixupInfo> fixups = null;            
+            List<PreInitFixupInfo> fixups = null;
 
             var typeFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "TypeHandleFixupAttribute");
             foreach (var typeFixupAttr in typeFixupAttrs)
@@ -232,13 +256,31 @@ namespace ILCompiler
                     throw new BadImageFormatException();
 
                 int offset = (int)typeFixupAttr.FixedArguments[0].Value;
-                TypeDesc fixupType = typeFixupAttr.FixedArguments[1].Value as TypeDesc;
+                var typeArg = typeFixupAttr.FixedArguments[1].Value;
+                var fixupType = typeArg as TypeDesc;
                 if (fixupType == null)
-                    throw new BadImageFormatException();
+                {
+                    if (typeArg is string fixupTypeName)
+                    {
+                        fixupType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(ecmaDataField.Module, fixupTypeName, throwIfNotFound: true);
+                    }
+                    else
+                    {
+                        throw new BadImageFormatException();
+                    }
+                }
 
                 fixups = fixups ?? new List<PreInitFixupInfo>();
 
-                fixups.Add(new PreInitTypeFixupInfo(offset, fixupType));
+                if (offset == 0 && fieldType.IsSzArray)
+                {
+                    // For array field, offset 0 is the element type handle followed by the element count
+                    realDataType = fixupType;
+                }
+                else
+                {
+                    fixups.Add(new PreInitTypeFixupInfo(offset, fixupType));
+                }
             }
 
             var methodFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "MethodAddrFixupAttribute");
@@ -265,7 +307,61 @@ namespace ILCompiler
                 fixups.Add(new PreInitMethodFixupInfo(offset, method));
             }
 
-            return new PreInitFieldInfo(field, rvaData, elementCount, fixups);
+            var fieldFixupAttrs = ecmaDataField.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "FieldAddrFixupAttribute");
+            foreach (var fieldFixupAttr in fieldFixupAttrs)
+            {
+                if (fieldFixupAttr.FixedArguments[0].Type != field.Context.GetWellKnownType(WellKnownType.Int32))
+                    throw new BadImageFormatException();
+
+                int offset = (int)fieldFixupAttr.FixedArguments[0].Value;
+                TypeDesc fixupType = fieldFixupAttr.FixedArguments[1].Value as TypeDesc;
+                if (fixupType == null)
+                    throw new BadImageFormatException();
+
+                string fieldName = fieldFixupAttr.FixedArguments[2].Value as string;
+                if (fieldName == null)
+                    throw new BadImageFormatException();
+
+                var fixupField = fixupType.GetField(fieldName);
+                if (fixupField == null)
+                    throw new BadImageFormatException();
+
+                if (!fixupField.IsStatic)
+                    throw new BadImageFormatException();
+
+                fixups = fixups ?? new List<PreInitFixupInfo>();
+
+                fixups.Add(new PreInitFieldFixupInfo(offset, fixupField));
+            }
+            
+            if (fieldType.IsValueType || fieldType.IsPointer)
+            {
+                elementCount = -1;
+                realDataOffset = 0;
+                realDataType = fieldType;
+            }
+            else if (fieldType.IsSzArray)
+            {
+                // Offset 0 is the element type handle fixup followed by the element count
+                if (realDataType == null)
+                    throw new BadImageFormatException();
+
+                int ptrSize = fieldType.Context.Target.PointerSize;
+                elementCount = rvaData[ptrSize] | rvaData[ptrSize + 1] << 8 | rvaData[ptrSize + 2] << 16 | rvaData[ptrSize + 3] << 24;
+                realDataOffset = ptrSize * 2;
+                realDataType = realDataType.MakeArrayType();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            return new PreInitFieldInfo(field, realDataType, rvaData, realDataOffset, elementCount, fixups);
+        }
+
+        public static int FieldDescCompare(PreInitFieldInfo fieldInfo1, PreInitFieldInfo fieldInfo2)
+        {
+            return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
     }
 }

@@ -255,6 +255,33 @@ namespace System.IO
                     buffer, offset, count, this);
         }
 
+        public virtual ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (destination.TryGetArray(out ArraySegment<byte> array))
+            {
+                return new ValueTask<int>(ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
+                return FinishReadAsync(ReadAsync(buffer, 0, destination.Length, cancellationToken), buffer, destination);
+
+                async ValueTask<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
+                {
+                    try
+                    {
+                        int result = await readTask.ConfigureAwait(false);
+                        new Span<byte>(localBuffer, 0, result).CopyTo(localDestination.Span);
+                        return result;
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(localBuffer);
+                    }
+                }
+            }
+        }
+
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (!CanRead)
@@ -304,6 +331,32 @@ namespace System.IO
                     buffer, offset, count, this);
         }
 
+        public virtual Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (source.DangerousTryGetArray(out ArraySegment<byte> array))
+            {
+                return WriteAsync(array.Array, array.Offset, array.Count, cancellationToken);
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(source.Length);
+                source.Span.CopyTo(buffer);
+                return FinishWriteAsync(WriteAsync(buffer, 0, source.Length, cancellationToken), buffer);
+
+                async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+                {
+                    try
+                    {
+                        await writeTask.ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(localBuffer);
+                    }
+                }
+            }
+        }
+
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (!CanWrite)
@@ -346,11 +399,6 @@ namespace System.IO
 
         public virtual int Read(Span<byte> destination)
         {
-            if (destination.Length == 0)
-            {
-                return 0;
-            }
-
             ArrayPool<byte> pool = ArrayPool<byte>.Shared;
             byte[] buffer = pool.Rent(destination.Length);
             try
@@ -387,11 +435,6 @@ namespace System.IO
 
         public virtual void Write(ReadOnlySpan<byte> source)
         {
-            if (source.Length == 0)
-            {
-                return;
-            }
-
             ArrayPool<byte> pool = ArrayPool<byte>.Shared;
             byte[] buffer = pool.Rent(source.Length);
             try
@@ -516,6 +559,12 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 return 0;
             }
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return 0;
+            }
 #pragma warning restore 1998
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
@@ -539,6 +588,11 @@ namespace System.IO
 
 #pragma warning disable 1998 // async method with no await
             public override async Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }

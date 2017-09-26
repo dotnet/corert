@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.General;
@@ -48,6 +49,27 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             _contextTypeInfo = contextTypeInfo;
             _reflectedType = reflectedType;
+        }
+
+        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.FieldInfo_CustomAttributes(this);
+#endif
+
+                foreach (CustomAttributeData cad in TrueCustomAttributes)
+                    yield return cad;
+
+                if (DeclaringType.IsExplicitLayout)
+                {
+                    int offset = ExplicitLayoutFieldOffsetData;
+                    CustomAttributeTypedArgument offsetArgument = new CustomAttributeTypedArgument(typeof(int), offset);
+                    yield return new RuntimePseudoCustomAttributeData(typeof(FieldOffsetAttribute), new CustomAttributeTypedArgument[] { offsetArgument }, null);
+                }
+            }
         }
 
         public sealed override Type DeclaringType
@@ -182,7 +204,6 @@ namespace System.Reflection.Runtime.FieldInfos
         }
 
         // Types that derive from RuntimeFieldInfo must implement the following public surface area members
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override FieldAttributes Attributes { get; }
         public abstract override int MetadataToken { get; }
         public abstract override String ToString();
@@ -257,6 +278,9 @@ namespace System.Reflection.Runtime.FieldInfos
         /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
         /// </summary>
         protected abstract RuntimeTypeInfo DefiningType { get; }
+
+        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
+        protected abstract int ExplicitLayoutFieldOffsetData { get; }
 
         /// <summary>
         /// Returns the field offset (asserts and throws if not an instance field). Does not include the size of the object header.

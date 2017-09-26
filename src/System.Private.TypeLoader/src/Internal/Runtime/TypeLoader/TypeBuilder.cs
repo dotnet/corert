@@ -417,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
 
         internal void ParseNativeLayoutInfo(InstantiatedMethod method)
         {
-            TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + ToString() + " ...");
+            TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + method.ToString() + " ...");
 
             Debug.Assert(method.Dictionary == null);
 
@@ -505,9 +505,11 @@ namespace Internal.Runtime.TypeLoader
             // If so, use that, otherwise, run down the template type loader path with the universal template
             if ((state.TemplateType == null) || isTemplateUniversalCanon)
             {
+#if !CORERT
                 // CanonAlike types do not get dictionaries
                 if ((state.TemplateType == null) && (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray)))
                     return;
+#endif
 
                 // ReadyToRun case - Native Layout is just the dictionary
                 NativeParser readyToRunInfoParser = state.GetParserForReadyToRunNativeLayoutInfo();
@@ -641,12 +643,14 @@ namespace Internal.Runtime.TypeLoader
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
 
+#if !CORERT
                         if (type.IsConstructedOverType(type.Context.CanonAlikeTypeArray))
                         {
                             TypeLoaderLogger.WriteLine("Type is CanonAlike, skip generation of dictionary");
                             typeInfoParser.SkipInteger();
                             break;
                         }
+#endif
 
                         Debug.Assert(state.Dictionary == null);
                         if (!state.TemplateType.RetrieveRuntimeTypeHandleIfPossible())
@@ -998,6 +1002,20 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Allocated new method dictionary for method " + method.ToString() + " @ " + rmd.LowLevelToString());
         }
 
+        private RuntimeTypeHandle[] GetGenericContextOfBaseType(DefType type, int vtableMethodSlot)
+        {
+            DefType baseType = type.BaseType;
+            Debug.Assert(baseType == null || !GetRuntimeTypeHandle(baseType).IsNull());
+            Debug.Assert(vtableMethodSlot < GetRuntimeTypeHandle(type).GetNumVtableSlots());
+
+            int numBaseTypeVtableSlots = baseType == null ? 0 : GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
+
+            if (vtableMethodSlot < numBaseTypeVtableSlots)
+                return GetGenericContextOfBaseType(baseType, vtableMethodSlot);
+            else
+                return GetRuntimeTypeHandles(type.Instantiation);
+        }
+
         private unsafe void FinishVTableCallingConverterThunks(TypeDesc type, TypeBuilderState state)
         {
             Debug.Assert(state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal));
@@ -1009,9 +1027,11 @@ namespace Internal.Runtime.TypeLoader
             IntPtr* vtableCells = (IntPtr*)((byte*)GetRuntimeTypeHandle(type).ToIntPtr() + sizeof(EEType));
             Debug.Assert((state.VTableMethodSignatures.Length - state.NumSealedVTableMethodSignatures) <= numVtableSlots);
 
+            TypeDesc baseType = type.BaseType;
+            int numBaseTypeVtableSlots = GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
+
             // Generic context
             RuntimeTypeHandle[] typeArgs = Empty<RuntimeTypeHandle>.Array;
-            RuntimeTypeHandle[] methodArgs = Empty<RuntimeTypeHandle>.Array;        // No GVMs in vtables
 
             if (type is DefType)
                 typeArgs = GetRuntimeTypeHandles(((DefType)type).Instantiation);
@@ -1020,11 +1040,21 @@ namespace Internal.Runtime.TypeLoader
 
             for (int i = 0; i < state.VTableMethodSignatures.Length; i++)
             {
+                RuntimeTypeHandle[] typeArgsToUse = typeArgs;
+
                 int vtableSlotInDynamicType = -1;
                 if (!state.VTableMethodSignatures[i].IsSealedVTableSlot)
                 {
                     vtableSlotInDynamicType = state.VTableSlotsMapping.GetVTableSlotInTargetType((int)state.VTableMethodSignatures[i].VTableSlot);
                     Debug.Assert(vtableSlotInDynamicType != -1);
+
+                    if (vtableSlotInDynamicType < numBaseTypeVtableSlots)
+                    {
+                        // Vtable method  from the vtable portion of a base type. Use generic context of the basetype defining the vtable slot.
+                        // We should never reach here for array types (the vtable entries of the System.Array basetype should never need a converter).
+                        Debug.Assert(type is DefType);
+                        typeArgsToUse = GetGenericContextOfBaseType((DefType)type, vtableSlotInDynamicType);
+                    }
                 }
 
                 IntPtr originalFunctionPointerFromVTable = state.VTableMethodSignatures[i].IsSealedVTableSlot ?
@@ -1036,7 +1066,7 @@ namespace Internal.Runtime.TypeLoader
                     originalFunctionPointerFromVTable,
                     state.VTableMethodSignatures[i].MethodSignature,
                     IntPtr.Zero,                                        // No instantiating arg for non-generic instance methods
-                    typeArgs,
+                    typeArgsToUse,
                     Empty<RuntimeTypeHandle>.Array);                    // No GVMs in vtables, no no method args
 
                 if (state.VTableMethodSignatures[i].IsSealedVTableSlot)
@@ -1841,6 +1871,103 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        //
+        // This method is used to build the floating portion of a generic dictionary.
+        // 
+        private unsafe IntPtr BuildFloatingDictionary(TypeSystemContext typeSystemContext, IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
+        {
+            isNewlyAllocatedDictionary = true;
+
+            NativeParser nativeLayoutParser;
+            NativeLayoutInfoLoadContext nlilContext;
+
+            if (isTypeContext)
+            {
+                TypeDesc typeContext = typeSystemContext.ResolveRuntimeTypeHandle(*(RuntimeTypeHandle*)&context);
+
+                TypeLoaderLogger.WriteLine("Building floating dictionary layout for type " + typeContext.ToString() + "...");
+
+                // We should only perform updates to floating dictionaries for types that share normal canonical code
+                Debug.Assert(typeContext.CanShareNormalGenericCode());
+
+                // Computing the template will throw if no template is found.
+                typeContext.ComputeTemplate();
+
+                TypeBuilderState state = typeContext.GetOrCreateTypeBuilderState();
+                nativeLayoutParser = state.GetParserForNativeLayoutInfo();
+                nlilContext = state.NativeLayoutInfo.LoadContext;
+            }
+            else
+            {
+                RuntimeTypeHandle declaringTypeHandle;
+                MethodNameAndSignature nameAndSignature;
+                RuntimeTypeHandle[] genericMethodArgHandles;
+                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
+                Debug.Assert(success);
+
+                DefType declaringType = (DefType)typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
+                InstantiatedMethod methodContext = (InstantiatedMethod)typeSystemContext.ResolveGenericMethodInstantiation(
+                    false, 
+                    declaringType, 
+                    nameAndSignature, 
+                    typeSystemContext.ResolveRuntimeTypeHandles(genericMethodArgHandles), 
+                    IntPtr.Zero, 
+                    false);
+
+                TypeLoaderLogger.WriteLine("Building floating dictionary layout for method " + methodContext.ToString() + "...");
+
+                // We should only perform updates to floating dictionaries for gemeric methods that share normal canonical code
+                Debug.Assert(!methodContext.IsNonSharableMethod);
+
+                uint nativeLayoutInfoToken;
+                NativeFormatModuleInfo nativeLayoutModule;
+                MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
+                if (templateMethod == null)
+                    throw new TypeBuilder.MissingTemplateException();
+
+                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+
+                nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
+                nlilContext = new NativeLayoutInfoLoadContext
+                {
+                    _typeSystemContext = methodContext.Context,
+                    _typeArgumentHandles = methodContext.OwningType.Instantiation,
+                    _methodArgumentHandles = methodContext.Instantiation,
+                    _module = nativeLayoutModule
+                };
+            }
+
+            NativeParser dictionaryLayoutParser = nativeLayoutParser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
+            if (dictionaryLayoutParser.IsNull)
+                return IntPtr.Zero;
+
+            int floatingVersionCellIndex, floatingVersionInLayout;
+            GenericDictionaryCell[] floatingCells = GenericDictionaryCell.BuildFloatingDictionary(this, nlilContext, dictionaryLayoutParser, out floatingVersionCellIndex, out floatingVersionInLayout);
+            if (floatingCells == null)
+                return IntPtr.Zero;
+
+            // First, check if the current version of the existing floating dictionary matches the version in the native layout. If so, there
+            // is no need to allocate anything new, and we can just use the existing statically compiled floating portion of the input dictionary.
+            int currentFloatingVersion = (int)(((IntPtr*)fixedDictionary)[floatingVersionCellIndex]);
+            if(currentFloatingVersion == floatingVersionInLayout)
+            {
+                isNewlyAllocatedDictionary = false;
+                return fixedDictionary + IntPtr.Size * floatingVersionCellIndex;
+            }
+
+            GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);
+
+            IntPtr result = floatingDict.Allocate();
+
+            ProcessTypesNeedingPreparation();
+
+            FinishTypeAndMethodBuilding();
+
+            floatingDict.Finish(this);
+
+            return result;
+        }
+
         public static bool TryBuildGenericType(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             Debug.Assert(!genericTypeDefinitionHandle.IsNull() && genericTypeArgumentHandles != null && genericTypeArgumentHandles.Length > 0);
@@ -2115,6 +2242,33 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContextFactory.Recycle(context);
 
             return success;
+        }
+
+        //
+        // This method is used to build the floating portion of a generic dictionary.
+        // 
+        internal static IntPtr TryBuildFloatingDictionary(IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
+        {
+            isNewlyAllocatedDictionary = true;
+
+            try
+            {
+                TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
+
+                IntPtr ret = new TypeBuilder().BuildFloatingDictionary(typeSystemContext, context, isTypeContext, fixedDictionary, out isNewlyAllocatedDictionary);
+
+                TypeSystemContextFactory.Recycle(typeSystemContext);
+
+                return ret;
+            }
+            catch (MissingTemplateException e)
+            {
+                // This should not ever happen. The static compiler should ensure that the templates are always
+                // available for types and methods that have floating dictionaries
+                Environment.FailFast("MissingTemplateException thrown during dictionary update", e);
+
+                return IntPtr.Zero;
+            }
         }
     }
 }

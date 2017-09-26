@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_DIR64           = 0x0A,     // 64 bit address base
         IMAGE_REL_BASED_REL32           = 0x10,     // 32-bit relative address from byte following reloc
         IMAGE_REL_BASED_THUMB_BRANCH24  = 0x13,     // Thumb2: based B, BL
+        IMAGE_REL_BASED_ARM64_BRANCH26  = 0x14,     // Arm64: B, BL
         IMAGE_REL_BASED_RELPTR32        = 0x7C,     // 32-bit relative address from byte starting reloc
                                                     // This is a special NGEN-specific relocation type 
                                                     // for relative pointer (used to make NGen relocation 

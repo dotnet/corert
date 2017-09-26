@@ -86,8 +86,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));
 
-            RuntimeTypeInfo runtimeDelegateType = delegateType as RuntimeTypeInfo;
-            if (runtimeDelegateType == null)
+            if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
 
             if (!runtimeDelegateType.IsDelegate)
@@ -148,6 +147,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
+
+        public abstract override int GenericParameterCount { get; }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
 

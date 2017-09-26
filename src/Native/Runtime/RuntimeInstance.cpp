@@ -181,6 +181,24 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
     return NULL;
 }
 
+PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
+{
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    if (pCodeManager != NULL)
+    {
+        PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
+        if (pData != NULL)
+        {
+            UInt8 flags = *pData++;
+
+            if ((flags & (UInt8)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
+                return *((PTR_PTR_UInt8)pData);
+        }
+    }
+
+    return NULL;
+}
+
 GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
 
 PTR_RuntimeInstance GetRuntimeInstance()
@@ -297,7 +315,8 @@ RuntimeInstance::RuntimeInstance() :
     m_pStaticGCRefsDescChunkList(NULL),
     m_pThreadStaticGCRefsDescChunkList(NULL),
     m_pGenericUnificationHashtable(NULL),
-    m_conservativeStackReportingEnabled(false)
+    m_conservativeStackReportingEnabled(false),
+    m_pUnboxingStubsRegion(NULL)
 {
 }
 
@@ -429,6 +448,46 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
     return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
 #endif
+
+bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    ASSERT(pvStartRange != NULL && cbRange > 0);
+
+    UnboxingStubsRegion * pEntry = new (nothrow) UnboxingStubsRegion();
+    if (NULL == pEntry)
+        return false;
+
+    pEntry->m_pRegionStart = pvStartRange;
+    pEntry->m_cbRegion = cbRange;
+
+    do
+    {
+        pEntry->m_pNextRegion = m_pUnboxingStubsRegion;
+    } 
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&m_pUnboxingStubsRegion, pEntry, pEntry->m_pNextRegion) != pEntry->m_pNextRegion);
+
+    return true;
+}
+
+bool RuntimeInstance::IsUnboxingStub(UInt8* pCode)
+{
+    UnboxingStubsRegion * pCurrent = m_pUnboxingStubsRegion;
+    while (pCurrent != NULL)
+    {
+        UInt8* pUnboxingStubsRegion = dac_cast<UInt8*>(pCurrent->m_pRegionStart);
+        if (pCode >= pUnboxingStubsRegion && pCode < (pUnboxingStubsRegion + pCurrent->m_cbRegion))
+            return true;
+
+        pCurrent = pCurrent->m_pNextRegion;
+    }
+
+    return false;
+}
+
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    return GetRuntimeInstance()->RegisterUnboxingStubs(pvStartRange, cbRange);
+}
 
 bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
 {

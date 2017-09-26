@@ -5,6 +5,7 @@
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
     <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -34,7 +35,7 @@
   -->
   <Target Name="RemoveObjFiles" AfterTargets="ResolveProjectReferences" Condition="'$(IlcMultiModule)' == 'true'">
     <ItemGroup>
-        <ObjFiles Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj'" />
+        <ObjFiles Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj' or '%(Extension)' == '.bc'" />
         <LinkerArg Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj'" />
         <IlcReference Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.dll'" />
         <_ResolvedProjectReferencePaths Remove="@(ObjFiles)" />

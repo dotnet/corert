@@ -15,7 +15,7 @@ namespace System.Reflection.Runtime.MethodInfos
 {
     internal sealed class OpenMethodInvoker : MethodInvoker
     {
-        public sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle)
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }

@@ -29,13 +29,12 @@
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
 
+#include "DebugFuncEval.h"
+
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
-
-EXTERN_C void * RhpDebugFuncEvalHelper;
-GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * RhpUniversalTransition();
@@ -97,9 +96,6 @@ PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
 {
     return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
 }
-
-// TODO, FuncEval, remove the assumption that there is only 1 func eval in progress
-GVAL_IMPL_INIT(UInt64, g_debuggermagic, 0);
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
 {
@@ -171,6 +167,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     // properly walk it in parallel.
     ResetNextExInfoForSP((UIntNative)dac_cast<TADDR>(pFrame));
 
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
@@ -212,6 +209,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
 #elif defined(_TARGET_ARM64_)
+    UNREFERENCED_PARAMETER(pPreservedRegsCursor);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #else // _TARGET_ARM_
@@ -253,6 +251,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
 #endif // _TARGET_ARM_
+
+#endif // defined(USE_PORTABLE_HELPERS)
 
     // @TODO: currently, we always save all registers -- how do we handle the onese we don't save once we 
     //        start only saving those that weren't already saved?
@@ -731,6 +731,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR11 = SP++;
     
 #elif defined(_TARGET_ARM64_)
+    UNREFERENCED_PARAMETER(isFilterInvoke);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #else
@@ -848,6 +849,20 @@ public:
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
     }
 
+#elif defined(_TARGET_ARM64_)
+private:
+    // ARM64TODO: #error NYI for this arch
+    UIntNative m_stackPassedArgs[1];        // Placeholder
+public:
+    PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    }
 #else
 #error NYI for this arch
 #endif
@@ -984,6 +999,12 @@ void StackFrameIterator::UnwindCallDescrThunk()
     newSP += sizeof(CALL_DESCR_CONTEXT);
 
 #elif defined(_TARGET_ARM64_)
+    // ARM64TODO: pFP points to the SP that we want to capture? (This arrangement allows for
+    // the arguments from this function to be loaded into memory with an adjustment
+    // to SP, like an alloca
+    newSP = *(PTR_UIntNative)m_RegDisplay.pFP;
+    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
+
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #elif defined(_TARGET_X86_)
@@ -1373,7 +1394,7 @@ void StackFrameIterator::PrepareToYieldFrame()
 
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
 
-    bool atDebuggerHijackSite = (this->m_ControlPC == (PTR_VOID)(TADDR)g_debuggermagic);
+    bool atDebuggerHijackSite = (this->m_ControlPC == (PTR_VOID)(TADDR)DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer());
 
     if (atDebuggerHijackSite)
     {

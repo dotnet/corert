@@ -42,13 +42,6 @@ namespace System.Runtime.CompilerServices
     }      
 }
 
-namespace Internal.Runtime.CompilerServices
-{
-    public struct FixupRuntimeTypeHandle
-    {
-        public RuntimeTypeHandle RuntimeTypeHandle => default(RuntimeTypeHandle);
-    }
-}
 
 namespace System.Runtime.InteropServices
 {
@@ -84,27 +77,34 @@ namespace System.Runtime.InteropServices
 
 class Details
 {
+    private static IntPtr PreInitializedInt32Field_DataBlob;
+
+    [TypeHandleFixupAttribute(0, typeof(IntPtr))]
     private static IntPtr PreInitializedIntField_DataBlob;
 
 #if BIT64
-    [TypeHandleFixupAttribute(0, typeof(int))]
-    [TypeHandleFixupAttribute(8, typeof(short))]
+    [TypeHandleFixupAttribute(0, typeof(RuntimeTypeHandle))]
+    [TypeHandleFixupAttribute(16, typeof(int))]
+    [TypeHandleFixupAttribute(24, typeof(short))]
+    [TypeHandleFixupAttribute(32, typeof(long))]
+    [TypeHandleFixupAttribute(40, typeof(string))]
+#else
+    [TypeHandleFixupAttribute(0, typeof(RuntimeTypeHandle))]
+    [TypeHandleFixupAttribute(8, typeof(int))]
+    [TypeHandleFixupAttribute(12, typeof(short))]
     [TypeHandleFixupAttribute(16, typeof(long))]
-    [TypeHandleFixupAttribute(24, typeof(string))]
-#else
-    [TypeHandleFixupAttribute(0, typeof(int))]
-    [TypeHandleFixupAttribute(4, typeof(short))]
-    [TypeHandleFixupAttribute(8, typeof(long))]
-    [TypeHandleFixupAttribute(12, typeof(string))]
+    [TypeHandleFixupAttribute(20, typeof(string))]
 #endif
-    private static IntPtr PreInitializedTypeField_DataBlob; 
+    private static IntPtr PreInitializedTypeField_DataBlob;
 
-#if BIT64    
-    [MethodAddrFixupAttribute(0, typeof(NativeMethods), "Func1")]
-    [MethodAddrFixupAttribute(8, typeof(NativeMethods), "Func2")]
+#if BIT64
+    [TypeHandleFixupAttribute(0, typeof(IntPtr))]
+    [MethodAddrFixupAttribute(16, typeof(NativeMethods), "Func1")]
+    [MethodAddrFixupAttribute(24, typeof(NativeMethods), "Func2")]
 #else
-    [MethodAddrFixupAttribute(0, typeof(NativeMethods), "Func1")]
-    [MethodAddrFixupAttribute(4, typeof(NativeMethods), "Func2")]
+    [TypeHandleFixupAttribute(0, typeof(IntPtr))]
+    [MethodAddrFixupAttribute(8, typeof(NativeMethods), "Func1")]
+    [MethodAddrFixupAttribute(12, typeof(NativeMethods), "Func2")]
 #endif
     private static IntPtr PreInitializedMethodTypeField_DataBlob;     
 }
@@ -126,17 +126,27 @@ class PreInitData
 {
     internal static string StaticStringFieldBefore = "BEFORE";
 
+    //
+    // Reference type fields
+    //
     [PreInitialized]
     [InitDataBlob(typeof(Details), "PreInitializedIntField_DataBlob")]
     internal static int[] PreInitializedIntField;
 
     [PreInitialized]
     [InitDataBlob(typeof(Details), "PreInitializedTypeField_DataBlob")]
-    internal static FixupRuntimeTypeHandle[] PreInitializedTypeField;
+    internal static RuntimeTypeHandle[] PreInitializedTypeField;
 
     [PreInitialized]
     [InitDataBlob(typeof(Details), "PreInitializedMethodField_DataBlob")]
     internal static IntPtr[] PreInitializedMethodField;
+
+    //
+    // Primitive type fields
+    //
+    [PreInitialized]
+    [InitDataBlob(typeof(Details), "PreInitializedInt32Field_DataBlob")]    
+    internal static int PreInitializedInt32Field;  // = 0x12345678
 
     internal static string StaticStringFieldAfter = "AFTER";
 }
@@ -149,6 +159,12 @@ public class PreInitDataTest
     public static int Main(string[] args)
     {
         int result = Pass;
+
+        if (!TestPreInitPrimitiveData())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
 
         if (!TestPreInitIntData())
         {
@@ -178,6 +194,16 @@ public class PreInitDataTest
         return result;
     }
 
+    static bool TestPreInitPrimitiveData()
+    {
+        Console.WriteLine("Testing preinitialized primitive data...");
+
+        if (PreInitData.PreInitializedInt32Field != 0x12345678)
+            return false;
+
+        return true;
+    }
+
     static bool TestPreInitIntData()
     {
         Console.WriteLine("Testing preinitialized int array...");
@@ -195,13 +221,13 @@ public class PreInitDataTest
     {
         Console.WriteLine("Testing preinitialized type array...");
 
-        if (!PreInitData.PreInitializedTypeField[0].RuntimeTypeHandle.Equals(typeof(int).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[0].Equals(typeof(int).TypeHandle))
             return false;
-        if (!PreInitData.PreInitializedTypeField[1].RuntimeTypeHandle.Equals(typeof(short).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[1].Equals(typeof(short).TypeHandle))
             return false;
-        if (!PreInitData.PreInitializedTypeField[2].RuntimeTypeHandle.Equals(typeof(long).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[2].Equals(typeof(long).TypeHandle))
             return false;
-        if (!PreInitData.PreInitializedTypeField[3].RuntimeTypeHandle.Equals(typeof(string).TypeHandle))
+        if (!PreInitData.PreInitializedTypeField[3].Equals(typeof(string).TypeHandle))
             return false;
 
         return true;

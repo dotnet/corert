@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
-            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type);
+            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type, hasGCStaticBase: true);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -81,12 +81,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-
-            builder.RequireInitialPointerAlignment();
-
             if (factory.Target.Abi == TargetAbi.CoreRT)
             {
+                ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+
+                builder.RequireInitialPointerAlignment();
+
                 int delta = GCStaticRegionConstants.Uninitialized;
 
                 // Set the flag that indicates next pointer following EEType is the preinit data
@@ -97,18 +97,31 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_preInitFieldInfos != null)
                     builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
+
+                builder.AddSymbol(this);
+
+                return builder.ToObjectData();
             }
-            else
+            else 
             {
-                builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
+                if (_preInitFieldInfos == null)
+                {
+                    ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
-                // @TODO - emit the frozen array node reloc
-                builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
+                    builder.RequireInitialPointerAlignment();
+
+                    builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
+
+                    builder.AddSymbol(this);
+
+                    return builder.ToObjectData();
+                }
+                else
+                {
+                    _preInitFieldInfos.Sort(PreInitFieldInfo.FieldDescCompare);
+                    return GCStaticsPreInitDataNode.GetDataForPreInitDataField(this, _type, _preInitFieldInfos, 0, factory, relocsOnly);
+                }
             }
-
-            builder.AddSymbol(this);
-
-            return builder.ToObjectData();
         }
     }
 }

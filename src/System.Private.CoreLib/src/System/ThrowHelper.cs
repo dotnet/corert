@@ -37,6 +37,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -65,43 +66,111 @@ namespace System
 
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
         {
-            throw GetArgumentOutOfRangeException(argument);
-        }
-        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument)
-        {
-            return new ArgumentOutOfRangeException(GetArgumentName(argument));
+            throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        {
+            return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
+        }
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, resource);
         }
-        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index()
         {
-            return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
+            throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
+                                                    ExceptionResource.ArgumentOutOfRange_Index);
+        }
+        internal static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.count,
+                                                    ExceptionResource.ArgumentOutOfRange_Count);
         }
 
         internal static void ThrowArgumentException_DestinationTooShort()
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort);
         }
-
-        internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        internal static void ThrowArgumentOutOfRange_IndexException()
         {
-            throw GetArgumentException(resource, argument);
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_Index);
         }
+        internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        internal static void ThrowArgumentException(ExceptionResource resource)
+        {
+            throw new ArgumentException(GetResourceString(resource));
+        }
+
         private static ArgumentException GetArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             return new ArgumentException(GetResourceString(resource), GetArgumentName(argument));
         }
+        internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        {
+            throw GetArgumentException(resource, argument);
+        }
+
+        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        {
+            throw new ArgumentException(GetResourceString(ExceptionResource.Argument_InvalidArrayType));
+        }
+
+        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
+        }
+        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            throw GetWrongValueTypeArgumentException(value, targetType);
+        }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
-            throw GetArgumentNullException(argument);
+            throw new ArgumentNullException(GetArgumentName(argument));
         }
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
+
+        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
         {
-            return new ArgumentNullException(GetArgumentName(argument));
+            throw new ObjectDisposedException(objectName, GetResourceString(resource));
+        }
+
+        internal static void ThrowInvalidOperationException(ExceptionResource resource)
+        {
+            throw new InvalidOperationException(GetResourceString(resource));
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
+        {
+            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumFailedVersion));
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
+        {
+            throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumOpCantHappen));
+        }
+
+
+        internal static void ThrowNotSupportedException(ExceptionResource resource)
+        {
+            throw new NotSupportedException(GetResourceString(resource));
+        }
+
+        // Allow nulls for reference types and Nullable<U>, but not for value types.
+        // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
+        // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName)
+        {
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            if (!(default(T) == null) && value == null)
+                ThrowHelper.ThrowArgumentNullException(argName);
         }
 
         private static string GetArgumentName(ExceptionArgument argument)
@@ -122,6 +191,32 @@ namespace System
                     return "startIndex";
                 case ExceptionArgument.task:
                     return "task";
+                case ExceptionArgument.s:
+                    return "s";
+                case ExceptionArgument.input:
+                    return "input";
+                case ExceptionArgument.ownedMemory:
+                    return "ownedMemory";
+                case ExceptionArgument.list:
+                    return "list";
+                case ExceptionArgument.index:
+                    return "index";
+                case ExceptionArgument.capacity:
+                    return "capacity";
+                case ExceptionArgument.collection:
+                    return "collection";
+                case ExceptionArgument.item:
+                    return "item";
+                case ExceptionArgument.converter:
+                    return "converter";
+                case ExceptionArgument.match:
+                    return "match";
+                case ExceptionArgument.count:
+                    return "count";
+                case ExceptionArgument.action:
+                    return "action";
+                case ExceptionArgument.comparison:
+                    return "comparison";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -135,8 +230,36 @@ namespace System
             {
                 case ExceptionResource.ArgumentOutOfRange_Index:
                     return SR.ArgumentOutOfRange_Index;
+                case ExceptionResource.ArgumentOutOfRange_Count:
+                    return SR.ArgumentOutOfRange_Count;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
+                case ExceptionResource.Memory_ThrowIfDisposed:
+                    return SR.Memory_ThrowIfDisposed;
+                case ExceptionResource.Memory_OutstandingReferences:
+                    return SR.Memory_OutstandingReferences;
+                case ExceptionResource.NotSupported_ReadOnlyCollection:
+                    return SR.NotSupported_ReadOnlyCollection;
+                case ExceptionResource.Arg_RankMultiDimNotSupported:
+                    return SR.Arg_RankMultiDimNotSupported;
+                case ExceptionResource.Arg_NonZeroLowerBound:
+                    return SR.Arg_NonZeroLowerBound;
+                case ExceptionResource.ArgumentOutOfRange_ListInsert:
+                    return SR.ArgumentOutOfRange_ListInsert;
+                case ExceptionResource.Argument_InvalidArrayType:
+                    return SR.Argument_InvalidArrayType;
+                case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
+                    return SR.ArgumentOutOfRange_NeedNonNegNum;
+                case ExceptionResource.ArgumentOutOfRange_SmallCapacity:
+                    return SR.ArgumentOutOfRange_SmallCapacity;
+                case ExceptionResource.Argument_InvalidOffLen:
+                    return SR.Argument_InvalidOffLen;
+                case ExceptionResource.ArgumentOutOfRange_BiggerThanCollection:
+                    return SR.ArgumentOutOfRange_BiggerThanCollection;
+                case ExceptionResource.InvalidOperation_EnumFailedVersion:
+                    return SR.InvalidOperation_EnumFailedVersion;
+                case ExceptionResource.InvalidOperation_EnumOpCantHappen:
+                    return SR.InvalidOperation_EnumOpCantHappen;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -156,7 +279,20 @@ namespace System
         obj,
         value,
         startIndex,
-        task
+        task,
+        s,
+        input,
+        ownedMemory,
+        list,
+        index,
+        capacity,
+        collection,
+        item,
+        converter,
+        match,
+        count,
+        action,
+        comparison,
     }
 
     //
@@ -165,6 +301,20 @@ namespace System
     internal enum ExceptionResource
     {
         ArgumentOutOfRange_Index,
+        ArgumentOutOfRange_Count,
         Arg_ArrayPlusOffTooSmall,
+        Memory_ThrowIfDisposed,
+        Memory_OutstandingReferences,
+        NotSupported_ReadOnlyCollection,
+        Arg_RankMultiDimNotSupported,
+        Arg_NonZeroLowerBound,
+        ArgumentOutOfRange_ListInsert,
+        Argument_InvalidArrayType,
+        ArgumentOutOfRange_NeedNonNegNum,
+        ArgumentOutOfRange_SmallCapacity,
+        Argument_InvalidOffLen,
+        ArgumentOutOfRange_BiggerThanCollection,
+        InvalidOperation_EnumFailedVersion,
+        InvalidOperation_EnumOpCantHappen,
     }
 }

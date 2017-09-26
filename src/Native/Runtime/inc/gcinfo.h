@@ -112,6 +112,184 @@ enum ScratchRegMask
     SR_MASK_LR   = 0x20,
 };
 
+#elif defined(_TARGET_ARM64_)
+// ARM64TODO: add all arm64-related changes in this file to gcinfo.h in E:\ProjNDev3X\src\Nutc\UTC
+
+enum RegMask
+{
+    RBM_NONE = 0,
+
+    RBM_X0 = 0x00000001,
+    RBM_X1 = 0x00000002,
+    RBM_X2 = 0x00000004,
+    RBM_X3 = 0x00000008,
+    RBM_X4 = 0x00000010,
+    RBM_X5 = 0x00000020,
+    RBM_X6 = 0x00000040,
+    RBM_X7 = 0x00000080,
+    RBM_X8 = 0x00000100, // ARM64TODO: ARM64 ABI: indirect result register
+    RBM_X9 = 0x00000200,
+    RBM_X10 = 0x00000400,
+    RBM_X11 = 0x00000800,
+    RBM_X12 = 0x00001000,
+    RBM_X13 = 0x00002000,
+    RBM_X14 = 0x00004000,
+    RBM_X15 = 0x00008000,
+
+    RBM_XIP0 = 0x00010000, // This one is occasionally used as a scratch register (but can be destroyed by branching or a call)
+    RBM_XIP1 = 0x00020000, // This one may be also used as a scratch register (but can be destroyed by branching or a call)
+    RBM_XPR = 0x00040000,
+
+    RBM_X19 = 0x00080000, // RA_CALLEESAVE
+    RBM_X20 = 0x00100000, // RA_CALLEESAVE
+    RBM_X21 = 0x00200000, // RA_CALLEESAVE
+    RBM_X22 = 0x00400000, // RA_CALLEESAVE
+    RBM_X23 = 0x00800000, // RA_CALLEESAVE
+    RBM_X24 = 0x01000000, // RA_CALLEESAVE
+    RBM_X25 = 0x02000000, // RA_CALLEESAVE
+    RBM_X26 = 0x04000000, // RA_CALLEESAVE
+    RBM_X27 = 0x08000000, // RA_CALLEESAVE
+    RBM_X28 = 0x10000000, // RA_CALLEESAVE
+
+    RBM_FP = 0x20000000,
+    RBM_LR = 0x40000000, // ARM64TODO: check to which lists it should be added
+    RBM_SP = 0x80000000,
+
+
+    RBM_RETVAL = RBM_X8,
+    RBM_CALLEE_SAVED_REGS = (RBM_X19 | RBM_X20 | RBM_X21 | RBM_X22 | RBM_X23 | RBM_X24 | RBM_X25 | RBM_X26 | RBM_X27 | RBM_X28),
+    RBM_CALLEE_SAVED_REG_COUNT = 10,
+
+    RBM_SCRATCH_REGS = (RBM_X0 | RBM_X1 | RBM_X2 | RBM_X3 | RBM_X4 | RBM_X5 | RBM_X6 | RBM_X7 | RBM_X8 | RBM_X9 |
+    RBM_X10 | RBM_X11 | RBM_X12 | RBM_X13 | RBM_X14 | RBM_X15 | RBM_XIP0| RBM_XIP1),
+    RBM_SCRATCH_REG_COUNT = 18,
+};
+
+#define NUM_PRESERVED_REGS RBM_CALLEE_SAVED_REG_COUNT
+
+enum RegNumber
+{
+    RN_X0 = 0,
+    RN_X1 = 1,
+    RN_X2 = 2,
+    RN_X3 = 3,
+    RN_X4 = 4,
+    RN_X5 = 5,
+    RN_X6 = 6,
+    RN_X7 = 7,
+    RN_X8 = 8, // indirect result register
+    RN_X9 = 9,
+    RN_X10 = 10,
+    RN_X11 = 11,
+    RN_X12 = 12,
+    RN_X13 = 13,
+    RN_X14 = 14,
+    RN_X15 = 15,
+
+    RN_XIP0 = 16,
+    RN_XIP1 = 17,
+    RN_XPR = 18,
+
+    RN_X19 = 19, // RA_CALLEESAVE
+    RN_X20 = 20, // RA_CALLEESAVE
+    RN_X21 = 21, // RA_CALLEESAVE
+    RN_X22 = 22, // RA_CALLEESAVE
+    RN_X23 = 23, // RA_CALLEESAVE
+    RN_X24 = 24, // RA_CALLEESAVE
+    RN_X25 = 25, // RA_CALLEESAVE
+    RN_X26 = 26, // RA_CALLEESAVE
+    RN_X27 = 27, // RA_CALLEESAVE
+    RN_X28 = 28, // RA_CALLEESAVE
+
+    RN_FP = 29,
+    RN_LR = 30,
+    RN_SP = 31,
+
+    RN_NONE = 32,
+};
+
+enum CalleeSavedRegNum
+{
+    CSR_NUM_X19 = 0,
+    CSR_NUM_X20 = 1,
+    CSR_NUM_X21 = 2,
+    CSR_NUM_X22 = 3,
+    CSR_NUM_X23 = 4,
+    CSR_NUM_X24 = 5,
+    CSR_NUM_X25 = 6,
+    CSR_NUM_X26 = 7,
+    CSR_NUM_X27 = 8,
+    CSR_NUM_X28 = 9,
+    CSR_NUM_NONE = 10,
+};
+
+enum CalleeSavedRegMask
+{
+    CSR_MASK_NONE = 0x00,
+    CSR_MASK_X19 = 0x001,
+    CSR_MASK_X20 = 0x002,
+    CSR_MASK_X21 = 0x004,
+    CSR_MASK_X22 = 0x008,
+    CSR_MASK_X23 = 0x010,
+    CSR_MASK_X24 = 0x020,
+    CSR_MASK_X25 = 0x040,
+    CSR_MASK_X26 = 0x080,
+    CSR_MASK_X27 = 0x100,
+    CSR_MASK_X28 = 0x200,
+
+    CSR_MASK_ALL = 0x3ff,
+    CSR_MASK_HIGHEST = 0x200,
+};
+
+enum ScratchRegNum
+{
+    SR_NUM_X0 = 0,
+    SR_NUM_X1 = 1,
+    SR_NUM_X2 = 2,
+    SR_NUM_X3 = 3,
+    SR_NUM_X4 = 4,
+    SR_NUM_X5 = 5,
+    SR_NUM_X6 = 6,
+    SR_NUM_X7 = 7,
+    SR_NUM_X8 = 8,
+    SR_NUM_X9 = 9,
+    SR_NUM_X10 = 10,
+    SR_NUM_X11 = 11,
+    SR_NUM_X12 = 12,
+    SR_NUM_X13 = 13,
+    SR_NUM_X14 = 14,
+    SR_NUM_X15 = 15,
+
+    SR_NUM_XIP0 = 16,
+    SR_NUM_XIP1 = 17,
+
+    SR_NUM_NONE = 18,
+};
+
+enum ScratchRegMask
+{
+    SR_MASK_NONE = 0x00,
+    SR_MASK_X0 = 0x01,
+    SR_MASK_X1 = 0x02,
+    SR_MASK_X2 = 0x04,
+    SR_MASK_X3 = 0x08,
+    SR_MASK_X4 = 0x10,
+    SR_MASK_X5 = 0x20,
+    SR_MASK_X6 = 0x40,
+    SR_MASK_X7 = 0x80,
+    SR_MASK_X8 = 0x100,
+    SR_MASK_X9 = 0x200,
+    SR_MASK_X10 = 0x400,
+    SR_MASK_X11 = 0x800,
+    SR_MASK_X12 = 0x1000,
+    SR_MASK_X13 = 0x2000,
+    SR_MASK_X14 = 0x4000,
+    SR_MASK_X15 = 0x8000,
+
+    SR_MASK_XIP0 = 0x10000,
+    SR_MASK_XIP1 = 0x20000,
+};
+
 #else // _TARGET_ARM_
 
 #ifdef _TARGET_AMD64_
@@ -251,6 +429,13 @@ private:
     UInt16  hasFrameSize            : 1; // 2 [4]    1: frame size is encoded below, 0: frame size is 0
     UInt16 calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [5:7]    3 [0:5]
     UInt16 arm_areParmOrVfpRegsPushed:1; // 1: pushed parm register set from R0-R3 and pushed fp reg start and count is encoded below, 0: no pushed parm or fp registers
+#elif defined (_TARGET_ARM64_)
+    // ARM64TODO: check
+    UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
+    UInt16  ebpFrame                : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM64 FP
+    UInt16  epilogAtEnd             : 1; // 2 [3]
+    UInt16  hasFrameSize            : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
+    UInt16  calleeSavedRegMask : NUM_PRESERVED_REGS;   // 2 [5:7]  +  3 [0:7]
 #else // _TARGET_ARM_
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
@@ -513,8 +698,12 @@ public:
         {
 #ifdef _TARGET_ARM_
             ASSERT(regNum == RN_R7);
-#else
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
             ASSERT(regNum == RN_EBP);
+#elif defined(_TARGET_ARM64_)
+            ASSERT(regNum == RN_FP);
+#else
+            ASSERT(!"NYI");
 #endif
             ebpFrame = 1;
         }
@@ -568,19 +757,21 @@ public:
         ASSERT((offsetInBytes % POINTER_SIZE) == 0);
         ASSERT(GetReturnKind() == MRK_ReturnsToNative);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // The offset can be either positive or negative on ARM and x64.
         bool isNeg = (offsetInBytes < 0);
         UInt32 uOffsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         UInt32 uEncodedVal = ((uOffsetInBytes / POINTER_SIZE) << 1) | (isNeg ? 1 : 0);
         reversePinvokeFrameOffset = uEncodedVal;
         ASSERT(reversePinvokeFrameOffset == uEncodedVal);
-#else
+#elif defined (_TARGET_X86_)
         // Use a positive number because it encodes better and 
         // the offset is always negative on x86.
         ASSERT(offsetInBytes < 0);
         reversePinvokeFrameOffset = (-offsetInBytes / POINTER_SIZE);
         ASSERT(reversePinvokeFrameOffset == (UInt32)(-offsetInBytes / POINTER_SIZE));
+#else
+        ASSERT(!"NYI");
 #endif
     }
 
@@ -821,7 +1012,7 @@ public:
 
     int GetReversePinvokeFrameOffset()
     {
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // The offset can be either positive or negative on ARM.
         Int32 offsetInBytes;
         UInt32 uEncodedVal = reversePinvokeFrameOffset;
@@ -829,11 +1020,13 @@ public:
         offsetInBytes = (uEncodedVal >> 1) * POINTER_SIZE;
         offsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         return offsetInBytes;
-#else
+#elif defined(_TARGET_X86_)
         // it's always at "EBP - something", so we encode it as a positive 
         // number and then apply the negative here.
         int unsignedOffset = reversePinvokeFrameOffset * POINTER_SIZE;
         return -unsignedOffset;
+#else
+        ASSERT(!"NYI");
 #endif
     }
 

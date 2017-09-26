@@ -9,7 +9,7 @@ namespace System
         internal TypeLoadException(string message, string typeName)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
             _typeName = typeName;
         }
     }

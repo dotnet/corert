@@ -108,8 +108,7 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.GetCustomAttributes()))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.GetCustomAttributes());
             }
         }
 
@@ -118,8 +117,7 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            EcmaFormatRuntimeEventInfo otherEvent = other as EcmaFormatRuntimeEventInfo;
-            if (otherEvent == null)
+            if (!(other is EcmaFormatRuntimeEventInfo otherEvent))
                 return false;
             if (!(_reader == otherEvent._reader))
                 return false;
@@ -130,8 +128,7 @@ namespace System.Reflection.Runtime.EventInfos.EcmaFormat
 
         public sealed override bool Equals(Object obj)
         {
-            EcmaFormatRuntimeEventInfo other = obj as EcmaFormatRuntimeEventInfo;
-            if (other == null)
+            if (!(obj is EcmaFormatRuntimeEventInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

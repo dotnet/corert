@@ -7,19 +7,13 @@ extern alias System_Private_CoreLib;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 
-using Internal.Metadata.NativeFormat;
-
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Execution.MethodInvokers;
 using Internal.NativeFormat;
 
 namespace Internal.Reflection.Execution

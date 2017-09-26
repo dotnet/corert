@@ -482,6 +482,27 @@ namespace System.IO
 
             return Read(buffer, offset, count);
         }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // ReadAsync(Memory<byte>,...) needs to delegate to an existing virtual to do the work, in case an existing derived type
+            // has changed or augmented the logic associated with reads.  If the Memory wraps an array, we could delegate to
+            // ReadAsync(byte[], ...), but that would defeat part of the purpose, as ReadAsync(byte[], ...) often needs to allocate
+            // a Task<int> for the return value, so we want to delegate to one of the synchronous methods.  We could always
+            // delegate to the Read(Span<byte>) method, and that's the most efficient solution when dealing with a concrete
+            // MemoryStream, but if we're dealing with a type derived from MemoryStream, Read(Span<byte>) will end up delegating
+            // to Read(byte[], ...), which requires it to get a byte[] from ArrayPool and copy the data.  So, we special-case the
+            // very common case of the Memory<byte> wrapping an array: if it does, we delegate to Read(byte[], ...) with it,
+            // as that will be efficient in both cases, and we fall back to Read(Span<byte>) if the Memory<byte> wrapped something
+            // else; if this is a concrete MemoryStream, that'll be efficient, and only in the case where the Memory<byte> wrapped
+            // something other than an array and this is a MemoryStream-derived type that doesn't override Read(Span<byte>) will
+            // it then fall back to doing the ArrayPool/copy behavior.
+            return destination.TryGetArray(out ArraySegment<byte> destinationArray) ?
+                Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
+                Read(destination.Span);
+        }
 #pragma warning restore 1998
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
@@ -822,6 +843,22 @@ namespace System.IO
             cancellationToken.ThrowIfCancellationRequested();
 
             Write(buffer, offset, count);
+        }
+
+        public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
+            // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
+            if (source.DangerousTryGetArray(out ArraySegment<byte> sourceArray))
+            {
+                Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
+            }
+            else
+            {
+                Write(source.Span);
+            }
         }
 #pragma warning restore 1998
 

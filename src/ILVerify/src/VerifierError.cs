@@ -63,12 +63,12 @@ namespace ILVerify
         Endfinally,                     //"Endfinally from outside a finally handler."
         Endfilter,                      //"Endfilter from outside an exception filter block."
         //E_ENDFILTER_MISSING  "Missing Endfilter."
-        //E_BR_INTO_TRY        "Branch into try block."
-        //E_BR_INTO_HND        "Branch into exception handler block."
-        //E_BR_INTO_FIL        "Branch into exception filter block."
-        //E_BR_OUTOF_TRY       "Branch out of try block."
-        //E_BR_OUTOF_HND       "Branch out of exception handler block."
-        //E_BR_OUTOF_FIL       "Branch out of exception filter block."
+        BranchIntoTry,          //"Branch into try block."
+        BranchIntoHandler,      //"Branch into exception handler block."
+        BranchIntoFilter,       //"Branch into exception filter block."
+        BranchOutOfTry,         //"Branch out of try block."
+        BranchOutOfHandler,     //"Branch out of exception handler block."
+        BranchOutOfFilter,      //"Branch out of exception filter block."
         //E_BR_OUTOF_FIN       "Branch out of finally block."
         //E_RET_FROM_TRY       "Return out of try block."
         //E_RET_FROM_HND       "Return out of exception handler block."
@@ -84,7 +84,7 @@ namespace ILVerify
         //E_THIS_UNINIT_RET    "Return from .ctor when this is uninitialized."
         //E_THIS_UNINIT_V_RET  "Return from .ctor before all fields are initialized."
         //E_THIS_UNINIT_BR     "Branch back when this is uninitialized."
-        //E_LDFTN_CTOR         "ldftn/ldvirtftn not allowed on .ctor."
+        LdftnCtor,       //"ldftn/ldvirtftn not allowed on .ctor."
         //StackNotEq,                     // "Non-compatible types on the stack."
         StackUnexpected,                // Unexpected type on the stack.
         StackUnexpectedArrayType,       // Unexpected array type on the stack.
@@ -100,7 +100,7 @@ namespace ILVerify
         StackObjRef,                    // "Expected an ObjRef on the stack."
         //E_STACK_P_OBJREF     "Expected address of an ObjRef on the stack."
         StackByRef,                     // Expected ByRef on the stack.
-        //E_STACK_METHOD       "Expected pointer to function on the stack."
+        StackMethod,            // Expected pointer to function on the stack.
         //E_STACK_ARRAY_SD     "Expected single dimension array on the stack."
         //E_STACK_VALCLASS     "Expected value type instance on the stack."
         //E_STACK_P_VALCLASS   "Expected address of value type on the stack."
@@ -176,7 +176,7 @@ namespace ILVerify
         CallAbstract,               // Call not allowed on abstract methods.
         //E_NOT_IN_GC_HEAP     "Value type with NotInGCHeap attribute being created on the GC heap."
         TryNonEmptyStack,           // Attempt to enter a try block with nonempty stack.
-        //E_DLGT_CTOR          "Unrecognized arguments for delegate .ctor."
+        DelegateCtor,           // Unrecognized arguments for delegate .ctor.
         //E_DLGT_BB            "Delegate .ctor not allowed at the start of a basic block when the function pointer argument is a virtual method."
         //E_DLGT_PATTERN       "Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block)."
         //E_DLGT_LDFTN         "Ldftn or ldvirtftn instruction required before call to a delegate .ctor."
@@ -187,15 +187,15 @@ namespace ILVerify
         //E_SIG_BYREF_TB_AH    "ByRef of TypedReference, ArgHandle, or ArgIterator."
         //E_SIG_ARRAY_TB_AH    "Array of TypedReference, ArgHandle, or ArgIterator."
         EndfilterStack,                 //"Stack not empty when leaving an exception filter."
-        //E_DLGT_SIG_I         "Unrecognized delegate .ctor signature; expected I."
-        //E_DLGT_SIG_O         "Unrecognized delegate .ctor signature; expected Object."
+        DelegateCtorSigI,        // Unrecognized delegate .ctor signature; expected Native Int.
+        DelegateCtorSigO,        // Unrecognized delegate .ctor signature; expected Object.
         //E_RA_PTR_TO_STACK    "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
         //E_CATCH_VALUE_TYPE   "Value type not allowed as catch type."
         //E_CATCH_BYREF        "ByRef not allowed as catch type."
         //E_FIL_PRECEED_HND    "filter block should immediately precede handler block"
-        //E_LDVIRTFTN_STATIC   "ldvirtftn on static"
-        CallVirtOnStatic,               // callvirt on static
-        InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
+        LdvirtftnOnStatic,      // ldvirtftn on static.
+        CallVirtOnStatic,       // callvirt on static.
+        InitLocals,             // initlocals must be set for verifiable methods with one or more local variables.
         //E_BR_TO_EXCEPTION    "branch/leave to the beginning of a catch/filter handler"
         //E_CALL_CTOR          "call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj." 
         
@@ -218,14 +218,14 @@ namespace ILVerify
         //E_CIRCULAR_VAR_CONSTRAINTS "Method parent has circular class type parameter constraints."
         //E_CIRCULAR_MVAR_CONSTRAINTS "Method has circular method type parameter constraints."
 
-        //E_UNSATISFIED_METHOD_INST          "Method instantiation has unsatisfied method type parameter constraints."
-        //E_UNSATISFIED_METHOD_PARENT_INST   "Method parent instantiation has unsatisfied class type parameter constraints."
+        UnsatisfiedMethodInst,                // Method instantiation has unsatisfied method type parameter constraints.
+        UnsatisfiedMethodParentInst,          // Method parent instantiation has unsatisfied class type parameter constraints.
         //E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
         //E_UNSATISFIED_BOX_OPERAND          "Type operand of box instruction has unsatisfied class type parameter constraints."
-        ConstrainedCallWithNonByRefThis,    // The 'this' argument to a constrained call must have ByRef type.
+        ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
         //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
-        ReadOnlyIllegalWrite,               // "Illegal write to readonly ByRef."
+        ReadOnlyIllegalWrite,                 // "Illegal write to readonly ByRef."
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT      "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
         //E_TAILCALL_INSIDE_EH       "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."

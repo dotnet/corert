@@ -21,7 +21,7 @@ struct JitInterfaceCallbacks
     void (__stdcall * getEHinfo)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned EHnumber, void* clause);
     void* (__stdcall * getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
-    void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
+    void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
     void (__stdcall * expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
@@ -117,6 +117,7 @@ struct JitInterfaceCallbacks
     const wchar_t* (__stdcall * getJitTimeLogFilename)(void * thisHandle, CorInfoException** ppException);
     unsigned int (__stdcall * getMethodDefFromMethod)(void * thisHandle, CorInfoException** ppException, void* hMethod);
     const char* (__stdcall * getMethodName)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** moduleName);
+    const char* (__stdcall * getMethodNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** className, const char** namespaceName);
     unsigned (__stdcall * getMethodHash)(void * thisHandle, CorInfoException** ppException, void* ftn);
     size_t (__stdcall * findNameOfToken)(void * thisHandle, CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (__stdcall * getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr);
@@ -283,10 +284,10 @@ public:
         return _ret;
     }
 
-    virtual void getMethodVTableOffset(void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection)
+    virtual void getMethodVTableOffset(void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative)
     {
         CorInfoException* pException = nullptr;
-        _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection);
+        _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection, isRelative);
         if (pException != nullptr)
             throw pException;
     }
@@ -1097,6 +1098,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         const char* _ret = _callbacks->getMethodName(_thisHandle, &pException, ftn, moduleName);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual const char* getMethodNameFromMetadata(void* ftn, const char** className, const char** namespaceName)
+    {
+        CorInfoException* pException = nullptr;
+        const char* _ret = _callbacks->getMethodNameFromMetadata(_thisHandle, &pException, ftn, className, namespaceName);
         if (pException != nullptr)
             throw pException;
         return _ret;

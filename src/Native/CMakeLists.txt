@@ -206,6 +206,10 @@ if(WIN32)
     add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options(/Zi) # enable debugging information
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
+
+    if (CLR_CMAKE_PLATFORM_ARCH_I386)
+      add_compile_options(/Gz)
+    endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 else(WIN32)
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)

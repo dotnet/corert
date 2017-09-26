@@ -9,22 +9,39 @@
 GVAL_IMPL_INIT(UInt32, g_FuncEvalMode, 0);
 GVAL_IMPL_INIT(UInt64, g_FuncEvalTarget, 0);
 GVAL_IMPL_INIT(UInt32, g_FuncEvalParameterBufferSize, 0);
+GVAL_IMPL_INIT(UInt64, g_MostRecentFuncEvalHijackInstructionPointer, 0);
+GPTR_IMPL_INIT(PTR_VOID, g_HighLevelDebugFuncEvalAbortHelperAddr, 0);
 
 #ifndef DACCESS_COMPILE
 
-void* DebugFuncEval::GetFuncEvalTarget()
+/* static */ void* DebugFuncEval::GetFuncEvalTarget()
 {
     return (void*)g_FuncEvalTarget;
 }
 
-UInt32 DebugFuncEval::GetFuncEvalParameterBufferSize()
+/* static */ UInt32 DebugFuncEval::GetFuncEvalParameterBufferSize()
 {
     return g_FuncEvalParameterBufferSize;
 }
 
-UInt32 DebugFuncEval::GetFuncEvalMode()
+/* static */ UInt32 DebugFuncEval::GetFuncEvalMode()
 {
     return g_FuncEvalMode;
+}
+
+/* static */ UInt64 DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer()
+{
+    return g_MostRecentFuncEvalHijackInstructionPointer;
+}
+
+/* static */ HighLevelDebugFuncEvalAbortHelperType DebugFuncEval::GetHighLevelDebugFuncEvalAbortHelper()
+{
+    return (HighLevelDebugFuncEvalAbortHelperType)g_HighLevelDebugFuncEvalAbortHelperAddr;
+}
+
+/* static */ void DebugFuncEval::SetHighLevelDebugFuncEvalAbortHelper(HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper)
+{
+    g_HighLevelDebugFuncEvalAbortHelperAddr = (PTR_PTR_VOID)highLevelDebugFuncEvalAbortHelper;
 }
 
 /// <summary>
@@ -71,4 +88,40 @@ EXTERN_C REDHAWK_API UInt32 __cdecl RhpGetFuncEvalMode()
     return DebugFuncEval::GetFuncEvalMode();
 }
 
+/// <summary>
+/// Initiate the func eval abort
+/// </summary>
+/// <remarks>
+/// This is the entry point of FuncEval abort
+/// When the debugger decides to abort the FuncEval, it will create a remote thread calling this function.
+/// This function will call back into the highLevelDebugFuncEvalAbortHelper to perform the abort.
+EXTERN_C REDHAWK_API void __cdecl RhpInitiateFuncEvalAbort(void* pointerFromDebugger)
+{
+    HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper = DebugFuncEval::GetHighLevelDebugFuncEvalAbortHelper();
+    highLevelDebugFuncEvalAbortHelper((UInt64)pointerFromDebugger);
+}
+
+/// <summary>
+/// Set the high level debug func eval abort helper
+/// </summary>
+/// <remarks>
+/// The high level debug func eval abort helper is a function that perform the actual func eval abort 
+/// It is implemented in System.Private.Debug.dll 
+EXTERN_C REDHAWK_API void __cdecl RhpSetHighLevelDebugFuncEvalAbortHelper(HighLevelDebugFuncEvalAbortHelperType highLevelDebugFuncEvalAbortHelper)
+{
+    DebugFuncEval::SetHighLevelDebugFuncEvalAbortHelper(highLevelDebugFuncEvalAbortHelper);
+}
+
+#else
+
+UInt64 DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer()
+{
+    return g_MostRecentFuncEvalHijackInstructionPointer;
+}
+
 #endif //!DACCESS_COMPILE
+
+EXTERN_C void * RhpDebugFuncEvalHelper;
+GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
+
+GPTR_IMPL_INIT(PTR_VOID, g_RhpInitiateFuncEvalAbortAddr, (void**)&RhpInitiateFuncEvalAbort);

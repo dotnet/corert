@@ -587,7 +587,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="result">The result for which we need a task.</param>
         /// <returns>The completed task containing the result.</returns>
-        private static Task<TResult> GetTaskForResult(TResult result)
+        internal static Task<TResult> GetTaskForResult(TResult result)
         {
             // Currently NUTC does not perform the optimization needed by this method.  The result is that
             // every call to this method results in quite a lot of work, including many allocations, which 

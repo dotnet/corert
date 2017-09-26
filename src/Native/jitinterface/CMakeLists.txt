@@ -7,7 +7,7 @@ set(NATIVE_SOURCES
     corinfoexception.cpp
 )
 
-if(WIN32)
+if(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         CodeHeap.cpp
         JITCodeManager.cpp
@@ -16,7 +16,7 @@ if(WIN32)
 
     add_definitions(-DGCINFODECODER_NO_EE)
     add_definitions(-DFEATURE_REDHAWK)
-endif(WIN32)
+endif(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
 add_library(jitinterface
     SHARED
