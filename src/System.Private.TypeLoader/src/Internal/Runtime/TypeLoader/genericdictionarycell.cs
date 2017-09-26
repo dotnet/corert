@@ -440,10 +440,39 @@ namespace Internal.Runtime.TypeLoader
         {
             internal TypeDesc ContainingType;
             internal uint VTableSlot;
+            private TypeDesc ContainingTypeTemplate;
 
             internal unsafe override void Prepare(TypeBuilder builder)
             {
                 builder.RegisterForPreparation(ContainingType);
+                ContainingTypeTemplate = ContainingType.ComputeTemplate();
+            }
+
+            //
+            // This helper function will traverse the hierarchy of the containing type of this vtable offset cell, in parallel with
+            // the hierarchy of its template type.
+            // When traversing the template type hierarchy, we have 2 possibilities for the base type:
+            //    - Fully universal canonical. USG types always have a dictionary slot, so if the dynamically created type does not share
+            //      normal canonical code, we subtract 1 from the vtable offset (the dynamic type does not have a dictionary slot in that case)
+            //    - Exact non-canonical type. In that case, we do not need to make any changes to the vtable offset (the binder/ILCompiler
+            //      would have written the correct vtable offset, taking in the account the existance or non-existance of a dictionary slot.
+            //
+            private void AdjustVtableSlot(TypeDesc currentType, TypeDesc currentTemplateType, ref int vtableSlot)
+            {
+                TypeDesc baseType = currentType.BaseType;
+                TypeDesc baseTemplateType = TypeBuilder.GetBaseTypeUsingRuntimeTypeHandle(currentTemplateType);
+
+                Debug.Assert((baseType == null && baseTemplateType == null) || (baseType != null && baseTemplateType != null));
+
+                // Compute the vtable layout for the current type starting with base types first
+                if (baseType != null)
+                    AdjustVtableSlot(baseType, baseTemplateType, ref vtableSlot);
+
+                if (currentType.IsGeneric())
+                {
+                    if (!currentType.CanShareNormalGenericCode() && currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
+                        vtableSlot--;
+                }
             }
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
@@ -457,21 +486,11 @@ namespace Internal.Runtime.TypeLoader
 #endif
 
                 int result = (int)VTableSlot;
-                DefType currentType = (DefType)ContainingType;
 
-                while (currentType != null)
-                {
-                    if (currentType.HasInstantiation)
-                    {
-                        // Check if the current type can share code with normal canonical
-                        // generic types. If not, then the vtable layout will not have a 
-                        // slot for a dictionary pointer, and we need to adjust the slot number
-                        if (!currentType.CanShareNormalGenericCode())
-                            result--;
-                    }
-
-                    currentType = currentType.BaseType;
-                }
+                // Check if the current type can share code with normal canonical
+                // generic types. If not, then the vtable layout will not have a 
+                // slot for a dictionary pointer, and we need to adjust the slot number
+                AdjustVtableSlot(ContainingType, ContainingTypeTemplate, ref result);
                 Debug.Assert(result >= 0);
 
                 return (IntPtr)(sizeof(EEType) + result * IntPtr.Size);
