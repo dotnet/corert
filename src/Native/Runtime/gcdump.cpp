@@ -244,6 +244,18 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 if (b & CSR_MASK_R6) { gcPrintf("R6 "); count++; }
                 if (b & CSR_MASK_R7) { gcPrintf("R7 "); count++; }
                 if (b & CSR_MASK_R8) { gcPrintf("R8 "); count++; }
+#elif defined(_TARGET_ARM64_)
+                // ARM64TODO: not all of these are needed?
+                if (b & CSR_MASK_X19) { gcPrintf("X19 "); count++; }
+                if (b & CSR_MASK_X20) { gcPrintf("X20 "); count++; }
+                if (b & CSR_MASK_X21) { gcPrintf("X21 "); count++; }
+                if (b & CSR_MASK_X22) { gcPrintf("X22 "); count++; }
+                if (b & CSR_MASK_X23) { gcPrintf("X23 "); count++; }
+                if (b & CSR_MASK_X24) { gcPrintf("X24 "); count++; }
+                if (b & CSR_MASK_X25) { gcPrintf("X25 "); count++; }
+                if (b & CSR_MASK_X26) { gcPrintf("X26 "); count++; }
+                if (b & CSR_MASK_X27) { gcPrintf("X27 "); count++; }
+                if (b & CSR_MASK_X28) { gcPrintf("X28 "); count++; }
 #else // _ARM_
                 if (b & CSR_MASK_RBX) { gcPrintf("RBX "); count++; }
                 if (b & CSR_MASK_RSI) { gcPrintf("RSI "); count++; }
@@ -273,6 +285,17 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R9: regName = "R9"; break;
                 case CSR_NUM_R10: regName = "R10"; break;
                 case CSR_NUM_R11: regName = "R11"; break;
+#elif defined(_TARGET_ARM64_)
+                case CSR_NUM_X19: regName = "X19"; break;
+                case CSR_NUM_X20: regName = "X20"; break;
+                case CSR_NUM_X21: regName = "X21"; break;
+                case CSR_NUM_X22: regName = "X22"; break;
+                case CSR_NUM_X23: regName = "X23"; break;
+                case CSR_NUM_X24: regName = "X24"; break;
+                case CSR_NUM_X25: regName = "X25"; break;
+                case CSR_NUM_X26: regName = "X26"; break;
+                case CSR_NUM_X27: regName = "X27"; break;
+                case CSR_NUM_X28: regName = "X28"; break;
 #else // _ARM_
                 case CSR_NUM_RBX: regName = "RBX"; break;
                 case CSR_NUM_RSI: regName = "RSI"; break;

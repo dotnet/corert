@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -272,6 +272,14 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMUnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\Register.cs" />

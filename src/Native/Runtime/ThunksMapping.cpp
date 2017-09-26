@@ -15,7 +15,7 @@
 
 #ifdef FEATURE_RX_THUNKS
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 static_assert(false, "Cannot use the portable helpers with FEATURE_RX_THUNKS");
 #endif
 
@@ -26,6 +26,7 @@ static_assert(false, "Cannot use the portable helpers with FEATURE_RX_THUNKS");
 #elif _TARGET_ARM_
 #define THUNK_SIZE  20
 #elif _TARGET_ARM64_
+//ARM64TODO
 #define THUNK_SIZE  0x8000         // This will cause RhpGetNumThunksPerBlock to return 0 for now
 #endif
 
@@ -198,9 +199,11 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             pCurrentThunkAddress += 2;
 
 #elif _TARGET_ARM64_
-
+            UNREFERENCED_PARAMETER(pCurrentDataAddress);
+            UNREFERENCED_PARAMETER(pCurrentThunkAddress);
             /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
-
+#else
+#error
 #endif
         }
     }

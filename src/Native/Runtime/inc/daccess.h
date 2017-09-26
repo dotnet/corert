@@ -536,7 +536,7 @@
 
 #include "safemath.h"
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 typedef UInt64 UIntTarget;
 #elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
