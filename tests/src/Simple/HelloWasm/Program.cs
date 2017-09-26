@@ -10,30 +10,22 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-        TwoCharStr strStruct = new TwoCharStr();
-        strStruct.first = (byte)'H';
-        strStruct.second = (byte)'\0';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'i';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)' ';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'f';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'r';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'o';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'m';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)' ';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'C';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'#';
-        printf((byte*)&strStruct, null);
-        strStruct.first = (byte)'!';
-        printf((byte*)&strStruct, null);
+
+        string s = "Hello from C#!";
+        PrintString(s, 14);
+    }
+
+    private static unsafe void PrintString(string s, int length)
+    {
+        fixed (char* curChar = s)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                TwoByteStr curCharStr = new TwoByteStr();
+                curCharStr.first = (byte)(*(curChar + i));
+                printf((byte*)&curCharStr, null);
+            }
+        }
     }
 
     private static int Add(int a, int b)
@@ -45,7 +37,7 @@ internal static class Program
     private static unsafe extern int printf(byte* str, byte* unused);
 }
 
-public struct TwoCharStr
+public struct TwoByteStr
 {
     public byte first;
     public byte second;

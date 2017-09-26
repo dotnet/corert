@@ -178,9 +178,12 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             EmitNativeMain();
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMPrintMessageAction, out IntPtr unused);
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
-            LLVM.DumpModule(Module);
+#if DEBUG
+            LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out IntPtr unused2);
+#endif //DEBUG
+            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out IntPtr unused);
+
             //throw new NotImplementedException(); // This function isn't complete
         }
 
@@ -416,7 +419,6 @@ namespace ILCompiler.DependencyAnalysis
             EmitBlob(new byte[this._nodeFactory.Target.PointerSize]);
             if (relocType == RelocType.IMAGE_REL_BASED_REL32)
             {
-                Console.WriteLine("REL BASED RELOC");
                 return this._nodeFactory.Target.PointerSize;
             }
 

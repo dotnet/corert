@@ -13,6 +13,7 @@ using ILCompiler;
 using ILCompiler.Compiler.CppCodeGen;
 
 using ILCompiler.DependencyAnalysis;
+using LLVMSharp;
 
 namespace Internal.IL
 {
@@ -66,7 +67,6 @@ namespace Internal.IL
 
                 ilImporter.Import();
                 methodCodeNodeNeedingCode.CompilationCompleted = true;
-                methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
             }
             catch (Exception e)
             {
@@ -77,7 +77,12 @@ namespace Internal.IL
                 //throw new NotImplementedException();
                 //methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
             }
+
+            // Ensure dependencies show up regardless of exceptions to avoid breaking LLVM
+            methodCodeNodeNeedingCode.SetDependencies(ilImporter.GetDependencies());
         }
+
+        static LLVMValueRef TrapFunction = default(LLVMValueRef);
 
         private static IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
         {
