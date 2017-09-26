@@ -108,7 +108,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     // The update failed due to a racing update to the same location. Return the new value of the second
     // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
     return pSecondPointer;
-#elif defined(_AMD64_)
+#elif defined(_AMD64_) || defined(_ARM64_)
     // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
     // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
 

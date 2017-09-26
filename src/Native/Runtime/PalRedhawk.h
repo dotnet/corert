@@ -383,6 +383,10 @@ typedef struct _NEON128 {
     Int64 High;
 } NEON128, *PNEON128;
 
+#if !defined(GEN_REG_COUNT)
+#define GEN_REG_COUNT 29
+#endif
+
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Control flags.
@@ -393,35 +397,43 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     // Integer registers
     //
     UInt32 Cpsr;       // NZVF + DAIF + CurrentEL + SPSel
-    UInt64 X0;
-    UInt64 X1;
-    UInt64 X2;
-    UInt64 X3;
-    UInt64 X4;
-    UInt64 X5;
-    UInt64 X6;
-    UInt64 X7;
-    UInt64 X8;
-    UInt64 X9;
-    UInt64 X10;
-    UInt64 X11;
-    UInt64 X12;
-    UInt64 X13;
-    UInt64 X14;
-    UInt64 X15;
-    UInt64 X16;
-    UInt64 X17;
-    UInt64 X18;
-    UInt64 X19;
-    UInt64 X20;
-    UInt64 X21;
-    UInt64 X22;
-    UInt64 X23;
-    UInt64 X24;
-    UInt64 X25;
-    UInt64 X26;
-    UInt64 X27;
-    UInt64 X28;
+    union {
+        struct {
+            UInt64 X0;
+            UInt64 X1;
+            UInt64 X2;
+            UInt64 X3;
+            UInt64 X4;
+            UInt64 X5;
+            UInt64 X6;
+            UInt64 X7;
+            UInt64 X8;
+            UInt64 X9;
+            UInt64 X10;
+            UInt64 X11;
+            UInt64 X12;
+            UInt64 X13;
+            UInt64 X14;
+            UInt64 X15;
+            UInt64 X16;
+            UInt64 X17;
+            UInt64 X18;
+            UInt64 X19;
+            UInt64 X20;
+            UInt64 X21;
+            UInt64 X22;
+            UInt64 X23;
+            UInt64 X24;
+            UInt64 X25;
+            UInt64 X26;
+            UInt64 X27;
+            UInt64 X28;
+#pragma warning(push)
+#pragma warning(disable:4201) // nameless struct
+        };
+        UInt64 X[GEN_REG_COUNT];
+    };
+#pragma warning(pop)
     UInt64 Fp; // X29
     UInt64 Lr; // X30
     UInt64 Sp;

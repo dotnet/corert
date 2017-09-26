@@ -213,6 +213,7 @@ namespace Internal.TypeSystem
                     else
                         return new LayoutInt(8);
                 case TargetArchitecture.X64:
+                case TargetArchitecture.ARM64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
                     return new LayoutInt(4);

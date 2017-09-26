@@ -190,7 +190,13 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
 #elif defined(_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    for (int i = 0; i < GEN_REG_COUNT; ++i) {
+        pContext->X[i] = pPalContext->X[i];
+    }
+    pContext->Fp = pPalContext->FP;
+    pContext->Sp = pPalContext->SP;
+    pContext->Lr = pPalContext->LR;
+    pContext->Pc = pPalContext->IP;
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
@@ -284,7 +290,7 @@ EXTERN_C Int32 RhpPInvokeExceptionGuard()
 }
 #endif
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_)
+#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
 EXTERN_C REDHAWK_API void __fastcall RhpThrowHwEx();
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
