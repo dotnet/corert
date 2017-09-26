@@ -30,6 +30,13 @@ exit /b %ERRORLEVEL%
 echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 
+if "%__BuildArch%"=="wasm" (
+    goto :PrepareEmscripten
+) else (
+    goto :PrepareVs
+)
+
+:PrepareVs
 :: Set the environment for the native build
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
@@ -46,14 +53,23 @@ pushd "%__IntermediatesDir%"
 call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
 popd
 
-if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNative
+if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNativeVs
 echo Failed to generate native component build project!
 exit /b 1
 
-:BuildNative
+:PrepareEmscripten
+:: TODO: Add real wasm preparation
+goto :BuildNativeEmscripten
+
+:BuildNativeVs
 %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__IntermediatesDir%\install.vcxproj" %__ExtraMsBuildParams% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto AfterNativeBuild
 echo Native component build failed. Refer !__NativeBuildLog! for details.
+exit /b 1
+
+:BuildNativeEmscripten
+:: TODO: Add a real wasm build
+echo Wasm build is not currently implemented
 exit /b 1
 
 :AfterNativeBuild

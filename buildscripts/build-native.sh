@@ -16,6 +16,11 @@ check_native_prereqs()
 
     # Check for clang
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
+
+    # Check for additional prereqs for wasm build
+    if [ $__BuildArch == "wasm" ]; then
+        hash emcmake 2>/dev/null || { echo >&2 "Please install Emscripten before running this script"; exit 1; }
+    fi
 }
 
 prepare_native_build()
@@ -40,7 +45,14 @@ build_native_corert()
 
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType"
-    "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
+    if [ $__BuildArch == "wasm" ]; then
+        # TODO: Add a real wasm build
+        echo "Wasm build is not currently implemented"
+        popd > /dev/null
+        exit 1
+    else
+        "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
+    fi
 
     # Check that the makefiles were created.
 
