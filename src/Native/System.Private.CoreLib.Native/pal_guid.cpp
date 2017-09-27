@@ -20,13 +20,18 @@ typedef struct _GUID {
 extern "C" void CoreLibNative_CreateGuid(GUID* pGuid)
 {
 #if HAVE_LIBUUID_H
+#ifdef _WASM_
+    // For WASM, Emscripten does not implement uuid_generate_random, however uuid_generate can be used, as it still generates version 4 UUIDs.
+    uuid_generate(*(uuid_t*)pGuid);
+#else
     uuid_generate_random(*(uuid_t*)pGuid);
-
+    
     // Change the byte order of the Data1, 2 and 3, since the uuid_generate_random
     // generates them with big endian while GUIDS need to have them in little endian.
     pGuid->Data1 = SWAP32(pGuid->Data1);
     pGuid->Data2 = SWAP16(pGuid->Data2);
     pGuid->Data3 = SWAP16(pGuid->Data3);
+#endif // _WASM_
 #else
 #error Don't know how to generate UUID on this platform
 #endif
