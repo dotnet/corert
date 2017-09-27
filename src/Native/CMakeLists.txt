@@ -256,7 +256,11 @@ if(WIN32)
 endif()
 add_subdirectory(Runtime)
 add_subdirectory(Bootstrap)
-add_subdirectory(jitinterface)
+
+# We don't need jitinterface for WASM.
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+    add_subdirectory(jitinterface)
+endif(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 
 # We don't need the PAL on Windows.
 if(CLR_CMAKE_PLATFORM_UNIX)
