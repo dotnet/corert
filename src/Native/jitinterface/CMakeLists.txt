@@ -18,17 +18,10 @@ if(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-DFEATURE_REDHAWK)
 endif(WIN32 AND CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-    add_library(jitinterface
-        STATIC
-        ${NATIVE_SOURCES}
-    )
-else()
-    add_library(jitinterface
-        SHARED
-        ${NATIVE_SOURCES}
-    )
-endif()
+add_library(jitinterface
+    SHARED
+    ${NATIVE_SOURCES}
+)
 
 install (TARGETS jitinterface DESTINATION tools)
 if(WIN32)
