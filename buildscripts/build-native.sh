@@ -19,7 +19,8 @@ check_native_prereqs()
 
     # Check for additional prereqs for wasm build
     if [ $__BuildArch == "wasm" ]; then
-        hash emcmake 2>/dev/null || { echo >&2 "Please install Emscripten before running this script"; exit 1; }
+        hash emcmake 2>/dev/null || { echo >&2 "Please install Emscripten before running this script. See https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md for more information."; exit 1; }
+        if [ -z ${EMSCRIPTEN+x} ]; then echo "EMSCRIPTEN is not set. Ensure your have set up the Emscripten environment using \"source <emsdk_dir>/emsdk_env.sh\""; exit 1; fi
     fi
 }
 
@@ -45,14 +46,7 @@ build_native_corert()
 
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType"
-    if [ $__BuildArch == "wasm" ]; then
-        # TODO: Add a real wasm build
-        echo "Wasm build is not currently implemented"
-        popd > /dev/null
-        exit 1
-    else
-        "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
-    fi
+    "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
 
     # Check that the makefiles were created.
 
@@ -77,7 +71,11 @@ build_native_corert()
 
     echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
 
-    make install -j $NumProc $__UnprocessedBuildArgs
+    if [ $__BuildArch == "wasm" ]; then
+        emmake make install -j $NumProc $__UnprocessedBuildArgs
+    else
+        make install -j $NumProc $__UnprocessedBuildArgs
+    fi
     if [ $? != 0 ]; then
         echo "Failed to build corert native components."
         popd

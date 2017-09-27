@@ -83,10 +83,20 @@ if "%__BuildArch%"=="wasm" (
 )
 
 :CheckPrereqsEmscripten
-if defined EMSCRIPTEN goto Done
-echo Emscripten is a prerequisite to build for WebAssembly.
-echo See: https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md
-exit /b 1
+if not defined EMSCRIPTEN (
+    echo Emscripten is a prerequisite to build for WebAssembly.
+    echo See: https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md
+    exit /b 1
+)
+where make >nul 2>nul
+if %errorlevel%==1 (
+    echo GNU Make is a prerequisite to build for WebAssembly.
+    echo Please ensure GNU Make is installed and is added to your path, for example using:
+    echo   set PATH=%%PATH%%^;C:\Program Files ^(x86^)\GnuWin32\bin\
+    echo The installer for GNU Make is available from http://gnuwin32.sourceforge.net/packages/make.htm
+    exit /b 1
+)
+goto Done
 
 :CheckPrereqsVs
 :: Validate that PowerShell is accessibile.

@@ -31,9 +31,10 @@ echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__Buil
 echo.
 
 if "%__BuildArch%"=="wasm" (
-    goto :PrepareEmscripten
+    set __VSVersion=none
+    goto RegenerateBuildFiles
 ) else (
-    goto :PrepareVs
+    goto PrepareVs
 )
 
 :PrepareVs
@@ -48,18 +49,16 @@ if /i "%__VSVersion%" == "vs2017" (
     call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 )
 
-:: Regenerate the VS solution
+:: Regenerate the build files
+:RegenerateBuildFiles
 pushd "%__IntermediatesDir%"
-call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
+call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% %__BuildType%
 popd
 
 if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNativeVs
+if exist "%__IntermediatesDir%\Makefile" goto BuildNativeEmscripten
 echo Failed to generate native component build project!
 exit /b 1
-
-:PrepareEmscripten
-:: TODO: Add real wasm preparation
-goto :BuildNativeEmscripten
 
 :BuildNativeVs
 %_msbuildexe% /ConsoleLoggerParameters:ForceNoAlign "%__IntermediatesDir%\install.vcxproj" %__ExtraMsBuildParams% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
@@ -68,7 +67,9 @@ echo Native component build failed. Refer !__NativeBuildLog! for details.
 exit /b 1
 
 :BuildNativeEmscripten
-:: TODO: Add a real wasm build
+pushd "%__IntermediatesDir%"
+emmake make install
+popd
 echo Wasm build is not currently implemented
 exit /b 1
 
