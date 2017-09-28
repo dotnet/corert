@@ -939,6 +939,9 @@
   <data name="ArgumentOutOfRange_NegativeLength" xml:space="preserve">
     <value>Length cannot be less than zero.</value>
   </data>
+  <data name="ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize" xml:space="preserve">
+    <value>lohSize can't be greater than totalSize</value>
+  </data>
   <data name="ArgumentOutOfRange_OffsetLength" xml:space="preserve">
     <value>Offset and length must refer to a position in the string.</value>
   </data>
