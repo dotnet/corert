@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
+using System.Threading.Tasks;
 
 // TODO: Move these tests to CoreFX once they can be run on CoreRT
 
@@ -35,6 +37,32 @@ internal static class Runner
         // This test takes a long time to run in release and especially in debug builds. Enable for manual testing.
         //Console.WriteLine("    WaitSubsystemTests.MutexMaximumReacquireCountTest");
         //WaitSubsystemTests.MutexMaximumReacquireCountTest();
+
+        Console.WriteLine("    ThreadPoolTests.RunProcessorCountItemsInParallel");
+        ThreadPoolTests.RunProcessorCountItemsInParallel();
+
+        Console.WriteLine("    ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection");
+        ThreadPoolTests.RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection();
+
+        Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable");
+        ThreadPoolTests.ThreadPoolCanPickUpOneJobWhenThreadIsAvailable();
+
+        Console.WriteLine("    ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable");
+        ThreadPoolTests.ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable();
+
+        // This test takes a long time to run (min 42 seconds sleeping). Enable for manual testing.
+        // Console.WriteLine("    ThreadPoolTests.RunJobsAfterThreadTimeout");
+        // ThreadPoolTests.RunJobsAfterThreadTimeout();
+
+        Console.WriteLine("    ThreadPoolTests.WorkQueueDepletionTest");
+        ThreadPoolTests.WorkQueueDepletionTest();
+
+        Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
+        ThreadPoolTests.WorkerThreadStateReset();
+
+        // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
+        // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
+        // ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum();
 
         Console.WriteLine("    WaitThreadTests.SignalingRegisteredHandleCallsCalback");
         WaitThreadTests.SignalingRegisteredHandleCallsCalback();
@@ -806,6 +834,289 @@ internal static class WaitSubsystemTests
     }
 }
 
+internal static class ThreadPoolTests
+{
+    [Fact]
+    public static void RunProcessorCountItemsInParallel()
+    {
+        int count = 0;
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        e0.CheckedWait();
+        // Run the test again to make sure we can reuse the threads.
+        count = 0;
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        e0.CheckedWait();
+    }
+
+    [Fact]
+    public static void RunMoreThanMaxJobsMakesOneJobWaitForStarvationDetection()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        int count = 0;
+        AutoResetEvent e1 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    jobsQueued.Set();
+                }
+                e0.CheckedWait();
+            });
+        }
+        jobsQueued.CheckedWait();
+        ThreadPool.QueueUserWorkItem( _ => e1.Set());
+        Thread.Sleep(500); // Sleep for the gate thread delay to wait for starvation
+        e1.CheckedWait();
+        e0.Set();
+    }
+
+    [Fact]
+    public static void ThreadPoolCanPickUpOneJobWhenThreadIsAvailable()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.CheckedWait();
+            });
+        }
+        jobsQueued.CheckedWait();
+        ThreadPool.QueueUserWorkItem( _ => testJobCompleted.Set());
+        testJobCompleted.CheckedWait();
+        e0.Set();
+    }
+
+    [Fact]
+    public static void ThreadPoolCanPickUpMultipleJobsWhenThreadsAreAvailable()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.CheckedWait();
+            });
+        }
+        jobsQueued.CheckedWait();
+        int testJobsCount = 0;
+        int maxCount = 5;
+        void Job(object _)
+        {
+            if(Interlocked.Increment(ref testJobsCount) != maxCount)
+            {
+                ThreadPool.QueueUserWorkItem(Job);
+            }
+            else
+            {
+                testJobCompleted.Set();
+            }
+        }
+        ThreadPool.QueueUserWorkItem(Job);
+        testJobCompleted.CheckedWait();
+        e0.Set();
+    }
+
+    private static WaitCallback CreateRecursiveJob(int jobCount, int targetJobCount, AutoResetEvent testJobCompleted)
+    {
+        return _ =>
+        {
+            if (jobCount == targetJobCount)
+            {
+                testJobCompleted.Set();
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(CreateRecursiveJob(jobCount + 1, targetJobCount, testJobCompleted));
+            }
+        };
+    }
+
+    [Fact]
+    [OuterLoop]
+    public static void RunJobsAfterThreadTimeout()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        AutoResetEvent jobsQueued = new AutoResetEvent(false);
+        AutoResetEvent testJobCompleted = new AutoResetEvent(false);
+        int count = 0;
+
+        for(int i = 0; i < Environment.ProcessorCount - 1; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount - 1)
+                {
+                    jobsQueued.Set();
+                }
+                e0.CheckedWait();
+            });
+        }
+        jobsQueued.CheckedWait();
+        ThreadPool.QueueUserWorkItem( _ => testJobCompleted.Set());
+        testJobCompleted.CheckedWait();
+        Console.Write("Sleeping to time out thread\n");
+        Thread.Sleep(21000);
+        ThreadPool.QueueUserWorkItem( _ => testJobCompleted.Set());
+        testJobCompleted.CheckedWait();
+        e0.Set();
+        Console.Write("Sleeping to time out all threads\n");
+        Thread.Sleep(21000);
+        ThreadPool.QueueUserWorkItem( _ => testJobCompleted.Set());
+        testJobCompleted.CheckedWait();
+    }
+
+    [Fact]
+    public static void WorkQueueDepletionTest()
+    {
+        ManualResetEvent e0 = new ManualResetEvent(false);
+        int numLocalScheduled = 1;
+        int numGlobalScheduled = 1;
+        int numToSchedule = Environment.ProcessorCount * 64;
+        int numCompleted = 0;
+        object syncRoot = new object();
+        void ThreadLocalJob()
+        {
+            if(Interlocked.Increment(ref numLocalScheduled) <= numToSchedule)
+            {
+                Task.Factory.StartNew(ThreadLocalJob);
+            }
+            if(Interlocked.Increment(ref numLocalScheduled) <= numToSchedule)
+            {
+                Task.Factory.StartNew(ThreadLocalJob);
+            }
+            if (Interlocked.Increment(ref numCompleted) == numToSchedule * 2)
+            {
+                e0.Set();
+            }
+        }
+        void GlobalJob(object _)
+        {
+            if(Interlocked.Increment(ref numGlobalScheduled) <= numToSchedule)
+            {
+                ThreadPool.QueueUserWorkItem(GlobalJob);
+            }
+            if(Interlocked.Increment(ref numGlobalScheduled) <= numToSchedule)
+            {
+                ThreadPool.QueueUserWorkItem(GlobalJob);
+            }
+            if (Interlocked.Increment(ref numCompleted) == numToSchedule * 2)
+            {
+                e0.Set();
+            }
+        }
+        Task.Factory.StartNew(ThreadLocalJob);
+        ThreadPool.QueueUserWorkItem(GlobalJob);
+        e0.CheckedWait();
+    }
+
+    [Fact]
+    public static void WorkerThreadStateReset()
+    {
+        var cultureInfo = new CultureInfo("pt-BR");
+        var expectedCultureInfo = CultureInfo.CurrentCulture;
+        var expectedUICultureInfo = CultureInfo.CurrentUICulture;
+        int count = 0;
+        AutoResetEvent e0 = new AutoResetEvent(false);
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                CultureInfo.CurrentCulture = cultureInfo;
+                CultureInfo.CurrentUICulture = cultureInfo;
+                Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        e0.CheckedWait();
+        // Run the test again to make sure we can reuse the threads.
+        count = 0;
+        for(int i = 0; i < Environment.ProcessorCount; ++i)
+        {
+            ThreadPool.QueueUserWorkItem( _ => {
+                Assert.Equal(expectedCultureInfo, CultureInfo.CurrentCulture);
+                Assert.Equal(expectedUICultureInfo, CultureInfo.CurrentUICulture);
+                Assert.Equal(ThreadPriority.Normal, Thread.CurrentThread.Priority);
+                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
+                {
+                    e0.Set();
+                }
+            });
+        }
+        e0.CheckedWait();
+    }
+
+    [Fact]
+    public static void SettingMinThreadsWillCreateThreadsUpToMinimum()
+    {
+        ThreadPool.GetMinThreads(out int minThreads, out int unusedMin);
+        ThreadPool.GetMaxThreads(out int maxThreads, out int unusedMax);
+        try
+        {
+            ManualResetEvent e0 = new ManualResetEvent(false);
+            AutoResetEvent jobsQueued = new AutoResetEvent(false);
+            int count = 0;
+            ThreadPool.SetMaxThreads(minThreads, unusedMax);
+            for(int i = 0; i < minThreads + 1; ++i)
+            {
+                ThreadPool.QueueUserWorkItem( _ => {
+                    if(Interlocked.Increment(ref count) == minThreads + 1)
+                    {
+                        jobsQueued.Set();
+                    }
+                    e0.CheckedWait();
+                });
+            }
+            Assert.False(jobsQueued.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            Assert.True(ThreadPool.SetMaxThreads(minThreads + 1, unusedMax));
+            Assert.True(ThreadPool.SetMinThreads(minThreads + 1, unusedMin));
+
+            jobsQueued.CheckedWait();
+
+            e0.Set();
+        }
+        finally
+        {
+            ThreadPool.SetMinThreads(minThreads, unusedMin);
+            ThreadPool.SetMaxThreads(maxThreads, unusedMax);
+        }
+    }
+}
+
 internal static class WaitThreadTests
 {
     private const int WaitThreadTimeoutTimeMs = 20000;
@@ -909,7 +1220,7 @@ internal static class WaitThreadTests
         }, state, 0, true);
         e0.CheckedWait();
     }
-
+    
     [Fact]
     [OuterLoop]
     public static void WaitWithLongerTimeoutThanWaitThreadCanStillTimeout()
@@ -1017,10 +1328,9 @@ internal static class ThreadTestHelpers
     }
 }
 
-
-
 internal sealed class InvalidWaitHandle : WaitHandle
 {
+
 }
 
 internal sealed class Stopwatch
