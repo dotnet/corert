@@ -30,13 +30,6 @@ exit /b %ERRORLEVEL%
 echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 
-if "%__BuildArch%"=="wasm" (
-    set __VSVersion=none
-    goto RegenerateBuildFiles
-) else (
-    goto PrepareVs
-)
-
 :PrepareVs
 :: Set the environment for the native build
 set __VCBuildArch=x86_amd64
@@ -68,9 +61,9 @@ exit /b 1
 
 :BuildNativeEmscripten
 pushd "%__IntermediatesDir%"
-emmake make install
+nmake install
 popd
-echo Wasm build is not currently implemented
+IF NOT ERRORLEVEL 1 goto AfterNativeBuild
 exit /b 1
 
 :AfterNativeBuild
