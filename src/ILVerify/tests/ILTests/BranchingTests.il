@@ -607,7 +607,8 @@
             endfilter
         } 
         { 
-
+            pop
+            leave.s lbl_ret
         }
 
         lbl_ret: ret
