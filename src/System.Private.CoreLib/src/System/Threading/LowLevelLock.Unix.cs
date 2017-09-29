@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -12,12 +13,15 @@ namespace System.Threading
     /// 
     /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
     /// </summary>
+    [EagerStaticClassConstruction] // the lock is used during lazy class construction on Unix
     internal sealed class LowLevelLock : IDisposable
     {
         private const int LockedMask = 1;
         private const int WaiterCountIncrement = 2;
 
         private const int MaximumPreemptingAcquireDurationMilliseconds = 200;
+
+        private static readonly Func<LowLevelLock, bool> SpinWaitTryAcquireDelegate = SpinWaitTryAcquire;
 
         /// <summary>
         /// Layout:
@@ -36,8 +40,6 @@ namespace System.Threading
         /// </summary>
         private bool _isAnyWaitingThreadSignaled;
 
-        private FirstLevelSpinWaiter _spinWaiter;
-        private readonly Func<bool> _spinWaitTryAcquireCallback;
         private readonly LowLevelMonitor _monitor;
 
         public LowLevelLock()
@@ -46,9 +48,6 @@ namespace System.Threading
             _ownerThread = null;
 #endif
 
-            _spinWaiter = new FirstLevelSpinWaiter();
-            _spinWaiter.Initialize();
-            _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor = new LowLevelMonitor();
         }
 
@@ -144,7 +143,7 @@ namespace System.Threading
             return (state & LockedMask) == 0 && Interlocked.CompareExchange(ref _state, state + LockedMask, state) == state;
         }
 
-        private bool SpinWaitTryAcquireCallback() => TryAcquire_NoFastPath(_state);
+        private static bool SpinWaitTryAcquire(LowLevelLock obj) => obj.TryAcquire_NoFastPath(obj._state);
 
         public void Acquire()
         {
@@ -159,7 +158,7 @@ namespace System.Threading
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
-            if (_spinWaiter.SpinWaitForCondition(_spinWaitTryAcquireCallback))
+            if (FirstLevelSpinWaiter.SpinWaitForCondition(SpinWaitTryAcquireDelegate, this))
             {
                 Debug.Assert((_state & LockedMask) != 0);
                 SetOwnerThreadToCurrent();

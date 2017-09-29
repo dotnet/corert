@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 
 namespace System.Threading
@@ -14,65 +15,62 @@ namespace System.Threading
     /// 
     /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
     /// </summary>
-    internal struct FirstLevelSpinWaiter
+    [EagerStaticClassConstruction] // the spin waiter is used during lazy class construction on Unix
+    internal static class FirstLevelSpinWaiter
     {
         // TODO: Tune these values
         private const int SpinCount = 8;
         private const int SpinYieldThreshold = 4;
         private const int SpinSleep0Threshold = 6;
 
-        private static int s_processorCount;
+        private static readonly int ProcessorCount = Environment.ProcessorCount;
 
-        private int _spinningThreadCount;
+        private static int s_spinningThreadCount;
 
-        public void Initialize()
-        {
-            if (s_processorCount == 0)
-            {
-                s_processorCount = Environment.ProcessorCount;
-            }
-        }
-
-        public bool SpinWaitForCondition(Func<bool> condition)
+        public static bool SpinWaitForCondition<T>(Func<T, bool> condition, T obj)
         {
             Debug.Assert(condition != null);
-            Debug.Assert(s_processorCount > 0);
 
-            int processorCount = s_processorCount;
-            int spinningThreadCount = Interlocked.Increment(ref _spinningThreadCount);
+            Debug.Assert(SpinYieldThreshold > 0);
+            Debug.Assert(SpinYieldThreshold < SpinSleep0Threshold);
+            Debug.Assert(SpinSleep0Threshold < SpinCount);
+
+            Debug.Assert(ProcessorCount > 0);
+
+            int processorCount = ProcessorCount;
+            int spinningThreadCount = Interlocked.Increment(ref s_spinningThreadCount);
             try
             {
                 // Limit the maximum spinning thread count to the processor count to prevent unnecessary context switching
                 // caused by an excessive number of threads spin waiting, perhaps even slowing down the thread holding the
                 // resource being waited upon
-                if (spinningThreadCount <= processorCount)
+                if (spinningThreadCount > processorCount)
                 {
-                    // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting
-                    // prior to that threshold would not help other threads make progress
-                    for (int spinIndex = processorCount > 1 ? 0 : SpinYieldThreshold; spinIndex < SpinCount; ++spinIndex)
-                    {
-                        // The caller should check the condition in a fast path before calling this method, so wait first
-                        Wait(spinIndex);
+                    return false;
+                }
 
-                        if (condition())
-                        {
-                            return true;
-                        }
+                // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting
+                // prior to that threshold would not help other threads make progress
+                for (int spinIndex = processorCount > 1 ? 0 : SpinYieldThreshold; spinIndex < SpinCount; ++spinIndex)
+                {
+                    // The caller should check the condition in a fast path before calling this method, so wait first
+                    Wait(spinIndex);
+
+                    if (condition(obj))
+                    {
+                        return true;
                     }
                 }
+                return false;
             }
             finally
             {
-                Interlocked.Decrement(ref _spinningThreadCount);
+                Interlocked.Decrement(ref s_spinningThreadCount);
             }
-
-            return false;
         }
 
         private static void Wait(int spinIndex)
         {
-            Debug.Assert(SpinYieldThreshold < SpinSleep0Threshold);
-
             if (spinIndex < SpinYieldThreshold)
             {
                 RuntimeThread.SpinWait(1 << spinIndex);
