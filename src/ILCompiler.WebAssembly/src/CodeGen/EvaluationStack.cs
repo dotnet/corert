@@ -135,7 +135,11 @@ namespace Internal.IL
         /// <returns>Element formerly at the top of the stack</returns>
         public T Pop()
         {
-            Debug.Assert(_top > 0, "Stack is not empty");
+#if DEBUG // This should eventually be an assert, but while many opcodes are unimplemented, we can just throw to avoid
+            // killing the process
+            if(_top <= 0)
+                throw new Exception("Stack is not empty");
+#endif //DEBUG
             return _stack[--_top];
         }
 

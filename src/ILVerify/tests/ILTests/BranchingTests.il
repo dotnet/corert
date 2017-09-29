@@ -571,8 +571,7 @@
         lbl_ret: ret
     }
 
-    /* These tests currently yield an assert (see issue #4537), due to a non-null entry stack to a catch/finally block; uncomment once fixed
-    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry.BranchIntoFilter() cil managed
+    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry.BranchIntoHandler() cil managed
     {
         .maxstack 2
 
@@ -594,8 +593,27 @@
 
         lbl_ret: ret
     }
-    */
-    /*
+
+    .method static public hidebysig void Branching.FromTryIntoFilter_Invalid_BranchOutOfTry.BranchIntoFilter() cil managed
+    {
+        .try
+        {
+            br.s  lbl_filter
+        }
+        filter
+        {
+            lbl_filter: pop
+            ldc.i4.0
+            endfilter
+        } 
+        { 
+            pop
+            leave.s lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
     .method static public hidebysig void Branching.FromTryIntoFinally_Invalid_BranchOutOfTry.BranchIntoHandler() cil managed
     {
         .maxstack 2
@@ -617,7 +635,6 @@
 
         lbl_ret: ret
     }
-    */
 
     .method static public hidebysig void Branching.FromTryIntoOtherTryStart_Invalid_BranchOutOfTry() cil managed
     {

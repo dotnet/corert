@@ -23,6 +23,7 @@ struct JitInterfaceCallbacks
     void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     void* (__stdcall * resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
+    void* (__stdcall * getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
     void (__stdcall * expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
     bool (__stdcall * isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
@@ -296,6 +297,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass, ownerType);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getDefaultEqualityComparerClass(void* elemType)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getDefaultEqualityComparerClass(_thisHandle, &pException, elemType);
         if (pException != nullptr)
             throw pException;
         return _ret;

@@ -36,15 +36,6 @@ namespace System.Threading
                                 // If the queue runs out of work for us, we need to update the number of working workers to reflect that we are done working for now
                                 RemoveWorkingWorker();
                             }
-
-                            // Reset thread-local state that we control.
-                            if (currentThread.Priority != ThreadPriority.Normal)
-                            {
-                                currentThread.Priority = ThreadPriority.Normal;
-                            }
-
-                            CultureInfo.CurrentCulture = CultureInfo.InstalledUICulture;
-                            CultureInfo.CurrentUICulture = CultureInfo.InstalledUICulture;
                         }
                         else
                         {
