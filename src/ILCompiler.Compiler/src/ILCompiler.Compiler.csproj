@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -42,6 +42,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaSignatureEncoder.cs">
+      <Link>Ecma\EcmaSignatureEncoder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
