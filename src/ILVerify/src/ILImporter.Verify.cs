@@ -393,18 +393,28 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
-        void CheckIsValidBranchTarget(BasicBlock src, BasicBlock target)
+        bool IsValidBranchTarget(BasicBlock src, BasicBlock target, bool reportErrors = true)
         {
+            bool isValid = true;
+
             if (src.TryIndex != target.TryIndex)
             {
                 if (src.TryIndex == null)
                 {
                     // Branching to first instruction of try-block is valid
                     if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
-                        VerificationError(VerifierError.BranchIntoTry);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchIntoTry);
+                        isValid = false;
+                    }
                 }
                 else if (target.TryIndex == null)
-                    VerificationError(VerifierError.BranchOutOfTry);
+                {
+                    if (reportErrors)
+                        VerificationError(VerifierError.BranchOutOfTry);
+                    isValid = false;
+                }
                 else
                 {
                     ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
@@ -415,46 +425,88 @@ namespace Internal.IL
                     {
                         // Only branching to first instruction of try-block is valid
                         if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
-                            VerificationError(VerifierError.BranchIntoTry);
+                        {
+                            if (reportErrors)
+                                VerificationError(VerifierError.BranchIntoTry);
+                            isValid = false;
+                        }
                     }
                     else
-                        VerificationError(VerifierError.BranchOutOfTry);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchOutOfTry);
+                        isValid = false;
+                    }
                 }
             }
 
             if (src.FilterIndex != target.FilterIndex)
             {
                 if (src.FilterIndex == null)
-                    VerificationError(VerifierError.BranchIntoFilter);
+                {
+                    if (reportErrors)
+                        VerificationError(VerifierError.BranchIntoFilter);
+                    isValid = false;
+                }
                 else if (target.HandlerIndex == null)
-                    VerificationError(VerifierError.BranchOutOfFilter);
+                {
+                    if (reportErrors)
+                        VerificationError(VerifierError.BranchOutOfFilter);
+                    isValid = false;
+                }
                 else
                 {
                     ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
                     ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
-                        VerificationError(VerifierError.BranchIntoFilter);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchIntoFilter);
+                        isValid = false;
+                    }
                     else
-                        VerificationError(VerifierError.BranchOutOfFilter);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchOutOfFilter);
+                        isValid = false;
+                    }
                 }
             }
 
             if (src.HandlerIndex != target.HandlerIndex)
             {
                 if (src.HandlerIndex == null)
-                    VerificationError(VerifierError.BranchIntoHandler);
+                {
+                    if (reportErrors)
+                        VerificationError(VerifierError.BranchIntoHandler);
+                    isValid = false;
+                }
                 else if (target.HandlerIndex == null)
-                    VerificationError(VerifierError.BranchOutOfHandler);
+                {
+                    if (reportErrors)
+                        VerificationError(VerifierError.BranchOutOfHandler);
+                    isValid = false;
+                }
                 else
                 {
                     ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
                     ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
-                        VerificationError(VerifierError.BranchIntoHandler);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchIntoHandler);
+                        isValid = false;
+                    }
                     else
-                        VerificationError(VerifierError.BranchOutOfHandler);
+                    {
+                        if (reportErrors)
+                            VerificationError(VerifierError.BranchOutOfHandler);
+                        isValid = false;
+                    }
                 }
             }
+
+            return isValid;
         }
 
         /// <summary>
@@ -1210,6 +1262,9 @@ namespace Internal.IL
 
         void ImportFallthrough(BasicBlock next)
         {
+            if (!IsValidBranchTarget(_currentBasicBlock, next))
+                return;
+
             StackValue[] entryStack = next.EntryStack;
 
             if (entryStack != null)
@@ -1262,7 +1317,6 @@ namespace Internal.IL
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
-                CheckIsValidBranchTarget(_currentBasicBlock, target);
                 ImportFallthrough(target);
             }
 
@@ -1272,8 +1326,6 @@ namespace Internal.IL
 
         void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
-            CheckIsValidBranchTarget(_currentBasicBlock, target);
-
             switch (opcode)
             {
                 case ILOpcode.br:
