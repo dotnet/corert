@@ -946,6 +946,13 @@ namespace Internal.JitInterface
             }
         }
 
+        private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            // TODO: EqualityComparer optimizations
+            // https://github.com/dotnet/corert/issues/763
+            return null;
+        }
+
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             // Resolved token as a potentially RuntimeDetermined object.
