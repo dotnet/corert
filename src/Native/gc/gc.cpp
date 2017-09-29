@@ -15780,7 +15780,7 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     num_heaps = n_heaps;
 #endif // MULTIPLE_HEAPS
 
-    uint64_t total_allowed_soh_allocation = max_soh_allocated * num_heaps;
+    uint64_t total_allowed_soh_allocation = (uint64_t)max_soh_allocated * num_heaps;
     // [LOCALGC TODO]
     // In theory, the upper limit here is the physical memory of the machine, not
     // SIZE_T_MAX. This is not true today because total_physical_mem can be
@@ -15817,7 +15817,7 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
 
     if (allocation_no_gc_soh != 0)
     {
-        current_no_gc_region_info.soh_allocation_size = allocation_no_gc_soh;
+        current_no_gc_region_info.soh_allocation_size = (size_t)allocation_no_gc_soh;
         size_per_heap = current_no_gc_region_info.soh_allocation_size;
 #ifdef MULTIPLE_HEAPS
         size_per_heap /= n_heaps;
@@ -15833,7 +15833,7 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
 
     if (allocation_no_gc_loh != 0)
     {
-        current_no_gc_region_info.loh_allocation_size = allocation_no_gc_loh;
+        current_no_gc_region_info.loh_allocation_size = (size_t)allocation_no_gc_loh;
         size_per_heap = current_no_gc_region_info.loh_allocation_size;
 #ifdef MULTIPLE_HEAPS
         size_per_heap /= n_heaps;
