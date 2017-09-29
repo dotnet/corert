@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
-      <Version>$(CoreFxVersion)</Version>
+      <Version>$(CoreFxUapVersion)</Version>
     </PackageReference>
   </ItemGroup>
 

@@ -26,14 +26,6 @@
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
       <Version>$(CoreFxVersion)</Version>
     </PackageReference>
-
-    <!-- TODO: These packages should be comming via regular references -->
-    <PackageReference Include="System.Memory">
-      <Version>$(CoreFxVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(CoreFxVersion)</Version>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
