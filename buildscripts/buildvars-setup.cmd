@@ -26,6 +26,7 @@ if /i "%1" == "-help" goto Usage
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i "%1" == "x86"    (set __BuildArch=x86&&shift&goto Arg_Loop)
 if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
+if /i "%1" == "wasm"    (set __BuildOS=WebAssembly&&set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
@@ -71,11 +72,25 @@ if not exist "%__ObjDir%" md "%__ObjDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
 
-:CheckPrereqs
 :: Check prerequisites
 echo Checking pre-requisites...
 echo.
 
+if "%__BuildArch%"=="wasm" (
+    goto :CheckPrereqsEmscripten
+) else (
+    goto :CheckPrereqsVs
+)
+
+:CheckPrereqsEmscripten
+if not defined EMSCRIPTEN (
+    echo Emscripten is a prerequisite to build for WebAssembly.
+    echo See: https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md
+    exit /b 1
+)
+goto CheckPrereqsVs
+
+:CheckPrereqsVs
 :: Validate that PowerShell is accessibile.
 for %%X in (powershell.exe) do (set __PSDir=%%~$PATH:X)
 if defined __PSDir goto EvaluatePS
@@ -168,6 +183,7 @@ if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 set __NugetRuntimeId=win7-x64
 if /i "%__BuildArch%" == "x86" (set __NugetRuntimeId=win7-x86)
 
+:Done
 set BUILDVARS_DONE=1
 exit /b 0
 
@@ -181,7 +197,7 @@ echo.
 echo All arguments are optional. The options are:
 echo.
 echo./? -? /h -h /help -help: view this message.
-echo Build architecture: one of x64, x86, arm ^(default: x64^).
+echo Build architecture: one of x64, x86, arm, wasm ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo Visual Studio version: vs2015, vs2017 ^(defaults to highest detected^).
 echo clean: force a clean build ^(default is to perform an incremental build^).

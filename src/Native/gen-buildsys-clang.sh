@@ -113,12 +113,20 @@ if [[ -n "$CROSSCOMPILE" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
 fi
 
-cmake \
-  "-DCMAKE_AR=$llvm_ar" \
-  "-DCMAKE_LINKER=$llvm_link" \
-  "-DCMAKE_NM=$llvm_nm" \
-  "-DCMAKE_OBJDUMP=$llvm_objdump" \
-  "-DCMAKE_RANLIB=$llvm_ranlib" \
-  "-DCMAKE_BUILD_TYPE=$build_type" \
-  $cmake_extra_defines \
-  "$1/src/Native"
+if [ $build_arch == "wasm" ]; then
+    emcmake cmake \
+        "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" \
+        "-DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN/cmake/Modules/Platform/Emscripten.cmake" \
+        "-DCMAKE_BUILD_TYPE=$build_type" \
+        "$1/src/Native"
+else
+    cmake \
+        "-DCMAKE_AR=$llvm_ar" \
+        "-DCMAKE_LINKER=$llvm_link" \
+        "-DCMAKE_NM=$llvm_nm" \
+        "-DCMAKE_OBJDUMP=$llvm_objdump" \
+        "-DCMAKE_RANLIB=$llvm_ranlib" \
+        "-DCMAKE_BUILD_TYPE=$build_type" \
+        $cmake_extra_defines \
+        "$1/src/Native"
+fi

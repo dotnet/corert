@@ -6,7 +6,7 @@ usage()
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
-    echo "BuildArch can be: x64, x86, arm, arm64, armel"
+    echo "BuildArch can be: x64, x86, arm, arm64, armel, wasm"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -123,38 +123,6 @@ case $CPUName in
 esac
 export __HostArch=$__BuildArch
 
-# Use uname to determine what the OS is.
-export OSName=$(uname -s)
-case $OSName in
-    Darwin)
-        export __BuildOS=OSX
-        export __NugetRuntimeId=osx.10.10-x64
-        ulimit -n 2048
-        ;;
-
-    FreeBSD)
-        export __BuildOS=FreeBSD
-        # TODO: Add proper FreeBSD target
-        export __NugetRuntimeId=ubuntu.14.04-x64
-        ;;
-
-    Linux)
-        export __BuildOS=Linux
-        export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
-        ;;
-
-    NetBSD)
-        export __BuildOS=NetBSD
-        # TODO: Add proper NetBSD target
-        export __NugetRuntimeId=ubuntu.14.04-x64
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        export __BuildOS=Linux
-        export __NugetRuntimeId=ubuntu.14.04-x64
-        ;;
-esac
 export __BuildType=Debug
 
 export BUILDERRORLEVEL=0
@@ -195,6 +163,9 @@ while [ "$1" != "" ]; do
             ;;
         armel)
             export __BuildArch=armel
+            ;;
+        wasm)
+            export __BuildArch=wasm
             ;;
         debug)
             export __BuildType=Debug
@@ -244,6 +215,42 @@ while [ "$1" != "" ]; do
     shift
 done
 
+if [ $__BuildArch == "wasm" ]; then
+    export __BuildOS=WebAssembly
+else
+    # Use uname to determine what the OS is.
+    export OSName=$(uname -s)
+    case $OSName in
+        Darwin)
+            export __BuildOS=OSX
+            export __NugetRuntimeId=osx.10.10-x64
+            ulimit -n 2048
+            ;;
+
+        FreeBSD)
+            export __BuildOS=FreeBSD
+            # TODO: Add proper FreeBSD target
+            export __NugetRuntimeId=ubuntu.14.04-x64
+            ;;
+
+        Linux)
+            export __BuildOS=Linux
+            export __NugetRuntimeId=$(get_current_linux_rid)-$__HostArch
+            ;;
+
+        NetBSD)
+            export __BuildOS=NetBSD
+            # TODO: Add proper NetBSD target
+            export __NugetRuntimeId=ubuntu.14.04-x64
+            ;;
+
+        *)
+            echo "Unsupported OS $OSName detected, configuring as if for Linux"
+            export __BuildOS=Linux
+            export __NugetRuntimeId=ubuntu.14.04-x64
+            ;;
+    esac
+fi
 
 # If neither managed nor native are passed as arguments, default to building both
 
