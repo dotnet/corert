@@ -214,9 +214,8 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
-# We don't need the full runtime for WASM.
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+if(NOT CLR_CMAKE_PLATFORM_WASM)
   add_subdirectory(Full)
-endif(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+endif(NOT CLR_CMAKE_PLATFORM_WASM)
 
 add_subdirectory(Portable)

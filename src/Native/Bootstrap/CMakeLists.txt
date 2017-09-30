@@ -9,9 +9,8 @@ add_compile_options(-Wno-unused-private-field)
 add_compile_options(-Wno-tautological-undefined-compare)
 endif()
 
-# We don't need base for WASM.
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+if(NOT CLR_CMAKE_PLATFORM_WASM)
     add_subdirectory(base)
-endif(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+endif(NOT CLR_CMAKE_PLATFORM_WASM)
 
 add_subdirectory(cpp)
