@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -175,7 +175,9 @@ namespace System
         private unsafe int IndexOfCharArray(char[] anyOf, int startIndex, int count)
         {
             // use probabilistic map, see InitializeProbabilisticMap
-            uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
+            ProbabilisticMap map = default(ProbabilisticMap);
+            uint* charMap = (uint*)&map;
+
             InitializeProbabilisticMap(charMap, anyOf);
 
             return IndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
@@ -223,23 +225,14 @@ namespace System
         private static unsafe void InitializeProbabilisticMap(uint* charMap, char[] anyOf)
         {
             bool hasAscii = false;
-
-            charMap[0] = 0;
-            charMap[1] = 0;
-            charMap[2] = 0;
-            charMap[3] = 0;
-            charMap[4] = 0;
-            charMap[5] = 0;
-            charMap[6] = 0;
-            charMap[7] = 0;
-            Debug.Assert(PROBABILISTICMAP_SIZE == 0x8);
+            uint* charMapLocal = charMap; // https://github.com/dotnet/coreclr/issues/14264
 
             for (int i = 0; i < anyOf.Length; ++i)
             {
                 int c = anyOf[i];
 
                 // Map low bit
-                SetCharBit(charMap, (byte)c);
+                SetCharBit(charMapLocal, (byte)c);
 
                 // Map high bit
                 c >>= 8;
@@ -250,14 +243,14 @@ namespace System
                 }
                 else
                 {
-                    SetCharBit(charMap, (byte)c);
+                    SetCharBit(charMapLocal, (byte)c);
                 }
             }
 
             if (hasAscii)
             {
                 // Common to search for ASCII symbols. Just set the high value once.
-                charMap[0] |= 1u;
+                charMapLocal[0] |= 1u;
             }
         }
 
@@ -469,7 +462,9 @@ namespace System
         private unsafe int LastIndexOfCharArray(char[] anyOf, int startIndex, int count)
         {
             // use probabilistic map, see InitializeProbabilisticMap
-            uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
+            ProbabilisticMap map = default(ProbabilisticMap);
+            uint* charMap = (uint*)&map;
+
             InitializeProbabilisticMap(charMap, anyOf);
 
             return LastIndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
@@ -588,5 +583,8 @@ namespace System
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
+
+        [StructLayout(LayoutKind.Explicit, Size = PROBABILISTICMAP_SIZE * sizeof(uint))]
+        private struct ProbabilisticMap { }
     }
 }
