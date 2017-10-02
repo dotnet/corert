@@ -1444,7 +1444,6 @@ namespace Internal.IL
         void ImportAddressOfField(int token, bool isStatic)
         {
             var field = ResolveFieldToken(token);
-            var actualThis = Pop();
 
             if (isStatic)
             {
@@ -1457,6 +1456,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
+                var actualThis = Pop();
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1466,8 +1466,8 @@ namespace Internal.IL
                 CheckIsAssignable(actualThis, declaredThis);
             }
 
-            var isPermanentHome = isStatic || actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
+            var fieldStackValue = StackValue.CreateFromType(field.FieldType);
+            Push(StackValue.CreateByRef(field.FieldType, false, isStatic || fieldStackValue.Kind == StackValueKind.ObjRef));
         }
 
         void ImportStoreField(int token, bool isStatic)
