@@ -687,6 +687,7 @@ namespace Internal.IL
         void EndImportingInstruction()
         {
             CheckPendingPrefix(_pendingPrefix);
+            ClearPendingPrefix(_pendingPrefix); // Make sure prefix is cleared
         }
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
@@ -1208,7 +1209,10 @@ namespace Internal.IL
 
             if (declaredReturnType.IsVoid)
             {
-                Check(_stackTop == 0, VerifierError.ReturnVoid, _stack[_stackTop - 1]);
+                Debug.Assert(_stackTop >= 0);
+
+                if (_stackTop > 0)
+                    VerificationError(VerifierError.ReturnVoid, _stack[_stackTop - 1]);
             }
             else
             {
