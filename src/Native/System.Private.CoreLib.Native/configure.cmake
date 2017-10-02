@@ -6,10 +6,25 @@ check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_
 
 check_include_files(uuid/uuid.h HAVE_LIBUUID_H)
 
-set(CMAKE_REQUIRED_LIBRARIES uuid)
-check_function_exists(uuid_generate_random HAVE_UUID_GENERATE_RANDOM)
-check_function_exists(uuid_generate HAVE_UUID_GENERATE)
-set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_compiles("
+#include <uuid/uuid.h>
+int main()
+{
+#ifndef uuid_generate_random
+  int i = sizeof(&uuid_generate_random);
+#endif
+  return 0;
+}" HAVE_UUID_GENERATE_RANDOM)
+
+check_cxx_source_compiles("
+#include <uuid/uuid.h>
+int main()
+{
+#ifndef uuid_generate
+  int i = sizeof(&uuid_generate);
+#endif
+  return 0;
+}" HAVE_UUID_GENERATE)
 
 check_cxx_source_runs("
 #include <stdlib.h>
