@@ -120,6 +120,12 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 
 if defined VisualStudioVersion goto :RunVCVars
 
+:: TODO: Remove: Prefer VS2015 by default to workaround CI issue
+if not exist "%VS140COMNTOOLS%" goto TryVSWhere
+call "%VS140COMNTOOLS%\VsDevCmd.bat"
+goto :RunVCVars
+:TryVSWhere
+
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
   for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
