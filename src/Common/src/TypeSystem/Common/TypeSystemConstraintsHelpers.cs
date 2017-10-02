@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -36,9 +37,14 @@ namespace Internal.TypeSystem
                     return false;
             }
 
+            var instantiatedConstraints = GetInstantiatedConstraints(instantiationParam, typeInstantiation, methodInstantiation);
+
             foreach (var constraintType in genericParam.TypeConstraints)
             {
                 var instantiatedType = constraintType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (CanCastConstraint(instantiatedConstraints, instantiatedType))
+                    continue;
+
                 if (!instantiationParam.CanCastTo(instantiatedType))
                     return false;
             }
@@ -96,6 +102,33 @@ namespace Internal.TypeSystem
             // type did not satisfy special constraint in any way
             return false;
         }
+
+        private static List<TypeDesc> GetInstantiatedConstraints(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            var instantiatedConstraints = new List<TypeDesc>();
+
+            if (type.IsGenericParameter)
+            {
+                GenericParameterDesc genericParam = (GenericParameterDesc)type;
+
+                foreach (var constraint in genericParam.TypeConstraints)
+                    instantiatedConstraints.Add(constraint.InstantiateSignature(typeInstantiation, methodInstantiation));
+            }
+
+            return instantiatedConstraints;
+        }
+
+        private static bool CanCastConstraint(List<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
+        {
+            foreach (var instantiatedConstraint in instantiatedConstraints)
+            {
+                if (instantiatedConstraint.CanCastTo(instantiatedType))
+                    return true;
+            }
+
+            return false;
+        }
+
 
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
