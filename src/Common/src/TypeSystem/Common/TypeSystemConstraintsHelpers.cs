@@ -129,7 +129,6 @@ namespace Internal.TypeSystem
             return false;
         }
 
-
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
             foreach(var arg in instantiation)
