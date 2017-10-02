@@ -1106,12 +1106,10 @@ namespace Internal.IL
                     vstate->readonlyPrefix = false;
                     tiRetVal.SetIsReadonlyByRef();
                 }
-
-                if (tiRetVal.IsByRef())
-                {                
-                    tiRetVal.SetIsPermanentHomeByRef();
-                }
 #endif
+
+                if (returnValue.Kind == StackValueKind.ByRef)
+                    returnValue.SetIsPermanentHome();
 
                 Push(returnValue);
             }
@@ -1196,68 +1194,32 @@ namespace Internal.IL
 
         void ImportReturn()
         {
-
-
 #if false
     // 'this' must be init before return
     if (m_verTrackObjCtorInitState)
         Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
-
-    // review : already in verifyreturnflow
-    if (region)
-    {
-        switch (RgnGetRegionType(region))
-        {
-            case ReaderBaseNS::RGN_FILTER:
-                BADCODE(MVER_E_RET_FROM_FIL);
-                break;
-            case ReaderBaseNS::RGN_TRY:
-                BADCODE(MVER_E_RET_FROM_TRY);
-                break;
-            case ReaderBaseNS::RGN_FAULT:
-            case ReaderBaseNS::RGN_FINALLY:
-            case ReaderBaseNS::RGN_MEXCEPT:
-            case ReaderBaseNS::RGN_MCATCH:
-                BADCODE(MVER_E_RET_FROM_HND);
-                break;
-            case ReaderBaseNS::RGN_ROOT:
-                break;
-            default:
-                VASSERT(UNREACHED);
-                break;
-        }
-    }
-
-    m_jitInfo->getMethodSig(getCurrentMethodHandle(), &sig);
-
-    // Now get the return type and convert it to our format.
-    corType = sig.retType;
-
-    expectedStack = 0;
-    if (corType != CORINFO_TYPE_VOID)
-    {
-        Verify(vstate->stackLevel() > 0, MVER_E_RET_MISSING);
-        Verify(vstate->stackLevel() == 1, MVER_E_RET_EMPTY);
-
-        vertype tiVal = vstate->impStackTop(0);
-        vertype tiDeclared = verMakeTypeInfo(corType, sig.retTypeClass);
-
-        VerifyCompatibleWith(tiVal, tiDeclared.NormaliseForStack());
-        Verify((!verIsByRefLike(tiDeclared)) || verIsSafeToReturnByRef(tiVal), MVER_E_RET_PTR_TO_STACK);
-        expectedStack=1;
-    }
-    else
-    {
-        Verify(vstate->stackLevel() == 0, MVER_E_RET_VOID);
-    }
-
-    if (expectedStack == 1)
-        vstate->pop();
-    else
-        VASSERT(!expectedStack);
 #endif
+            // Check current region type
+            Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
+            Check(_currentBasicBlock.TryIndex == null, VerifierError.ReturnFromTry);
+            Check(_currentBasicBlock.HandlerIndex == null, VerifierError.ReturnFromHandler);
 
-            // TODO
+            var declaredReturnType = _method.Signature.ReturnType;
+
+            if (declaredReturnType.IsVoid)
+            {
+                Check(_stackTop == 0, VerifierError.ReturnVoid, _stack[_stackTop - 1]);
+            }
+            else
+            {
+                Check(_stackTop > 0, VerifierError.ReturnMissing);
+                Check(_stackTop == 1, VerifierError.ReturnEmpty);
+
+                var actualReturnType = Pop();
+                CheckIsAssignable(actualReturnType, StackValue.CreateFromType(declaredReturnType));
+
+                Check(!declaredReturnType.IsByRefLike || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+            }
         }
 
         void ImportFallthrough(BasicBlock next)
@@ -1478,6 +1440,7 @@ namespace Internal.IL
         void ImportAddressOfField(int token, bool isStatic)
         {
             var field = ResolveFieldToken(token);
+            var actualThis = Pop();
 
             if (isStatic)
             {
@@ -1490,7 +1453,6 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1500,7 +1462,8 @@ namespace Internal.IL
                 CheckIsAssignable(actualThis, declaredThis);
             }
 
-            Push(StackValue.CreateByRef(field.FieldType));
+            var isPermanentHome = isStatic || actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
+            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)
@@ -1762,7 +1725,8 @@ namespace Internal.IL
                 CheckIsPointerElementCompatibleWith(actualElementType, elementType);
             }
 
-            Push(StackValue.CreateByRef(elementType, HasPendingPrefix(Prefix.ReadOnly)));
+            // an array interior pointer is always on the heap, hence permanentHome = true
+            Push(StackValue.CreateByRef(elementType, HasPendingPrefix(Prefix.ReadOnly), true));
             ClearPendingPrefix(Prefix.ReadOnly);
         }
 
@@ -1814,7 +1778,7 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            var value = Pop();
+            CheckIsObjRef(Pop());
 
             if (opCode == ILOpcode.unbox_any)
             {
@@ -1824,7 +1788,8 @@ namespace Internal.IL
             {
                 Check(type.IsValueType, VerifierError.ValueTypeExpected);
 
-                Push(StackValue.CreateByRef(type ,true));
+                // We always come from an ObjRef, hence this is permanentHome
+                Push(StackValue.CreateByRef(type, true, true));
             }
         }
 

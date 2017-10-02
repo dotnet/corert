@@ -222,6 +222,27 @@
   <data name="Rethrow" xml:space="preserve">
     <value>Rethrow from outside a catch handler.</value>
   </data>
+  <data name="ReturnEmpty" xml:space="preserve">
+    <value>Stack must contain only the return value.</value>
+  </data>
+  <data name="ReturnFromFilter" xml:space="preserve">
+    <value>Return out of exception filter block.</value>
+  </data>
+  <data name="ReturnFromHandler" xml:space="preserve">
+    <value>Return out of exception handler block.</value>
+  </data>
+  <data name="ReturnFromTry" xml:space="preserve">
+    <value>Return out of try block.</value>
+  </data>
+  <data name="ReturnMissing" xml:space="preserve">
+    <value>Return value missing on the stack.</value>
+  </data>
+  <data name="ReturnPtrToStack" xml:space="preserve">
+    <value>Return type is ByRef, TypedReference, ArgHandle, or ArgIterator.</value>
+  </data>
+  <data name="ReturnVoid" xml:space="preserve">
+    <value>Stack must be empty on return from a void function.</value>
+  </data>
   <data name="StackByRef" xml:space="preserve">
     <value>Expected ByRef on the stack.</value>
   </data>
