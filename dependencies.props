@@ -4,7 +4,7 @@
     <ObjectWriterVersion>1.0.19-prerelease-00001</ObjectWriterVersion>
     <CoreFxVersion>4.5.0-preview1-25729-01</CoreFxVersion>
     <CoreFxUapVersion>4.6.0-preview1-25729-01</CoreFxUapVersion>
-    <MicrosoftNETCoreNativeVersion>2.0.0-beta-25021-03</MicrosoftNETCoreNativeVersion>
+    <MicrosoftNETCoreNativeVersion>2.1.0-preview1-25730-01</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion>2.0.0-preview2-25312-01</MicrosoftNETCoreAppPackageVersion>
     <XunitNetcoreExtensionsVersion>1.0.1-prerelease-01616-05</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
