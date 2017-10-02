@@ -272,6 +272,10 @@ namespace TypeSystemTests
                 // Type that implements a variant compatible interface
                 instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(arg3OfObject, _context.GetWellKnownType(WellKnownType.String));
                 Assert.True(instantiatedType.CheckConstraints());
+
+                // Instantiate type with own generic parameters
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(_complexGenericConstraint3Type.Instantiation[0], _complexGenericConstraint3Type.Instantiation[1]);
+                Assert.True(instantiatedType.CheckConstraints());
             }
 
             // MultipleConstraints
