@@ -16,7 +16,6 @@ namespace System
     {
         // WARNING: Don't allocate these on the heap, the "digits" property will return an unmanaged pointer
         // to an interior character array.
-        [System.Runtime.CompilerServices.IsByRefLike]
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct NumberBuffer
         {
