@@ -22,7 +22,7 @@
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
 
-  <Import Project="System.Private.Interop.shared.projitems" />
+  <Import Project="System.Private.Interop.Shared.projitems" />
   
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />

@@ -29,7 +29,7 @@
     <PackageReference Include="System.Private.CompilerServices.ICastable">
       <Version>1.0.0</Version>
     </PackageReference>
- </ItemGroup>
+  </ItemGroup>
  
   <ItemGroup>
     <Compile Include="InteropExtensions\DependencyReductionConditionallyDependentAttribute.cs" />
@@ -70,6 +70,6 @@
     <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
   </ItemGroup>
   
- <Import Project="System.Private.Interop.shared.projitems" />
+  <Import Project="System.Private.Interop.Shared.projitems" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
