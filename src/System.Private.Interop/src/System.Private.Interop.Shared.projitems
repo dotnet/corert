@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="System\__HResults.cs" />
+
+    <!-- TODO  We should not include anything from CompilerServices directly -->
+    <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IgnoresAccessChecksToAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\UnmanagedValueTypeConstraintAttribute.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
+
+    <Compile Include="Shared\ComCallableObject.cs" />
+    <Compile Include="Shared\ComInterop.cs" />
+    <Compile Include="Shared\Dictionary.cs" />
+    <Compile Include="Shared\DictionaryBase.cs" />
+    <Compile Include="Shared\FixedHashTable.cs" />
+    <Compile Include="Shared\GCEventProvider.cs" />
+    <Compile Include="Shared\HashSet.cs" />
+    <Compile Include="Shared\InternalModule.cs" />
+    <Compile Include="Shared\Interop.Manual.cs" />
+    <Compile Include="Shared\List.cs" />
+    <Compile Include="Shared\McgAccessorAttribute.cs" />
+    <Compile Include="Shared\McgComCallableAttribute.cs" />
+    <Compile Include="Shared\McgComHelpers.cs" />
+    <Compile Include="Shared\McgData.cs" />
+    <Compile Include="Shared\McgGeneratedAssemblyAttribute.cs" />
+    <Compile Include="Shared\McgGeneratedMarshallingCodeAttribute.cs" />
+    <Compile Include="Shared\McgHelpers.cs" />
+    <Compile Include="Shared\McgIntrinsics.cs" />
+    <Compile Include="Shared\McgMarshal.cs" />
+    <Compile Include="Shared\McgMethodNameAttribute.cs" />
+    <Compile Include="Shared\McgModule.cs" />
+    <Compile Include="Shared\McgModuleManager.cs" />
+    <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
+    <Compile Include="Shared\McgredirectedMethodAttribute.cs" />
+    <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />
+    <Compile Include="Shared\McgRemovedType.cs" />
+    <Compile Include="Shared\McgRootsTypeAttribute.cs" />
+    <Compile Include="Shared\McgTypeHelpers.cs" />
+    <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />
+    <Compile Include="Shared\RCWWalker.cs" />
+    <Compile Include="Shared\StandardInterfaces.cs" />
+    <Compile Include="Shared\StringPool.cs" />
+    <Compile Include="Shared\__ComObject.cs" />
+
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
+    </Compile>
+    <Compile Include="Interop\Interop.Memory.cs" />
+
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Interop\Interop.COM.Windows.cs" />
+    <Compile Include="Interop\Interop.Common.Windows.cs" />
+    <Compile Include="Interop\Interop.Localization.Windows.cs" />
+    <Compile Include="Interop\Interop.String.Windows.cs" />	
+  </ItemGroup>  
+
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Compile Include="Interop\Interop.Common.Unix.cs" />
+    <Compile Include="Interop\Interop.String.Unix.cs" />
+  </ItemGroup>  
+</Project>
