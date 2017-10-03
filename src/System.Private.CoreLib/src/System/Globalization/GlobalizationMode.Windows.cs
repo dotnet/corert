@@ -6,7 +6,11 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        private const string c_InvariantModeConfigSwitch = "System.Globalization.Invariant";
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
+        private static bool GetGlobalizationInvariantMode()
+        {
+            // CORERT-TODO: Enable System.Globalization.Invariant switch
+            // return CLRConfig.GetBoolValue(c_InvariantModeConfigSwitch);
+            return false;
+        }
     }
 }

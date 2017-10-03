@@ -123,11 +123,13 @@ namespace System
         [FieldOffset(12), NonSerialized]
         private uint umid;
 
-        /// <summary>
-        /// The low and mid fields combined in little-endian order
-        /// </summary>
-        [FieldOffset(8), NonSerialized]
-        private ulong ulomidLE;
+        // Constructs a zero Decimal.
+        //public Decimal() {
+        //    lo = 0;
+        //    mid = 0;
+        //    hi = 0;
+        //    flags = 0;
+        //}
 
         // Constructs a Decimal from an integer value.
         //
@@ -177,7 +179,8 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            Low64 = (ulong)value;
+            ulo = (uint)value_copy;
+            umid = (uint)(value_copy >> 32);
             uhi = 0;
         }
 
@@ -187,7 +190,8 @@ namespace System
         public Decimal(ulong value)
         {
             uflags = 0;
-            Low64 = value;
+            ulo = (uint)value;
+            umid = (uint)(value >> 32);
             uhi = 0;
         }
 
@@ -276,6 +280,10 @@ namespace System
         //
         public Decimal(int[] bits)
         {
+            lo = 0;
+            mid = 0;
+            hi = 0;
+            flags = 0;
             SetBits(bits);
         }
 
@@ -644,8 +652,9 @@ namespace System
         //
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
-            DecCalc.VarDecMul(ref d1, ref d2);
-            return d1;
+            Decimal decRes;
+            DecCalc.VarDecMul(ref d1, ref d2, out decRes);
+            return decRes;
         }
 
         // Returns the negated value of the given Decimal. If d is non-zero,
