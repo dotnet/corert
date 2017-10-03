@@ -1245,13 +1245,17 @@ namespace Internal.IL
             }
             else
             {
-                Check(_stackTop > 0, VerifierError.ReturnMissing);
-                Check(_stackTop == 1, VerifierError.ReturnEmpty);
+                if (_stackTop <= 0)
+                    VerificationError(VerifierError.ReturnMissing);
+                else
+                {
+                    Check(_stackTop == 1, VerifierError.ReturnEmpty);
 
-                var actualReturnType = Pop();
-                CheckIsAssignable(actualReturnType, StackValue.CreateFromType(declaredReturnType));
+                    var actualReturnType = Pop();
+                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(declaredReturnType));
 
-                Check(!declaredReturnType.IsByRefLike || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                    Check((!declaredReturnType.IsByRef && !declaredReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                }
             }
         }
 
@@ -1473,10 +1477,13 @@ namespace Internal.IL
         void ImportAddressOfField(int token, bool isStatic)
         {
             var field = ResolveFieldToken(token);
+            bool isPermanentHome = false;
 
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
+
+                isPermanentHome = true;
             }
             else
             {
@@ -1493,10 +1500,11 @@ namespace Internal.IL
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
+
+                isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
             }
 
-            var fieldStackValue = StackValue.CreateFromType(field.FieldType);
-            Push(StackValue.CreateByRef(field.FieldType, false, isStatic || fieldStackValue.Kind == StackValueKind.ObjRef));
+            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)
