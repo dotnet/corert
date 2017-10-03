@@ -57,6 +57,8 @@ namespace Internal.IL
         StackValue[] _stack = s_emptyStack;
         int _stackTop = 0;
 
+        bool _trackObjCtorState;
+
         class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -164,6 +166,8 @@ namespace Internal.IL
             _initLocals = _methodIL.IsInitLocals;
 
             _maxStack = _methodIL.MaxStack;
+
+            _trackObjCtorState = !_methodSignature.IsStatic && _method.IsConstructor && !method.OwningType.IsValueType;
 
             _ilBytes = _methodIL.GetILBytes();
             _locals = _methodIL.GetLocals();
@@ -798,6 +802,14 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() && x.IsThisPtr())
+                    x.SetUninitialisedObjRef();
+            }
+#endif
+
             Push(StackValue.CreateFromType(varType));
         }
 
@@ -806,6 +818,14 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             var value = Pop();
+
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
+                    Verify(!m_paramVerifyMap[num].IsThisPtr(), MVER_E_THIS_UNINIT_STORE); //"storing to uninit this ptr"
+            }
+#endif
 
             CheckIsAssignable(value, StackValue.CreateFromType(varType));
         }
@@ -816,6 +836,14 @@ namespace Internal.IL
 
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
+
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
+                    Verify(!tiRetVal.IsThisPtr(), MVER_E_THIS_UNINIT_STORE);
+            }
+#endif
 
             Push(StackValue.CreateByRef(varType));
         }
@@ -1196,10 +1224,11 @@ namespace Internal.IL
         void ImportReturn()
         {
 #if false
-    // 'this' must be init before return
-    if (m_verTrackObjCtorInitState)
-        Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
+            // 'this' must be init before return
+            if (_trackObjCtorState)
+                Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
 #endif
+
             // Check current region type
             Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
             Check(_currentBasicBlock.TryIndex == null, VerifierError.ReturnFromTry);
@@ -1560,6 +1589,18 @@ namespace Internal.IL
             var value = Pop();
 
             CheckIsObjRef(value);
+
+#if false
+            if (m_verTrackObjCtorInitState && !vstate->isThisInitialized())
+                Verify(!tiRetVal.IsThisPtr(), MVER_E_STACK_UNINIT);
+
+            while (vstate->stackLevel() > 0)
+            {
+                // vstate->pop();
+                // throw is not a return so we don't need to be initialized
+                vstate->popPossiblyUninit();
+            }
+#endif
         }
 
         void ImportLoadString(int token)
