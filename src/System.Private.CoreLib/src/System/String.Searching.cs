@@ -180,11 +180,6 @@ namespace System
 
             InitializeProbabilisticMap(charMap, anyOf);
 
-            return IndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
-        }
-
-        private unsafe int IndexOfCharArrayFilter(char[] anyOf, int startIndex, uint* charMap, int count)
-        {
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
@@ -467,11 +462,6 @@ namespace System
 
             InitializeProbabilisticMap(charMap, anyOf);
 
-            return LastIndexOfCharArrayFilter(anyOf, startIndex, charMap, count);
-        }
-
-        private unsafe int LastIndexOfCharArrayFilter(char[] anyOf, int startIndex, uint* charMap, int count)
-        {
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
