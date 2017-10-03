@@ -22,7 +22,7 @@ internal static class Program
 		if(tempInt == 9)
 		{
 			string s = "Hello from C#!";
-			PrintString(s, 14);
+			PrintString(s, s.Length);
 		}
 		
 		var not = Not(0xFFFFFFFF) == 0x00000000;

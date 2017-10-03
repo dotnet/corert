@@ -307,10 +307,22 @@ namespace Internal.IL
             if (argument)
             {
                 varBase = 0;
-                // todo: this is off by one for instance methods
+                if(!_method.Signature.IsStatic)
+                {
+                    varBase = 1;
+                }
+
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset);
-                valueType = GetLLVMTypeForTypeDesc(_method.Signature[index]);
-                type = _method.Signature[index];
+
+                if (!_method.Signature.IsStatic && index == 0)
+                {
+                    type = _method.OwningType;
+                }
+                else
+                {
+                    type = _method.Signature[index - varBase];
+                }
+                valueType = GetLLVMTypeForTypeDesc(type);
             }
             else
             {
@@ -498,10 +510,26 @@ namespace Internal.IL
 
         private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset)
         {
+            int thisSize = 0;
+            if (!_method.Signature.IsStatic)
+            {
+                thisSize = _method.OwningType.GetElementSize().AsInt;
+                if (index == 0)
+                {
+                    size = thisSize;
+                    offset = 0;
+                    return;
+                }
+                else
+                {
+                    index--;
+                }
+            }
+
             var argType = _method.Signature[index];
             size = argType.GetElementSize().AsInt;
 
-            offset = 0;
+            offset = thisSize;
             for (int i = 0; i < index; i++)
             {
                 offset += _method.Signature[i].GetElementSize().AsInt;
@@ -597,6 +625,11 @@ namespace Internal.IL
             {
                 throw new NotImplementedException();
             }
+            if(opcode == ILOpcode.callvirt && callee.IsAbstract)
+            {
+                throw new NotImplementedException();
+            }
+
             HandleCall(callee);
         }
 
@@ -1312,6 +1345,24 @@ namespace Internal.IL
 
         private void ImportLeave(BasicBlock target)
         {
+            for (int i = 0; i < _exceptionRegions.Length; i++)
+            {
+                var r = _exceptionRegions[i];
+
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Finally &&
+                    IsOffsetContained(_currentOffset - 1, r.ILRegion.TryOffset, r.ILRegion.TryLength) &&
+                    !IsOffsetContained(target.StartOffset, r.ILRegion.TryOffset, r.ILRegion.TryLength))
+                {
+                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                }
+            }
+
+            MarkBasicBlock(target);
+        }
+
+        private static bool IsOffsetContained(int offset, int start, int length)
+        {
+            return start <= offset && offset < start + length;
         }
 
         private void ImportNewArray(int token)
@@ -1437,6 +1488,11 @@ namespace Internal.IL
                 TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
             }
             LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
+        }
+
+        public override string ToString()
+        {
+            return _method.ToString();
         }
     }
 }

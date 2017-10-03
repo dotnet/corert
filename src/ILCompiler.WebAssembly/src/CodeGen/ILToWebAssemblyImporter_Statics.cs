@@ -31,7 +31,8 @@ namespace Internal.IL
 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                throw new NotImplementedException();
+                methodCodeNodeNeedingCode.CompilationCompleted = true;
+                //throw new NotImplementedException();
                 //CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
                 //return;
             }
@@ -49,7 +50,18 @@ namespace Internal.IL
             ILImporter ilImporter = null;
             try
             {
-                ilImporter = new ILImporter(compilation, method, methodIL, methodCodeNodeNeedingCode.GetMangledName(compilation.NameMangler));
+                string mangledName;
+                // TODO: We should have better detection for main or a way for native main to find out what managed main's name is
+                if(methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
+                {
+                    mangledName = "Main";
+                }
+                else
+                {
+                    mangledName = compilation.NameMangler.GetMangledMethodName(methodCodeNodeNeedingCode.Method).ToString();
+                }
+
+                ilImporter = new ILImporter(compilation, method, methodIL, mangledName);
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 
