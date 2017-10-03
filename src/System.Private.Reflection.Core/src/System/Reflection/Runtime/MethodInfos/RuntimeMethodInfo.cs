@@ -377,8 +377,16 @@ namespace System.Reflection.Runtime.MethodInfos
             MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
-            if (!IsAssignableFrom(executionEnvironment, invokeMethod.ReturnParameter.ParameterType, this.ReturnParameter.ParameterType))
+            Type expectedReturnType = ReturnParameter.ParameterType;
+            Type actualReturnType = invokeMethod.ReturnParameter.ParameterType;
+            if (!IsAssignableFrom(executionEnvironment, actualReturnType, expectedReturnType))
                 return null;
+            if (expectedReturnType.IsValueType && !actualReturnType.IsValueType)
+            {
+                // For value type returning methods, conversions between enums and primitives are allowed (and screened by the above call to IsAssignableFrom)
+                // but conversions to Object or interfaces implemented by the value type are not.
+                return null;
+            }
 
             IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
             IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
