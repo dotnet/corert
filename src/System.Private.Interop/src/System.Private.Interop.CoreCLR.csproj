@@ -49,17 +49,20 @@
     <Compile Include="InteropExtensions\PreInitializedAttribute.cs" />
     <Compile Include="InteropExtensions\PInvokeMarshal.cs" />
     <Compile Include="Interop\Interop.PlatformNotSupported.cs" />            
-    <Compile Include="Interop\Interop.WinRT.cs" />	
-    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgPInvokeData.cs">
       <Link>System\Runtime\InteropServices\McgPInvokeData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
       <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
     </Compile>
-  </ItemGroup> 
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'"> 
+    <Compile Include="Interop\Interop.WinRT.cs" />	
+    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
+    <Compile Include="System\Runtime\InteropServices\Variant.cs" />
+  </ItemGroup>
+  
   <ItemGroup>
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
