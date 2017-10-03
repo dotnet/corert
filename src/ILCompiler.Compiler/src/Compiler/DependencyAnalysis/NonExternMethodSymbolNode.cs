@@ -12,6 +12,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public static class ProjectNDependencyBehavior
+    {
+        // Temporary static variable to enable full analysis when using the ProjectN abi
+        // When full analysis is fully supported, remove this class and field forever.
+        public static bool EnableFullAnalysis = false;
+    }
+
     /// <summary>
     /// Represents a symbol that is defined externally but modeled as a method
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
@@ -94,10 +101,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // TODO Change this to
-                // return HasCompiledBody;
-                // when we fix up creation of NonExternMethodSymbolNode to be correctly handled
-                return true;
+                if (ProjectNDependencyBehavior.EnableFullAnalysis)
+                    return HasCompiledBody;
+                else
+                    return true;
             }
         }
 
