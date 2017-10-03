@@ -324,6 +324,7 @@ namespace TypeSystemTests
             }
         }
 
+#if false // https://github.com/dotnet/corert/issues/4665
         [Fact]
         public void TestInvalidByRefLikeTypes()
         {
@@ -337,5 +338,6 @@ namespace TypeSystemTests
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }
+#endif
     }
 }
