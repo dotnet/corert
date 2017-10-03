@@ -193,10 +193,10 @@
         .locals init (
             class [System.Runtime]System.Func`1<!T> V_0
         )
-        
-        ldarg.0
+
         ldloc.0
         callvirt  instance !0 class [System.Runtime]System.Func`1<!T>::Invoke()
+        pop
         ret
     }
 

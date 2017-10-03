@@ -27,6 +27,7 @@
         readonly. 
         ldelema    [System.Runtime]System.Int32
         call       instance string [System.Runtime]System.Int32::ToString()
+        pop
         ret
     }
 
@@ -43,6 +44,7 @@
         
         readonly. 
         ldelem    [System.Runtime]System.Int32
+        pop
         ret
     }
 
