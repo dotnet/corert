@@ -71,6 +71,10 @@ namespace System.Globalization
         [OptionalField(VersionAdded = 3)]
         private SortVersion m_SortVersion; // Do not rename (binary serialization)
 
+        // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
+        [NonSerialized]
+        private readonly bool _invariantMode = GlobalizationMode.Invariant;
+
         private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
         internal CompareInfo(CultureInfo culture)

@@ -205,6 +205,8 @@
     <Compile Include="System\Empty.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
+    <Compile Include="System\Globalization\GlobalizationMode.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Guid.CoreRT.cs" />
     <Compile Include="System\InvokeUtils.cs" />
