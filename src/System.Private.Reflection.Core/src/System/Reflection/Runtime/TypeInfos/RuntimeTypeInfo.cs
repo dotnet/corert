@@ -51,6 +51,8 @@ namespace System.Reflection.Runtime.TypeInfos
         protected abstract override bool IsByRefImpl();
         protected abstract override bool IsPointerImpl();
         public abstract override bool IsGenericParameter { get; }
+        public abstract override bool IsGenericTypeParameter { get; }
+        public abstract override bool IsGenericMethodParameter { get; }
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsByRefLike { get; }
 

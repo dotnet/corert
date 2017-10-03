@@ -39,6 +39,8 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override bool IsPointerImpl() => false;
         public sealed override bool IsConstructedGenericType => true;
         public sealed override bool IsGenericParameter => false;
+        public sealed override bool IsGenericTypeParameter => false;
+        public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool IsByRefLike => GenericTypeDefinitionTypeInfo.IsByRefLike;
 
         //
