@@ -23,6 +23,9 @@ namespace System.Reflection.Runtime.TypeInfos.EcmaFormat
             _declaringType = declaringType;
         }
 
+        public sealed override bool IsGenericTypeParameter => true;
+        public sealed override bool IsGenericMethodParameter => false;
+
         public sealed override MethodBase DeclaringMethod
         {
             get
