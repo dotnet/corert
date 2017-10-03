@@ -103,9 +103,9 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static List<TypeDesc> GetInstantiatedConstraints(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        private static ArrayBuilder<TypeDesc> GetInstantiatedConstraints(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            var instantiatedConstraints = new List<TypeDesc>();
+            var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
 
             if (type.IsGenericParameter)
             {
@@ -118,11 +118,11 @@ namespace Internal.TypeSystem
             return instantiatedConstraints;
         }
 
-        private static bool CanCastConstraint(List<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
+        private static bool CanCastConstraint(ArrayBuilder<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
         {
-            foreach (var instantiatedConstraint in instantiatedConstraints)
+            for (int i = 0; i < instantiatedConstraints.Count; ++i)
             {
-                if (instantiatedConstraint.CanCastTo(instantiatedType))
+                if (instantiatedConstraints[i].CanCastTo(instantiatedType))
                     return true;
             }
 
