@@ -135,18 +135,25 @@ namespace Internal.IL
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
-            _method = method;
             _typeSystemContext = method.Context;
 
+            // Instantiate method and its owning type
+            var instantiatedType = method.OwningType;
+            _method = method;
+            if (instantiatedType.HasInstantiation)
+            {
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
+                _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
+            }
+
+            if (_method.HasInstantiation)
+                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
+            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
+
+            // Determine this type
             if (!_method.Signature.IsStatic)
             {
-                if (_method.OwningType.HasInstantiation)
-                {
-                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
-                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
-                }
-                else
-                    _thisType = _method.OwningType;
+                _thisType = instantiatedType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
@@ -155,12 +162,7 @@ namespace Internal.IL
                     _thisType = _thisType.MakeByRefType();
             }
 
-            if (_method.HasInstantiation)
-                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
-
             _methodSignature = _method.Signature;
-            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
-
             _initLocals = _methodIL.IsInitLocals;
 
             _maxStack = _methodIL.MaxStack;

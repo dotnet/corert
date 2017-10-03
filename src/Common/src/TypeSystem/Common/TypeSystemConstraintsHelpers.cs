@@ -37,7 +37,8 @@ namespace Internal.TypeSystem
                     return false;
             }
 
-            var instantiatedConstraints = GetInstantiatedConstraints(instantiationParam, typeInstantiation, methodInstantiation);
+            var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
+            GetInstantiatedConstraintsRecursive(instantiationParam, typeInstantiation, methodInstantiation, ref instantiatedConstraints);
 
             foreach (var constraintType in genericParam.TypeConstraints)
             {
@@ -103,19 +104,33 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static ArrayBuilder<TypeDesc> GetInstantiatedConstraints(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        private static void GetInstantiatedConstraintsRecursive(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation, ref ArrayBuilder<TypeDesc> instantiatedConstraints)
         {
-            var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
+            if (!type.IsGenericParameter)
+                return;
 
-            if (type.IsGenericParameter)
+            GenericParameterDesc genericParam = (GenericParameterDesc)type;
+
+            foreach (var constraint in genericParam.TypeConstraints)
             {
-                GenericParameterDesc genericParam = (GenericParameterDesc)type;
+                var instantiatedType = constraint.InstantiateSignature(typeInstantiation, methodInstantiation);
 
-                foreach (var constraint in genericParam.TypeConstraints)
-                    instantiatedConstraints.Add(constraint.InstantiateSignature(typeInstantiation, methodInstantiation));
+                if (instantiatedType.IsGenericParameter)
+                {
+                    // Make sure it is save to call this method recursively
+                    if (!instantiatedConstraints.Contains(instantiatedType))
+                    {
+                        instantiatedConstraints.Add(instantiatedType);
+
+                        // Constraints of this constraint apply to 'genericParam' too
+                        GetInstantiatedConstraintsRecursive(instantiatedType, instantiatedType.Instantiation, default(Instantiation), ref instantiatedConstraints);
+                    }
+                }
+                else
+                {
+                    instantiatedConstraints.Add(instantiatedType);
+                }
             }
-
-            return instantiatedConstraints;
         }
 
         private static bool CanCastConstraint(ArrayBuilder<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
