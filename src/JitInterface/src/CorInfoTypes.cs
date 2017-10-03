@@ -1483,6 +1483,18 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
+
+        CORJIT_FLAG_USE_SSE3 = 43,
+        CORJIT_FLAG_USE_SSSE3 = 44,
+        CORJIT_FLAG_USE_SSE41 = 45,
+        CORJIT_FLAG_USE_SSE42 = 46,
+        CORJIT_FLAG_USE_AES = 47,
+        CORJIT_FLAG_USE_BMI1 = 48,
+        CORJIT_FLAG_USE_BMI2 = 49,
+        CORJIT_FLAG_USE_FMA = 50,
+        CORJIT_FLAG_USE_LZCNT = 51,
+        CORJIT_FLAG_USE_PCLMULQDQ = 52,
+        CORJIT_FLAG_USE_POPCNT = 53
     }
 
     public struct CORJIT_FLAGS

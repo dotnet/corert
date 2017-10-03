@@ -17,6 +17,13 @@
     <CLSCompliant Condition="'$(CLSCompliant)'==''">false</CLSCompliant>
   </PropertyGroup>
 
+  <!-- Set default references for netcoreapp2.0 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <!-- This tells VS that this is .NET Core app - uses .NET Core debugger, IntelliSense, etc. -->
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+  </PropertyGroup>
+
   <!-- Set default references for netstandard1.3 -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>

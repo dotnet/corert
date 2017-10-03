@@ -16,6 +16,12 @@ check_native_prereqs()
 
     # Check for clang
     hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
+
+    # Check for additional prereqs for wasm build
+    if [ $__BuildArch == "wasm" ]; then
+        hash emcmake 2>/dev/null || { echo >&2 "Please install Emscripten before running this script. See https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md for more information."; exit 1; }
+        if [ -z ${EMSCRIPTEN+x} ]; then echo "EMSCRIPTEN is not set. Ensure your have set up the Emscripten environment using \"source <emsdk_dir>/emsdk_env.sh\""; exit 1; fi
+    fi
 }
 
 prepare_native_build()
@@ -65,7 +71,11 @@ build_native_corert()
 
     echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
 
-    make install -j $NumProc $__UnprocessedBuildArgs
+    if [ $__BuildArch == "wasm" ]; then
+        emmake make install -j $NumProc $__UnprocessedBuildArgs
+    else
+        make install -j $NumProc $__UnprocessedBuildArgs
+    fi
     if [ $? != 0 ]; then
         echo "Failed to build corert native components."
         popd
