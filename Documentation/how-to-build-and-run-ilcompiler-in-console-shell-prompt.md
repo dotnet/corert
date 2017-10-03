@@ -17,7 +17,7 @@ This will result in the following:
 # Install .NET Core 2.0 SDK
 
 * Download .NET Core 2.0 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
-* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017' or 'VS2015 x64 Native Tools Command Prompt'
+* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017'
     (This is distinct from the 'Developer Command Prompt for VS 2017')
 
 You should now be able to use the `dotnet` commands of the CLI tools.
