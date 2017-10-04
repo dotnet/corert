@@ -8,6 +8,8 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
+    <!-- Don't warn if some dependencies were rolled forward -->
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.console.netcore">
