@@ -6,6 +6,8 @@ if [ "$BUILDVARS_DONE" != 1 ]; then
     . $scriptRoot/buildvars-setup.sh $*
 fi
 
+export __BuildArch
+
 # Prepare the system for building
 
 prepare_managed_build()
