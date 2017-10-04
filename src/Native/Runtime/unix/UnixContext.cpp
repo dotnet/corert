@@ -228,6 +228,7 @@ static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unw
 
 #undef ASSIGN_REG
 #undef ASSIGN_REG_PTR
+
 #endif // _ARM_
 }
 
@@ -325,6 +326,10 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     GET_CONTEXT_POINTER(UNW_AARCH64_X26, 26)	\
     GET_CONTEXT_POINTER(UNW_AARCH64_X27, 27)	\
     GET_CONTEXT_POINTER(UNW_AARCH64_X28, 28)
+#elif defined(_X86_)
+#define GET_CONTEXT_POINTERS                    \
+    GET_CONTEXT_POINTER(UNW_X86_EBP, Rbp)       \
+    GET_CONTEXT_POINTER(UNW_X86_EBX, Rbx)
 #else
 #error unsupported architecture
 #endif
@@ -361,9 +366,22 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
     ASSIGN_REG(R14, R14)     \
     ASSIGN_REG(R15, R15)
 
-#define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg) \
-    MCREG_Rdi(nativeContext->uc_mcontext) = arg0Reg;      \
+#define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg)    \
+    MCREG_Rdi(nativeContext->uc_mcontext) = arg0Reg;  \
     MCREG_Rsi(nativeContext->uc_mcontext) = arg1Reg;
+
+#elif defined(_X86_)
+#define ASSIGN_CONTROL_REGS \
+    ASSIGN_REG(Eip, IP)     \
+    ASSIGN_REG(Esp, Rsp)
+
+#define ASSIGN_INTEGER_REGS  \
+    ASSIGN_REG(Ebx, Rbx)     \
+    ASSIGN_REG(Ebp, Rbp)
+
+#define ASSIGN_TWO_ARGUMENT_REGS(arg0Reg, arg1Reg)    \
+    MCREG_Ecx(nativeContext->uc_mcontext) = arg0Reg;  \
+    MCREG_Edx(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(_ARM_)
 

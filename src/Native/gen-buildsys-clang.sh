@@ -127,6 +127,7 @@ else
         "-DCMAKE_OBJDUMP=$llvm_objdump" \
         "-DCMAKE_RANLIB=$llvm_ranlib" \
         "-DCMAKE_BUILD_TYPE=$build_type" \
+        "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
         $cmake_extra_defines \
         "$1/src/Native"
 fi

@@ -301,10 +301,12 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_RSI: regName = "RSI"; break;
                 case CSR_NUM_RDI: regName = "RDI"; break;
                 case CSR_NUM_RBP: regName = "RBP"; break;
+#ifdef _TARGET_AMD64_
                 case CSR_NUM_R12: regName = "R12"; break;
                 case CSR_NUM_R13: regName = "R13"; break;
                 case CSR_NUM_R14: regName = "R14"; break;
                 case CSR_NUM_R15: regName = "R15"; break;
+#endif // _TARGET_AMD64_
 #endif // _ARM_
                 }
                 gcPrintf("%02x          | 3  %s%s%s \n", b, regName, interior, pinned);

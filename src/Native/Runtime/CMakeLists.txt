@@ -42,7 +42,7 @@ set(COMMON_RUNTIME_SOURCES
     thread.cpp
     threadstore.cpp
     UniversalTransitionHelpers.cpp
-    
+
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp
     ../gc/gcwks.cpp
@@ -124,15 +124,15 @@ else()
     )
   endif()
 
+  set(ASM_SUFFIX S)
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
-    set(ASM_SUFFIX S)
   elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     set(ARCH_SOURCES_DIR arm64)
-    set(ASM_SUFFIX S)
   elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
-    set(ASM_SUFFIX S)
+  elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+    set(ARCH_SOURCES_DIR i386)
   endif()
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
@@ -148,7 +148,7 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}  
+  ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}

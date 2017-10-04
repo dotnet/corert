@@ -12,7 +12,6 @@
 #ifndef BITVECTOR_H
 #define BITVECTOR_H 1
 
-
 #ifndef LIMITED_METHOD_CONTRACT
 #define LIMITED_METHOD_CONTRACT
 #define UNDEF_LIMITED_METHOD_CONTRACT
@@ -60,8 +59,9 @@
 class BitVector {
     // Set this to be unsigned char to do testing, should be UINT_PTR for real life
 
-    typedef UINT_PTR ChunkType;  // The size of integer type that the machine can operate on directly  
-//  typedef BYTE ChunkType;      // Use for testing
+    typedef uint32_t BOOL;
+    typedef uintptr_t ChunkType;  // The size of integer type that the machine can operate on directly
+//  typedef BYTE ChunkType;       // Use for testing
 
     // Maximum number of bits in our bitvector
 #define MAX_PTRARG_OFS 1024
