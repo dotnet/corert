@@ -361,12 +361,12 @@ namespace ILCompiler
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen);
 
             useScanner &= !_noScanner;
 
             ILScanResults scanResults = null;
-            if (useScanner && !_isCppCodegen && !_isWasmCodegen)
+            if (useScanner)
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots);
