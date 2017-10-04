@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using Internal.TypeSystem;
 
 using Xunit;
@@ -17,6 +12,7 @@ namespace TypeSystemTests
     {
         TestTypeSystemContext _context;
         ModuleDesc _testModule;
+        ModuleDesc _ilTestModule;
 
         public InstanceFieldLayoutTests()
         {
@@ -25,6 +21,7 @@ namespace TypeSystemTests
             _context.SetSystemModule(systemModule);
 
             _testModule = systemModule;
+            _ilTestModule = _context.CreateModuleForSimpleName("ILTestAssembly");
         }
 
         [Fact]
@@ -324,20 +321,23 @@ namespace TypeSystemTests
             }
         }
 
-#if false // https://github.com/dotnet/corert/issues/4665
         [Fact]
         public void TestInvalidByRefLikeTypes()
         {
             {
-                DefType type = _testModule.GetType("IsByRefLike", "InvalidClass");
+                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidClass1");
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
 
             {
-                DefType type = _testModule.GetType("IsByRefLike", "InvalidStruct");
+                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidClass2");
+                Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
+            }
+
+            {
+                DefType type = _ilTestModule.GetType("IsByRefLike", "InvalidStruct");
                 Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
             }
         }
-#endif
     }
 }
