@@ -14,19 +14,12 @@ set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testresults.xml
 set CoreRT_TestName=*
 
-:: Default to highest Visual Studio version available
-set CoreRT_VSVersion=vs2015
-if defined VS150COMNTOOLS set CoreRT_VSVersion=vs2017
-
 :ArgLoop
 if "%1" == "" goto :ArgsDone
 if /i "%1" == "/?" goto :Usage
 if /i "%1" == "x64"    (set CoreRT_BuildArch=x64&&shift&goto ArgLoop)
 if /i "%1" == "x86"    (set CoreRT_BuildArch=x86&&shift&goto ArgLoop)
 if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
-
-if /i "%1" == "vs2017"   (set CoreRT_VSVersion=vs2017&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"   (set CoreRT_VSVersion=vs2015&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set CoreRT_BuildType=Debug&shift&goto ArgLoop)
 if /i "%1" == "release"  (set CoreRT_BuildType=Release&shift&goto ArgLoop)
@@ -110,12 +103,18 @@ if NOT "%CoreRT_MultiFileConfiguration%" == "" (
 
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
-:: VS2017 changed the location of vcvarsall.bat.
-if /i "%__VSVersion%" == "vs2017" (
-    call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_BuildArch%
-) else (
-    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
+if defined VisualStudioVersion goto :RunVCVars
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:RunVCVars
+
+call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_BuildArch%
 
 if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepo
 

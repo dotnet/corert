@@ -7,10 +7,8 @@ set __BuildType=Debug
 set __BuildOS=Windows_NT
 
 :: Default to highest Visual Studio version available
-set __VSVersion=vs2015
-
-if defined VS120COMNTOOLS set __VSVersion=vs2013
-if defined VS140COMNTOOLS set __VSVersion=vs2015
+set __VSVersion=vs2017
+set __VSProductVersion=150
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -47,9 +45,6 @@ if /i "%1" == "x86"                   (set __BuildArch=x86&set __MSBuildBuildArc
 if /i "%1" == "debug"                 (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"               (set __BuildType=Checked&shift&goto Arg_Loop)
-
-if /i "%1" == "vs2013"                (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"                (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&shift&shift&goto Arg_Loop)
@@ -96,31 +91,15 @@ if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinB
 
 if not exist %__LogsDir% md %__LogsDir%
 
-set __VSProductVersion=
-if /i "%__VSVersion%" == "vs2013" set __VSProductVersion=120
-if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
-
 :: Check presence of VS
 if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
 
-:: Does VS really exist?
-if not exist "%__VSToolsRoot%\..\IDE\devenv.exe"      goto NoVS
-if not exist "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" goto NoVS
-if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 
-if /i "%__VSVersion%" =="vs2015" goto MSBuild14
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-goto :CheckMSBuild14
-:MSBuild14
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-:CheckMSBuild14
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
+if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 :: Set the environment for the  build- VS cmd prompt
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
@@ -373,6 +352,6 @@ echo CORE_ROOT The path to the runtime
 exit /b 1
 
 :NoVS
-echo Visual Studio 2013+ ^(Community is free^) is a prerequisite to build this repository.
+echo Visual Studio 2017 ^(Community is free^) is a prerequisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
