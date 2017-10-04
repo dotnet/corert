@@ -9,9 +9,8 @@ namespace System
     // ByReference<T> is meant to be used to represent "ref T" fields. It is working
     // around lack of first class support for byref fields in C# and IL. The JIT and 
     // type loader have special handling for it that turns it into a thin wrapper around ref T.
-    [IsByRefLike]
     [System.Runtime.CompilerServices.DependencyReductionRoot] // TODO: put this in System.Private.ILToolchain contract instead
-    internal struct ByReference<T>
+    internal ref struct ByReference<T>
     {
         // CS0169: The private field '{blah}' is never used
 #pragma warning disable 169
