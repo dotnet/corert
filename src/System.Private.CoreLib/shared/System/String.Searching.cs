@@ -19,10 +19,9 @@ namespace System
             return (IndexOf(value, comparisonType) >= 0);
         }
 
-        // Returns the index of the first occurrence of value in the current instance.
+        // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
-
         public int IndexOf(char value)
         {
             return IndexOf(value, 0, this.Length);
@@ -78,7 +77,6 @@ namespace System
         // Returns the index of the first occurrence of any specified character in the current instance.
         // The search starts at startIndex and runs to startIndex + count - 1.
         //
-
         public int IndexOfAny(char[] anyOf)
         {
             return IndexOfAny(anyOf, 0, this.Length);
@@ -275,6 +273,11 @@ namespace System
             return IndexOf(value, StringComparison.CurrentCulture);
         }
 
+        public int IndexOf(String value, int startIndex)
+        {
+            return IndexOf(value, startIndex, StringComparison.CurrentCulture);
+        }
+
         public int IndexOf(String value, int startIndex, int count)
         {
             if (startIndex < 0 || startIndex > this.Length)
@@ -288,11 +291,6 @@ namespace System
             }
 
             return IndexOf(value, startIndex, count, StringComparison.CurrentCulture);
-        }
-
-        public int IndexOf(String value, int startIndex)
-        {
-            return IndexOf(value, startIndex, StringComparison.CurrentCulture);
         }
 
         public int IndexOf(String value, StringComparison comparisonType)
@@ -347,7 +345,6 @@ namespace System
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         //
-
         public int LastIndexOf(char value)
         {
             return LastIndexOf(value, this.Length - 1, this.Length);
@@ -409,14 +406,11 @@ namespace System
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         //
-
-        //ForceInline ... Jit can't recognize String.get_Length to determine that this is "fluff"
         public int LastIndexOfAny(char[] anyOf)
         {
             return LastIndexOfAny(anyOf, this.Length - 1, this.Length);
         }
 
-        //ForceInline ... Jit can't recognize String.get_Length to determine that this is "fluff"
         public int LastIndexOfAny(char[] anyOf, int startIndex)
         {
             return LastIndexOfAny(anyOf, startIndex, startIndex + 1);
@@ -541,13 +535,13 @@ namespace System
                     count--;
             }
 
-            // If we are looking for nothing, just return 0
-            if (value.Length == 0 && count >= 0 && startIndex - count + 1 >= 0)
-                return startIndex;
-
             // 2nd half of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+
+            // If we are looking for nothing, just return startIndex
+            if (value.Length == 0)
+                return startIndex;
 
             switch (comparisonType)
             {
@@ -564,7 +558,7 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count);
+                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.Ordinal);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return TextInfo.LastIndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
