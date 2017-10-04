@@ -157,16 +157,4 @@ namespace IsByRefLike
     {
         int X;
     }
-
-#if false // https://github.com/dotnet/corert/issues/4665
-    public ref class InvalidClass
-    {
-        ByReference<int> ByRef;
-    }
-
-    public struct InvalidStruct
-    {
-        ByRefLikeStruct ByRefLike;
-    }
-#endif
 }
