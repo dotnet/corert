@@ -333,10 +333,6 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.Ordinal);
 
                 case StringComparison.OrdinalIgnoreCase:
-#if CORECLR
-                    if (value.IsAscii() && this.IsAscii())
-                        return CultureInfo.InvariantCulture.CompareInfo.IndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
-#endif
                     return TextInfo.IndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
 
                 default:
@@ -562,13 +558,9 @@ namespace System
                     return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count);
+                    return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.Ordinal);
 
                 case StringComparison.OrdinalIgnoreCase:
-#if CORECLR
-                    if (value.IsAscii() && this.IsAscii())
-                        return CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, CompareOptions.IgnoreCase);
-#endif
                     return TextInfo.LastIndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
 
                 default:
