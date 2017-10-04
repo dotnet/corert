@@ -467,9 +467,8 @@ namespace System.Runtime
             InstructionFaultFlag = 0x10
         }
 
-        [IsByRefLike]
         [StructLayout(LayoutKind.Explicit)]
-        public struct ExInfo
+        public ref struct ExInfo
         {
             internal void Init(object exceptionObj, bool instructionFault = false)
             {
