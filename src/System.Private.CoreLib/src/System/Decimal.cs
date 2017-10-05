@@ -177,7 +177,7 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            Low64 = (ulong)value;
+            Low64 = (ulong)value_copy;
             uhi = 0;
         }
 
