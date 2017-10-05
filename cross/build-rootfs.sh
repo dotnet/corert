@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [LinuxCodeName]"
-    echo "BuildArch can be: arm(default), armel, arm64"
+    echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, jessie, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     exit 1
 }
@@ -43,6 +43,11 @@ for i in "$@"
             __UbuntuArch=armel
             __UbuntuRepo="http://ftp.debian.org/debian/"
             __LinuxCodeName=jessie
+            ;;
+        x86)
+            __BuildArch=x86
+            __UbuntuArch=i386
+            __UbuntuRepo="http://archive.ubuntu.com/ubuntu/"
             ;;
         lldb3.6)
             __LLDB_Package="lldb-3.6-dev"
