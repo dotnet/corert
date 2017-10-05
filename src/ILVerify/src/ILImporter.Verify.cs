@@ -1046,7 +1046,6 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            var ecmaType = method.OwningType as EcmaType;
             if (!method.OwningType.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
             else if (!method.CheckConstraints())
