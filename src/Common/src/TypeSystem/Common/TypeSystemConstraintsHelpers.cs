@@ -7,9 +7,30 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
+    public class InstantiationContext
+    {
+        public InstantiationContext(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            TypeInstantiation = typeInstantiation;
+            MethodInstantiation = methodInstantiation;
+        }
+
+        public Instantiation TypeInstantiation
+        {
+            get;
+            private set;
+        }
+
+        public Instantiation MethodInstantiation
+        {
+            get;
+            private set;
+        }
+    }
+
     public static class TypeSystemConstraintsHelpers
     {
-        private static bool VerifyGenericParamConstraint(Instantiation typeInstantiation, Instantiation methodInstantiation, GenericParameterDesc genericParam, TypeDesc instantiationParam)
+        private static bool VerifyGenericParamConstraint(InstantiationContext genericParamContext, GenericParameterDesc genericParam, InstantiationContext instantiationParamContext, TypeDesc instantiationParam)
         {
             GenericConstraints constraints = genericParam.Constraints;
 
@@ -38,11 +59,11 @@ namespace Internal.TypeSystem
             }
 
             var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
-            GetInstantiatedConstraintsRecursive(instantiationParam, typeInstantiation, methodInstantiation, ref instantiatedConstraints);
+            GetInstantiatedConstraintsRecursive(instantiationParamContext, instantiationParam, ref instantiatedConstraints);
 
             foreach (var constraintType in genericParam.TypeConstraints)
             {
-                var instantiatedType = constraintType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                var instantiatedType = constraintType.InstantiateSignature(genericParamContext.TypeInstantiation, genericParamContext.MethodInstantiation);
                 if (CanCastConstraint(instantiatedConstraints, instantiatedType))
                     continue;
 
@@ -104,16 +125,16 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static void GetInstantiatedConstraintsRecursive(TypeDesc type, Instantiation typeInstantiation, Instantiation methodInstantiation, ref ArrayBuilder<TypeDesc> instantiatedConstraints)
+        private static void GetInstantiatedConstraintsRecursive(InstantiationContext typeContext, TypeDesc type, ref ArrayBuilder<TypeDesc> instantiatedConstraints)
         {
-            if (!type.IsGenericParameter)
+            if (!type.IsGenericParameter || typeContext == null)
                 return;
 
             GenericParameterDesc genericParam = (GenericParameterDesc)type;
 
             foreach (var constraint in genericParam.TypeConstraints)
             {
-                var instantiatedType = constraint.InstantiateSignature(typeInstantiation, methodInstantiation);
+                var instantiatedType = constraint.InstantiateSignature(typeContext.TypeInstantiation, typeContext.MethodInstantiation);
 
                 if (instantiatedType.IsGenericParameter)
                 {
@@ -123,7 +144,7 @@ namespace Internal.TypeSystem
                         instantiatedConstraints.Add(instantiatedType);
 
                         // Constraints of this constraint apply to 'genericParam' too
-                        GetInstantiatedConstraintsRecursive(instantiatedType, instantiatedType.Instantiation, default(Instantiation), ref instantiatedConstraints);
+                        GetInstantiatedConstraintsRecursive(typeContext, instantiatedType, ref instantiatedConstraints);
                     }
                 }
                 else
@@ -160,7 +181,7 @@ namespace Internal.TypeSystem
             return true;
         }
 
-        public static bool CheckConstraints(this TypeDesc type)
+        public static bool CheckConstraints(this TypeDesc type, InstantiationContext context = null)
         {
             TypeDesc uninstantiatedType = type.GetTypeDefinition();
 
@@ -170,16 +191,16 @@ namespace Internal.TypeSystem
 
             for (int i = 0; i < uninstantiatedType.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(type.Instantiation, default(Instantiation), (GenericParameterDesc)uninstantiatedType.Instantiation[i], type.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(new InstantiationContext(type.Instantiation, default(Instantiation)), (GenericParameterDesc)uninstantiatedType.Instantiation[i], context, type.Instantiation[i]))
                     return false;
             }
 
             return true;
         }
 
-        public static bool CheckConstraints(this MethodDesc method)
+        public static bool CheckConstraints(this MethodDesc method, InstantiationContext context = null)
         {
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(context))
                 return false;
 
             // Non-generic methods always pass constraints check
@@ -189,7 +210,7 @@ namespace Internal.TypeSystem
             MethodDesc uninstantiatedMethod = method.GetMethodDefinition();
             for (int i = 0; i < uninstantiatedMethod.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(method.OwningType.Instantiation, method.Instantiation, (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], method.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(new InstantiationContext(method.OwningType.Instantiation, method.Instantiation), (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], context, method.Instantiation[i]))
                     return false;
             }
 

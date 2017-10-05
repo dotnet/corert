@@ -41,6 +41,7 @@ namespace Internal.IL
         readonly MethodDesc _method;
         readonly MethodSignature _methodSignature;
         readonly TypeSystemContext _typeSystemContext;
+        readonly InstantiationContext _instantiationContext;
 
         readonly TypeDesc _thisType;
 
@@ -149,6 +150,7 @@ namespace Internal.IL
             if (_method.HasInstantiation)
                 _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
             _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
+            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, _method.Instantiation);
 
             // Determine this type
             if (!_method.Signature.IsStatic)
@@ -1046,9 +1048,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
             // Access verifications
@@ -1164,9 +1166,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
 #if false
