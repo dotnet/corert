@@ -37,6 +37,16 @@ namespace Internal.TypeSystem
                     canonicalMethodResult = this;
                 }
 
+                // If the method instantiation is universal, we use a __UniversalCanon for all instantiation arguments for simplicity.
+                // This is to not end up having method instantiations like Foo<__UniversalCanon>.Method<int> or Foo<__UniversalCanon>.Method<string>
+                // or Foo<__UniversalCanon>.Method<__Canon> or Foo<int>.Method<__UniversalCanon>
+                // It should just be Foo<__UniversalCanon>.Method<__UniversalCanon>
+                if (canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Universal) &&
+                    canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Specific))
+                {
+                    canonicalMethodResult = (InstantiatedMethod)canonicalMethodResult.GetCanonMethodTarget(CanonicalFormKind.Universal);
+                }
+
                 SetCachedCanonValue(kind, canonicalMethodResult);
             }
             

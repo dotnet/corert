@@ -42,6 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
+            dependencyList.Add(((UtcNodeFactory)factory).TypeThreadStaticGCDescNode(_type), "GC Desc");
             return dependencyList;
         }
 

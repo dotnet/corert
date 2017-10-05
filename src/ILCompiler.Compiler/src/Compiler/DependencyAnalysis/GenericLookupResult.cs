@@ -283,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to an EEType where if the type is Nullable&lt;X&gt; the EEType is X
     /// </summary>
-    internal sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult
+    public sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult
     {
         private TypeDesc _type;
 
@@ -313,6 +313,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
+        public TypeDesc Type => _type;
         public override string ToString() => $"UnwrapNullable: {_type}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
@@ -604,7 +605,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a method dictionary.
     /// </summary>
-    internal sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
+    public sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
@@ -640,6 +641,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
+        public MethodDesc Method => _method;
         public override string ToString() => $"MethodDictionary: {_method}";
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
