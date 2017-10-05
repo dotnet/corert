@@ -275,7 +275,7 @@ namespace TypeSystemTests
 
                 // Instantiate type with own generic parameters
                 instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(_complexGenericConstraint3Type.Instantiation[0], _complexGenericConstraint3Type.Instantiation[1]);
-                Assert.True(instantiatedType.CheckConstraints());
+                Assert.True(instantiatedType.CheckConstraints(new InstantiationContext(instantiatedType.Instantiation, default(Instantiation))));
             }
 
             // MultipleConstraints
