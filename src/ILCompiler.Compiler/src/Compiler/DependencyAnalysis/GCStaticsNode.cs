@@ -69,6 +69,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (_preInitFieldInfos != null)
                     dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
             }
+            else
+            {
+                dependencyList.Add(((UtcNodeFactory)factory).TypeGCStaticDescSymbol(_type), "GC Desc");
+            }
 
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
             return dependencyList;
