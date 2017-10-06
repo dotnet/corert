@@ -80,8 +80,8 @@ namespace ILVerify
         PathStackDepth,         //"Stack depth differs depending on path."
         //E_THIS               "Instance variable (this) missing."
         //E_THIS_UNINIT_EXCEP  "Uninitialized this on entering a try block."
-        //E_THIS_UNINIT_STORE  "Store into this when it is uninitialized."
-        //E_THIS_UNINIT_RET    "Return from .ctor when this is uninitialized."
+        ThisUninitStore,        // Store into this when it is uninitialized.
+        ThisUninitReturn,       // Return from .ctor when this is uninitialized.
         //E_THIS_UNINIT_V_RET  "Return from .ctor before all fields are initialized."
         //E_THIS_UNINIT_BR     "Branch back when this is uninitialized."
         LdftnCtor,       //"ldftn/ldvirtftn not allowed on .ctor."
@@ -92,7 +92,7 @@ namespace ILVerify
         StackOverflow,                  // Stack overflow.
         StackUnderflow,                 // Stack underflow.
         //E_STACK_EMPTY        "Stack empty."
-        //E_STACK_UNINIT       "Uninitialized item on stack."
+        UninitStack,                    // Uninitialized item on stack.
         ExpectedIntegerType,            // Expected I, I4, or I8 on the stack.
         ExpectedFloatType,              // Expected R, R4, or R8 on the stack.
         //E_STACK_NO_R_I8      "unexpected R, R4, R8, or I8 on the stack."
@@ -156,7 +156,7 @@ namespace ILVerify
         //E_SIG_ELEM_PTR       "ELEMENT_TYPE_PTR cannot be verified."
         //E_SIG_VARARG         "Unexpected vararg."
         //E_SIG_VOID           "Unexpected Void."
-        //E_SIG_BYREF_BYREF    "ByRef of ByRef"
+        ByrefOfByref,                   // ByRef of ByRef.
         //E_CODE_SIZE_ZERO     "Code size is zero."
         //E_BAD_VARARG         "Unrecognized use of vararg."
         TailCall,                       // Missing call/callvirt/calli.
@@ -197,7 +197,7 @@ namespace ILVerify
         CallVirtOnStatic,       // callvirt on static.
         InitLocals,             // initlocals must be set for verifiable methods with one or more local variables.
         //E_BR_TO_EXCEPTION    "branch/leave to the beginning of a catch/filter handler"
-        //E_CALL_CTOR          "call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj." 
+        CallCtor,               // call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.
         
         ////@GENERICSVER: new generics related error messages
         ExpectedValClassObjRefVariable, // Value type, ObjRef type or variable type expected.
@@ -232,7 +232,7 @@ namespace ILVerify
         //E_BACKWARD_BRANCH          "Stack height at all points must be determinable in a single forward scan of IL."
         //E_CALL_TO_VTYPE_BASE       "Call to base type of valuetype."
         //E_NEWOBJ_OF_ABSTRACT_CLASS "Cannot construct an instance of abstract class."
-        //E_UNMANAGED_POINTER        "Unmanaged pointers are not a verifiable type."
+        UnmanagedPointer,                     // Unmanaged pointers are not a verifiable type.
         //E_LDFTN_NON_FINAL_VIRTUAL  "Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class."
         //E_FIELD_OVERLAP      "Accessing type with overlapping fields."
         //E_THIS_MISMATCH      "The 'this' parameter to the call must be the calling method's 'this' parameter."

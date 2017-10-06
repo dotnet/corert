@@ -106,6 +106,8 @@ namespace Internal.IL
             public int? HandlerIndex;
             public int? FilterIndex;
 
+            public bool IsThisInitialized = false;
+
             public int ErrorCount
             {
                 get;
@@ -128,11 +130,16 @@ namespace Internal.IL
             _stack[_stackTop++] = value;
         }
 
-        StackValue Pop()
+        StackValue Pop(bool allowUninitThis = false)
         {
             FatalCheck(_stackTop > 0, VerifierError.StackUnderflow);
 
-            return _stack[--_stackTop];
+            var stackValue = _stack[--_stackTop];
+
+            if (!allowUninitThis)
+                Check(!_trackObjCtorState || !stackValue.IsThisPtr || _currentBasicBlock.IsThisInitialized, VerifierError.UninitStack, stackValue);
+
+            return stackValue;
         }
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
@@ -609,6 +616,12 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackObjRef, value);
         }
 
+        private void CheckIsNotUnmanaged(TypeDesc type)
+        {
+            if (type.IsPointer)
+                VerificationError(VerifierError.UnmanagedPointer);
+        }
+
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
         {
             if (!IsBinaryComparable(a, b, op))
@@ -802,15 +815,13 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() && x.IsThisPtr())
-                    x.SetUninitialisedObjRef();
-            }
-#endif
+            CheckIsNotUnmanaged(varType);
 
-            Push(StackValue.CreateFromType(varType));
+            var stackValue = StackValue.CreateFromType(varType);
+            if (index == 0 && argument)
+                stackValue.SetIsThisPtr();
+
+            Push(stackValue);
         }
 
         void ImportStoreVar(int index, bool argument)
@@ -819,13 +830,8 @@ namespace Internal.IL
 
             var value = Pop();
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
-                    Verify(!m_paramVerifyMap[num].IsThisPtr(), MVER_E_THIS_UNINIT_STORE); //"storing to uninit this ptr"
-            }
-#endif
+            if (_trackObjCtorState && !_currentBasicBlock.IsThisInitialized)
+                Check(index != 0 || !argument, VerifierError.ThisUninitStore);
 
             CheckIsAssignable(value, StackValue.CreateFromType(varType));
         }
@@ -837,15 +843,17 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
-                    Verify(!tiRetVal.IsThisPtr(), MVER_E_THIS_UNINIT_STORE);
-            }
-#endif
+            Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
-            Push(StackValue.CreateByRef(varType));
+            var stackValue = StackValue.CreateByRef(varType);
+            if (index == 0 && argument)
+            {
+                stackValue.SetIsThisPtr();
+
+                Check(!_trackObjCtorState || _currentBasicBlock.IsThisInitialized, VerifierError.ThisUninitStore);
+            }
+
+            Push(stackValue);
         }
 
         void ImportDup()
@@ -858,7 +866,7 @@ namespace Internal.IL
 
         void ImportPop()
         {
-            Pop();
+            Pop(true);
         }
 
         void ImportJmp(int token)
@@ -962,7 +970,7 @@ namespace Internal.IL
             {
                 for (int i = sig.Length - 1; i >= 0; i--)
                 {
-                    var actual = Pop();
+                    var actual = Pop(true);
                     var declared = StackValue.CreateFromType(sig[i]);
 
                     CheckIsAssignable(actual, declared);
@@ -984,32 +992,20 @@ namespace Internal.IL
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
 
-#if false
-                // If this is a call to the base class .ctor, set thisPtr Init for
-                // this block.
-                if (mflags & CORINFO_FLG_CONSTRUCTOR)
+                // If this is a call to the base class .ctor, set thisPtr Init for this block.
+                if (method.IsConstructor)
                 {
-                    if (m_verTrackObjCtorInitState && tiThis.IsThisPtr()
-                        && verIsCallToInitThisPtr(getCurrentMethodClass(), methodClassHnd))
+                    if (_trackObjCtorState && actualThis.IsThisPtr &&
+                        (methodType == _thisType || methodType == _thisType.BaseType)) // Call to overloaded ctor or base ctor
                     {
-                        // do not allow double init
-                        Verify(vstate->thisInitialized == THISUNINIT
-                               || vstate->thisInitialized == THISEHREACHED, MVER_E_PATH_THIS);
-
-                        vstate->containsCtorCall = 1;
-                        vstate->setThisInitialized();
-                        vstate->thisInitializedThisBlock = true;
-                        tiThis.SetInitialisedObjRef();
+                        _currentBasicBlock.IsThisInitialized = true;
                     }
                     else
                     {
-                        // We allow direct calls to value type constructors
-                        // NB: we have to check that the contents of tiThis is a value type, otherwise we could use a constrained
-                        // callvirt to illegally re-enter a .ctor on a value of reference type.
-                        VerifyAndReportFound(tiThis.IsByRef() && DereferenceByRef(tiThis).IsValueClass(), tiThis, MVER_E_CALL_CTOR);
+                        // Allow direct calls to value type constructors
+                        Check(actualThis.Kind == StackValueKind.ByRef && actualThis.Type.IsValueType, VerifierError.CallCtor);
                     }
                 }
-#endif
 
                 if (constrained != null)
                 {
@@ -1223,11 +1219,9 @@ namespace Internal.IL
 
         void ImportReturn()
         {
-#if false
             // 'this' must be init before return
             if (_trackObjCtorState)
-                Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
-#endif
+                Check(_currentBasicBlock.IsThisInitialized, VerifierError.ThisUninitReturn);
 
             // Check current region type
             Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
@@ -1261,9 +1255,26 @@ namespace Internal.IL
 
         void ImportFallthrough(BasicBlock next)
         {
-            if (!IsValidBranchTarget(_currentBasicBlock, next))
+            if (!IsValidBranchTarget(_currentBasicBlock, next) || _currentBasicBlock.ErrorCount > 0)
                 return;
 
+            // Propagate 'this' state
+            if (next.State == BasicBlock.ImportState.Unmarked)
+                next.IsThisInitialized = _currentBasicBlock.IsThisInitialized;
+            else
+            {
+                if (next.IsThisInitialized && !_currentBasicBlock.IsThisInitialized)
+                {
+                    // Next block has 'this' initialized, but current has not 
+                    // therefore next block must be reverified with 'this' uninitialized
+                    if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
+                        next.State = BasicBlock.ImportState.Unmarked;
+                }
+
+                next.IsThisInitialized = next.IsThisInitialized && _currentBasicBlock.IsThisInitialized;
+            }
+
+            // Propagate stack across block bounds
             StackValue[] entryStack = next.EntryStack;
 
             if (entryStack != null)
@@ -1598,17 +1609,10 @@ namespace Internal.IL
 
             CheckIsObjRef(value);
 
-#if false
-            if (m_verTrackObjCtorInitState && !vstate->isThisInitialized())
-                Verify(!tiRetVal.IsThisPtr(), MVER_E_STACK_UNINIT);
+            if (_trackObjCtorState && !_currentBasicBlock.IsThisInitialized)
+                Check(!value.IsThisPtr, VerifierError.UninitStack);
 
-            while (vstate->stackLevel() > 0)
-            {
-                // vstate->pop();
-                // throw is not a return so we don't need to be initialized
-                vstate->popPossiblyUninit();
-            }
-#endif
+            EmptyTheStack();
         }
 
         void ImportLoadString(int token)
