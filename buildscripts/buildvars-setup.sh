@@ -99,29 +99,28 @@ fi
 
 case $CPUName in
     i686)
-        export __BuildArch=x86
+        export __HostArch=x86
         ;;
 
     x86_64)
-        export __BuildArch=x64
+        export __HostArch=x64
         ;;
 
     armv7l)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        export __BuildArch=arm
+        export __HostArch=arm
         ;;
 
     aarch64)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        export __BuildArch=arm64
+        export __HostArch=arm64
         ;;
 
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        export __BuildArch=x64
+        export __HostArch=x64
         ;;
 esac
-export __HostArch=$__BuildArch
 
 export __BuildType=Debug
 
@@ -135,6 +134,7 @@ export __ClangMajorVersion=3
 export __ClangMinorVersion=9
 export __CrossBuild=0
 
+__BuildArch=$__HostArch
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -150,22 +150,22 @@ while [ "$1" != "" ]; do
             export __buildnative=true
             ;;
         x86)
-            export __BuildArch=x86
+            __BuildArch=x86
             ;;
         x64)
-            export __BuildArch=x64
+            __BuildArch=x64
             ;;
         arm)
-            export __BuildArch=arm
+            __BuildArch=arm
             ;;
         arm64)
-            export __BuildArch=arm64
+            __BuildArch=arm64
             ;;
         armel)
-            export __BuildArch=armel
+            __BuildArch=armel
             ;;
         wasm)
-            export __BuildArch=wasm
+            __BuildArch=wasm
             ;;
         debug)
             export __BuildType=Debug
@@ -214,6 +214,8 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+export $__BuildArch
 
 if [ $__BuildArch == "wasm" ]; then
     export __BuildOS=WebAssembly

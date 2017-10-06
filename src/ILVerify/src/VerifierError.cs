@@ -70,9 +70,9 @@ namespace ILVerify
         BranchOutOfHandler,     //"Branch out of exception handler block."
         BranchOutOfFilter,      //"Branch out of exception filter block."
         //E_BR_OUTOF_FIN       "Branch out of finally block."
-        //E_RET_FROM_TRY       "Return out of try block."
-        //E_RET_FROM_HND       "Return out of exception handler block."
-        //E_RET_FROM_FIL       "Return out of exception filter block."
+        ReturnFromTry,          //"Return out of try block."
+        ReturnFromHandler,      //"Return out of exception handler block."
+        ReturnFromFilter,       //"Return out of exception filter block."
         //E_BAD_JMP_TARGET     "jmp / exception into the middle of an instruction."
         //E_PATH_LOC           "Non-compatible types depending on path."
         //E_PATH_THIS          "Init state for this differs depending on path."
@@ -118,10 +118,10 @@ namespace ILVerify
         //  E_TOKEN_TYPE_SIG     "Expected signature token."
         Unverifiable,                   // Instruction can not be verified.
         StringOperand,                  // Operand does not point to a valid string ref.
-        //E_RET_PTR_TO_STACK   "Return type is ByRef, TypedReference, ArgHandle, or ArgIterator."
-        //E_RET_VOID           "Stack must be empty on return from a void function."
-        //E_RET_MISSING        "Return value missing on the stack."
-        //E_RET_EMPTY          "Stack must contain only the return value."
+        ReturnPtrToStack,               // Return type is ByRef, TypedReference, ArgHandle, or ArgIterator.
+        ReturnVoid,                     // Stack must be empty on return from a void function.
+        ReturnMissing,                  // Return value missing on the stack.
+        ReturnEmpty,                    // Stack must contain only the return value.
         //E_RET_UNINIT         "Return uninitialized data."
         //E_ARRAY_ACCESS       "Illegal array access."
         //E_ARRAY_V_STORE      "Store non Object type into Object array."

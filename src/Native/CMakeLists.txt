@@ -22,11 +22,11 @@ function(clr_unknown_arch)
     if (WIN32)
         message(FATAL_ERROR "Only AMD64 and I386 are supported")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and ARMEL are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM, ARMEL and I386 are supported")
     endif()
 endfunction()
 
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
+if (CLR_CMAKE_TARGET_ARCH STREQUAL x64 OR CLR_CMAKE_TARGET_ARCH STREQUAL arm64)
     set(IS_64BIT_BUILD 1)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
     add_definitions(-DBIT32=1)
@@ -60,12 +60,14 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
-    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+    if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)
         set(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 1)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm)
         set(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM 1)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm64)
         set(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM64 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL x86)
+        set(CLR_CMAKE_PLATFORM_UNIX_TARGET_I386 1)
     else()
         clr_unknown_arch()
     endif()
@@ -99,10 +101,15 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-null-arithmetic)
     add_compile_options(-Wno-null-conversion)
 
-    if (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
+    if (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 OR CLR_CMAKE_PLATFORM_UNIX_TARGET_I386)
         # Allow 16 byte compare-exchange
         add_compile_options(-mcx16)
+    endif()
+
+    if (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
         add_definitions(-DUNIX_AMD64_ABI)
+    elseif (CLR_CMAKE_PLATFORM_UNIX_TARGET_I386)
+        add_definitions(-DUNIX_X86_ABI)
     endif()
 
     # Disable strict warning on unused functions.
@@ -122,7 +129,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     endif(CLR_CMAKE_PLATFORM_DARWIN)
 
     if(CLR_CMAKE_PLATFORM_LINUX)
-        set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")  
+        set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
     endif(CLR_CMAKE_PLATFORM_LINUX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
@@ -132,6 +139,8 @@ elseif(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM64)
     set(CLR_CMAKE_PLATFORM_ARCH_ARM64 1)
 elseif(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
     set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
+elseif(CLR_CMAKE_PLATFORM_UNIX_TARGET_I386)
+    set(CLR_CMAKE_PLATFORM_ARCH_I386 1)
 elseif(WIN32)
     if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
         set(CLR_CMAKE_PLATFORM_ARCH_AMD64 1)
@@ -161,7 +170,7 @@ function(get_compile_definitions DefinitionName)
 
     foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
         if (${DEFINITION} MATCHES "^\\$<\\$<CONFIG:([^>]+)>:([^>]+)>$")
-            # The entries that contain generator expressions must have the -D inside of the 
+            # The entries that contain generator expressions must have the -D inside of the
             # expression. So we transform e.g. $<$<CONFIG:Debug>:_DEBUG> to $<$<CONFIG:Debug>:-D_DEBUG>
             set(DEFINITION "$<$<CONFIG:${CMAKE_MATCH_1}>:-D${CMAKE_MATCH_2}>")
         else()
@@ -189,8 +198,8 @@ else()
 endif()
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
-# to form absolute paths. 
-# The parameters after the RetSources are the input files. 
+# to form absolute paths.
+# The parameters after the RetSources are the input files.
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
     foreach(Source IN LISTS Sources)
@@ -222,6 +231,10 @@ elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
 else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_compile_options(-m32)
+    link_libraries(-m32)
+endif()
 endif (WIN32)
 
 include(configure.cmake)

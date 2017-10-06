@@ -12,6 +12,7 @@
     <Compile Include="Main.il" />
 
     <Compile Include="ILDisassembler.il" />
+    <Compile Include="InstanceFieldLayout.il" />
     <Compile Include="StaticFieldLayout.il" />
     <Compile Include="VirtualFunctionOverride.il" />
   </ItemGroup>

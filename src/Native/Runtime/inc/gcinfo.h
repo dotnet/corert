@@ -361,10 +361,12 @@ enum CalleeSavedRegNum
     CSR_NUM_RSI = 0x01,
     CSR_NUM_RDI = 0x02,
     CSR_NUM_RBP = 0x03,
+#ifdef _TARGET_AMD64_
     CSR_NUM_R12 = 0x04,
     CSR_NUM_R13 = 0x05,
     CSR_NUM_R14 = 0x06,
     CSR_NUM_R15 = 0x07,
+#endif // _TARGET_AMD64_
 };
 
 enum CalleeSavedRegMask
@@ -393,10 +395,12 @@ enum ScratchRegNum
     SR_NUM_RAX = 0x00,
     SR_NUM_RCX = 0x01,
     SR_NUM_RDX = 0x02,
+#ifdef _TARGET_AMD64_
     SR_NUM_R8  = 0x03,
     SR_NUM_R9  = 0x04,
     SR_NUM_R10 = 0x05,
     SR_NUM_R11 = 0x06,
+#endif // _TARGET_AMD64_
 };
 
 enum ScratchRegMask

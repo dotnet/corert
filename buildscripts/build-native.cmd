@@ -35,12 +35,7 @@ echo.
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 
-:: VS2017 changed the location of vcvarsall.bat.
-if /i "%__VSVersion%" == "vs2017" (
-    call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
-) else (
-    call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-)
+call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 
 :: Regenerate the build files
 :RegenerateBuildFiles

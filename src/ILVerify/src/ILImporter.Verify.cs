@@ -57,6 +57,8 @@ namespace Internal.IL
         StackValue[] _stack = s_emptyStack;
         int _stackTop = 0;
 
+        bool _trackObjCtorState;
+
         class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -164,6 +166,8 @@ namespace Internal.IL
             _initLocals = _methodIL.IsInitLocals;
 
             _maxStack = _methodIL.MaxStack;
+
+            _trackObjCtorState = !_methodSignature.IsStatic && _method.IsConstructor && !method.OwningType.IsValueType;
 
             _ilBytes = _methodIL.GetILBytes();
             _locals = _methodIL.GetLocals();
@@ -687,6 +691,7 @@ namespace Internal.IL
         void EndImportingInstruction()
         {
             CheckPendingPrefix(_pendingPrefix);
+            ClearPendingPrefix(_pendingPrefix); // Make sure prefix is cleared
         }
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
@@ -797,6 +802,14 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() && x.IsThisPtr())
+                    x.SetUninitialisedObjRef();
+            }
+#endif
+
             Push(StackValue.CreateFromType(varType));
         }
 
@@ -805,6 +818,14 @@ namespace Internal.IL
             var varType = GetVarType(index, argument);
 
             var value = Pop();
+
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
+                    Verify(!m_paramVerifyMap[num].IsThisPtr(), MVER_E_THIS_UNINIT_STORE); //"storing to uninit this ptr"
+            }
+#endif
 
             CheckIsAssignable(value, StackValue.CreateFromType(varType));
         }
@@ -815,6 +836,14 @@ namespace Internal.IL
 
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
+
+#if false
+            if (argument)
+            {
+                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
+                    Verify(!tiRetVal.IsThisPtr(), MVER_E_THIS_UNINIT_STORE);
+            }
+#endif
 
             Push(StackValue.CreateByRef(varType));
         }
@@ -1106,12 +1135,10 @@ namespace Internal.IL
                     vstate->readonlyPrefix = false;
                     tiRetVal.SetIsReadonlyByRef();
                 }
-
-                if (tiRetVal.IsByRef())
-                {                
-                    tiRetVal.SetIsPermanentHomeByRef();
-                }
 #endif
+
+                if (returnValue.Kind == StackValueKind.ByRef)
+                    returnValue.SetIsPermanentHome();
 
                 Push(returnValue);
             }
@@ -1196,68 +1223,40 @@ namespace Internal.IL
 
         void ImportReturn()
         {
-
-
 #if false
-    // 'this' must be init before return
-    if (m_verTrackObjCtorInitState)
-        Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
-
-    // review : already in verifyreturnflow
-    if (region)
-    {
-        switch (RgnGetRegionType(region))
-        {
-            case ReaderBaseNS::RGN_FILTER:
-                BADCODE(MVER_E_RET_FROM_FIL);
-                break;
-            case ReaderBaseNS::RGN_TRY:
-                BADCODE(MVER_E_RET_FROM_TRY);
-                break;
-            case ReaderBaseNS::RGN_FAULT:
-            case ReaderBaseNS::RGN_FINALLY:
-            case ReaderBaseNS::RGN_MEXCEPT:
-            case ReaderBaseNS::RGN_MCATCH:
-                BADCODE(MVER_E_RET_FROM_HND);
-                break;
-            case ReaderBaseNS::RGN_ROOT:
-                break;
-            default:
-                VASSERT(UNREACHED);
-                break;
-        }
-    }
-
-    m_jitInfo->getMethodSig(getCurrentMethodHandle(), &sig);
-
-    // Now get the return type and convert it to our format.
-    corType = sig.retType;
-
-    expectedStack = 0;
-    if (corType != CORINFO_TYPE_VOID)
-    {
-        Verify(vstate->stackLevel() > 0, MVER_E_RET_MISSING);
-        Verify(vstate->stackLevel() == 1, MVER_E_RET_EMPTY);
-
-        vertype tiVal = vstate->impStackTop(0);
-        vertype tiDeclared = verMakeTypeInfo(corType, sig.retTypeClass);
-
-        VerifyCompatibleWith(tiVal, tiDeclared.NormaliseForStack());
-        Verify((!verIsByRefLike(tiDeclared)) || verIsSafeToReturnByRef(tiVal), MVER_E_RET_PTR_TO_STACK);
-        expectedStack=1;
-    }
-    else
-    {
-        Verify(vstate->stackLevel() == 0, MVER_E_RET_VOID);
-    }
-
-    if (expectedStack == 1)
-        vstate->pop();
-    else
-        VASSERT(!expectedStack);
+            // 'this' must be init before return
+            if (_trackObjCtorState)
+                Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
 #endif
 
-            // TODO
+            // Check current region type
+            Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
+            Check(_currentBasicBlock.TryIndex == null, VerifierError.ReturnFromTry);
+            Check(_currentBasicBlock.HandlerIndex == null, VerifierError.ReturnFromHandler);
+
+            var declaredReturnType = _method.Signature.ReturnType;
+
+            if (declaredReturnType.IsVoid)
+            {
+                Debug.Assert(_stackTop >= 0);
+
+                if (_stackTop > 0)
+                    VerificationError(VerifierError.ReturnVoid, _stack[_stackTop - 1]);
+            }
+            else
+            {
+                if (_stackTop <= 0)
+                    VerificationError(VerifierError.ReturnMissing);
+                else
+                {
+                    Check(_stackTop == 1, VerifierError.ReturnEmpty);
+
+                    var actualReturnType = Pop();
+                    CheckIsAssignable(actualReturnType, StackValue.CreateFromType(declaredReturnType));
+
+                    Check((!declaredReturnType.IsByRef && !declaredReturnType.IsByRefLike) || actualReturnType.IsPermanentHome, VerifierError.ReturnPtrToStack);
+                }
+            }
         }
 
         void ImportFallthrough(BasicBlock next)
@@ -1478,10 +1477,13 @@ namespace Internal.IL
         void ImportAddressOfField(int token, bool isStatic)
         {
             var field = ResolveFieldToken(token);
+            bool isPermanentHome = false;
 
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
+
+                isPermanentHome = true;
             }
             else
             {
@@ -1498,9 +1500,11 @@ namespace Internal.IL
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
+
+                isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
             }
 
-            Push(StackValue.CreateByRef(field.FieldType));
+            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)
@@ -1593,6 +1597,18 @@ namespace Internal.IL
             var value = Pop();
 
             CheckIsObjRef(value);
+
+#if false
+            if (m_verTrackObjCtorInitState && !vstate->isThisInitialized())
+                Verify(!tiRetVal.IsThisPtr(), MVER_E_STACK_UNINIT);
+
+            while (vstate->stackLevel() > 0)
+            {
+                // vstate->pop();
+                // throw is not a return so we don't need to be initialized
+                vstate->popPossiblyUninit();
+            }
+#endif
         }
 
         void ImportLoadString(int token)
@@ -1762,7 +1778,8 @@ namespace Internal.IL
                 CheckIsPointerElementCompatibleWith(actualElementType, elementType);
             }
 
-            Push(StackValue.CreateByRef(elementType, HasPendingPrefix(Prefix.ReadOnly)));
+            // an array interior pointer is always on the heap, hence permanentHome = true
+            Push(StackValue.CreateByRef(elementType, HasPendingPrefix(Prefix.ReadOnly), true));
             ClearPendingPrefix(Prefix.ReadOnly);
         }
 
@@ -1814,7 +1831,7 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            var value = Pop();
+            CheckIsObjRef(Pop());
 
             if (opCode == ILOpcode.unbox_any)
             {
@@ -1824,7 +1841,8 @@ namespace Internal.IL
             {
                 Check(type.IsValueType, VerifierError.ValueTypeExpected);
 
-                Push(StackValue.CreateByRef(type ,true));
+                // We always come from an ObjRef, hence this is permanentHome
+                Push(StackValue.CreateByRef(type, true, true));
             }
         }
 

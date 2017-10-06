@@ -104,33 +104,22 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__
 
 :: Default to highest Visual Studio version available
 ::
-:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
-:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
-:: allows users to locate where the instance of VS2015 is installed.
-::
 :: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
 :: is no longer set as a global environment variable and is instead only set if the user
 :: has launched the VS2017 Developer Command Prompt.
 ::
 :: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
 :: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
-:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
-:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
+:: is already configured to use that toolset. Otherwise, we will fallback to using the latest 
+:: VS2017 toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
 
 if defined VisualStudioVersion goto :RunVCVars
-
-:: TODO: Remove: Prefer VS2015 by default to workaround CI issue
-if not exist "%VS140COMNTOOLS%" goto TryVSWhere
-call "%VS140COMNTOOLS%\VsDevCmd.bat"
-goto :RunVCVars
-:TryVSWhere
 
 set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
   for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
-if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
@@ -138,13 +127,11 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
-) else if "%VisualStudioVersion%"=="14.0" (
-    goto :VS2015
 )
 
 :MissingVersion
-:: Can't find VS 2015 or 2017
-echo Visual Studio 2017 is a pre-requisite to build this repository. Visual Studio 2015 also works.
+:: Can't find VS 2017
+echo Visual Studio 2017 is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
@@ -155,28 +142,17 @@ set __VSProductVersion=150
 if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto :MissingVisualC
 goto :CheckMSBuild
 
-:VS2015
-:: Setup vars for VS2015
-set __VSVersion=vs2015
-set __VSProductVersion=140
-if not exist "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" goto :MissingVisualC
-goto :CheckMSBuild
-
 :MissingVisualC
 echo Could not find Visual C++ under !VS%__VSProductVersion%COMNTOOLS!. Visual C++ is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
 :CheckMSBuild
-if /i "%__VSVersion%" == "vs2017" (
-    rem The MSBuild that is installed in the shared location is not compatible
-    rem with VS2017 C++ projects. I must use the MSBuild located in
-    rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
-    set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
-) else (
-    set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-    if not exist !_msbuildexe! (set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe")
-)
+rem The MSBuild that is installed in the shared location is not compatible
+rem with VS2017 C++ projects. I must use the MSBuild located in
+rem C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
+set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
+
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt
@@ -205,7 +181,6 @@ echo.
 echo./? -? /h -h /help -help: view this message.
 echo Build architecture: one of x64, x86, arm, wasm ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
-echo Visual Studio version: vs2015, vs2017 ^(defaults to highest detected^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo skiptests: skip building tests ^(default: tests are built^).
 exit /b 1

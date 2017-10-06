@@ -16,7 +16,8 @@ namespace Internal.IL
         public enum StackValueFlags
         {
             None = 0,
-            ReadOnly = 1 << 1
+            ReadOnly = 1 << 1,
+            PermanentHome = 1 << 2
         }
         private StackValueFlags Flags;
 
@@ -37,9 +38,19 @@ namespace Internal.IL
             Flags |= StackValueFlags.ReadOnly;
         }
 
+        public void SetIsPermanentHome()
+        {
+            Flags |= StackValueFlags.PermanentHome;
+        }
+
         public bool IsReadOnly
         {
             get { return (Flags & StackValueFlags.ReadOnly) == StackValueFlags.ReadOnly; }
+        }
+
+        public bool IsPermanentHome
+        {
+            get { return (Flags & StackValueFlags.PermanentHome) == StackValueFlags.PermanentHome; }
         }
 
         public bool IsNullReference
@@ -83,9 +94,11 @@ namespace Internal.IL
             return new StackValue(StackValueKind.ValueType, type);
         }
 
-        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false)
+        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false, bool permanentHome = false)
         {
-            return new StackValue(StackValueKind.ByRef, type, null, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
+            return new StackValue(StackValueKind.ByRef, type, null,
+                (readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None) | 
+                (permanentHome ? StackValueFlags.PermanentHome : StackValueFlags.None));
         }
 
         static public StackValue CreateMethod(MethodDesc method)

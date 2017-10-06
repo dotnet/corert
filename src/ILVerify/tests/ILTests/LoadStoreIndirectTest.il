@@ -17,6 +17,7 @@
     {
         ldarg.0
         ldind.ref
+        pop
         ret
     }
 
@@ -24,6 +25,7 @@
     {
         ldarg.0
         ldind.i4
+        pop
         ret
     }
 
@@ -31,6 +33,7 @@
     {
         ldarg.0
         ldind.i4
+        pop
         ret
     }
 
@@ -38,6 +41,7 @@
     {
         ldarg.0
         ldind.ref
+        pop
         ret
     }
 
