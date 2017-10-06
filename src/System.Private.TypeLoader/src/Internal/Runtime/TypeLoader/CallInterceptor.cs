@@ -1279,28 +1279,41 @@ namespace Internal.Runtime.CallInterceptor
         /// </summary>
         public void FreeThunk()
         {
-            if (_thunkAddress != IntPtr.Zero)
+            FreeThunk(_thunkAddress);
+            _thunkAddress = IntPtr.Zero;
+            _id = 0;
+        }
+
+        /// <summary>
+        /// Free the specified thunk. Once this is called, the old thunk address is invalid.
+        /// </summary>
+        /// <param name="thunkAddress"></param>
+        public static void FreeThunk(IntPtr thunkAddress)
+        {
+            if (thunkAddress != IntPtr.Zero)
             {
                 lock (s_callInterceptors)
                 {
-                    if (_thunkAddress != IntPtr.Zero)
+                    if (thunkAddress != IntPtr.Zero)
                     {
-                        RuntimeAugments.FreeThunk(s_thunkPoolHeap, _thunkAddress);
-
-                        _thunkAddress = IntPtr.Zero;
-
-                        s_callInterceptors[_id] = null;
-                        if (s_countFreeCallInterceptorId == s_freeCallInterceptorIds.Count)
+                        IntPtr context;
+                        if (RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, thunkAddress, out context, out _))
                         {
-                            s_freeCallInterceptorIds.Add(_id);
-                        }
-                        else
-                        {
-                            s_freeCallInterceptorIds[s_countFreeCallInterceptorId] = _id;
-                        }
+                            int id = context.ToInt32();
+                            s_callInterceptors[id] = null;
+                            if (s_countFreeCallInterceptorId == s_freeCallInterceptorIds.Count)
+                            {
+                                s_freeCallInterceptorIds.Add(id);
+                            }
+                            else
+                            {
+                                s_freeCallInterceptorIds[s_countFreeCallInterceptorId] = id;
+                            }
 
-                        s_countFreeCallInterceptorId++;
-                        _id = 0;
+                            s_countFreeCallInterceptorId++;
+
+                            RuntimeAugments.FreeThunk(s_thunkPoolHeap, thunkAddress);
+                        }
                     }
                 }
             }
