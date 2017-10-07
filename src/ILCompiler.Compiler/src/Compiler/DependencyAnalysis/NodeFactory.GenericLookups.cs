@@ -132,16 +132,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ConstrainedMethodUseLookupResult(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
                 });
-
-                _integers = new NodeCache<int, GenericLookupResult>(integer =>
-                {
-                    return new IntegerLookupResult(integer);
-                });
-
-                _pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
-                {
-                    return new PointerToSlotLookupResult(slotIndex);
-                });
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _typeSymbols;
@@ -308,24 +298,24 @@ namespace ILCompiler.DependencyAnalysis
                 return _constrainedMethodUses.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
             }
 
-            private static NodeCache<int, GenericLookupResult> _integers = new NodeCache<int, GenericLookupResult>(slotIndex =>
+            private static NodeCache<int, GenericLookupResult> s_integers = new NodeCache<int, GenericLookupResult>(slotIndex =>
             {
-                return new PointerToSlotLookupResult(slotIndex);
+                return new IntegerLookupResult(slotIndex);
             });
 
             public static GenericLookupResult Integer(int integer)
             {
-                return _integers.GetOrAdd(integer);
+                return s_integers.GetOrAdd(integer);
             }
 
-            private static NodeCache<int, GenericLookupResult> _pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
+            private static NodeCache<int, GenericLookupResult> s_pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
             {
                 return new PointerToSlotLookupResult(slotIndex);
             });
 
             public static GenericLookupResult PointerToSlot(int slotIndex)
             {
-                return _pointersToSlots.GetOrAdd(slotIndex);
+                return s_pointersToSlots.GetOrAdd(slotIndex);
             }
         }
 
