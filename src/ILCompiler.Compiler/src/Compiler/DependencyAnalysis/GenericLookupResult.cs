@@ -61,6 +61,7 @@ namespace ILCompiler.DependencyAnalysis
     public interface IGenericLookupResultTocWriter
     {
         void WriteData(GenericLookupResultReferenceType referenceType, LookupResultType slotType, TypeSystemEntity context);
+        void WriteIntegerSlot(int value);
     }
 
     public struct GenericLookupResultContext
@@ -83,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     return owningTypeDefinition.MakeInstantiatedType(TypeInstantiation);
                 }
-                
+
                 Debug.Assert(_canonicalOwner is MethodDesc);
                 MethodDesc owningMethodDefinition = ((MethodDesc)_canonicalOwner).GetTypicalMethodDefinition();
                 Debug.Assert(owningMethodDefinition.Instantiation.Length == MethodInstantiation.Length);
@@ -144,7 +145,7 @@ namespace ILCompiler.DependencyAnalysis
             return ClassCode * 31 + GetHashCodeImpl();
         }
 
-        public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
+        public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
             ISymbolNode target = GetTarget(factory, dictionary);
             if (LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect)
@@ -172,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis
             return Array.Empty<DependencyNodeCore<NodeFactory>>();
         }
 
-        public class Comparer
+        public class Comparer : IComparer<GenericLookupResult>
         {
             private TypeSystemComparer _comparer;
 
@@ -375,7 +376,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
             FieldDesc instantiatedField = _field.GetNonRuntimeDeterminedFieldFromRuntimeDeterminedFieldViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             int offset = instantiatedField.Offset.AsInt;
@@ -438,7 +439,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
             Debug.Assert(false, "VTableOffset contents should only be generated into generic dictionaries at runtime");
             builder.EmitNaturalInt(0);
@@ -717,7 +718,7 @@ namespace ILCompiler.DependencyAnalysis
             bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
 
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
-                _method, 
+                _method,
                 _isUnboxingThunk,
                 factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
         }
@@ -1174,7 +1175,7 @@ namespace ILCompiler.DependencyAnalysis
             return ((CastClassGenericLookupResult)obj)._type == _type;
         }
     }
-    
+
     /// <summary>
     /// Generic lookup result that points to an isInst helper.
     /// </summary>
@@ -1376,7 +1377,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If there isn't a default constructor, use the fallback one.
                 MetadataType missingCtorType = factory.TypeSystemContext.SystemModule.GetKnownType("System", "Activator");
-                missingCtorType = missingCtorType.GetKnownNestedType("ClassWithMissingConstructor");                
+                missingCtorType = missingCtorType.GetKnownNestedType("ClassWithMissingConstructor");
                 defaultCtor = missingCtorType.GetParameterlessConstructor();
             }
             else
@@ -1439,7 +1440,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
             Debug.Assert(false, "CallingConventionConverterLookupResult contents should only be generated into generic dictionaries at runtime");
             builder.EmitNaturalInt(0);
@@ -1502,7 +1503,7 @@ namespace ILCompiler.DependencyAnalysis
             return null;
         }
 
-        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary)
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             int typeSize;
@@ -1639,6 +1640,135 @@ namespace ILCompiler.DependencyAnalysis
             return _constrainedMethod == other._constrainedMethod &&
                 _constraintType == other._constraintType &&
                 _directCall == other._directCall;
+        }
+    }
+
+    public sealed class IntegerLookupResult : GenericLookupResult
+    {
+        int _integerValue;
+
+        public IntegerLookupResult(int integer)
+        {
+            _integerValue = integer;
+        }
+
+        public int IntegerValue => _integerValue;
+
+        protected override int ClassCode => 385752509;
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            return null;
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("IntegerLookupResult_").Append(_integerValue.ToString("x"));
+        }
+
+        public override string ToString()
+        {
+            return "IntegerLookupResult_" + _integerValue.ToString("x");
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            IntegerLookupResult lookupResultOther = (IntegerLookupResult)other;
+            if (lookupResultOther._integerValue == _integerValue)
+                return 0;
+
+            return _integerValue > lookupResultOther._integerValue ? 1 : -1;
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult other)
+        {
+            IntegerLookupResult lookupResultOther = (IntegerLookupResult)other;
+            return lookupResultOther._integerValue == _integerValue;
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _integerValue;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            builder.EmitNaturalInt(_integerValue);
+        }
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.IntegerSlot(_integerValue);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteIntegerSlot(_integerValue);
+        }
+    }
+
+    public sealed class PointerToSlotLookupResult : GenericLookupResult
+    {
+        int _slotIndex;
+
+        public PointerToSlotLookupResult(int slotIndex)
+        {
+            _slotIndex = slotIndex;
+        }
+
+        public int SlotIndex => _slotIndex;
+
+        protected override int ClassCode => 551050755;
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            return null;
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("PointerToSlotLookupResult_").Append(_slotIndex.ToString("x"));
+        }
+
+        public override string ToString()
+        {
+            return "PointerToSlotLookupResult_" + _slotIndex.ToString("x");
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
+            if (pointerToSlotResultOther._slotIndex == _slotIndex)
+                return 0;
+
+            return _slotIndex > pointerToSlotResultOther._slotIndex ? 1 : -1;
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult other)
+        {
+            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
+            return pointerToSlotResultOther._slotIndex == _slotIndex;
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _slotIndex;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            builder.EmitPointerReloc(dictionaryNode, _slotIndex * factory.Target.PointerSize);
+        }
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.PointerToOtherSlot(_slotIndex);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // Under no circumstance should we attempt to write out a pointer to slot result
+            throw new InvalidProgramException();
         }
     }
 }

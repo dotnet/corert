@@ -270,18 +270,21 @@ namespace ILCompiler
                     int pointerSize = _nodeFactory.Target.PointerSize;
 
                     GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                    int dictionarySlot = dictionaryLayout.GetSlotForEntry(lookup);
-                    int dictionaryOffset = dictionarySlot * pointerSize;
+                    int dictionarySlot = dictionaryLayout.GetSlotForFixedEntry(lookup);
+                    if (dictionarySlot != -1)
+                    {
+                        int dictionaryOffset = dictionarySlot * pointerSize;
 
-                    if (contextSource == GenericContextSource.MethodParameter)
-                    {
-                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
-                    }
-                    else
-                    {
-                        int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
-                        int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
-                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                        if (contextSource == GenericContextSource.MethodParameter)
+                        {
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
+                        }
+                        else
+                        {
+                            int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
+                            int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                        }
                     }
                 }
             }

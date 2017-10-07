@@ -76,8 +76,8 @@ namespace ILCompiler
             return new EmptyInteropStubManager(compilationModuleGroup, context, null);
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, new UtcDictionaryLayoutProvider())
+        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT, DictionaryLayoutProvider dictionaryLayoutProvider) 
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, dictionaryLayoutProvider)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
@@ -324,9 +324,9 @@ namespace ILCompiler
             return _standaloneGCStaticDescs.GetOrAdd(staticDesc);
         }
 
-        private class UtcDictionaryLayoutProvider : DictionaryLayoutProvider
+        public class UtcDictionaryLayoutProvider : DictionaryLayoutProvider
         {
-            internal override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
+            public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
             {
                 return new UtcDictionaryLayoutNode(methodOrType);
             }

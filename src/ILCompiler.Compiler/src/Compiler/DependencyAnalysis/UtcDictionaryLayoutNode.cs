@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         public override int GetSlotForEntry(GenericLookupResult entry) => throw new NotImplementedException();
         public override IEnumerable<GenericLookupResult> Entries => throw new NotImplementedException();
         public override ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory) => throw new NotImplementedException();
-        public override void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary) => throw new NotImplementedException();
+        public override void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary, bool fixedLayoutOnly) => throw new NotImplementedException();
 #endif
     }
 }
