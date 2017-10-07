@@ -70,11 +70,23 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public abstract int GetSlotForEntry(GenericLookupResult entry);
+
+        /// <summary>
+        /// Get the slot for an entry which is fixed already. Otherwise return -1
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <returns></returns>
+        public virtual int GetSlotForFixedEntry(GenericLookupResult entry)
+        {
+            return GetSlotForEntry(entry);
+        }
         
         public abstract IEnumerable<GenericLookupResult> Entries
         {
             get;
         }
+
+        public virtual IEnumerable<GenericLookupResult> FixedEntries => Entries;
 
         public TypeSystemEntity OwningMethodOrType => _owningMethodOrType;
 
@@ -85,6 +97,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             get;
         }
+
+        /// <summary>
+        /// Gets a value indicating if this dictionary may have non fixed slots
+        /// </summary>
+        public virtual bool HasUnfixedSlots => !HasFixedSlots;
 
         public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
         {
@@ -97,9 +114,11 @@ namespace ILCompiler.DependencyAnalysis
             return templateEntries.ToArray();
         }
 
-        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary)
+        public virtual void EmitDictionaryData(ref ObjectDataBuilder builder, NodeFactory factory, GenericDictionaryNode dictionary, bool fixedLayoutOnly)
         {
             var context = new GenericLookupResultContext(dictionary.OwningEntity, dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            IEnumerable<GenericLookupResult> entriesToEmit = fixedLayoutOnly ? FixedEntries : Entries;
 
             foreach (GenericLookupResult lookupResult in Entries)
             {
@@ -107,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis
                 int offsetBefore = builder.CountBytes;
 #endif
 
-                lookupResult.EmitDictionaryEntry(ref builder, factory, context);
+                lookupResult.EmitDictionaryEntry(ref builder, factory, context, dictionary);
 
 #if DEBUG
                 Debug.Assert(builder.CountBytes - offsetBefore == factory.Target.PointerSize);
@@ -129,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (HasFixedSlots)
             {
-                foreach (GenericLookupResult lookupResult in Entries)
+                foreach (GenericLookupResult lookupResult in FixedEntries)
                 {
                     foreach (DependencyNodeCore<NodeFactory> dependency in lookupResult.NonRelocDependenciesFromUsage(factory))
                     {
@@ -155,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
 
             List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
 
-            foreach (var lookupSignature in Entries)
+            foreach (var lookupSignature in FixedEntries)
             {
                 conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,

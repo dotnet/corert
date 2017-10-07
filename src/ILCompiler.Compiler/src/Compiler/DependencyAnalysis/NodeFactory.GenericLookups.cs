@@ -297,6 +297,26 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _constrainedMethodUses.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
             }
+
+            private static NodeCache<int, GenericLookupResult> s_integers = new NodeCache<int, GenericLookupResult>(slotIndex =>
+            {
+                return new IntegerLookupResult(slotIndex);
+            });
+
+            public static GenericLookupResult Integer(int integer)
+            {
+                return s_integers.GetOrAdd(integer);
+            }
+
+            private static NodeCache<int, GenericLookupResult> s_pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
+            {
+                return new PointerToSlotLookupResult(slotIndex);
+            });
+
+            public static GenericLookupResult PointerToSlot(int slotIndex)
+            {
+                return s_pointersToSlots.GetOrAdd(slotIndex);
+            }
         }
 
         public GenericLookupResults GenericLookup = new GenericLookupResults();

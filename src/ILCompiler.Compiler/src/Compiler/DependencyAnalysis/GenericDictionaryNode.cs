@@ -69,16 +69,16 @@ namespace ILCompiler.DependencyAnalysis
             if (layout.HasFixedSlots || !relocsOnly)
             {
                 // TODO: pass the layout we already have to EmitDataInternal
-                EmitDataInternal(ref builder, factory);
+                EmitDataInternal(ref builder, factory, relocsOnly);
             }
 
             return builder.ToObjectData();
         }
 
-        protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
+        protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory, bool fixedLayoutOnly)
         {
             DictionaryLayoutNode layout = GetDictionaryLayout(factory);
-            layout.EmitDictionaryData(ref builder, factory, this);            
+            layout.EmitDictionaryData(ref builder, factory, this, fixedLayoutOnly: fixedLayoutOnly);
         }
 
         protected sealed override string GetName(NodeFactory factory)
@@ -219,7 +219,7 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GenericDictionaryLayout(_owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
-        protected override void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
+        protected override void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory, bool fixedLayoutOnly)
         {
             // Method generic dictionaries get prefixed by the hash code of the owning method
             // to allow quick lookups of additional details by the type loader.
@@ -235,7 +235,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.LazyGenericsPolicy.UsesLazyGenerics(OwningMethod))
                 return;
 
-            base.EmitDataInternal(ref builder, factory);
+            base.EmitDataInternal(ref builder, factory, fixedLayoutOnly);
         }
 
         public MethodGenericDictionaryNode(MethodDesc owningMethod, NodeFactory factory)

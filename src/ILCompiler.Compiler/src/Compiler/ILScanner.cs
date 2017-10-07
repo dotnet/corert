@@ -150,7 +150,7 @@ namespace ILCompiler
                 }
             }
 
-            internal override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
+            public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
             {
                 if (methodOrType is TypeDesc type)
                 {

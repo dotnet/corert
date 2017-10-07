@@ -70,6 +70,20 @@ namespace Internal.Runtime.DebuggerSupport
 
     public class TypeSystemHelper
     {
+        public static unsafe IntPtr GetVirtualMethodFunctionPointer(IntPtr thisPointer, uint virtualMethodSlot)
+        {
+            // The first pointer in the object is a pointer to the EEType object
+            EEType* eeType = *(EEType**)thisPointer;
+
+            // The vtable of the object can be found at the end of EEType object
+            IntPtr* vtable = eeType->GetVTableStartAddress();
+
+            // Indexing the vtable to find out the actual function entry point
+            IntPtr entryPoint = vtable[virtualMethodSlot];
+
+            return entryPoint;
+        }
+
         public static bool CallingConverterDataFromMethodSignature(LowLevelNativeFormatReader reader,
                                                                    ulong[] externalReferences,
                                                                    out bool hasThis,
