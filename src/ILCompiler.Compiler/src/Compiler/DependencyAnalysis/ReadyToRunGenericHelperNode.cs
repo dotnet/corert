@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DictionaryLayoutNode layout = factory.GenericDictionaryLayout(_dictionaryOwner);
 
-            if (!layout.HasFixedSlots)
+            if (layout.HasUnfixedSlots)
             {
                 // When the helper call gets marked, ensure the generic layout for the associated dictionaries
                 // includes the signature.
