@@ -82,6 +82,8 @@ struct JitInterfaceCallbacks
     int (__stdcall * getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (__stdcall * canCast)(void * thisHandle, CorInfoException** ppException, void* child, void* parent);
     int (__stdcall * areTypesEquivalent)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
+    int (__stdcall * compareTypesForCast)(void * thisHandle, CorInfoException** ppException, void* fromClass, void* toClass);
+    int (__stdcall * compareTypesForEquality)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (__stdcall * mergeClasses)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
     void* (__stdcall * getParentType)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (__stdcall * getChildType)(void * thisHandle, CorInfoException** ppException, void* clsHnd, void* clsRet);
@@ -817,6 +819,24 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->areTypesEquivalent(_thisHandle, &pException, cls1, cls2);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int compareTypesForCast(void* fromClass, void* toClass)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->compareTypesForCast(_thisHandle, &pException, fromClass, toClass);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int compareTypesForEquality(void* cls1, void* cls2)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->compareTypesForEquality(_thisHandle, &pException, cls1, cls2);
         if (pException != nullptr)
             throw pException;
         return _ret;
