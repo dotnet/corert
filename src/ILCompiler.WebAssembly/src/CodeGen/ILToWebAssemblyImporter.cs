@@ -544,6 +544,7 @@ namespace Internal.IL
 
         private void ImportDup()
         {
+            _stack.Push(_stack.Peek().Duplicate());
         }
 
         private void ImportPop()
