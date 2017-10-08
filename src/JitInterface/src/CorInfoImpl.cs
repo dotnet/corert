@@ -1827,6 +1827,7 @@ namespace Internal.JitInterface
                 {
                     if (!type1.HasSameTypeDefinition(type2) &&
                         !type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
+                        !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
                     {
                         result = TypeCompareState.MustNot;
                     }
