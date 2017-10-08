@@ -1825,7 +1825,8 @@ namespace Internal.JitInterface
                 // be equal unless the type defs are the same.
                 if (type1.IsValueType || type2.IsValueType)
                 {
-                    if (!type1.HasSameTypeDefinition(type2))
+                    if (!type1.HasSameTypeDefinition(type2) &&
+                        !type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
                     {
                         result = TypeCompareState.MustNot;
                     }
