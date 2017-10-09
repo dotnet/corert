@@ -22,7 +22,7 @@ internal static class Program
 		if(tempInt == 9)
 		{
 			string s = "Hello from C#!";
-			PrintString(s, s.Length);
+			PrintString(s);
 		}
 		
 		var not = Not(0xFFFFFFFF) == 0x00000000;
@@ -60,8 +60,9 @@ internal static class Program
         }
     }
 
-    private static unsafe void PrintString(string s, int length)
+    private static unsafe void PrintString(string s)
     {
+        int length = s.Length;
         fixed (char* curChar = s)
         {
             for (int i = 0; i < length; i++)

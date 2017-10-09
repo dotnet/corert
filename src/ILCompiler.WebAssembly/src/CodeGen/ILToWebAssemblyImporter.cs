@@ -300,16 +300,18 @@ namespace Internal.IL
         private void ImportLoadVar(int index, bool argument)
         {
             int varBase;
+            int varCountBase;
             int varOffset;
             LLVMTypeRef valueType;
             TypeDesc type;
 
             if (argument)
             {
+                varCountBase = 0;
                 varBase = 0;
                 if(!_method.Signature.IsStatic)
                 {
-                    varBase = 1;
+                    varCountBase = 1;
                 }
 
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset);
@@ -320,7 +322,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    type = _method.Signature[index - varBase];
+                    type = _method.Signature[index - varCountBase];
                 }
                 valueType = GetLLVMTypeForTypeDesc(type);
             }
@@ -505,6 +507,11 @@ namespace Internal.IL
             {
                 offset += _method.Signature[i].GetElementSize().AsInt;
             }
+            if(!_method.Signature.IsStatic)
+            {
+                offset += _method.OwningType.GetElementSize().AsInt;
+            }
+
             return offset;
         }
 
@@ -683,9 +690,15 @@ namespace Internal.IL
 
             // argument offset
             uint argOffset = 0;
+            int instanceAdjustment = 0;
+            if (!callee.Signature.IsStatic)
+            {
+                instanceAdjustment = 1;
+            }
 
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
-            LLVMValueRef[] argumentValues = new LLVMValueRef[callee.Signature.Length];
+            LLVMValueRef[] argumentValues = new LLVMValueRef[callee.Signature.Length + instanceAdjustment];
+
             for(int i = 0; i < argumentValues.Length; i++)
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop().LLVMValue;
@@ -695,11 +708,21 @@ namespace Internal.IL
             {
                 LLVMValueRef toStore = argumentValues[index];
 
-                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(callee.Signature[index]);
+                TypeDesc argType;
+                if (index == 0 && !callee.Signature.IsStatic)
+                {
+                    argType = callee.OwningType;
+                }
+                else
+                {
+                    argType = callee.Signature[index];
+                }
+
+                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
 
                 ImportStoreHelper(toStore, valueType, castShadowStack, argOffset);
 
-                argOffset += (uint) callee.Signature[index].GetElementSize().AsInt;
+                argOffset += (uint)argType.GetElementSize().AsInt;
             }
 
             LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
@@ -1283,6 +1306,21 @@ namespace Internal.IL
 
         private void ImportLoadField(int token, bool isStatic)
         {
+            if (isStatic)
+            {
+                throw new NotImplementedException("static ldfld");
+            }
+
+            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+            
+            StackEntry objectEntry = _stack.Pop();
+
+            var untypedObjectPointer = LLVM.BuildPointerCast(_builder, objectEntry.LLVMValue, LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), String.Empty);
+            var loadLocation = LLVM.BuildGEP(_builder, untypedObjectPointer,
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)field.Offset.AsInt, LLVMMisc.False) }, String.Empty);
+            var typedLoadLocation = LLVM.BuildPointerCast(_builder, loadLocation, LLVM.PointerType(GetLLVMTypeForTypeDesc(field.FieldType), 0), String.Empty);
+            LLVMValueRef loadValue = LLVM.BuildLoad(_builder, typedLoadLocation, "ldfld_" + field.Name);
+            PushExpression(GetStackValueKind(field.FieldType), "ldfld", loadValue, field.FieldType);
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
@@ -1358,6 +1396,7 @@ namespace Internal.IL
             }
 
             MarkBasicBlock(target);
+            LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(target));
         }
 
         private static bool IsOffsetContained(int offset, int start, int length)
