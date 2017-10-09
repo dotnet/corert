@@ -691,6 +691,25 @@ namespace System
             return CompareOrdinalHelper(strA, strB);
         }
 
+        // TODO https://github.com/dotnet/corefx/issues/21395: Expose this publicly?
+        internal static int CompareOrdinal(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
+        {
+            // TODO: This needs to be optimized / unrolled.  It can't just use CompareOrdinalHelper(str, str)
+            // (changed to accept spans) because its implementation is based on a string layout,
+            // in a way that doesn't work when there isn't guaranteed to be a null terminator.
+
+            int minLength = Math.Min(strA.Length, strB.Length);
+            for (int i = 0; i < minLength; i++)
+            {
+                if (strA[i] != strB[i])
+                {
+                    return strA[i] - strB[i];
+                }
+            }
+
+            return strA.Length - strB.Length;
+        }
+
         public static int CompareOrdinal(String strA, int indexA, String strB, int indexB, int length)
         {
             if (strA == null || strB == null)
