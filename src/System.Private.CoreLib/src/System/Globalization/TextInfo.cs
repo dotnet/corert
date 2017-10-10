@@ -91,7 +91,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         // Currently we don't have native functions to do this, so we do it the hard way
@@ -102,7 +102,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         ////////////////////////////////////////////////////////////////////////

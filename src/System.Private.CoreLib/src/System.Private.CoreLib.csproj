@@ -236,7 +236,6 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
-    <Compile Include="System\Globalization\CompareInfo.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Globalization\IdnMapping.cs" />
