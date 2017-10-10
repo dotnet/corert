@@ -1825,11 +1825,12 @@ namespace Internal.JitInterface
                 // be equal unless the type defs are the same.
                 if (type1.IsValueType || type2.IsValueType)
                 {
-                    if (!type1.HasSameTypeDefinition(type2) &&
-                        !type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
-                        !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
                     {
-                        result = TypeCompareState.MustNot;
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = TypeCompareState.MustNot;
+                        }
                     }
                 }
                 // If we have two ref types that are not __Canon, then the
