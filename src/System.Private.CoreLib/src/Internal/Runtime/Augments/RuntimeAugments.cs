@@ -994,10 +994,15 @@ namespace Internal.Runtime.Augments
         [System.Runtime.InteropServices.McgIntrinsicsAttribute]
         internal class RawCalliHelper
         {
+            [DebuggerHidden]
+            [DebuggerStepThrough]
             public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
             {
                 // This will be filled in by an IL transform
             }
+
+            [DebuggerHidden]
+            [DebuggerStepThrough]
             public static unsafe void Call<T, U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
             {
                 // This will be filled in by an IL transform
