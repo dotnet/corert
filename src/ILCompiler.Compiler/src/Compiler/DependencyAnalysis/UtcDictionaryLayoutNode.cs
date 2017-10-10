@@ -39,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
 #if CORERT
+        public override void EnsureEntry(GenericLookupResult lookupResult) => throw new NotImplementedException();
         public override int GetSlotForEntry(GenericLookupResult entry) => throw new NotImplementedException();
         public override IEnumerable<GenericLookupResult> Entries => throw new NotImplementedException();
         public override ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory) => throw new NotImplementedException();
