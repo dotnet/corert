@@ -134,7 +134,7 @@ namespace ILCompiler
                 FixupInfos.Sort();
         }
 
-        public void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
+        public void WriteData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly = false)
         {
             int offset = Offset;
 
@@ -150,8 +150,11 @@ namespace ILCompiler
                     if (fixupInfo.Offset < offset)
                         throw new BadImageFormatException();
 
-                    // emit bytes before fixup
-                    builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
+                    if (!relocsOnly)
+                    {
+                        // emit bytes before fixup
+                        builder.EmitBytes(Data, offset, fixupInfo.Offset - offset);
+                    }
 
                     // write the fixup
                     FixupInfos[i].WriteData(ref builder, factory);
@@ -164,8 +167,11 @@ namespace ILCompiler
             if (offset > Data.Length)
                 throw new BadImageFormatException();
             
-            // Emit remaining bytes
-            builder.EmitBytes(Data, offset, Data.Length - offset);
+            if (!relocsOnly)
+            {
+                // Emit remaining bytes
+                builder.EmitBytes(Data, offset, Data.Length - offset);
+            }
         }
 
         public static List<PreInitFieldInfo> GetPreInitFieldInfos(TypeDesc type, bool hasGCStaticBase)
