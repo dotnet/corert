@@ -10,9 +10,13 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-
-        string s = "Hello from C#!";
-        PrintString(s, 14);
+		int tempInt = 0;
+		(*(&tempInt)) = 9;
+		if(tempInt == 9)
+		{
+			string s = "Hello from C#!";
+			PrintString(s, 14);
+		}
     }
 
     private static unsafe void PrintString(string s, int length)

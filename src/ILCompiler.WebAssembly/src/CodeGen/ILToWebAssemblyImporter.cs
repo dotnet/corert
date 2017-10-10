@@ -893,6 +893,34 @@ namespace Internal.IL
 
         private void ImportStoreIndirect(TypeDesc type)
         {
+            StackEntry value = _stack.Pop();
+            StackEntry destinationPointer = _stack.Pop();
+            LLVMTypeRef requestedPointerType = LLVM.PointerType(GetLLVMTypeForTypeDesc(type), 0);
+            LLVMValueRef typedValue = value.LLVMValue;
+            LLVMValueRef typedPointer = destinationPointer.LLVMValue;
+
+            if (LLVM.GetTypeKind(LLVM.TypeOf(destinationPointer.LLVMValue)) != LLVMTypeKind.LLVMPointerTypeKind)
+            {
+                typedPointer = LLVM.BuildIntToPtr(_builder, destinationPointer.LLVMValue, requestedPointerType, "stindintptrcast");
+            }
+            else
+            {
+                typedPointer = LLVM.BuildPointerCast(_builder, destinationPointer.LLVMValue, requestedPointerType, "stindptrcast");
+            }
+
+            if (value.Type != type)
+            {
+                if (LLVM.GetTypeKind(GetLLVMTypeForTypeDesc(value.Type)) != LLVMTypeKind.LLVMPointerTypeKind)
+                {
+                    typedValue = LLVM.BuildIntCast(_builder, typedValue, GetLLVMTypeForTypeDesc(type), "stindvalcast");
+                }
+                else
+                {
+                    typedValue = LLVM.BuildPointerCast(_builder, typedValue, GetLLVMTypeForTypeDesc(type), "stindvalptrcast");
+                }
+            }
+
+            LLVM.BuildStore(_builder, typedValue, typedPointer);
         }
 
         private void ImportBinaryOperation(ILOpcode opcode)
