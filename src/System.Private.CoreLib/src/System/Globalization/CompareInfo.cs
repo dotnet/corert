@@ -79,7 +79,7 @@ namespace System.Globalization
 
         internal CompareInfo(CultureInfo culture)
         {
-            m_name = culture.m_name;
+            m_name = culture._name;
             InitSort(culture);
         }
 
@@ -230,7 +230,7 @@ namespace System.Globalization
             {
                 // From whidbey, didn't have a name
                 CultureInfo ci = CultureInfo.GetCultureInfo(this.culture);
-                m_name = ci.m_name;
+                m_name = ci._name;
             }
             else
             {
