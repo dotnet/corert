@@ -10,6 +10,8 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
+        Shift();
+        UnsignedShift();
 
         string s = "Hello from C#!";
         PrintString(s, 14);
@@ -31,6 +33,18 @@ internal static class Program
     private static int Add(int a, int b)
     {
         return a + b;
+    }
+
+    private static int Shift(int a, int b)
+    {
+        int left = a << b;
+        int right = a >> b;
+        return 0;
+    }
+
+    private static int UnsignedShift(uint a, int b)
+    {
+        return a >> b;
     }
 
     [DllImport("*")]

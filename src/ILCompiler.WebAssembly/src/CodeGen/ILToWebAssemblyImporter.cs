@@ -995,6 +995,27 @@ namespace Internal.IL
 
         private void ImportShiftOperation(ILOpcode opcode)
         {
+            LLVMValueRef result;
+
+            StackEntry numBitsToShift = _stack.Pop();
+            StackEntry valueToShift = _stack.Pop();
+
+            switch (opcode)
+            {
+                case ILOpcode.shl:
+                    result = LLVM.BuildShl(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shl");
+                    break;
+                case ILOpcode.shr:
+                    result = LLVM.BuildAShr(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shr");
+                    break;
+                case ILOpcode.shr_un:
+                    result = LLVM.BuildLShr(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shr");
+                    break;
+                default:
+                    throw new InvalidOperationException(); // Should be unreachable
+            }
+
+            PushExpression(valueToShift.Kind, "", result, valueToShift.Type);
         }
 
         private void ImportCompareOperation(ILOpcode opcode)
