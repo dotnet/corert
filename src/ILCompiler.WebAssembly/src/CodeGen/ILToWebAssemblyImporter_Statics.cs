@@ -51,7 +51,7 @@ namespace Internal.IL
             try
             {
                 string mangledName;
-                // TODO: We should have better detection for main or a way for native main to find out what managed main's name is
+                // TODO: We should use the startup node to generate StartupCodeMain and avoid special casing here
                 if(methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
                 {
                     mangledName = "Main";

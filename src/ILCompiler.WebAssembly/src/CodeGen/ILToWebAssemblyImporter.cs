@@ -28,6 +28,8 @@ namespace Internal.IL
         public LLVMModuleRef Module { get; }
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
+        private readonly MethodSignature _signature;
+        private readonly TypeDesc _thisType;
         private readonly WebAssemblyCodegenCompilation _compilation;
         private LLVMValueRef _llvmFunction;
         private LLVMBasicBlockRef _curBasicBlock;
@@ -78,6 +80,8 @@ namespace Internal.IL
             _methodIL = methodIL;
             _ilBytes = methodIL.GetILBytes();
             _locals = methodIL.GetLocals();
+            _signature = method.Signature;
+            _thisType = method.OwningType;
 
             var ilExceptionRegions = methodIL.GetExceptionRegions();
             _exceptionRegions = new ExceptionRegion[ilExceptionRegions.Length];
@@ -309,20 +313,24 @@ namespace Internal.IL
             {
                 varCountBase = 0;
                 varBase = 0;
-                if(!_method.Signature.IsStatic)
+                if(!_signature.IsStatic)
                 {
                     varCountBase = 1;
                 }
 
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset);
 
-                if (!_method.Signature.IsStatic && index == 0)
+                if (!_signature.IsStatic && index == 0)
                 {
-                    type = _method.OwningType;
+                    type = _thisType;
+                    if (type.IsValueType)
+                    {
+                        type = type.MakeByRefType();
+                    }
                 }
                 else
                 {
-                    type = _method.Signature[index - varCountBase];
+                    type = _signature[index - varCountBase];
                 }
                 valueType = GetLLVMTypeForTypeDesc(type);
             }
@@ -503,13 +511,13 @@ namespace Internal.IL
         private int GetTotalParameterOffset()
         {
             int offset = 0;
-            for (int i = 0; i < _method.Signature.Length; i++)
+            for (int i = 0; i < _signature.Length; i++)
             {
-                offset += _method.Signature[i].GetElementSize().AsInt;
+                offset += _signature[i].GetElementSize().AsInt;
             }
-            if(!_method.Signature.IsStatic)
+            if(!_signature.IsStatic)
             {
-                offset += _method.OwningType.GetElementSize().AsInt;
+                offset += _thisType.GetElementSize().AsInt;
             }
 
             return offset;
@@ -518,9 +526,9 @@ namespace Internal.IL
         private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset)
         {
             int thisSize = 0;
-            if (!_method.Signature.IsStatic)
+            if (!_signature.IsStatic)
             {
-                thisSize = _method.OwningType.GetElementSize().AsInt;
+                thisSize = _thisType.GetElementSize().AsInt;
                 if (index == 0)
                 {
                     size = thisSize;
@@ -533,13 +541,13 @@ namespace Internal.IL
                 }
             }
 
-            var argType = _method.Signature[index];
+            var argType = _signature[index];
             size = argType.GetElementSize().AsInt;
 
             offset = thisSize;
             for (int i = 0; i < index; i++)
             {
-                offset += _method.Signature[i].GetElementSize().AsInt;
+                offset += _signature[i].GetElementSize().AsInt;
             }
         }
 
@@ -598,10 +606,10 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if(_method.Signature.ReturnType != GetWellKnownType(WellKnownType.Void))
+            if(_signature.ReturnType != GetWellKnownType(WellKnownType.Void))
             {
                 StackEntry retVal = _stack.Pop();
-                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_method.Signature.ReturnType);
+                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_signature.ReturnType);
 
                 ImportStoreHelper(retVal.LLVMValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
             }
