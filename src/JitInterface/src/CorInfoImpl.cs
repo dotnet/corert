@@ -3636,6 +3636,12 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
+#if X86
+            // RyuJIT/x86 requires SSE2 to be available.
+            // On .NET Core, the VM always tells us that SSE2 is available.
+            // On CoreRT not, so we have to set it manually.
+            flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE2);
+#endif
 
             if (this.MethodBeingCompiled.IsNativeCallable)
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
