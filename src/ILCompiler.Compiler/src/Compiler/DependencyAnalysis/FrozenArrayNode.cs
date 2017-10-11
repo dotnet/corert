@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
-        {           
+        {
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
@@ -72,17 +72,28 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // byte contents
-            _preInitFieldInfo.WriteData(ref dataBuilder, factory);
+            _preInitFieldInfo.WriteData(ref dataBuilder, factory, relocsOnly);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[]
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, true);
+            EncodeData(ref builder, factory, true);
+            Relocation[] relocs = builder.ToObjectData().Relocs;
+            DependencyList dependencies = null;
+
+            if (relocs != null)
             {
-                new DependencyListEntry(GetEETypeNode(factory), "Frozen preinitialized array"),
-            };
+                dependencies = new DependencyList();
+                foreach (Relocation reloc in relocs)
+                {
+                    dependencies.Add(reloc.Target, "reloc");
+                }
+            }
+
+            return dependencies;
         }
 
         protected override void OnMarked(NodeFactory factory)

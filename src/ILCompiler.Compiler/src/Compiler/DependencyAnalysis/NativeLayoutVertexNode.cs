@@ -737,11 +737,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
             {
-                return new DependencyListEntry[] { new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature") };
+                return new DependencyListEntry[] 
+                {
+                    new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature"),
+                    new DependencyListEntry(context.GenericDictionaryLayout(_owningMethodOrType), "Dictionary Layout")
+                };
             }
             else
             {
-                return Array.Empty<DependencyListEntry>();
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(context.GenericDictionaryLayout(_owningMethodOrType), "Dictionary Layout")
+                };
             }
         }
 
@@ -752,6 +759,7 @@ namespace ILCompiler.DependencyAnalysis
             VertexSequence sequence = new VertexSequence();
 
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_owningMethodOrType);
+            Debug.Assert(associatedLayout.Marked);
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
 
             foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
