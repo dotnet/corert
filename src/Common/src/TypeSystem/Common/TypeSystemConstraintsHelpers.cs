@@ -9,28 +9,20 @@ namespace Internal.TypeSystem
 {
     public class InstantiationContext
     {
+        public readonly Instantiation TypeInstantiation;
+        public readonly Instantiation MethodInstantiation;
+
         public InstantiationContext(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             TypeInstantiation = typeInstantiation;
             MethodInstantiation = methodInstantiation;
         }
-
-        public Instantiation TypeInstantiation
-        {
-            get;
-            private set;
-        }
-
-        public Instantiation MethodInstantiation
-        {
-            get;
-            private set;
-        }
     }
 
     public static class TypeSystemConstraintsHelpers
     {
-        private static bool VerifyGenericParamConstraint(InstantiationContext genericParamContext, GenericParameterDesc genericParam, InstantiationContext instantiationParamContext, TypeDesc instantiationParam)
+        private static bool VerifyGenericParamConstraint(InstantiationContext genericParamContext, GenericParameterDesc genericParam,
+            InstantiationContext instantiationParamContext, TypeDesc instantiationParam)
         {
             GenericConstraints constraints = genericParam.Constraints;
 
@@ -64,7 +56,7 @@ namespace Internal.TypeSystem
             foreach (var constraintType in genericParam.TypeConstraints)
             {
                 var instantiatedType = constraintType.InstantiateSignature(genericParamContext.TypeInstantiation, genericParamContext.MethodInstantiation);
-                if (CanCastConstraint(instantiatedConstraints, instantiatedType))
+                if (CanCastConstraint(ref instantiatedConstraints, instantiatedType))
                     continue;
 
                 if (!instantiationParam.CanCastTo(instantiatedType))
@@ -154,7 +146,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private static bool CanCastConstraint(ArrayBuilder<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
+        private static bool CanCastConstraint(ref ArrayBuilder<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
         {
             for (int i = 0; i < instantiatedConstraints.Count; ++i)
             {
@@ -189,9 +181,10 @@ namespace Internal.TypeSystem
             if (uninstantiatedType == type)
                 return true;
 
+            var paramContext = new InstantiationContext(type.Instantiation, default(Instantiation));
             for (int i = 0; i < uninstantiatedType.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(new InstantiationContext(type.Instantiation, default(Instantiation)), (GenericParameterDesc)uninstantiatedType.Instantiation[i], context, type.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(paramContext, (GenericParameterDesc)uninstantiatedType.Instantiation[i], context, type.Instantiation[i]))
                     return false;
             }
 
@@ -207,10 +200,11 @@ namespace Internal.TypeSystem
             if (!method.HasInstantiation)
                 return true;
 
+            var paramContext = new InstantiationContext(method.OwningType.Instantiation, method.Instantiation);
             MethodDesc uninstantiatedMethod = method.GetMethodDefinition();
             for (int i = 0; i < uninstantiatedMethod.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(new InstantiationContext(method.OwningType.Instantiation, method.Instantiation), (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], context, method.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(paramContext, (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], context, method.Instantiation[i]))
                     return false;
             }
 

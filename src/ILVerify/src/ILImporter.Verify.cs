@@ -140,17 +140,19 @@ namespace Internal.IL
 
             // Instantiate method and its owning type
             var instantiatedType = method.OwningType;
-            _method = method;
+            var instantiatedMethod = method;
             if (instantiatedType.HasInstantiation)
             {
                 instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
-                _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
+                instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
             }
 
-            if (_method.HasInstantiation)
-                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
-            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
-            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, _method.Instantiation);
+            if (instantiatedMethod.HasInstantiation)
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, instantiatedMethod.Instantiation);
+            _method = instantiatedMethod;
+            _methodSignature = _method.Signature;
+            _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
+            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, instantiatedMethod.Instantiation);
 
             // Determine this type
             if (!_method.Signature.IsStatic)
@@ -164,7 +166,6 @@ namespace Internal.IL
                     _thisType = _thisType.MakeByRefType();
             }
 
-            _methodSignature = _method.Signature;
             _initLocals = _methodIL.IsInitLocals;
 
             _maxStack = _methodIL.MaxStack;
