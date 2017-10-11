@@ -865,6 +865,7 @@ namespace Internal.IL
 
         private void ImportLoadIndirect(int token)
         {
+            ImportLoadIndirect(ResolveTypeToken(token));
         }
 
         private void ImportLoadIndirect(TypeDesc type)
@@ -889,6 +890,7 @@ namespace Internal.IL
 
         private void ImportStoreIndirect(int token)
         {
+            ImportStoreIndirect(ResolveTypeToken(token));
         }
 
         private void ImportStoreIndirect(TypeDesc type)
@@ -1358,6 +1360,11 @@ namespace Internal.IL
 
             MarkBasicBlock(next);
 
+        }
+
+        private TypeDesc ResolveTypeToken(int token)
+        {
+            return (TypeDesc)_methodIL.GetObject(token);
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
