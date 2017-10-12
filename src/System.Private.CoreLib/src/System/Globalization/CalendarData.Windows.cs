@@ -132,7 +132,7 @@ namespace System.Globalization
 
             EnumCalendarsData data = new EnumCalendarsData();
             data.userOverride = 0;
-            data.calendars = new LowLevelList<int>();
+            data.calendars = new List<int>();
 
             // First call GetLocaleInfo if necessary
             if (useUserOverride)
@@ -276,7 +276,7 @@ namespace System.Globalization
         private class EnumData
         {
             public string userOverride;
-            public LowLevelList<string> strings;
+            public List<string> strings;
         }
 
         // EnumCalendarInfoExEx callback itself.
@@ -304,7 +304,7 @@ namespace System.Globalization
         {
             EnumData context = new EnumData();
             context.userOverride = null;
-            context.strings = new LowLevelList<string>();
+            context.strings = new List<string>();
 
             // First call GetLocaleInfo if necessary
             if (((lcType != 0) && ((lcType & CAL_NOUSEROVERRIDE) == 0)) &&
@@ -430,7 +430,7 @@ namespace System.Globalization
         private class EnumCalendarsData
         {
             public int userOverride;   // user override value (if found)
-            public LowLevelList<int> calendars;      // list of calendars found so far
+            public List<int> calendars;      // list of calendars found so far
         }
 
         // [NativeCallable(CallingConvention = CallingConvention.StdCall)]

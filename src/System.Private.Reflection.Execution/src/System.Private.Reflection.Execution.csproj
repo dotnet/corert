@@ -106,9 +106,6 @@
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
       <Link>System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" >
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" >
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>

@@ -1189,8 +1189,8 @@ namespace Internal.Runtime.CallInterceptor
 
         internal static CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData s_managedToManagedCommonStubData;
         internal static CallConverterThunk.CallingConventionConverter_CommonCallingStub_PointerData s_nativeToManagedCommonStubData;
-        internal static LowLevelList<CallInterceptor> s_callInterceptors = new LowLevelList<CallInterceptor>();
-        internal static LowLevelList<int> s_freeCallInterceptorIds = new LowLevelList<int>();
+        internal static List<CallInterceptor> s_callInterceptors = new List<CallInterceptor>();
+        internal static List<int> s_freeCallInterceptorIds = new List<int>();
         private static int s_countFreeCallInterceptorId = 0;
 
         static CallInterceptor()

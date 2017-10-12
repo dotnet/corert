@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.General
             if (handleType != HandleType.ModifiedType)
                 return Array.Empty<Type>();
 
-            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            List<Type> customModifiers = new List<Type>();
             do
             {
                 ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);

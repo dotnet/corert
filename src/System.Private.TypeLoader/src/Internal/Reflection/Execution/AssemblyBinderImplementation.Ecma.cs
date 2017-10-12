@@ -44,7 +44,7 @@ namespace Internal.Reflection.Execution
             public readonly PEReader PE;
         }
 
-        private static LowLevelList<PEInfo> s_ecmaLoadedAssemblies = new LowLevelList<PEInfo>();
+        private static List<PEInfo> s_ecmaLoadedAssemblies = new List<PEInfo>();
 
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
         {

@@ -51,7 +51,7 @@ namespace System.Reflection
             byte[] pkt = null;
             AssemblyNameFlags flags = 0;
 
-            LowLevelList<String> alreadySeen = new LowLevelList<String>();
+            List<String> alreadySeen = new List<String>();
             token = lexer.GetNext();
             while (token != AssemblyNameLexer.Token.End)
             {

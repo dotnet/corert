@@ -524,7 +524,7 @@ namespace Internal.Runtime.Augments
             if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
                 return null;
 
-            LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
+            List<RuntimeTypeHandle> implementedInterfaces = new List<RuntimeTypeHandle>();
             for (int i = 0; i < eeType.Interfaces.Count; i++)
             {
                 EETypePtr ifcEEType = eeType.Interfaces[i];

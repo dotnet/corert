@@ -731,7 +731,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static IntPtr CreateStaticGCDesc(LowLevelList<bool> gcBitfield, out bool allocated, out int cbGCDesc)
+        private static IntPtr CreateStaticGCDesc(List<bool> gcBitfield, out bool allocated, out int cbGCDesc)
         {
             if (gcBitfield != null)
             {
@@ -845,7 +845,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
+        private static unsafe int CreateArrayGCDesc(List<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
         {
             if (bitfield == null)
                 return 0;
@@ -916,7 +916,7 @@ namespace Internal.Runtime.TypeLoader
             return numSeries;
         }
 
-        private static unsafe int CreateGCDesc(LowLevelList<bool> bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
+        private static unsafe int CreateGCDesc(List<bool> bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
         {
             int offs = 0;
             // if this type is a class we have to account for the gcdesc.

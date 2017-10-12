@@ -648,7 +648,7 @@ namespace Internal.Runtime.TypeLoader
             instanceDefTypeToExamine = instanceType.GetClosestDefType();
 
             MethodDesc newlyFoundVirtualMethod = null;
-            LowLevelList<MethodDesc> variantTargets = null;
+            List<MethodDesc> variantTargets = null;
 
             if (targetVirtualMethod.OwningType.HasVariance)
             {
@@ -661,7 +661,7 @@ namespace Internal.Runtime.TypeLoader
                         if (RuntimeAugments.IsAssignableFrom(targetVirtualMethod.OwningType.GetRuntimeTypeHandle(), type.GetRuntimeTypeHandle()))
                         {
                             if (variantTargets == null)
-                                variantTargets = new LowLevelList<MethodDesc>();
+                                variantTargets = new List<MethodDesc>();
 
                             MethodDesc targetVariantMatch = type.Context.GetMethodForInstantiatedType(
                                 targetVirtualMethod.GetTypicalMethodDefinition(),

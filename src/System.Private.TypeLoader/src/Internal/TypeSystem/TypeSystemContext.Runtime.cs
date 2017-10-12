@@ -618,7 +618,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private LowLevelList<TypeDesc> _typesToFlushTypeSystemStateFrom;
+        private List<TypeDesc> _typesToFlushTypeSystemStateFrom;
 
         /// <summary>
         /// Register the types that will get their attached TypeSystemState flushed if the 
@@ -627,7 +627,7 @@ namespace Internal.TypeSystem
         internal void RegisterTypeForTypeSystemStateFlushing(TypeDesc type)
         {
             if (_typesToFlushTypeSystemStateFrom == null)
-                _typesToFlushTypeSystemStateFrom = new LowLevelList<TypeDesc>();
+                _typesToFlushTypeSystemStateFrom = new List<TypeDesc>();
             _typesToFlushTypeSystemStateFrom.Add(type);
         }
 

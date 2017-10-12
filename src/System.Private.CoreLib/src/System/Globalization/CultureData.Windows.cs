@@ -568,7 +568,7 @@ namespace System.Globalization
         // Context for EnumTimeFormatsEx callback.
         private struct EnumData
         {
-            public LowLevelList<string> strings;
+            public List<string> strings;
         }
 
         // EnumTimeFormatsEx callback itself.
@@ -593,7 +593,7 @@ namespace System.Globalization
             const uint LOCALE_STIMEFORMAT = 0x00001003;
 
             EnumData data = new EnumData();
-            data.strings = new LowLevelList<string>();
+            data.strings = new List<string>();
 
             // Now call the enumeration API. Work is done by our callback function
             Interop.Kernel32.EnumTimeFormatsEx(EnumTimeCallback, localeName, (uint)dwFlags, Unsafe.AsPointer(ref data));
@@ -721,7 +721,7 @@ namespace System.Globalization
             }
 
             EnumData context = new EnumData();
-            context.strings = new LowLevelList<string>();
+            context.strings = new List<string>();
 
             unsafe
             {
@@ -757,7 +757,7 @@ namespace System.Globalization
             get
             {
                 EnumData context = new EnumData();
-                context.strings = new LowLevelList<string>();
+                context.strings = new List<string>();
 
                 unsafe
                 {

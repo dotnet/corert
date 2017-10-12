@@ -146,7 +146,7 @@ namespace System.Reflection.Runtime.TypeParsing
             else
             {
                 _lexer.Skip();
-                LowLevelListWithIList<TypeName> genericTypeArguments = new LowLevelListWithIList<TypeName>();
+                List<TypeName> genericTypeArguments = new List<TypeName>();
                 for (;;)
                 {
                     TypeName genericTypeArgument = ParseGenericTypeArgument();

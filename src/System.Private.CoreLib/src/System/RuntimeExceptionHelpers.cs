@@ -376,7 +376,7 @@ namespace System
         /// </summary>
         public static void GenerateExceptionInformationForDump(Exception currentException, IntPtr exceptionCCWPtr)
         {
-            LowLevelList<byte[]> serializedExceptions = new LowLevelList<byte[]>();
+            List<byte[]> serializedExceptions = new List<byte[]>();
 
             // If currentException is null, there's a state corrupting exception in flight and we can't serialize it
             if (currentException != null)
@@ -387,7 +387,7 @@ namespace System
             GenerateErrorReportForDump(serializedExceptions);
         }
 
-        private static void SerializeExceptionsForDump(Exception currentException, IntPtr exceptionCCWPtr, LowLevelList<byte[]> serializedExceptions)
+        private static void SerializeExceptionsForDump(Exception currentException, IntPtr exceptionCCWPtr, List<byte[]> serializedExceptions)
         {
             const UInt32 NoInnerExceptionValue = 0xFFFFFFFF;
 
@@ -399,8 +399,8 @@ namespace System
             RuntimeImports.RhGetExceptionsForCurrentThread(null, out nExceptions);
             Exception[] curThreadExceptions = new Exception[nExceptions];
             RuntimeImports.RhGetExceptionsForCurrentThread(curThreadExceptions, out nExceptions);
-            LowLevelList<Exception> exceptions = new LowLevelList<Exception>(curThreadExceptions);
-            LowLevelList<Exception> nonThrownInnerExceptions = new LowLevelList<Exception>();
+            List<Exception> exceptions = new List<Exception>(curThreadExceptions);
+            List<Exception> nonThrownInnerExceptions = new List<Exception>();
 
             uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
 
@@ -528,7 +528,7 @@ namespace System
             }
         }
 
-        private static unsafe void GenerateErrorReportForDump(LowLevelList<byte[]> serializedExceptions)
+        private static unsafe void GenerateErrorReportForDump(List<byte[]> serializedExceptions)
         {
             checked
             {

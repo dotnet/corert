@@ -30,7 +30,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override String[] GetManifestResourceNames(Assembly assembly)
         {
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            List<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             String[] names = new String[resourceInfos.Count];
             for (int i = 0; i < resourceInfos.Count; i++)
             {
@@ -47,7 +47,7 @@ namespace Internal.Reflection.Execution
 
             // This was most likely an embedded resource which the toolchain should have embedded 
             // into an assembly.
-            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            List<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
             for (int i = 0; i < resourceInfos.Count; i++)
             {
                 ResourceInfo resourceInfo = resourceInfos[i];
@@ -90,17 +90,17 @@ namespace Internal.Reflection.Execution
             return stream;
         }
 
-        private LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
+        private List<ResourceInfo> GetExtractedResources(Assembly assembly)
         {
-            LowLevelDictionary<String, LowLevelList<ResourceInfo>> extractedResourceDictionary = this.ExtractedResourceDictionary;
+            LowLevelDictionary<String, List<ResourceInfo>> extractedResourceDictionary = this.ExtractedResourceDictionary;
             String assemblyName = assembly.GetName().FullName;
-            LowLevelList<ResourceInfo> resourceInfos;
+            List<ResourceInfo> resourceInfos;
             if (!extractedResourceDictionary.TryGetValue(assemblyName, out resourceInfos))
-                return new LowLevelList<ResourceInfo>();
+                return new List<ResourceInfo>();
             return resourceInfos;
         }
 
-        private LowLevelDictionary<String, LowLevelList<ResourceInfo>> ExtractedResourceDictionary
+        private LowLevelDictionary<String, List<ResourceInfo>> ExtractedResourceDictionary
         {
             get
             {
@@ -109,7 +109,7 @@ namespace Internal.Reflection.Execution
                     // Lazily create the extracted resource dictionary. If two threads race here, we may construct two dictionaries
                     // and overwrite one - this is ok since the dictionaries are read-only once constructed and they contain the identical data.
 
-                    LowLevelDictionary<String, LowLevelList<ResourceInfo>> dict = new LowLevelDictionary<String, LowLevelList<ResourceInfo>>();
+                    LowLevelDictionary<String, List<ResourceInfo>> dict = new LowLevelDictionary<String, List<ResourceInfo>>();
 
                     foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                     {
@@ -132,10 +132,10 @@ namespace Internal.Reflection.Execution
 
                             ResourceInfo resourceInfo = new ResourceInfo(resourceName, resourceOffset, resourceLength, module);
 
-                            LowLevelList<ResourceInfo> assemblyResources;
+                            List<ResourceInfo> assemblyResources;
                             if(!dict.TryGetValue(assemblyName, out assemblyResources))
                             {
-                                assemblyResources = new LowLevelList<ResourceInfo>();
+                                assemblyResources = new List<ResourceInfo>();
                                 dict[assemblyName] = assemblyResources;
                             }
 
@@ -176,7 +176,7 @@ namespace Internal.Reflection.Execution
         /// The dictionary's key is a Fusion-style assembly name.
         /// The dictionary's value is a list of <resourcename,index> tuples.
         /// </summary>
-        private static volatile LowLevelDictionary<String, LowLevelList<ResourceInfo>> s_extractedResourceDictionary;
+        private static volatile LowLevelDictionary<String, List<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {

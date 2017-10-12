@@ -2140,7 +2140,7 @@ namespace System
                 else
                 {
                     TIME_ZONE_INFORMATION tzdi = new TIME_ZONE_INFORMATION();
-                    LowLevelList<AdjustmentRule> rules = new LowLevelList<AdjustmentRule>();
+                    List<AdjustmentRule> rules = new List<AdjustmentRule>();
 
                     //
                     // First rule

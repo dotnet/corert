@@ -191,7 +191,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
+                List<RuntimeTypeInfo> genericTypeParameters = new List<RuntimeTypeInfo>();
 
                 foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
                 {
@@ -225,7 +225,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> directlyImplementedInterfaces = new LowLevelList<QTypeDefRefOrSpec>();
+                List<QTypeDefRefOrSpec> directlyImplementedInterfaces = new List<QTypeDefRefOrSpec>();
                 foreach (Handle ifcHandle in _typeDefinition.Interfaces)
                     directlyImplementedInterfaces.Add(new QTypeDefRefOrSpec(_reader, ifcHandle));
                 return directlyImplementedInterfaces.ToArray();

@@ -181,7 +181,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> result = new LowLevelList<QTypeDefRefOrSpec>();
+                List<QTypeDefRefOrSpec> result = new List<QTypeDefRefOrSpec>();
                 QTypeDefRefOrSpec[] constraints = Constraints;
                 TypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
