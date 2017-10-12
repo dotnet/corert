@@ -77,7 +77,8 @@ The format of the special test method is equal to normal valid or invalid tests,
 Additionally the method signature of the special test method must be equal to the signature of the method that shall be tested.
 
  E.g.: In order to test a specific invalid constructor method the specialname `.ctor` method is defined as usual, while an additional method ```'special.SimpleAdd..ctor_Invalid_StackUnexpected'``` is defined.
-<br/><br/>
+
+
 The methods are automatically fed into appropriate XUnit theories based on the naming convention. Methods not following this naming conventions are ignored by the test scaffolding system.
 
 You can run the tests either in Visual Studio (in Test Explorer) or with the ```dotnet test ``` command from the command line.
