@@ -858,7 +858,7 @@ namespace Internal.IL
 
         void ImportDup()
         {
-            var value = Pop();
+            var value = Pop(true);
 
             Push(value);
             Push(value);
@@ -988,7 +988,7 @@ namespace Internal.IL
             else
             if (methodType != null)
             {
-                var actualThis = Pop();
+                var actualThis = Pop(true);
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
 
@@ -1609,9 +1609,6 @@ namespace Internal.IL
 
             CheckIsObjRef(value);
 
-            if (_trackObjCtorState && !_currentBasicBlock.IsThisInitialized)
-                Check(!value.IsThisPtr, VerifierError.UninitStack);
-
             EmptyTheStack();
         }
 
@@ -1905,7 +1902,7 @@ namespace Internal.IL
             Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
-            var result = Pop();
+            var result = Pop(true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
