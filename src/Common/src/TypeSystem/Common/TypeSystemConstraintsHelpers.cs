@@ -2,13 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
+    public class InstantiationContext
+    {
+        public readonly Instantiation TypeInstantiation;
+        public readonly Instantiation MethodInstantiation;
+
+        public InstantiationContext(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            TypeInstantiation = typeInstantiation;
+            MethodInstantiation = methodInstantiation;
+        }
+    }
+
     public static class TypeSystemConstraintsHelpers
     {
-        private static bool VerifyGenericParamConstraint(Instantiation typeInstantiation, Instantiation methodInstantiation, GenericParameterDesc genericParam, TypeDesc instantiationParam)
+        private static bool VerifyGenericParamConstraint(InstantiationContext genericParamContext, GenericParameterDesc genericParam,
+            InstantiationContext instantiationParamContext, TypeDesc instantiationParam)
         {
             GenericConstraints constraints = genericParam.Constraints;
 
@@ -36,9 +50,15 @@ namespace Internal.TypeSystem
                     return false;
             }
 
+            var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
+            GetInstantiatedConstraintsRecursive(instantiationParamContext, instantiationParam, ref instantiatedConstraints);
+
             foreach (var constraintType in genericParam.TypeConstraints)
             {
-                var instantiatedType = constraintType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                var instantiatedType = constraintType.InstantiateSignature(genericParamContext.TypeInstantiation, genericParamContext.MethodInstantiation);
+                if (CanCastConstraint(ref instantiatedConstraints, instantiatedType))
+                    continue;
+
                 if (!instantiationParam.CanCastTo(instantiatedType))
                     return false;
             }
@@ -97,6 +117,46 @@ namespace Internal.TypeSystem
             return false;
         }
 
+        private static void GetInstantiatedConstraintsRecursive(InstantiationContext typeContext, TypeDesc type, ref ArrayBuilder<TypeDesc> instantiatedConstraints)
+        {
+            if (!type.IsGenericParameter || typeContext == null)
+                return;
+
+            GenericParameterDesc genericParam = (GenericParameterDesc)type;
+
+            foreach (var constraint in genericParam.TypeConstraints)
+            {
+                var instantiatedType = constraint.InstantiateSignature(typeContext.TypeInstantiation, typeContext.MethodInstantiation);
+
+                if (instantiatedType.IsGenericParameter)
+                {
+                    // Make sure it is save to call this method recursively
+                    if (!instantiatedConstraints.Contains(instantiatedType))
+                    {
+                        instantiatedConstraints.Add(instantiatedType);
+
+                        // Constraints of this constraint apply to 'genericParam' too
+                        GetInstantiatedConstraintsRecursive(typeContext, instantiatedType, ref instantiatedConstraints);
+                    }
+                }
+                else
+                {
+                    instantiatedConstraints.Add(instantiatedType);
+                }
+            }
+        }
+
+        private static bool CanCastConstraint(ref ArrayBuilder<TypeDesc> instantiatedConstraints, TypeDesc instantiatedType)
+        {
+            for (int i = 0; i < instantiatedConstraints.Count; ++i)
+            {
+                if (instantiatedConstraints[i].CanCastTo(instantiatedType))
+                    return true;
+            }
+
+            return false;
+        }
+
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
             foreach(var arg in instantiation)
@@ -113,7 +173,7 @@ namespace Internal.TypeSystem
             return true;
         }
 
-        public static bool CheckConstraints(this TypeDesc type)
+        public static bool CheckConstraints(this TypeDesc type, InstantiationContext context = null)
         {
             TypeDesc uninstantiatedType = type.GetTypeDefinition();
 
@@ -121,28 +181,30 @@ namespace Internal.TypeSystem
             if (uninstantiatedType == type)
                 return true;
 
+            var paramContext = new InstantiationContext(type.Instantiation, default(Instantiation));
             for (int i = 0; i < uninstantiatedType.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(type.Instantiation, default(Instantiation), (GenericParameterDesc)uninstantiatedType.Instantiation[i], type.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(paramContext, (GenericParameterDesc)uninstantiatedType.Instantiation[i], context, type.Instantiation[i]))
                     return false;
             }
 
             return true;
         }
 
-        public static bool CheckConstraints(this MethodDesc method)
+        public static bool CheckConstraints(this MethodDesc method, InstantiationContext context = null)
         {
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(context))
                 return false;
 
             // Non-generic methods always pass constraints check
             if (!method.HasInstantiation)
                 return true;
 
+            var paramContext = new InstantiationContext(method.OwningType.Instantiation, method.Instantiation);
             MethodDesc uninstantiatedMethod = method.GetMethodDefinition();
             for (int i = 0; i < uninstantiatedMethod.Instantiation.Length; i++)
             {
-                if (!VerifyGenericParamConstraint(method.OwningType.Instantiation, method.Instantiation, (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], method.Instantiation[i]))
+                if (!VerifyGenericParamConstraint(paramContext, (GenericParameterDesc)uninstantiatedMethod.Instantiation[i], context, method.Instantiation[i]))
                     return false;
             }
 

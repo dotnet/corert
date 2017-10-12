@@ -41,6 +41,7 @@ namespace Internal.IL
         readonly MethodDesc _method;
         readonly MethodSignature _methodSignature;
         readonly TypeSystemContext _typeSystemContext;
+        readonly InstantiationContext _instantiationContext;
 
         readonly TypeDesc _thisType;
 
@@ -137,18 +138,28 @@ namespace Internal.IL
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
-            _method = method;
             _typeSystemContext = method.Context;
 
+            // Instantiate method and its owning type
+            var instantiatedType = method.OwningType;
+            var instantiatedMethod = method;
+            if (instantiatedType.HasInstantiation)
+            {
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
+                instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
+            }
+
+            if (instantiatedMethod.HasInstantiation)
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, instantiatedMethod.Instantiation);
+            _method = instantiatedMethod;
+            _methodSignature = _method.Signature;
+            _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
+            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, instantiatedMethod.Instantiation);
+
+            // Determine this type
             if (!_method.Signature.IsStatic)
             {
-                if (_method.OwningType.HasInstantiation)
-                {
-                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
-                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
-                }
-                else
-                    _thisType = _method.OwningType;
+                _thisType = instantiatedType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
@@ -156,12 +167,6 @@ namespace Internal.IL
                 if (_thisType.IsValueType)
                     _thisType = _thisType.MakeByRefType();
             }
-
-            if (_method.HasInstantiation)
-                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
-
-            _methodSignature = _method.Signature;
-            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
 
             _initLocals = _methodIL.IsInitLocals;
 
@@ -1073,10 +1078,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            var ecmaType = method.OwningType as EcmaType;
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
             // Access verifications
@@ -1190,9 +1194,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
 #if false
