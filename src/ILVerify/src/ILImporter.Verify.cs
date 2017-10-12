@@ -721,9 +721,15 @@ namespace Internal.IL
                         continue;
 
                     if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
-                    
-                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                    {
+                        var filterBlock = _basicBlocks[r.ILRegion.FilterOffset];
+                        PropagateThisState(basicBlock, filterBlock);
+                        MarkBasicBlock(filterBlock);
+                    }
+
+                    var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
+                    PropagateThisState(basicBlock, handlerBlock);
+                    MarkBasicBlock(handlerBlock);
                 }
             }
 
@@ -1258,21 +1264,7 @@ namespace Internal.IL
             if (!IsValidBranchTarget(_currentBasicBlock, next) || _currentBasicBlock.ErrorCount > 0)
                 return;
 
-            // Propagate 'this' state
-            if (next.State == BasicBlock.ImportState.Unmarked)
-                next.IsThisInitialized = _currentBasicBlock.IsThisInitialized;
-            else
-            {
-                if (next.IsThisInitialized && !_currentBasicBlock.IsThisInitialized)
-                {
-                    // Next block has 'this' initialized, but current has not 
-                    // therefore next block must be reverified with 'this' uninitialized
-                    if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
-                        next.State = BasicBlock.ImportState.Unmarked;
-                }
-
-                next.IsThisInitialized = next.IsThisInitialized && _currentBasicBlock.IsThisInitialized;
-            }
+            PropagateThisState(_currentBasicBlock, next);
 
             // Propagate stack across block bounds
             StackValue[] entryStack = next.EntryStack;
@@ -1317,6 +1309,24 @@ namespace Internal.IL
             }
 
             MarkBasicBlock(next);
+        }
+
+        void PropagateThisState(BasicBlock current, BasicBlock next)
+        {
+            if (next.State == BasicBlock.ImportState.Unmarked)
+                next.IsThisInitialized = current.IsThisInitialized;
+            else
+            {
+                if (next.IsThisInitialized && !current.IsThisInitialized)
+                {
+                    // Next block has 'this' initialized, but current has not 
+                    // therefore next block must be reverified with 'this' uninitialized
+                    if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
+                        next.State = BasicBlock.ImportState.Unmarked;
+                }
+
+                next.IsThisInitialized = next.IsThisInitialized && current.IsThisInitialized;
+            }
         }
 
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
@@ -1472,14 +1482,14 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);               
+                CheckIsAssignable(actualThis, declaredThis);
             }
 
             Push(StackValue.CreateFromType(field.FieldType));
@@ -1503,7 +1513,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1538,7 +1548,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1671,7 +1681,9 @@ namespace Internal.IL
         {
             EmptyTheStack();
 
+            PropagateThisState(_currentBasicBlock, target);
             MarkBasicBlock(target);
+
             // TODO
         }
 

@@ -27,7 +27,7 @@
         ret
     }
 
-    .method public hidebysig instance void 'special.LoadFieldThisUninit..ctor_Invalid_UninitStack'(int32) cil managed { ret }
+    .method public hidebysig instance void 'special.LoadFieldThisUninit..ctor_Valid'(int32) cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor(int32) cil managed 
     {
         ldarg.0
@@ -59,7 +59,7 @@
         ret
     }
 
-    .method public hidebysig instance void 'special.StoreFieldThisUninit..ctor_Invalid_UninitStack'(int32, int32) cil managed { ret }
+    .method public hidebysig instance void 'special.StoreFieldThisUninit..ctor_Valid'(int32, int32) cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor(int32, int32) cil managed 
     {
         ldarg.0
