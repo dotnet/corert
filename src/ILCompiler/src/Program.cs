@@ -379,7 +379,7 @@ namespace ILCompiler
                 scanResults = scanner.Scan();
             }
 
-            var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
+            var logger = new Logger(Console.Out, _isVerbose);
 
             DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
                 (_ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(_ilDump, new EcmaOnlyDebugInformationProvider())) :
