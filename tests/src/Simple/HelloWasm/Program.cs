@@ -10,8 +10,8 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-        Shift();
-        UnsignedShift();
+        Shift(1, 2);
+        UnsignedShift(1u, 2);
 
         string s = "Hello from C#!";
         PrintString(s, 14);
@@ -42,7 +42,7 @@ internal static class Program
         return 0;
     }
 
-    private static int UnsignedShift(uint a, int b)
+    private static uint UnsignedShift(uint a, int b)
     {
         return a >> b;
     }
