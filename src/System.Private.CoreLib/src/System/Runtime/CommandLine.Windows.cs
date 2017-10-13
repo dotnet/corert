@@ -14,6 +14,7 @@ namespace System.Runtime
 
     internal static class CommandLine
     {
+        [System.Diagnostics.DebuggerHidden]
         [NativeCallable(EntryPoint="InvokeExeMain", CallingConvention = CallingConvention.Cdecl)]
         public unsafe static int InvokeExeMain(IntPtr pfnUserMain)
         {

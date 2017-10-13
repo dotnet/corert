@@ -105,14 +105,14 @@ namespace Internal.JitInterface
             return instance;
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        [UnmanagedFunctionPointer(default(CallingConvention))]
         private unsafe delegate int __getIntConfigValue(IntPtr thisHandle, [MarshalAs(UnmanagedType.LPWStr)] string name, int defaultValue);
         private unsafe int getIntConfigValue(IntPtr thisHandle, string name, int defaultValue)
         {
             return GetIntConfigValue(name, defaultValue);
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        [UnmanagedFunctionPointer(default(CallingConvention))]
         private unsafe delegate int __getStringConfigValue(IntPtr thisHandle, [MarshalAs(UnmanagedType.LPWStr)] string name, char* retBuffer, int retBufferLength);
         private unsafe int getStringConfigValue(IntPtr thisHandle, string name, char* retBuffer, int retBufferLength)
         {

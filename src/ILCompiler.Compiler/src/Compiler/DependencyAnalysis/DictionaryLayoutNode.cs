@@ -69,6 +69,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Ensure that a generic lookup result can be resolved. Used to add new lookups to a dictionary which HasUnfixedSlots
+        /// Must not be used after any calls to GetSlotForEntry
+        /// </summary>
+        public abstract void EnsureEntry(GenericLookupResult entry);
+
+        /// <summary>
+        /// Get a slot index for a given entry. Slot indices are never expected to change once given out.
+        /// </summary>
         public abstract int GetSlotForEntry(GenericLookupResult entry);
 
         /// <summary>
@@ -120,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
             IEnumerable<GenericLookupResult> entriesToEmit = fixedLayoutOnly ? FixedEntries : Entries;
 
-            foreach (GenericLookupResult lookupResult in Entries)
+            foreach (GenericLookupResult lookupResult in entriesToEmit)
             {
 #if DEBUG
                 int offsetBefore = builder.CountBytes;
@@ -210,6 +219,17 @@ namespace ILCompiler.DependencyAnalysis
             _layout = l.ToArray();
         }
 
+        public override void EnsureEntry(GenericLookupResult entry)
+        {
+            int index = Array.IndexOf(_layout, entry);
+
+            if (index == -1)
+            {
+                // Using EnsureEntry to add a slot to a PrecomputedDictionaryLayoutNode is not supported
+                throw new NotSupportedException();
+            }
+        }
+
         public override int GetSlotForEntry(GenericLookupResult entry)
         {
             int index = Array.IndexOf(_layout, entry);
@@ -247,7 +267,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public void EnsureEntry(GenericLookupResult entry)
+        public override void EnsureEntry(GenericLookupResult entry)
         {
             Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
             _entries.AddOrGetExisting(entry);

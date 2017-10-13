@@ -15,6 +15,19 @@ internal static class Program
 
         string s = "Hello from C#!";
         PrintString(s, 14);
+		    int tempInt = 0;
+		    (*(&tempInt)) = 9;
+		
+		    TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+		    TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
+		    *(&str) = str2;
+		    str2 = *(&str);
+		
+		    if(tempInt == 9)
+		    {
+			      string s = "Hello from C#!";
+			      PrintString(s, 14);
+		    }
     }
 
     private static unsafe void PrintString(string s, int length)

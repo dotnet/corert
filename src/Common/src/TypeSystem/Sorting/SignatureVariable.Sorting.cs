@@ -9,18 +9,32 @@ namespace Internal.TypeSystem
     // Functionality related to determinstic ordering of types
     partial class SignatureVariable
     {
+        protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+        {
+            return ((SignatureVariable)other).Index - Index;
+        }
+    }
+
+    partial class SignatureTypeVariable
+    {
         protected internal override int ClassCode
         {
             get
             {
-                throw new NotSupportedException();
+                return 1042124696;
+            }
+        }
+    }
+
+    partial class SignatureMethodVariable
+    {
+        protected internal override int ClassCode
+        {
+            get
+            {
+                return 144542889;
             }
         }
 
-        protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
-        {
-            // Who needs this and why?
-            throw new NotSupportedException();
-        }
     }
 }

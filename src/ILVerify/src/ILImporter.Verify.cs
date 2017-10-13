@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -41,6 +40,7 @@ namespace Internal.IL
         readonly MethodDesc _method;
         readonly MethodSignature _methodSignature;
         readonly TypeSystemContext _typeSystemContext;
+        readonly InstantiationContext _instantiationContext;
 
         readonly TypeDesc _thisType;
 
@@ -57,6 +57,7 @@ namespace Internal.IL
         StackValue[] _stack = s_emptyStack;
         int _stackTop = 0;
 
+        bool _isThisInitialized;
         bool _trackObjCtorState;
 
         class ExceptionRegion
@@ -96,6 +97,7 @@ namespace Internal.IL
             public ImportState State = ImportState.Unmarked;
 
             public StackValue[] EntryStack;
+            public bool IsThisInitialized = false;
 
             public bool TryStart;
             public bool FilterStart;
@@ -128,27 +130,42 @@ namespace Internal.IL
             _stack[_stackTop++] = value;
         }
 
-        StackValue Pop()
+        StackValue Pop(bool allowUninitThis = false)
         {
             FatalCheck(_stackTop > 0, VerifierError.StackUnderflow);
 
-            return _stack[--_stackTop];
+            var stackValue = _stack[--_stackTop];
+
+            if (!allowUninitThis)
+                Check(!_trackObjCtorState || !stackValue.IsThisPtr || _isThisInitialized, VerifierError.UninitStack, stackValue);
+
+            return stackValue;
         }
 
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
-            _method = method;
             _typeSystemContext = method.Context;
 
+            // Instantiate method and its owning type
+            var instantiatedType = method.OwningType;
+            var instantiatedMethod = method;
+            if (instantiatedType.HasInstantiation)
+            {
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
+                instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
+            }
+
+            if (instantiatedMethod.HasInstantiation)
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, instantiatedMethod.Instantiation);
+            _method = instantiatedMethod;
+            _methodSignature = _method.Signature;
+            _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
+            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, instantiatedMethod.Instantiation);
+
+            // Determine this type
             if (!_method.Signature.IsStatic)
             {
-                if (_method.OwningType.HasInstantiation)
-                {
-                    _thisType = _typeSystemContext.GetInstantiatedType((MetadataType)_method.OwningType, _method.OwningType.Instantiation);
-                    _method = _typeSystemContext.GetMethodForInstantiatedType(_method.GetTypicalMethodDefinition(), (InstantiatedType)_thisType);
-                }
-                else
-                    _thisType = _method.OwningType;
+                _thisType = instantiatedType;
 
                 // ECMA-335 II.13.3 Methods of value types, P. 164:
                 // ... By contrast, instance and virtual methods of value types shall be coded to expect a
@@ -157,16 +174,11 @@ namespace Internal.IL
                     _thisType = _thisType.MakeByRefType();
             }
 
-            if (_method.HasInstantiation)
-                _method = _typeSystemContext.GetInstantiatedMethod(_method, _method.Instantiation);
-
-            _methodSignature = _method.Signature;
-            _methodIL = method == _method ? methodIL : new InstantiatedMethodIL(_method, methodIL);
-
             _initLocals = _methodIL.IsInitLocals;
 
             _maxStack = _methodIL.MaxStack;
 
+            _isThisInitialized = false;
             _trackObjCtorState = !_methodSignature.IsStatic && _method.IsConstructor && !method.OwningType.IsValueType;
 
             _ilBytes = _methodIL.GetILBytes();
@@ -609,6 +621,12 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackObjRef, value);
         }
 
+        private void CheckIsNotPointer(TypeDesc type)
+        {
+            if (type.IsPointer)
+                VerificationError(VerifierError.UnmanagedPointer);
+        }
+
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
         {
             if (!IsBinaryComparable(a, b, op))
@@ -696,6 +714,8 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _isThisInitialized = basicBlock.IsThisInitialized;
+
             if (basicBlock.TryStart)
             {
                 Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
@@ -708,9 +728,15 @@ namespace Internal.IL
                         continue;
 
                     if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                        MarkBasicBlock(_basicBlocks[r.ILRegion.FilterOffset]);
-                    
-                    MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
+                    {
+                        var filterBlock = _basicBlocks[r.ILRegion.FilterOffset];
+                        PropagateThisState(basicBlock, filterBlock);
+                        MarkBasicBlock(filterBlock);
+                    }
+
+                    var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
+                    PropagateThisState(basicBlock, handlerBlock);
+                    MarkBasicBlock(handlerBlock);
                 }
             }
 
@@ -802,15 +828,13 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() && x.IsThisPtr())
-                    x.SetUninitialisedObjRef();
-            }
-#endif
+            CheckIsNotPointer(varType);
 
-            Push(StackValue.CreateFromType(varType));
+            var stackValue = StackValue.CreateFromType(varType);
+            if (index == 0 && argument)
+                stackValue.SetIsThisPtr();
+
+            Push(stackValue);
         }
 
         void ImportStoreVar(int index, bool argument)
@@ -819,13 +843,8 @@ namespace Internal.IL
 
             var value = Pop();
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
-                    Verify(!m_paramVerifyMap[num].IsThisPtr(), MVER_E_THIS_UNINIT_STORE); //"storing to uninit this ptr"
-            }
-#endif
+            if (_trackObjCtorState && !_isThisInitialized)
+                Check(index != 0 || !argument, VerifierError.ThisUninitStore);
 
             CheckIsAssignable(value, StackValue.CreateFromType(varType));
         }
@@ -837,20 +856,22 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
-#if false
-            if (argument)
-            {
-                if (m_verTrackObjCtorInitState && !vstate->isThisInitialized() )
-                    Verify(!tiRetVal.IsThisPtr(), MVER_E_THIS_UNINIT_STORE);
-            }
-#endif
+            Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
-            Push(StackValue.CreateByRef(varType));
+            var stackValue = StackValue.CreateByRef(varType);
+            if (index == 0 && argument)
+            {
+                stackValue.SetIsThisPtr();
+
+                Check(!_trackObjCtorState || _isThisInitialized, VerifierError.ThisUninitStore);
+            }
+
+            Push(stackValue);
         }
 
         void ImportDup()
         {
-            var value = Pop();
+            var value = Pop(allowUninitThis: true);
 
             Push(value);
             Push(value);
@@ -858,7 +879,7 @@ namespace Internal.IL
 
         void ImportPop()
         {
-            Pop();
+            Pop(allowUninitThis: true);
         }
 
         void ImportJmp(int token)
@@ -962,7 +983,7 @@ namespace Internal.IL
             {
                 for (int i = sig.Length - 1; i >= 0; i--)
                 {
-                    var actual = Pop();
+                    var actual = Pop(allowUninitThis: true);
                     var declared = StackValue.CreateFromType(sig[i]);
 
                     CheckIsAssignable(actual, declared);
@@ -980,36 +1001,24 @@ namespace Internal.IL
             else
             if (methodType != null)
             {
-                var actualThis = Pop();
+                var actualThis = Pop(allowUninitThis: true);
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
 
-#if false
-                // If this is a call to the base class .ctor, set thisPtr Init for
-                // this block.
-                if (mflags & CORINFO_FLG_CONSTRUCTOR)
+                // If this is a call to the base class .ctor, set thisPtr Init for this block.
+                if (method.IsConstructor)
                 {
-                    if (m_verTrackObjCtorInitState && tiThis.IsThisPtr()
-                        && verIsCallToInitThisPtr(getCurrentMethodClass(), methodClassHnd))
+                    if (_trackObjCtorState && actualThis.IsThisPtr &&
+                        (methodType == _thisType || methodType == _thisType.BaseType)) // Call to overloaded ctor or base ctor
                     {
-                        // do not allow double init
-                        Verify(vstate->thisInitialized == THISUNINIT
-                               || vstate->thisInitialized == THISEHREACHED, MVER_E_PATH_THIS);
-
-                        vstate->containsCtorCall = 1;
-                        vstate->setThisInitialized();
-                        vstate->thisInitializedThisBlock = true;
-                        tiThis.SetInitialisedObjRef();
+                        _isThisInitialized = true;
                     }
                     else
                     {
-                        // We allow direct calls to value type constructors
-                        // NB: we have to check that the contents of tiThis is a value type, otherwise we could use a constrained
-                        // callvirt to illegally re-enter a .ctor on a value of reference type.
-                        VerifyAndReportFound(tiThis.IsByRef() && DereferenceByRef(tiThis).IsValueClass(), tiThis, MVER_E_CALL_CTOR);
+                        // Allow direct calls to value type constructors
+                        Check(actualThis.Kind == StackValueKind.ByRef && actualThis.Type.IsValueType, VerifierError.CallCtor);
                     }
                 }
-#endif
 
                 if (constrained != null)
                 {
@@ -1073,10 +1082,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            var ecmaType = method.OwningType as EcmaType;
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
             // Access verifications
@@ -1190,9 +1198,9 @@ namespace Internal.IL
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints())
+            if (!method.OwningType.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints())
+            else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
 #if false
@@ -1223,11 +1231,9 @@ namespace Internal.IL
 
         void ImportReturn()
         {
-#if false
             // 'this' must be init before return
             if (_trackObjCtorState)
-                Verify(vstate->isThisPublishable(), MVER_E_THIS_UNINIT_RET);
-#endif
+                Check(_isThisInitialized, VerifierError.ThisUninitReturn);
 
             // Check current region type
             Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
@@ -1261,9 +1267,12 @@ namespace Internal.IL
 
         void ImportFallthrough(BasicBlock next)
         {
-            if (!IsValidBranchTarget(_currentBasicBlock, next))
+            if (!IsValidBranchTarget(_currentBasicBlock, next) || _currentBasicBlock.ErrorCount > 0)
                 return;
 
+            PropagateThisState(_currentBasicBlock, next);
+
+            // Propagate stack across block bounds
             StackValue[] entryStack = next.EntryStack;
 
             if (entryStack != null)
@@ -1306,6 +1315,24 @@ namespace Internal.IL
             }
 
             MarkBasicBlock(next);
+        }
+
+        void PropagateThisState(BasicBlock current, BasicBlock next)
+        {
+            if (next.State == BasicBlock.ImportState.Unmarked)
+                next.IsThisInitialized = _isThisInitialized;
+            else
+            {
+                if (next.IsThisInitialized && !_isThisInitialized)
+                {
+                    // Next block has 'this' initialized, but current state has not 
+                    // therefore next block must be reverified with 'this' uninitialized
+                    if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
+                        next.State = BasicBlock.ImportState.Unmarked;
+                }
+
+                next.IsThisInitialized = next.IsThisInitialized && _isThisInitialized;
+            }
         }
 
         void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
@@ -1461,14 +1488,14 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
                 var declaredThis = owningType.IsValueType ?
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
-                CheckIsAssignable(actualThis, declaredThis);               
+                CheckIsAssignable(actualThis, declaredThis);
             }
 
             Push(StackValue.CreateFromType(field.FieldType));
@@ -1492,7 +1519,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1527,7 +1554,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop();
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1598,17 +1625,7 @@ namespace Internal.IL
 
             CheckIsObjRef(value);
 
-#if false
-            if (m_verTrackObjCtorInitState && !vstate->isThisInitialized())
-                Verify(!tiRetVal.IsThisPtr(), MVER_E_STACK_UNINIT);
-
-            while (vstate->stackLevel() > 0)
-            {
-                // vstate->pop();
-                // throw is not a return so we don't need to be initialized
-                vstate->popPossiblyUninit();
-            }
-#endif
+            EmptyTheStack();
         }
 
         void ImportLoadString(int token)
@@ -1670,7 +1687,9 @@ namespace Internal.IL
         {
             EmptyTheStack();
 
+            PropagateThisState(_currentBasicBlock, target);
             MarkBasicBlock(target);
+
             // TODO
         }
 
@@ -1901,7 +1920,7 @@ namespace Internal.IL
             Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
-            var result = Pop();
+            var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }

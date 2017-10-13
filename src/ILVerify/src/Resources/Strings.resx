@@ -138,8 +138,14 @@
   <data name="BranchOutOfTry" xml:space="preserve">
     <value>Branch out of try block.</value>
   </data>
+  <data name="ByrefOfByref" xml:space="preserve">
+    <value>ByRef of ByRef.</value>
+  </data>
   <data name="CallAbstract" xml:space="preserve">
     <value>Call not allowed on abstract methods.</value>
+  </data>
+  <data name="CallCtor" xml:space="preserve">
+    <value>call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.</value>
   </data>
   <data name="CallVirtOnStatic" xml:space="preserve">
     <value>callvirt on static.</value>
@@ -279,6 +285,12 @@
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>
   </data>
+  <data name="ThisUninitReturn" xml:space="preserve">
+    <value>Return from .ctor when this is uninitialized.</value>
+  </data>
+  <data name="ThisUninitStore" xml:space="preserve">
+    <value>Store into this when it is uninitialized.</value>
+  </data>
   <data name="TokenResolve" xml:space="preserve">
     <value>Unable to resolve token.</value>
   </data>
@@ -287,6 +299,12 @@
   </data>
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
+  </data>
+  <data name="UninitStack" xml:space="preserve">
+    <value>Uninitialized item on stack.</value>
+  </data>
+  <data name="UnmanagedPointer" xml:space="preserve">
+    <value>Unmanaged pointers are not a verifiable type.</value>
   </data>
   <data name="UnrecognizedArgumentNumber" xml:space="preserve">
     <value>Unrecognized argument number.</value>
