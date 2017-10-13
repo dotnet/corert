@@ -13,6 +13,7 @@ enum FuncEvalEntryPointMode : uint32_t
 {
     FixedAddress = 0,
     VirtualMethodSlotOnly = 1,
+    InterfaceDispatch = 2,
 };
 
 enum FuncEvalMode : uint32_t
