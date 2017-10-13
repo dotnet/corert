@@ -1082,16 +1082,8 @@ namespace Internal.IL
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
             else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
-#if false
-            // Access verifications
-            handleMemberAccessForVerification(callInfo.accessAllowed, callInfo.callsiteCalloutHelper,
-                                                MVER_E_METHOD_ACCESS);
 
-            if (mflags & CORINFO_FLG_PROTECTED)
-            {
-                Verify(m_jitInfo->canAccessFamily(getCurrentMethodHandle(), instanceClassHnd), MVER_E_METHOD_ACCESS);
-            }
-#endif
+            Check(((EcmaType)_method.OwningType).CanAccess((EcmaMethod)method), VerifierError.MethodAccess);
 
             TypeDesc returnType = sig.ReturnType;
 
@@ -1199,13 +1191,7 @@ namespace Internal.IL
             else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
-#if false
-            Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from
-                                            methodClassHnd, // in
-                                            methHnd, // what
-                                            instanceClassHnd),
-                   MVER_E_METHOD_ACCESS);
-#endif
+            Check(((EcmaType)_method.OwningType).CanAccess((EcmaMethod)method), VerifierError.MethodAccess);
 
             Push(StackValue.CreateMethod(method));
         }
