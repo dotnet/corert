@@ -60,6 +60,8 @@ namespace Internal.IL
 
         bool _trackObjCtorState;
 
+        int? _delegateCreateStart;
+
         class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -622,6 +624,64 @@ namespace Internal.IL
             }
         }
 
+        void CheckDelegateCreation(StackValue ftn, StackValue obj)
+        {
+            if (!_delegateCreateStart.HasValue)
+            {
+                VerificationError(VerifierError.DelegatePattern);
+                return;
+            }
+
+            int delegateStart = _delegateCreateStart.Value;
+
+            if (_currentInstructionOffset - delegateStart == 6) // ldftn <tok> takes 6 bytes
+            {
+                if (GetOpcodeAt(delegateStart) != ILOpcode.ldftn)
+                {
+                    VerificationError(VerifierError.DelegatePattern);
+                    return;
+                }
+                else
+                {
+                    if (ftn.Method.IsVirtual && ftn.Method.IsFinal)
+                    {
+                        if (!obj.IsBoxedValueType)
+                        {
+#if false
+                            Check(obj.IsThisPtr, VerifierError.LdftnNonFinalVirtual);
+                            Verify(!m_thisPtrModified, MVER_E_LDFTN_NON_FINAL_VIRTUAL);
+#endif
+                        }
+                    }
+                }
+            }
+            else if (_currentInstructionOffset - _delegateCreateStart == 7) // dup, ldvirtftn <tok> takes 7 bytes
+            {
+                if (GetOpcodeAt(delegateStart) != ILOpcode.dup)
+                {
+                    VerificationError(VerifierError.DelegatePattern);
+                    return;
+                }
+
+                if (GetOpcodeAt(delegateStart + 1) != ILOpcode.ldvirtftn)
+                {
+                    VerificationError(VerifierError.DelegatePattern);
+                    return;
+                }
+            }
+            else
+                VerificationError(VerifierError.DelegatePattern);
+        }
+
+        ILOpcode GetOpcodeAt(int instructionOffset)
+        {
+            var opCode = (ILOpcode)_ilBytes[instructionOffset];
+            if (opCode == ILOpcode.prefix1)
+                opCode = (ILOpcode)(0x100 + _ilBytes[instructionOffset + 1]);
+
+            return opCode;
+        }
+
         void Unverifiable()
         {
             VerificationError(VerifierError.Unverifiable);
@@ -701,6 +761,8 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _delegateCreateStart = null;
+
             if (basicBlock.TryStart)
             {
                 Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
@@ -857,6 +919,9 @@ namespace Internal.IL
         {
             var value = Pop();
 
+            // this could be the beginning of a delegate create
+            _delegateCreateStart = _currentInstructionOffset;
+
             Push(value);
             Push(value);
         }
@@ -948,11 +1013,8 @@ namespace Internal.IL
                 CheckIsAssignable(actualObj, declaredObj);
                 Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
 
+                CheckDelegateCreation(actualFtn, actualObj);
 #if false
-                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
-                                                    tiActualFtn, tiActualObj),
-                           MVER_E_DLGT_PATTERN);
-
                     Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
                                                            parentTypeHandle,
                                                            tiActualFtn.GetMethod(),
@@ -1165,9 +1227,7 @@ namespace Internal.IL
 
             if (opCode == ILOpcode.ldftn)
             {
-#if false
-                vstate->delegateCreateStart = codeAddr;
-#endif
+                _delegateCreateStart = _currentInstructionOffset;
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {

@@ -162,6 +162,9 @@
   <data name="DelegateCtorSigO" xml:space="preserve">
     <value>Unrecognized delegate .ctor signature; expected Object.</value>
   </data>
+  <data name="DelegatePattern" xml:space="preserve">
+    <value>Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).</value>
+  </data>
   <data name="Endfilter" xml:space="preserve">
     <value>Endfilter from outside an exception filter block.</value>
   </data>
@@ -203,6 +206,9 @@
   </data>
   <data name="LdftnConstructor" xml:space="preserve">
     <value>ldftn/ldvirtftn not allowed on .ctor.</value>
+  </data>
+  <data name="LdftnNonFinalVirtual" xml:space="preserve">
+    <value>Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.</value>
   </data>
   <data name="LdvirtftnOnStatic" xml:space="preserve">
     <value>ldvirtftn on static.</value>

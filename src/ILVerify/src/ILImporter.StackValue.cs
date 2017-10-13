@@ -63,6 +63,11 @@ namespace Internal.IL
             get { return Kind == StackValueKind.NativeInt && Method != null; }
         }
 
+        public bool IsBoxedValueType
+        {
+            get { return Kind == StackValueKind.ObjRef && Type.IsValueType; }
+        }
+
         public StackValue DereferenceByRef()
         {
             Debug.Assert(Kind == StackValueKind.ByRef && Type != null, "Cannot dereference");
