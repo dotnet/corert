@@ -616,7 +616,7 @@ namespace Internal.IL
                 VerificationError(VerifierError.StackObjRef, value);
         }
 
-        private void CheckIsNotUnmanaged(TypeDesc type)
+        private void CheckIsNotPointer(TypeDesc type)
         {
             if (type.IsPointer)
                 VerificationError(VerifierError.UnmanagedPointer);
@@ -821,7 +821,7 @@ namespace Internal.IL
             if (!argument)
                 Check(_initLocals, VerifierError.InitLocals);
 
-            CheckIsNotUnmanaged(varType);
+            CheckIsNotPointer(varType);
 
             var stackValue = StackValue.CreateFromType(varType);
             if (index == 0 && argument)
@@ -864,7 +864,7 @@ namespace Internal.IL
 
         void ImportDup()
         {
-            var value = Pop(true);
+            var value = Pop(allowUninitThis: true);
 
             Push(value);
             Push(value);
@@ -872,7 +872,7 @@ namespace Internal.IL
 
         void ImportPop()
         {
-            Pop(true);
+            Pop(allowUninitThis: true);
         }
 
         void ImportJmp(int token)
@@ -976,7 +976,7 @@ namespace Internal.IL
             {
                 for (int i = sig.Length - 1; i >= 0; i--)
                 {
-                    var actual = Pop(true);
+                    var actual = Pop(allowUninitThis: true);
                     var declared = StackValue.CreateFromType(sig[i]);
 
                     CheckIsAssignable(actual, declared);
@@ -994,7 +994,7 @@ namespace Internal.IL
             else
             if (methodType != null)
             {
-                var actualThis = Pop(true);
+                var actualThis = Pop(allowUninitThis: true);
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
 
@@ -1482,7 +1482,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop(true);
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1513,7 +1513,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop(true);
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1548,7 +1548,7 @@ namespace Internal.IL
                 // Note that even if the field is static, we require that the this pointer
                 // satisfy the same constraints as a non-static field  This happens to
                 // be simpler and seems reasonable
-                var actualThis = Pop(true);
+                var actualThis = Pop(allowUninitThis: true);
                 if (actualThis.Kind == StackValueKind.ValueType)
                     actualThis = StackValue.CreateByRef(actualThis.Type);
 
@@ -1914,7 +1914,7 @@ namespace Internal.IL
             Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
-            var result = Pop(true);
+            var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
