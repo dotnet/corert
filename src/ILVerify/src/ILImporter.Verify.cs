@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -57,6 +56,7 @@ namespace Internal.IL
         StackValue[] _stack = s_emptyStack;
         int _stackTop = 0;
 
+        bool _isThisInitialized;
         bool _trackObjCtorState;
 
         class ExceptionRegion
@@ -96,6 +96,7 @@ namespace Internal.IL
             public ImportState State = ImportState.Unmarked;
 
             public StackValue[] EntryStack;
+            public bool IsThisInitialized = false;
 
             public bool TryStart;
             public bool FilterStart;
@@ -105,8 +106,6 @@ namespace Internal.IL
             public int? TryIndex;
             public int? HandlerIndex;
             public int? FilterIndex;
-
-            public bool IsThisInitialized = false;
 
             public int ErrorCount
             {
@@ -137,7 +136,7 @@ namespace Internal.IL
             var stackValue = _stack[--_stackTop];
 
             if (!allowUninitThis)
-                Check(!_trackObjCtorState || !stackValue.IsThisPtr || _currentBasicBlock.IsThisInitialized, VerifierError.UninitStack, stackValue);
+                Check(!_trackObjCtorState || !stackValue.IsThisPtr || _isThisInitialized, VerifierError.UninitStack, stackValue);
 
             return stackValue;
         }
@@ -174,6 +173,7 @@ namespace Internal.IL
 
             _maxStack = _methodIL.MaxStack;
 
+            _isThisInitialized = false;
             _trackObjCtorState = !_methodSignature.IsStatic && _method.IsConstructor && !method.OwningType.IsValueType;
 
             _ilBytes = _methodIL.GetILBytes();
@@ -709,6 +709,8 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _isThisInitialized = basicBlock.IsThisInitialized;
+
             if (basicBlock.TryStart)
             {
                 Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
@@ -836,7 +838,7 @@ namespace Internal.IL
 
             var value = Pop();
 
-            if (_trackObjCtorState && !_currentBasicBlock.IsThisInitialized)
+            if (_trackObjCtorState && !_isThisInitialized)
                 Check(index != 0 || !argument, VerifierError.ThisUninitStore);
 
             CheckIsAssignable(value, StackValue.CreateFromType(varType));
@@ -856,7 +858,7 @@ namespace Internal.IL
             {
                 stackValue.SetIsThisPtr();
 
-                Check(!_trackObjCtorState || _currentBasicBlock.IsThisInitialized, VerifierError.ThisUninitStore);
+                Check(!_trackObjCtorState || _isThisInitialized, VerifierError.ThisUninitStore);
             }
 
             Push(stackValue);
@@ -1004,7 +1006,7 @@ namespace Internal.IL
                     if (_trackObjCtorState && actualThis.IsThisPtr &&
                         (methodType == _thisType || methodType == _thisType.BaseType)) // Call to overloaded ctor or base ctor
                     {
-                        _currentBasicBlock.IsThisInitialized = true;
+                        _isThisInitialized = true;
                     }
                     else
                     {
@@ -1227,7 +1229,7 @@ namespace Internal.IL
         {
             // 'this' must be init before return
             if (_trackObjCtorState)
-                Check(_currentBasicBlock.IsThisInitialized, VerifierError.ThisUninitReturn);
+                Check(_isThisInitialized, VerifierError.ThisUninitReturn);
 
             // Check current region type
             Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
@@ -1314,18 +1316,18 @@ namespace Internal.IL
         void PropagateThisState(BasicBlock current, BasicBlock next)
         {
             if (next.State == BasicBlock.ImportState.Unmarked)
-                next.IsThisInitialized = current.IsThisInitialized;
+                next.IsThisInitialized = _isThisInitialized;
             else
             {
-                if (next.IsThisInitialized && !current.IsThisInitialized)
+                if (next.IsThisInitialized && !_isThisInitialized)
                 {
-                    // Next block has 'this' initialized, but current has not 
+                    // Next block has 'this' initialized, but current state has not 
                     // therefore next block must be reverified with 'this' uninitialized
                     if (next.State == BasicBlock.ImportState.WasVerified && next.ErrorCount == 0)
                         next.State = BasicBlock.ImportState.Unmarked;
                 }
 
-                next.IsThisInitialized = next.IsThisInitialized && current.IsThisInitialized;
+                next.IsThisInitialized = next.IsThisInitialized && _isThisInitialized;
             }
         }
 
