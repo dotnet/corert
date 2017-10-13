@@ -94,6 +94,12 @@
         ret
     }
 
+    .method public hidebysig static int32 StaticIntMethod() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+
     .method public hidebysig static void StaticMethodRefConstr<class T>() cil managed 
     {
         ret
@@ -325,6 +331,25 @@
 
     lbl_ldvirt:
         ldvirtftn   instance void TestClass::InstanceMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.DelegateMissingArgument_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn       void TestClass::StaticMethod()
+        newobj      instance void class [System.Runtime]System.Action`1<int32>::.ctor(object, native int)
+        ldc.i4.0
+        callvirt    instance void class [System.Runtime]System.Action`1<int32>::Invoke(!0)
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.DelegateWrongReturnType_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn       int32 TestClass::StaticIntMethod()
         newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
         callvirt    instance void [System.Runtime]System.Action::Invoke()
         ret
