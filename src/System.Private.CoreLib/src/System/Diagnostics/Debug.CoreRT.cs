@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.DeveloperExperience;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Security;
 

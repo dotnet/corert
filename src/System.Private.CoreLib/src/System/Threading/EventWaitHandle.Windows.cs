@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -76,8 +75,6 @@ namespace System.Threading
             {
                 throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Constants.MaxPath), nameof(name));
             }
-
-            Contract.EndContractBlock();
 
             result = null;
 

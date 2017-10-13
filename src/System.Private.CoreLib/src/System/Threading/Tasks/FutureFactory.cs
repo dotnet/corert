@@ -12,7 +12,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
@@ -672,7 +671,6 @@ namespace System.Threading.Tasks
 
             if (scheduler == null)
                 throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             TaskFactory.CheckFromAsyncOptions(creationOptions, false);
 
@@ -1249,7 +1247,6 @@ namespace System.Threading.Tasks
             {
                 // Validate argument
                 if (asyncResult == null) throw new ArgumentNullException(nameof(asyncResult));
-                Contract.EndContractBlock();
 
                 var promise = asyncResult.AsyncState as FromAsyncTrimPromise<TInstance>;
                 if (promise == null) throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, nameof(asyncResult));
@@ -1352,7 +1349,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl(tasks, continuationFunction, m_defaultContinuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1381,7 +1377,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction, CancellationToken cancellationToken)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl(tasks, continuationFunction, m_defaultContinuationOptions, cancellationToken, DefaultScheduler);
         }
@@ -1416,7 +1411,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll(Task[] tasks, Func<Task[], TResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl(tasks, continuationFunction, continuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1462,7 +1456,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl(tasks, continuationFunction, continuationOptions, cancellationToken, scheduler);
         }
@@ -1487,7 +1480,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAll<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>[], TResult> continuationFunction)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl<TAntecedentResult>(tasks, continuationFunction, m_defaultContinuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1518,7 +1510,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl<TAntecedentResult>(tasks, continuationFunction, m_defaultContinuationOptions, cancellationToken, DefaultScheduler);
         }
@@ -1555,7 +1546,6 @@ namespace System.Threading.Tasks
             TaskContinuationOptions continuationOptions)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl<TAntecedentResult>(tasks, continuationFunction, continuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1602,7 +1592,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAllImpl<TAntecedentResult>(tasks, continuationFunction, continuationOptions, cancellationToken, scheduler);
         }
@@ -1619,7 +1608,6 @@ namespace System.Threading.Tasks
             if (tasks == null) throw new ArgumentNullException(nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
             Task<TAntecedentResult>[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy<TAntecedentResult>(tasks);
@@ -1651,7 +1639,6 @@ namespace System.Threading.Tasks
             if (tasks == null) throw new ArgumentNullException(nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
             Task<TAntecedentResult>[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy<TAntecedentResult>(tasks);
@@ -1685,7 +1672,6 @@ namespace System.Threading.Tasks
             if (tasks == null) throw new ArgumentNullException(nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
             Task[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy(tasks);
@@ -1723,7 +1709,6 @@ namespace System.Threading.Tasks
             if (tasks == null) throw new ArgumentNullException(nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Check tasks array and make defensive copy
             Task[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy(tasks);
@@ -1775,7 +1760,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl(tasks, continuationFunction, m_defaultContinuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1804,7 +1788,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction, CancellationToken cancellationToken)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl(tasks, continuationFunction, m_defaultContinuationOptions, cancellationToken, DefaultScheduler);
         }
@@ -1839,7 +1822,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny(Task[] tasks, Func<Task, TResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl(tasks, continuationFunction, continuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1885,7 +1867,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl(tasks, continuationFunction, continuationOptions, cancellationToken, scheduler);
         }
@@ -1910,7 +1891,6 @@ namespace System.Threading.Tasks
         public Task<TResult> ContinueWhenAny<TAntecedentResult>(Task<TAntecedentResult>[] tasks, Func<Task<TAntecedentResult>, TResult> continuationFunction)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl<TAntecedentResult>(tasks, continuationFunction, m_defaultContinuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -1941,7 +1921,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl<TAntecedentResult>(tasks, continuationFunction, m_defaultContinuationOptions, cancellationToken, DefaultScheduler);
         }
@@ -1978,7 +1957,6 @@ namespace System.Threading.Tasks
             TaskContinuationOptions continuationOptions)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl<TAntecedentResult>(tasks, continuationFunction, continuationOptions, m_defaultCancellationToken, DefaultScheduler);
         }
@@ -2025,7 +2003,6 @@ namespace System.Threading.Tasks
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
             if (continuationFunction == null) throw new ArgumentNullException(nameof(continuationFunction));
-            Contract.EndContractBlock();
 
             return ContinueWhenAnyImpl<TAntecedentResult>(tasks, continuationFunction, continuationOptions, cancellationToken, scheduler);
         }
@@ -2042,7 +2019,6 @@ namespace System.Threading.Tasks
             if (tasks.Length == 0) throw new ArgumentException(SR.Task_MultiTaskContinuation_EmptyTaskList, nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Call common ContinueWhenAny() setup logic, extract starter
             Task<Task> starter = TaskFactory.CommonCWAnyLogic(tasks);
@@ -2077,7 +2053,6 @@ namespace System.Threading.Tasks
             if (tasks.Length == 0) throw new ArgumentException(SR.Task_MultiTaskContinuation_EmptyTaskList, nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Call common ContinueWhenAny() setup logic, extract starter
             Task<Task> starter = TaskFactory.CommonCWAnyLogic(tasks);
@@ -2111,7 +2086,6 @@ namespace System.Threading.Tasks
             if (tasks.Length == 0) throw new ArgumentException(SR.Task_MultiTaskContinuation_EmptyTaskList, nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Call common ContinueWhenAny setup logic, extract starter
             var starter = TaskFactory.CommonCWAnyLogic(tasks);
@@ -2141,7 +2115,6 @@ namespace System.Threading.Tasks
             if (tasks.Length == 0) throw new ArgumentException(SR.Task_MultiTaskContinuation_EmptyTaskList, nameof(tasks));
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
-            Contract.EndContractBlock();
 
             // Call common ContinueWhenAny setup logic, extract starter
             var starter = TaskFactory.CommonCWAnyLogic(tasks);

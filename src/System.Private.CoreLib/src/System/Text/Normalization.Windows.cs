@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -18,7 +17,6 @@ namespace System.Text
             {
                 throw new ArgumentNullException(nameof(strInput));
             }
-            Contract.EndContractBlock();
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
             Interop.mincore.SetLastError(Interop.ERROR_SUCCESS);
@@ -50,7 +48,6 @@ namespace System.Text
             {
                 throw new ArgumentNullException(nameof(strInput));
             }
-            Contract.EndContractBlock();
 
             // we depend on Win32 last error when calling NormalizeString
             Interop.mincore.SetLastError(Interop.ERROR_SUCCESS);

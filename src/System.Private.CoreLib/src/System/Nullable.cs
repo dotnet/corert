@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime;
@@ -109,7 +108,6 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(nullableType));
             }
-            Contract.EndContractBlock();
 
             Type result = null;
 

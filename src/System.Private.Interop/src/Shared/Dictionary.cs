@@ -6,7 +6,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -125,8 +124,6 @@ namespace System.Collections.Generic.Internal
         {
             get
             {
-                Contract.Ensures(Contract.Result<KeyCollection>() != null);
-
                 return new KeyCollection(this);
             }
         }
@@ -135,8 +132,6 @@ namespace System.Collections.Generic.Internal
         {
             get
             {
-                Contract.Ensures(Contract.Result<ValueCollection>() != null);
-
                 return new ValueCollection(this);
             }
         }

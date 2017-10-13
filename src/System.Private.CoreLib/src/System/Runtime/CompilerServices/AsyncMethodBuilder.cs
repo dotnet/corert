@@ -12,7 +12,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -343,7 +342,6 @@ namespace System.Runtime.CompilerServices
         internal static void SetException(Task task, Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             var oce = exception as OperationCanceledException;
@@ -594,10 +592,6 @@ namespace System.Runtime.CompilerServices
             // is the opposite of the intent.  For now, let's just return a new Task each time.
             // Bug 719350 tracks re-optimizing this in ProjectN.
 #if false
-            Contract.Ensures(
-                EqualityComparer<TResult>.Default.Equals(result, Contract.Result<Task<TResult>>().Result),
-                "The returned task's Result must return the same value as the specified result value.");
-
             // The goal of this function is to be give back a cached task if possible,
             // or to otherwise give back a new task.  To give back a cached task,
             // we need to be able to evaluate the incoming result value, and we need
@@ -869,7 +863,6 @@ namespace System.Runtime.CompilerServices
             //
             if (stateMachine == null)
                 throw new ArgumentNullException(nameof(stateMachine));
-            Contract.EndContractBlock();
             if (cachedMoveNextAction == null)
                 throw new InvalidOperationException(SR.AsyncMethodBuilder_InstanceNotInitialized);
             Action unwrappedMoveNextAction = TryGetStateMachineForDebugger(cachedMoveNextAction);
@@ -911,7 +904,6 @@ namespace System.Runtime.CompilerServices
         internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             // If the user supplied a SynchronizationContext...
             if (targetContext != null)

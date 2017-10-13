@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -283,7 +282,6 @@ namespace System
         {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
-            Contract.EndContractBlock();
             if (bits.Length == 4)
             {
                 uint f = (uint)bits[3];
@@ -305,7 +303,6 @@ namespace System
         {
             if (scale > 28)
                 throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
-            Contract.EndContractBlock();
             this.lo = lo;
             this.mid = mid;
             this.hi = hi;
@@ -471,25 +468,21 @@ namespace System
         //
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, null);
         }
 
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, provider);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, provider);
         }
 
@@ -520,7 +513,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
-            Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // Check for hex number
                 throw new ArgumentException(SR.Arg_HexStyleNotSupported);
@@ -693,7 +685,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
-            Contract.EndContractBlock();
 
             if (mode == MidpointRounding.ToEven)
             {
