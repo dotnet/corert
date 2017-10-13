@@ -673,6 +673,39 @@ namespace Internal.IL
                 VerificationError(VerifierError.DelegatePattern);
         }
 
+        void CheckIsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
+        {
+            if (!IsDelegateAssignable(ftn, delegateType))
+                VerificationError(VerifierError.DelegateCtor);
+        }
+
+        bool IsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
+        {
+            var invokeMethod = delegateType.GetMethod("Invoke", null);
+            if (invokeMethod == null)
+                return false;
+
+            var ftnSignature = ftn.Signature;
+            var delegateSignature = invokeMethod.Signature;
+
+            // Compare calling convention ignoring distinction between static and instance
+            if ((ftnSignature.Flags & ~MethodSignatureFlags.Static) != (delegateSignature.Flags & ~MethodSignatureFlags.Static))
+                return false;
+
+            // Compare signature parameters
+            if (ftnSignature.Length != delegateSignature.Length)
+                return false;
+
+            for (int i = 0; i < ftnSignature.Length; i++)
+            {
+                if (!IsAssignable(ftnSignature[i], delegateSignature[i]))
+                    return false;
+            }
+
+            // Compare return type
+            return IsAssignable(delegateSignature.ReturnType, ftnSignature.ReturnType);
+        }
+
         ILOpcode GetOpcodeAt(int instructionOffset)
         {
             var opCode = (ILOpcode)_ilBytes[instructionOffset];
@@ -1014,16 +1047,8 @@ namespace Internal.IL
                 Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
 
                 CheckDelegateCreation(actualFtn, actualObj);
-#if false
-                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
-                                                           parentTypeHandle,
-                                                           tiActualFtn.GetMethod(),
-                                                           methodClassHnd,
-                                                           getCurrentModuleHandle(),
-                                                           delegateMethodRef,
-                                                           memberRef),
-                           MVER_E_DLGT_CTOR);
-#endif
+
+                CheckIsDelegateAssignable(actualFtn.Method, methodType);
             }
             else
             {
