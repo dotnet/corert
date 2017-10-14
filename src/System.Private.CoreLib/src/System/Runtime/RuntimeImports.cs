@@ -41,9 +41,6 @@ namespace System.Runtime
         internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr RhpGetFuncEvalTargetAddress();
-
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
