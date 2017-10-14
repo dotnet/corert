@@ -1087,6 +1087,29 @@ namespace Internal.IL
 
         private void ImportUnaryOperation(ILOpcode opCode)
         {
+            var argument = _stack.Pop();
+             
+            LLVMValueRef result;
+            switch (opCode)
+            {
+                case ILOpcode.neg:
+                    if (argument.Kind == StackValueKind.Float)
+                    {
+                        result = LLVM.BuildFNeg(_builder, argument.LLVMValue, string.Empty);
+                    }   
+                    else
+                    {
+                        result = LLVM.BuildNeg(_builder, argument.LLVMValue, string.Empty);
+                    }
+                    break;
+                case ILOpcode.not:
+                    result = LLVM.BuildNot(_builder, argument.LLVMValue, string.Empty);
+                    break;
+                default:
+                    throw new NotSupportedException(); // unreachable
+            }
+
+            _stack.Push(new ExpressionEntry(argument.Kind, string.Empty, result, argument.Type));
         }
 
         private void ImportCpOpj(int token)
