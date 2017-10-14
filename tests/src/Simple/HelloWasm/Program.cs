@@ -23,6 +23,20 @@ internal static class Program
 			string s = "Hello from C#!";
 			PrintString(s, 14);
 		}
+		
+		var not = Not(0xFFFFFFFF) == 0x00000000;
+		if(not)
+		{
+			PrintString("\n", 1);
+			PrintString("not test: Ok.", 13);
+		}
+		
+		var negInt = Neg(42) == -42;
+		if(negInt)
+		{
+			PrintString("\n", 1);
+			PrintString("negInt test: Ok.", 16);
+		}
     }
 
     private static unsafe void PrintString(string s, int length)
@@ -41,6 +55,16 @@ internal static class Program
     private static int Add(int a, int b)
     {
         return a + b;
+    }
+	
+	private static uint Not(uint a)
+    {
+        return ~a;
+    }
+	
+	private static int Neg(int a)
+    {
+        return -a;
     }
 
     [DllImport("*")]
