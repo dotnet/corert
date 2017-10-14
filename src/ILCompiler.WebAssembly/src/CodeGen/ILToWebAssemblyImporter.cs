@@ -517,7 +517,15 @@ namespace Internal.IL
             }
             if(!_signature.IsStatic)
             {
-                offset += _thisType.GetElementSize().AsInt;
+                // If this is a struct, then it's a pointer on the stack
+                if (_thisType.IsValueType)
+                {
+                    offset += _thisType.Context.Target.PointerSize;
+                }
+                else
+                {
+                    offset += _thisType.GetElementSize().AsInt;
+                }
             }
 
             return offset;
@@ -528,7 +536,7 @@ namespace Internal.IL
             int thisSize = 0;
             if (!_signature.IsStatic)
             {
-                thisSize = _thisType.GetElementSize().AsInt;
+                thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt;
                 if (index == 0)
                 {
                     size = thisSize;
