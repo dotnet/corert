@@ -23,7 +23,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
 using Internal.NativeFormat;
 using System.Runtime.CompilerServices;
 

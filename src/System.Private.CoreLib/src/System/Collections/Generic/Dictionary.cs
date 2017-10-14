@@ -6,7 +6,6 @@ using Internal.Runtime.CompilerServices;
 using System;
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -159,7 +158,6 @@ namespace System.Collections.Generic
         {
             get
             {
-                Contract.Ensures(Contract.Result<KeyCollection>() != null);
                 if (keys == null) keys = new KeyCollection(this);
                 return keys;
             }
@@ -187,7 +185,6 @@ namespace System.Collections.Generic
         {
             get
             {
-                Contract.Ensures(Contract.Result<ValueCollection>() != null);
                 if (values == null) values = new ValueCollection(this);
                 return values;
             }

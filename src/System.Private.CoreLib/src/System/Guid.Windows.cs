@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
-
 namespace System
 {
     partial struct Guid
@@ -15,7 +13,6 @@ namespace System
             // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
             // uniqueness guarantees.  It should also never return a known GUID, but it's unclear
             // how extensively it checks for known values.
-            Contract.Ensures(Contract.Result<Guid>() != Guid.Empty);
 
             Guid g;
             int hr = Interop.mincore.CoCreateGuid(out g);

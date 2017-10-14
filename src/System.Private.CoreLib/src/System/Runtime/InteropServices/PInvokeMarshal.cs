@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
 using System.Security;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.Augments;
@@ -75,7 +74,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
 
             return s.MarshalToString(globalAlloc: true, unicode: false);
         }
@@ -86,7 +84,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
 
             return s.MarshalToString(globalAlloc: true, unicode: true); ;
         }
@@ -97,7 +94,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
 
             return s.MarshalToString(globalAlloc: false, unicode: false);
         }
@@ -108,7 +104,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            Contract.EndContractBlock();
 
             return s.MarshalToString(globalAlloc: false, unicode: true);
         }
@@ -152,7 +147,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(length), SR.Arg_CopyOutOfRange);
             if ((uint)startIndex + (uint)length > (uint)source.Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.Arg_CopyOutOfRange);
-            Contract.EndContractBlock();
 
             nuint bytesToCopy = (nuint)length * source.ElementSize;
             nuint startOffset = (nuint)startIndex * source.ElementSize;

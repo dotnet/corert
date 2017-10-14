@@ -13,7 +13,6 @@
 ===========================================================*/
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -60,7 +59,6 @@ namespace System.Collections
         {
             if (min < 0)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
-            Contract.EndContractBlock();
 
             for (int i = 0; i < primes.Length; i++)
             {

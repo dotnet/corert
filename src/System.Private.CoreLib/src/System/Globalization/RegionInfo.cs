@@ -15,7 +15,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
@@ -65,8 +64,6 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_NoRegionInvariantCulture, nameof(name));
             }
-
-            Contract.EndContractBlock();
 
             //
             // For CoreCLR we only want the region names that are full culture names
