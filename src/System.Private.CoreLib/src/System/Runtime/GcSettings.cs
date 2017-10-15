@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Diagnostics;
@@ -74,7 +73,6 @@ namespace System.Runtime
                 {
                     throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum);
                 }
-                Contract.EndContractBlock();
 
                 RuntimeImports.RhSetLohCompactionMode((int)value);
             }

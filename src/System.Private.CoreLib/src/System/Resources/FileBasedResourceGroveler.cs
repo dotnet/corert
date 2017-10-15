@@ -26,8 +26,7 @@ namespace System.Resources
     using System.Text;
     using System.Threading;
     using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
+    
     internal class FileBasedResourceGroveler : IResourceGroveler
     {
         private ResourceManager.ResourceManagerMediator _mediator;

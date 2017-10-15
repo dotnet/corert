@@ -1107,11 +1107,6 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
         }
 
-        public static IntPtr RhpGetFuncEvalTargetAddress()
-        {
-            return RuntimeImports.RhpGetFuncEvalTargetAddress();
-        }
-
         [CLSCompliant(false)]
         public static uint RhpGetFuncEvalParameterBufferSize()
         {

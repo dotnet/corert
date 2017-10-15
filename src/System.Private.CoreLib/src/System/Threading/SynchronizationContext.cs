@@ -12,7 +12,6 @@
 ===========================================================*/
 
 using Internal.Runtime.Augments;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -84,7 +83,6 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(waitHandles));
             }
-            Contract.EndContractBlock();
 
             return WaitHandle.WaitForMultipleObjectsIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
         }

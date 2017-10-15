@@ -25,7 +25,6 @@
 using System;
 using System.Security;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -76,7 +75,6 @@ namespace System.Runtime.CompilerServices
             {
                 // Validate arguments
                 if (continuation == null) throw new ArgumentNullException(nameof(continuation));
-                Contract.EndContractBlock();
 
                 // Get the current SynchronizationContext, and if there is one,
                 // post the continuation to it.  However, treat the base type

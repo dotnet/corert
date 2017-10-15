@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -141,19 +140,16 @@ namespace System.Runtime.InteropServices
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
             // we never had a check for generics here
-            Contract.EndContractBlock();
 
             return SizeOfHelper(structure.GetType(), true);
         }
 
-        [Pure]
         public static int SizeOf(Type t)
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
-            Contract.EndContractBlock();
 
             return SizeOfHelper(t, true);
         }
@@ -192,7 +188,6 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            Contract.EndContractBlock();
 
             return OffsetOfHelper(t, fieldName);
         }
@@ -902,7 +897,6 @@ namespace System.Runtime.InteropServices
         {
             if (o == null)
                 throw new ArgumentNullException(nameof(o));
-            Contract.EndContractBlock();
 
             __ComObject co = null;
 
@@ -1233,7 +1227,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
             }
 
-            Contract.EndContractBlock();
 
             DestroyStructureHelper(ptr, structuretype);
         }
@@ -1302,7 +1295,6 @@ namespace System.Runtime.InteropServices
 
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
-            Contract.EndContractBlock();
 
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
@@ -1334,7 +1326,6 @@ namespace System.Runtime.InteropServices
             if (obj != null && (obj.GetType().TypeHandle.IsGenericType() || obj.GetType().TypeHandle.IsGenericTypeDefinition()))
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));
 
-            Contract.EndContractBlock();
 
             Variant* pVariant = (Variant*)pDstNativeVariant;
             *pVariant = new Variant(obj);
@@ -1354,7 +1345,6 @@ namespace System.Runtime.InteropServices
             // Obsolete
             if (pSrcNativeVariant == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pSrcNativeVariant));
-            Contract.EndContractBlock();
 
             Variant* pNativeVar = (Variant*)pSrcNativeVariant;
             return pNativeVar->ToObject();
@@ -1372,7 +1362,6 @@ namespace System.Runtime.InteropServices
 
             if (cVars < 0)
                 throw new ArgumentOutOfRangeException(nameof(cVars), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             Object[] obj = new Object[cVars];
             IntPtr aNativeVar = aSrcNativeVariant;
@@ -1579,7 +1568,6 @@ namespace System.Runtime.InteropServices
         {
             if (m == null)
                 throw new ArgumentNullException(nameof(m));
-            Contract.EndContractBlock();
 
             // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
             // the P/Invoke, but everything is pre-generated in CoreRT.
@@ -1589,7 +1577,6 @@ namespace System.Runtime.InteropServices
         {
             if (c == null)
                 throw new ArgumentNullException(nameof(c));
-            Contract.EndContractBlock();
 
             MethodInfo[] mi = c.GetMethods();
             if (mi != null)

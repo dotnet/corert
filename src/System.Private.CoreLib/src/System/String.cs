@@ -13,7 +13,6 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -148,7 +147,6 @@ namespace System
 
             if (startIndex > value.Length - length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
 
             if (length > 0)
             {
@@ -215,7 +213,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
-            Contract.EndContractBlock();
 
             char* pFrom = ptr + startIndex;
             if (pFrom < ptr)

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -510,7 +509,6 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
 
             TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
         }
@@ -557,7 +555,6 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
             if (period > MAX_SUPPORTED_TIMEOUT)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
-            Contract.EndContractBlock();
             TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
         }
 
@@ -578,7 +575,6 @@ namespace System.Threading
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(TimerCallback));
-            Contract.EndContractBlock();
 
             _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
         }
@@ -589,7 +585,6 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
 
             return _timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
         }
@@ -615,7 +610,6 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
             if (period > MAX_SUPPORTED_TIMEOUT)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
-            Contract.EndContractBlock();
 
             return _timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
         }
@@ -624,7 +618,6 @@ namespace System.Threading
         {
             if (notifyObject == null)
                 throw new ArgumentNullException(nameof(notifyObject));
-            Contract.EndContractBlock();
 
             return _timer.Close(notifyObject);
         }

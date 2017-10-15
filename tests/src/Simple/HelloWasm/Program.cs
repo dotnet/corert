@@ -15,19 +15,33 @@ internal static class Program
 
         string s = "Hello from C#!";
         PrintString(s, 14);
-		    int tempInt = 0;
-		    (*(&tempInt)) = 9;
+        int tempInt = 0;
+        (*(&tempInt)) = 9;
+    
+        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
+        *(&str) = str2;
+        str2 = *(&str);
 		
-		    TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-		    TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
-		    *(&str) = str2;
-		    str2 = *(&str);
+		if(tempInt == 9)
+		{
+			string s = "Hello from C#!";
+			PrintString(s, 14);
+		}
 		
-		    if(tempInt == 9)
-		    {
-			      string s = "Hello from C#!";
-			      PrintString(s, 14);
-		    }
+		var not = Not(0xFFFFFFFF) == 0x00000000;
+		if(not)
+		{
+			PrintString("\n", 1);
+			PrintString("not test: Ok.", 13);
+		}
+		
+		var negInt = Neg(42) == -42;
+		if(negInt)
+		{
+			PrintString("\n", 1);
+			PrintString("negInt test: Ok.", 16);
+		}
     }
 
     private static unsafe void PrintString(string s, int length)
@@ -46,6 +60,16 @@ internal static class Program
     private static int Add(int a, int b)
     {
         return a + b;
+    }
+	
+	private static uint Not(uint a)
+    {
+        return ~a;
+    }
+	
+	private static int Neg(int a)
+    {
+        return -a;
     }
 
     private static int Shift(int a, int b)

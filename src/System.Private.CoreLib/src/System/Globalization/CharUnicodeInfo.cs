@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -234,7 +233,6 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
-            Contract.EndContractBlock();
             return (InternalGetNumericValue(InternalConvertToUtf32(s, index)));
         }
 
@@ -254,7 +252,6 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
-            Contract.EndContractBlock();
 
             return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) >> 8);
         }
@@ -276,7 +273,6 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            Contract.EndContractBlock();
             return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) & 0x00FF);
         }
 
@@ -293,7 +289,6 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             return InternalGetUnicodeCategory(s, index);
         }
 

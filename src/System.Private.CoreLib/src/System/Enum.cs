@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -560,7 +559,6 @@ namespace System
         {
             if (flag == null)
                 throw new ArgumentNullException(nameof(flag));
-            Contract.EndContractBlock();
 
             if (!(this.EETypePtr == flag.EETypePtr))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), this.GetType()));
@@ -728,7 +726,6 @@ namespace System
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            Contract.EndContractBlock();
 
             // Delegate rest of error checking to the other functions
             TypeCode typeCode = Convert.GetTypeCode(value);
