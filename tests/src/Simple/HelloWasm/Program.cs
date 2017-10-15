@@ -10,11 +10,7 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-        Shift(1, 2);
-        UnsignedShift(1u, 2);
 
-        string s = "Hello from C#!";
-        PrintString(s, 14);
         int tempInt = 0;
         (*(&tempInt)) = 9;
     
@@ -42,6 +38,26 @@ internal static class Program
 			PrintString("\n", 1);
 			PrintString("negInt test: Ok.", 16);
 		}
+
+        var shiftLeft = ShiftLeft(1, 2) == 4;
+        if(shiftLeft)
+        {
+            PrintString("\n", 1);
+            PrintString("shiftLeft test: Ok.", 19);
+        }
+
+        var shiftRight = ShiftRight(4, 2) == 1;
+        if(shiftRight)
+        {
+            PrintString("\n", 1);
+            PrintString("shiftRight test: Ok.", 20);
+        }
+        var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
+        if(unsignedShift)
+        {
+            PrintString("\n", 1);
+            PrintString("unsignedShift test: Ok.", 23);
+        }
     }
 
     private static unsafe void PrintString(string s, int length)
@@ -72,11 +88,14 @@ internal static class Program
         return -a;
     }
 
-    private static int Shift(int a, int b)
+    private static int ShiftLeft(int a, int b)
     {
-        int left = a << b;
-        int right = a >> b;
-        return 0;
+        return a << b;
+    }
+
+    private static int ShiftRight(int a, int b)
+    {
+        return a >> b;
     }
 
     private static uint UnsignedShift(uint a, int b)
