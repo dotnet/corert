@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 
 internal static class Program
 {
+	private static int staticInt;
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
@@ -23,6 +24,13 @@ internal static class Program
 		{
 			string s = "Hello from C#!";
 			PrintString(s);
+		}
+		
+		staticInt = 5;
+		if(staticInt == 5)
+		{
+			PrintString("\n");
+			PrintString("static int field test: Ok.");
 		}
 		
 		var not = Not(0xFFFFFFFF) == 0x00000000;
