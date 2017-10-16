@@ -731,7 +731,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    argType = callee.Signature[index];
+                    argType = callee.Signature[index - instanceAdjustment];
                 }
 
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
