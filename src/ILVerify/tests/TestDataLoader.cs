@@ -146,6 +146,10 @@ namespace ILVerify.Tests
                 { systemRuntime.GetName().Name, systemRuntime.Location }
             };
 
+            typeSystemContext.ReferenceFilePaths = new Dictionary<string, string>();
+            foreach (var fileName in GetAllTestDlls())
+                typeSystemContext.ReferenceFilePaths.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(coreAssembly.GetName().Name));
             return typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
         }
