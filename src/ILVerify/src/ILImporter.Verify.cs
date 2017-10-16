@@ -1083,7 +1083,7 @@ namespace Internal.IL
             else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
-            Check(((EcmaType)_method.OwningType).CanAccess((EcmaMethod)method), VerifierError.MethodAccess);
+            Check(_method.OwningType.CanAccess(method), VerifierError.MethodAccess);
 
             TypeDesc returnType = sig.ReturnType;
 
@@ -1191,7 +1191,7 @@ namespace Internal.IL
             else if (!method.CheckConstraints(_instantiationContext))
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
-            Check(((EcmaType)_method.OwningType).CanAccess((EcmaMethod)method), VerifierError.MethodAccess);
+            Check(_method.OwningType.CanAccess(method), VerifierError.MethodAccess);
 
             Push(StackValue.CreateMethod(method));
         }

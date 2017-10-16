@@ -12,26 +12,30 @@ namespace ILVerify
 {
     internal static class AccessVerificationHelpers
     {
-        internal static bool CanAccess(this EcmaType currentClass, EcmaType targetClass)
+        internal static bool CanAccess(this TypeDesc currentClass, TypeDesc targetClass)
         {
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation)
             {
                 foreach (var inst in targetClass.Instantiation)
                 {
-                    if (!currentClass.CanAccess((EcmaType)inst))
+                    if (!inst.IsGenericParameter && !currentClass.CanAccess(inst))
                         return false;
                 }
             }
 
-            if (targetClass.ContainingType == null)
+            var currentTypeDef = (EcmaType)currentClass.GetTypeDefinition();
+            var targetTypeDef = (EcmaType)targetClass.GetTypeDefinition();
+
+            var targetContainingType = targetTypeDef.ContainingType;
+            if (targetContainingType == null)
             {
                 // a non-nested class can be either all public or accessible only from its own assembly (and friends)
-                if ((targetClass.Attributes & TypeAttributes.Public) != 0)
+                if ((targetTypeDef.Attributes & TypeAttributes.Public) != 0)
                     return true;
                 else
                 {
-                    return currentClass.Module == targetClass.Module;
+                    return currentTypeDef.Module == targetTypeDef.Module;
 #if false
                     return (pTargetAssembly == pCurrentAssembly) || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly);
 #endif
@@ -39,28 +43,32 @@ namespace ILVerify
             }
 
             // Target class is nested
-            MethodAttributes visibility = NestedToMethodAccess(targetClass.Attributes);
+            MethodAttributes visibility = NestedToMethodAccess(targetTypeDef.Attributes);
 
             // Translate access check into member access check, i.e. check whether the current class can access
             // a member of the enclosing class with the visibility of target class
-            return currentClass.CanAccessMember((EcmaType)targetClass.ContainingType, visibility);
+            return currentTypeDef.CanAccessMember(targetContainingType, visibility);
         }
 
-        internal static bool CanAccess(this EcmaType currentType, EcmaMethod targetMethod)
+        internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod)
         {
             // If generic method, check instantiation access
             if (!currentType.CanAccessMethodInstantiation(targetMethod))
                 return false;
 
-            return currentType.CanAccessMember((EcmaType)targetMethod.OwningType, targetMethod.Attributes & MethodAttributes.MemberAccessMask);
+            var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
+            var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
+
+            return currentTypeDef.CanAccessMember((EcmaType)targetMethodDef.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask);
         }
 
-        private static bool CanAccessMember(this EcmaType currentType, EcmaType targetType, MethodAttributes memberVisibility)
+        private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility)
         {
             // Check access to class defining member
             if (!currentType.CanAccess(targetType))
                 return false;
 
+            var targetTypeDef = (EcmaType)targetType.GetTypeDefinition();
 #if false
             // if caller is transparent, and target is non-public and critical, then fail access check
             if (!CheckTransparentAccessToCriticalCode(pCurrentMD, dwMemberAccess, pTargetMT, pOptionalTargetMethod, pOptionalTargetField))
@@ -72,14 +80,14 @@ namespace ILVerify
 
             // This is module-scope checking, to support C++ file & function statics.
             if (memberVisibility == MethodAttributes.PrivateScope)
-                return currentType.Module == targetType.Module;
+                return currentType.Module == targetTypeDef.Module;
 
             if (memberVisibility == MethodAttributes.Assembly)
             {
 #if false
                 return (pCurrentAssembly == pTargetAssembly || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly));
 #endif
-                return currentType.Module == targetType.Module;
+                return currentType.Module == targetTypeDef.Module;
             }
 
             if (memberVisibility == MethodAttributes.FamANDAssem)
@@ -88,16 +96,15 @@ namespace ILVerify
                 if ((pCurrentAssembly != pTargetAssembly) && !pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly))
                     return false;
 #endif
-                if (currentType.Module != targetType.Module)
+                if (currentType.Module != targetTypeDef.Module)
                     return false;
             }
 
             // Nested classes can access all members of their parent class.
-            var targetTypeDef = targetType.GetTypeDefinition();
             do
             {
                 // Classes have access to all of their own members
-                if (currentType.GetTypeDefinition() == targetTypeDef)
+                if (currentType == targetTypeDef)
                     return true;
 
                 switch (memberVisibility)
@@ -108,17 +115,17 @@ namespace ILVerify
                         if (pCurrentAssembly == pTargetAssembly || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly))
                             return TRUE;
 #endif
-                        if (currentType.Module == targetType.Module)
+                        if (currentType.Module == targetTypeDef.Module)
                             return true;
 
                         // Check if current class is subclass of target
-                        if (IsSubclassOf(currentType, targetType))
+                        if (IsSubclassOf(currentType, targetTypeDef))
                             return true;
                         break;
                     case MethodAttributes.Family:
                     case MethodAttributes.FamANDAssem:
                         // Assembly acces was already checked earlier, so only need to check family access
-                        if (IsSubclassOf(currentType, targetType))
+                        if (IsSubclassOf(currentType, targetTypeDef))
                             return true;
                         break;
                     case MethodAttributes.Private:
@@ -128,19 +135,23 @@ namespace ILVerify
                         break;
                 }
 
-                currentType = (EcmaType)currentType.ContainingType;
+                var containingType = currentType.ContainingType;
+                if (containingType != null)
+                    currentType = (EcmaType)containingType.GetTypeDefinition();
+                else
+                    currentType = null;
             } while (currentType != null);
 
             return false;
         }
 
-        private static bool CanAccessMethodInstantiation(this EcmaType currentType, EcmaMethod targetMethod)
+        private static bool CanAccessMethodInstantiation(this TypeDesc currentType, MethodDesc targetMethod)
         {
             if (targetMethod.HasInstantiation)
             {
                 foreach (var inst in targetMethod.Instantiation)
                 {
-                    if (!currentType.CanAccess((EcmaType)inst))
+                    if (!inst.IsGenericParameter && !currentType.CanAccess(inst))
                         return false;
                 }
             }
@@ -170,9 +181,8 @@ namespace ILVerify
             }
         }
 
-        private static bool IsSubclassOf(DefType currentType, DefType targetType)
+        private static bool IsSubclassOf(TypeDesc currentType, TypeDesc targetTypeDef)
         {
-            var targetTypeDef = targetType.GetTypeDefinition();
             while (currentType != null)
             {
                 if (currentType.GetTypeDefinition() == targetTypeDef)
