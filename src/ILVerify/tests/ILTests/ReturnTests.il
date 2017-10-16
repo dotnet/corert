@@ -148,4 +148,18 @@
         ldflda      int32 Struct::instanceField
         ret
     }
+
+    .method public hidebysig instance void 'special.ReturnAfterBaseCtor..ctor_Valid'() cil managed { ret }
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
+    {
+        ldarg.0
+        call    instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public hidebysig instance void 'special.ReturnBeforeBaseCtor..ctor_Invalid_ThisUninitReturn'(int32) cil managed { ret }
+    .method public hidebysig specialname rtspecialname instance void .ctor(int32) cil managed 
+    {
+        ret
+    }
 }

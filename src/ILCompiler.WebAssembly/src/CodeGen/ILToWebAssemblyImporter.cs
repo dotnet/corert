@@ -1025,6 +1025,27 @@ namespace Internal.IL
 
         private void ImportShiftOperation(ILOpcode opcode)
         {
+            LLVMValueRef result;
+
+            StackEntry numBitsToShift = _stack.Pop();
+            StackEntry valueToShift = _stack.Pop();
+
+            switch (opcode)
+            {
+                case ILOpcode.shl:
+                    result = LLVM.BuildShl(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shl");
+                    break;
+                case ILOpcode.shr:
+                    result = LLVM.BuildAShr(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shr");
+                    break;
+                case ILOpcode.shr_un:
+                    result = LLVM.BuildLShr(_builder, valueToShift.LLVMValue, numBitsToShift.LLVMValue, "shr");
+                    break;
+                default:
+                    throw new InvalidOperationException(); // Should be unreachable
+            }
+
+            PushExpression(valueToShift.Kind, "", result, valueToShift.Type);
         }
 
         private void ImportCompareOperation(ILOpcode opcode)
@@ -1087,6 +1108,29 @@ namespace Internal.IL
 
         private void ImportUnaryOperation(ILOpcode opCode)
         {
+            var argument = _stack.Pop();
+             
+            LLVMValueRef result;
+            switch (opCode)
+            {
+                case ILOpcode.neg:
+                    if (argument.Kind == StackValueKind.Float)
+                    {
+                        result = LLVM.BuildFNeg(_builder, argument.LLVMValue, "neg");
+                    }   
+                    else
+                    {
+                        result = LLVM.BuildNeg(_builder, argument.LLVMValue, "neg");
+                    }
+                    break;
+                case ILOpcode.not:
+                    result = LLVM.BuildNot(_builder, argument.LLVMValue, "not");
+                    break;
+                default:
+                    throw new NotSupportedException(); // unreachable
+            }
+
+            PushExpression(argument.Kind, "", result, argument.Type);
         }
 
         private void ImportCpOpj(int token)

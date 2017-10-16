@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,20 +31,17 @@ namespace System.IO
 
         public abstract bool CanRead
         {
-            [Pure]
             get;
         }
 
         // If CanSeek is false, Position, Seek, Length, and SetLength should throw.
         public abstract bool CanSeek
         {
-            [Pure]
             get;
         }
 
         public virtual bool CanTimeout
         {
-            [Pure]
             get
             {
                 return false;
@@ -54,7 +50,6 @@ namespace System.IO
 
         public abstract bool CanWrite
         {
-            [Pure]
             get;
         }
 
@@ -466,31 +461,13 @@ namespace System.IO
         {
             internal NullStream() { }
 
-            public override bool CanRead
-            {
-                [Pure]
-                get
-                { return true; }
-            }
+            public override bool CanRead => true;
 
-            public override bool CanWrite
-            {
-                [Pure]
-                get
-                { return true; }
-            }
+            public override bool CanWrite => true;
 
-            public override bool CanSeek
-            {
-                [Pure]
-                get
-                { return true; }
-            }
+            public override bool CanSeek => true;
 
-            public override long Length
-            {
-                get { return 0; }
-            }
+            public override long Length => 0;
 
             public override long Position
             {
@@ -621,32 +598,13 @@ namespace System.IO
                 _stream = stream;
             }
 
-            public override bool CanRead
-            {
-                [Pure]
-                get { return _stream.CanRead; }
-            }
+            public override bool CanRead => _stream.CanRead;
 
-            public override bool CanWrite
-            {
-                [Pure]
-                get { return _stream.CanWrite; }
-            }
+            public override bool CanWrite => _stream.CanWrite;
 
-            public override bool CanSeek
-            {
-                [Pure]
-                get { return _stream.CanSeek; }
-            }
+            public override bool CanSeek => _stream.CanSeek;
 
-            public override bool CanTimeout
-            {
-                [Pure]
-                get
-                {
-                    return _stream.CanTimeout;
-                }
-            }
+            public override bool CanTimeout => _stream.CanTimeout;
 
             public override long Length
             {

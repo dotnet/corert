@@ -20,7 +20,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -29,7 +28,6 @@ namespace System.Threading
         public Mutex(bool initiallyOwned, string name, out bool createdNew)
         {
             VerifyNameForCreate(name);
-            Contract.EndContractBlock();
 
             CreateMutexCore(initiallyOwned, name, out createdNew);
         }
@@ -37,7 +35,6 @@ namespace System.Threading
         public Mutex(bool initiallyOwned, string name)
         {
             VerifyNameForCreate(name);
-            Contract.EndContractBlock();
 
             bool createdNew;
             CreateMutexCore(initiallyOwned, name, out createdNew);

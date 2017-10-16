@@ -915,7 +915,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            yield return new DependencyListEntry(context.ConstructedTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Template EEType");
+            ISymbolNode typeNode;
+            if (!ConstructedEETypeNode.CreationAllowed(_type))
+                typeNode = context.NecessaryTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            else
+                typeNode = context.ConstructedTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+
+            yield return new DependencyListEntry(typeNode, "Template EEType");
 
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType()), "Dictionary layout");
 
@@ -1344,36 +1350,44 @@ namespace ILCompiler.DependencyAnalysis
 
             IEnumerable<MethodDesc> vtableEntriesToProcess;
 
-            switch (whichEntries)
+            if (ConstructedEETypeNode.CreationAllowed(declType))
             {
-                case VTableEntriesToProcess.AllInVTable:
-                    vtableEntriesToProcess = factory.VTable(declType).Slots;
-                    break;
-
-                case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                    if (factory.VTable(declType).HasFixedSlots)
-                    {
+                switch (whichEntries)
+                {
+                    case VTableEntriesToProcess.AllInVTable:
                         vtableEntriesToProcess = factory.VTable(declType).Slots;
-                    }
-                    else
-                    {
-                        vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                    }
-                    break;
+                        break;
 
-                case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                    if (factory.VTable(declType).HasFixedSlots)
-                    {
-                        vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                    }
-                    else
-                    {
-                        vtableEntriesToProcess = EnumVirtualSlotsDeclaredOnType(declType);
-                    }
-                    break;
+                    case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
+                        if (factory.VTable(declType).HasFixedSlots)
+                        {
+                            vtableEntriesToProcess = factory.VTable(declType).Slots;
+                        }
+                        else
+                        {
+                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
+                        }
+                        break;
 
-                default:
-                    throw new Exception();
+                    case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
+                        if (factory.VTable(declType).HasFixedSlots)
+                        {
+                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
+                        }
+                        else
+                        {
+                            vtableEntriesToProcess = EnumVirtualSlotsDeclaredOnType(declType);
+                        }
+                        break;
+
+                    default:
+                        throw new Exception();
+                }
+            }
+            else
+            {
+                // If allocating an object of the EEType isn't permitted, don't process any vtable entries.
+                vtableEntriesToProcess = Array.Empty<MethodDesc>();
             }
 
             // Dictionary slot

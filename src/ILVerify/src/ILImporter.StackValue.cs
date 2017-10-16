@@ -17,7 +17,8 @@ namespace Internal.IL
         {
             None = 0,
             ReadOnly = 1 << 1,
-            PermanentHome = 1 << 2
+            PermanentHome = 1 << 2,
+            ThisPtr = 1 << 3,
         }
         private StackValueFlags Flags;
 
@@ -35,12 +36,19 @@ namespace Internal.IL
 
         public void SetIsReadOnly()
         {
+            Debug.Assert(Kind == StackValueKind.ByRef);
             Flags |= StackValueFlags.ReadOnly;
         }
 
         public void SetIsPermanentHome()
         {
+            Debug.Assert(Kind == StackValueKind.ByRef);
             Flags |= StackValueFlags.PermanentHome;
+        }
+
+        public void SetIsThisPtr()
+        {
+            Flags |= StackValueFlags.ThisPtr;
         }
 
         public bool IsReadOnly
@@ -51,6 +59,11 @@ namespace Internal.IL
         public bool IsPermanentHome
         {
             get { return (Flags & StackValueFlags.PermanentHome) == StackValueFlags.PermanentHome; }
+        }
+
+        public bool IsThisPtr
+        {
+            get { return (Flags & StackValueFlags.ThisPtr) == StackValueFlags.ThisPtr; }
         }
 
         public bool IsNullReference

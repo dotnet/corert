@@ -17,7 +17,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -305,7 +304,6 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == resourceDir)
                 throw new ArgumentNullException(nameof(resourceDir));
-            Contract.EndContractBlock();
 
             BaseNameField = baseName;
 
@@ -326,7 +324,6 @@ namespace System.Resources
 
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
-            Contract.EndContractBlock();
 
             MainAssembly = assembly;
             BaseNameField = baseName;
@@ -736,7 +733,7 @@ namespace System.Resources
 
             foreach (SatelliteContractVersionAttribute attr in attrs)
             {
-                Contract.Assert(v == null, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
+                Debug.Assert(v == null, "Cannot have multiple instances of SatelliteContractVersionAttribute on an assembly!");
                 v = attr.Version;
             }
 
@@ -758,7 +755,7 @@ namespace System.Resources
                 // BCL directory.
                 if (a == typeof(Object).GetTypeInfo().Assembly)
                 {
-                    Contract.Assert(false, System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
+                    Debug.Assert(false, System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
                     return null;
                 }
 
@@ -781,7 +778,7 @@ namespace System.Resources
                                           String typeName2,
                                           AssemblyName asmName2)
         {
-            Contract.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
+            Debug.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
 
             // First, compare type names
             int comma = asmTypeName1.IndexOf(',');
@@ -837,9 +834,9 @@ namespace System.Resources
 #if FEATURE_APPX
         // Throws WinRT hresults
         private string GetStringFromPRI(String stringName, String startingCulture, String neutralResourcesCulture) {
-            Contract.Assert(_bUsingModernResourceManagement);
-            Contract.Assert(_WinRTResourceManager != null);
-            Contract.Assert(_PRIonAppXInitialized);
+            Debug.Assert(_bUsingModernResourceManagement);
+            Debug.Assert(_WinRTResourceManager != null);
+            Debug.Assert(_PRIonAppXInitialized);
         
             if (stringName.Length == 0)
                 return null;
@@ -905,11 +902,11 @@ namespace System.Resources
 
         private void SetAppXConfiguration()
         {
-            Contract.Assert(_bUsingModernResourceManagement == false); // Only this function writes to this member
+            Debug.Assert(_bUsingModernResourceManagement == false); // Only this function writes to this member
 #if FEATURE_APPX
-            Contract.Assert(_WinRTResourceManager == null); // Only this function writes to this member
-            Contract.Assert(_PRIonAppXInitialized == false); // Only this function writes to this member
-            Contract.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
+            Debug.Assert(_WinRTResourceManager == null); // Only this function writes to this member
+            Debug.Assert(_PRIonAppXInitialized == false); // Only this function writes to this member
+            Debug.Assert(_PRIExceptionInfo == null); // Only this function writes to this member
 
             Assembly resourcesAssembly = MainAssembly;
 
@@ -1034,7 +1031,6 @@ namespace System.Resources
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             // Recursion guard so framework resource lookups can't stack overflow
             if (ts_recursionCount > 10)
@@ -1160,7 +1156,6 @@ namespace System.Resources
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
 #if FEATURE_APPX
             if(s_IsAppXModel)

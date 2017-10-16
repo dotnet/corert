@@ -61,6 +61,23 @@ The method name must contain 2 '`_`' characters.
  3. part: the expected [VerifierErrors](https://github.com/dotnet/corert/blob/master/src/ILVerify/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.     
  
  E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
+ 
+### Methods with special names:
+
+In order to test methods with special names (e.g. '.ctor'), the specialname method is defined as usual and a separate empty method is added to the type:
+```
+special.[FriendlyName].[SpecialName]_[Valid | Invalid]_[ExpectedVerifierError1].[ExpectedVerifierError2]....[ExpectedVerifierErrorN]
+```
+
+The format of the special test method is equal to normal valid or invalid tests, except that the first part must contain 3 sub-parts separated by '`.`':
+ 1. part: the '`special`' prefix
+ 2. part: a friendly name
+ 3. part: the name of the specialname method to actually test
+
+Additionally the method signature of the special test method must be equal to the signature of the method that shall be tested.
+
+ E.g.: In order to test a specific invalid constructor method the specialname `.ctor` method is defined as usual, while an additional method ```'special.SimpleAdd..ctor_Invalid_StackUnexpected'``` is defined.
+
 
 The methods are automatically fed into appropriate XUnit theories based on the naming convention. Methods not following this naming conventions are ignored by the test scaffolding system.
 
