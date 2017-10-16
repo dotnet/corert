@@ -1247,6 +1247,15 @@ namespace Internal.IL
 
         private void ImportThrow()
         {
+            var exceptionObject = _stack.Pop();
+
+            if (TrapFunction.Pointer == IntPtr.Zero)
+            {
+                TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+            }
+            LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
+
+            LLVM.BuildUnreachable(_builder);
         }
 
         private void ImportLoadField(int token, bool isStatic)
