@@ -291,6 +291,9 @@
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>
   </data>
+  <data name="ThisMismatch" xml:space="preserve">
+    <value>The 'this' parameter to the call must be the calling method's 'this' parameter.</value>
+  </data>
   <data name="ThisUninitReturn" xml:space="preserve">
     <value>Return from .ctor when this is uninitialized.</value>
   </data>

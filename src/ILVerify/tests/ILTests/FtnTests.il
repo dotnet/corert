@@ -354,4 +354,13 @@
         callvirt    instance void [System.Runtime]System.Action::Invoke()
         ret
     }
+
+    .method static public hidebysig void LdFtn.VirtualMethodNonThisPtr_Invalid_LdftnNonFinalVirtual(class TestClass c) cil managed
+    {
+        ldarg.0
+        ldftn       instance void TestClass::VirtInstanceMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
 }

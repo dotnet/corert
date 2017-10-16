@@ -235,7 +235,7 @@ namespace ILVerify
         UnmanagedPointer,                     // Unmanaged pointers are not a verifiable type.
         LdftnNonFinalVirtual,                 // Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.
         //E_FIELD_OVERLAP                     "Accessing type with overlapping fields."
-        //E_THIS_MISMATCH                     "The 'this' parameter to the call must be the calling method's 'this' parameter."
+        ThisMismatch,                         // The 'this' parameter to the call must be the calling method's 'this' parameter.
         //E_STACK_I_I4                        "Expected I4 on the stack."
 
         //E_BAD_PE             "Unverifiable PE Header/native stub."
