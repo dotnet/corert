@@ -22,46 +22,47 @@ internal static class Program
 		if(tempInt == 9)
 		{
 			string s = "Hello from C#!";
-			PrintString(s, 14);
+			PrintString(s);
 		}
 		
 		var not = Not(0xFFFFFFFF) == 0x00000000;
 		if(not)
 		{
-			PrintString("\n", 1);
-			PrintString("not test: Ok.", 13);
+			PrintString("\n");
+			PrintString("not test: Ok.");
 		}
 		
 		var negInt = Neg(42) == -42;
 		if(negInt)
 		{
-			PrintString("\n", 1);
-			PrintString("negInt test: Ok.", 16);
+			PrintString("\n");
+			PrintString("negInt test: Ok.");
 		}
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
         if(shiftLeft)
         {
-            PrintString("\n", 1);
-            PrintString("shiftLeft test: Ok.", 19);
+            PrintString("\n");
+            PrintString("shiftLeft test: Ok.");
         }
 
         var shiftRight = ShiftRight(4, 2) == 1;
         if(shiftRight)
         {
-            PrintString("\n", 1);
-            PrintString("shiftRight test: Ok.", 20);
+            PrintString("\n");
+            PrintString("shiftRight test: Ok.");
         }
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         if(unsignedShift)
         {
-            PrintString("\n", 1);
-            PrintString("unsignedShift test: Ok.", 23);
+            PrintString("\n");
+            PrintString("unsignedShift test: Ok.");
         }
     }
 
-    private static unsafe void PrintString(string s, int length)
+    private static unsafe void PrintString(string s)
     {
+        int length = s.Length;
         fixed (char* curChar = s)
         {
             for (int i = 0; i < length; i++)
