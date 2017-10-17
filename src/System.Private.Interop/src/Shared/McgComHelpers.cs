@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSeek,
                 pStreamNativePtr,
                 0UL,
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSetSize,
                 pStreamNativePtr,
                 lSize,
