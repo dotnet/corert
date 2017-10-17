@@ -55,6 +55,17 @@
         ret
     }
 
+    .method public hidebysig static void InaccessibleParamMethod(class SimpleClass/PrivateNestedClass c) cil managed 
+    {
+        ret
+    }
+
+    .method public hidebysig static class SimpleClass/PrivateNestedClass InaccessibleReturnMethod() cil managed 
+    {
+        newobj      instance void SimpleClass/PrivateNestedClass::.ctor()
+        ret
+    }
+
     .class nested public auto ansi beforefieldinit PublicNestedClass
         extends [System.Runtime]System.Object
     {
@@ -62,6 +73,13 @@
         {
             ldarg.0
             call        instance void [System.Runtime]System.Object::.ctor()
+            ret
+        }
+
+        .method public hidebysig static void Instantiate.PrivateNestedClassFromNested_Valid() cil managed 
+        {
+            newobj      instance void SimpleClass/PrivateNestedClass::.ctor()
+            pop
             ret
         }
     }
@@ -88,7 +106,7 @@
         }
     }
 
-    .class nested famorassem auto ansi beforefieldinit AssemblyOrFamilyNestedClass
+    .class nested famorassem auto ansi beforefieldinit FamilyOrAssemblyNestedClass
         extends [System.Runtime]System.Object
     {
         .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
@@ -99,7 +117,7 @@
         }
     }
 
-    .class nested famandassem auto ansi beforefieldinit AssemblyAndFamilyNestedClass
+    .class nested famandassem auto ansi beforefieldinit FamilyAndAssemblyNestedClass
         extends [System.Runtime]System.Object
     {
         .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
@@ -119,6 +137,20 @@
             call        instance void [System.Runtime]System.Object::.ctor()
             ret
         }
+    }
+
+    .method private hidebysig static void Call.PrivateClassParamIntern_Valid(class SimpleClass/PrivateNestedClass c) cil managed 
+    {
+        ldarg.0
+        call        void SimpleClass::InaccessibleParamMethod(class SimpleClass/PrivateNestedClass)
+        ret
+    }
+
+    .method private hidebysig static void Call.PrivateReturnTypeIntern_Valid() cil managed 
+    {
+        call        class SimpleClass/PrivateNestedClass SimpleClass::InaccessibleReturnMethod()
+        pop
+        ret
     }
 }
 
@@ -148,14 +180,14 @@
 
     .method public hidebysig instance void InstantiateAssemOrFamNested_Valid() cil managed
     {
-        newobj      instance void SimpleClass/AssemblyOrFamilyNestedClass::.ctor()
+        newobj      instance void SimpleClass/FamilyOrAssemblyNestedClass::.ctor()
         pop
         ret
     }
 
     .method public hidebysig instance void InstantiateAssemAndFamNested_Invalid_MethodAccess() cil managed
     {
-        newobj      instance void SimpleClass/AssemblyAndFamilyNestedClass::.ctor()
+        newobj      instance void SimpleClass/FamilyAndAssemblyNestedClass::.ctor()
         pop
         ret
     }
@@ -163,6 +195,20 @@
     .method public hidebysig instance void InstantiateFamilyNested_Invalid_MethodAccess() cil managed
     {
         newobj      instance void SimpleClass/FamilyNestedClass::.ctor()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Call.PrivateClassParamExtern_Invalid_MethodAccess(class SimpleClass/PrivateNestedClass c) cil managed
+    {
+        ldarg.1
+        call        void SimpleClass::InaccessibleParamMethod(class SimpleClass/PrivateNestedClass)
+        ret
+    }
+
+    .method public hidebysig instance void Call.PrivateReturnTypeExtern_Invalid_MethodAccess() cil managed
+    {
+        call        class SimpleClass/PrivateNestedClass SimpleClass::InaccessibleReturnMethod()
         pop
         ret
     }
@@ -174,6 +220,20 @@
     .method public hidebysig instance void Call.DerivedFamAndAssemblyMethod_Valid() cil managed
     {
         call      void SimpleClass::FamilyAndAssemblyMethod()
+        ret
+    }
+
+    .method public hidebysig instance void Instantiate.FamOrAssemblyNestedClassFromDerived_Valid() cil managed
+    {
+        newobj      instance void SimpleClass/FamilyOrAssemblyNestedClass::.ctor()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Instantiate.FamNestedClassFromDerived_Valid() cil managed
+    {
+        newobj      instance void SimpleClass/FamilyNestedClass::.ctor()
+        pop
         ret
     }
 }

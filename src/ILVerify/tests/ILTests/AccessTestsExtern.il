@@ -54,14 +54,14 @@
 
     .method public hidebysig instance void Instantiate.AssemOrFamNested_Invalid_MethodAccess() cil managed
     {
-        newobj      instance void [AccessTests]SimpleClass/AssemblyOrFamilyNestedClass::.ctor()
+        newobj      instance void [AccessTests]SimpleClass/FamilyOrAssemblyNestedClass::.ctor()
         pop
         ret
     }
 
     .method public hidebysig instance void Instantiate.AssemAndFamNested_Invalid_MethodAccess() cil managed
     {
-        newobj      instance void [AccessTests]SimpleClass/AssemblyAndFamilyNestedClass::.ctor()
+        newobj      instance void [AccessTests]SimpleClass/FamilyAndAssemblyNestedClass::.ctor()
         pop
         ret
     }
@@ -122,6 +122,31 @@
     .method public hidebysig instance void Call.DerivedFamAndAssemblyMethod_Invalid_MethodAccess() cil managed
     {
         call      void [AccessTests]SimpleClass::FamilyAndAssemblyMethod()
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit DerivedClass
+        extends [AccessTests]SimpleClass
+{
+    .method public hidebysig instance void Instantiate.FamAndAssemblyNestedClassFromDerived_Invalid_MethodAccess() cil managed
+    {
+        newobj      instance void [AccessTests]SimpleClass/FamilyAndAssemblyNestedClass::.ctor()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Instantiate.FamOrAssemblyNestedClassFromDerived_Valid() cil managed
+    {
+        newobj      instance void [AccessTests]SimpleClass/FamilyOrAssemblyNestedClass::.ctor()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Instantiate.FamNestedClassFromDerived_Valid() cil managed
+    {
+        newobj      instance void [AccessTests]SimpleClass/FamilyNestedClass::.ctor()
+        pop
         ret
     }
 }

@@ -14,6 +14,12 @@ namespace ILVerify
     {
         internal static bool CanAccess(this TypeDesc currentClass, TypeDesc targetClass)
         {
+            if (targetClass.IsGenericParameter || targetClass.IsSignatureVariable)
+                return true; // Generic parameters are always accessible
+
+            if (targetClass.IsArray)
+                return currentClass.CanAccess(targetClass = ((ArrayType)targetClass).ParameterType);
+
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
                 return false;
@@ -56,7 +62,7 @@ namespace ILVerify
             if (!currentTypeDef.CanAccessMember((EcmaType)targetMethodDef.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask))
                 return false;
 
-            return currentTypeDef.CanAccessMethodSignature(targetMethodDef);
+            return currentTypeDef.CanAccessMethodSignature(targetMethod);
         }
 
         private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility)
