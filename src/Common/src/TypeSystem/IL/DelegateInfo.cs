@@ -117,17 +117,18 @@ namespace Internal.IL
             for (int i = 0; i < delegateSignature.Length; i++)
             {
                 TypeDesc paramType = delegateSignature[i];
-                if (!paramType.IsSignatureVariable &&
-                    (paramType.IsByRefLike ||
-                    (paramType.IsByRef && ((ByRefType)paramType).ParameterType.IsByRefLike)))
+                if (paramType.IsByRef)
+                    paramType = ((ByRefType)paramType).ParameterType;
+                if (!paramType.IsSignatureVariable && paramType.IsByRefLike)
                 {
                     generateObjectArrayThunk = false;
                     break;
                 }
             }
-            if (!delegateSignature.ReturnType.IsSignatureVariable &&
-                (delegateSignature.ReturnType.IsByRefLike ||
-                (delegateSignature.ReturnType.IsByRef && ((ByRefType)delegateSignature.ReturnType).ParameterType.IsByRefLike)))
+            TypeDesc normalizedReturnType = delegateSignature.ReturnType;
+            if (normalizedReturnType.IsByRef)
+                normalizedReturnType = ((ByRefType)normalizedReturnType).ParameterType;
+            if (!normalizedReturnType.IsSignatureVariable && normalizedReturnType.IsByRefLike)
                 generateObjectArrayThunk = false;
 
             if (generateObjectArrayThunk)
