@@ -41,8 +41,8 @@ namespace Internal.TypeSystem
                 // This is to not end up having method instantiations like Foo<__UniversalCanon>.Method<int> or Foo<__UniversalCanon>.Method<string>
                 // or Foo<__UniversalCanon>.Method<__Canon> or Foo<int>.Method<__UniversalCanon>
                 // It should just be Foo<__UniversalCanon>.Method<__UniversalCanon>
-                if (canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Universal) &&
-                    canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Specific))
+                if ((kind == CanonicalFormKind.Specific) && 
+                    canonicalMethodResult.IsCanonicalMethod(CanonicalFormKind.Universal))
                 {
                     canonicalMethodResult = (InstantiatedMethod)canonicalMethodResult.GetCanonMethodTarget(CanonicalFormKind.Universal);
                 }
