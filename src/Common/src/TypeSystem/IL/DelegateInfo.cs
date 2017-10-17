@@ -109,12 +109,33 @@ namespace Internal.IL
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
-            _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
 
-            if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(owningDelegate.Signature))
-                _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
-
+            // Methods that have a byref-like type in the signature cannot be invoked with the object array thunk.
+            // We would need to box the parameter and these can't be boxed.
             MethodSignature delegateSignature = owningDelegate.Signature;
+            bool generateObjectArrayThunk = true;
+            for (int i = 0; i < delegateSignature.Length; i++)
+            {
+                TypeDesc paramType = delegateSignature[i];
+                if (!paramType.IsSignatureVariable &&
+                    (paramType.IsByRefLike ||
+                    (paramType.IsByRef && ((ByRefType)paramType).ParameterType.IsByRefLike)))
+                {
+                    generateObjectArrayThunk = false;
+                    break;
+                }
+            }
+            if (!delegateSignature.ReturnType.IsSignatureVariable &&
+                (delegateSignature.ReturnType.IsByRefLike ||
+                (delegateSignature.ReturnType.IsByRef && ((ByRefType)delegateSignature.ReturnType).ParameterType.IsByRefLike)))
+                generateObjectArrayThunk = false;
+
+            if (generateObjectArrayThunk)
+                _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
+
+            if (!owningDelegate.Type.HasInstantiation && IsNativeCallingConventionCompatible(delegateSignature))
+                _reversePInvokeThunk = new DelegateReversePInvokeThunk(owningDelegate);
+            
             if (delegateSignature.Length > 0)
             {
                 TypeDesc firstParam = delegateSignature[0];
