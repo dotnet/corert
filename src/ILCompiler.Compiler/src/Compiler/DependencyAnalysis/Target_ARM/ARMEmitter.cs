@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ARM
@@ -13,10 +14,25 @@ namespace ILCompiler.DependencyAnalysis.ARM
         {
             Builder = new ObjectDataBuilder(factory, relocsOnly);
             TargetRegister = new TargetRegisterMap(factory.Target.OperatingSystem);
+            _debugLocInfos = new ArrayBuilder<DebugLocInfo>();
         }
 
         public ObjectDataBuilder Builder;
         public TargetRegisterMap TargetRegister;
+        private ArrayBuilder<DebugLocInfo> _debugLocInfos;
+
+        public DebugLocInfo[] GetDebugLocInfos()
+        {
+            return _debugLocInfos.ToArray();
+        }
+
+        public void MarkDebuggerStepInPoint()
+        {
+            if (_debugLocInfos.Count == 0 && Builder.CountBytes > 0)
+                _debugLocInfos.Add(new DebugLocInfo(0, "", 0xF00F00));
+
+            _debugLocInfos.Add(new DebugLocInfo(Builder.CountBytes, "", 0xFEEFEE));
+        }
 
         // check the value length
         private static bool IsBitNumOverflow(int value, byte numBits)

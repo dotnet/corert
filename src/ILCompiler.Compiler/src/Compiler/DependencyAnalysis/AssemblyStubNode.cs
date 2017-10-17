@@ -33,14 +33,14 @@ namespace ILCompiler.DependencyAnalysis
                     EmitCode(factory, ref x64Emitter, relocsOnly);
                     x64Emitter.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
                     x64Emitter.Builder.AddSymbol(this);
-                    return x64Emitter.Builder.ToObjectData();
+                    return x64Emitter.Builder.ToMethodCode(x64Emitter.GetDebugLocInfos(), null);
 
                 case TargetArchitecture.X86:
                     X86.X86Emitter x86Emitter = new X86.X86Emitter(factory, relocsOnly);
                     EmitCode(factory, ref x86Emitter, relocsOnly);
                     x86Emitter.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
                     x86Emitter.Builder.AddSymbol(this);
-                    return x86Emitter.Builder.ToObjectData();
+                    return x86Emitter.Builder.ToMethodCode(x86Emitter.GetDebugLocInfos(), null);
 
                 case TargetArchitecture.ARM:
                 case TargetArchitecture.ARMEL:
@@ -48,14 +48,14 @@ namespace ILCompiler.DependencyAnalysis
                     EmitCode(factory, ref armEmitter, relocsOnly);
                     armEmitter.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
                     armEmitter.Builder.AddSymbol(this);
-                    return armEmitter.Builder.ToObjectData();
+                    return armEmitter.Builder.ToMethodCode(armEmitter.GetDebugLocInfos(), null);
 
                 case TargetArchitecture.ARM64:
                     ARM64.ARM64Emitter arm64Emitter = new ARM64.ARM64Emitter(factory, relocsOnly);
                     EmitCode(factory, ref arm64Emitter, relocsOnly);
                     arm64Emitter.Builder.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
                     arm64Emitter.Builder.AddSymbol(this);
-                    return arm64Emitter.Builder.ToObjectData();
+                    return arm64Emitter.Builder.ToMethodCode(arm64Emitter.GetDebugLocInfos(), null);
 
                 default:
                     throw new NotImplementedException();

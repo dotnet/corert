@@ -45,6 +45,7 @@ namespace ILCompiler.DependencyAnalysis
                             Debug.Assert(slot != -1);
                         }
 
+                        encoder.MarkDebuggerStepInPoint();
                         AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                     }
