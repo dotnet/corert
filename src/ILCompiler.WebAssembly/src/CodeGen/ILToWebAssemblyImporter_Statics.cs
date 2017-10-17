@@ -23,7 +23,12 @@ namespace Internal.IL
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-            compilation.Logger.Writer.WriteLine("Compiling " + method.ToString());
+            if (compilation.Logger.IsVerbose)
+            {
+                string methodName = method.ToString();
+                compilation.Logger.Writer.WriteLine("Compiling " + methodName);
+            }
+
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 throw new NotImplementedException();
