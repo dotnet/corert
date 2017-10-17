@@ -198,6 +198,9 @@
   <data name="ExpectedValClassObjRefVariable" xml:space="preserve">
     <value>Value type, ObjRef type or variable type expected.</value>
   </data>
+  <data name="FieldAccess" xml:space="preserve">
+    <value>Field is not visible.</value>
+  </data>
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>

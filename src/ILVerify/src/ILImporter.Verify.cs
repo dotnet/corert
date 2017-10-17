@@ -1461,6 +1461,8 @@ namespace Internal.IL
                 CheckIsAssignable(actualThis, declaredThis);               
             }
 
+            Check(_method.OwningType.CanAccess(field), VerifierError.FieldAccess);
+
             Push(StackValue.CreateFromType(field.FieldType));
         }
 
@@ -1494,6 +1496,8 @@ namespace Internal.IL
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
             }
 
+            Check(_method.OwningType.CanAccess(field), VerifierError.FieldAccess);
+
             Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
 
@@ -1526,6 +1530,8 @@ namespace Internal.IL
 
                 CheckIsAssignable(actualThis, declaredThis);
             }
+
+            Check(_method.OwningType.CanAccess(field), VerifierError.FieldAccess);
 
             CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));
         }

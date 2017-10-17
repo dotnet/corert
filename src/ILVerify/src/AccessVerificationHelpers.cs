@@ -12,6 +12,9 @@ namespace ILVerify
 {
     internal static class AccessVerificationHelpers
     {
+        /// <summary>
+        /// Returns whether the class <paramref name="currentClass"/> can access the class <paramref name="targetClass"/>.
+        /// </summary>
         internal static bool CanAccess(this TypeDesc currentClass, TypeDesc targetClass)
         {
             if (targetClass.IsGenericParameter || targetClass.IsSignatureVariable)
@@ -50,6 +53,9 @@ namespace ILVerify
             return currentTypeDef.CanAccessMember(targetContainingType, visibility);
         }
 
+        /// <summary>
+        /// Returns whether the class <paramref name="currentClass"/> can access the method <paramref name="targetMethod"/>.
+        /// </summary>
         internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod)
         {
             // If generic method, check instantiation access
@@ -59,10 +65,28 @@ namespace ILVerify
             var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
             var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
 
-            if (!currentTypeDef.CanAccessMember((EcmaType)targetMethodDef.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask))
+            if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask))
                 return false;
 
             return currentTypeDef.CanAccessMethodSignature(targetMethod);
+        }
+
+        /// <summary>
+        /// Returns whether the class <paramref name="currentClass"/> can access the field <paramref name="targetField"/>.
+        /// </summary>
+        internal static bool CanAccess(this TypeDesc currentType, FieldDesc targetField)
+        {
+            // Check access to field owning type
+            var targetFieldDef = (EcmaField)targetField.GetTypicalFieldDefinition();
+            var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
+
+            var targetFieldAccess = FieldToMethodAccessAttribute(targetFieldDef.Attributes);
+
+            if (!currentTypeDef.CanAccessMember(targetField.OwningType, targetFieldAccess))
+                return false;
+
+            // Check access to field type itself
+            return currentType.CanAccess(targetField.FieldType);
         }
 
         private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility)
@@ -152,9 +176,6 @@ namespace ILVerify
         {
             foreach (var inst in instantiation)
             {
-                if (inst.IsGenericParameter || inst.IsSignatureVariable)
-                    continue; // Generic parameters are always accessible
-
                 if (!currentType.CanAccess(inst))
                     return false;
             }
@@ -210,6 +231,30 @@ namespace ILVerify
                 case TypeAttributes.NestedPrivate:
                     return MethodAttributes.Private;
                 case TypeAttributes.NestedPublic:
+                    return MethodAttributes.Public;
+                default:
+                    Debug.Assert(false);
+                    return MethodAttributes.Public;
+            }
+        }
+
+        private static MethodAttributes FieldToMethodAccessAttribute(FieldAttributes attributes)
+        {
+            switch (attributes & FieldAttributes.FieldAccessMask)
+            {
+                case FieldAttributes.Assembly:
+                    return MethodAttributes.Assembly;
+                case FieldAttributes.FamANDAssem:
+                    return MethodAttributes.FamANDAssem;
+                case FieldAttributes.Family:
+                    return MethodAttributes.Family;
+                case FieldAttributes.FamORAssem:
+                    return MethodAttributes.FamORAssem;
+                case FieldAttributes.Private:
+                    return MethodAttributes.Private;
+                case FieldAttributes.PrivateScope:
+                    return MethodAttributes.PrivateScope;
+                case FieldAttributes.Public:
                     return MethodAttributes.Public;
                 default:
                     Debug.Assert(false);
