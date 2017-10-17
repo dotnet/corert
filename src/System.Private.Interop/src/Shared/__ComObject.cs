@@ -3067,7 +3067,7 @@ namespace System.Runtime.InteropServices
                     (Interop.COM.__IContextCallback*)(void*)pContextCallback;
                 fixed (Guid* unsafe_iid = &Interop.COM.IID_IEnterActivityWithNoLock)
                 {
-                    int hr = CalliIntrinsics.StdCall<int>(
+                    int hr = CalliIntrinsics.StdCall__int(
                         pContextCallbackNativePtr->vtbl->pfnContextCallback,
                         pContextCallbackNativePtr,                              // Don't forget 'this pointer
                         AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget1>(EnterContextCallbackProc),
@@ -3608,7 +3608,7 @@ namespace System.Runtime.InteropServices
 
                     try
                     {
-                        int hr = CalliIntrinsics.StdCall<int>(
+                        int hr = CalliIntrinsics.StdCall__int(
                             pIStringable->pVtable->pfnToString,
                             pIStringable,
                             &unsafe_hstring

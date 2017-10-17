@@ -1612,7 +1612,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void **)&pIMarshal);
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnGetUnmarshalClass,
                     pIMarshal,
                     piid,
@@ -1645,7 +1645,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void**)&pIMarshal); ;
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnGetMarshalSizeMax,
                     pIMarshal,
                     piid,
@@ -1678,7 +1678,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void**)&pIMarshal);
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnMarshalInterface,
                     pIMarshal,
                     pStm,
@@ -1708,7 +1708,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void**)&pIMarshal);
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnUnmarshalInterface,
                     pIMarshal,
                     pStm,
@@ -1733,7 +1733,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void**)&pIMarshal);
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnReleaseMarshalData,
                     pIMarshal,
                     pStm);
@@ -1756,7 +1756,7 @@ namespace System.Runtime.InteropServices
                 int hr = GetIMarshal((void**)&pIMarshal);
                 if (hr < 0) return hr;
 
-                return CalliIntrinsics.StdCall<int>(
+                return CalliIntrinsics.StdCall__int(
                     (*pIMarshal)->pfnDisconnectObject,
                     pIMarshal,
                     dwReserved);

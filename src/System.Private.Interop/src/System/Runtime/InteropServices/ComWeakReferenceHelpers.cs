@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices
                     {
                         // Now that we have the IWeakReferenceSource , we need to call the GetWeakReference method to get the corresponding IWeakReference
                         __com_IWeakReferenceSource* pComWeakRefSource = (__com_IWeakReferenceSource*)pWeakRefSource;
-                        int result = CalliIntrinsics.StdCall<int>(
+                        int result = CalliIntrinsics.StdCall__int(
                            pComWeakRefSource->pVtable->pfnGetWeakReference,
                            pWeakRefSource,
                            out pWeakRef);
