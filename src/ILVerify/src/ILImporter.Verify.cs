@@ -285,8 +285,6 @@ namespace Internal.IL
 
             while (_currentOffset < _ilBytes.Length)
             {
-                MarkInstructionBoundary();
-
                 ILOpcode opCode = (ILOpcode)ReadILByte();
 
 again:
