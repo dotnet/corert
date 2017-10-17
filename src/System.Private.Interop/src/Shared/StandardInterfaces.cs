@@ -1579,7 +1579,7 @@ namespace System.Runtime.InteropServices
 
         static unsafe int GetIMarshal(void **ppIMarshal)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             void *pUnk = null;
             int hr = ExternalInterop.CoCreateFreeThreadedMarshaler(null, (void **)&pUnk);
             if (hr < 0) return hr;
@@ -1801,7 +1801,7 @@ namespace System.Runtime.InteropServices
         /// <returns>The IStream*</returns>
         internal static unsafe IntPtr CreateMemStm(ulong lSize)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             __com_IStream* pIStream = (__com_IStream*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)sizeof(__com_IStream)));
             pIStream->pVtable = (__vtable_IStream*)__vtable_IStream.GetVtable();
             pIStream->m_cbCurrent = 0;
@@ -2077,7 +2077,7 @@ namespace System.Runtime.InteropServices
 
         #region Rest of IStream overrides that are not implemented
         [NativeCallable]
-        internal static int Clone(System.IntPtr pComThis, out IntPtr ppstm)
+        internal static int Clone(System.IntPtr pComThis, IntPtr ppstm)
         {
             ppstm = default(IntPtr);
             return Interop.COM.E_NOTIMPL;

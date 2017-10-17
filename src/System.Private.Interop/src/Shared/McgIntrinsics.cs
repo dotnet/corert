@@ -608,7 +608,7 @@ namespace System.Runtime.InteropServices
             IntPtr puArgErr);
 
         // IStream
-        internal delegate int AddrOfIStreamClone(IntPtr pComThis, out IntPtr ppstm);
+        internal delegate int AddrOfIStreamClone(IntPtr pComThis, IntPtr ppstm);
         internal delegate int AddrOfIStreamCopyTo(IntPtr pComThis, IntPtr pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         internal delegate int AddrOfIStreamLockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamRead(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbRead);
