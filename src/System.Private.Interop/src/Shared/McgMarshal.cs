@@ -367,7 +367,7 @@ namespace System.Runtime.InteropServices
         }
 #endif
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
        
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe HSTRING StringToHString(string sourceString)
@@ -408,7 +408,7 @@ namespace System.Runtime.InteropServices
                 return hr;
             }
         }
-#endif //ENABLE_WINRT
+#endif //ENABLE_MIN_WINRT
 
 #endregion
 
