@@ -847,6 +847,12 @@ namespace Internal.JitInterface
                 return null;
             }
 
+            if (implType.IsValueType)
+            {
+                // TODO: this ends up asserting RyuJIT because it's expecting an unboxing thunk
+                return null;
+            }
+
             implType = implType.GetClosestDefType();
 
             MethodDesc decl = HandleToObject(baseMethod);
@@ -859,12 +865,6 @@ namespace Internal.JitInterface
             if (declOwningType.IsInterface)
             {
                 // Interface call devirtualization.
-
-                if (implType.IsValueType)
-                {
-                    // TODO: this ends up asserting RyuJIT - why?
-                    return null;
-                }
 
                 if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
