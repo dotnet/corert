@@ -39,6 +39,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             _isUnboxing = isUnboxing;
             _method = method;
+
+            // Ensure all method bodies are fully canonicalized or not at all.
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) || (method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method));
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Universal) || (method.GetCanonMethodTarget(CanonicalFormKind.Universal) == method));
         }
 
         protected override string GetName(NodeFactory factory) => "Non" + base.GetName(factory);

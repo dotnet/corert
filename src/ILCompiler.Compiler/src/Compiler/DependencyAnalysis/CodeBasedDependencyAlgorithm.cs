@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies = new DependencyList();
 
                 if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method)
-                    && ((factory.Target.Abi != TargetAbi.ProjectN) || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
+                    && ((factory.Target.Abi != TargetAbi.ProjectN) || ProjectNDependencyBehavior.EnableFullAnalysis || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
                 {
                     MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
                     if (canonInvokeStub.IsSharedByGenericInstantiations)
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 bool skipUnboxingStubDependency = false;
-                if (factory.Target.Abi == TargetAbi.ProjectN)
+                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
                 {
                     // ProjectN compilation currently computes the presence of these stubs independent from dependency analysis here
                     // TODO: fix that issue and remove this odd treatment of unboxing stubs
