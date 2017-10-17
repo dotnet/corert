@@ -296,3 +296,40 @@
         ret
     }
 }
+
+// Special case: Nested class trying to access family field of superclass of containing class
+
+.class private auto ansi beforefieldinit SuperClass
+        extends [System.Runtime]System.Object
+{
+    .field family static int32 familyField
+
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
+    {
+        ldarg.0
+        call        instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+}
+
+.class private auto ansi beforefieldinit NestedClass
+        extends SuperClass
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
+    {
+        ldarg.0
+        call        instance void SuperClass::.ctor()
+        ret
+    }
+
+    .class nested private auto ansi beforefieldinit NestedClass
+        extends [System.Runtime]System.Object
+    {
+        .method private hidebysig instance void Load.FamFieldOfSuperOfContaining_Valid() cil managed
+        {
+            ldsfld      int32 SuperClass::familyField
+            pop
+            ret
+        }
+    }
+}
