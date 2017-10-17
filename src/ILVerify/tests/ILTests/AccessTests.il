@@ -20,9 +20,27 @@
     }
 }
 
+.class public auto ansi beforefieldinit GenericClass<S, T>
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
+    {
+        ldarg.0
+        call        instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit SimpleClass
         extends [System.Runtime]System.Object
 {
+    .field public static int32 publicField
+    .field private static int32 privateField
+    .field family static int32 familyField
+    .field assembly static int32 assemblyField
+    .field famorassem static int32 familyOrAssemblyField
+    .field famandassem static int32 familyAndAssemblyField
+
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {
         ldarg.0
@@ -60,6 +78,11 @@
         ret
     }
 
+    .method public hidebysig static void GenericMethod<T>() cil managed 
+    {
+        ret
+    }
+
     .method public hidebysig static class SimpleClass/PrivateNestedClass InaccessibleReturnMethod() cil managed 
     {
         newobj      instance void SimpleClass/PrivateNestedClass::.ctor()
@@ -82,11 +105,20 @@
             pop
             ret
         }
+
+        .method public hidebysig static void Load.PrivateFieldFromNestedClass_Valid() cil managed 
+        {
+            ldsfld      int32 SimpleClass::privateField
+            pop
+            ret
+        }
     }
 
     .class nested private auto ansi beforefieldinit PrivateNestedClass
         extends [System.Runtime]System.Object
     {
+        .field public static int32 publicField
+
         .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
         {
             ldarg.0
@@ -157,44 +189,51 @@
 .class public auto ansi beforefieldinit AccessTestsType
         extends [System.Runtime]System.Object
 {
-    .method public hidebysig instance void InstantiatePublicNested_Valid() cil managed
+    .method public hidebysig instance void Instantiate.PublicNestedClass_Valid() cil managed
     {
         newobj      instance void SimpleClass/PublicNestedClass::.ctor()
         pop
         ret
     }
 
-    .method public hidebysig instance void InstantiatePrivateNested_Invalid_MethodAccess() cil managed
+    .method public hidebysig instance void Instantiate.PrivateNestedClass_Invalid_MethodAccess() cil managed
     {
         newobj      instance void SimpleClass/PrivateNestedClass::.ctor()
         pop
         ret
     }
 
-    .method public hidebysig instance void InstantiateAssemNested_Valid() cil managed
+    .method public hidebysig instance void Instantiate.AssemNestedClass_Valid() cil managed
     {
         newobj      instance void SimpleClass/AssemblyNestedClass::.ctor()
         pop
         ret
     }
 
-    .method public hidebysig instance void InstantiateAssemOrFamNested_Valid() cil managed
+    .method public hidebysig instance void Instantiate.AssemOrFamNestedClass_Valid() cil managed
     {
         newobj      instance void SimpleClass/FamilyOrAssemblyNestedClass::.ctor()
         pop
         ret
     }
 
-    .method public hidebysig instance void InstantiateAssemAndFamNested_Invalid_MethodAccess() cil managed
+    .method public hidebysig instance void Instantiate.AssemAndFamNestedClass_Invalid_MethodAccess() cil managed
     {
         newobj      instance void SimpleClass/FamilyAndAssemblyNestedClass::.ctor()
         pop
         ret
     }
 
-    .method public hidebysig instance void InstantiateFamilyNested_Invalid_MethodAccess() cil managed
+    .method public hidebysig instance void Instantiate.FamilyNestedClass_Invalid_MethodAccess() cil managed
     {
         newobj      instance void SimpleClass/FamilyNestedClass::.ctor()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Instantiate.GenericWithPrivateNestedClass_Invalid_MethodAccess() cil managed
+    {
+        newobj      instance void class GenericClass<class SimpleClass/PrivateNestedClass, class SimpleClass/PublicNestedClass>::.ctor()
         pop
         ret
     }
@@ -209,6 +248,26 @@
     .method public hidebysig instance void Call.PrivateReturnTypeExtern_Invalid_MethodAccess() cil managed
     {
         call        class SimpleClass/PrivateNestedClass SimpleClass::InaccessibleReturnMethod()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Call.GenericMethodWithPrivateNestedClass_Invalid_MethodAccess() cil managed
+    {
+        call      void class SimpleClass::GenericMethod<class SimpleClass/PrivateNestedClass>()
+        ret
+    }
+
+    .method public hidebysig instance void Load.PrivateFieldExtern_Invalid_FieldAccess() cil managed
+    {
+        ldsfld      int32 SimpleClass::privateField
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Load.PublicFieldOfPrivateClass_Invalid_FieldAccess() cil managed
+    {
+        ldsfld      int32 SimpleClass/PrivateNestedClass::publicField
         pop
         ret
     }
