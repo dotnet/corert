@@ -109,11 +109,7 @@ namespace Internal.IL
                 }
                 LLVMBasicBlockRef trapBlock = LLVM.AppendBasicBlock(_llvmFunction, "Trap");
                 LLVM.PositionBuilderAtEnd(_builder, trapBlock);
-                if (TrapFunction.Pointer == IntPtr.Zero)
-                {
-                    TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
-                }
-                LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), String.Empty);
+                EmitTrapCall();
                 LLVM.BuildRetVoid(_builder);
                 throw;
             }
@@ -1247,6 +1243,9 @@ namespace Internal.IL
 
         private void ImportThrow()
         {
+            var exceptionObject = _stack.Pop();
+
+            EmitTrapCall();
         }
 
         private void ImportLoadField(int token, bool isStatic)
@@ -1431,5 +1430,13 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
+        private void EmitTrapCall()
+        {
+            if (TrapFunction.Pointer == IntPtr.Zero)
+            {
+                TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+            }
+            LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
+        }
     }
 }
