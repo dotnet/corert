@@ -8,11 +8,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     interface IMethodCodeNode : IMethodNode, ISymbolDefinitionNode
     {
-        void SetCode(ObjectNode.ObjectData data);
+        void SetCode(byte[] data, Relocation[] relocs, DebugLocInfo[] debugLocInfos, DebugVarInfo[] debugVarInfos);
         void InitializeFrameInfos(FrameInfo[] frameInfos);
         void InitializeGCInfo(byte[] gcInfo);
         void InitializeEHInfo(ObjectNode.ObjectData ehInfo);
-        void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos);
-        void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos);
     }
 }

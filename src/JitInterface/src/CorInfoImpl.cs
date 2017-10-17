@@ -385,20 +385,13 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            var objectData = new ObjectNode.ObjectData(_code,
-                                                       relocs,
-                                                       _compilation.NodeFactory.Target.MinimumFunctionAlignment,
-                                                       new ISymbolDefinitionNode[] { _methodCodeNode });
-
-            _methodCodeNode.SetCode(objectData);
+            _methodCodeNode.SetCode(_code, relocs,
+                _debugLocInfos, _debugVarInfos);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             if (_ehClauses != null)
                 _methodCodeNode.InitializeEHInfo(EncodeEHInfo());
-
-            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
-            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
         }
 
         private MethodDesc MethodBeingCompiled

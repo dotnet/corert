@@ -26,6 +26,20 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ISymbolDefinitionNode[] DefinedSymbols;
         }
 
+        public class MethodCode : ObjectData, INodeWithDebugInfo
+        {
+            public MethodCode(byte[] data, Relocation[] relocs, int alignment, ISymbolDefinitionNode[] definedSymbols,
+                DebugLocInfo[] debugLocInfos, DebugVarInfo[] debugVarInfos)
+                : base(data, relocs, alignment, definedSymbols)
+            {
+                DebugLocInfos = debugLocInfos;
+                DebugVarInfos = debugVarInfos;
+            }
+
+            public DebugLocInfo[] DebugLocInfos { get; }
+            public DebugVarInfo[] DebugVarInfos { get; }
+        }
+
         public virtual bool RepresentsIndirectionCell => false;
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);

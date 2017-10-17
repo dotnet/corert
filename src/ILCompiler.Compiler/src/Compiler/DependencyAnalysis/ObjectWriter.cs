@@ -318,7 +318,7 @@ namespace ILCompiler.DependencyAnalysis
             EmitDebugVar(_nativeObjectWriter, debugVar.Name, typeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
         }
 
-        public void EmitDebugVarInfo(ObjectNode node)
+        public void EmitDebugVarInfo(ObjectData node)
         {
             // No interest if it's not a debug node.
             var nodeWithDebugInfo = node as INodeWithDebugInfo;
@@ -346,63 +346,22 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitDebugModuleInfo(IntPtr objWriter);
         public void EmitDebugModuleInfo()
         {
-            if (HasModuleDebugInfo())
-            {
+            if (_debugFileToId.Count > 0)
                 EmitDebugModuleInfo(_nativeObjectWriter);
-            }
-        }
-
-        public bool HasModuleDebugInfo()
-        {
-            return _debugFileToId.Count > 0;
         }
 
         public bool HasFunctionDebugInfo()
         {
             if (_offsetToDebugLoc.Count > 0)
             {
-                Debug.Assert(HasModuleDebugInfo());
                 return true;
             }
 
             return false;
         }
 
-        public void BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
+        public void BuildDebugLocInfoMap(ObjectData node)
         {
-            int fileId = 1;
-            foreach (DependencyNode node in nodes)
-            {
-                if (node is INodeWithDebugInfo)
-                {
-                    DebugLocInfo[] debugLocInfos = ((INodeWithDebugInfo)node).DebugLocInfos;
-                    if (debugLocInfos != null)
-                    {
-                        foreach (DebugLocInfo debugLocInfo in debugLocInfos)
-                        {
-                            string fileName = debugLocInfo.FileName;
-                            if (!_debugFileToId.ContainsKey(fileName))
-                            {
-                                _debugFileToId.Add(fileName, fileId++);
-                            }
-                        }
-                    }
-                }
-            }
-
-            foreach (var entry in _debugFileToId)
-            {
-                this.EmitDebugFileInfo(entry.Value, entry.Key);
-            }
-        }
-
-        public void BuildDebugLocInfoMap(ObjectNode node)
-        {
-            if (!HasModuleDebugInfo())
-            {
-                return;
-            }
-
             _offsetToDebugLoc.Clear();
             INodeWithDebugInfo debugNode = node as INodeWithDebugInfo;
             if (debugNode != null)
@@ -663,7 +622,15 @@ namespace ILCompiler.DependencyAnalysis
             DebugLocInfo loc;
             if (_offsetToDebugLoc.TryGetValue(offset, out loc))
             {
-                Debug.Assert(_debugFileToId.Count > 0);
+                int documentId;
+                if (!_debugFileToId.TryGetValue(loc.FileName, out documentId))
+                {
+                    documentId = _debugFileToId.Count + 1;
+                    _debugFileToId.Add(loc.FileName, documentId);
+
+                    EmitDebugFileInfo(documentId, loc.FileName);
+                }
+
                 EmitDebugLoc(offset,
                     _debugFileToId[loc.FileName],
                     loc.LineNumber,
@@ -900,9 +867,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 objectWriter.SetCodeSectionAttribute(managedCodeSection);
 
-                // Build file info map.
-                objectWriter.BuildFileInfoMap(nodes);
-
                 var listOfOffsets = new List<int>();
                 foreach (DependencyNode depNode in nodes)
                 {
@@ -955,7 +919,7 @@ namespace ILCompiler.DependencyAnalysis
                         objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
-                    objectWriter.BuildDebugLocInfoMap(node);
+                    objectWriter.BuildDebugLocInfoMap(nodeContents);
 
                     Relocation[] relocs = nodeContents.Relocs;
                     int nextRelocOffset = -1;
@@ -1064,7 +1028,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // Build debug local var info.
                             // It currently supports only Windows CodeView format.
-                            objectWriter.EmitDebugVarInfo(node);
+                            objectWriter.EmitDebugVarInfo(nodeContents);
                         }
                         objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
                     }
