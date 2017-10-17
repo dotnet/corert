@@ -792,19 +792,16 @@ again:
                 else
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
-                    if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
+                    var owningTypeDef = (EcmaType)ftn.Method.OwningType.GetTypeDefinition();
+
+                    if (ftn.Method.IsVirtual && !(ftn.Method.IsFinal || owningTypeDef.IsSealed) && !obj.IsBoxedValueType)
                         Check(obj.IsThisPtr && !_modifiesThisPtr, VerifierError.LdftnNonFinalVirtual);
                 }
             }
             else if (_currentInstructionOffset - _delegateCreateStart == 7) // dup, ldvirtftn <tok> takes 7 bytes
             {
-                if (GetOpcodeAt(delegateStart) != ILOpcode.dup)
-                {
-                    VerificationError(VerifierError.DelegatePattern);
-                    return;
-                }
-
-                if (GetOpcodeAt(delegateStart + 1) != ILOpcode.ldvirtftn)
+                if (GetOpcodeAt(delegateStart) != ILOpcode.dup ||
+                    GetOpcodeAt(delegateStart + 1) != ILOpcode.ldvirtftn)
                 {
                     VerificationError(VerifierError.DelegatePattern);
                     return;
@@ -1054,7 +1051,10 @@ again:
 
             var stackValue = StackValue.CreateFromType(varType);
             if (index == 0 && argument && _thisType != null)
+            {
+                Debug.Assert(varType == _thisType);
                 stackValue.SetIsThisPtr();
+            }
 
             Push(stackValue);
         }
@@ -1083,6 +1083,7 @@ again:
             var stackValue = StackValue.CreateByRef(varType);
             if (index == 0 && argument && _thisType != null)
             {
+                Debug.Assert(varType == _thisType);
                 stackValue.SetIsThisPtr();
 
                 Check(!_trackObjCtorState || _isThisInitialized, VerifierError.ThisUninitStore);
@@ -1273,7 +1274,9 @@ again:
                     // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).    
                     // This is stronger than is strictly needed, but implementing a laxer rule is significantly 
                     // harder and more error prone.
-                    if (method.IsVirtual && !method.IsFinal && !actualThis.IsBoxedValueType)
+                    var methodTypeDef = (EcmaType)methodType.GetTypeDefinition(); // Method is always considered final if owning type is sealed
+
+                    if (method.IsVirtual && !(method.IsFinal || methodTypeDef.IsSealed) && !actualThis.IsBoxedValueType)
                         Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
                 }
 
