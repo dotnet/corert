@@ -15,14 +15,8 @@ namespace ILVerify
         internal static bool CanAccess(this TypeDesc currentClass, TypeDesc targetClass)
         {
             // Check access to class instantiations if generic class
-            if (targetClass.HasInstantiation)
-            {
-                foreach (var inst in targetClass.Instantiation)
-                {
-                    if (!inst.IsGenericParameter && !currentClass.CanAccess(inst))
-                        return false;
-                }
-            }
+            if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
+                return false;
 
             var currentTypeDef = (EcmaType)currentClass.GetTypeDefinition();
             var targetTypeDef = (EcmaType)targetClass.GetTypeDefinition();
@@ -43,7 +37,7 @@ namespace ILVerify
             }
 
             // Target class is nested
-            MethodAttributes visibility = NestedToMethodAccess(targetTypeDef.Attributes);
+            MethodAttributes visibility = NestedToMethodAccessAttribute(targetTypeDef.Attributes);
 
             // Translate access check into member access check, i.e. check whether the current class can access
             // a member of the enclosing class with the visibility of target class
@@ -53,13 +47,16 @@ namespace ILVerify
         internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod)
         {
             // If generic method, check instantiation access
-            if (!currentType.CanAccessMethodInstantiation(targetMethod))
+            if (targetMethod.HasInstantiation && !currentType.CanAccessInstantiation(targetMethod.Instantiation))
                 return false;
 
             var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
             var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
 
-            return currentTypeDef.CanAccessMember((EcmaType)targetMethodDef.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask);
+            if (!currentTypeDef.CanAccessMember((EcmaType)targetMethodDef.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask))
+                return false;
+
+            return currentTypeDef.CanAccessMethodSignature(targetMethodDef);
         }
 
         private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility)
@@ -145,21 +142,54 @@ namespace ILVerify
             return false;
         }
 
-        private static bool CanAccessMethodInstantiation(this TypeDesc currentType, MethodDesc targetMethod)
+        private static bool CanAccessInstantiation(this TypeDesc currentType, Instantiation instantiation)
         {
-            if (targetMethod.HasInstantiation)
+            foreach (var inst in instantiation)
             {
-                foreach (var inst in targetMethod.Instantiation)
-                {
-                    if (!inst.IsGenericParameter && !currentType.CanAccess(inst))
-                        return false;
-                }
+                if (inst.IsGenericParameter || inst.IsSignatureVariable)
+                    continue; // Generic parameters are always accessible
+
+                if (!currentType.CanAccess(inst))
+                    return false;
             }
 
             return true;
         }
 
-        private static MethodAttributes NestedToMethodAccess(TypeAttributes nestedVisibility)
+        private static bool CanAccessMethodSignature(this TypeDesc currentType, MethodDesc targetMethod)
+        {
+            var methodSig = targetMethod.Signature;
+
+            // Check return type
+            var returnType = methodSig.ReturnType;
+            if (returnType.IsByRef)
+                returnType = ((ByRefType)returnType).ParameterType;
+
+            if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable // Generic parameters are always accessible
+                && !returnType.IsVoid)
+            {
+                if (!currentType.CanAccess(returnType))
+                    return false;
+            }
+
+            // Check arguments
+            for (int i = 0; i < methodSig.Length; ++i)
+            {
+                var param = methodSig[i];
+                if (param.IsByRef)
+                    param = ((ByRefType)param).ParameterType;
+
+                if (param.IsGenericParameter || param.IsSignatureVariable)
+                    continue; // Generic parameters are always accessible
+
+                if (!currentType.CanAccess(param))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static MethodAttributes NestedToMethodAccessAttribute(TypeAttributes nestedVisibility)
         {
             switch (nestedVisibility & TypeAttributes.VisibilityMask)
             {
