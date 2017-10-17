@@ -78,13 +78,24 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static bool IsCOMObject(Type type)
+        /// <summary>
+        /// Return true if the type is __COM or derived from __COM. False otherwise
+        /// </summary>
+        public static bool IsComObject(Type type)
         {
 #if RHTESTCL
             return false;
 #else
-            return type.GetTypeInfo().IsSubclassOf(typeof(__ComObject));
+            return type == typeof(__ComObject) || type.GetTypeInfo().IsSubclassOf(typeof(__ComObject));
 #endif
+        }
+
+        /// <summary>
+        /// Return true if the object is a RCW. False otherwise
+        /// </summary>
+        internal static bool IsComObject(object obj)
+        {
+            return (obj is __ComObject);
         }
 
         public static T FastCast<T>(object value) where T : class
@@ -401,7 +412,7 @@ namespace System.Runtime.InteropServices
 
 #endregion
 
-#region COM marshalling
+        #region COM marshalling
 
         /// <summary>
         /// Explicit AddRef for RCWs
@@ -921,10 +932,9 @@ namespace System.Runtime.InteropServices
         {
             return CoCreateInstanceEx(clsid, string.Empty);
         }
+        #endregion
 
-#endregion
-
-#region Testing
+        #region Testing
 
         /// <summary>
         /// Internal-only method to allow testing of apartment teardown code
@@ -1063,7 +1073,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr pResult = default(IntPtr);
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pIActivationFactoryInternal->pVtable->pfnActivateInstance,
                 pIActivationFactoryInternal,
                 &pResult
