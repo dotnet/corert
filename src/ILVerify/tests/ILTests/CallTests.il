@@ -49,6 +49,24 @@
         call    instance void SimpleClass::VirtualMethod()
         ret
     }
+
+    .method public hidebysig instance void Call.BaseMethodModThisLdarga_Invalid_ThisMismatch() cil managed
+    {
+        ldarg.0
+        call    instance void SimpleClass::VirtualMethod()
+        ldarga  0
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Call.BaseMethodModThisStarg_Invalid_ThisMismatch() cil managed
+    {
+        ldarg.0
+        call    instance void SimpleClass::VirtualMethod()
+        ldarg.0
+        starg  0
+        ret
+    }
 }
 
 .class public auto ansi beforefieldinit CallTestsType
