@@ -792,7 +792,7 @@ again:
                 else
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
-                    var owningTypeDef = (EcmaType)ftn.Method.OwningType.GetTypeDefinition();
+                    var owningTypeDef = (MetadataType)ftn.Method.OwningType.GetTypeDefinition();
 
                     if (ftn.Method.IsVirtual && !(ftn.Method.IsFinal || owningTypeDef.IsSealed) && !obj.IsBoxedValueType)
                         Check(obj.IsThisPtr && !_modifiesThisPtr, VerifierError.LdftnNonFinalVirtual);
@@ -1274,7 +1274,7 @@ again:
                     // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).    
                     // This is stronger than is strictly needed, but implementing a laxer rule is significantly 
                     // harder and more error prone.
-                    var methodTypeDef = (EcmaType)methodType.GetTypeDefinition(); // Method is always considered final if owning type is sealed
+                    var methodTypeDef = (MetadataType)methodType.GetTypeDefinition(); // Method is always considered final if owning type is sealed
 
                     if (method.IsVirtual && !(method.IsFinal || methodTypeDef.IsSealed) && !actualThis.IsBoxedValueType)
                         Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
