@@ -313,7 +313,7 @@ namespace Internal.IL
             {
                 varCountBase = 0;
                 varBase = 0;
-                if(!_signature.IsStatic)
+                if (!_signature.IsStatic)
                 {
                     varCountBase = 1;
                 }
@@ -515,7 +515,7 @@ namespace Internal.IL
             {
                 offset += _signature[i].GetElementSize().AsInt;
             }
-            if(!_signature.IsStatic)
+            if (!_signature.IsStatic)
             {
                 // If this is a struct, then it's a pointer on the stack
                 if (_thisType.IsValueType)
@@ -614,7 +614,7 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if(_signature.ReturnType != GetWellKnownType(WellKnownType.Void))
+            if (_signature.ReturnType != GetWellKnownType(WellKnownType.Void))
             {
                 StackEntry retVal = _stack.Pop();
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(_signature.ReturnType);
@@ -648,7 +648,7 @@ namespace Internal.IL
             {
                 throw new NotImplementedException();
             }
-            if(opcode == ILOpcode.callvirt && callee.IsAbstract)
+            if (opcode == ILOpcode.callvirt && callee.IsAbstract)
             {
                 throw new NotImplementedException();
             }

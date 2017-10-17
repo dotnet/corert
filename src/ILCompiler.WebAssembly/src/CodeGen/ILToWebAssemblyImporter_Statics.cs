@@ -52,7 +52,7 @@ namespace Internal.IL
             {
                 string mangledName;
                 // TODO: We should use the startup node to generate StartupCodeMain and avoid special casing here
-                if(methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
+                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
                 {
                     mangledName = "Main";
                 }
