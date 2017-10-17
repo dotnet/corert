@@ -16,7 +16,7 @@ namespace Internal.Reflection.Execution
     {
         public sealed override bool IsCOMObject(Type type)
         {
-            return McgMarshal.IsCOMObject(type);
+            return McgMarshal.IsComObject(type);
         }
     }
 }

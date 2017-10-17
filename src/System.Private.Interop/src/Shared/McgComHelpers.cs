@@ -231,14 +231,6 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Return true if the object is a RCW. False otherwise
-        /// </summary>
-        internal static bool IsComObject(object obj)
-        {
-            return (obj is __ComObject);
-        }
-
-        /// <summary>
         /// Unwrap if this is a managed wrapper
         /// Typically used in data binding
         /// For example, you don't want to data bind against a KeyValuePairImpl<K, V> - you want the real 
