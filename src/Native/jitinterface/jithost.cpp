@@ -6,10 +6,16 @@
 
 #include "dllexport.h"
 
+#ifndef _TARGET_ARM_
 #ifdef PLATFORM_UNIX
 #define DEFAULT_CALL_CONV __cdecl
 #else
 #define DEFAULT_CALL_CONV __stdcall
+#endif
+#else
+#define DEFAULT_CALL_CONV
+#define __cdecl
+#define __stdcall
 #endif
 
 class JitConfigProvider
