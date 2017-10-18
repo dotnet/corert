@@ -50,13 +50,14 @@ namespace ILVerify
 
             // Translate access check into member access check, i.e. check whether the current class can access
             // a member of the enclosing class with the visibility of target class
-            return currentTypeDef.CanAccessMember(targetContainingType, visibility);
+            return currentTypeDef.CanAccessMember(targetContainingType, visibility, null);
         }
 
         /// <summary>
-        /// Returns whether the class <paramref name="currentClass"/> can access the method <paramref name="targetMethod"/>.
+        /// Returns whether the class '<paramref name="currentClass"/>' can access the method '<paramref name="targetMethod"/>' through
+        /// the instance '<paramref name="instance"/>'. The instance can be null, if the method to be accessed is static.
         /// </summary>
-        internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod)
+        internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod, TypeDesc instance = null)
         {
             // If generic method, check instantiation access
             if (targetMethod.HasInstantiation && !currentType.CanAccessInstantiation(targetMethod.Instantiation))
@@ -65,16 +66,17 @@ namespace ILVerify
             var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
             var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
 
-            if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask))
+            if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask, instance))
                 return false;
 
             return currentTypeDef.CanAccessMethodSignature(targetMethod);
         }
 
         /// <summary>
-        /// Returns whether the class <paramref name="currentClass"/> can access the field <paramref name="targetField"/>.
+        /// Returns whether the class '<paramref name="currentClass"/>' can access the field '<paramref name="targetField"/>' through
+        /// the instance '<paramref name="instance"/>'. The instance can be null, if the field to be accessed is static.
         /// </summary>
-        internal static bool CanAccess(this TypeDesc currentType, FieldDesc targetField)
+        internal static bool CanAccess(this TypeDesc currentType, FieldDesc targetField, TypeDesc instance = null)
         {
             // Check access to field owning type
             var targetFieldDef = (EcmaField)targetField.GetTypicalFieldDefinition();
@@ -82,15 +84,18 @@ namespace ILVerify
 
             var targetFieldAccess = FieldToMethodAccessAttribute(targetFieldDef.Attributes);
 
-            if (!currentTypeDef.CanAccessMember(targetField.OwningType, targetFieldAccess))
+            if (!currentTypeDef.CanAccessMember(targetField.OwningType, targetFieldAccess, instance))
                 return false;
 
             // Check access to field type itself
             return currentType.CanAccess(targetField.FieldType);
         }
 
-        private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility)
+        private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility, TypeDesc instance)
         {
+            if (instance == null)
+                instance = currentType;
+
             // Check access to class defining member
             if (!currentType.CanAccess(targetType))
                 return false;
@@ -146,13 +151,13 @@ namespace ILVerify
                             return true;
 
                         // Check if current class is subclass of target
-                        if (IsSubclassOf(currentType, targetTypeDef))
+                        if (CanAccessFamily(currentType, targetTypeDef, instance))
                             return true;
                         break;
                     case MethodAttributes.Family:
                     case MethodAttributes.FamANDAssem:
                         // Assembly acces was already checked earlier, so only need to check family access
-                        if (IsSubclassOf(currentType, targetTypeDef))
+                        if (CanAccessFamily(currentType, targetTypeDef, instance))
                             return true;
                         break;
                     case MethodAttributes.Private:
@@ -216,6 +221,42 @@ namespace ILVerify
             return true;
         }
 
+        private static bool CanAccessFamily(TypeDesc currentType, TypeDesc targetTypeDef, TypeDesc instanceType)
+        {
+            // Iterate through all containing types of instance
+            while (instanceType != null)
+            {
+                var curInstTypeDef = instanceType;
+                var currentTypeDef = currentType.GetTypeDefinition();
+                // Iterate through all super types of current instance type
+                while (curInstTypeDef != null)
+                {
+                    if (currentTypeDef == curInstTypeDef.GetTypeDefinition())
+                    {
+                        // At this point we know that the instance type is able to access the same family fields as current type
+                        // Now iterate through all super types of current type to see if current type can access family target type
+                        while (currentTypeDef != null)
+                        {
+                            if (currentTypeDef == targetTypeDef)
+                                return true;
+
+                            currentTypeDef = currentTypeDef.BaseType;
+                            if (currentTypeDef != null)
+                                currentTypeDef = currentTypeDef.GetTypeDefinition();
+                        }
+
+                        return false;
+                    }
+
+                    curInstTypeDef = curInstTypeDef.BaseType;
+                }
+
+                instanceType = ((MetadataType)instanceType.GetTypeDefinition()).ContainingType;
+            }
+
+            return false;
+        }
+
         private static MethodAttributes NestedToMethodAccessAttribute(TypeAttributes nestedVisibility)
         {
             switch (nestedVisibility & TypeAttributes.VisibilityMask)
@@ -260,19 +301,6 @@ namespace ILVerify
                     Debug.Assert(false);
                     return MethodAttributes.Public;
             }
-        }
-
-        private static bool IsSubclassOf(TypeDesc currentType, TypeDesc targetTypeDef)
-        {
-            while (currentType != null)
-            {
-                if (currentType.GetTypeDefinition() == targetTypeDef)
-                    return true;
-
-                currentType = currentType.BaseType;
-            }
-
-            return false;
         }
     }
 }

@@ -41,6 +41,8 @@
     .field famorassem static int32 familyOrAssemblyField
     .field famandassem static int32 familyAndAssemblyField
 
+    .field family int32 instanceFamilyField
+
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {
         ldarg.0
@@ -79,6 +81,11 @@
     }
 
     .method public hidebysig static void GenericMethod<T>() cil managed 
+    {
+        ret
+    }
+
+    .method family hidebysig instance void FamilyMethod() cil managed 
     {
         ret
     }
@@ -295,6 +302,36 @@
         pop
         ret
     }
+
+    .method private hidebysig instance void Load.FamFieldOfBaseWithBaseInstance_Invalid_FieldAccess(class SimpleClass c) cil managed
+    {
+        ldarg.1
+        ldfld      int32 SimpleClass::instanceFamilyField
+        pop
+        ret
+    }
+
+    .method private hidebysig instance void Load.FamFieldOfBaseWithDerivedInstance_Valid() cil managed
+    {
+        ldarg.0
+        ldfld      int32 SimpleClass::instanceFamilyField
+        pop
+        ret
+    }
+
+    .method private hidebysig instance void Call.FamMethodOfBaseWithBaseInstance_Invalid_MethodAccess(class SimpleClass c) cil managed
+    {
+        ldarg.1
+        call        instance void SimpleClass::FamilyMethod()
+        ret
+    }
+
+    .method private hidebysig instance void Call.FamMethodOfBaseWithDerivedInstance_Valid() cil managed
+    {
+        ldarg.0
+        call        instance void SimpleClass::FamilyMethod()
+        ret
+    }
 }
 
 // Special case: Nested class trying to access family field of superclass of containing class
@@ -303,6 +340,7 @@
         extends [System.Runtime]System.Object
 {
     .field family static int32 familyField
+    .field family int32 instanceFamilyField
 
     .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
     {
@@ -325,6 +363,13 @@
     .class nested private auto ansi beforefieldinit NestedClass
         extends [System.Runtime]System.Object
     {
+        .method public hidebysig specialname rtspecialname instance void .ctor() cil managed 
+        {
+            ldarg.0
+            call        instance void [System.Runtime]System.Object::.ctor()
+            ret
+        }
+
         .method private hidebysig instance void Load.FamFieldOfSuperOfContaining_Valid() cil managed
         {
             ldsfld      int32 SuperClass::familyField
