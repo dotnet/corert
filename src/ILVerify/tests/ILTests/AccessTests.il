@@ -6,6 +6,10 @@
 {
 }
 
+.assembly extern AccessTestsFriend
+{
+}
+
 .assembly AccessTests
 {
 }
@@ -330,6 +334,20 @@
     {
         ldarg.0
         call        instance void SimpleClass::FamilyMethod()
+        ret
+    }
+
+    .method private hidebysig instance void Load.AssemFieldOfFriendAssembly_Valid() cil managed
+    {
+        ldsfld       int32 [AccessTestsFriend]AccessTestsFriendType::assemblyField
+        pop
+        ret
+    }
+
+    .method private hidebysig instance void Load.PrivateFieldOfFriendAssembly_Invalid_FieldAccess() cil managed
+    {
+        ldsfld       int32 [AccessTestsFriend]AccessTestsFriendType::privateField
+        pop
         ret
     }
 }

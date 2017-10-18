@@ -20,14 +20,14 @@ namespace ILVerify
             if (targetClass.IsGenericParameter || targetClass.IsSignatureVariable)
                 return true; // Generic parameters are always accessible
 
-            if (targetClass.IsArray)
-                return currentClass.CanAccess(targetClass = ((ArrayType)targetClass).ParameterType);
+            if (targetClass.IsParameterizedType)
+                return currentClass.CanAccess(((ParameterizedType)targetClass).ParameterType);
 
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
                 return false;
 
-            var currentTypeDef = (EcmaType)currentClass.GetTypeDefinition();
+            var currentTypeDef = (MetadataType)currentClass.GetTypeDefinition();
             var targetTypeDef = (EcmaType)targetClass.GetTypeDefinition();
 
             var targetContainingType = targetTypeDef.ContainingType;
@@ -37,12 +37,7 @@ namespace ILVerify
                 if ((targetTypeDef.Attributes & TypeAttributes.Public) != 0)
                     return true;
                 else
-                {
-                    return currentTypeDef.Module == targetTypeDef.Module;
-#if false
-                    return (pTargetAssembly == pCurrentAssembly) || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly);
-#endif
-                }
+                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module);
             }
 
             // Target class is nested
@@ -64,7 +59,7 @@ namespace ILVerify
                 return false;
 
             var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
-            var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
+            var currentTypeDef = (MetadataType)currentType.GetTypeDefinition();
 
             if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask, instance))
                 return false;
@@ -80,7 +75,7 @@ namespace ILVerify
         {
             // Check access to field owning type
             var targetFieldDef = (EcmaField)targetField.GetTypicalFieldDefinition();
-            var currentTypeDef = (EcmaType)currentType.GetTypeDefinition();
+            var currentTypeDef = (MetadataType)currentType.GetTypeDefinition();
 
             var targetFieldAccess = FieldToMethodAccessAttribute(targetFieldDef.Attributes);
 
@@ -91,7 +86,7 @@ namespace ILVerify
             return currentType.CanAccess(targetField.FieldType);
         }
 
-        private static bool CanAccessMember(this EcmaType currentType, TypeDesc targetType, MethodAttributes memberVisibility, TypeDesc instance)
+        private static bool CanAccessMember(this MetadataType currentType, TypeDesc targetType, MethodAttributes memberVisibility, TypeDesc instance)
         {
             if (instance == null)
                 instance = currentType;
@@ -100,7 +95,7 @@ namespace ILVerify
             if (!currentType.CanAccess(targetType))
                 return false;
 
-            var targetTypeDef = (EcmaType)targetType.GetTypeDefinition();
+            var targetTypeDef = (MetadataType)targetType.GetTypeDefinition();
 #if false
             // if caller is transparent, and target is non-public and critical, then fail access check
             if (!CheckTransparentAccessToCriticalCode(pCurrentMD, dwMemberAccess, pTargetMT, pOptionalTargetMethod, pOptionalTargetField))
@@ -115,20 +110,11 @@ namespace ILVerify
                 return currentType.Module == targetTypeDef.Module;
 
             if (memberVisibility == MethodAttributes.Assembly)
-            {
-#if false
-                return (pCurrentAssembly == pTargetAssembly || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly));
-#endif
-                return currentType.Module == targetTypeDef.Module;
-            }
+                return currentType.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentType.Module);
 
             if (memberVisibility == MethodAttributes.FamANDAssem)
             {
-#if false
-                if ((pCurrentAssembly != pTargetAssembly) && !pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly))
-                    return false;
-#endif
-                if (currentType.Module != targetTypeDef.Module)
+                if (currentType.Module != targetTypeDef.Module && !targetTypeDef.Module.GrantsFriendAccessTo(currentType.Module))
                     return false;
             }
 
@@ -142,12 +128,7 @@ namespace ILVerify
                 switch (memberVisibility)
                 {
                     case MethodAttributes.FamORAssem:
-#if false
-                        // If the current assembly is same as the desired target, or if it grants friend access, allow access.
-                        if (pCurrentAssembly == pTargetAssembly || pTargetAssembly->GrantsFriendAccessTo(pCurrentAssembly))
-                            return TRUE;
-#endif
-                        if (currentType.Module == targetTypeDef.Module)
+                        if (currentType.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentType.Module))
                             return true;
 
                         // Check if current class is subclass of target
@@ -169,7 +150,7 @@ namespace ILVerify
 
                 var containingType = currentType.ContainingType;
                 if (containingType != null)
-                    currentType = (EcmaType)containingType.GetTypeDefinition();
+                    currentType = (MetadataType)containingType.GetTypeDefinition();
                 else
                     currentType = null;
             } while (currentType != null);
@@ -194,8 +175,8 @@ namespace ILVerify
 
             // Check return type
             var returnType = methodSig.ReturnType;
-            if (returnType.IsByRef)
-                returnType = ((ByRefType)returnType).ParameterType;
+            if (returnType.IsParameterizedType)
+                returnType = ((ParameterizedType)returnType).ParameterType;
 
             if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable // Generic parameters are always accessible
                 && !returnType.IsVoid)
@@ -255,6 +236,48 @@ namespace ILVerify
             }
 
             return false;
+        }
+
+        private const string PUBLIC_KEY = "PublicKey=";
+
+        private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
+        {
+            var assembly = (EcmaAssembly)module;
+            var friendAssembly = (IAssemblyDesc)friendModule;
+
+            var friendName = friendAssembly.GetName();
+            var friendPublicKey = friendName.GetPublicKey();
+
+            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
+            {
+                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(", ");
+                if (friendValues.Length >= 1 && friendValues.Length <= 2)
+                {
+                    if (friendValues[0] != friendName.Name)
+                        continue;
+
+                    if (friendValues.Length == 2 &&
+                        (!friendValues[1].StartsWith(PUBLIC_KEY) || !IsSamePublicKey(friendPublicKey, friendValues[1].Substring(PUBLIC_KEY.Length))))
+                        continue;
+
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsSamePublicKey(byte[] key1, string key2)
+        {
+            if (key1.Length * 2 != key2.Length)
+                return false;
+
+            for (int i = 0; i < key1.Length; i++)
+            {
+                if (key1[i] != Convert.ToByte(key2[i*2] + "" + key2[i*2+1], 16))
+                    return false;
+            }
+
+            return true;
         }
 
         private static MethodAttributes NestedToMethodAccessAttribute(TypeAttributes nestedVisibility)
