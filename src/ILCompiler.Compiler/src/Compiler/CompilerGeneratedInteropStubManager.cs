@@ -136,6 +136,36 @@ namespace ILCompiler
                     };
             }
         }
+        
+        private void AddDependenciesDueToPInvokeStructDelegateField(ref DependencyList dependencies, NodeFactory factory, TypeDesc typeDesc)
+        {
+            if (typeDesc is ByRefType)
+            {
+                typeDesc = typeDesc.GetParameterType();
+            }
+
+            MetadataType metadataType = typeDesc as MetadataType;
+            if (metadataType != null) 
+            {
+                foreach (FieldDesc field in metadataType.GetFields())
+                {
+                    if (field.IsStatic)
+                    {
+                        continue;
+                    }
+                    TypeDesc fieldType = field.FieldType;
+
+                    if (fieldType.IsDelegate)
+                    {
+                        AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, fieldType);
+                    }
+                    else if (MarshalHelpers.IsStructMarshallingRequired(fieldType))
+                    {
+                        AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, fieldType);
+                    }
+                }
+            }
+        }
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
@@ -146,9 +176,19 @@ namespace ILCompiler
                 MethodSignature methodSig = method.Signature;
                 AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig.ReturnType);
 
+                // struct may contain delegate fields, hence we need to add dependencies for it
+                if (MarshalHelpers.IsStructMarshallingRequired(methodSig.ReturnType))
+                {
+                    AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, methodSig.ReturnType);
+                }
+
                 for (int i = 0; i < methodSig.Length; i++)
                 {
                     AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, methodSig[i]);
+                    if (MarshalHelpers.IsStructMarshallingRequired(methodSig[i]))
+                    {
+                        AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, methodSig[i]);
+                    }
                 }
             }
 
@@ -226,13 +266,7 @@ namespace ILCompiler
                 dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingNativeToManagedStub(type)), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingCleanupStub(type)), "Struct Marshalling stub");
 
-                foreach (var inlineArrayCandidate in stub.GetInlineArrayCandidates())
-                {
-                    foreach (var method in inlineArrayCandidate.ElementType.GetMethods())
-                    {
-                        dependencies.Add(factory.MethodEntrypoint(method), "inline array marshalling stub");
-                    }
-                }
+                AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, type);
             }
         }
 
