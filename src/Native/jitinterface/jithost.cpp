@@ -6,7 +6,7 @@
 
 #include "dllexport.h"
 
-#ifndef _TARGET_ARM_
+#ifdef _X86_
 #ifdef PLATFORM_UNIX
 #define DEFAULT_CALL_CONV __cdecl
 #else
