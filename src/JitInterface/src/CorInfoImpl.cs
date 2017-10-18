@@ -849,7 +849,9 @@ namespace Internal.JitInterface
 
             if (implType.IsValueType)
             {
-                // TODO: this ends up asserting RyuJIT because it's expecting an unboxing thunk
+                // TODO: If we resolve to a method on a valuetype, we should return a MethodDesc for the unboxing stub
+                // so that RyuJIT won't try to inline it. We don't have MethodDescs for unboxing stubs in the
+                // type system though.
                 return null;
             }
 
