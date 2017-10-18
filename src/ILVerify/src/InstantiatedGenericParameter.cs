@@ -10,35 +10,21 @@ namespace Internal.TypeSystem
     internal sealed partial class InstantiatedGenericParameter : GenericParameterDesc
     {
         private GenericParameterDesc _genericParam;
-        private Instantiation _typeInstantiation;
-        private Instantiation _methodInstantiation;
+        public Instantiation TypeInstantiation
+        {
+            get;
+            set;
+        }
+        public Instantiation MethodInstantiation
+        {
+            get;
+            set;
+        }
 
-        internal InstantiatedGenericParameter(GenericParameterDesc genericParam, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        internal InstantiatedGenericParameter(GenericParameterDesc genericParam)
         {
             Debug.Assert(!(genericParam is InstantiatedGenericParameter));
             _genericParam = genericParam;
-
-            Debug.Assert(typeInstantiation.Length > 0 || methodInstantiation.Length > 0);
-            _typeInstantiation = SubstituteInstantiation(ref typeInstantiation);
-            _methodInstantiation = SubstituteInstantiation(ref methodInstantiation);
-        }
-
-        // Substitute _genericParam in given instantiation with this.
-        // Required to be able to compare the instantiated constraints of this generic parameter
-        // with other instantiated types that were instantiated with this type.
-        private Instantiation SubstituteInstantiation(ref Instantiation instantiation)
-        {
-            var parameters = new TypeDesc[instantiation.Length];
-
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                if (instantiation[i] == _genericParam)
-                    parameters[i] = this;
-                else
-                    parameters[i] = instantiation[i];
-            }
-
-            return new Instantiation(parameters);
         }
 
         public override GenericParameterKind Kind => _genericParam.Kind;
@@ -57,7 +43,7 @@ namespace Internal.TypeSystem
             {
                 foreach (var constraint in _genericParam.TypeConstraints)
                 {
-                    yield return constraint.InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                    yield return constraint.InstantiateSignature(TypeInstantiation, MethodInstantiation);
                 }
             }
         }

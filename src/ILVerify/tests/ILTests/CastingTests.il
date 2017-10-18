@@ -116,6 +116,18 @@
         stloc.0
         ret
     }
+
+    .method static public hidebysig void Assign.ComplexConstrainedGenericToComparable_Valid<(!!S) T, (class [System.Runtime]System.IComparable`1<!!T>) S>(!!T t)
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable`1<!!T> c
+        )
+
+        ldarg.0
+        box     !!T
+        stloc.0
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit GenericOtherFieldsType`1<T>
