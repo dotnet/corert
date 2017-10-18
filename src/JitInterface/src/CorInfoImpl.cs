@@ -698,7 +698,12 @@ namespace Internal.JitInterface
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
-                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
+            {
+                if (getIntrinsicID(method, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal)
+                    result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
+                else
+                    result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+            }
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
             if (method.IsAbstract)
@@ -2482,9 +2487,21 @@ namespace Internal.JitInterface
 
         private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName)
         {
-            // TODO: Implement JIT recognized intrinsics
-            // https://github.com/dotnet/corert/issues/4492
-            return null;
+            MethodDesc method = HandleToObject(ftn);
+
+            MetadataType owningType = method.OwningType as MetadataType;
+            if (owningType != null)
+            {
+                *className = (byte*)GetPin(StringToUTF8(owningType.Name));
+                *namespaceName = (byte*)GetPin(StringToUTF8(owningType.Namespace));
+            }
+            else
+            {
+                *className = null;
+                *namespaceName = null;
+            }
+
+            return (byte*)GetPin(StringToUTF8(method.Name));
         }
 
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)

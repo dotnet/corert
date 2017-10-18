@@ -42,7 +42,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __expandRawHandleIntrinsic(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoIntrinsics __getIntrinsicID(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.U1)] ref bool pMustExpand);
+        delegate CorInfoIntrinsics __getIntrinsicID(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, byte* pMustExpand);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isInSIMDModule(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -553,12 +553,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoIntrinsics _getIntrinsicID(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.U1)] ref bool pMustExpand)
+        static CorInfoIntrinsics _getIntrinsicID(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, byte* pMustExpand)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getIntrinsicID(method, ref pMustExpand);
+                return _this.getIntrinsicID(method, pMustExpand);
             }
             catch (Exception ex)
             {
