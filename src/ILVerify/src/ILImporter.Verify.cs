@@ -58,7 +58,10 @@ namespace Internal.IL
         int _stackTop = 0;
 
         bool _isThisInitialized;
+        bool _modifiesThisPtr;
         bool _trackObjCtorState;
+
+        int? _delegateCreateStart;
 
         class ExceptionRegion
         {
@@ -204,6 +207,7 @@ namespace Internal.IL
 
             FindBasicBlocks();
             FindEnclosingExceptionRegions();
+            FindThisPtrModification();
             ImportBasicBlocks();
         }
 
@@ -266,6 +270,137 @@ namespace Internal.IL
                             basicBlock.FilterIndex = j;
                         }
                     }
+                }
+            }
+        }
+
+        private void FindThisPtrModification()
+        {
+            _modifiesThisPtr = false;
+
+            if (_thisType == null)
+                return; // Early exit: no this pointer in this method
+
+            _currentOffset = 0;
+
+            while (_currentOffset < _ilBytes.Length)
+            {
+                ILOpcode opCode = (ILOpcode)ReadILByte();
+
+again:
+                switch (opCode)
+                {
+                    case ILOpcode.starg_s:
+                    case ILOpcode.ldarga_s:
+                        if (ReadILByte() == 0)
+                        {
+                            _modifiesThisPtr = true;
+                            return;
+                        }
+                        break;
+                    case ILOpcode.starg:
+                    case ILOpcode.ldarga:
+                        if (ReadILUInt16() == 0)
+                        {
+                            _modifiesThisPtr = true;
+                            return;
+                        }
+                        break;
+                    // Skip all other Opcodes
+                    case ILOpcode.ldarg_s:
+                    case ILOpcode.ldloc_s:
+                    case ILOpcode.ldloca_s:
+                    case ILOpcode.stloc_s:
+                    case ILOpcode.ldc_i4_s:
+                    case ILOpcode.unaligned:
+                    case ILOpcode.br_s:
+                    case ILOpcode.leave_s:
+                    case ILOpcode.brfalse_s:
+                    case ILOpcode.brtrue_s:
+                    case ILOpcode.beq_s:
+                    case ILOpcode.bge_s:
+                    case ILOpcode.bgt_s:
+                    case ILOpcode.ble_s:
+                    case ILOpcode.blt_s:
+                    case ILOpcode.bne_un_s:
+                    case ILOpcode.bge_un_s:
+                    case ILOpcode.bgt_un_s:
+                    case ILOpcode.ble_un_s:
+                    case ILOpcode.blt_un_s:
+                        SkipIL(1);
+                        break;
+                    case ILOpcode.ldarg:
+                    case ILOpcode.ldloc:
+                    case ILOpcode.ldloca:
+                    case ILOpcode.stloc:
+                        SkipIL(2);
+                        break;
+                    case ILOpcode.ldc_i4:
+                    case ILOpcode.ldc_r4:
+                    case ILOpcode.jmp:
+                    case ILOpcode.call:
+                    case ILOpcode.calli:
+                    case ILOpcode.callvirt:
+                    case ILOpcode.cpobj:
+                    case ILOpcode.ldobj:
+                    case ILOpcode.ldstr:
+                    case ILOpcode.newobj:
+                    case ILOpcode.castclass:
+                    case ILOpcode.isinst:
+                    case ILOpcode.unbox:
+                    case ILOpcode.ldfld:
+                    case ILOpcode.ldflda:
+                    case ILOpcode.stfld:
+                    case ILOpcode.ldsfld:
+                    case ILOpcode.ldsflda:
+                    case ILOpcode.stsfld:
+                    case ILOpcode.stobj:
+                    case ILOpcode.box:
+                    case ILOpcode.newarr:
+                    case ILOpcode.ldelema:
+                    case ILOpcode.ldelem:
+                    case ILOpcode.stelem:
+                    case ILOpcode.unbox_any:
+                    case ILOpcode.refanyval:
+                    case ILOpcode.mkrefany:
+                    case ILOpcode.ldtoken:
+                    case ILOpcode.ldftn:
+                    case ILOpcode.ldvirtftn:
+                    case ILOpcode.initobj:
+                    case ILOpcode.constrained:
+                    case ILOpcode.sizeof_:
+                    case ILOpcode.br:
+                    case ILOpcode.leave:
+                    case ILOpcode.brfalse:
+                    case ILOpcode.brtrue:
+                    case ILOpcode.beq:
+                    case ILOpcode.bge:
+                    case ILOpcode.bgt:
+                    case ILOpcode.ble:
+                    case ILOpcode.blt:
+                    case ILOpcode.bne_un:
+                    case ILOpcode.bge_un:
+                    case ILOpcode.bgt_un:
+                    case ILOpcode.ble_un:
+                    case ILOpcode.blt_un:
+                        SkipIL(4);
+                        break;
+                    case ILOpcode.ldc_i8:
+                    case ILOpcode.ldc_r8:
+                        SkipIL(8);
+                        break;
+                    case ILOpcode.prefix1:
+                        opCode = (ILOpcode)(0x100 + ReadILByte());
+                        goto again;
+                    case ILOpcode.switch_:
+                        {
+                            uint count = ReadILUInt32();
+                            for (uint i = 0; i < count; i++)
+                               SkipIL(4);
+                        }
+                        break;
+                    default:
+                        continue;
                 }
             }
         }
@@ -635,6 +770,87 @@ namespace Internal.IL
             }
         }
 
+        void CheckDelegateCreation(StackValue ftn, StackValue obj)
+        {
+            if (!_delegateCreateStart.HasValue)
+            {
+                VerificationError(VerifierError.DelegatePattern);
+                return;
+            }
+
+            int delegateStart = _delegateCreateStart.Value;
+
+            if (_currentInstructionOffset - delegateStart == 6) // ldftn <tok> takes 6 bytes
+            {
+                if (GetOpcodeAt(delegateStart) != ILOpcode.ldftn)
+                {
+                    VerificationError(VerifierError.DelegatePattern);
+                    return;
+                }
+                else
+                {
+                    // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
+                    var owningTypeDef = (MetadataType)ftn.Method.OwningType.GetTypeDefinition();
+
+                    if (ftn.Method.IsVirtual && !(ftn.Method.IsFinal || owningTypeDef.IsSealed) && !obj.IsBoxedValueType)
+                        Check(obj.IsThisPtr && !_modifiesThisPtr, VerifierError.LdftnNonFinalVirtual);
+                }
+            }
+            else if (_currentInstructionOffset - _delegateCreateStart == 7) // dup, ldvirtftn <tok> takes 7 bytes
+            {
+                if (GetOpcodeAt(delegateStart) != ILOpcode.dup ||
+                    GetOpcodeAt(delegateStart + 1) != ILOpcode.ldvirtftn)
+                {
+                    VerificationError(VerifierError.DelegatePattern);
+                    return;
+                }
+            }
+            else
+                VerificationError(VerifierError.DelegatePattern);
+        }
+
+        void CheckIsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
+        {
+            if (!IsDelegateAssignable(ftn, delegateType))
+                VerificationError(VerifierError.DelegateCtor);
+        }
+
+        bool IsDelegateAssignable(MethodDesc ftn, TypeDesc delegateType)
+        {
+            var invokeMethod = delegateType.GetMethod("Invoke", null);
+            if (invokeMethod == null)
+                return false;
+
+            var ftnSignature = ftn.Signature;
+            var delegateSignature = invokeMethod.Signature;
+
+            // Compare calling convention ignoring distinction between static and instance
+            if ((ftnSignature.Flags & ~MethodSignatureFlags.Static) != (delegateSignature.Flags & ~MethodSignatureFlags.Static))
+                return false;
+
+            // Compare signature parameters
+            if (ftnSignature.Length != delegateSignature.Length)
+                return false;
+
+            for (int i = 0; i < ftnSignature.Length; i++)
+            {
+                if (!IsAssignable(ftnSignature[i], delegateSignature[i]))
+                    return false;
+            }
+
+            // Compare return type
+            return IsAssignable(delegateSignature.ReturnType, ftnSignature.ReturnType);
+        }
+
+        ILOpcode GetOpcodeAt(int instructionOffset)
+        {
+            var opCode = (ILOpcode)_ilBytes[instructionOffset];
+            if (opCode == ILOpcode.prefix1)
+                opCode = (ILOpcode)(0x100 + _ilBytes[instructionOffset + 1]);
+
+            return opCode;
+        }
+
         void Unverifiable()
         {
             VerificationError(VerifierError.Unverifiable);
@@ -714,6 +930,7 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
 
             if (basicBlock.TryStart)
@@ -831,8 +1048,11 @@ namespace Internal.IL
             CheckIsNotPointer(varType);
 
             var stackValue = StackValue.CreateFromType(varType);
-            if (index == 0 && argument)
+            if (index == 0 && argument && _thisType != null)
+            {
+                Debug.Assert(varType == _thisType);
                 stackValue.SetIsThisPtr();
+            }
 
             Push(stackValue);
         }
@@ -859,8 +1079,9 @@ namespace Internal.IL
             Check(!varType.IsByRef, VerifierError.ByrefOfByref);
 
             var stackValue = StackValue.CreateByRef(varType);
-            if (index == 0 && argument)
+            if (index == 0 && argument && _thisType != null)
             {
+                Debug.Assert(varType == _thisType);
                 stackValue.SetIsThisPtr();
 
                 Check(!_trackObjCtorState || _isThisInitialized, VerifierError.ThisUninitStore);
@@ -872,6 +1093,9 @@ namespace Internal.IL
         void ImportDup()
         {
             var value = Pop(allowUninitThis: true);
+
+            // this could be the beginning of a delegate create
+            _delegateCreateStart = _currentInstructionOffset;
 
             Push(value);
             Push(value);
@@ -964,20 +1188,9 @@ namespace Internal.IL
                 CheckIsAssignable(actualObj, declaredObj);
                 Check(actualObj.Kind == StackValueKind.ObjRef, VerifierError.DelegateCtorSigO, actualObj);
 
-#if false
-                    Verify(verCheckDelegateCreation(opcode, vstate, codeAddr, delegateMethodRef, 
-                                                    tiActualFtn, tiActualObj),
-                           MVER_E_DLGT_PATTERN);
+                CheckDelegateCreation(actualFtn, actualObj);
 
-                    Verify(m_jitInfo->isCompatibleDelegate(objTypeHandle,
-                                                           parentTypeHandle,
-                                                           tiActualFtn.GetMethod(),
-                                                           methodClassHnd,
-                                                           getCurrentModuleHandle(),
-                                                           delegateMethodRef,
-                                                           memberRef),
-                           MVER_E_DLGT_CTOR);
-#endif
+                CheckIsDelegateAssignable(actualFtn.Method, methodType);
             }
             else
             {
@@ -1039,36 +1252,31 @@ namespace Internal.IL
                 }
                 CheckIsAssignable(actualThis, declaredThis);
 
-#if false
-                // Rules for non-virtual call to a non-final virtual method:
-        
-                // Define: 
-                // The "this" pointer is considered to be "possibly written" if
-                //   1. Its address have been taken (LDARGA 0) anywhere in the method.
-                //   (or)
-                //   2. It has been stored to (STARG.0) anywhere in the method.
-
-                // A non-virtual call to a non-final virtual method is only allowed if
-                //   1. The this pointer passed to the callee is an instance of a boxed value type. 
-                //   (or)
-                //   2. The this pointer passed to the callee is the current method's this pointer.
-                //      (and) The current method's this pointer is not "possibly written".
-
-                // Thus the rule is that if you assign to this ANYWHERE you can't make "base" calls to 
-                // virtual methods.  (Luckily this does affect .ctors, since they are not virtual).    
-                // This is stronger that is strictly needed, but implementing a laxer rule is significantly 
-                // hard and more error prone.
-
-                if (opcode == ReaderBaseNS::CEE_CALL 
-                    && (mflags & CORINFO_FLG_VIRTUAL) 
-                    && ((mflags & CORINFO_FLG_FINAL) == 0)
-                    && (!verIsBoxedValueType(tiThis)))
+                if (opcode == ILOpcode.call)
                 {
-                    // always enforce for peverify
-                    Verify(tiThis.IsThisPtr() && !thisPossiblyModified,
-                           MVER_E_THIS_MISMATCH);
+                    // Rules for non-virtual call to a non-final virtual method (ECMA III.3.19: Verifiability of 'call'):
+
+                    // Define: 
+                    // The "this" pointer is considered to be "possibly written" if
+                    //   1. Its address have been taken (LDARGA 0) anywhere in the method.
+                    //   (or)
+                    //   2. It has been stored to (STARG.0) anywhere in the method.
+
+                    // A non-virtual call to a non-final virtual method is only allowed if
+                    //   1. The this pointer passed to the callee is an instance of a boxed value type. 
+                    //   (or)
+                    //   2. The this pointer passed to the callee is the current method's this pointer.
+                    //      (and) The current method's this pointer is not "possibly written".
+
+                    // Thus the rule is that if you assign to this ANYWHERE you can't make "base" calls to 
+                    // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).    
+                    // This is stronger than is strictly needed, but implementing a laxer rule is significantly 
+                    // harder and more error prone.
+                    var methodTypeDef = (MetadataType)methodType.GetTypeDefinition(); // Method is always considered final if owning type is sealed
+
+                    if (method.IsVirtual && !(method.IsFinal || methodTypeDef.IsSealed) && !actualThis.IsBoxedValueType)
+                        Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
                 }
-#endif
 
                 if (tailCall)
                 {
@@ -1169,9 +1377,7 @@ namespace Internal.IL
 
             if (opCode == ILOpcode.ldftn)
             {
-#if false
-                vstate->delegateCreateStart = codeAddr;
-#endif
+                _delegateCreateStart = _currentInstructionOffset;
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
