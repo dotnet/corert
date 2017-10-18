@@ -2492,13 +2492,17 @@ namespace Internal.JitInterface
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType != null)
             {
-                *className = (byte*)GetPin(StringToUTF8(owningType.Name));
-                *namespaceName = (byte*)GetPin(StringToUTF8(owningType.Namespace));
+                if (className != null)
+                    *className = (byte*)GetPin(StringToUTF8(owningType.Name));
+                if (namespaceName != null)
+                    *namespaceName = (byte*)GetPin(StringToUTF8(owningType.Namespace));
             }
             else
             {
-                *className = null;
-                *namespaceName = null;
+                if (className != null)
+                    *className = null;
+                if (namespaceName != null)
+                    *namespaceName = null;
             }
 
             return (byte*)GetPin(StringToUTF8(method.Name));
