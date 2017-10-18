@@ -545,11 +545,11 @@ namespace ILCompiler
 
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
 
-            Console.Write($"--singlemethodtypename {formatter.FormatName(failingMethod.OwningType)}");
+            Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
             Console.Write($" --singlemethodname {failingMethod.Name}");
 
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
-                Console.Write($" --singlemethodgenericarg {formatter.FormatName(failingMethod.Instantiation[i])}");
+                Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
             return false;
         }
