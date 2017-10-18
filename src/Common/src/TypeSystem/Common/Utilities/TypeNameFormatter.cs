@@ -138,10 +138,10 @@ namespace Internal.TypeSystem
         protected abstract TState AppendNameForNamespaceType(StringBuilder sb, DefType type, TOptions options);
         protected abstract TState AppendNameForInstantiatedType(StringBuilder sb, DefType type, TOptions options);
 
-        public string FormatName(TypeDesc type)
+        public string FormatName(TypeDesc type, TOptions options)
         {
             StringBuilder sb = new StringBuilder();
-            AppendName(sb, type, default(TOptions));
+            AppendName(sb, type, options);
             return sb.ToString();
         }
     }
