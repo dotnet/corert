@@ -40,7 +40,6 @@ namespace Internal.IL
         readonly MethodDesc _method;
         readonly MethodSignature _methodSignature;
         readonly TypeSystemContext _typeSystemContext;
-        readonly InstantiationContext _instantiationContext;
 
         readonly TypeDesc _thisType;
 
@@ -148,22 +147,22 @@ namespace Internal.IL
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
             _typeSystemContext = method.Context;
+            _method = method;
 
             // Instantiate method and its owning type
             var instantiatedType = method.OwningType;
             var instantiatedMethod = method;
             if (instantiatedType.HasInstantiation)
             {
-                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, InstantiateGenericInstantiation(instantiatedType.Instantiation));
                 instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
             }
 
             if (instantiatedMethod.HasInstantiation)
-                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, instantiatedMethod.Instantiation);
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, InstantiateGenericInstantiation(instantiatedMethod.Instantiation));
             _method = instantiatedMethod;
             _methodSignature = _method.Signature;
             _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
-            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, instantiatedMethod.Instantiation);
 
             // Determine this type
             if (!_method.Signature.IsStatic)
@@ -403,6 +402,19 @@ again:
                         continue;
                 }
             }
+        }
+
+        private Instantiation InstantiateGenericInstantiation(Instantiation instantiation)
+        {
+            var parameters = new TypeDesc[instantiation.Length];
+            for (int i = 0; i < instantiation.Length; i++)
+            {
+                if (instantiation[i].IsGenericParameter)
+                    parameters[i] = new InstantiatedGenericParameter((GenericParameterDesc)instantiation[i], _method.OwningType.Instantiation, _method.Instantiation);
+                else
+                    parameters[i] = instantiation[i];
+            }
+            return new Instantiation(parameters);
         }
 
         void AbortBasicBlockVerification()
@@ -1290,9 +1302,9 @@ again:
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints(_instantiationContext))
+            if (!method.OwningType.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints(_instantiationContext))
+            else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 #if false
             // Access verifications
@@ -1404,9 +1416,9 @@ again:
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints(_instantiationContext))
+            if (!method.OwningType.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints(_instantiationContext))
+            else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
 #if false
