@@ -847,6 +847,14 @@ namespace Internal.JitInterface
                 return null;
             }
 
+            if (implType.IsValueType)
+            {
+                // TODO: If we resolve to a method on a valuetype, we should return a MethodDesc for the unboxing stub
+                // so that RyuJIT won't try to inline it. We don't have MethodDescs for unboxing stubs in the
+                // type system though.
+                return null;
+            }
+
             implType = implType.GetClosestDefType();
 
             MethodDesc decl = HandleToObject(baseMethod);
@@ -859,12 +867,6 @@ namespace Internal.JitInterface
             if (declOwningType.IsInterface)
             {
                 // Interface call devirtualization.
-
-                if (implType.IsValueType)
-                {
-                    // TODO: this ends up asserting RyuJIT - why?
-                    return null;
-                }
 
                 if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
