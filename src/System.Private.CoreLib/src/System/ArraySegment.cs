@@ -16,7 +16,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -41,7 +40,6 @@ namespace System
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
-            Contract.EndContractBlock();
 
             _array = array;
             _offset = 0;
@@ -58,7 +56,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             _array = array;
             _offset = offset;
@@ -208,7 +205,6 @@ namespace System
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
-                Contract.EndContractBlock();
 
                 return _array[_offset + index];
             }
@@ -217,7 +213,6 @@ namespace System
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
-                Contract.EndContractBlock();
 
                 _array[_offset + index] = value;
             }
@@ -254,7 +249,6 @@ namespace System
                 ThrowInvalidOperationIfDefault();
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException(nameof(index));
-                Contract.EndContractBlock();
 
                 return _array[_offset + index];
             }

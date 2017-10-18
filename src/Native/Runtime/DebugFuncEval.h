@@ -21,19 +21,6 @@ class DebugFuncEval
 {
 public:
     /// <summary>
-    /// Retrieve the global FuncEval target address
-    /// </summary>
-    /// <remarks>
-    /// During debugging, if a FuncEval is requested, 
-    /// The func eval infrastructure needs to know which function to call, and
-    /// It will call this API to obtain the target address.
-    /// By the time, the value should have been set through the UpdateFuncEvalTarget() method 
-    /// on the ISosRedhawk7 interface.
-    /// </remarks>
-    static void* GetFuncEvalTarget();
-
-
-    /// <summary>
     /// Retrieve the global FuncEval parameter buffer size.
     /// </summary>
     /// <remarks>

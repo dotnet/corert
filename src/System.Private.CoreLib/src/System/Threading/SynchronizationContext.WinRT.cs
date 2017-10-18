@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -102,7 +101,6 @@ namespace System.Threading
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
-            Contract.EndContractBlock();
 
             var invoker = new Invoker(d, state);
             WinRTInterop.Callbacks.PostToWinRTDispatcher(m_dispatcher, Invoker.InvokeDelegate, invoker);

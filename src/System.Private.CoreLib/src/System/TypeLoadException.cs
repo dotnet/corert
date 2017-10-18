@@ -6,6 +6,8 @@ using System.Runtime.Serialization;
 
 namespace System
 {
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class TypeLoadException : SystemException
     {
         public TypeLoadException()
@@ -29,7 +31,7 @@ namespace System
         protected TypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            throw new PlatformNotSupportedException();
+            // Ignoring serialization input
         }
 
         public override string Message
@@ -55,6 +57,10 @@ namespace System
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+            info.AddValue("TypeLoadClassName", null, typeof(string));
+            info.AddValue("TypeLoadAssemblyName", null, typeof(string));
+            info.AddValue("TypeLoadMessageArg", null, typeof(string));
+            info.AddValue("TypeLoadResourceID", 0, typeof(int));
         }
 
         private readonly string _typeName;

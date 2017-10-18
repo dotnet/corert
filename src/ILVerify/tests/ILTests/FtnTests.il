@@ -94,6 +94,12 @@
         ret
     }
 
+    .method public hidebysig static int32 StaticIntMethod() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+
     .method public hidebysig static void StaticMethodRefConstr<class T>() cil managed 
     {
         ret
@@ -223,7 +229,7 @@
         ret
     }
 
-    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO(int32 i) cil managed
+    .method static public hidebysig void LdvirtFtn.ValueTypeWrongBox_Invalid_StackUnexpected.DelegateCtorSigO.DelegatePattern(int32 i) cil managed
     {
         // (int i)
         // var f = new System.Func<int, int>(i.CompareTo);
@@ -268,6 +274,93 @@
 
         newobj      instance void class GenericTestClass`1<int32>::.ctor()
         pop
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.NopInDelegatePattern_Invalid_DelegatePattern() cil managed
+    {
+        // var a = new System.Action(TestClass.StaticMethod);
+        // a();
+
+        ldnull
+        ldftn       void TestClass::StaticMethod()
+        nop
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdvirtFtn.NopInDelegatePattern_Invalid_DelegatePattern(class TestClass c) cil managed
+    {
+        // (TestClass c)
+        // var a = new System.Action(c.InstanceMethod);
+        // a();
+
+        ldarg.0
+        dup
+        nop
+        ldvirtftn   instance void TestClass::InstanceMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern() cil managed
+    {
+        ldnull
+        ldftn       void TestClass::StaticMethod()
+        br          lbl_newobj
+
+        ldnull
+        ldftn       void TestClass::StaticMethod()
+
+    lbl_newobj:
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdvirtFtn.BranchIntoDelegatePattern_Invalid_DelegatePattern(class TestClass t) cil managed
+    {
+        ldarg.0
+        dup
+        br          lbl_ldvirt
+
+        ldarg.0
+        dup
+
+    lbl_ldvirt:
+        ldvirtftn   instance void TestClass::InstanceMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.DelegateMissingArgument_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn       void TestClass::StaticMethod()
+        newobj      instance void class [System.Runtime]System.Action`1<int32>::.ctor(object, native int)
+        ldc.i4.0
+        callvirt    instance void class [System.Runtime]System.Action`1<int32>::Invoke(!0)
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.DelegateWrongReturnType_Invalid_DelegateCtor() cil managed
+    {
+        ldnull
+        ldftn       int32 TestClass::StaticIntMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
+        ret
+    }
+
+    .method static public hidebysig void LdFtn.VirtualMethodNonThisPtr_Invalid_LdftnNonFinalVirtual(class TestClass c) cil managed
+    {
+        ldarg.0
+        ldftn       instance void TestClass::VirtInstanceMethod()
+        newobj      instance void [System.Runtime]System.Action::.ctor(object, native int)
+        callvirt    instance void [System.Runtime]System.Action::Invoke()
         ret
     }
 }

@@ -36,12 +36,10 @@
 // 
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System
 {
-    [Pure]
     internal static class ThrowHelper
     {
         internal static void ThrowArrayTypeMismatchException()

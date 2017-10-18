@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -83,12 +82,6 @@ namespace Internal.Runtime.Augments
                 throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
             }
         }
-
-        // TODO Perf: Once CoreCLR gets EnumerateEnvironmentVariables(), get rid of GetEnvironmentVariables() and have 
-        // corefx call EnumerateEnvironmentVariables() instead so we don't have to create a dictionary just to copy it into
-        // another dictionary.
-        public static IDictionary GetEnvironmentVariables() => new Dictionary<string, string>(EnumerateEnvironmentVariables());
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => new Dictionary<string, string>(EnumerateEnvironmentVariables(target));
 
         public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {

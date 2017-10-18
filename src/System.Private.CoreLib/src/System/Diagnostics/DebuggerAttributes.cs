@@ -13,7 +13,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 
 namespace System.Diagnostics
 {
@@ -131,7 +130,6 @@ namespace System.Diagnostics
         {
             if (state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
                 throw new ArgumentOutOfRangeException(nameof(state));
-            Contract.EndContractBlock();
 
             _state = state;
         }
@@ -156,7 +154,6 @@ namespace System.Diagnostics
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            Contract.EndContractBlock();
 
             _typeName = type.AssemblyQualifiedName;
         }
@@ -178,7 +175,6 @@ namespace System.Diagnostics
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 _targetName = value.AssemblyQualifiedName;
                 _target = value;
@@ -251,7 +247,6 @@ namespace System.Diagnostics
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 _targetName = value.AssemblyQualifiedName;
                 _target = value;

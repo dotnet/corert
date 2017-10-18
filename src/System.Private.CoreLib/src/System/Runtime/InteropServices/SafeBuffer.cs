@@ -67,7 +67,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
@@ -112,7 +111,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (IntPtr.Size == 4 && numBytes > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
-            Contract.EndContractBlock();
 
             if (numBytes >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
@@ -134,7 +132,6 @@ namespace System.Runtime.InteropServices
 
             if (IntPtr.Size == 4 && numElements * sizeOfEachElement > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
-            Contract.EndContractBlock();
 
             if (numElements * sizeOfEachElement >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMaxMinusOne);
@@ -256,7 +253,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
@@ -336,7 +332,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (_numBytes == Uninitialized)
                 throw NotInitialized();

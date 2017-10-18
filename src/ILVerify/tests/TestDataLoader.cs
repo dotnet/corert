@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Internal.IL;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Newtonsoft.Json;
 using Xunit;
@@ -30,6 +31,8 @@ namespace ILVerify.Tests
         /// See: https://github.com/dotnet/corert/pull/3725#discussion_r118820770
         /// </summary>
         public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
+
+        private const string SPECIALTEST_PREFIX = "special.";
 
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
@@ -107,7 +110,8 @@ namespace ILVerify.Tests
                     if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
                     {
                         var mparams = methodName.Split('_');
-                        var newItem = methodSelector(mparams, methodHandle);
+                        var specialMethodHandle = HandleSpecialTests(mparams, method);
+                        var newItem = methodSelector(mparams, specialMethodHandle);
 
                         if (newItem != null)
                         {
@@ -121,6 +125,29 @@ namespace ILVerify.Tests
                 }
             }
             return retVal;
+        }
+
+        private static MethodDefinitionHandle HandleSpecialTests(string[] methodParams, EcmaMethod method)
+        {
+            if (!methodParams[0].StartsWith(SPECIALTEST_PREFIX))
+                return method.Handle;
+
+            // Cut off special prefix
+            var specialParams = methodParams[0].Substring(SPECIALTEST_PREFIX.Length);
+
+            // Get friendly name / special name
+            int delimiter = specialParams.IndexOf('.');
+            if (delimiter < 0)
+                return method.Handle;
+
+            var friendlyName = specialParams.Substring(0, delimiter);
+            var specialName = specialParams.Substring(delimiter + 1);
+
+            // Substitute method parameters with friendly name
+            methodParams[0] = friendlyName;
+
+            var specialMethodHandle = (EcmaMethod)method.OwningType.GetMethod(specialName, method.Signature);
+            return specialMethodHandle == null ? method.Handle : specialMethodHandle.Handle;
         }
 
         private static IEnumerable<string> GetAllTestDlls()

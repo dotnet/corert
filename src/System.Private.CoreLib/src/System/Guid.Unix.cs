@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -17,7 +16,6 @@ namespace System
             // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
             // uniqueness guarantees.  It should also never return a known GUID, but it's unclear
             // how extensively it checks for known values.
-            Contract.Ensures(Contract.Result<Guid>() != Guid.Empty);
 
             Interop.Sys.CreateGuid(out Guid g);
             return g;

@@ -199,6 +199,25 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool InlineStringTest(ref InlineString ias);
 
+        internal delegate int Callback0();
+        internal delegate int Callback1();
+        internal delegate int Callback2();
+
+        [DllImport("*")]
+        internal static extern bool RegisterCallbacks(ref Callbacks callbacks);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Callbacks
+        {
+            public Callback0 callback0;
+            public Callback1 callback1;
+            public Callback2 callback2;
+        }
+
+        public static int callbackFunc0() { return 0; }
+        public static int callbackFunc1() { return 1; }
+        public static int callbackFunc2() { return 2; }
+
         public static int Main(string[] args)
         {
             TestBlittableType();
@@ -621,7 +640,7 @@ namespace PInvokeTests
             ius.inlineString = "Hello World";
 
 
-            TestStruct2 ts = new TestStruct2() { f1 = 100, f2 = true };
+            TestStruct2 ts = new TestStruct2() { f1 = 100, f2 = true};
             int size = Marshal.SizeOf<TestStruct2>(ts);
             IntPtr memory = Marshal.AllocHGlobal(size);
             try
@@ -666,6 +685,12 @@ namespace PInvokeTests
                 pass = true;
             }
             ThrowIfNotEquals(true, pass, "Struct marshalling scenario6 failed.");
+
+            Callbacks callbacks = new Callbacks();
+            callbacks.callback0 = new Callback0(callbackFunc0);
+            callbacks.callback1 = new Callback1(callbackFunc1);
+            callbacks.callback2 = new Callback2(callbackFunc2);
+            ThrowIfNotEquals(true,  RegisterCallbacks(ref callbacks), "Scenario 7: Struct with delegate marshalling failed");
 #endif
         }
     }

@@ -21,7 +21,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
 using Internal.NativeFormat;
 
 namespace System.Runtime.InteropServices
@@ -187,10 +186,10 @@ namespace System.Runtime.InteropServices
             void * arg7)
         {
             // This method is implemented elsewhere in the toolchain
-            return 0;
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* pComThis,
                     ulong arg0,
@@ -198,9 +197,9 @@ namespace System.Runtime.InteropServices
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return 0;
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* pComThis,
                     IntPtr arg0,
@@ -210,50 +209,44 @@ namespace System.Runtime.InteropServices
                     IntPtr arg4)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return 0;
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     uint arg0)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
-                    System.IntPtr pfn,
-                    void* arg0,
-                    void* arg1)
-        {
-            // This method is implemented elsewhere in the toolchain
-            return default(T);
-        }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     uint arg1,
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     void* arg1,
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     uint arg1,
@@ -261,18 +254,19 @@ namespace System.Runtime.InteropServices
                     void* arg3)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     int hr,
                     void* errorMsg,
                     System.IntPtr pUnk)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     System.IntPtr pComThis,
                     out System.IntPtr arg1,
@@ -285,18 +279,19 @@ namespace System.Runtime.InteropServices
             arg3 = default(IntPtr);
             arg4 = default(IntPtr);
             arg2 = 0;
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
             System.IntPtr pfn,
             System.IntPtr pComThis,
             out System.IntPtr arg)
         {
             // This method is implemented elsewhere in the toolchain
             arg = default(IntPtr);
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
             System.IntPtr pfn,
             System.IntPtr pComThis,
             System.Guid arg1,
@@ -304,10 +299,10 @@ namespace System.Runtime.InteropServices
         {
             // This method is implemented elsewhere in the toolchain
             arg2 = default(IntPtr);
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
             IntPtr pfn,
             void* pComThis,
             IntPtr piid,
@@ -318,10 +313,10 @@ namespace System.Runtime.InteropServices
             IntPtr pclsid)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm,
@@ -332,10 +327,10 @@ namespace System.Runtime.InteropServices
               int mshlflags)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm,
@@ -343,25 +338,25 @@ namespace System.Runtime.InteropServices
               IntPtr ppvObj)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               int dwReserved)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
         private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
@@ -612,7 +607,7 @@ namespace System.Runtime.InteropServices
             IntPtr puArgErr);
 
         // IStream
-        internal delegate int AddrOfIStreamClone(IntPtr pComThis, out IntPtr ppstm);
+        internal delegate int AddrOfIStreamClone(IntPtr pComThis, IntPtr ppstm);
         internal delegate int AddrOfIStreamCopyTo(IntPtr pComThis, IntPtr pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         internal delegate int AddrOfIStreamLockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamRead(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbRead);
