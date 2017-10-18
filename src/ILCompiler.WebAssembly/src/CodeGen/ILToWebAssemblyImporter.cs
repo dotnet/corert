@@ -617,6 +617,7 @@ namespace Internal.IL
 
         private void ImportJmp(int token)
         {
+            throw new NotImplementedException("jmp");
         }
 
         private void ImportCasting(ILOpcode opcode, int token)
@@ -897,43 +898,61 @@ namespace Internal.IL
                         kind = op2.Kind;
                     }
 
+                    LLVMValueRef left = op1.LLVMValue;
+                    LLVMValueRef right = op2.LLVMValue;
+
+                    if (kind == StackValueKind.NativeInt || kind == StackValueKind.ObjRef || kind == StackValueKind.ByRef)
+                    {
+                        if (LLVM.GetTypeKind(LLVM.TypeOf(left)) == LLVMTypeKind.LLVMPointerTypeKind)
+                        {
+                            left = LLVM.BuildPtrToInt(_builder, left, LLVM.Int32Type(), "lptrasint");
+                        }
+                        if (LLVM.GetTypeKind(LLVM.TypeOf(right)) == LLVMTypeKind.LLVMPointerTypeKind)
+                        {
+                            right = LLVM.BuildPtrToInt(_builder, right, LLVM.Int32Type(), "rptrasint");
+                        }
+                    }
+
 
                     switch (opcode)
                     {
                         case ILOpcode.beq:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, op1.LLVMValue, op2.LLVMValue, "beq");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, left, right, "beq");
                             break;
                         case ILOpcode.bge:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGE, op1.LLVMValue, op2.LLVMValue, "bge");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGE, left, right, "bge");
                             break;
                         case ILOpcode.bgt:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, op1.LLVMValue, op2.LLVMValue, "bgt");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, left, right, "bgt");
                             break;
                         case ILOpcode.ble:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLE, op1.LLVMValue, op2.LLVMValue, "ble");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLE, left, right, "ble");
                             break;
                         case ILOpcode.blt:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, op1.LLVMValue, op2.LLVMValue, "blt");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, left, right, "blt");
                             break;
                         case ILOpcode.bne_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, op1.LLVMValue, op2.LLVMValue, "bne_un");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, left, right, "bne_un");
                             break;
                         case ILOpcode.bge_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGE, op1.LLVMValue, op2.LLVMValue, "bge_un");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGE, left, right, "bge_un");
                             break;
                         case ILOpcode.bgt_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, op1.LLVMValue, op2.LLVMValue, "bgt_un");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, left, right, "bgt_un");
                             break;
                         case ILOpcode.ble_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULE, op1.LLVMValue, op2.LLVMValue, "ble_un");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULE, left, right, "ble_un");
                             break;
                         case ILOpcode.blt_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, op1.LLVMValue, op2.LLVMValue, "blt_un");
+                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, left, right, "blt_un");
                             break;
                         default:
                             throw new NotSupportedException(); // unreachable
                     }
                 }
+                //TODO: why did this happen
+                if (target.StartOffset == 0)
+                    throw new NotImplementedException("cant branch to entry basic block");
 
                 LLVM.BuildCondBr(_builder, condition, GetLLVMBasicBlockForBlock(target), GetLLVMBasicBlockForBlock(fallthrough));
 
@@ -1322,6 +1341,7 @@ namespace Internal.IL
 
         private void ImportRethrow()
         {
+            EmitTrapCall();
         }
 
         private void ImportSizeOf(int token)
