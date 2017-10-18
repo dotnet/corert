@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSeek,
                 pStreamNativePtr,
                 0UL,
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSetSize,
                 pStreamNativePtr,
                 lSize,
@@ -227,14 +227,6 @@ namespace System.Runtime.InteropServices
             {
                 ExternalInterop.MemFree((IntPtr)block);
             }
-        }
-
-        /// <summary>
-        /// Return true if the object is a RCW. False otherwise
-        /// </summary>
-        internal static bool IsComObject(object obj)
-        {
-            return (obj is __ComObject);
         }
 
         /// <summary>

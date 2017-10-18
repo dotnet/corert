@@ -797,7 +797,7 @@ namespace System.Runtime.InteropServices
             if (o == null)
                 throw new ArgumentNullException(nameof(o), SR.Arg_InvalidHandle);
 
-            return McgComHelpers.IsComObject(o);
+            return McgMarshal.IsComObject(o);
         }
 
         public static unsafe IntPtr StringToCoTaskMemUni(String s)

@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
                 {
                     // Get the errorDetails associated with the restrictedErrorInfo.
                     __com_IRestrictedErrorInfo* pComRestrictedErrorInfo = (__com_IRestrictedErrorInfo*)pRestrictedErrorInfo;
-                    result = CalliIntrinsics.StdCall<int>(
+                    result = CalliIntrinsics.StdCall__int(
                        pComRestrictedErrorInfo->pVtable->pfnGetErrorDetails,
                        pRestrictedErrorInfo,
                        out pErrDes,
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
                 try
                 {
                     __com_IRestrictedErrorInfo* pComRestrictedErrorInfo = (__com_IRestrictedErrorInfo*)pRestrictedErrorInfo;
-                    int result = CalliIntrinsics.StdCall<int>(pComRestrictedErrorInfo->pVtable->pfnGetReference, pRestrictedErrorInfo, out pReference);
+                    int result = CalliIntrinsics.StdCall__int(pComRestrictedErrorInfo->pVtable->pfnGetReference, pRestrictedErrorInfo, out pReference);
                     if (result >= 0)
                     {
                         errReference = Interop.COM.ConvertBSTRToString(pReference);
@@ -795,7 +795,7 @@ namespace System.Runtime.InteropServices
                             // We have an LanguageExceptionErrorInfo.
                             IntPtr pUnk;
                             __com_ILanguageExceptionErrorInfo* pComLanguageExceptionErrorInfo = (__com_ILanguageExceptionErrorInfo*)pLanguageExceptionErrorInfo;
-                            int result = CalliIntrinsics.StdCall<int>(pComLanguageExceptionErrorInfo->pVtable->pfnGetLanguageException, pLanguageExceptionErrorInfo, out pUnk);
+                            int result = CalliIntrinsics.StdCall__int(pComLanguageExceptionErrorInfo->pVtable->pfnGetLanguageException, pLanguageExceptionErrorInfo, out pUnk);
                             McgMarshal.ComSafeRelease(pLanguageExceptionErrorInfo);
 
                             if (result >= 0 && pUnk != IntPtr.Zero)

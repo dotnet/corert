@@ -835,10 +835,12 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsComClass(this RuntimeTypeHandle handle)
         {
+            //From Interop point, Delegates aren't treated as Class
 #if CORECLR
-            return InteropExtensions.IsClass(handle);        
+            return  InteropExtensions.IsClass(handle) && 
+                    !InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
 #else
-            return !InteropExtensions.IsInterface(handle) &&
+            return  !InteropExtensions.IsInterface(handle) &&
                     !handle.IsValueType() &&
                     !InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
 #endif
