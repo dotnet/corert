@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             if (unboxThunkNode != null && unboxThunkNode.IsSpecialUnboxingThunk)
             {
                 flags |= AssociatedDataFlags.HasUnboxingStubTarget;
-                objData.EmitPointerReloc(unboxThunkNode.GetUnboxingThunkTarget(factory));
+                objData.EmitReloc(unboxThunkNode.GetUnboxingThunkTarget(factory), RelocType.IMAGE_REL_BASED_RELPTR32);
             }
 
             objData.EmitByte(flagsReservation, (byte)flags);
