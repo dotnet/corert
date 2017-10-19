@@ -23,6 +23,20 @@ namespace ILVerify
             if (targetClass.IsParameterizedType)
                 return currentClass.CanAccess(((ParameterizedType)targetClass).ParameterType);
 
+#if false
+            // perform transparency check on the type, if the caller is transparent
+            if ((NULL != pCurrentMD) && Security::IsTransparentMethod(pCurrentMD))
+            {
+                // check if type is visible outside the assembly
+                if (!IsTypeVisibleOutsideAssembly(pTargetClass))
+                {
+                    // check transparent/critical on type
+                    if (!Security::CheckNonPublicCriticalAccess(pCurrentMD, NULL, NULL, pTargetClass)) 
+                        return FALSE;
+                }
+            }
+#endif
+
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
                 return false;
@@ -96,11 +110,6 @@ namespace ILVerify
                 return false;
 
             var targetTypeDef = (MetadataType)targetType.GetTypeDefinition();
-#if false
-            // if caller is transparent, and target is non-public and critical, then fail access check
-            if (!CheckTransparentAccessToCriticalCode(pCurrentMD, dwMemberAccess, pTargetMT, pOptionalTargetMethod, pOptionalTargetField))
-                return FALSE;
-#endif
 
             if (memberVisibility == MethodAttributes.Public)
                 return true;
