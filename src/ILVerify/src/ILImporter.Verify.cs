@@ -161,7 +161,6 @@ namespace Internal.IL
             if (instantiatedMethod.HasInstantiation)
                 instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, InstantiateGenericInstantiation(instantiatedMethod.Instantiation));
             _method = instantiatedMethod;
-            SetGenericInstantiationContext();
 
             _methodSignature = _method.Signature;
             _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
@@ -412,34 +411,12 @@ again:
             for (int i = 0; i < instantiation.Length; i++)
             {
                 if (instantiation[i].IsGenericParameter)
-                    parameters[i] = new InstantiatedGenericParameter((GenericParameterDesc)instantiation[i]);
+                    parameters[i] = instantiation[i].Context.GetInstantiatedGenericParameter(
+                        (GenericParameterDesc)instantiation[i], _method.OwningType.Instantiation, _method.Instantiation);
                 else
                     parameters[i] = instantiation[i];
             }
             return new Instantiation(parameters);
-        }
-
-        private void SetGenericInstantiationContext()
-        {
-            foreach (var inst in _method.OwningType.Instantiation)
-            {
-                if (inst is InstantiatedGenericParameter)
-                {
-                    var instantiatedGeneric = ((InstantiatedGenericParameter)inst);
-                    instantiatedGeneric.TypeInstantiation = _method.OwningType.Instantiation;
-                    instantiatedGeneric.MethodInstantiation = _method.Instantiation;
-                }
-            }
-
-            foreach (var inst in _method.Instantiation)
-            {
-                if (inst is InstantiatedGenericParameter)
-                {
-                    var instantiatedGeneric = ((InstantiatedGenericParameter)inst);
-                    instantiatedGeneric.TypeInstantiation = _method.OwningType.Instantiation;
-                    instantiatedGeneric.MethodInstantiation = _method.Instantiation;
-                }
-            }
         }
 
         void AbortBasicBlockVerification()

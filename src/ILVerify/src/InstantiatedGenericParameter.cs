@@ -9,22 +9,70 @@ namespace Internal.TypeSystem
 {
     internal sealed partial class InstantiatedGenericParameter : GenericParameterDesc
     {
-        private GenericParameterDesc _genericParam;
-        public Instantiation TypeInstantiation
+        private readonly GenericParameterDesc _genericParam;
+        private readonly Instantiation _typeInstantiation;
+        private readonly Instantiation _methodInstantiation;
+
+        public GenericParameterDesc GenericParameter
         {
-            get;
-            set;
-        }
-        public Instantiation MethodInstantiation
-        {
-            get;
-            set;
+            get
+            {
+                return _genericParam;
+            }
         }
 
-        internal InstantiatedGenericParameter(GenericParameterDesc genericParam)
+        public Instantiation TypeInstantiation
+        {
+            get
+            {
+                return _typeInstantiation;
+            }
+        }
+
+        public Instantiation MethodInstantiation
+        {
+            get
+            {
+                return _methodInstantiation;
+            }
+        }
+
+        private Instantiation _typeGenericInstantiation;
+        private Instantiation _methodGenericInstantiation;
+        private bool instantiationsIntitialized = false;
+
+        internal InstantiatedGenericParameter(GenericParameterDesc genericParam, Instantiation typeInstantiation, Instantiation methodInstantation)
         {
             Debug.Assert(!(genericParam is InstantiatedGenericParameter));
             _genericParam = genericParam;
+
+            Debug.Assert(typeInstantiation.Length > 0 || methodInstantation.Length > 0);
+            _typeInstantiation = typeInstantiation;
+            _methodInstantiation = methodInstantation;
+        }
+
+        private Instantiation SubstituteInstantiation(Instantiation instantiation)
+        {
+            if (instantiation.Length <= 0)
+                return instantiation;
+
+            var parameters = new TypeDesc[instantiation.Length];
+
+            for (int i = 0; i < instantiation.Length; ++i)
+            {
+                if (instantiation[i].IsGenericParameter)
+                {
+                    if (instantiation[i] == GenericParameter)
+                        parameters[i] = this;
+                    else
+                        parameters[i] = instantiation[i].Context.GetInstantiatedGenericParameter(
+                            (GenericParameterDesc)instantiation[i], _typeInstantiation, _methodInstantiation);
+                }
+                else
+                    parameters[i] = instantiation[i];
+            }
+
+            return new Instantiation(parameters);
         }
 
         public override GenericParameterKind Kind => _genericParam.Kind;
@@ -41,9 +89,16 @@ namespace Internal.TypeSystem
         {
             get
             {
+                if (!instantiationsIntitialized)
+                {
+                    _typeGenericInstantiation = SubstituteInstantiation(_typeInstantiation);
+                    _methodGenericInstantiation = SubstituteInstantiation(_methodInstantiation);
+                    instantiationsIntitialized = true;
+                }
+
                 foreach (var constraint in _genericParam.TypeConstraints)
                 {
-                    yield return constraint.InstantiateSignature(TypeInstantiation, MethodInstantiation);
+                    yield return constraint.InstantiateSignature(_typeGenericInstantiation, _methodGenericInstantiation);
                 }
             }
         }

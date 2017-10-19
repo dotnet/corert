@@ -18,6 +18,7 @@
     <Compile Include="VerifierError.cs" />
     <Compile Include="TypeSystemHelpers.cs" />
     <Compile Include="InstantiatedGenericParameter.cs" />
+    <Compile Include="TypeSystemContext.InstantiatedGenericParameter.cs" />
   </ItemGroup>
 
   <ItemGroup>
