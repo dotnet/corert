@@ -282,8 +282,15 @@ namespace ILVerify
 
             for (int i = 0; i < key1.Length; i++)
             {
-                if (key1[i] != Convert.ToByte(key2[i*2] + "" + key2[i*2+1], 16))
+                try
+                {
+                    if (key1[i] != Convert.ToByte(key2[i * 2] + "" + key2[i * 2 + 1], 16))
+                        return false;
+                }
+                catch
+                {
                     return false;
+                }
             }
 
             return true;
