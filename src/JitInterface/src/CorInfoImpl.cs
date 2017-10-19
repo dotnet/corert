@@ -698,13 +698,7 @@ namespace Internal.JitInterface
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
-            {
-                // TODO: We can report both flags once we pick up https://github.com/dotnet/coreclr/pull/14566
-                if (getIntrinsicID(method, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal)
-                    result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
-                else
-                    result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
-            }
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC | CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
             if (method.IsAbstract)
