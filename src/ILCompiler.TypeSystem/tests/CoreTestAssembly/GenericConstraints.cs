@@ -59,5 +59,14 @@ namespace GenericConstraints
 
     public class ComplexGenericConstraint3<T, U> where T : IGen<U> { }
 
+    public class ComplexGenericConstraint4<T, U> where T : U where U : IGen<T> { }
+
     public class MultipleConstraints<T, U> where T : class, IGen<U>, new() { }
+
+    public class GenericMethods
+    {
+        public static void SimpleGenericConstraintMethod<T, U>() where T : U { }
+
+        public static void ComplexGenericConstraintMethod<T, U>() where T : U where U : IGen<T> { }
+    }
 }

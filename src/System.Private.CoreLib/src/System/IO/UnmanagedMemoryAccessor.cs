@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -79,7 +78,6 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
-            Contract.EndContractBlock();
 
             if (_isOpen)
             {

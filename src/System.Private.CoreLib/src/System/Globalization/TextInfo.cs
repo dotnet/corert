@@ -13,7 +13,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -91,7 +90,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         // Currently we don't have native functions to do this, so we do it the hard way
@@ -102,7 +101,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -214,7 +213,6 @@ namespace System.Globalization
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
             if (textInfo == null) { throw new ArgumentNullException(nameof(textInfo)); }
-            Contract.EndContractBlock();
             if (textInfo.IsReadOnly) { return (textInfo); }
 
             TextInfo clonedTextInfo = (TextInfo)(textInfo.MemberwiseClone());
@@ -430,7 +428,6 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            Contract.EndContractBlock();
             if (str.Length == 0)
             {
                 return (str);

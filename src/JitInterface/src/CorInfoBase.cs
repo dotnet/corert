@@ -11,339 +11,343 @@ namespace Internal.JitInterface
 {
     unsafe partial class CorInfoImpl
     {
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getMethodAttribs(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setMethodAttribs(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CorInfoMethodRuntimeFlags attribs);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getMethodSig(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __getMethodInfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoInline __canInline(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reportInliningDecision(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __canTailCall(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reportTailCallDecision(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getEHinfo(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getMethodClass(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_MODULE_STRUCT_* __getMethodModule(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getMethodVTableOffset(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, [MarshalAs(UnmanagedType.U1)] ref bool isRelative);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_METHOD_STRUCT_* __resolveVirtualMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, CORINFO_CONTEXT_STRUCT* ownerType);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getDefaultEqualityComparerClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* elemType);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __expandRawHandleIntrinsic(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoIntrinsics __getIntrinsicID(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.U1)] ref bool pMustExpand);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isInSIMDModule(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* classHnd);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoUnmanagedCallConv __getUnmanagedCallConv(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __pInvokeMarshalingRequired(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __satisfiesMethodConstraints(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isCompatibleDelegate(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, [MarshalAs(UnmanagedType.Bool)] ref bool pfIsOpenDelegate);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoInstantiationVerification __isInstantiationOfVerifiedGeneric(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __initConstraintsForVerification(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularClassConstraints, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularMethodConstraint);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoCanSkipVerificationResult __canSkipMethodVerification(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHandle);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __methodMustBeLoadedBeforeCodeIsRun(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_METHOD_STRUCT_* __mapMethodDeclToMethodImpl(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getGSCookie(IntPtr _this, IntPtr* ppException, IntPtr* pCookieVal, IntPtr** ppCookieVal);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __resolveToken(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __tryResolveToken(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __findSig(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __findCallSiteSig(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getTokenTypeAsHandle(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoCanSkipVerificationResult __canSkipVerification(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidToken(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidStringRef(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __shouldEnforceCallvirtRestriction(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* scope);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoType __asCorInfoType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getClassName(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate int __appendClassName(IntPtr _this, IntPtr* ppException, short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValueClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canInlineTypeCheckWithObjectVTable(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassAttribs(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isStructRequiringStackAllocRetBuf(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_MODULE_STRUCT_* __getClassModule(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_ASSEMBLY_STRUCT_* __getModuleAssembly(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* mod);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getAssemblyName(IntPtr _this, IntPtr* ppException, CORINFO_ASSEMBLY_STRUCT_* assem);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __LongLifetimeMalloc(IntPtr _this, IntPtr* ppException, UIntPtr sz);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __LongLifetimeFree(IntPtr _this, IntPtr* ppException, void* obj);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getClassModuleIdForStatics(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassSize(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassAlignmentRequirement(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassGClayout(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte* gcPtrs);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassNumInstanceFields(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_FIELD_STRUCT_* __getFieldInClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, int num);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __checkMethodModifier(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, [MarshalAs(UnmanagedType.Bool)]bool fOptional);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getNewHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getNewArrHelper(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* arrayCls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getCastingHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool fThrowing);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getSharedCCtorHelper(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getSecurityPrologHelper(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getTypeForBox(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getBoxHelper(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getUnBoxHelper(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __getReadyToRunHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getReadyToRunDelegateCtorHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getHelperName(IntPtr _this, IntPtr* ppException, CorInfoHelpFunc helpFunc);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoInitClassResult __initClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __classMustBeLoadedBeforeCodeIsRun(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getBuiltinClass(IntPtr _this, IntPtr* ppException, CorInfoClassId classId);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoType __getTypeForPrimitiveValueClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canCast(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __areTypesEquivalent(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate TypeCompareState __compareTypesForCast(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate TypeCompareState __compareTypesForEquality(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __mergeClasses(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getParentType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoType __getChildType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __satisfiesClassConstraints(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isSDArray(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getArrayRank(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getArrayInitializationData(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, uint size);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoIsAccessAllowedResult __canAccessClass(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getFieldName(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* ftn, byte** moduleName);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getFieldClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoType __getFieldType(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getFieldOffset(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isWriteBarrierHelperRequired(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getFieldInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __isFieldStatic(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getBoundaries(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implictBoundaries);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setBoundaries(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getVars(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars, [MarshalAs(UnmanagedType.U1)] ref bool extendOthers);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setVars(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __allocateArray(IntPtr _this, IntPtr* ppException, uint cBytes);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __freeArray(IntPtr _this, IntPtr* ppException, void* array);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_ARG_LIST_STRUCT_* __getArgNext(IntPtr _this, IntPtr* ppException, CORINFO_ARG_LIST_STRUCT_* args);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoTypeWithMod __getArgType(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, ref CORINFO_CLASS_STRUCT_* vcTypeRet);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __GetErrorHRESULT(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __GetErrorMessage(IntPtr _this, IntPtr* ppException, short* buffer, uint bufferLength);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate int __FilterException(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __HandleException(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __ThrowExceptionForJitResult(IntPtr _this, IntPtr* ppException, HRESULT result);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __ThrowExceptionForHelper(IntPtr _this, IntPtr* ppException, ref CORINFO_HELPER_DESC throwHelper);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __runWithErrorTrap(IntPtr _this, IntPtr* ppException, void* function, void* parameter);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getEEInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_EE_INFO pEEInfoOut);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.LPWStr)]delegate string __getJitTimeLogFilename(IntPtr _this, IntPtr* ppException);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate mdToken __getMethodDefFromMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getMethodName(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** moduleName);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __getMethodNameFromMetadata(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getMethodHash(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate byte* __findNameOfToken(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __getSystemVAmd64PassStructInRegisterDescriptor(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getThreadTLSIndex(IntPtr _this, IntPtr* ppException, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getInlinedCallFrameVptr(IntPtr _this, IntPtr* ppException, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate int* __getAddrOfCaptureThreadGlobal(IntPtr _this, IntPtr* ppException, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getHelperFtn(IntPtr _this, IntPtr* ppException, CorInfoHelpFunc ftnNum, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getFunctionEntryPoint(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getFunctionFixedEntryPoint(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getMethodSync(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CorInfoHelpFunc __getLazyStringLiteralHelper(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* handle);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_MODULE_STRUCT_* __embedModuleHandle(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __embedClassHandle(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_METHOD_STRUCT_* __embedMethodHandle(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_FIELD_STRUCT_* __embedFieldHandle(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __embedGenericHandle(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getLocationOfThisType(IntPtr _this, IntPtr* ppException, out CORINFO_LOOKUP_KIND _return, CORINFO_METHOD_STRUCT_* context);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getPInvokeUnmanagedTarget(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getAddressOfPInvokeFixup(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getAddressOfPInvokeTarget(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __GetCookieForPInvokeCalliSig(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __canGetCookieForPInvokeCalliSig(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* szMetaSig);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_JUST_MY_CODE_HANDLE_* __getJustMyCodeHandle(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __GetProfilingHandle(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getCallInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __canAccessFamily(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isRIDClassDomainID(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassDomainID(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getFieldAddress(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate IntPtr __getVarArgsHandle(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __canGetVarArgsHandle(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate InfoAccessType __constructStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate InfoAccessType __emptyStringLiteral(IntPtr _this, IntPtr* ppException, ref void* ppValue);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getFieldThreadLocalStoreID(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setOverride(IntPtr _this, IntPtr* ppException, IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __addActiveDependency(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_METHOD_STRUCT_* __GetDelegateCtor(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __MethodCompileComplete(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* methHnd);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getTailCallCopyArgsThunk(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __getMemoryManager(IntPtr _this, IntPtr* ppException);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __allocMem(IntPtr _this, IntPtr* ppException, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reserveUnwindInfo(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)]bool isFunclet, [MarshalAs(UnmanagedType.Bool)]bool isColdCode, uint unwindSize);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __allocUnwindInfo(IntPtr _this, IntPtr* ppException, byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void* __allocGCInfo(IntPtr _this, IntPtr* ppException, UIntPtr size);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __yieldExecution(IntPtr _this, IntPtr* ppException);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setEHcount(IntPtr _this, IntPtr* ppException, uint cEH);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __setEHinfo(IntPtr _this, IntPtr* ppException, uint EHnumber, ref CORINFO_EH_CLAUSE clause);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __logMsg(IntPtr _this, IntPtr* ppException, uint level, byte* fmt, IntPtr args);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate int __doAssert(IntPtr _this, IntPtr* ppException, byte* szFile, int iLine, byte* szExpr);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reportFatalError(IntPtr _this, IntPtr* ppException, CorJitResult result);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __allocBBProfileBuffer(IntPtr _this, IntPtr* ppException, uint count, ref ProfileBuffer* profileBuffer);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __getBBProfileData(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordCallSite(IntPtr _this, IntPtr* ppException, uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordRelocation(IntPtr _this, IntPtr* ppException, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate ushort __getRelocTypeHint(IntPtr _this, IntPtr* ppException, void* target);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getModuleNativeEntryPointRange(IntPtr _this, IntPtr* ppException, ref void* pStart, ref void* pEnd);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getExpectedTargetArchitecture(IntPtr _this, IntPtr* ppException);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getJitFlags(IntPtr _this, IntPtr* ppException, ref CORJIT_FLAGS flags, uint sizeInBytes);
 
         static uint _getMethodAttribs(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
@@ -1334,6 +1338,34 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default(bool);
+            }
+        }
+
+        static TypeCompareState _compareTypesForCast(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.compareTypesForCast(fromClass, toClass);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(TypeCompareState);
+            }
+        }
+
+        static TypeCompareState _compareTypesForEquality(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.compareTypesForEquality(cls1, cls2);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(TypeCompareState);
             }
         }
 
@@ -2641,8 +2673,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 167);
-            Object[] delegates = new Object[167];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 169);
+            Object[] delegates = new Object[169];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -2860,291 +2892,297 @@ namespace Internal.JitInterface
             var d71 = new __areTypesEquivalent(_areTypesEquivalent);
             callbacks[71] = Marshal.GetFunctionPointerForDelegate(d71);
             delegates[71] = d71;
-            var d72 = new __mergeClasses(_mergeClasses);
+            var d72 = new __compareTypesForCast(_compareTypesForCast);
             callbacks[72] = Marshal.GetFunctionPointerForDelegate(d72);
             delegates[72] = d72;
-            var d73 = new __getParentType(_getParentType);
+            var d73 = new __compareTypesForEquality(_compareTypesForEquality);
             callbacks[73] = Marshal.GetFunctionPointerForDelegate(d73);
             delegates[73] = d73;
-            var d74 = new __getChildType(_getChildType);
+            var d74 = new __mergeClasses(_mergeClasses);
             callbacks[74] = Marshal.GetFunctionPointerForDelegate(d74);
             delegates[74] = d74;
-            var d75 = new __satisfiesClassConstraints(_satisfiesClassConstraints);
+            var d75 = new __getParentType(_getParentType);
             callbacks[75] = Marshal.GetFunctionPointerForDelegate(d75);
             delegates[75] = d75;
-            var d76 = new __isSDArray(_isSDArray);
+            var d76 = new __getChildType(_getChildType);
             callbacks[76] = Marshal.GetFunctionPointerForDelegate(d76);
             delegates[76] = d76;
-            var d77 = new __getArrayRank(_getArrayRank);
+            var d77 = new __satisfiesClassConstraints(_satisfiesClassConstraints);
             callbacks[77] = Marshal.GetFunctionPointerForDelegate(d77);
             delegates[77] = d77;
-            var d78 = new __getArrayInitializationData(_getArrayInitializationData);
+            var d78 = new __isSDArray(_isSDArray);
             callbacks[78] = Marshal.GetFunctionPointerForDelegate(d78);
             delegates[78] = d78;
-            var d79 = new __canAccessClass(_canAccessClass);
+            var d79 = new __getArrayRank(_getArrayRank);
             callbacks[79] = Marshal.GetFunctionPointerForDelegate(d79);
             delegates[79] = d79;
-            var d80 = new __getFieldName(_getFieldName);
+            var d80 = new __getArrayInitializationData(_getArrayInitializationData);
             callbacks[80] = Marshal.GetFunctionPointerForDelegate(d80);
             delegates[80] = d80;
-            var d81 = new __getFieldClass(_getFieldClass);
+            var d81 = new __canAccessClass(_canAccessClass);
             callbacks[81] = Marshal.GetFunctionPointerForDelegate(d81);
             delegates[81] = d81;
-            var d82 = new __getFieldType(_getFieldType);
+            var d82 = new __getFieldName(_getFieldName);
             callbacks[82] = Marshal.GetFunctionPointerForDelegate(d82);
             delegates[82] = d82;
-            var d83 = new __getFieldOffset(_getFieldOffset);
+            var d83 = new __getFieldClass(_getFieldClass);
             callbacks[83] = Marshal.GetFunctionPointerForDelegate(d83);
             delegates[83] = d83;
-            var d84 = new __isWriteBarrierHelperRequired(_isWriteBarrierHelperRequired);
+            var d84 = new __getFieldType(_getFieldType);
             callbacks[84] = Marshal.GetFunctionPointerForDelegate(d84);
             delegates[84] = d84;
-            var d85 = new __getFieldInfo(_getFieldInfo);
+            var d85 = new __getFieldOffset(_getFieldOffset);
             callbacks[85] = Marshal.GetFunctionPointerForDelegate(d85);
             delegates[85] = d85;
-            var d86 = new __isFieldStatic(_isFieldStatic);
+            var d86 = new __isWriteBarrierHelperRequired(_isWriteBarrierHelperRequired);
             callbacks[86] = Marshal.GetFunctionPointerForDelegate(d86);
             delegates[86] = d86;
-            var d87 = new __getBoundaries(_getBoundaries);
+            var d87 = new __getFieldInfo(_getFieldInfo);
             callbacks[87] = Marshal.GetFunctionPointerForDelegate(d87);
             delegates[87] = d87;
-            var d88 = new __setBoundaries(_setBoundaries);
+            var d88 = new __isFieldStatic(_isFieldStatic);
             callbacks[88] = Marshal.GetFunctionPointerForDelegate(d88);
             delegates[88] = d88;
-            var d89 = new __getVars(_getVars);
+            var d89 = new __getBoundaries(_getBoundaries);
             callbacks[89] = Marshal.GetFunctionPointerForDelegate(d89);
             delegates[89] = d89;
-            var d90 = new __setVars(_setVars);
+            var d90 = new __setBoundaries(_setBoundaries);
             callbacks[90] = Marshal.GetFunctionPointerForDelegate(d90);
             delegates[90] = d90;
-            var d91 = new __allocateArray(_allocateArray);
+            var d91 = new __getVars(_getVars);
             callbacks[91] = Marshal.GetFunctionPointerForDelegate(d91);
             delegates[91] = d91;
-            var d92 = new __freeArray(_freeArray);
+            var d92 = new __setVars(_setVars);
             callbacks[92] = Marshal.GetFunctionPointerForDelegate(d92);
             delegates[92] = d92;
-            var d93 = new __getArgNext(_getArgNext);
+            var d93 = new __allocateArray(_allocateArray);
             callbacks[93] = Marshal.GetFunctionPointerForDelegate(d93);
             delegates[93] = d93;
-            var d94 = new __getArgType(_getArgType);
+            var d94 = new __freeArray(_freeArray);
             callbacks[94] = Marshal.GetFunctionPointerForDelegate(d94);
             delegates[94] = d94;
-            var d95 = new __getArgClass(_getArgClass);
+            var d95 = new __getArgNext(_getArgNext);
             callbacks[95] = Marshal.GetFunctionPointerForDelegate(d95);
             delegates[95] = d95;
-            var d96 = new __getHFAType(_getHFAType);
+            var d96 = new __getArgType(_getArgType);
             callbacks[96] = Marshal.GetFunctionPointerForDelegate(d96);
             delegates[96] = d96;
-            var d97 = new __GetErrorHRESULT(_GetErrorHRESULT);
+            var d97 = new __getArgClass(_getArgClass);
             callbacks[97] = Marshal.GetFunctionPointerForDelegate(d97);
             delegates[97] = d97;
-            var d98 = new __GetErrorMessage(_GetErrorMessage);
+            var d98 = new __getHFAType(_getHFAType);
             callbacks[98] = Marshal.GetFunctionPointerForDelegate(d98);
             delegates[98] = d98;
-            var d99 = new __FilterException(_FilterException);
+            var d99 = new __GetErrorHRESULT(_GetErrorHRESULT);
             callbacks[99] = Marshal.GetFunctionPointerForDelegate(d99);
             delegates[99] = d99;
-            var d100 = new __HandleException(_HandleException);
+            var d100 = new __GetErrorMessage(_GetErrorMessage);
             callbacks[100] = Marshal.GetFunctionPointerForDelegate(d100);
             delegates[100] = d100;
-            var d101 = new __ThrowExceptionForJitResult(_ThrowExceptionForJitResult);
+            var d101 = new __FilterException(_FilterException);
             callbacks[101] = Marshal.GetFunctionPointerForDelegate(d101);
             delegates[101] = d101;
-            var d102 = new __ThrowExceptionForHelper(_ThrowExceptionForHelper);
+            var d102 = new __HandleException(_HandleException);
             callbacks[102] = Marshal.GetFunctionPointerForDelegate(d102);
             delegates[102] = d102;
-            var d103 = new __runWithErrorTrap(_runWithErrorTrap);
+            var d103 = new __ThrowExceptionForJitResult(_ThrowExceptionForJitResult);
             callbacks[103] = Marshal.GetFunctionPointerForDelegate(d103);
             delegates[103] = d103;
-            var d104 = new __getEEInfo(_getEEInfo);
+            var d104 = new __ThrowExceptionForHelper(_ThrowExceptionForHelper);
             callbacks[104] = Marshal.GetFunctionPointerForDelegate(d104);
             delegates[104] = d104;
-            var d105 = new __getJitTimeLogFilename(_getJitTimeLogFilename);
+            var d105 = new __runWithErrorTrap(_runWithErrorTrap);
             callbacks[105] = Marshal.GetFunctionPointerForDelegate(d105);
             delegates[105] = d105;
-            var d106 = new __getMethodDefFromMethod(_getMethodDefFromMethod);
+            var d106 = new __getEEInfo(_getEEInfo);
             callbacks[106] = Marshal.GetFunctionPointerForDelegate(d106);
             delegates[106] = d106;
-            var d107 = new __getMethodName(_getMethodName);
+            var d107 = new __getJitTimeLogFilename(_getJitTimeLogFilename);
             callbacks[107] = Marshal.GetFunctionPointerForDelegate(d107);
             delegates[107] = d107;
-            var d108 = new __getMethodNameFromMetadata(_getMethodNameFromMetadata);
+            var d108 = new __getMethodDefFromMethod(_getMethodDefFromMethod);
             callbacks[108] = Marshal.GetFunctionPointerForDelegate(d108);
             delegates[108] = d108;
-            var d109 = new __getMethodHash(_getMethodHash);
+            var d109 = new __getMethodName(_getMethodName);
             callbacks[109] = Marshal.GetFunctionPointerForDelegate(d109);
             delegates[109] = d109;
-            var d110 = new __findNameOfToken(_findNameOfToken);
+            var d110 = new __getMethodNameFromMetadata(_getMethodNameFromMetadata);
             callbacks[110] = Marshal.GetFunctionPointerForDelegate(d110);
             delegates[110] = d110;
-            var d111 = new __getSystemVAmd64PassStructInRegisterDescriptor(_getSystemVAmd64PassStructInRegisterDescriptor);
+            var d111 = new __getMethodHash(_getMethodHash);
             callbacks[111] = Marshal.GetFunctionPointerForDelegate(d111);
             delegates[111] = d111;
-            var d112 = new __getThreadTLSIndex(_getThreadTLSIndex);
+            var d112 = new __findNameOfToken(_findNameOfToken);
             callbacks[112] = Marshal.GetFunctionPointerForDelegate(d112);
             delegates[112] = d112;
-            var d113 = new __getInlinedCallFrameVptr(_getInlinedCallFrameVptr);
+            var d113 = new __getSystemVAmd64PassStructInRegisterDescriptor(_getSystemVAmd64PassStructInRegisterDescriptor);
             callbacks[113] = Marshal.GetFunctionPointerForDelegate(d113);
             delegates[113] = d113;
-            var d114 = new __getAddrOfCaptureThreadGlobal(_getAddrOfCaptureThreadGlobal);
+            var d114 = new __getThreadTLSIndex(_getThreadTLSIndex);
             callbacks[114] = Marshal.GetFunctionPointerForDelegate(d114);
             delegates[114] = d114;
-            var d115 = new __getHelperFtn(_getHelperFtn);
+            var d115 = new __getInlinedCallFrameVptr(_getInlinedCallFrameVptr);
             callbacks[115] = Marshal.GetFunctionPointerForDelegate(d115);
             delegates[115] = d115;
-            var d116 = new __getFunctionEntryPoint(_getFunctionEntryPoint);
+            var d116 = new __getAddrOfCaptureThreadGlobal(_getAddrOfCaptureThreadGlobal);
             callbacks[116] = Marshal.GetFunctionPointerForDelegate(d116);
             delegates[116] = d116;
-            var d117 = new __getFunctionFixedEntryPoint(_getFunctionFixedEntryPoint);
+            var d117 = new __getHelperFtn(_getHelperFtn);
             callbacks[117] = Marshal.GetFunctionPointerForDelegate(d117);
             delegates[117] = d117;
-            var d118 = new __getMethodSync(_getMethodSync);
+            var d118 = new __getFunctionEntryPoint(_getFunctionEntryPoint);
             callbacks[118] = Marshal.GetFunctionPointerForDelegate(d118);
             delegates[118] = d118;
-            var d119 = new __getLazyStringLiteralHelper(_getLazyStringLiteralHelper);
+            var d119 = new __getFunctionFixedEntryPoint(_getFunctionFixedEntryPoint);
             callbacks[119] = Marshal.GetFunctionPointerForDelegate(d119);
             delegates[119] = d119;
-            var d120 = new __embedModuleHandle(_embedModuleHandle);
+            var d120 = new __getMethodSync(_getMethodSync);
             callbacks[120] = Marshal.GetFunctionPointerForDelegate(d120);
             delegates[120] = d120;
-            var d121 = new __embedClassHandle(_embedClassHandle);
+            var d121 = new __getLazyStringLiteralHelper(_getLazyStringLiteralHelper);
             callbacks[121] = Marshal.GetFunctionPointerForDelegate(d121);
             delegates[121] = d121;
-            var d122 = new __embedMethodHandle(_embedMethodHandle);
+            var d122 = new __embedModuleHandle(_embedModuleHandle);
             callbacks[122] = Marshal.GetFunctionPointerForDelegate(d122);
             delegates[122] = d122;
-            var d123 = new __embedFieldHandle(_embedFieldHandle);
+            var d123 = new __embedClassHandle(_embedClassHandle);
             callbacks[123] = Marshal.GetFunctionPointerForDelegate(d123);
             delegates[123] = d123;
-            var d124 = new __embedGenericHandle(_embedGenericHandle);
+            var d124 = new __embedMethodHandle(_embedMethodHandle);
             callbacks[124] = Marshal.GetFunctionPointerForDelegate(d124);
             delegates[124] = d124;
-            var d125 = new __getLocationOfThisType(_getLocationOfThisType);
+            var d125 = new __embedFieldHandle(_embedFieldHandle);
             callbacks[125] = Marshal.GetFunctionPointerForDelegate(d125);
             delegates[125] = d125;
-            var d126 = new __getPInvokeUnmanagedTarget(_getPInvokeUnmanagedTarget);
+            var d126 = new __embedGenericHandle(_embedGenericHandle);
             callbacks[126] = Marshal.GetFunctionPointerForDelegate(d126);
             delegates[126] = d126;
-            var d127 = new __getAddressOfPInvokeFixup(_getAddressOfPInvokeFixup);
+            var d127 = new __getLocationOfThisType(_getLocationOfThisType);
             callbacks[127] = Marshal.GetFunctionPointerForDelegate(d127);
             delegates[127] = d127;
-            var d128 = new __getAddressOfPInvokeTarget(_getAddressOfPInvokeTarget);
+            var d128 = new __getPInvokeUnmanagedTarget(_getPInvokeUnmanagedTarget);
             callbacks[128] = Marshal.GetFunctionPointerForDelegate(d128);
             delegates[128] = d128;
-            var d129 = new __GetCookieForPInvokeCalliSig(_GetCookieForPInvokeCalliSig);
+            var d129 = new __getAddressOfPInvokeFixup(_getAddressOfPInvokeFixup);
             callbacks[129] = Marshal.GetFunctionPointerForDelegate(d129);
             delegates[129] = d129;
-            var d130 = new __canGetCookieForPInvokeCalliSig(_canGetCookieForPInvokeCalliSig);
+            var d130 = new __getAddressOfPInvokeTarget(_getAddressOfPInvokeTarget);
             callbacks[130] = Marshal.GetFunctionPointerForDelegate(d130);
             delegates[130] = d130;
-            var d131 = new __getJustMyCodeHandle(_getJustMyCodeHandle);
+            var d131 = new __GetCookieForPInvokeCalliSig(_GetCookieForPInvokeCalliSig);
             callbacks[131] = Marshal.GetFunctionPointerForDelegate(d131);
             delegates[131] = d131;
-            var d132 = new __GetProfilingHandle(_GetProfilingHandle);
+            var d132 = new __canGetCookieForPInvokeCalliSig(_canGetCookieForPInvokeCalliSig);
             callbacks[132] = Marshal.GetFunctionPointerForDelegate(d132);
             delegates[132] = d132;
-            var d133 = new __getCallInfo(_getCallInfo);
+            var d133 = new __getJustMyCodeHandle(_getJustMyCodeHandle);
             callbacks[133] = Marshal.GetFunctionPointerForDelegate(d133);
             delegates[133] = d133;
-            var d134 = new __canAccessFamily(_canAccessFamily);
+            var d134 = new __GetProfilingHandle(_GetProfilingHandle);
             callbacks[134] = Marshal.GetFunctionPointerForDelegate(d134);
             delegates[134] = d134;
-            var d135 = new __isRIDClassDomainID(_isRIDClassDomainID);
+            var d135 = new __getCallInfo(_getCallInfo);
             callbacks[135] = Marshal.GetFunctionPointerForDelegate(d135);
             delegates[135] = d135;
-            var d136 = new __getClassDomainID(_getClassDomainID);
+            var d136 = new __canAccessFamily(_canAccessFamily);
             callbacks[136] = Marshal.GetFunctionPointerForDelegate(d136);
             delegates[136] = d136;
-            var d137 = new __getFieldAddress(_getFieldAddress);
+            var d137 = new __isRIDClassDomainID(_isRIDClassDomainID);
             callbacks[137] = Marshal.GetFunctionPointerForDelegate(d137);
             delegates[137] = d137;
-            var d138 = new __getVarArgsHandle(_getVarArgsHandle);
+            var d138 = new __getClassDomainID(_getClassDomainID);
             callbacks[138] = Marshal.GetFunctionPointerForDelegate(d138);
             delegates[138] = d138;
-            var d139 = new __canGetVarArgsHandle(_canGetVarArgsHandle);
+            var d139 = new __getFieldAddress(_getFieldAddress);
             callbacks[139] = Marshal.GetFunctionPointerForDelegate(d139);
             delegates[139] = d139;
-            var d140 = new __constructStringLiteral(_constructStringLiteral);
+            var d140 = new __getVarArgsHandle(_getVarArgsHandle);
             callbacks[140] = Marshal.GetFunctionPointerForDelegate(d140);
             delegates[140] = d140;
-            var d141 = new __emptyStringLiteral(_emptyStringLiteral);
+            var d141 = new __canGetVarArgsHandle(_canGetVarArgsHandle);
             callbacks[141] = Marshal.GetFunctionPointerForDelegate(d141);
             delegates[141] = d141;
-            var d142 = new __getFieldThreadLocalStoreID(_getFieldThreadLocalStoreID);
+            var d142 = new __constructStringLiteral(_constructStringLiteral);
             callbacks[142] = Marshal.GetFunctionPointerForDelegate(d142);
             delegates[142] = d142;
-            var d143 = new __setOverride(_setOverride);
+            var d143 = new __emptyStringLiteral(_emptyStringLiteral);
             callbacks[143] = Marshal.GetFunctionPointerForDelegate(d143);
             delegates[143] = d143;
-            var d144 = new __addActiveDependency(_addActiveDependency);
+            var d144 = new __getFieldThreadLocalStoreID(_getFieldThreadLocalStoreID);
             callbacks[144] = Marshal.GetFunctionPointerForDelegate(d144);
             delegates[144] = d144;
-            var d145 = new __GetDelegateCtor(_GetDelegateCtor);
+            var d145 = new __setOverride(_setOverride);
             callbacks[145] = Marshal.GetFunctionPointerForDelegate(d145);
             delegates[145] = d145;
-            var d146 = new __MethodCompileComplete(_MethodCompileComplete);
+            var d146 = new __addActiveDependency(_addActiveDependency);
             callbacks[146] = Marshal.GetFunctionPointerForDelegate(d146);
             delegates[146] = d146;
-            var d147 = new __getTailCallCopyArgsThunk(_getTailCallCopyArgsThunk);
+            var d147 = new __GetDelegateCtor(_GetDelegateCtor);
             callbacks[147] = Marshal.GetFunctionPointerForDelegate(d147);
             delegates[147] = d147;
-            var d148 = new __getMemoryManager(_getMemoryManager);
+            var d148 = new __MethodCompileComplete(_MethodCompileComplete);
             callbacks[148] = Marshal.GetFunctionPointerForDelegate(d148);
             delegates[148] = d148;
-            var d149 = new __allocMem(_allocMem);
+            var d149 = new __getTailCallCopyArgsThunk(_getTailCallCopyArgsThunk);
             callbacks[149] = Marshal.GetFunctionPointerForDelegate(d149);
             delegates[149] = d149;
-            var d150 = new __reserveUnwindInfo(_reserveUnwindInfo);
+            var d150 = new __getMemoryManager(_getMemoryManager);
             callbacks[150] = Marshal.GetFunctionPointerForDelegate(d150);
             delegates[150] = d150;
-            var d151 = new __allocUnwindInfo(_allocUnwindInfo);
+            var d151 = new __allocMem(_allocMem);
             callbacks[151] = Marshal.GetFunctionPointerForDelegate(d151);
             delegates[151] = d151;
-            var d152 = new __allocGCInfo(_allocGCInfo);
+            var d152 = new __reserveUnwindInfo(_reserveUnwindInfo);
             callbacks[152] = Marshal.GetFunctionPointerForDelegate(d152);
             delegates[152] = d152;
-            var d153 = new __yieldExecution(_yieldExecution);
+            var d153 = new __allocUnwindInfo(_allocUnwindInfo);
             callbacks[153] = Marshal.GetFunctionPointerForDelegate(d153);
             delegates[153] = d153;
-            var d154 = new __setEHcount(_setEHcount);
+            var d154 = new __allocGCInfo(_allocGCInfo);
             callbacks[154] = Marshal.GetFunctionPointerForDelegate(d154);
             delegates[154] = d154;
-            var d155 = new __setEHinfo(_setEHinfo);
+            var d155 = new __yieldExecution(_yieldExecution);
             callbacks[155] = Marshal.GetFunctionPointerForDelegate(d155);
             delegates[155] = d155;
-            var d156 = new __logMsg(_logMsg);
+            var d156 = new __setEHcount(_setEHcount);
             callbacks[156] = Marshal.GetFunctionPointerForDelegate(d156);
             delegates[156] = d156;
-            var d157 = new __doAssert(_doAssert);
+            var d157 = new __setEHinfo(_setEHinfo);
             callbacks[157] = Marshal.GetFunctionPointerForDelegate(d157);
             delegates[157] = d157;
-            var d158 = new __reportFatalError(_reportFatalError);
+            var d158 = new __logMsg(_logMsg);
             callbacks[158] = Marshal.GetFunctionPointerForDelegate(d158);
             delegates[158] = d158;
-            var d159 = new __allocBBProfileBuffer(_allocBBProfileBuffer);
+            var d159 = new __doAssert(_doAssert);
             callbacks[159] = Marshal.GetFunctionPointerForDelegate(d159);
             delegates[159] = d159;
-            var d160 = new __getBBProfileData(_getBBProfileData);
+            var d160 = new __reportFatalError(_reportFatalError);
             callbacks[160] = Marshal.GetFunctionPointerForDelegate(d160);
             delegates[160] = d160;
-            var d161 = new __recordCallSite(_recordCallSite);
+            var d161 = new __allocBBProfileBuffer(_allocBBProfileBuffer);
             callbacks[161] = Marshal.GetFunctionPointerForDelegate(d161);
             delegates[161] = d161;
-            var d162 = new __recordRelocation(_recordRelocation);
+            var d162 = new __getBBProfileData(_getBBProfileData);
             callbacks[162] = Marshal.GetFunctionPointerForDelegate(d162);
             delegates[162] = d162;
-            var d163 = new __getRelocTypeHint(_getRelocTypeHint);
+            var d163 = new __recordCallSite(_recordCallSite);
             callbacks[163] = Marshal.GetFunctionPointerForDelegate(d163);
             delegates[163] = d163;
-            var d164 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
+            var d164 = new __recordRelocation(_recordRelocation);
             callbacks[164] = Marshal.GetFunctionPointerForDelegate(d164);
             delegates[164] = d164;
-            var d165 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d165 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[165] = Marshal.GetFunctionPointerForDelegate(d165);
             delegates[165] = d165;
-            var d166 = new __getJitFlags(_getJitFlags);
+            var d166 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
             callbacks[166] = Marshal.GetFunctionPointerForDelegate(d166);
             delegates[166] = d166;
+            var d167 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            callbacks[167] = Marshal.GetFunctionPointerForDelegate(d167);
+            delegates[167] = d167;
+            var d168 = new __getJitFlags(_getJitFlags);
+            callbacks[168] = Marshal.GetFunctionPointerForDelegate(d168);
+            delegates[168] = d168;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

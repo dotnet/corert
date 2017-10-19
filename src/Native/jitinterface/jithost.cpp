@@ -6,15 +6,27 @@
 
 #include "dllexport.h"
 
+#ifdef _X86_
+#ifdef PLATFORM_UNIX
+#define DEFAULT_CALL_CONV __cdecl
+#else
+#define DEFAULT_CALL_CONV __stdcall
+#endif
+#else
+#define DEFAULT_CALL_CONV
+#define __cdecl
+#define __stdcall
+#endif
+
 class JitConfigProvider
 {
 public:
-    virtual int getIntConfigValue(
+    virtual int DEFAULT_CALL_CONV getIntConfigValue(
         const wchar_t* name, 
         int defaultValue
         ) = 0;
 
-    virtual int getStringConfigValue(
+    virtual int DEFAULT_CALL_CONV getStringConfigValue(
         const wchar_t* name,
         wchar_t* retBuffer,
         int retBufferLength
@@ -78,7 +90,7 @@ public:
     }
 };
 
-DLL_EXPORT void* __stdcall GetJitHost(JitConfigProvider* pConfigProvider)
+DLL_EXPORT void* GetJitHost(JitConfigProvider* pConfigProvider)
 {
     return new JitHost(pConfigProvider);
 }

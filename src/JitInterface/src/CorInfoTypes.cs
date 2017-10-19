@@ -1436,6 +1436,13 @@ namespace Internal.JitInterface
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
     };
 
+    public enum TypeCompareState
+    {
+        MustNot = -1, // types are not equal
+        May = 0,      // types may be equal (must test at runtime)
+        Must = 1,     // type are equal
+    }
+
     public enum CorJitFlag : uint
     {
         CORJIT_FLAG_CALL_GETJITFLAGS = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a

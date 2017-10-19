@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -11,13 +10,20 @@ namespace System.Globalization
     {
         private unsafe void InitSort(CultureInfo culture)
         {
-            const uint LCMAP_SORTHANDLE = 0x20000000;
-
             _sortName = culture.SortName;
 
-            IntPtr handle;
-            int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
-            _sortHandle = ret > 0 ? handle : IntPtr.Zero;
+            if (_invariantMode)
+            {
+                _sortHandle = IntPtr.Zero;
+            }
+            else
+            {
+                const uint LCMAP_SORTHANDLE = 0x20000000;
+
+                IntPtr handle;
+                int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+                _sortHandle = ret > 0 ? handle : IntPtr.Zero;
+            }
         }
 
         private static unsafe int FindStringOrdinal(
@@ -29,6 +35,8 @@ namespace System.Globalization
             int cchValue,
             bool bIgnoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             fixed (char* pSource = stringSource)
             fixed (char* pValue = value)
             {
@@ -43,16 +51,20 @@ namespace System.Globalization
             }
         }
 
-        internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
             return FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
         }
 
-        internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
@@ -61,6 +73,8 @@ namespace System.Globalization
 
         private unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(source != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -88,29 +102,66 @@ namespace System.Globalization
 
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             // Use the OS to compare and then convert the result to expected value by subtracting 2 
             return Interop.Kernel32.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
-        private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
+        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // This method shouldn't be necessary, as we should be able to just use the overload
+        // that takes two spans.  But due to this issue, that's adding significant overhead.
+        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
         {
-            Debug.Assert(string1 != null);
             Debug.Assert(string2 != null);
+            Debug.Assert(!_invariantMode);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
-            fixed (char* pString1 = string1)
-            fixed (char* pString2 = string2)
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.GetRawStringData())
             {
                 int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
-                                    pString1 + offset1,
-                                    length1,
-                                    pString2 + offset2,
-                                    length2,
+                                    pString1,
+                                    string1.Length,
+                                    pString2,
+                                    string2.Length,
+                                    null,
+                                    null,
+                                    _sortHandle);
+
+                if (result == 0)
+                {
+                    Environment.FailFast("CompareStringEx failed");
+                }
+
+                // Map CompareStringEx return value to -1, 0, 1.
+                return result - 2;
+            }
+        }
+
+        private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+
+            fixed (char* pLocaleName = localeName)
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.DangerousGetPinnableReference())
+            {
+                int result = Interop.Kernel32.CompareStringEx(
+                                    pLocaleName,
+                                    (uint)GetNativeCompareFlags(options),
+                                    pString1,
+                                    string1.Length,
+                                    pString2,
+                                    string2.Length,
                                     null,
                                     null,
                                     _sortHandle);
@@ -135,6 +186,8 @@ namespace System.Globalization
                     int cchValue,
                     int* pcchFound)
         {
+            Debug.Assert(!_invariantMode);
+
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
@@ -204,6 +257,8 @@ namespace System.Globalization
 
         private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
@@ -239,6 +294,8 @@ namespace System.Globalization
 
         private unsafe bool StartsWith(string source, string prefix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -255,6 +312,8 @@ namespace System.Globalization
 
         private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -358,8 +417,9 @@ namespace System.Globalization
 
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
-            Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {
@@ -403,6 +463,8 @@ namespace System.Globalization
 
         private static unsafe bool IsSortable(char* text, int length)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
         }
 
@@ -446,6 +508,8 @@ namespace System.Globalization
 
         private unsafe SortVersion GetSortVersion()
         {
+            Debug.Assert(!_invariantMode);
+
             Interop.Kernel32.NlsVersionInfoEx nlsVersion = new Interop.Kernel32.NlsVersionInfoEx();
             Interop.Kernel32.GetNLSVersionEx(Interop.Kernel32.COMPARE_STRING, _sortName, &nlsVersion);
             return new SortVersion(

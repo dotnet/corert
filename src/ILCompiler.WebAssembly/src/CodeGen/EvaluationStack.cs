@@ -125,7 +125,11 @@ namespace Internal.IL
         /// <returns>Element at the top of the stack</returns>
         public T Peek()
         {
-            Debug.Assert(_top > 0, "Stack is not empty");
+            if (_top <= 0)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
             return _stack[_top - 1];
         }
 
@@ -135,11 +139,11 @@ namespace Internal.IL
         /// <returns>Element formerly at the top of the stack</returns>
         public T Pop()
         {
-#if DEBUG // This should eventually be an assert, but while many opcodes are unimplemented, we can just throw to avoid
-            // killing the process
-            if(_top <= 0)
-                throw new Exception("Stack is not empty");
-#endif //DEBUG
+            if (_top <= 0)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
             return _stack[--_top];
         }
 

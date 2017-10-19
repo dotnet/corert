@@ -62,7 +62,7 @@ namespace ILVerify.Tests
                 {
                     Assert.True(verifierErrors.Contains(item));
                 }
-            }        
+            }
         }
 
         private ILImporter ConstructILImporter(TestCase testCase)
