@@ -137,11 +137,16 @@ namespace Internal.JitInterface
 
         static IntrinsicHashtable s_IntrinsicHashtable = InitializeIntrinsicHashtable();
 
-        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn, ref bool pMustExpand)
+        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn, byte* pMustExpand)
         {
-            pMustExpand = false;
-
             var method = HandleToObject(ftn);
+            return getIntrinsicID(method, pMustExpand);
+        }
+
+        private CorInfoIntrinsics getIntrinsicID(MethodDesc method, byte* pMustExpand)
+        {
+            if (pMustExpand != null)
+                *pMustExpand = 0;
 
             Debug.Assert(method.IsIntrinsic);
 
@@ -202,11 +207,13 @@ namespace Internal.JitInterface
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
-                    pMustExpand = true;
+                    if (pMustExpand != null)
+                        *pMustExpand = 1;
                     break;
 
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle:
-                    pMustExpand = true;
+                    if (pMustExpand != null)
+                        *pMustExpand = 1;
                     break;
 
                 default:

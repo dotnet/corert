@@ -62,6 +62,7 @@ GSCookie**,IntPtr**,void**
 
 BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool,int*
 bool*,[MarshalAs(UnmanagedType.U1)] ref bool
+BoolStar,byte*,bool*
 ULONG*,ref uint,unsigned long*
 void **,ref void*
 VOIDSTARSTAR,void **,void **
@@ -174,7 +175,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE resolveVirtualMethod(            CORINFO_METHOD_HANDLE       virtualMethod,          CORINFO_CLASS_HANDLE        implementingClass,            CORINFO_CONTEXT_HANDLE      ownerType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
-    CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , bool * pMustExpand);
+    CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , BoolStar pMustExpand);
     bool isInSIMDModule(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
     BOOL pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
