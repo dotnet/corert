@@ -421,6 +421,10 @@ namespace Internal.IL
 
         private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType)
         {
+            LLVMTypeRef sourceType = LLVM.TypeOf(source);
+            if (sourceType.Pointer == valueType.Pointer)
+                return source;
+
             LLVMTypeKind toStoreKind = LLVM.GetTypeKind(LLVM.TypeOf(source));
             LLVMTypeKind valueTypeKind = LLVM.GetTypeKind(valueType);
 
