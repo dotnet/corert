@@ -19,7 +19,7 @@ namespace ILCompiler
         WebAssemblyCodegenConfigProvider _config = new WebAssemblyCodegenConfigProvider(Array.Empty<string>());
 
         public WebAssemblyCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
-            : base(context, group, new CoreRTNameMangler(new WebAssemblyNodeMangler(), true))
+            : base(context, group, new CoreRTNameMangler(new WebAssemblyNodeMangler(), false))
         {
         }
 

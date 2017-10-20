@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -32,7 +31,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(addMethod));
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Managed code allows adding a null event handler, the effect is a no-op.  To match this behavior
             // for WinRT events, we simply ignore attempts to add null.
@@ -64,7 +62,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Managed code allows removing a null event handler, the effect is a no-op.  To match this behavior
             // for WinRT events, we simply ignore attempts to remove null.
@@ -90,7 +87,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (removeMethod == null)
                 throw new ArgumentNullException(nameof(removeMethod));
-            Contract.EndContractBlock();
 
             // Delegate to managed event registration implementation or native event registration implementation
             // They have completely different implementation because native side has its own unique problem to solve -

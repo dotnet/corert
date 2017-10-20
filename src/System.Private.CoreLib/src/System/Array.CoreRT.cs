@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
@@ -79,10 +78,6 @@ namespace System
             if ((object)elementType == null)
                 throw new ArgumentNullException(nameof(elementType));
 
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.Ensures(Contract.Result<Array>().Rank == 1);
-            Contract.EndContractBlock();
-
             return CreateSzArray(elementType, length);
         }
 
@@ -94,11 +89,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length1));
             if (length2 < 0)
                 throw new ArgumentOutOfRangeException(nameof(length2));
-
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.Ensures(Contract.Result<Array>().Rank == 2);
-            Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
-            Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
 
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 2);
             int* pLengths = stackalloc int[2];
@@ -118,12 +108,6 @@ namespace System
             if (length3 < 0)
                 throw new ArgumentOutOfRangeException(nameof(length3));
 
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.Ensures(Contract.Result<Array>().Rank == 3);
-            Contract.Ensures(Contract.Result<Array>().GetLength(0) == length1);
-            Contract.Ensures(Contract.Result<Array>().GetLength(1) == length2);
-            Contract.Ensures(Contract.Result<Array>().GetLength(2) == length3);
-
             Type arrayType = GetArrayTypeFromElementType(elementType, true, 3);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
@@ -140,10 +124,6 @@ namespace System
                 throw new ArgumentNullException(nameof(lengths));
             if (lengths.Length == 0)
                 throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
-            Contract.EndContractBlock();
 
             if (lengths.Length == 1)
             {
@@ -168,9 +148,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_RanksAndBounds);
             if (lengths.Length == 0)
                 throw new ArgumentException(SR.Arg_NeedAtLeast1Rank);
-            Contract.Ensures(Contract.Result<Array>() != null);
-            Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
-            Contract.EndContractBlock();
 
             return CreateMultiDimArray(elementType, lengths, lowerBounds);
         }
@@ -1073,7 +1050,6 @@ namespace System
         {
             if (Rank != 2)
                 throw new ArgumentException(SR.Arg_Need2DArray);
-            Contract.EndContractBlock();
 
             int* pIndices = stackalloc int[2];
             pIndices[0] = index1;
@@ -1085,7 +1061,6 @@ namespace System
         {
             if (Rank != 3)
                 throw new ArgumentException(SR.Arg_Need3DArray);
-            Contract.EndContractBlock();
 
             int* pIndices = stackalloc int[3];
             pIndices[0] = index1;
@@ -1203,7 +1178,6 @@ namespace System
         {
             if (Rank != 2)
                 throw new ArgumentException(SR.Arg_Need2DArray);
-            Contract.EndContractBlock();
 
             int* pIndices = stackalloc int[2];
             pIndices[0] = index1;
@@ -1215,7 +1189,6 @@ namespace System
         {
             if (Rank != 3)
                 throw new ArgumentException(SR.Arg_Need3DArray);
-            Contract.EndContractBlock();
 
             int* pIndices = stackalloc int[3];
             pIndices[0] = index1;

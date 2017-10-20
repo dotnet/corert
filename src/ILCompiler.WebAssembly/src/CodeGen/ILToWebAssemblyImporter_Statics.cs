@@ -23,10 +23,16 @@ namespace Internal.IL
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-            compilation.Logger.Writer.WriteLine("Compiling " + method.ToString());
+            if (compilation.Logger.IsVerbose)
+            {
+                string methodName = method.ToString();
+                compilation.Logger.Writer.WriteLine("Compiling " + methodName);
+            }
+
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                throw new NotImplementedException();
+                methodCodeNodeNeedingCode.CompilationCompleted = true;
+                //throw new NotImplementedException();
                 //CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
                 //return;
             }
@@ -44,7 +50,18 @@ namespace Internal.IL
             ILImporter ilImporter = null;
             try
             {
-                ilImporter = new ILImporter(compilation, method, methodIL, methodCodeNodeNeedingCode.GetMangledName(compilation.NameMangler));
+                string mangledName;
+                // TODO: We should use the startup node to generate StartupCodeMain and avoid special casing here
+                if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && methodCodeNodeNeedingCode.Method.Name == "Main")
+                {
+                    mangledName = "Main";
+                }
+                else
+                {
+                    mangledName = compilation.NameMangler.GetMangledMethodName(methodCodeNodeNeedingCode.Method).ToString();
+                }
+
+                ilImporter = new ILImporter(compilation, method, methodIL, mangledName);
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 

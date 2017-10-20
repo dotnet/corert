@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -261,10 +260,6 @@ namespace System
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
 
-            Contract.Ensures(Contract.Result<TOutput[]>() != null);
-            Contract.Ensures(Contract.Result<TOutput[]>().Length == array.Length);
-            Contract.EndContractBlock();
-
             TOutput[] newArray = new TOutput[array.Length];
             for (int i = 0; i < array.Length; i++)
             {
@@ -297,7 +292,6 @@ namespace System
         {
             if (index > Int32.MaxValue || index < Int32.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            Contract.EndContractBlock();
 
             this.CopyTo(array, (int)index);
         }
@@ -309,8 +303,6 @@ namespace System
 
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
-
-            Contract.EndContractBlock();
 
             for (int i = 0; i < array.Length; i++)
             {
@@ -344,7 +336,6 @@ namespace System
         {
             if (index > Int32.MaxValue || index < Int32.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            Contract.EndContractBlock();
 
             return this.GetValue((int)index);
         }
@@ -355,7 +346,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(index1), SR.ArgumentOutOfRange_HugeArrayNotSupported);
             if (index2 > Int32.MaxValue || index2 < Int32.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            Contract.EndContractBlock();
 
             return this.GetValue((int)index1, (int)index2);
         }
@@ -368,7 +358,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(index2), SR.ArgumentOutOfRange_HugeArrayNotSupported);
             if (index3 > Int32.MaxValue || index3 < Int32.MinValue)
                 throw new ArgumentOutOfRangeException(nameof(index3), SR.ArgumentOutOfRange_HugeArrayNotSupported);
-            Contract.EndContractBlock();
 
             return this.GetValue((int)index1, (int)index2, (int)index3);
         }
@@ -379,7 +368,6 @@ namespace System
                 throw new ArgumentNullException(nameof(indices));
             if (Rank != indices.Length)
                 throw new ArgumentException(SR.Arg_RankIndices);
-            Contract.EndContractBlock();
 
             int[] intIndices = new int[indices.Length];
 
@@ -1124,7 +1112,6 @@ namespace System
         {
             if (keys == null)
                 throw new ArgumentNullException(nameof(keys));
-            Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
         }
 
@@ -1137,7 +1124,6 @@ namespace System
         {
             if (keys == null)
                 throw new ArgumentNullException(nameof(keys));
-            Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
 
@@ -1149,7 +1135,6 @@ namespace System
                 throw new ArgumentOutOfRangeException((length < 0 ? nameof(length) : nameof(index)), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (keys.Length - index < length || (items != null && index > items.Length - length))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
 
             if (length > 1)
             {

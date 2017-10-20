@@ -33,7 +33,12 @@ namespace TypeSystemTests
         private MetadataType _complexGenericConstraint1Type;
         private MetadataType _complexGenericConstraint2Type;
         private MetadataType _complexGenericConstraint3Type;
+        private MetadataType _complexGenericConstraint4Type;
         private MetadataType _multipleConstraintsType;
+
+        private MetadataType _genericMethodsType;
+        private MethodDesc _simpleGenericConstraintMethod;
+        private MethodDesc _complexGenericConstraintMethod;
 
         public ConstraintsValidationTest()
         {
@@ -64,13 +69,19 @@ namespace TypeSystemTests
             _complexGenericConstraint1Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint1`2");
             _complexGenericConstraint2Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint2`2");
             _complexGenericConstraint3Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint3`2");
+            _complexGenericConstraint4Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint4`2");
             _multipleConstraintsType = _testModule.GetType("GenericConstraints", "MultipleConstraints`2");
+
+            _genericMethodsType = _testModule.GetType("GenericConstraints", "GenericMethods");
+            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod", null);
+            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod", null);
         }
 
         [Fact]
         public void TestTypeConstraints()
         {
-            MetadataType instantiatedType;
+            TypeDesc instantiatedType;
+            MethodDesc instantiatedMethod;
 
             MetadataType arg2OfInt = _arg2Type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
             MetadataType arg2OfBool = _arg2Type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Boolean));
@@ -272,6 +283,36 @@ namespace TypeSystemTests
                 // Type that implements a variant compatible interface
                 instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(arg3OfObject, _context.GetWellKnownType(WellKnownType.String));
                 Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Constraints requiring InstantiationContext
+            {
+                // Instantiate type / method with own generic parameters
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(_complexGenericConstraint3Type.Instantiation[0], _complexGenericConstraint3Type.Instantiation[1]);
+                Assert.True(instantiatedType.CheckConstraints(new InstantiationContext(instantiatedType.Instantiation, default(Instantiation))));
+
+                instantiatedType = _complexGenericConstraint4Type.MakeInstantiatedType(_complexGenericConstraint4Type.Instantiation[0], _complexGenericConstraint4Type.Instantiation[1]);
+                Assert.True(instantiatedType.CheckConstraints(new InstantiationContext(instantiatedType.Instantiation, default(Instantiation))));
+
+                instantiatedMethod = _simpleGenericConstraintMethod.MakeInstantiatedMethod(_simpleGenericConstraintMethod.Instantiation);
+                Assert.True(instantiatedMethod.CheckConstraints(new InstantiationContext(default(Instantiation), instantiatedMethod.Instantiation)));
+
+                instantiatedMethod = _complexGenericConstraintMethod.MakeInstantiatedMethod(_complexGenericConstraintMethod.Instantiation);
+                Assert.True(instantiatedMethod.CheckConstraints(new InstantiationContext(default(Instantiation), instantiatedMethod.Instantiation)));
+
+                // Instantiate type with generic parameters of method
+                instantiatedType = _simpleGenericConstraintType.MakeInstantiatedType(_simpleGenericConstraintMethod.Instantiation);
+                Assert.True(instantiatedType.CheckConstraints(new InstantiationContext(default(Instantiation), _simpleGenericConstraintMethod.Instantiation)));
+
+                instantiatedType = _complexGenericConstraint4Type.MakeInstantiatedType(_complexGenericConstraintMethod.Instantiation);
+                Assert.True(instantiatedType.CheckConstraints(new InstantiationContext(default(Instantiation), _complexGenericConstraintMethod.Instantiation)));
+
+                // Instantiate method with generic parameters of type
+                instantiatedMethod = _simpleGenericConstraintMethod.MakeInstantiatedMethod(_simpleGenericConstraintType.Instantiation);
+                Assert.True(instantiatedMethod.CheckConstraints(new InstantiationContext(_simpleGenericConstraintType.Instantiation, default(Instantiation))));
+
+                instantiatedMethod = _complexGenericConstraintMethod.MakeInstantiatedMethod(_complexGenericConstraint4Type.Instantiation);
+                Assert.True(instantiatedMethod.CheckConstraints(new InstantiationContext(_complexGenericConstraint4Type.Instantiation, default(Instantiation))));
             }
 
             // MultipleConstraints

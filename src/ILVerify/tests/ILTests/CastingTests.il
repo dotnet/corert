@@ -106,7 +106,7 @@
     }
 }
 
-.class public sequential ansi beforefieldinit GenericOtherFieldsType`1<T>
+.class public sequential ansi sealed beforefieldinit GenericOtherFieldsType`1<T>
        extends [System.Runtime]System.ValueType
 {
     .field public !T GenericField;

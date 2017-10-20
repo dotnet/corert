@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -31,7 +30,6 @@ namespace System.Text
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            Contract.EndContractBlock();
 
             return (int)NameToCodePageCache.Instance.GetOrAdd(name);
         }

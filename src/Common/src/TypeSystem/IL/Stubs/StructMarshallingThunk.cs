@@ -119,38 +119,6 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public IEnumerable<InlineArrayCandidate> GetInlineArrayCandidates()
-        {
-            int index = 0;
-            MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
-            foreach (FieldDesc field in ManagedType.GetFields())
-            {
-                if (field.IsStatic)
-                {
-                    continue;
-                }
-
-                Marshaller marshaller = _marshallers[index];
-
-                if (marshaller.MarshallerKind == MarshallerKind.ByValAnsiString
-                    || marshaller.MarshallerKind == MarshallerKind.ByValUnicodeString)
-                {
-                    yield return MarshalHelpers.GetInlineArrayCandidate(marshaller.ManagedType.Context.GetWellKnownType(WellKnownType.Char), marshaller.ElementMarshallerKind, _interopStateManager, marshalAsDescriptors[index]);
-                }
-                else if (marshaller.MarshallerKind == MarshallerKind.ByValArray
-                    || marshaller.MarshallerKind == MarshallerKind.ByValAnsiCharArray)
-                {
-                    var arrayType = marshaller.ManagedType as ArrayType;
-
-                    Debug.Assert(arrayType != null);
-
-                    yield return MarshalHelpers.GetInlineArrayCandidate(arrayType.ElementType, marshaller.ElementMarshallerKind, _interopStateManager, marshalAsDescriptors[index]);
-                }
-
-                index++;
-            }
-        }
-
         private Marshaller[] InitializeMarshallers()
         {
             Debug.Assert(_interopStateManager != null);

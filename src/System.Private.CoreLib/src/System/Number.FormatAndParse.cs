@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System
@@ -480,7 +479,6 @@ namespace System
 
         private static unsafe void StringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal)
         {
-            Contract.EndContractBlock();
             Debug.Assert(info != null, "");
             fixed (char* stringPointer = &str.DangerousGetPinnableReference())
             {

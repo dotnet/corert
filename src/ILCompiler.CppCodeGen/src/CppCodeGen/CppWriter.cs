@@ -393,7 +393,12 @@ namespace ILCompiler.CppCodeGen
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-            _compilation.Logger.Writer.WriteLine("Compiling " + method.ToString());
+            if (_compilation.Logger.IsVerbose)
+            {
+                string methodName = method.ToString();
+                _compilation.Logger.Writer.WriteLine("Compiling " + methodName);
+            }
+
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
