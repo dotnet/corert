@@ -11,73 +11,61 @@ internal static class Program
     {
         Add(1, 2);
 
+		TestString();
+		
         int tempInt = 0;
         (*(&tempInt)) = 9;
-    
-        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
-        *(&str) = str2;
-        str2 = *(&str);
 		
 		if(tempInt == 9)
 		{
-			string s = "Hello from C#!";
-			PrintString(s);
+			PrintLine("Hello from C#!");
 		}
 		
 		var not = Not(0xFFFFFFFF) == 0x00000000;
 		if(not)
 		{
-			PrintString("\n");
-			PrintString("not test: Ok.");
+			PrintLine("not test: Ok.");
 		}
 		
 		var negInt = Neg(42) == -42;
 		if(negInt)
 		{
-			PrintString("\n");
-			PrintString("negInt test: Ok.");
+			PrintLine("negInt test: Ok.");
 		}
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
         if(shiftLeft)
         {
-            PrintString("\n");
-            PrintString("shiftLeft test: Ok.");
+            PrintLine("shiftLeft test: Ok.");
         }
 
         var shiftRight = ShiftRight(4, 2) == 1;
         if(shiftRight)
         {
-            PrintString("\n");
-            PrintString("shiftRight test: Ok.");
+            PrintLine("shiftRight test: Ok.");
         }
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         if(unsignedShift)
         {
-            PrintString("\n");
-            PrintString("unsignedShift test: Ok.");
+            PrintLine("unsignedShift test: Ok.");
         }
 		
 		var switchTest0 = SwitchOp(5, 5, 0);
 		if(switchTest0 == 10)
 		{
-			PrintString("\n");
-            PrintString("SwitchOp0 test: Ok.");
+            PrintLine("SwitchOp0 test: Ok.");
 		}
 		
 		var switchTest1 = SwitchOp(5, 5, 1);
 		if(switchTest1 == 25)
 		{
-			PrintString("\n");
-            PrintString("SwitchOp1 test: Ok.");
+            PrintLine("SwitchOp1 test: Ok.");
 		}
 		
 		var switchTestDefault = SwitchOp(5, 5, 20);
 		if(switchTestDefault == 0)
 		{
-			PrintString("\n");
-            PrintString("SwitchOpDefault test: Ok.");
+            PrintLine("SwitchOpDefault test: Ok.");
 		}
     }
 
@@ -94,6 +82,20 @@ internal static class Program
             }
         }
     }
+	
+	private static void PrintLine(string s)
+	{
+		PrintString(s);
+		PrintString("\n");
+	}
+	
+	private static unsafe void TestString()
+	{
+		TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
+        *(&str) = str2;
+        str2 = *(&str);
+	}
 
     private static int Add(int a, int b)
     {
