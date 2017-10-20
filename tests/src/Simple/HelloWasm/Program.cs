@@ -58,6 +58,27 @@ internal static class Program
             PrintString("\n");
             PrintString("unsignedShift test: Ok.");
         }
+		
+		var switchTest0 = SwitchOp(5, 5, 0);
+		if(switchTest0 == 10)
+		{
+			PrintString("\n");
+            PrintString("SwitchOp0 test: Ok.");
+		}
+		
+		var switchTest1 = SwitchOp(5, 5, 1);
+		if(switchTest1 == 25)
+		{
+			PrintString("\n");
+            PrintString("SwitchOp1 test: Ok.");
+		}
+		
+		var switchTestDefault = SwitchOp(5, 5, 20);
+		if(switchTestDefault == 0)
+		{
+			PrintString("\n");
+            PrintString("SwitchOpDefault test: Ok.");
+		}
     }
 
     private static unsafe void PrintString(string s)
@@ -102,6 +123,23 @@ internal static class Program
     private static uint UnsignedShift(uint a, int b)
     {
         return a >> b;
+    }
+	
+	private static int SwitchOp(int a, int b, int mode)
+	{
+		switch(mode)
+		{
+			case 0:
+				return a + b;
+			case 1:
+				return a * b;
+			case 2:
+				return a / b;
+			case 3:
+				return a - b;
+			default:
+				return 0;
+		}
     }
 
     [DllImport("*")]
