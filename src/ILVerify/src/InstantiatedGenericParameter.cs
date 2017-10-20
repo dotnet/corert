@@ -27,7 +27,7 @@ namespace Internal.TypeSystem
             if (instantiation.Length == 0)
                 return instantiation;
 
-            var genericInstantiation = CreateGenericInstantiation(ref instantiation);
+            var genericInstantiation = CreateGenericInstantiation(instantiation);
 
             foreach (var parameter in genericInstantiation)
                 ((InstantiatedGenericParameter)parameter)._typeInstantiation = genericInstantiation;
@@ -40,7 +40,7 @@ namespace Internal.TypeSystem
             if (methodInstantiation.Length == 0)
                 return methodInstantiation;
 
-            var genericInstantiation = CreateGenericInstantiation(ref methodInstantiation);
+            var genericInstantiation = CreateGenericInstantiation(methodInstantiation);
 
             foreach (var parameter in genericInstantiation)
             {
@@ -52,11 +52,11 @@ namespace Internal.TypeSystem
             return genericInstantiation;
         }
 
-        private static Instantiation CreateGenericInstantiation(ref Instantiation from)
+        private static Instantiation CreateGenericInstantiation(Instantiation fromInstantiation)
         {
-            var parameters = new TypeDesc[from.Length];
-            for (int i = 0; i < from.Length; ++i)
-                parameters[i] = new InstantiatedGenericParameter((GenericParameterDesc)from[i]);
+            var parameters = new TypeDesc[fromInstantiation.Length];
+            for (int i = 0; i < fromInstantiation.Length; ++i)
+                parameters[i] = new InstantiatedGenericParameter((GenericParameterDesc)fromInstantiation[i]);
 
             return new Instantiation(parameters);
         }

@@ -147,7 +147,6 @@ namespace Internal.IL
         public ILImporter(MethodDesc method, MethodIL methodIL)
         {
             _typeSystemContext = method.Context;
-            _method = method;
 
             // Instantiate method and its owning type
             var instantiatedType = method.OwningType;
