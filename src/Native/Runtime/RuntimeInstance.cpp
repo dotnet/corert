@@ -192,7 +192,7 @@ PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Cont
             UInt8 flags = *pData++;
 
             if ((flags & (UInt8)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
-                return *((PTR_PTR_UInt8)pData);
+                return pData + *dac_cast<PTR_Int32>(pData);
         }
     }
 

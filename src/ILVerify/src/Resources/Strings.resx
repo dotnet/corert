@@ -207,6 +207,9 @@
   <data name="ExpectedValClassObjRefVariable" xml:space="preserve">
     <value>Value type, ObjRef type or variable type expected.</value>
   </data>
+  <data name="FieldAccess" xml:space="preserve">
+    <value>Field is not visible.</value>
+  </data>
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>
@@ -218,6 +221,9 @@
   </data>
   <data name="LdvirtftnOnStatic" xml:space="preserve">
     <value>ldvirtftn on static.</value>
+  </data>
+  <data name="MethodAccess" xml:space="preserve">
+    <value>Method is not visible.</value>
   </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>

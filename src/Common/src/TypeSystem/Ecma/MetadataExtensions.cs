@@ -47,12 +47,7 @@ namespace Internal.TypeSystem.Ecma
             var attributeHandles = metadataReader.GetMethodDefinition(This.Handle).GetCustomAttributes();
             foreach (var attributeHandle in attributeHandles)
             {
-                StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
-                    continue;
-
-                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
-                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
                     yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
                 }
@@ -80,14 +75,23 @@ namespace Internal.TypeSystem.Ecma
             var attributeHandles = metadataReader.GetFieldDefinition(This.Handle).GetCustomAttributes();
             foreach (var attributeHandle in attributeHandles)
             {
-                StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
-                    continue;
-
-                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
-                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
                     yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+                }
+            }
+        }
+
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaAssembly This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetAssemblyDefinition().GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This));
                 }
             }
         }
@@ -97,18 +101,24 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var attributeHandle in customAttributes)
             {
-                StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
-                    continue;
-
-                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
-                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
                     return attributeHandle;
                 }
             }
 
             return default(CustomAttributeHandle);
+        }
+
+        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader, 
+            string attributeNamespace, string attributeName)
+        {
+            StringHandle namespaceHandle, nameHandle;
+            if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                return false;
+
+            return metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
+                && metadataReader.StringComparer.Equals(nameHandle, attributeName);
         }
 
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,

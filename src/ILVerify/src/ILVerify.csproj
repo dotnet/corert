@@ -19,6 +19,7 @@
     <Compile Include="TypeSystemHelpers.cs" />
     <Compile Include="InstantiatedGenericParameter.cs" />
     <Compile Include="TypeSystemContext.InstantiatedGenericParameter.cs" />
+    <Compile Include="AccessVerificationHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

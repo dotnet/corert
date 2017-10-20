@@ -17,10 +17,13 @@ namespace ILCompiler
     {
         public sealed override bool UsesLazyGenerics(MethodDesc method)
         {
+            if (UsesLazyGenerics(method.OwningType))
+                return true;
+
             if (method.HasInstantiation)
                 return method.IsVirtual || method.HasCustomAttribute("System.Runtime.CompilerServices", "ForceLazyDictionaryAttribute");
-            else
-                return UsesLazyGenerics(method.OwningType);
+
+            return false;
         }
 
         public sealed override bool UsesLazyGenerics(TypeDesc type)

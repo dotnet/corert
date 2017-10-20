@@ -555,6 +555,7 @@ namespace System
             return result;
         }
 
+        [Intrinsic]
         public Boolean HasFlag(Enum flag)
         {
             if (flag == null)

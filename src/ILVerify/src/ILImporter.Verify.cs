@@ -1221,6 +1221,8 @@ again:
                 }
             }
 
+            TypeDesc instance = null;
+
             if (opcode == ILOpcode.newobj)
             {
                 // TODO:
@@ -1229,6 +1231,7 @@ again:
             if (methodType != null)
             {
                 var actualThis = Pop(allowUninitThis: true);
+                instance = actualThis.Type;
                 var declaredThis = methodType.IsValueType ?
                     StackValue.CreateByRef(methodType) : StackValue.CreateObjRef(methodType);
 
@@ -1308,16 +1311,8 @@ again:
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
             else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
-#if false
-            // Access verifications
-            handleMemberAccessForVerification(callInfo.accessAllowed, callInfo.callsiteCalloutHelper,
-                                                MVER_E_METHOD_ACCESS);
 
-            if (mflags & CORINFO_FLG_PROTECTED)
-            {
-                Verify(m_jitInfo->canAccessFamily(getCurrentMethodHandle(), instanceClassHnd), MVER_E_METHOD_ACCESS);
-            }
-#endif
+            Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
 
             TypeDesc returnType = sig.ReturnType;
 
@@ -1389,9 +1384,13 @@ again:
                 NO_WAY("Currently do not support LDFTN of Parameterized functions");
 #endif
 
+            TypeDesc instance;
+
             if (opCode == ILOpcode.ldftn)
             {
                 _delegateCreateStart = _currentInstructionOffset;
+
+                instance = null;
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
@@ -1407,6 +1406,7 @@ again:
                     declaredType = StackValue.CreateFromType(method.OwningType);
 
                 var thisPtr = Pop();
+                instance = thisPtr.Type;
 
                 CheckIsObjRef(thisPtr);
                 CheckIsAssignable(thisPtr, declaredType);
@@ -1423,13 +1423,7 @@ again:
             else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
-#if false
-            Verify(m_jitInfo->canAccessMethod(getCurrentMethodHandle(), //from
-                                            methodClassHnd, // in
-                                            methHnd, // what
-                                            instanceClassHnd),
-                   MVER_E_METHOD_ACCESS);
-#endif
+            Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
 
             Push(StackValue.CreateMethod(method));
         }
@@ -1697,9 +1691,13 @@ again:
 
             var field = ResolveFieldToken(token);
 
+            TypeDesc instance;
+
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
+
+                instance = null;
             }
             else
             {
@@ -1716,7 +1714,11 @@ again:
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
+
+                instance = actualThis.Type;
             }
+
+            Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
             Push(StackValue.CreateFromType(field.FieldType));
         }
@@ -1726,11 +1728,14 @@ again:
             var field = ResolveFieldToken(token);
             bool isPermanentHome = false;
 
+            TypeDesc instance;
+
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
 
                 isPermanentHome = true;
+                instance = null;
             }
             else
             {
@@ -1749,7 +1754,10 @@ again:
                 CheckIsAssignable(actualThis, declaredThis);
 
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
+                instance = actualThis.Type;
             }
+
+            Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
             Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
         }
@@ -1763,9 +1771,13 @@ again:
 
             var field = ResolveFieldToken(token);
 
+            TypeDesc instance;
+
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
+
+                instance = null;
             }
             else
             {
@@ -1782,7 +1794,11 @@ again:
                     StackValue.CreateByRef(owningType) : StackValue.CreateObjRef(owningType);
 
                 CheckIsAssignable(actualThis, declaredThis);
+
+                instance = actualThis.Type;
             }
+
+            Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
             CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));
         }
