@@ -73,6 +73,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
+        private static Dictionary<FieldDesc, LLVMValueRef> s_staticFieldMapping = new Dictionary<FieldDesc, LLVMValueRef>();
 
         public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
@@ -186,6 +187,31 @@ namespace ILCompiler.DependencyAnalysis
 
             //throw new NotImplementedException(); // This function isn't complete
         }
+
+        public static LLVMValueRef EmitGlobal(LLVMModuleRef module, FieldDesc field, NameMangler nameMangler)
+        {
+            if (field.IsThreadStatic)
+            {
+                throw new NotImplementedException("thread static field");
+            }
+            else if (field.IsStatic)
+            {
+                if (s_staticFieldMapping.TryGetValue(field, out LLVMValueRef existingValue))
+                    return existingValue;
+                else
+                {
+                    var valueType = LLVM.ArrayType(LLVM.Int8Type(), (uint)field.FieldType.GetElementSize().AsInt);
+                    var llvmValue = LLVM.AddGlobal(module, valueType, nameMangler.GetMangledFieldName(field).ToString());
+                    LLVM.SetLinkage(llvmValue, LLVMLinkage.LLVMInternalLinkage);
+                    LLVM.SetInitializer(llvmValue, LLVM.ConstPointerNull(valueType));
+                    s_staticFieldMapping.Add(field, llvmValue);
+                    return llvmValue;
+                }
+            }
+            else
+                throw new NotImplementedException();
+        }
+
 
         private void EmitNativeMain()
         {
