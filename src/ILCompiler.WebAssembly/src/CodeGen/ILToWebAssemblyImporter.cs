@@ -950,7 +950,7 @@ namespace Internal.IL
                             throw new NotSupportedException(); // unreachable
                     }
                 }
-                //TODO: why did this happen
+                //TODO: why did this happen only during an optimized build of [System.Private.CoreLib]System.Threading.Lock.ReleaseContended
                 if (target.StartOffset == 0)
                     throw new NotImplementedException("cant branch to entry basic block");
 
@@ -1170,6 +1170,7 @@ namespace Internal.IL
             }
 
             LLVMValueRef result;
+            //TODO: deal with sign extension here instead of just casting
             var typeSaneOp1 = op1.LLVMValue;
             var typeSaneOp2 = op2.LLVMValue;
             if (op1.Type != op2.Type || op1.Type == null)
@@ -1197,29 +1198,27 @@ namespace Internal.IL
                     typeSaneOp2 = CastIfNecessary(op2.LLVMValue, LLVM.TypeOf(typeSaneOp1));
                 }
             }
-            
 
-
-                switch (opcode)
-                {
-                    case ILOpcode.ceq:
-                        result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, typeSaneOp2, typeSaneOp1, "ceq");
-                        break;
-                    case ILOpcode.cgt:
-                        result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, typeSaneOp2, typeSaneOp1, "cgt");
-                        break;
-                    case ILOpcode.clt:
-                        result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, typeSaneOp2, typeSaneOp1, "clt");
-                        break;
-                    case ILOpcode.cgt_un:
-                        result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, typeSaneOp2, typeSaneOp1, "cgt_un");
-                        break;
-                    case ILOpcode.clt_un:
-                        result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, typeSaneOp2, typeSaneOp1, "clt_un");
-                        break;
-                    default:
-                        throw new NotSupportedException(); // unreachable
-                }
+            switch (opcode)
+            {
+                case ILOpcode.ceq:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, typeSaneOp2, typeSaneOp1, "ceq");
+                    break;
+                case ILOpcode.cgt:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, typeSaneOp2, typeSaneOp1, "cgt");
+                    break;
+                case ILOpcode.clt:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, typeSaneOp2, typeSaneOp1, "clt");
+                    break;
+                case ILOpcode.cgt_un:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, typeSaneOp2, typeSaneOp1, "cgt_un");
+                    break;
+                case ILOpcode.clt_un:
+                    result = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, typeSaneOp2, typeSaneOp1, "clt_un");
+                    break;
+                default:
+                    throw new NotSupportedException(); // unreachable
+            }
 
             PushExpression(kind, "", result, GetWellKnownType(WellKnownType.SByte));
         }
