@@ -59,6 +59,7 @@
     </Compile>
     <Compile Include="Interop\Interop.Memory.cs" />
 
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs"/>
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

@@ -6,7 +6,9 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if !CORECLR 
 using Internal.Runtime.Augments;
+#endif
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -22,7 +24,11 @@ namespace Internal.Runtime.CompilerHelpers
             __vtable_IUnknown.Initialize();
             McgModuleManager.Initialize();
 #endif
+
+#if !CORECLR
+            /// @TODO: enable this for Mcg on CoreCLR scenario
             RuntimeAugments.InitializeInteropLookups(RuntimeInteropData.Instance);
+#endif
         }
     }
 }
