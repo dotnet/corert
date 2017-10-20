@@ -154,12 +154,17 @@ namespace Internal.IL
             var instantiatedMethod = method;
             if (instantiatedType.HasInstantiation)
             {
-                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, InstantiateGenericInstantiation(instantiatedType.Instantiation));
+                Instantiation genericTypeInstantiation = InstantiatedGenericParameter.CreateGenericTypeInstantiaton(instantiatedType.Instantiation);
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, genericTypeInstantiation);
                 instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
             }
 
             if (instantiatedMethod.HasInstantiation)
-                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, InstantiateGenericInstantiation(instantiatedMethod.Instantiation));
+            {
+                Instantiation genericMethodInstantiation = InstantiatedGenericParameter.CreateGenericMethodInstantiation(
+                    instantiatedType.Instantiation, instantiatedMethod.Instantiation);
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, genericMethodInstantiation);
+            }
             _method = instantiatedMethod;
 
             _methodSignature = _method.Signature;
@@ -403,20 +408,6 @@ again:
                         continue;
                 }
             }
-        }
-
-        private Instantiation InstantiateGenericInstantiation(Instantiation instantiation)
-        {
-            var parameters = new TypeDesc[instantiation.Length];
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                if (instantiation[i].IsGenericParameter)
-                    parameters[i] = instantiation[i].Context.GetInstantiatedGenericParameter(
-                        (GenericParameterDesc)instantiation[i], _method.OwningType.Instantiation, _method.Instantiation);
-                else
-                    parameters[i] = instantiation[i];
-            }
-            return new Instantiation(parameters);
         }
 
         void AbortBasicBlockVerification()
