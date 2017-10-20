@@ -40,7 +40,6 @@ namespace Internal.IL
         readonly MethodDesc _method;
         readonly MethodSignature _methodSignature;
         readonly TypeSystemContext _typeSystemContext;
-        readonly InstantiationContext _instantiationContext;
 
         readonly TypeDesc _thisType;
 
@@ -154,16 +153,21 @@ namespace Internal.IL
             var instantiatedMethod = method;
             if (instantiatedType.HasInstantiation)
             {
-                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, instantiatedType.Instantiation);
+                Instantiation genericTypeInstantiation = InstantiatedGenericParameter.CreateGenericTypeInstantiaton(instantiatedType.Instantiation);
+                instantiatedType = _typeSystemContext.GetInstantiatedType((MetadataType)instantiatedType, genericTypeInstantiation);
                 instantiatedMethod = _typeSystemContext.GetMethodForInstantiatedType(instantiatedMethod.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedType);
             }
 
             if (instantiatedMethod.HasInstantiation)
-                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, instantiatedMethod.Instantiation);
+            {
+                Instantiation genericMethodInstantiation = InstantiatedGenericParameter.CreateGenericMethodInstantiation(
+                    instantiatedType.Instantiation, instantiatedMethod.Instantiation);
+                instantiatedMethod = _typeSystemContext.GetInstantiatedMethod(instantiatedMethod, genericMethodInstantiation);
+            }
             _method = instantiatedMethod;
+
             _methodSignature = _method.Signature;
             _methodIL = method == instantiatedMethod ? methodIL : new InstantiatedMethodIL(instantiatedMethod, methodIL);
-            _instantiationContext = new InstantiationContext(instantiatedType.Instantiation, instantiatedMethod.Instantiation);
 
             // Determine this type
             if (!_method.Signature.IsStatic)
@@ -1293,9 +1297,9 @@ again:
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints(_instantiationContext))
+            if (!method.OwningType.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints(_instantiationContext))
+            else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
             Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
@@ -1404,9 +1408,9 @@ again:
             }
 
             // Check any constraints on the callee's class and type parameters
-            if (!method.OwningType.CheckConstraints(_instantiationContext))
+            if (!method.OwningType.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodParentInst, method.OwningType);
-            else if (!method.CheckConstraints(_instantiationContext))
+            else if (!method.CheckConstraints())
                 VerificationError(VerifierError.UnsatisfiedMethodInst, method);
 
             Check(_method.OwningType.CanAccess(method, instance), VerifierError.MethodAccess);
