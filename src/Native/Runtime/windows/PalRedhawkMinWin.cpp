@@ -331,13 +331,23 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     pCtx->SP = win32ctx.Sp;
     pCtx->LR = win32ctx.Lr;
 #elif defined(_ARM64_)
-    for (int i = 0; i < GEN_REG_COUNT; ++i) {
-        pCtx->X[i] = win32ctx.X[i];
-    }
+    pCtx->IP = win32ctx.Pc;
+    pCtx->X0 = win32ctx.X0;
+    pCtx->X1 = win32ctx.X1;
+    // TODO: Copy X2-X7 when we start supporting HVA's
+    pCtx->X19 = win32ctx.X19;
+    pCtx->X20 = win32ctx.X20;
+    pCtx->X21 = win32ctx.X21;
+    pCtx->X22 = win32ctx.X22;
+    pCtx->X23 = win32ctx.X23;
+    pCtx->X24 = win32ctx.X24;
+    pCtx->X25 = win32ctx.X25;
+    pCtx->X26 = win32ctx.X26;
+    pCtx->X27 = win32ctx.X27;
+    pCtx->X28 = win32ctx.X28;
     pCtx->SP = win32ctx.Sp;
     pCtx->LR = win32ctx.Lr;
     pCtx->FP = win32ctx.Fp;
-    pCtx->IP = win32ctx.Pc;
 #else
 #error Unsupported platform
 #endif

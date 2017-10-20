@@ -6,6 +6,8 @@
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CallingConventionCoverter Helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+POINTER_SIZE                        equ 0x08
+
 ;;
 ;; Note: The "__jmpstub__" prefix is used to indicate to debugger
 ;; that it must step-through this stub when it encounters it while
@@ -16,7 +18,7 @@
     ;; void CallingConventionConverter_ReturnThunk()
     ;;
     LEAF_ENTRY CallingConventionConverter_ReturnThunk
-        brk 0xf000
+        ret
     LEAF_END CallingConventionConverter_ReturnThunk
 
     ;;
@@ -36,25 +38,27 @@
     ;;                                                                           // calling stub is easier to debug
     ;; }
     ;;
-    ;; sp-4 - Points at CommonCallingStubInputData
+    ;; xip0 - Points at CommonCallingStubInputData
     ;;  
     ;;
     LEAF_ENTRY __jmpstub__CallingConventionConverter_CommonCallingStub
-        brk 0xf000
+        ldr     xip1, [xip0]                ; put CallingConventionId into xip1 as "parameter" to universal transition thunk
+        ldr     xip0, [xip0, #POINTER_SIZE] ; get pointer to CallingConventionConverter_CommonCallingStub_PointerData into xip0
+        ldr     x12, [xip0, #POINTER_SIZE]  ; get address of UniversalTransitionThunk (which we'll tailcall to later)
+        ldr     xip0, [xip0]                ; get address of ManagedCallConverterThunk (target for universal thunk to call)
+        ret     x12
     LEAF_END __jmpstub__CallingConventionConverter_CommonCallingStub
-
-    ;;
-    ;; void CallingConventionConverter_SpecifyCommonStubData(CallingConventionConverter_CommonCallingStub_PointerData *commonData);
-    ;;
-    LEAF_ENTRY CallingConventionConverter_SpecifyCommonStubData
-        brk 0xf000
-    LEAF_END CallingConventionConverter_SpecifyCommonStubData
 
     ;;
     ;; void CallingConventionConverter_GetStubs(IntPtr *returnVoidStub, IntPtr *returnIntegerStub, IntPtr *commonCallingStub)
     ;;
     LEAF_ENTRY CallingConventionConverter_GetStubs
-        brk 0xf000
+        ldr     x12, =CallingConventionConverter_ReturnThunk
+        str     x12, [x0] ;; ARM doesn't need different return thunks.
+        str     x12, [x1]
+        ldr     x12, =__jmpstub__CallingConventionConverter_CommonCallingStub
+        str     x12, [x2]
+        ret
     LEAF_END CallingConventionConverter_GetStubs
 
     END

@@ -57,18 +57,10 @@ namespace System.Runtime
         public const nuint PageSizeMask = 0xFFF;
         public const nuint AllocationGranularityMask = 0xFFFF;
 
-#if ARM64
-        // ARM64TODO
-        public static readonly int ThunkDataSize = 0;
-        public static readonly int ThunkCodeSize = 0;
-        public static readonly int NumThunksPerBlock = 0;
-        public static readonly int NumThunkBlocksPerMapping = 0;
-#else
         public static readonly int ThunkDataSize = 2 * IntPtr.Size;
         public static readonly int ThunkCodeSize = InternalCalls.RhpGetThunkSize();
         public static readonly int NumThunksPerBlock = InternalCalls.RhpGetNumThunksPerBlock();
         public static readonly int NumThunkBlocksPerMapping = InternalCalls.RhpGetNumThunkBlocksPerMapping();
-#endif
     }
 
     internal class ThunksHeap

@@ -563,6 +563,11 @@ struct InterfaceDispatchCell
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
 {
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
     // standard preserved registers
     PTFF_SAVE_R4        = 0x00000001,
     PTFF_SAVE_R5        = 0x00000002,
@@ -591,9 +596,62 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_THREAD_ABORT   = 0x00010000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
+#elif defined(_TARGET_ARM64_)
+enum PInvokeTransitionFrameFlags
+{
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
+    // standard preserved registers
+    PTFF_SAVE_X19       = 0x00000001,
+    PTFF_SAVE_X20       = 0x00000002,
+    PTFF_SAVE_X21       = 0x00000004,
+    PTFF_SAVE_X22       = 0x00000008,
+    PTFF_SAVE_X23       = 0x00000010,
+    PTFF_SAVE_X24       = 0x00000020,
+    PTFF_SAVE_X25       = 0x00000040,
+    PTFF_SAVE_X26       = 0x00000080,
+    PTFF_SAVE_X27       = 0x00000100,
+    PTFF_SAVE_X28       = 0x00000200,
+
+    PTFF_SAVE_SP        = 0x00000400,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
+                                        // PInvokes are required to have a frame pointers, but methods which
+                                        // call runtime helpers are not.  Therefore, methods that call runtime
+                                        // helpers may need SP to seed the stackwalk.
+
+    // Scratch registers
+    PTFF_SAVE_X0        = 0x00000800,
+    PTFF_SAVE_X1        = 0x00001000,
+    PTFF_SAVE_X2        = 0x00002000,
+    PTFF_SAVE_X3        = 0x00004000,
+    PTFF_SAVE_X4        = 0x00008000,
+    PTFF_SAVE_X5        = 0x00010000,
+    PTFF_SAVE_X6        = 0x00020000,
+    PTFF_SAVE_X7        = 0x00040000,
+
+    PTFF_SAVE_FP        = 0x00080000,   // should never be used, we require FP frames for methods with 
+                                        // pinvoke and it is saved into the frame pointer field instead
+
+    PTFF_SAVE_LR        = 0x00100000,   // this is useful for the case of loop hijacking where we need both
+                                        // a return address pointing into the hijacked method and that method's
+                                        // lr register, which may hold a gc pointer
+
+    // Other flags
+    PTFF_X0_IS_GCREF    = 0x00200000,   // used by hijack handler to report return value of hijacked method
+    PTFF_X0_IS_BYREF    = 0x00400000,   // used by hijack handler to report return value of hijacked method
+
+    PTFF_THREAD_ABORT   = 0x00800000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+};
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\[amd64|i386]\AsmMacros.inc
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
     // standard preserved registers
     PTFF_SAVE_RBX       = 0x00000001,
     PTFF_SAVE_RSI       = 0x00000002,
@@ -648,12 +706,18 @@ struct PInvokeTransitionFrame
 #ifdef _TARGET_ARM_
     TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
 #endif
+#ifdef _TARGET_ARM64_
+    // On arm64, the FP and LR registers are pushed in that order when setting up frames
+    TgtPTR_Void     m_FramePointer;
+    TgtPTR_Void     m_RIP;
+#else
     TgtPTR_Void     m_RIP;
     TgtPTR_Void     m_FramePointer;
+#endif
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     UInt32          m_dwAlignPad2;
 #endif
     UIntTarget      m_PreservedRegs[];
@@ -670,6 +734,10 @@ struct PInvokeTransitionFrame
 #elif defined(_TARGET_ARM_)
 // R4-R6,R8-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 8
+#elif defined(_TARGET_ARM64_)
+// X19-X29, X0, SP
+// ARM64TODO: do we need more here? Verify count when you start using this define.
+#define PInvokeTransitionFrame_SaveRegs_count 12
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
