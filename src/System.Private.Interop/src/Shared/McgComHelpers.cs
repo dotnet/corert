@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static string GetRuntimeClassName(Object obj)
         {
-#if  ENABLE_WINRT
+#if  ENABLE_MIN_WINRT 
             System.IntPtr pWinRTItf = default(IntPtr);
 
             try
@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static string GetRuntimeClassName(IntPtr pWinRTItf)
         {
-#if  ENABLE_WINRT
+#if  ENABLE_MIN_WINRT
             void* unsafe_hstring = null;
 
             try

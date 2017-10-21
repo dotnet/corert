@@ -383,10 +383,6 @@ typedef struct _NEON128 {
     Int64 High;
 } NEON128, *PNEON128;
 
-#if !defined(GEN_REG_COUNT)
-#define GEN_REG_COUNT 29
-#endif
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Control flags.
@@ -431,7 +427,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 #pragma warning(push)
 #pragma warning(disable:4201) // nameless struct
         };
-        UInt64 X[GEN_REG_COUNT];
+        UInt64 X[29];
     };
 #pragma warning(pop)
     UInt64 Fp; // X29

@@ -13,15 +13,18 @@
 ;;
 ;; INPUT: none
 ;;
-;; OUTPUT: r0: Thread pointer
+;; OUTPUT: x0: Thread pointer
 ;;
 ;; MUST PRESERVE ARGUMENT REGISTERS
-;; @todo check the actual requirements here, r0 is both return and argument register
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     LEAF_ENTRY RhpGetThread
-        brk 0xf000
+        ;; x0 = GetThread(), TRASHES xip0 (which can be used as an intra-procedure-call scratch register)
+        INLINE_GETTHREAD x0, xip0
+        ret
     LEAF_END
 FASTCALL_ENDFUNC
+
+    INLINE_GETTHREAD_CONSTANT_POOL
 
     end

@@ -209,8 +209,45 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
 #elif defined(_TARGET_ARM64_)
-    UNREFERENCED_PARAMETER(pPreservedRegsCursor);
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    m_RegDisplay.pFP = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
+    m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
+
+    ASSERT(!(pFrame->m_dwFlags & PTFF_SAVE_FP)); // FP should never contain a GC ref because we require
+                                                 // a frame pointer for methods with pinvokes
+
+    if (pFrame->m_dwFlags & PTFF_SAVE_X19) { m_RegDisplay.pX19 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X20) { m_RegDisplay.pX20 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X21) { m_RegDisplay.pX21 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X22) { m_RegDisplay.pX22 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X23) { m_RegDisplay.pX23 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X24) { m_RegDisplay.pX24 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X25) { m_RegDisplay.pX25 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X26) { m_RegDisplay.pX26 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X27) { m_RegDisplay.pX27 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X28) { m_RegDisplay.pX28 = pPreservedRegsCursor++; }
+
+    if (pFrame->m_dwFlags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
+
+    if (pFrame->m_dwFlags & PTFF_SAVE_X0) { m_RegDisplay.pX0 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X1) { m_RegDisplay.pX1 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X2) { m_RegDisplay.pX2 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X3) { m_RegDisplay.pX3 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X4) { m_RegDisplay.pX4 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X5) { m_RegDisplay.pX5 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X6) { m_RegDisplay.pX6 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_X7) { m_RegDisplay.pX7 = pPreservedRegsCursor++; }
+    if (pFrame->m_dwFlags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
+
+    if (pFrame->m_dwFlags & PTFF_X0_IS_GCREF)
+    {
+        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
+        m_HijackedReturnValueKind = GCRK_Object;
+    }
+    if (pFrame->m_dwFlags & PTFF_X0_IS_BYREF)
+    {
+        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pX0;
+        m_HijackedReturnValueKind = GCRK_Byref;
+    }
 
 #else // _TARGET_ARM_
     if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
@@ -368,7 +405,35 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR0  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R0);
 
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pX19 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X19);
+    m_RegDisplay.pX20 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X20);
+    m_RegDisplay.pX21 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X21);
+    m_RegDisplay.pX22 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X22);
+    m_RegDisplay.pX23 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X23);
+    m_RegDisplay.pX24 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X24);
+    m_RegDisplay.pX25 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X25);
+    m_RegDisplay.pX26 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X26);
+    m_RegDisplay.pX27 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X27);
+    m_RegDisplay.pX28 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X28);
+    m_RegDisplay.pFP = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, FP);
+    m_RegDisplay.pLR = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, LR);
+
+    //
+    // preserved vfp regs
+    //
+    for (Int32 i = 0; i < 16 - 8; i++)
+    {
+        m_RegDisplay.D[i] = pCtx->D[i];
+    }
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pX0 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X0);
+    m_RegDisplay.pX1 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, X1);
+    // TODO: Copy X2-X7 when we start supporting HVA's
 
 #elif defined(UNIX_AMD64_ABI)
     //
@@ -529,7 +594,17 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR11 = thisFuncletPtrs.pR11;
 
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    m_RegDisplay.pX19 = thisFuncletPtrs.pX19;
+    m_RegDisplay.pX20 = thisFuncletPtrs.pX20;
+    m_RegDisplay.pX21 = thisFuncletPtrs.pX21;
+    m_RegDisplay.pX22 = thisFuncletPtrs.pX22;
+    m_RegDisplay.pX23 = thisFuncletPtrs.pX23;
+    m_RegDisplay.pX24 = thisFuncletPtrs.pX24;
+    m_RegDisplay.pX25 = thisFuncletPtrs.pX25;
+    m_RegDisplay.pX26 = thisFuncletPtrs.pX26;
+    m_RegDisplay.pX27 = thisFuncletPtrs.pX27;
+    m_RegDisplay.pX28 = thisFuncletPtrs.pX28;
+    // ARM64TODO: FP? LR?
 
 #elif defined(UNIX_AMD64_ABI)
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
@@ -850,18 +925,25 @@ public:
     }
 
 #elif defined(_TARGET_ARM64_)
+
+// Conservative GC reporting must be applied to everything between the base of the
+// ReturnBlock and the top of the StackPassedArgs.
 private:
-    // ARM64TODO: #error NYI for this arch
-    UIntNative m_stackPassedArgs[1];        // Placeholder
+    UIntNative m_pushedFP;                  // ChildSP+000     CallerSP-0C8 (0x08 bytes)    (fp)
+    UIntNative m_pushedLR;                  // ChildSP+008     CallerSP-0C0 (0x08 bytes)    (lr)
+    UInt64 m_fpArgRegs[8];                  // ChildSP+010     CallerSP-0C0 (0x40 bytes)    (d0-d7)
+    UIntNative m_returnBlock[8];            // ChildSP+050     CallerSP-080 (0x40 bytes)
+    UIntNative m_intArgRegs[8];             // ChildSP+090     CallerSP-040 (0x40 bytes)    (x0-x7)
+    UIntNative m_stackPassedArgs[1];        // ChildSP+0D0     CallerSP+000 (unknown size)
+
 public:
-    PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
-    PTR_UIntNative get_AddressOfPushedCallerIP() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
-    PTR_UIntNative get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); return NULL; }
+    PTR_UIntNative get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_pushedLR); }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
-        UNREFERENCED_PARAMETER(pRegisterSet);
-        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+        pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 #else
 #error NYI for this arch
@@ -940,7 +1022,7 @@ struct CALL_DESCR_CONTEXT
     UIntNative  IP;
 };
 #elif defined(_TARGET_ARM64_)
-// @TODO: Add ARM64 entries
+// ARM64TODO: Add ARM64 entries
 struct CALL_DESCR_CONTEXT
 {
     UIntNative IP;
@@ -1077,7 +1159,17 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR10 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R10);
     m_RegDisplay.pR11 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R11);
 #elif defined(_TARGET_ARM64_)
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    m_RegDisplay.pX19 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X19);
+    m_RegDisplay.pX20 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X20);
+    m_RegDisplay.pX21 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X21);
+    m_RegDisplay.pX22 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X22);
+    m_RegDisplay.pX23 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X23);
+    m_RegDisplay.pX24 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X24);
+    m_RegDisplay.pX25 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X25);
+    m_RegDisplay.pX26 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X26);
+    m_RegDisplay.pX27 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X27);
+    m_RegDisplay.pX28 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X28);
+    // ARM64TODO: FP? LR?
 #elif defined(_TARGET_X86_)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);

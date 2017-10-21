@@ -143,7 +143,7 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs"/>
-    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
   </ItemGroup>
