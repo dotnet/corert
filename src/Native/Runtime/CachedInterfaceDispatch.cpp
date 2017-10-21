@@ -188,12 +188,12 @@ static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * p
 // any more) we can place them on one of several free lists based on their size.
 //
 
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
 // Head of the list of discarded cache blocks that can't be re-used just yet.
-InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64, m_pCell is not used and we can link the discarded blocks themselves
+InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64 and ARM64, m_pCell is not used and we can link the discarded blocks themselves
 
-#else // ifdef _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
 struct DiscardedCacheBlock
 {
@@ -207,7 +207,7 @@ static DiscardedCacheBlock * g_pDiscardedCacheList = NULL;
 // Free list of DiscardedCacheBlock items
 static DiscardedCacheBlock * g_pDiscardedCacheFree = NULL;
 
-#endif // ifdef _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 
 // Free lists for each cache size up to the maximum. We allocate from these in preference to new memory.
 static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
@@ -352,13 +352,13 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
     CrstHolder lh(&g_sListLock);
 
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
-    // on AMD64, we can thread the list through the blocks directly
+    // on AMD64 and ARM64, we can thread the list through the blocks directly
     pCache->m_pNextFree = g_pDiscardedCacheList;
     g_pDiscardedCacheList = pCache;
 
-#else // _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
     // on other architectures, we cannot overwrite pCache->m_pNextFree yet
     // because it shares storage with m_pCell which may still be used as a back
@@ -378,7 +378,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
         g_pDiscardedCacheList = pDiscardedCacheBlock;
     }
-#endif // _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 }
 
 // Called during a GC to empty the list of discarded caches (which we can now guarantee aren't being accessed)
@@ -388,7 +388,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
     // No need for any locks, we're not racing with any other threads any more.
 
     // Walk the list of discarded caches.
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
     // on AMD64, this is threaded directly through the cache blocks
     InterfaceDispatchCache * pCache = g_pDiscardedCacheList;
@@ -406,7 +406,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pCache = pNextCache;
     }
 
-#else // _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
     // on other architectures, we use an auxiliary list instead
     DiscardedCacheBlock * pDiscardedCacheBlock = g_pDiscardedCacheList;
@@ -428,7 +428,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pDiscardedCacheBlock = pNextDiscardedCacheBlock;
     }
 
-#endif // _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 
     // We processed all the discarded entries, so we can simply NULL the list head.
     g_pDiscardedCacheList = NULL;
@@ -498,11 +498,11 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
     if (InterfaceDispatchCell::IsCache(newCacheValue))
     {
         pCache = (InterfaceDispatchCache*)newCacheValue;
-#ifndef _AMD64_
-        // Set back pointer to interface dispatch cell for non-AMD64
-        // for AMD64, we have enough registers to make this trick unnecessary
+#if !defined(_AMD64_) && !defined(_ARM64_)
+        // Set back pointer to interface dispatch cell for non-AMD64 and non-ARM64
+        // for AMD64 and ARM64, we have enough registers to make this trick unnecessary
         pCache->m_pCell = pCell;
-#endif // _AMD64_
+#endif // !defined(_AMD64_) && !defined(_ARM64_)
 
         // Add entry to the first unused slot.
         InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];

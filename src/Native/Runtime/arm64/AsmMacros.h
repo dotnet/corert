@@ -21,7 +21,23 @@ GC_ALLOC_ALIGN8_BIAS            equ 4
 GC_ALLOC_ALIGN8                 equ 8
 
 ;; Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
-;; ARM64TODO
+PTFF_SAVE_X19           equ 0x00000001
+PTFF_SAVE_X20           equ 0x00000002
+PTFF_SAVE_X21           equ 0x00000004
+PTFF_SAVE_X22           equ 0x00000008
+PTFF_SAVE_X23           equ 0x00000010
+PTFF_SAVE_X24           equ 0x00000020
+PTFF_SAVE_X25           equ 0x00000040
+PTFF_SAVE_X26           equ 0x00000080
+PTFF_SAVE_X27           equ 0x00000100
+PTFF_SAVE_X28           equ 0x00000200
+PTFF_SAVE_SP            equ 0x00000400
+PTFF_SAVE_ALL_PRESERVED equ 0x000003FF  ;; NOTE: x19-x28
+PTFF_SAVE_FP            equ 0x00080000
+PTFF_SAVE_LR            equ 0x00100000
+PTFF_X0_IS_GCREF        equ 0x00200000  ;; iff PTFF_SAVE_X0 : set->x0 is Object, clear->x0 is scalar
+PTFF_X0_IS_BYREF        equ 0x00400000  ;; iff PTFF_SAVE_X0 : set->x0 is ByRef, clear->x0 is Object or scalar
+PTFF_THREAD_ABORT       equ 0x00800000  ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;;
 ;; Rename fields of nested structs
@@ -35,6 +51,11 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN RhpGcAlloc
     EXTERN RhpPublishObject
     EXTERN RhExceptionHandling_FailedAllocation
+    IMPORT g_lowest_address
+    IMPORT g_highest_address
+    IMPORT g_ephemeral_low
+    IMPORT g_ephemeral_high
+    IMPORT g_card_table
 
 ;; -----------------------------------------------------------------------------
 ;;
@@ -88,7 +109,8 @@ __SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
         ldr         $trashReg, [$trashReg]
         ldr         $destReg, [xpr, #__tls_array]
         ldr         $destReg, [$destReg, $trashReg lsl #3]
-        ldr         $trashReg, $__SECTIONREL_tls_CurrentThread
+        ldr         $trashReg, =$__SECTIONREL_tls_CurrentThread
+        ldr         $trashReg, [$trashReg]
         add         $destReg, $destReg, $trashReg
     MEND
 
@@ -128,19 +150,37 @@ __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 ;; - This macro uses trashReg (after its initial value has been saved in the frame) and upon exit trashReg
 ;;   will contain the address of transition frame.
 ;;
+
+DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+
     MACRO
         PUSH_COOP_PINVOKE_FRAME $trashReg
 
-        ;; ARM64TODO: reserve stack for any data+flags needed to make the stack walker do its job
+        ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
+        ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
+        LCLS TrashRegister32Bit
+TrashRegister32Bit SETS "$trashReg"
+TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
 
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-0x60!      ;; Push down stack pointer and store FP and LR
-        mov                    fp, sp               ;; Set the frame pointer to the bottom of the new frame
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-0x80!      ;; Push down stack pointer and store FP and LR
+
+        ;; 0x10 bytes reserved for Thread* and flags
+
         ;; Save callee saved registers
-        PROLOG_SAVE_REG_PAIR   x19, x20, #16
-        PROLOG_SAVE_REG_PAIR   x21, x22, #32
-        PROLOG_SAVE_REG_PAIR   x23, x24, #48
-        PROLOG_SAVE_REG_PAIR   x25, x26, #64
-        PROLOG_SAVE_REG_PAIR   x27, x28, #80
+        PROLOG_SAVE_REG_PAIR   x19, x20, #0x20
+        PROLOG_SAVE_REG_PAIR   x21, x22, #0x30
+        PROLOG_SAVE_REG_PAIR   x23, x24, #0x40
+        PROLOG_SAVE_REG_PAIR   x25, x26, #0x50
+        PROLOG_SAVE_REG_PAIR   x27, x28, #0x60
+
+        ;; Save the value of SP before stack allocation to the last slot in the frame (slot #15)
+        add                    $trashReg, sp, #0x80
+        str                    $trashReg, [sp, #0x70]
+
+        ;; Record the bitmask of saved registers in the frame (slot #3)
+        mov                    $TrashRegister32Bit, #DEFAULT_FRAME_SAVE_FLAGS
+        str                    $TrashRegister32Bit, [sp, #0x18]
+
         mov $trashReg, sp
     MEND
 
@@ -148,12 +188,10 @@ __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
     MACRO
         POP_COOP_PINVOKE_FRAME
 
-        ;; ARM64TODO: restore stack used by any data + flags needed to make the stack walker do its job
-
-        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
-        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
-        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
-        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
-        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-        EPILOG_RESTORE_REG_PAIR   fp, lr, #0x60!
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #0x20
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #0x30
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #0x40
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #0x50
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
+        EPILOG_RESTORE_REG_PAIR   fp, lr, #0x80!
     MEND

@@ -1560,6 +1560,7 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
     return NULL;
 
 #elif defined(_ARM64_)
+    UNREFERENCED_PARAMETER(pInfoHeader);
     UNREFERENCED_PARAMETER(pbEpilog);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
