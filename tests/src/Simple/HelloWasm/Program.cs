@@ -11,27 +11,39 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-
-		    TestString();
       
         int tempInt = 0;
         (*(&tempInt)) = 9;
 	
         if(tempInt == 9)
         {
-          PrintLine("Hello from C#!");
+			PrintLine("Hello from C#!");
+        }
+		
+		TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+
+        if (str2.second == 4)
+        {
+            PrintLine("value type int field test: Ok.");
+        }
+		
+		staticInt = 5;
+        if (staticInt == 5)
+        {
+            PrintLine("static int field test: Ok.");
         }
 
         var not = Not(0xFFFFFFFF) == 0x00000000;
         if(not)
         {
-          PrintLine("not test: Ok.");
+			PrintLine("not test: Ok.");
         }
 
         var negInt = Neg(42) == -42;
         if(negInt)
         {
-          PrintLine("negInt test: Ok.");
+			PrintLine("negInt test: Ok.");
         }
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
@@ -88,14 +100,6 @@ internal static class Program
     {
         PrintString(s);
         PrintString("\n");
-    }
-
-    private static unsafe void TestString()
-    {
-      TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-          TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
-          *(&str) = str2;
-          str2 = *(&str);
     }
 
     private static int Add(int a, int b)
