@@ -17,7 +17,7 @@
         ;;
         ;; x0 contains EEType pointer
         ;;
-        ldur        w2, [x0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         w2, [x0, #OFFSETOF__EEType__m_uBaseSize]
 
         ;;
         ;; x0: EEType pointer
@@ -25,7 +25,11 @@
         ;; x2: base size
         ;;
 
+        ;; Load potential new object address into x12.
         ldr         x12, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
         ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x13
@@ -66,7 +70,7 @@ RhpNewFast_RarePath
         ;; Preserve the EEType in x19
         mov         x19, x0
 
-        ldur        w2, [x0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         w2, [x0, #OFFSETOF__EEType__m_uBaseSize]
 
         ;; Call the rest of the allocation helper.
         ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
@@ -77,7 +81,7 @@ RhpNewFast_RarePath
         str         x19, [x0, #OFFSETOF__Object__m_pEEType]
 
         ;; If the object is bigger than RH_LARGE_OBJECT_SIZE, we must publish it to the BGC
-        ldur        w1, [x19, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         w1, [x19, #OFFSETOF__EEType__m_uBaseSize]
         movk        x2, #(RH_LARGE_OBJECT_SIZE & 0xFFFF)
         movk        x2, #(RH_LARGE_OBJECT_SIZE >> 16), lsl #16
         cmp         x1, x2
@@ -90,7 +94,7 @@ RhpNewFast_RarePath
 New_SkipPublish
 
         POP_COOP_PINVOKE_FRAME
-        ret
+        EPILOG_RETURN
 
 NewOutOfMemory
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
@@ -100,9 +104,7 @@ NewOutOfMemory
         mov         x1, 0               ; Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-
-        ldr         x12, =RhExceptionHandling_FailedAllocation
-        EPILOG_BRANCH_REG   x12
+        EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
     NESTED_END RhpNewObject
 
@@ -110,8 +112,56 @@ NewOutOfMemory
 ;;  x0 == EEType
 ;;  x1 == element/character count
     LEAF_ENTRY RhNewString
-        ;; ARM64TODO
-        brk 0xf000
+        ;; Make sure computing the overall allocation size won't overflow
+        mov         x2,#0x7FFFFFFF
+        cmp         x1, x2
+        bgt         StringSizeOverflow
+
+        ;; Compute overall allocation size (align(base size + (element size * elements), 8)).
+        mov         w2, #STRING_COMPONENT_SIZE
+        mov         x3, #(STRING_BASE_SIZE + 7)
+        umaddl      x2, w1, w2, x3          ; x2 = w1 * w2 + x3
+        and         x2, x2, #-8
+
+        ; x0 == EEType
+        ; x1 == element count
+        ; x2 == string size
+
+        INLINE_GETTHREAD x3, x5
+
+        ;; Load potential new object address into x12.
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        add         x2, x2, x12
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         x2, x12
+        bhi         RhpNewArrayRare
+
+        ;; Reload new object address into r12.
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Update the alloc pointer to account for the allocation.
+        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Set the new object's EEType pointer and element count.
+        str         x0, [x12, #OFFSETOF__Object__m_pEEType]
+        str         x1, [x12, #OFFSETOF__Array__m_Length]
+
+        ;; Return the object allocated in x0.
+        mov         x0, x12
+
+        ret
+
+StringSizeOverflow
+        ; We get here if the length of the final string object can't be represented as an unsigned 
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
+        ; an OOM exception that the caller of this allocator understands.
+
+        ; x0 holds EEType pointer already
+        mov         x1, #1                  ; Indicate that we should throw OverflowException
+        bl          RhExceptionHandling_FailedAllocation
     LEAF_END    RhNewString
 
     INLINE_GETTHREAD_CONSTANT_POOL
@@ -122,14 +172,17 @@ NewOutOfMemory
 ;;  x1 == element count
     LEAF_ENTRY RhpNewArray
 
-        ; we want to limit the element count to the non-negative 32-bit int range
+        ;; We want to limit the element count to the non-negative 32-bit int range.
+        ;; If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
+        ;; size is <= 0xffff (it's an unsigned 16-bit value), and the base size for the worst 
+        ;; case (32 dimensional MdArray) is less than 0xffff, and thus the product fits in 64 bits.
         mov         x2,#0x7FFFFFFF
         cmp         x1,x2
         bgt         ArraySizeOverflow
 
-        ldurh       w2, [x0, #OFFSETOF__EEType__m_usComponentSize]
+        ldrh        w2, [x0, #OFFSETOF__EEType__m_usComponentSize]
         umull       x2, w1, w2
-        ldur        w3, [x0, #OFFSETOF__EEType__m_uBaseSize]
+        ldr         w3, [x0, #OFFSETOF__EEType__m_uBaseSize]
         add         x2, x2, x3
         add         x2, x2, #7
         and         x2, x2, #-8
@@ -145,7 +198,6 @@ NewOutOfMemory
 
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
-
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
@@ -168,7 +220,7 @@ NewOutOfMemory
 
 ArraySizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned 
-        ; 64-bit value. We're going to tail-call to a managed helper that will throw
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
 
         ; x0 holds EEType pointer already
@@ -185,9 +237,9 @@ ArraySizeOverflow
 ;;  x3 == Thread
     NESTED_ENTRY RhpNewArrayRare
 
-        ; Recover array size by subtracting the alloc_ptr from r2.
-        ldr x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        sub x2, x2, x12
+        ; Recover array size by subtracting the alloc_ptr from x2.
+        PROLOG_NOP ldr x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        PROLOG_NOP sub x2, x2, x12
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -231,9 +283,7 @@ ArrayOutOfMemory
         mov         x1, 0               ; Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-
-        ldr         x12, =RhExceptionHandling_FailedAllocation
-        EPILOG_BRANCH_REG x12
+        EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
     NESTED_END RhpNewArrayRare
 

@@ -7,66 +7,67 @@ using System.Runtime.InteropServices;
 
 internal static class Program
 {
+    private static int staticInt;
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
 
-		TestString();
-		
+		    TestString();
+      
         int tempInt = 0;
         (*(&tempInt)) = 9;
-		
-		if(tempInt == 9)
-		{
-			PrintLine("Hello from C#!");
-		}
-		
-		var not = Not(0xFFFFFFFF) == 0x00000000;
-		if(not)
-		{
-			PrintLine("not test: Ok.");
-		}
-		
-		var negInt = Neg(42) == -42;
-		if(negInt)
-		{
-			PrintLine("negInt test: Ok.");
-		}
+	
+        if(tempInt == 9)
+        {
+          PrintLine("Hello from C#!");
+        }
+
+        var not = Not(0xFFFFFFFF) == 0x00000000;
+        if(not)
+        {
+          PrintLine("not test: Ok.");
+        }
+
+        var negInt = Neg(42) == -42;
+        if(negInt)
+        {
+          PrintLine("negInt test: Ok.");
+        }
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
-        if(shiftLeft)
+        if (shiftLeft)
         {
             PrintLine("shiftLeft test: Ok.");
         }
 
         var shiftRight = ShiftRight(4, 2) == 1;
-        if(shiftRight)
+        if (shiftRight)
         {
             PrintLine("shiftRight test: Ok.");
         }
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
-        if(unsignedShift)
+        if (unsignedShift)
         {
             PrintLine("unsignedShift test: Ok.");
         }
 		
-		var switchTest0 = SwitchOp(5, 5, 0);
-		if(switchTest0 == 10)
-		{
+        var switchTest0 = SwitchOp(5, 5, 0);
+        if(switchTest0 == 10)
+        {
             PrintLine("SwitchOp0 test: Ok.");
-		}
-		
-		var switchTest1 = SwitchOp(5, 5, 1);
-		if(switchTest1 == 25)
-		{
+        }
+
+        var switchTest1 = SwitchOp(5, 5, 1);
+        if(switchTest1 == 25)
+        {
             PrintLine("SwitchOp1 test: Ok.");
-		}
-		
-		var switchTestDefault = SwitchOp(5, 5, 20);
-		if(switchTestDefault == 0)
-		{
+        }
+
+        var switchTestDefault = SwitchOp(5, 5, 20);
+        if(switchTestDefault == 0)
+        {
             PrintLine("SwitchOpDefault test: Ok.");
-		}
+        }
     }
 
     private static unsafe void PrintString(string s)
@@ -83,31 +84,31 @@ internal static class Program
         }
     }
 	
-	private static void PrintLine(string s)
-	{
-		PrintString(s);
-		PrintString("\n");
-	}
-	
-	private static unsafe void TestString()
-	{
-		TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
-        *(&str) = str2;
-        str2 = *(&str);
-	}
+    private static void PrintLine(string s)
+    {
+        PrintString(s);
+        PrintString("\n");
+    }
+
+    private static unsafe void TestString()
+    {
+      TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+          TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };;
+          *(&str) = str2;
+          str2 = *(&str);
+    }
 
     private static int Add(int a, int b)
     {
         return a + b;
     }
-	
-	private static uint Not(uint a)
+
+    private static uint Not(uint a)
     {
         return ~a;
     }
-	
-	private static int Neg(int a)
+
+    private static int Neg(int a)
     {
         return -a;
     }
@@ -127,21 +128,21 @@ internal static class Program
         return a >> b;
     }
 	
-	private static int SwitchOp(int a, int b, int mode)
-	{
-		switch(mode)
-		{
-			case 0:
-				return a + b;
-			case 1:
-				return a * b;
-			case 2:
-				return a / b;
-			case 3:
-				return a - b;
-			default:
-				return 0;
-		}
+    private static int SwitchOp(int a, int b, int mode)
+    {
+        switch(mode)
+        {
+          case 0:
+            return a + b;
+          case 1:
+            return a * b;
+          case 2:
+            return a / b;
+          case 3:
+            return a - b;
+          default:
+            return 0;
+        }
     }
 
     [DllImport("*")]

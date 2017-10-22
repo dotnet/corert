@@ -190,9 +190,19 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
 #elif defined(_ARM64_)
-    for (int i = 0; i < GEN_REG_COUNT; ++i) {
-        pContext->X[i] = pPalContext->X[i];
-    }
+    pContext->X0 = pPalContext->X0;
+    pContext->X1 = pPalContext->X1;
+    // TODO: Copy registers X2-X7 when we start supporting HVA's
+    pContext->X19 = pPalContext->X19;
+    pContext->X20 = pPalContext->X20;
+    pContext->X21 = pPalContext->X21;
+    pContext->X22 = pPalContext->X22;
+    pContext->X23 = pPalContext->X23;
+    pContext->X24 = pPalContext->X24;
+    pContext->X25 = pPalContext->X25;
+    pContext->X26 = pPalContext->X26;
+    pContext->X27 = pPalContext->X27;
+    pContext->X28 = pPalContext->X28;
     pContext->Fp = pPalContext->FP;
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
@@ -204,6 +214,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
 
 
 #if defined(_AMD64_) || defined(_ARM_) || defined(_X86_)
+// ARM64TODO
 struct DISPATCHER_CONTEXT
 {
     UIntNative  ControlPc;

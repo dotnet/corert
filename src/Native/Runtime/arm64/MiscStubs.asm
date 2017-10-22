@@ -4,6 +4,8 @@
 
 #include "AsmMacros.h"
 
+    EXTERN memcpy
+
     TEXTAREA
 
 ;;
@@ -62,11 +64,28 @@
 ;;
 
     LEAF_ENTRY    RhpCopyMultibyteNoGCRefs
-        brk 0xf000
+
+        ; x0    dest
+        ; x1    src
+        ; x2    count
+
+        cbz     x2, NothingToCopy_NoGCRefs  ; check for a zero-length copy
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
     ALTERNATE_ENTRY RhpCopyMultibyteNoGCRefsDestAVLocation
-        brk 0xf000
+        ldrb    wzr, [x0]
     ALTERNATE_ENTRY RhpCopyMultibyteNoGCRefsSrcAVLocation
-        brk 0xf000
+        ldrb    wzr, [x1]
+
+        ; tail-call to plain-old-memcpy
+        b       memcpy
+
+NothingToCopy_NoGCRefs
+        ; dest is already in x0
+        ret
+
     LEAF_END
 
 
