@@ -295,6 +295,7 @@ namespace Internal.IL
 
         private void ImportNop()
         {
+            EmitDoNothingCall();
         }
 
         private void ImportBreak()
@@ -1626,6 +1627,15 @@ namespace Internal.IL
                 TrapFunction = LLVM.AddFunction(Module, "llvm.trap", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
             }
             LLVM.BuildCall(_builder, TrapFunction, Array.Empty<LLVMValueRef>(), string.Empty);
+        }
+
+        private void EmitDoNothingCall()
+        {
+            if (DoNothingFunction.Pointer == IntPtr.Zero)
+            {
+                DoNothingFunction = LLVM.AddFunction(Module, "llvm.donothing", LLVM.FunctionType(LLVM.VoidType(), Array.Empty<LLVMTypeRef>(), false));
+            }
+            LLVM.BuildCall(_builder, DoNothingFunction, Array.Empty<LLVMValueRef>(), string.Empty);
         }
 
         public override string ToString()
