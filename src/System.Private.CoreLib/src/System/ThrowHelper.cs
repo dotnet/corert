@@ -40,6 +40,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
+    [StackTraceHidden]
     internal static class ThrowHelper
     {
         internal static void ThrowArrayTypeMismatchException()
