@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -91,16 +92,63 @@ namespace ILCompiler
             var typeNameAttribute = typeElement.Attribute("Name");
             if (typeNameAttribute == null)
                 throw new Exception();
+            string typeName = typeNameAttribute.Value;
+            TypeDesc type = containingModule.GetTypeByCustomAttributeTypeName(typeName);
 
             var dynamicDegreeAttribute = typeElement.Attribute("Dynamic");
             if (dynamicDegreeAttribute != null)
             {
                 if (dynamicDegreeAttribute.Value != "Required All")
                     throw new NotSupportedException();
+                
+                RootType(rootProvider, type);
             }
 
-            string typeName = typeNameAttribute.Value;
-            RootType(rootProvider, containingModule.GetTypeByCustomAttributeTypeName(typeName));
+            foreach (var element in typeElement.Elements())
+            {
+                switch (element.Name.LocalName)
+                {
+                    case "Method":
+                        ProcessMethodDirective(rootProvider, containingModule, type, element);
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+        }
+
+        private void ProcessMethodDirective(IRootingServiceProvider rootProvider, ModuleDesc containingModule, TypeDesc containingType, XElement methodElement)
+        {
+            var methodNameAttribute = methodElement.Attribute("Name");
+            if (methodNameAttribute == null)
+                throw new Exception();
+            string methodName = methodNameAttribute.Value;
+            MethodDesc method = containingType.GetMethod(methodName, null);
+
+            var instArgs = new List<TypeDesc>();
+            foreach (var element in methodElement.Elements())
+            {
+                switch (element.Name.LocalName)
+                {
+                    case "GenericArgument":
+                        string instArgName = element.Attribute("Name").Value;
+                        instArgs.Add(containingModule.GetTypeByCustomAttributeTypeName(instArgName));
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+
+            if (instArgs.Count != method.Instantiation.Length)
+                throw new Exception();
+
+            if (instArgs.Count > 0)
+            {
+                var methodInst = new Instantiation(instArgs.ToArray());
+                method = method.MakeInstantiatedMethod(methodInst);
+            }
+
+            RootMethod(rootProvider, method);
         }
 
         private void RootType(IRootingServiceProvider rootProvider, TypeDesc type)
@@ -118,31 +166,36 @@ namespace ILCompiler
                     if (method.HasInstantiation)
                         continue;
 
-                    try
-                    {
-                        LibraryRootProvider.CheckCanGenerateMethod(method);
-                        
-                        // Virtual methods should be rooted as if they were called virtually
-                        if (method.IsVirtual)
-                        {
-                            MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                            rootProvider.RootVirtualMethodForReflection(slotMethod, "RD.XML root");
-                        }
-                        
-                        if (!method.IsAbstract)
-                            rootProvider.AddCompilationRoot(method, "RD.XML root");
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // TODO: fail compilation if a switch was passed
-
-                        // Individual methods can fail to load types referenced in their signatures.
-                        // Skip them in library mode since they're not going to be callable.
-                        continue;
-
-                        // TODO: Log as a warning
-                    }
+                    RootMethod(rootProvider, method);
                 }
+            }
+        }
+
+        private void RootMethod(IRootingServiceProvider rootProvider, MethodDesc method)
+        {
+            try
+            {
+                LibraryRootProvider.CheckCanGenerateMethod(method);
+
+                // Virtual methods should be rooted as if they were called virtually
+                if (method.IsVirtual)
+                {
+                    MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    rootProvider.RootVirtualMethodForReflection(slotMethod, "RD.XML root");
+                }
+
+                if (!method.IsAbstract)
+                    rootProvider.AddCompilationRoot(method, "RD.XML root");
+            }
+            catch (TypeSystemException)
+            {
+                // TODO: fail compilation if a switch was passed
+
+                // Individual methods can fail to load types referenced in their signatures.
+                // Skip them in library mode since they're not going to be callable.
+                return;
+
+                // TODO: Log as a warning
             }
         }
     }
