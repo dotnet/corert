@@ -208,7 +208,7 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                Debug.Assert(false, "Unexpected DelegateMarshallingMethodThunkKind");
+                Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind");
             }
         }
 

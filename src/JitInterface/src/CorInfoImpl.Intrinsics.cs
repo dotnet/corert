@@ -50,7 +50,7 @@ namespace Internal.JitInterface
             }
             protected override IntrinsicEntry CreateValueFromKey(IntrinsicKey key)
             {
-                Debug.Assert(false, "CreateValueFromKey not supported");
+                Debug.Fail("CreateValueFromKey not supported");
                 return null;
             }
             protected override int GetKeyHashCode(IntrinsicKey key)

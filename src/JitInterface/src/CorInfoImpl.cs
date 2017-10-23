@@ -2355,7 +2355,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.FilterException should not be called");
+            Debug.Fail("CorInfoImpl.FilterException should not be called");
             throw new NotSupportedException("FilterException");
         }
 
@@ -2363,7 +2363,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.HandleException should not be called");
+            Debug.Fail("CorInfoImpl.HandleException should not be called");
             throw new NotSupportedException("HandleException");
         }
 
@@ -2371,7 +2371,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.runWithErrorTrap should not be called");
+            Debug.Fail("CorInfoImpl.runWithErrorTrap should not be called");
             throw new NotSupportedException("runWithErrorTrap");
         }
 
@@ -3356,7 +3356,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.getMemoryManager should not be called");
+            Debug.Fail("CorInfoImpl.getMemoryManager should not be called");
             throw new NotSupportedException("getMemoryManager");
         }
 

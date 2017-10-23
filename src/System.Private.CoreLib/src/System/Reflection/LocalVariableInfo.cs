@@ -33,7 +33,7 @@ namespace System.Reflection
             get
             {
                 // Don't laugh - this is really how the desktop behaves if you don't override.
-                Debug.Assert(false, "type must be set!");
+                Debug.Fail("type must be set!");
                 return null;
             }
         }

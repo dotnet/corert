@@ -928,7 +928,7 @@ namespace ILCompiler.DependencyAnalysis
                         catch (ArgumentException)
                         {
                             ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName(factory.NameMangler)];
-                            Debug.Assert(false, "Duplicate node name emitted to file",
+                            Debug.Fail("Duplicate node name emitted to file",
                             $"Symbol {definedSymbol.GetMangledName(factory.NameMangler)} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
                         }
                     }

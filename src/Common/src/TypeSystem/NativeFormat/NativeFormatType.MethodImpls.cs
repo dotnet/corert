@@ -98,7 +98,7 @@ namespace Internal.TypeSystem.NativeFormat
                         break;
 
                     default:
-                        Debug.Assert(false, "unexpected methodDeclHandleType");
+                        Debug.Fail("unexpected methodDeclHandleType");
                         break;
                 }
 

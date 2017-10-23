@@ -62,7 +62,7 @@ namespace ILCompiler
             }
             protected override ModuleData CreateValueFromKey(EcmaModule key)
             {
-                Debug.Assert(false, "CreateValueFromKey not supported");
+                Debug.Fail("CreateValueFromKey not supported");
                 return null;
             }
         }
@@ -90,7 +90,7 @@ namespace ILCompiler
             }
             protected override ModuleData CreateValueFromKey(string key)
             {
-                Debug.Assert(false, "CreateValueFromKey not supported");
+                Debug.Fail("CreateValueFromKey not supported");
                 return null;
             }
         }

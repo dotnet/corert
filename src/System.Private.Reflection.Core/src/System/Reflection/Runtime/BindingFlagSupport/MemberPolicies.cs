@@ -220,7 +220,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             else
             {
-                Debug.Assert(false, "Unknown MemberInfo type.");
+                Debug.Fail("Unknown MemberInfo type.");
             }
         }
 

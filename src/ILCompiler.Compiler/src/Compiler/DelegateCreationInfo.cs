@@ -129,7 +129,7 @@ namespace ILCompiler
                     return factory.RuntimeMethodHandle(TargetMethod);
 
                 case TargetKind.VTableLookup:
-                    Debug.Assert(false, "Need to do runtime lookup");
+                    Debug.Fail("Need to do runtime lookup");
                     return null;
 
                 default:

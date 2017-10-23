@@ -430,7 +430,7 @@ namespace System
                     m_flags |= (ComObjectFlags.GCPressureWinRT_High | ComObjectFlags.GCPressure_Set);
                     break;
                 default:
-                    Debug.Assert(false, "Incorrect GCPressure value");
+                    Debug.Fail("Incorrect GCPressure value");
                     return;
             }
 
@@ -2449,7 +2449,7 @@ namespace System.Runtime.InteropServices
                 int hr = ExternalInterop.CoGetContextToken(out pCookie);
                 if (hr < 0)
                 {
-                    Debug.Assert(false, "CoGetContextToken failed");
+                    Debug.Fail("CoGetContextToken failed");
                     pCookie = default(IntPtr);
                 }
                 return new ContextCookie(pCookie);

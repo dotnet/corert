@@ -12,7 +12,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                Debug.Assert(false, "IsRuntimeDeterminedSubtype of an indefinite type");
+                Debug.Fail("IsRuntimeDeterminedSubtype of an indefinite type");
                 return false;
             }
         }

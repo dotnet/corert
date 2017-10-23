@@ -372,7 +372,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            Debug.Assert(false, "GetTarget for a FieldOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            Debug.Fail("GetTarget for a FieldOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
             return null;
         }
 
@@ -435,13 +435,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            Debug.Assert(false, "GetTarget for a VTableOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            Debug.Fail("GetTarget for a VTableOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
             return null;
         }
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
-            Debug.Assert(false, "VTableOffset contents should only be generated into generic dictionaries at runtime");
+            Debug.Fail("VTableOffset contents should only be generated into generic dictionaries at runtime");
             builder.EmitNaturalInt(0);
         }
 
@@ -1436,13 +1436,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            Debug.Assert(false, "GetTarget for a CallingConventionConverterLookupResult doesn't make sense. It isn't a pointer being emitted");
+            Debug.Fail("GetTarget for a CallingConventionConverterLookupResult doesn't make sense. It isn't a pointer being emitted");
             return null;
         }
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
-            Debug.Assert(false, "CallingConventionConverterLookupResult contents should only be generated into generic dictionaries at runtime");
+            Debug.Fail("CallingConventionConverterLookupResult contents should only be generated into generic dictionaries at runtime");
             builder.EmitNaturalInt(0);
         }
 
@@ -1499,7 +1499,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            Debug.Assert(false, "GetTarget for a TypeSizeLookupResult doesn't make sense. It isn't a pointer being emitted");
+            Debug.Fail("GetTarget for a TypeSizeLookupResult doesn't make sense. It isn't a pointer being emitted");
             return null;
         }
 

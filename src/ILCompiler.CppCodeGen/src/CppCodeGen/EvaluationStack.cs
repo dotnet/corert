@@ -503,7 +503,7 @@ namespace Internal.IL
         public override void Append(CppGenerationBuffer _builder)
         {
             _builder.Append("// FIXME: An invalid value was pushed onto the evaluation stack.");
-            Debug.Assert(false, "Invalid stack values shouldn't be appended.");
+            Debug.Fail("Invalid stack values shouldn't be appended.");
         }
 
         public override StackEntry Duplicate()

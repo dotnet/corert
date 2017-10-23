@@ -225,7 +225,7 @@ namespace Internal.TypeSystem.Interop
                 switch (_homeType)
                 {
                     case HomeType.Arg:
-                        Debug.Assert(false, "Unexpectting setting value on non-byref arg");
+                        Debug.Fail("Unexpectting setting value on non-byref arg");
                         break;
                     case HomeType.Local:
                         stream.EmitStLoc(_var);
