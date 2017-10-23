@@ -65,7 +65,7 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="/NOLOGO /DEBUG /MANIFEST:NO" />
     <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
     <LinkerArg Include="/INCREMENTAL:NO" />
-  </ItemGroup> 
+  </ItemGroup>
 
   <ItemGroup>
     <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
