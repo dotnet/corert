@@ -673,7 +673,7 @@ namespace Internal.Runtime.TypeLoader
                 case TypeSignatureKind.Lookback:
                     {
                         //  Recursion above better have removed all lookbacks
-                        Debug.Assert(false, "Unexpected lookback type");
+                        Debug.Fail("Unexpected lookback type");
                         return false;
                     }
 

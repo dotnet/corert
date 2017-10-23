@@ -105,7 +105,7 @@ namespace Internal.IL.Stubs
                     case StructMarshallingThunkType.Cleanup:
                         return "Cleanup";
                     default:
-                        System.Diagnostics.Debug.Assert(false, "Unexpected Struct marshalling thunk type");
+                        System.Diagnostics.Debug.Fail("Unexpected Struct marshalling thunk type");
                         return string.Empty;
                 }
             }

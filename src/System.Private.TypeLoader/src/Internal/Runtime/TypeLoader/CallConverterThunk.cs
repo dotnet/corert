@@ -1317,7 +1317,7 @@ namespace Internal.Runtime.TypeLoader
                     break;
 #endif
                 default:
-                    Debug.Assert(false, "Should only be called for sizes where sign extension is a meaningful concept");
+                    Debug.Fail("Should only be called for sizes where sign extension is a meaningful concept");
                     break;
             }
         }
@@ -1344,7 +1344,7 @@ namespace Internal.Runtime.TypeLoader
                     break;
 #endif
                 default:
-                    Debug.Assert(false, "Should only be called for sizes where sign extension is a meaningful concept");
+                    Debug.Fail("Should only be called for sizes where sign extension is a meaningful concept");
                     break;
             }
         }

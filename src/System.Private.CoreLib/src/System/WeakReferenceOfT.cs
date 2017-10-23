@@ -143,7 +143,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(false, "WinRTInteropCallback is null");
+                Debug.Fail("WinRTInteropCallback is null");
             }
 #endif // ENABLE_WINRT
             return null;
@@ -162,7 +162,7 @@ namespace System
                 callbacks.SetCOMWeakReferenceTarget(this, target);
             else
             {
-                Debug.Assert(false, "WinRTInteropCallback is null");
+                Debug.Fail("WinRTInteropCallback is null");
             }
 #endif // ENABLE_WINRT
         }

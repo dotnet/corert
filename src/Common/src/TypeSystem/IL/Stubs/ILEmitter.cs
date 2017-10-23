@@ -256,7 +256,7 @@ namespace Internal.IL.Stubs
                     Emit(ILOpcode.ldobj, _emitter.NewToken(type));
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    Debug.Fail("Unexpected TypeDesc category");
                     break;
             }
         }
@@ -305,7 +305,7 @@ namespace Internal.IL.Stubs
                     Emit(ILOpcode.stobj, _emitter.NewToken(type));
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    Debug.Fail("Unexpected TypeDesc category");
                     break;
             }
         }
@@ -355,7 +355,7 @@ namespace Internal.IL.Stubs
                     Emit(ILOpcode.stelem, _emitter.NewToken(type));
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    Debug.Fail("Unexpected TypeDesc category");
                     break;
             }
         }
@@ -405,7 +405,7 @@ namespace Internal.IL.Stubs
                     Emit(ILOpcode.ldelem, _emitter.NewToken(type));
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected TypeDesc category");
+                    Debug.Fail("Unexpected TypeDesc category");
                     break;
             }
         }

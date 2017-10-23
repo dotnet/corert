@@ -1749,7 +1749,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((_flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
                 {
                     // _nameAndSignature should have been read from the InvokeMap entry directly!
-                    Debug.Assert(false, "Universal canonical entries do NOT have dictionary entries!");
+                    Debug.Fail("Universal canonical entries do NOT have dictionary entries!");
                     return false;
                 }
 

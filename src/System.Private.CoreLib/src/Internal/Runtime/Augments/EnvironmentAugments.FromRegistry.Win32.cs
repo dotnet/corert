@@ -50,7 +50,7 @@ namespace Internal.Runtime.Augments
             // send a WM_SETTINGCHANGE message to all windows
             IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, "Environment", 0, 1000, IntPtr.Zero);
             if (r == IntPtr.Zero)
-                Debug.Assert(false, "SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
+                Debug.Fail("SetEnvironmentVariable failed: " + Marshal.GetLastWin32Error());
         }
 
         private static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(bool fromMachine)

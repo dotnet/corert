@@ -220,7 +220,7 @@ namespace System.Collections.Concurrent
                         {
                             V heyYoureSupposedToBeDead;
                             if (_entries[idx]._weakValue.TryGetTarget(out heyYoureSupposedToBeDead))
-                                Debug.Assert(false, "Add: You were supposed to verify inside the lock that this entry's weak reference had already expired!");
+                                Debug.Fail("Add: You were supposed to verify inside the lock that this entry's weak reference had already expired!");
                         }
 #endif //DEBUG
                         _entries[idx]._weakValue = new WeakReference<V>(value, trackResurrection: false);
@@ -367,7 +367,7 @@ namespace System.Collections.Concurrent
                         if (walk2 != -1)
                             walk2 = _entries[walk2]._next;
                         if (walk1 == walk2 && walk2 != -1)
-                            Debug.Assert(false, "Bucket " + bucket + " has a cycle in its linked list.");
+                            Debug.Fail("Bucket " + bucket + " has a cycle in its linked list.");
                     }
                 }
                 // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 

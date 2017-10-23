@@ -42,7 +42,7 @@ namespace System.Diagnostics.Contracts
 
             if (t_assertingMustUseRewriter)
             {
-                System.Diagnostics.Debug.Assert(false, "Asserting that we must use the rewriter went reentrant. Didn't rewrite this System.Private.CoreLib?");
+                System.Diagnostics.Debug.Fail("Asserting that we must use the rewriter went reentrant. Didn't rewrite this System.Private.CoreLib?");
                 return;
             }
             t_assertingMustUseRewriter = true;

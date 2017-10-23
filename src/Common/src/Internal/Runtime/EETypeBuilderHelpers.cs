@@ -52,7 +52,7 @@ namespace Internal.Runtime
                     break;
             }
 
-            Debug.Assert(false, "Primitive type value expected.");
+            Debug.Fail("Primitive type value expected.");
             return 0;
         }
 

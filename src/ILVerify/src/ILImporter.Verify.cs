@@ -1403,7 +1403,7 @@ again:
             }
             else
             {
-                Debug.Assert(false, "Unexpected ldftn opcode: " + opCode.ToString());
+                Debug.Fail("Unexpected ldftn opcode: " + opCode.ToString());
                 return;
             }
 
@@ -1585,7 +1585,7 @@ again:
                     }
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected branch opcode");
+                    Debug.Fail("Unexpected branch opcode");
                     break;
             }
 
@@ -2050,7 +2050,7 @@ again:
                     CheckIsInteger(operand);
                     break;
                 default:
-                    Debug.Assert(false, "Unexpected branch opcode");
+                    Debug.Fail("Unexpected branch opcode");
                     break;
             }
 

@@ -122,7 +122,7 @@ namespace Internal.Runtime.TypeLoader
                     }
             }
 
-            Debug.Assert(false, "UNREACHABLE");
+            Debug.Fail("UNREACHABLE");
             return false;
         }
 
