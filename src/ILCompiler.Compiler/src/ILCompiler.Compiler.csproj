@@ -315,6 +315,7 @@
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />

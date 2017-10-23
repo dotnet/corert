@@ -15,23 +15,11 @@ namespace ILCompiler
     /// </summary>
     public class LibraryRootProvider : ICompilationRootProvider
     {
-        /// <summary>
-        /// Symbolic name under which the managed entrypoint is exported.
-        /// </summary>
-        public const string ManagedEntryPointMethodName = "__managed__Startup";
-
         private EcmaModule _module;
-        private IList<MethodDesc> _libraryInitializers;
 
         public LibraryRootProvider(EcmaModule module)
         {
             _module = module;
-        }
-
-        public LibraryRootProvider(EcmaModule module, IList<MethodDesc> libraryInitializers)
-        {
-            _module = module;
-            _libraryInitializers = libraryInitializers;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -60,15 +48,6 @@ namespace ILCompiler
                     rootProvider.RootGCStaticBaseForType(type, "Library module type statics");
                     rootProvider.RootNonGCStaticBaseForType(type, "Library module type statics");
                 }
-            }
-
-            // We don't want to do this for MultiModule
-            if (_libraryInitializers != null)
-            {
-                TypeDesc owningType = _module.GetGlobalModuleType();
-                var nativeLibStartupCode = new NativeLibraryStartupMethod(owningType, _libraryInitializers);
-
-                rootProvider.AddCompilationRoot(nativeLibStartupCode, "Startup Code Main Method", ManagedEntryPointMethodName);
             }
         }
 

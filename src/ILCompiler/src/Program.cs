@@ -323,7 +323,7 @@ namespace ILCompiler
 
                     LibraryInitializers libraryInitializers =
                         new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new LibraryRootProvider(module, libraryInitializers.LibraryInitializerMethods));
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
                 }
 
                 if (_multiFile)
