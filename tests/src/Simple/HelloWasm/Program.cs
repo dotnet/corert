@@ -14,36 +14,36 @@ internal static class Program
       
         int tempInt = 0;
         (*(&tempInt)) = 9;
-	
+    
         if(tempInt == 9)
         {
-			PrintLine("Hello from C#!");
+            PrintLine("Hello from C#!");
         }
-		
-		TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        
+        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
         TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
 
         if (str2.second == 4)
         {
             PrintLine("value type int field test: Ok.");
         }
-		
-		staticInt = 5;
+        
+        staticInt = 5;
         if (staticInt == 5)
         {
             PrintLine("static int field test: Ok.");
         }
 
         var not = Not(0xFFFFFFFF) == 0x00000000;
-        if(not)
+        if (not)
         {
-			PrintLine("not test: Ok.");
+            PrintLine("not test: Ok.");
         }
 
         var negInt = Neg(42) == -42;
-        if(negInt)
+        if (negInt)
         {
-			PrintLine("negInt test: Ok.");
+            PrintLine("negInt test: Ok.");
         }
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
@@ -62,21 +62,21 @@ internal static class Program
         {
             PrintLine("unsignedShift test: Ok.");
         }
-		
+        
         var switchTest0 = SwitchOp(5, 5, 0);
-        if(switchTest0 == 10)
+        if (switchTest0 == 10)
         {
             PrintLine("SwitchOp0 test: Ok.");
         }
 
         var switchTest1 = SwitchOp(5, 5, 1);
-        if(switchTest1 == 25)
+        if (switchTest1 == 25)
         {
             PrintLine("SwitchOp1 test: Ok.");
         }
 
         var switchTestDefault = SwitchOp(5, 5, 20);
-        if(switchTestDefault == 0)
+        if (switchTestDefault == 0)
         {
             PrintLine("SwitchOpDefault test: Ok.");
         }
@@ -95,7 +95,7 @@ internal static class Program
             }
         }
     }
-	
+    
     private static void PrintLine(string s)
     {
         PrintString(s);
@@ -131,7 +131,7 @@ internal static class Program
     {
         return a >> b;
     }
-	
+    
     private static int SwitchOp(int a, int b, int mode)
     {
         switch(mode)
