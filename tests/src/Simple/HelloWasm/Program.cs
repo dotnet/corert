@@ -11,66 +11,74 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-
+      
         int tempInt = 0;
         (*(&tempInt)) = 9;
-
-        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
-        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 }; ;
-        *(&str) = str2;
-        str2 = *(&str);
-
-        if (tempInt == 9)
+    
+        if(tempInt == 9)
         {
-            string s = "Hello from C#!";
-            PrintString(s);
+            PrintLine("Hello from C#!");
         }
+        
+        TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
+        TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
 
+        if (str2.second == 4)
+        {
+            PrintLine("value type int field test: Ok.");
+        }
+        
         staticInt = 5;
         if (staticInt == 5)
         {
-            PrintString("\n");
-            PrintString("static int field test: Ok.");
-        }
-
-        if (str.second == 4)
-        {
-            PrintString("\n");
-            PrintString("value type int field test: Ok.");
+            PrintLine("static int field test: Ok.");
         }
 
         var not = Not(0xFFFFFFFF) == 0x00000000;
         if (not)
         {
-            PrintString("\n");
-            PrintString("not test: Ok.");
+            PrintLine("not test: Ok.");
         }
 
         var negInt = Neg(42) == -42;
         if (negInt)
         {
-            PrintString("\n");
-            PrintString("negInt test: Ok.");
+            PrintLine("negInt test: Ok.");
         }
 
         var shiftLeft = ShiftLeft(1, 2) == 4;
         if (shiftLeft)
         {
-            PrintString("\n");
-            PrintString("shiftLeft test: Ok.");
+            PrintLine("shiftLeft test: Ok.");
         }
 
         var shiftRight = ShiftRight(4, 2) == 1;
         if (shiftRight)
         {
-            PrintString("\n");
-            PrintString("shiftRight test: Ok.");
+            PrintLine("shiftRight test: Ok.");
         }
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         if (unsignedShift)
         {
-            PrintString("\n");
-            PrintString("unsignedShift test: Ok.");
+            PrintLine("unsignedShift test: Ok.");
+        }
+        
+        var switchTest0 = SwitchOp(5, 5, 0);
+        if (switchTest0 == 10)
+        {
+            PrintLine("SwitchOp0 test: Ok.");
+        }
+
+        var switchTest1 = SwitchOp(5, 5, 1);
+        if (switchTest1 == 25)
+        {
+            PrintLine("SwitchOp1 test: Ok.");
+        }
+
+        var switchTestDefault = SwitchOp(5, 5, 20);
+        if (switchTestDefault == 0)
+        {
+            PrintLine("SwitchOpDefault test: Ok.");
         }
     }
 
@@ -86,6 +94,12 @@ internal static class Program
                 printf((byte*)&curCharStr, null);
             }
         }
+    }
+    
+    private static void PrintLine(string s)
+    {
+        PrintString(s);
+        PrintString("\n");
     }
 
     private static int Add(int a, int b)
@@ -116,6 +130,23 @@ internal static class Program
     private static uint UnsignedShift(uint a, int b)
     {
         return a >> b;
+    }
+    
+    private static int SwitchOp(int a, int b, int mode)
+    {
+        switch(mode)
+        {
+          case 0:
+            return a + b;
+          case 1:
+            return a * b;
+          case 2:
+            return a / b;
+          case 3:
+            return a - b;
+          default:
+            return 0;
+        }
     }
 
     [DllImport("*")]

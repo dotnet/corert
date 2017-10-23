@@ -969,7 +969,17 @@ namespace Internal.IL
 
         private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
-            throw new NotImplementedException("switch");
+            var operand = _stack.Pop();
+
+            var @switch = LLVM.BuildSwitch(_builder, operand.LLVMValue, GetLLVMBasicBlockForBlock(fallthrough), (uint)jmpDelta.Length);
+            for (var i = 0; i < jmpDelta.Length; i++)
+            {
+                var target = _basicBlocks[_currentOffset + jmpDelta[i]];
+                LLVM.AddCase(@switch, LLVM.ConstInt(LLVM.Int32Type(), (ulong)i, false), GetLLVMBasicBlockForBlock(target));
+                ImportFallthrough(target);
+            }
+
+            ImportFallthrough(fallthrough);
         }
 
         private void ImportLoadIndirect(int token)
