@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{A85709C9-22D5-4704-8B7A-73751BB4386A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>TARGET_CORE_API_SET;CORECLR</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET;CORECLR</DefineConstants>
     <!-- Disable warning about CLSCompliant attributes on members not being needed. -->
     <NoWarn>$(NoWarn);3021</NoWarn>
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
