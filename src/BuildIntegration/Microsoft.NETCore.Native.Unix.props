@@ -59,6 +59,6 @@ See the LICENSE file in the project root for more information.
     <LinkerArg Include="-luuid" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
     <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
-    <LinkerArg Include="-dynamiclib" Condition="'$(NativeLib)' == 'Shared'" />
+    <LinkerArg Include="-shared" Condition="'$(NativeLib)' == 'Shared'" />
   </ItemGroup>
 </Project>
