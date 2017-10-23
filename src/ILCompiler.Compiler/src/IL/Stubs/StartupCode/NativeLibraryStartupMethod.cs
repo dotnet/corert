@@ -28,15 +28,6 @@ namespace Internal.IL.Stubs.StartupCode
             _libraryInitializers = libraryInitializers;
         }
 
-        protected override int ClassCode => -304225482;
-
-        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            // Should be a singleton
-            Debug.Assert(this == other);
-            return 0;
-        }
-
         public override TypeSystemContext Context
         {
             get
