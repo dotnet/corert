@@ -313,16 +313,8 @@ namespace ILCompiler
                 }
                 else if (_nativeLib)
                 {
-                    EcmaModule module = null;
-                    // Get first (and only) module
-                    foreach (var inputFile in typeSystemContext.InputFilePaths)
-                    {
-                        module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                        break;
-                    }
-
-                    LibraryInitializers libraryInitializers =
-                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
                 }
 
