@@ -447,6 +447,16 @@ namespace System.Runtime.InteropServices
         {
             //Nop
         }
+
+        public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)
+        { 
+            throw new NotSupportedException("GetCriticalHandle"); 
+        }
+ 
+        public static void SetCriticalHandle(CriticalHandle criticalHandle, IntPtr handle)
+        { 
+            throw new NotSupportedException("SetCriticalHandle"); 
+        }
     }
 
     public class GCHelpers

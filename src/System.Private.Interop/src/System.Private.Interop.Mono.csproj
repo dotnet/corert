@@ -5,7 +5,35 @@
     <TargetName>$(AssemblyName)</TargetName>
     <DefineConstants>$(DefineConstants);ENABLE_MIN_WINRT</DefineConstants>
     <OutputPath>$(OutputPath)\mono</OutputPath>
-  </PropertyGroup> 
- 
+  </PropertyGroup>
+  
+  <ItemGroup>
+     <Compile Include="InteropExtensions\DebugAnnotations.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\__IUnboxInternal.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IReadOnlyListAdapter.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IReferenceArray.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\PropertyValueImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceArrayImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceArrayImplBase.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
+    
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="Windows\Foundation\IKeyValuePair.cs" />
+    <Compile Include="Windows\Foundation\IReference.cs" />
+    <Compile Include="Windows\Foundation\Point.cs" />
+    <Compile Include="Windows\Foundation\PropertyType.cs" />
+    <Compile Include="Windows\Foundation\Rect.cs" />
+    <Compile Include="Windows\Foundation\Size.cs" />
+    <Compile Include="Windows\Foundation\TokenizerHelper.cs" />
+  </ItemGroup>
+
   <Import Project="System.Private.Interop.CoreCLR.csproj" />
 </Project>
