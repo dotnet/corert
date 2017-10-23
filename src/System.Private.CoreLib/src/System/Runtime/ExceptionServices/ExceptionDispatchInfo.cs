@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 namespace System.Runtime.ExceptionServices
 {
@@ -54,6 +55,7 @@ namespace System.Runtime.ExceptionServices
         // This method will restore the original stack trace and bucketing details before throwing
         // the exception so that it is easy, from debugging standpoint, to understand what really went wrong on
         // the original thread.
+        [StackTraceHidden]
         public void Throw()
         {
             // Restore the exception dispatch details before throwing the exception.
