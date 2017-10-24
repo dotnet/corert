@@ -75,6 +75,8 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
+
             return dependencyList;
         }
 

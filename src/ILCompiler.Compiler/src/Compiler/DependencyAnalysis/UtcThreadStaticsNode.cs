@@ -43,6 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(((UtcNodeFactory)factory).TypeThreadStaticGCDescNode(_type), "GC Desc");
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
             return dependencyList;
         }
 

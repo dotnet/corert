@@ -119,6 +119,8 @@ namespace ILCompiler.DependencyAnalysis
             if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+
+                AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
             }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))

@@ -920,11 +920,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            ISymbolNode typeNode;
-            if (!ConstructedEETypeNode.CreationAllowed(_type))
-                typeNode = context.NecessaryTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            else
-                typeNode = context.ConstructedTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            ISymbolNode typeNode = context.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
             yield return new DependencyListEntry(typeNode, "Template EEType");
 
