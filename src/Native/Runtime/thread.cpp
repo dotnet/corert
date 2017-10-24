@@ -1115,8 +1115,11 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     return true;
 }
 
+extern "C" int InitializeRuntime();
+
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
+    InitializeRuntime();
     if (!IsStateSet(TSF_Attached))
         ThreadStore::AttachCurrentThread();
 
@@ -1284,14 +1287,9 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
 }
 #endif // CORERT
 
-extern "C" int InitializeRuntime();
-
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
 {
-    // Entrypoint for reverse PInvoke
-    // ensure runtime is initialized
-    InitializeRuntime();
     ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
     pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
 }
