@@ -43,10 +43,13 @@ namespace ILCompiler.DependencyAnalysis
                     _debugMergedAssembliesSection = new WindowsDebugMergedAssembliesSection(mergedAssemblyRecords);
                     _debugILImagesSection = new WindowsDebugILImagesSection(mergedAssemblyRecords);
                     _debugManagedNativeDictionaryInfoSection = new WindowsDebugManagedNativeDictionaryInfoSection();
+
+                    _debugTypeSignatureMapSection = new WindowsDebugTypeSignatureMapSection(_userDefinedTypeDescriptor);
+                    _debugMethodSignatureMapSection = new WindowsDebugMethodSignatureMapSection();
+                    _debugVirtualMethodInfoSection = new WindowsDebugMethodInfoSection(mergedAssemblyRecords);
                 }
 
                 bool is64Bit = _nodeFactory.Target.PointerSize == 8 ? true : false;
-
                 if (nonSectionBasedDebugInfoWriter != null)
                 {
                     _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(nonSectionBasedDebugInfoWriter, is64Bit, _nodeFactory.Target.Abi);
@@ -55,12 +58,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     _debugTypeRecordsSection = new WindowsDebugTypeRecordsSection(new DebugInfoWriter(), _nodeFactory);
                     _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(_debugTypeRecordsSection, is64Bit, _nodeFactory.Target.Abi);
-                }
-
-                if (mergedAssemblyRecords != null)
-                {
-                    _debugTypeSignatureMapSection = new WindowsDebugTypeSignatureMapSection(_userDefinedTypeDescriptor);
-                    _debugMethodSignatureMapSection = new WindowsDebugMethodSignatureMapSection();
                 }
 
                 graph.AddRoot(_debugNeedTypeIndicesStore, "Debug Force All EETypes to have type indices");
@@ -79,6 +76,8 @@ namespace ILCompiler.DependencyAnalysis
                     graph.AddRoot(_debugPseudoAssemblySection, "Debug PseudoAssembly");
                 if (_debugTypeRecordsSection != null)
                     graph.AddRoot(_debugTypeRecordsSection, "Debug Type Records");
+                if (_debugVirtualMethodInfoSection != null)
+                    graph.AddRoot(_debugVirtualMethodInfoSection, "Debug Virtual Method map");
             }
 
             private WindowsDebugILImagesSection _debugILImagesSection;
@@ -90,6 +89,7 @@ namespace ILCompiler.DependencyAnalysis
             private WindowsDebugPseudoAssemblySection _debugPseudoAssemblySection;
             private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
             private WindowsDebugNeedTypeIndicesStoreNode _debugNeedTypeIndicesStore;
+            private WindowsDebugMethodInfoSection _debugVirtualMethodInfoSection;
 
             internal WindowsDebugILImagesSection DebugILImagesSection => _debugILImagesSection;
             internal WindowsDebugTypeSignatureMapSection DebugTypeSignatureMapSection => _debugTypeSignatureMapSection;
@@ -99,6 +99,7 @@ namespace ILCompiler.DependencyAnalysis
             internal WindowsDebugPseudoAssemblySection DebugPseudoAssemblySection => _debugPseudoAssemblySection;
             internal WindowsDebugManagedNativeDictionaryInfoSection DebugManagedNativeDictionaryInfoSection => _debugManagedNativeDictionaryInfoSection;
             internal WindowsDebugNeedTypeIndicesStoreNode DebugNeedTypeIndicesStore => _debugNeedTypeIndicesStore;
+            internal WindowsDebugMethodInfoSection DebugVirtualMethodInfoSection => _debugVirtualMethodInfoSection;
 
             public UserDefinedTypeDescriptor UserDefinedTypeDescriptor => _userDefinedTypeDescriptor;
         }

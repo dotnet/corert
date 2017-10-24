@@ -85,10 +85,11 @@ namespace ILCompiler
     public class MergedAssemblyRecords
     {
         public IReadOnlyCollection<MergedAssemblyRecord> MergedAssemblies { get; }
-
-        public MergedAssemblyRecords(IReadOnlyCollection<MergedAssemblyRecord> mergedAssemblies)
+        public uint CorLibIndex { get; }
+        public MergedAssemblyRecords(IReadOnlyCollection<MergedAssemblyRecord> mergedAssemblies, uint corLibIndex)
         {
             MergedAssemblies = mergedAssemblies;
+            CorLibIndex = corLibIndex;
         }
     }
 }

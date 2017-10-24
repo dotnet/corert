@@ -107,6 +107,7 @@
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodMapSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugNeedTypeIndicesStoreNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugPseudoAssemblySection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeRecordsSection.cs" />
