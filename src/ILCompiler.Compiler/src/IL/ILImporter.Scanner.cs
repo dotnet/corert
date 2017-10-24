@@ -753,10 +753,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    if (ConstructedEETypeNode.CreationAllowed(type))
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
-                    else
-                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
+                    _dependencies.Add(_factory.MaximallyConstructableType(type), "ldtoken");
                 }
 
                 // If this is a ldtoken Type / GetValueInternal sequence, we're done.

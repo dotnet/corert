@@ -533,6 +533,14 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
 
+        public IEETypeNode MaximallyConstructableType(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return ConstructedTypeSymbol(type);
+            else
+                return NecessaryTypeSymbol(type);
+        }
+
         public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
         {
             Debug.Assert(!TypeCannotHaveEEType(type));

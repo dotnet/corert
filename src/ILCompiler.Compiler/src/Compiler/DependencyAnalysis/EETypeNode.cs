@@ -146,10 +146,41 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => IsTypeNodeShareable(_type);
 
+        private bool CanonFormTypeMayExist
+        {
+            get
+            {
+                if (!_type.HasInstantiation)
+                    return false;
+
+                if (!_type.Context.SupportsCanon)
+                    return false;
+
+                // If type is already in canon form, a canonically equivalent type cannot exist
+                if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    return false;
+
+                // If we reach here, a universal canon variant can exist (if universal canon is supported)
+                if (_type.Context.SupportsUniversalCanon)
+                    return true;
+
+                // Attempt to convert to canon. If the type changes, then the CanonForm exists
+                return (_type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type);
+            }
+        }
+
         public sealed override bool HasConditionalStaticDependencies
         {
             get
             {
+                // If the type is can be converted to some interesting canon type, and this is the non-constructed variant of an EEType
+                // we may need to trigger the fully constructed type to exist to make the behavior of the type consistent
+                // in reflection and generic template expansion scenarios
+                if (CanonFormTypeMayExist && ProjectNDependencyBehavior.EnableFullAnalysis)
+                {
+                    return true;
+                }
+
                 if (!EmitVirtualSlotsAndInterfaces)
                     return false;
 
@@ -170,9 +201,22 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            Debug.Assert(EmitVirtualSlotsAndInterfaces);
+            IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
+
+            if (maximallyConstructableType != this)
+            {
+                // EEType upgrading from necessary to constructed if some template instantation exists that matches up
+                if (CanonFormTypeMayExist)
+                {
+                    yield return new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists");
+
+                    if (_type.Context.SupportsUniversalCanon)
+                        yield return new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Universal)), "Trigger full type generation if universal canonical form exists");
+                }
+                yield break;
+            }
 
             DefType defType = _type.GetClosestDefType();
 
@@ -1025,6 +1069,62 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsFunctionPointer)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
+        }
+
+        public static void AddDependenciesForStaticsNode(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
+        {
+            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
+                return;
+
+            // To ensure that the behvior of FieldInfo.GetValue/SetValue remains correct,
+            // if a type may be reflectable, and it is generic, if a canonical instantiation of reflection
+            // can exist which can refer to the associated type of this static base, ensure that type
+            // has an EEType. (Which will allow the static field lookup logic to find the right type)
+            if (type.HasInstantiation && factory.MetadataManager.SupportsReflection && !factory.MetadataManager.IsReflectionBlocked(type))
+            {
+                // This current implementation is slightly generous, as it does not attempt to restrict
+                // the created types to the maximum extent by investigating reflection data and such. Here we just
+                // check if we support use of a canonically equivalent type to perform reflection.
+                // We don't check to see if reflection is enabled on the type.
+                if (factory.TypeSystemContext.SupportsUniversalCanon
+                    || (factory.TypeSystemContext.SupportsCanon && (type != type.ConvertToCanonForm(CanonicalFormKind.Specific))))
+                {
+                    if (dependencies == null)
+                        dependencies = new DependencyList();
+
+                    dependencies.Add(factory.NecessaryTypeSymbol(type), "Static block owning type is necessary for canonically equivalent reflection");
+                }
+            }
+        }
+
+        protected static void AddDependenciesForUniversalGVMSupport(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
+        {
+            if (factory.TypeSystemContext.SupportsUniversalCanon)
+            {
+                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
+                    return;
+
+                foreach (MethodDesc method in type.GetMethods())
+                {
+                    if (!method.IsVirtual || !method.HasInstantiation)
+                        continue;
+
+                    if (method.IsAbstract)
+                        continue;
+
+                    TypeDesc[] universalCanonArray = new TypeDesc[method.Instantiation.Length];
+                    for (int i = 0; i < universalCanonArray.Length; i++)
+                        universalCanonArray[i] = factory.TypeSystemContext.UniversalCanonType;
+
+                    MethodDesc universalCanonMethodNonCanonicalized = method.MakeInstantiatedMethod(new Instantiation(universalCanonArray));
+                    MethodDesc universalCanonGVMMethod = universalCanonMethodNonCanonicalized.GetCanonMethodTarget(CanonicalFormKind.Universal);
+
+                    if (dependencies == null)
+                        dependencies = new DependencyList();
+
+                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
+                }
             }
         }
 

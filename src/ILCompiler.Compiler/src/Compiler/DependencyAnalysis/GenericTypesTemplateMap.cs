@@ -62,11 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // If the type does not have fully constructed type, don't track its dependencies.
                     // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                    IDependencyNode node;
-                    if (ConstructedEETypeNode.CreationAllowed(type))
-                        node = factory.ConstructedTypeSymbol(type);
-                    else
-                        node = factory.NecessaryTypeSymbol(type);
+                    IDependencyNode node = factory.MaximallyConstructableType(type);
 
                     if (!node.Marked)
                         continue;
@@ -111,11 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If the type does not have fully constructed type, don't track its dependencies.
                 // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                IDependencyNode node;
-                if (ConstructedEETypeNode.CreationAllowed(templateType))
-                    node = factory.ConstructedTypeSymbol(templateType);
-                else
-                    node = factory.NecessaryTypeSymbol(templateType);
+                IDependencyNode node = factory.MaximallyConstructableType(templateType);
 
                 if (!node.Marked)
                     return;
