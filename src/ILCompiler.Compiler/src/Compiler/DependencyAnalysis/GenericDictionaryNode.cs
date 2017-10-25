@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList result = result = new DependencyList();
+            DependencyList result = new DependencyList();
 
             result.Add(GetDictionaryLayout(factory), "Layout");
 
@@ -148,6 +148,21 @@ namespace ILCompiler.DependencyAnalysis
 
                     result.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Cross-objectfile equivalent dictionary");
+                }
+            }
+
+            // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
+            if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningType))
+            {
+                foreach (var arg in _owningType.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    result.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
                 }
             }
 
@@ -210,6 +225,31 @@ namespace ILCompiler.DependencyAnalysis
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);
+
+            // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
+            if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningMethod))
+            {
+                foreach (var arg in _owningMethod.OwningType.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    dependencies.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
+                }
+                foreach (var arg in _owningMethod.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    dependencies.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
+                }
+            }
 
             return dependencies;
         }
