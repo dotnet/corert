@@ -45,6 +45,7 @@ namespace ILCompiler
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
+        private HashSet<DefaultConstructorFromLazyNode> _defaultConstructorsNeeded = new HashSet<DefaultConstructorFromLazyNode>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
@@ -135,6 +136,9 @@ namespace ILCompiler
             var virtualInvokeMapNode = new ReflectionVirtualInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.VirtualInvokeMap), virtualInvokeMapNode, virtualInvokeMapNode, virtualInvokeMapNode.EndSymbol);
 
+            var defaultConstructorMapNode = new DefaultConstructorMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DefaultConstructorMap), defaultConstructorMapNode, defaultConstructorMapNode, defaultConstructorMapNode.EndSymbol);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -197,6 +201,12 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+            }
+
+            var ctorFromLazyGenericsNode = obj as DefaultConstructorFromLazyNode;
+            if (ctorFromLazyGenericsNode != null)
+            {
+                _defaultConstructorsNeeded.Add(ctorFromLazyGenericsNode);
             }
 
             // TODO: temporary until we have an IL scanning Metadata Manager. We shouldn't have to keep track of these.
@@ -568,6 +578,11 @@ namespace ILCompiler
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
+        }
+
+        internal IEnumerable<DefaultConstructorFromLazyNode> GetDefaultConstructorsNeeded()
+        {
+            return _defaultConstructorsNeeded;
         }
 
         internal bool TypeGeneratesEEType(TypeDesc type)

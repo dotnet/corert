@@ -199,5 +199,10 @@ namespace System.Runtime.InteropServices
         {
             return default(String);
         }
+
+        public static unsafe void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
+        {  
+            // nop
+        }  
     }
 }

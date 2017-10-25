@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            List<DependencyListEntry> result = new List<DependencyListEntry>();
+            DependencyList result = new DependencyList();
 
             result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
 
@@ -62,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
 
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;
         }
 

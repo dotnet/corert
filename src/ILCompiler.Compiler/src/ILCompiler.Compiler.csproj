@@ -103,10 +103,12 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugILImagesSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodMapSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugNeedTypeIndicesStoreNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugPseudoAssemblySection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeRecordsSection.cs" />

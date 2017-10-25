@@ -334,14 +334,7 @@ namespace ILCompiler
 
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
-                if (!ConstructedEETypeNode.CreationAllowed(type))
-                {
-                    _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
-                }
-                else
-                {
-                    _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-                }
+                _graph.AddRoot(_factory.MaximallyConstructableType(type), reason);
             }
 
             public void RootThreadStaticBaseForType(TypeDesc type, string reason)

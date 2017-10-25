@@ -487,7 +487,7 @@ namespace System.Runtime.InteropServices
             return default(T);
         }
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
         // For SharedCCW_IVector/SharedCCW_IVectorView
         internal static T Call<T>(IntPtr pfn, object list, Toolbox.IList_Oper oper, int index, ref object item)
         {
@@ -505,8 +505,7 @@ namespace System.Runtime.InteropServices
             return default(T);
         }
 
-#if !RHTESTCL && !CORECLR
-
+#if ENABLE_WINRT
         // For SharedCcw_AsyncOperationCompletedHandler
         internal static T Call<T>(IntPtr pfn, object handler, object asyncInfo, global::Windows.Foundation.AsyncStatus status)
         {
@@ -518,7 +517,7 @@ namespace System.Runtime.InteropServices
         {
             return default(T);
         }
-#endif // ENABLE_WINRT
+#endif // ENABLE_MIN_WINRT
         // For ForwardDelegateCreationStub
         internal static Delegate Call__Delegate(System.IntPtr pfn, System.IntPtr pStub)
         {
@@ -623,7 +622,7 @@ namespace System.Runtime.InteropServices
 #endif        
     }
 
-#if !CORECLR && ENABLE_WINRT
+#if ENABLE_MIN_WINRT
     [McgIntrinsics]
     internal class WinRTAddrOfIntrinsics
     {
@@ -631,7 +630,7 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfGetIndexedProperty(System.IntPtr pComThis, HSTRING unsafe_name, TypeName unsafe_type, IntPtr __IntPtr__unsafe_customProperty);
         internal delegate int AddrOfTarget19(IntPtr p0, IntPtr p1, int p2);
     }
-#endif // !CORECLR && ENABLE_WINRT
+#endif // ENABLE_MIN_WINRT
 
     public delegate IntPtr AddrOfGetCCWVtable();
     public delegate int AddrOfRelease(IntPtr pComThis);
