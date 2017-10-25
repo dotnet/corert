@@ -87,7 +87,8 @@ namespace Internal.Runtime.DebuggerSupport
 
         public static unsafe IntPtr GetInterfaceDispatchFunctionPointer(IntPtr thisPointer, RuntimeTypeHandle interfaceType, uint virtualMethodSlot)
         {
-            object instance = Unsafe.As<IntPtr, object>(ref thisPointer);
+            IntPtr locationOfThisPointer = (IntPtr)(&thisPointer);
+            object instance = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);
             return RuntimeAugments.ResolveDispatch(instance, interfaceType, (int)virtualMethodSlot);
         }
 
