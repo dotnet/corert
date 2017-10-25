@@ -49,15 +49,14 @@ namespace ILCompiler.DependencyAnalysis
                     _debugVirtualMethodInfoSection = new WindowsDebugMethodInfoSection(mergedAssemblyRecords);
                 }
 
-                bool is64Bit = _nodeFactory.Target.PointerSize == 8 ? true : false;
                 if (nonSectionBasedDebugInfoWriter != null)
                 {
-                    _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(nonSectionBasedDebugInfoWriter, is64Bit, _nodeFactory.Target.Abi);
+                    _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(nonSectionBasedDebugInfoWriter, _nodeFactory);
                 }
                 else
                 {
                     _debugTypeRecordsSection = new WindowsDebugTypeRecordsSection(new DebugInfoWriter(), _nodeFactory);
-                    _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(_debugTypeRecordsSection, is64Bit, _nodeFactory.Target.Abi);
+                    _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(_debugTypeRecordsSection, _nodeFactory);
                 }
 
                 graph.AddRoot(_debugNeedTypeIndicesStore, "Debug Force All EETypes to have type indices");

@@ -798,7 +798,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
-            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, _targetPlatform.PointerSize == 8, factory.Target.Abi);
+            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, factory);
         }
 
         public void Dispose()
