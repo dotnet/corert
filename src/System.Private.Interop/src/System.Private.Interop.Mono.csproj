@@ -26,7 +26,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Include="Windows\Foundation\IKeyValuePair.cs" />
+    <Compile Include="Windows\Foundation\Collections\IKeyValuePair.cs" />
     <Compile Include="Windows\Foundation\IReference.cs" />
     <Compile Include="Windows\Foundation\Point.cs" />
     <Compile Include="Windows\Foundation\PropertyType.cs" />

@@ -167,11 +167,23 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IReferenceArray.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReadOnlyArrayAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(EnableWinRT)'=='true'">
+    <Compile Include="Windows\Foundation\Collections\IKeyValuePair.cs" />
+    <Compile Include="Windows\Foundation\Point.cs" />
+    <Compile Include="Windows\Foundation\Rect.cs" />
+    <Compile Include="Windows\Foundation\Size.cs" />
+    <Compile Include="Windows\Foundation\TokenizerHelper.cs" />
+    <Compile Include="Windows\Foundation\IReference.cs" />
+  </ItemGroup>
+  
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
