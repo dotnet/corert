@@ -383,7 +383,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
-            OutputBaseSize(ref objData);
+            objData.EmitInt(BaseSize);
             OutputRelatedType(factory, ref objData);
 
             // Number of vtable slots will be only known later. Reseve the bytes for it.
@@ -526,66 +526,67 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitShort((short)flags);
         }
 
-        protected virtual void OutputBaseSize(ref ObjectDataBuilder objData)
+        protected virtual int BaseSize
         {
-            int pointerSize = _type.Context.Target.PointerSize;
-            int objectSize;
-
-            if (_type.IsDefType)
+            get
             {
-                LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
+                int pointerSize = _type.Context.Target.PointerSize;
+                int objectSize;
 
-                if (instanceByteCount.IsIndeterminate)
+                if (_type.IsDefType)
                 {
-                    // Some value must be put in, but the specific value doesn't matter as it
-                    // isn't used for specific instantiations, and the universal canon eetype
-                    // is never associated with an allocated object.
-                    objectSize = pointerSize; 
+                    LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
+
+                    if (instanceByteCount.IsIndeterminate)
+                    {
+                        // Some value must be put in, but the specific value doesn't matter as it
+                        // isn't used for specific instantiations, and the universal canon eetype
+                        // is never associated with an allocated object.
+                        objectSize = pointerSize;
+                    }
+                    else
+                    {
+                        objectSize = pointerSize +
+                            ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                    }
+
+                    if (_type.IsValueType)
+                        objectSize += pointerSize; // + EETypePtr field inherited from System.Object
+                }
+                else if (_type.IsArray)
+                {
+                    objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
+                    if (_type.IsMdArray)
+                        objectSize +=
+                            2 * sizeof(int) * ((ArrayType)_type).Rank;
+                }
+                else if (_type.IsPointer)
+                {
+                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                    return ParameterizedTypeShapeConstants.Pointer;
+                }
+                else if (_type.IsByRef)
+                {
+                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                    return ParameterizedTypeShapeConstants.ByRef;
                 }
                 else
+                    throw new NotImplementedException();
+
+                objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
+                objectSize = Math.Max(MinimumObjectSize, objectSize);
+
+                if (_type.IsString)
                 {
-                    objectSize = pointerSize +
-                        ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                    // If this is a string, throw away objectSize we computed so far. Strings are special.
+                    // SyncBlock + EETypePtr + length + firstChar
+                    objectSize = 2 * pointerSize +
+                        sizeof(int) +
+                        StringComponentSize.Value;
                 }
 
-                if (_type.IsValueType)
-                    objectSize += pointerSize; // + EETypePtr field inherited from System.Object
+                return objectSize;
             }
-            else if (_type.IsArray)
-            {
-                objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                if (_type.IsMdArray)
-                    objectSize +=
-                        2 * sizeof(int) * ((ArrayType)_type).Rank;
-            }
-            else if (_type.IsPointer)
-            {
-                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                objData.EmitInt(ParameterizedTypeShapeConstants.Pointer);
-                return;
-            }
-            else if (_type.IsByRef)
-            {
-                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                objData.EmitInt(ParameterizedTypeShapeConstants.ByRef);
-                return;
-            }
-            else
-                throw new NotImplementedException();
-
-            objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
-            objectSize = Math.Max(MinimumObjectSize, objectSize);
-
-            if (_type.IsString)
-            {
-                // If this is a string, throw away objectSize we computed so far. Strings are special.
-                // SyncBlock + EETypePtr + length + firstChar
-                objectSize = 2 * pointerSize +
-                    sizeof(int) +
-                    StringComponentSize.Value;
-            }
-
-            objData.EmitInt(objectSize);
         }
 
         protected static TypeDesc GetFullCanonicalTypeForCanonicalType(TypeDesc type)
@@ -925,7 +926,28 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount.AsInt - defType.InstanceByteCountUnaligned.AsInt));
+                int numInstanceFieldBytes = defType.InstanceByteCountUnaligned.AsInt;
+
+                // Check if we have a type derived from System.ValueType or System.Enum, but not System.Enum itself
+                if (defType.IsValueType)
+                {
+                    // Value types should have at least 1 byte of size
+                    Debug.Assert(numInstanceFieldBytes >= 1);
+
+                    // The size doesn't currently include the EEType pointer size.  We need to add this so that 
+                    // the number of instance field bytes consistently represents the boxed size.
+                    numInstanceFieldBytes += _type.Context.Target.PointerSize;
+                }
+
+                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need 
+                // to record the actual size of the fields of a type without any padding for GC heap allocation (since 
+                // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
+                // types is effected by the unaligned base size). We don't want to store this information for all EETypes 
+                // since it's only relevant for value types, and derivable types so it's added as an optional field. It's 
+                // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes 
+                // for 64-bit) which cuts down our storage requirements.
+
+                uint valueTypeFieldPadding = checked((uint)((BaseSize - _type.Context.Target.PointerSize) - numInstanceFieldBytes));
                 valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt, _type.Context.Target.PointerSize);
             }
 
