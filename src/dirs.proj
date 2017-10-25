@@ -10,6 +10,10 @@
     <ExcludeProjects Include="**\ILVerify.csproj" />
     <ExcludeProjects Include="**\ILVerify.Tests.csproj" />
 
+    <!-- These projects have issues building in CoreRT -->
+    <ExcludeProjects Condition="'$(IsProjectNLibrary)' != 'true'" Include="**\System.Private.Interop.CoreCLR.csproj" />
+    <ExcludeProjects Condition="'$(IsProjectNLibrary)' != 'true'" Include="**\System.Private.Interop.Mono.csproj" />
+
     <Project Include="AotPackageReference\AotPackageReference.depproj" />
 
     <Project Include="Framework\Framework.depproj" />
