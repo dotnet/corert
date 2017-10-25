@@ -94,6 +94,11 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             fi
             cd $__DOTNET_PATH
             tar -xf $__DOTNET_PATH/dotnet.tar
+            if [ "$?" != "0" ]; then
+                echo "ERROR: Could not download dotnet cli." 1>&2
+                display_error_message
+                exit 1
+            fi
 
             cd $__scriptpath
 
