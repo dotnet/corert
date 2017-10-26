@@ -4,10 +4,10 @@
 
 namespace Windows.Foundation
 {
-    [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
+    [global::System.Runtime.CompilerServices.DependencyReductionRootAttribute]
     public interface IReference<T>
     {
-        [System.Runtime.InteropServices.McgAccessor(System.Runtime.InteropServices.McgAccessorKind.PropertyGet, "Value")]
+        [global::System.Runtime.InteropServices.McgAccessor(global::System.Runtime.InteropServices.McgAccessorKind.PropertyGet, "Value")]
         T get_Value();
     }
 }

@@ -113,6 +113,7 @@ namespace Internal.Runtime.TypeLoader
             private static int s_resolveCallOnReferenceTypeCacheMissFunc;
 
             private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_nonGenericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
+            private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_nonGenericConstrainedCallDescsDirect = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
 
             public static unsafe IntPtr GetDirectConstrainedCallPtr(RuntimeTypeHandle constraintType, RuntimeTypeHandle constrainedMethodType, int constrainedMethodSlot)
             {
@@ -139,14 +140,16 @@ namespace Internal.Runtime.TypeLoader
 
             public static unsafe IntPtr Get(RuntimeTypeHandle constraintType, RuntimeTypeHandle constrainedMethodType, int constrainedMethodSlot, bool directConstrainedCall = false)
             {
-                lock (s_nonGenericConstrainedCallDescs)
+                LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> nonGenericConstrainedCallDescsDirect = directConstrainedCall ? s_nonGenericConstrainedCallDescsDirect : s_nonGenericConstrainedCallDescs;
+
+                lock (nonGenericConstrainedCallDescsDirect)
                 {
                     // Get list of constrained call descs associated with a given type
                     LowLevelList<IntPtr> associatedCallDescs;
-                    if (!s_nonGenericConstrainedCallDescs.TryGetValue(constraintType, out associatedCallDescs))
+                    if (!nonGenericConstrainedCallDescsDirect.TryGetValue(constraintType, out associatedCallDescs))
                     {
                         associatedCallDescs = new LowLevelList<IntPtr>();
-                        s_nonGenericConstrainedCallDescs.Add(constraintType, associatedCallDescs);
+                        nonGenericConstrainedCallDescsDirect.Add(constraintType, associatedCallDescs);
                     }
 
                     // Perform linear scan of associated call descs to see if one matches
