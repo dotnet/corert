@@ -32,7 +32,7 @@ namespace ILCompiler
                 mangledJustTypeName = MangledBoxedTypeName(type);
             else
                 mangledJustTypeName = NameMangler.GetMangledTypeName(type);
-            return mangledJustTypeName + "::`vftable'";
+            return "const " + mangledJustTypeName + "::`vftable'";
         }
 
         public sealed override string GCStatics(TypeDesc type)
