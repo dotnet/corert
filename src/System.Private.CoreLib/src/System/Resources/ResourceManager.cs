@@ -755,7 +755,7 @@ namespace System.Resources
                 // BCL directory.
                 if (a == typeof(Object).GetTypeInfo().Assembly)
                 {
-                    Debug.Assert(false, System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
+                    Debug.Fail(System.CoreLib.Name + "'s SatelliteContractVersionAttribute is a malformed version string!");
                     return null;
                 }
 

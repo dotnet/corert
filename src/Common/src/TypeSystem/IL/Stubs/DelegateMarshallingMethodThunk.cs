@@ -209,7 +209,7 @@ namespace Internal.IL.Stubs
                     case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
                         return "ForwardNativeFunctionWrapper";
                     default:
-                        System.Diagnostics.Debug.Assert(false, "Unexpected DelegateMarshallingMethodThunkKind.");
+                        System.Diagnostics.Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
                         return String.Empty;
                 }
             }

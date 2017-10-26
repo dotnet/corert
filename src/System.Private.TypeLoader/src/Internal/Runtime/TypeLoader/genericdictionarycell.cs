@@ -873,7 +873,7 @@ namespace Internal.Runtime.TypeLoader
                     return BuildCallingConventionConverter(builder, Method.UsgFunctionPointer, methodDictionary, true);
                 }
 
-                Debug.Assert(false, "UNREACHABLE");
+                Debug.Fail("UNREACHABLE");
                 return IntPtr.Zero;
             }
 
@@ -1125,7 +1125,7 @@ namespace Internal.Runtime.TypeLoader
             if (!(cell is PointerToOtherDictionarySlotCell))
             {
                 // This is not a dictionary layout that has a floating portion
-                Debug.Assert(false, "Unreachable: we should never reach here if the target dictionary does not have a floating layout");
+                Debug.Fail("Unreachable: we should never reach here if the target dictionary does not have a floating layout");
                 return null;
             }
 

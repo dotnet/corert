@@ -434,7 +434,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
                 }
 
-                Debug.Assert(false, "UNREACHABLE");
+                Debug.Fail("UNREACHABLE");
                 return null;
             }
         }
@@ -461,7 +461,7 @@ namespace ILCompiler.DependencyAnalysis
                         return GetNativeWriter(factory).GetVariableTypeSignature((uint)((SignatureMethodVariable)_type).Index, true);
                 }
 
-                Debug.Assert(false, "UNREACHABLE");
+                Debug.Fail("UNREACHABLE");
                 return null;
             }
         }

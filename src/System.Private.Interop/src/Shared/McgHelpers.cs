@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IListThunk wrong oper");
+                    Debug.Fail("IListThunk wrong oper");
                     break;
             }
 
@@ -213,7 +213,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IListBlittableThunk wrong oper");
+                    Debug.Fail("IListBlittableThunk wrong oper");
                     break;
             }
 
@@ -269,7 +269,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IReadOnlyListThunk wrong oper");
+                    Debug.Fail("IReadOnlyListThunk wrong oper");
                     break;
             }
 
@@ -311,7 +311,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IReadOnlyListThunk wrong oper");
+                    Debug.Fail("IReadOnlyListThunk wrong oper");
                     break;
             }
 

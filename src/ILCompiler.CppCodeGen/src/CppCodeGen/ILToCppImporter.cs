@@ -1723,7 +1723,7 @@ namespace Internal.IL
                 case ILOpcode.mul_ovf: op = "*"; break;
                 case ILOpcode.mul_ovf_un: op = "*"; unsigned = true; break;
 
-                default: Debug.Assert(false, "Unexpected opcode"); break;
+                default: Debug.Fail("Unexpected opcode"); break;
             }
 
             if (kind == StackValueKind.ByRef)

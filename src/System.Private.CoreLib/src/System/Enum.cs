@@ -174,7 +174,7 @@ namespace System
             ulong rawValue;
             if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
             {
-                Debug.Assert(false, "Caller was expected to do enough validation to avoid reaching this.");
+                Debug.Fail("Caller was expected to do enough validation to avoid reaching this.");
                 throw new ArgumentException();
             }
 
@@ -287,7 +287,7 @@ namespace System
                     }
 
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
+                    Debug.Fail("Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -372,7 +372,7 @@ namespace System
                     }
 
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
+                    Debug.Fail("Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -1318,7 +1318,7 @@ namespace System
                 return TypeCode.Char;
             }
 
-            Debug.Assert(false, "Unknown underlying type.");
+            Debug.Fail("Unknown underlying type.");
             throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 

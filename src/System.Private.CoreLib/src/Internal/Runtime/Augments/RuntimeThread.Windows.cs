@@ -362,7 +362,7 @@ namespace Internal.Runtime.Augments
                                     break;
 
                                 default:
-                                    Debug.Assert(false, "NA apartment without NA qualifier");
+                                    Debug.Fail("NA apartment without NA qualifier");
                                     break;
                             }
                             break;
@@ -370,7 +370,7 @@ namespace Internal.Runtime.Augments
                     break;
 
                 default:
-                    Debug.Assert(false, "bad return from CoGetApartmentType");
+                    Debug.Fail("bad return from CoGetApartmentType");
                     break;
             }
 

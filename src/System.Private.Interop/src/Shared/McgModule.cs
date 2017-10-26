@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices
                     {
                         if (intfHashSet.Add(new EquatableRuntimeTypeHandle(typeHnd), typeHnd.GetHashCode()))
                         {
-                            Debug.Assert(false, "Duplicate RuntimeTypeHandle found in m_interfaceData");
+                            Debug.Fail("Duplicate RuntimeTypeHandle found in m_interfaceData");
                         }
                     }
                 }
@@ -159,7 +159,7 @@ namespace System.Runtime.InteropServices
                     {
                         if (classHashSet.Add(new EquatableRuntimeTypeHandle(typeHnd), typeHnd.GetHashCode()))
                         {
-                            Debug.Assert(false, "Duplicate RuntimeTypeHandle found in m_classData");
+                            Debug.Fail("Duplicate RuntimeTypeHandle found in m_classData");
                         }
                     }
                 }

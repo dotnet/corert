@@ -362,7 +362,7 @@ namespace System.Collections.Concurrent
                         if (walk2 != -1)
                             walk2 = _entries[walk2]._next;
                         if (walk1 == walk2 && walk2 != -1)
-                            Debug.Assert(false, "Bucket " + bucket + " has a cycle in its linked list.");
+                            Debug.Fail("Bucket " + bucket + " has a cycle in its linked list.");
                     }
                 }
                 // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 
