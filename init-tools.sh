@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ "$BUILDVARS_DONE" != 1 ]; then
-    . ./buildscripts/buildvars-setup.sh
+    . ./buildscripts/hostvars-setup.sh
 fi
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
