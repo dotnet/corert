@@ -214,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ImportedEETypeSymbolNode(this, type);
             });
 
-            _nonGCStatics = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
+            _nonGCStatics = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
@@ -230,7 +230,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _GCStatics = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
+            _GCStatics = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
@@ -362,7 +362,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReadyToRunGenericLookupFromTypeNode(this, data.HelperId, data.Target, data.DictionaryOwner);
             });
 
-            _indirectionNodes = new NodeCache<ISymbolNode, ISymbolNode>(indirectedNode =>
+            _indirectionNodes = new NodeCache<ISortableSymbolNode, ISymbolNode>(indirectedNode =>
             {
                 return new IndirectionNode(Target, indirectedNode, 0);                
             });
@@ -399,11 +399,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
             {
-                var dispatchMap = InterfaceDispatchMap(type);
-                return DispatchMapTable.NewNodeWithSymbol(dispatchMap, (indirectionNode) =>
-                {
-                    dispatchMap.SetDispatchMapIndex(this, DispatchMapTable.IndexOfEmbeddedObject(indirectionNode));
-                });
+                return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
             });
 
             _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
@@ -431,7 +427,7 @@ namespace ILCompiler.DependencyAnalysis
                     return _vtableSliceProvider.GetSlice(type);
             });
 
-            _methodGenericDictionaries = new NodeCache<MethodDesc, ISymbolNode>(method =>
+            _methodGenericDictionaries = new NodeCache<MethodDesc, ISortableSymbolNode>(method =>
             {
                 if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
@@ -443,7 +439,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, ISymbolNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
             {
                 if (CompilationModuleGroup.ContainsType(type))
                 {
@@ -560,17 +556,17 @@ namespace ILCompiler.DependencyAnalysis
             return _importedTypeSymbols.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, ISymbolNode> _nonGCStatics;
+        private NodeCache<MetadataType, ISortableSymbolNode> _nonGCStatics;
 
-        public ISymbolNode TypeNonGCStaticsSymbol(MetadataType type)
+        public ISortableSymbolNode TypeNonGCStaticsSymbol(MetadataType type)
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _nonGCStatics.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, ISymbolNode> _GCStatics;
+        private NodeCache<MetadataType, ISortableSymbolNode> _GCStatics;
 
-        public ISymbolNode TypeGCStaticsSymbol(MetadataType type)
+        public ISortableSymbolNode TypeGCStaticsSymbol(MetadataType type)
         {
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _GCStatics.GetOrAdd(type);
@@ -673,7 +669,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
-        public ISymbolNode ExternSymbol(string name)
+        public ISortableSymbolNode ExternSymbol(string name)
         {
             return _externSymbols.GetOrAdd(name);
         }
@@ -699,14 +695,14 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, ISymbolNode> _methodGenericDictionaries;
-        public ISymbolNode MethodGenericDictionary(MethodDesc method)
+        private NodeCache<MethodDesc, ISortableSymbolNode> _methodGenericDictionaries;
+        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method)
         {
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, ISymbolNode> _typeGenericDictionaries;
-        public ISymbolNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, ISortableSymbolNode> _typeGenericDictionaries;
+        public ISortableSymbolNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
@@ -902,9 +898,9 @@ namespace ILCompiler.DependencyAnalysis
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
-        private NodeCache<ISymbolNode, ISymbolNode> _indirectionNodes;
+        private NodeCache<ISortableSymbolNode, ISymbolNode> _indirectionNodes;
 
-        public ISymbolNode Indirection(ISymbolNode symbol)
+        public ISymbolNode Indirection(ISortableSymbolNode symbol)
         {
             if (symbol.RepresentsIndirectionCell)
             {
@@ -997,13 +993,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
             "__GCStaticRegionStart", 
-            "__GCStaticRegionEnd", 
-            null);
+            "__GCStaticRegionEnd",
+            new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
 
-        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedDataNode<ThreadStaticsNode> ThreadStaticsRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsNode>(
             "__ThreadStaticRegionStart",
             "__ThreadStaticRegionEnd",
-            null);
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",
@@ -1013,12 +1009,12 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
             "__DispatchMapTableStart",
             "__DispatchMapTableEnd",
-            null);
+            new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
 
         public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
-            null);
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 

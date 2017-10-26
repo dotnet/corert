@@ -21,25 +21,18 @@ namespace ILCompiler.DependencyAnalysis
     /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
     /// sorted using provided comparer), followed by ending symbol.
     /// </summary>
-    public class ArrayOfEmbeddedDataNode<TEmbedded> : ObjectNode, IHasStartSymbol
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode, IHasStartSymbol
         where TEmbedded : EmbeddedObjectNode
     {
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
         private List<TEmbedded> _nestedNodesList = new List<TEmbedded>();
-        private ObjectAndOffsetSymbolNode _startSymbol;
-        private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter) : base(startSymbolMangledName, endSymbolMangledName)
         {
-            _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName, true);
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName, true);
             _sorter = nodeSorter;
         }
-
-        public ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
-        public ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
-
+        
         public void AddEmbeddedObject(TEmbedded symbol)
         {
             lock (_nestedNodes)
@@ -52,13 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int IndexOfEmbeddedObject(TEmbedded symbol)
-        {
-            Debug.Assert(_sorter == null);
-            return _nestedNodesList.IndexOf(symbol);
-        }
-
-        protected override string GetName(NodeFactory factory) => $"Region {_startSymbol.GetMangledName(factory.NameMangler)}";
+        protected override string GetName(NodeFactory factory) => $"Region {StartSymbol.GetMangledName(factory.NameMangler)}";
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
         public override bool IsShareable => false;
@@ -69,10 +56,14 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
+            int index = 0;
             foreach (TEmbedded node in NodesList)
             {
                 if (!relocsOnly)
+                {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                    node.InitializeIndexFromBeginningOfArray(index++);
+                }
 
                 node.EncodeData(ref builder, factory, relocsOnly);
                 if (node is ISymbolDefinitionNode)
@@ -90,12 +81,12 @@ namespace ILCompiler.DependencyAnalysis
             if (_sorter != null)
                 _nestedNodesList.Sort(_sorter);
 
-            builder.AddSymbol(_startSymbol);
+            builder.AddSymbol(StartSymbol);
 
             GetElementDataForNodes(ref builder, factory, relocsOnly);
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.AddSymbol(_endSymbol);
+            EndSymbol.SetSymbolOffset(builder.CountBytes);
+            builder.AddSymbol(EndSymbol);
 
             ObjectData objData = builder.ToObjectData();
             return objData;
@@ -114,15 +105,9 @@ namespace ILCompiler.DependencyAnalysis
 
             return dependencies;
         }
-    }
 
-    // TODO: delete this once we review each use of this and put it on the generic plan with the
-    //       right element type
-    public class ArrayOfEmbeddedDataNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
-    {
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
-            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
-        {
-        }
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedDataNode;
     }
 }
