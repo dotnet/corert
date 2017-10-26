@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        protected internal override int ClassCode => -266743363;
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // Emit a 4-byte integer flag with initial value of 0. 

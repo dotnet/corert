@@ -369,5 +369,24 @@ namespace ILCompiler
         {
             return fieldInfo1.Field.Offset.AsInt - fieldInfo2.Field.Offset.AsInt;
         }
+
+        public int CompareTo(PreInitFieldInfo other, TypeSystemComparer comparer)
+        {
+            if (Length != other.Length)
+                return Length - other.Length;
+
+            var compare = comparer.Compare(Field, other.Field);
+            if (compare != 0)
+                return compare;
+
+            Debug.Assert(Data.Length == other.Data.Length);
+            for (int i = 0; i < Length; i++)
+            {
+                if (Data[i] != other.Data[i])
+                    return Data[i] - other.Data[i];
+            }
+
+            return 0;
+        }
     }
 }

@@ -119,18 +119,13 @@ namespace ILCompiler.DependencyAnalysis
             get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
         }
 
-        internal byte[] GetOptionalFieldsData(NodeFactory factory)
+        internal byte[] GetOptionalFieldsData()
         {
             return _optionalFieldsBuilder.GetBytes();
         }
         
         public override bool StaticDependenciesAreComputed => true;
-
-        public void SetDispatchMapIndex(int index)
-        {
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)index));
-        }
-
+        
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
             return nameMangler.NodeMangler.EEType(type);
@@ -798,6 +793,11 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
+            if (!relocsOnly && _type.RuntimeInterfaces.Length > 0 && factory.InterfaceDispatchMap(_type).Marked)
+            {
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(Type).IndexFromBeginningOfArray));
+            }
+            
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             if (!relocsOnly)
@@ -1148,6 +1148,20 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
                 }
             }
+        }
+
+        protected internal override int ClassCode => 1521789141;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((EETypeNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
 
         private struct SlotCounter

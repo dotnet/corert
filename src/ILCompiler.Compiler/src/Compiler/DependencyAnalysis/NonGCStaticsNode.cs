@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    public class NonGCStaticsNode : ObjectNode, IExportableSymbolNode
+    public class NonGCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode
     {
         private MetadataType _type;
         private NodeFactory _factory;
@@ -176,6 +176,20 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
 
             return builder.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -1173104872;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((NonGCStaticsNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

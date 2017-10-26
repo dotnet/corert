@@ -206,6 +206,52 @@ namespace ILCompiler.DependencyAnalysis
             
             return conditionalDependencies;
         }
+        
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            var compare = _id.CompareTo(((ReadyToRunGenericHelperNode)other)._id);
+            if (compare != 0)
+                return compare;
+
+            if (_dictionaryOwner is MethodDesc)
+            {
+                if (((ReadyToRunGenericHelperNode)other)._dictionaryOwner is TypeDesc)
+                    return -1;
+
+                compare = comparer.Compare((MethodDesc)_dictionaryOwner, (MethodDesc)((ReadyToRunGenericHelperNode)other)._dictionaryOwner);
+            }
+            else
+            {
+                if (((ReadyToRunGenericHelperNode)other)._dictionaryOwner is MethodDesc)
+                    return 1;
+
+                compare = comparer.Compare((TypeDesc)_dictionaryOwner, (TypeDesc)((ReadyToRunGenericHelperNode)other)._dictionaryOwner);
+            }
+
+            if (compare != 0)
+                return compare;
+
+            switch (_id)
+            {
+                case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                case ReadyToRunHelperId.DefaultConstructor:
+                    return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunGenericHelperNode)other)._target);
+                case ReadyToRunHelperId.MethodHandle:
+                case ReadyToRunHelperId.MethodDictionary:
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.MethodEntry:
+                    return comparer.Compare((MethodDesc)_target, (MethodDesc)((ReadyToRunGenericHelperNode)other)._target);
+                case ReadyToRunHelperId.FieldHandle:
+                    return comparer.Compare((FieldDesc)_target, (FieldDesc)((ReadyToRunGenericHelperNode)other)._target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunGenericHelperNode)other)._target, comparer);
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 
     public partial class ReadyToRunGenericLookupFromDictionaryNode : ReadyToRunGenericHelperNode
@@ -226,6 +272,8 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
+
+        protected internal override int ClassCode => 1055354299;
     }
 
     public partial class ReadyToRunGenericLookupFromTypeNode : ReadyToRunGenericHelperNode
@@ -246,5 +294,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
+
+        protected internal override int ClassCode => 913214059;
     }
 }

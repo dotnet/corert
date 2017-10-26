@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents the offset of the thread static region of a given type from the TLS section start. 
     /// The node is used for cross-module thread statics reference
     /// </summary>
-    public class ThreadStaticsOffsetNode : EmbeddedObjectNode, IExportableSymbolNode
+    public class ThreadStaticsOffsetNode : EmbeddedObjectNode, IExportableSymbolNode, ISortableSymbolNode
     {
         private MetadataType _type;
 
@@ -72,6 +72,20 @@ namespace ILCompiler.DependencyAnalysis
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
             builder.EmitReloc(factory.TypeThreadStaticsSymbol(_type), RelocType.IMAGE_REL_SECREL);
+        }
+
+        protected internal override int ClassCode => 419394032;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((ThreadStaticsOffsetNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => 419394032;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

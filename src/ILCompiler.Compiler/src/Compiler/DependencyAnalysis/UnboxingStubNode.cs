@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -60,6 +59,20 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        protected internal override int ClassCode => -1846923013;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(Method, ((UnboxingStubNode)other).Method);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
+        }
     }
 
     //
@@ -97,6 +110,13 @@ namespace ILCompiler.DependencyAnalysis
             objData.AddSymbol(this);
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => 1102274050;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return _isEndSymbol.CompareTo(((WindowsUnboxingStubsRegionNode)other)._isEndSymbol);
         }
     }
 }

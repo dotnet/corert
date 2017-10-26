@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -13,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a symbol that is defined externally and statically linked to the output obj file.
     /// </summary>
-    public class ExternSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    public class ExternSymbolNode : DependencyNodeCore<NodeFactory>, ISortableSymbolNode
     {
         private Utf8String _name;
 
@@ -39,5 +40,14 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+
+#if !SUPPORT_JIT
+        int ISortableSymbolNode.ClassCode => 1092559304;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return _name.CompareTo(((ExternSymbolNode)other)._name);
+        }
+#endif
     }
 }

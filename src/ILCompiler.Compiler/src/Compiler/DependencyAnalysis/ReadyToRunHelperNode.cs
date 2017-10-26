@@ -188,5 +188,36 @@ namespace ILCompiler.DependencyAnalysis
 
             return null;
         }
+
+#if !SUPPORT_JIT
+        protected internal override int ClassCode => -911637948;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            var compare = _id.CompareTo(((ReadyToRunHelperNode)other)._id);
+            if (compare != 0)
+                return compare;
+
+            switch (_id)
+            {
+                case ReadyToRunHelperId.NewHelper:
+                case ReadyToRunHelperId.NewArr1:
+                case ReadyToRunHelperId.IsInstanceOf:
+                case ReadyToRunHelperId.CastClass:
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    return comparer.Compare((MethodDesc)_target, (MethodDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunHelperNode)other)._target, comparer);
+                default:
+                    throw new NotImplementedException();
+            }
+            
+        }
+#endif
     }
 }

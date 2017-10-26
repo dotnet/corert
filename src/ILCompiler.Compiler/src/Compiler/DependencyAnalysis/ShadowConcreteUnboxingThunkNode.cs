@@ -69,5 +69,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
         public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
+
+        int ISortableSymbolNode.ClassCode => -501699818;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            var compare = comparer.Compare(Method, ((ShadowConcreteUnboxingThunkNode)other).Method);
+            if (compare != 0)
+                return compare;
+
+            return comparer.Compare(_canonicalThunk, ((ShadowConcreteUnboxingThunkNode)other)._canonicalThunk);
+        }
     }
 }
