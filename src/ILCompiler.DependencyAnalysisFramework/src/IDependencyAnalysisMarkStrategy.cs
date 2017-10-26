@@ -22,5 +22,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         void VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor);
 
         void VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor);
+
+        void AttachContext(DependencyContextType context);
     }
 }

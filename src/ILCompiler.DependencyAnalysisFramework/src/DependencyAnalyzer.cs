@@ -68,6 +68,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             _dependencyContext = dependencyContext;
             _resultSorter = resultSorter;
+            _marker.AttachContext(dependencyContext);
         }
 
         /// <summary>

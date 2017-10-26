@@ -28,11 +28,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            if (_dispatchMapTableIndex == IndexNotSet)
-            {
-                throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
-            }
-
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(_dispatchMapTableIndex.ToStringInvariant());
         }
 
