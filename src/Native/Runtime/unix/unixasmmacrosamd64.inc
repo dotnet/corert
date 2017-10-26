@@ -308,7 +308,9 @@ C_FUNC(\Name):
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    lea             \trashReg, [rsp +  8h]
+    push_nonvol_reg rbp                         // push RBP frame
+    mov             rbp, rsp
+    lea             \trashReg, [rsp + 10h]
     push_register   \trashReg                   // save caller's RSP
     push_nonvol_reg r15                         // save preserved registers
     push_nonvol_reg r14                         //   ..
@@ -317,19 +319,14 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     push_nonvol_reg rbx                         //   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    // save the register bitmask
     push_register   \trashReg                   // Thread * (unused by stackwalker)
-    push_nonvol_reg rbp                         // save caller's RBP
-    mov             \trashReg, [rsp + 9*8]      // Find the return address
+    push_register   rbp                         // save caller's RBP
+    mov             \trashReg, [rsp + 10*8]     // Find the return address
     push_register   \trashReg                   // save m_RIP
     lea             \trashReg, [rsp]            // trashReg == address of frame
-
-    // stack alignment
-    alloc_stack 8
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
-    // Adjust for stack alignment and discard RIP
-    free_stack 16
-
+    pop_register r10    // discard RIP
     pop_nonvol_reg rbp  // restore RBP
     pop_register r10    // discard thread
     pop_register r10    // discard bitmask
@@ -339,4 +336,5 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     pop_nonvol_reg r14
     pop_nonvol_reg r15
     pop_register r10    // discard caller RSP
+    pop_register r10    // discard RBP frame
 .endm
