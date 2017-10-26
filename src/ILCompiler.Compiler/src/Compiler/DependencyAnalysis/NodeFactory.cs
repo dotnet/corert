@@ -296,6 +296,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
+            {
+                return new MethodAssociatedDataNode(methodNode);
+            });
+
             _fatFunctionPointers = new NodeCache<MethodKey, FatFunctionPointerNode>(method =>
             {
                 return new FatFunctionPointerNode(method.Method, method.IsUnboxingStub);
@@ -478,6 +483,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new StringAllocatorMethodNode(constructor);
             });
 
+            _defaultConstructorFromLazyNodes = new NodeCache<TypeDesc, DefaultConstructorFromLazyNode>(type =>
+            {
+                return new DefaultConstructorFromLazyNode(type);
+            });
+
             NativeLayout = new NativeLayoutHelper(this);
             WindowsDebugData = new WindowsDebugDataHelper(this);
         }
@@ -527,6 +537,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
+
+        public IEETypeNode MaximallyConstructableType(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return ConstructedTypeSymbol(type);
+            else
+                return NecessaryTypeSymbol(type);
+        }
 
         public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
         {
@@ -707,6 +725,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
+        private NodeCache<IMethodNode, MethodAssociatedDataNode> _methodAssociatedData;
 
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
@@ -716,6 +735,11 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
+        {
+            return _methodAssociatedData.GetOrAdd(methodNode);
         }
 
         private NodeCache<MethodKey, FatFunctionPointerNode> _fatFunctionPointers;
@@ -762,17 +786,21 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
-
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
             return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
         private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;
-
         public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
         {
             return _runtimeDeterminedMethods.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, DefaultConstructorFromLazyNode> _defaultConstructorFromLazyNodes;
+        internal DefaultConstructorFromLazyNode DefaultConstructorFromLazy(TypeDesc type)
+        {
+            return _defaultConstructorFromLazyNodes.GetOrAdd(type);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {

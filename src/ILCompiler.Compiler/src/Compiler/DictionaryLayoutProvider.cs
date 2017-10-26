@@ -12,7 +12,7 @@ namespace ILCompiler
     /// </summary>
     public abstract class DictionaryLayoutProvider
     {
-        internal abstract DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType);
+        public abstract DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType);
     }
 
     /// <summary>
@@ -21,7 +21,7 @@ namespace ILCompiler
     /// </summary>
     public sealed class LazyDictionaryLayoutProvider : DictionaryLayoutProvider
     {
-        internal override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
+        public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)
         {
             return new LazilyBuiltDictionaryLayoutNode(methodOrType);
         }

@@ -102,7 +102,7 @@ namespace ILCompiler
 
             public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
             {
-                Debug.Assert(false, "Resolving a TypeRef in the compiler generated assembly?");
+                Debug.Fail("Resolving a TypeRef in the compiler generated assembly?");
 
                 if (throwIfNotFound)
                     ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);

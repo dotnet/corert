@@ -282,14 +282,14 @@ namespace TypeSystemTests
             {
                 {
                     var fmt = new CustomAttributeTypeNameFormatter((IAssemblyDesc)_testModule);
-                    string formatted = fmt.FormatName(type);
+                    string formatted = fmt.FormatName(type, true);
                     TypeDesc roundTripped = _testModule.GetTypeByCustomAttributeTypeName(formatted);
                     Assert.Equal(type, roundTripped);
                 }
 
                 {
                     var fmt = new CustomAttributeTypeNameFormatter();
-                    string formatted = fmt.FormatName(type);
+                    string formatted = fmt.FormatName(type, true);
                     TypeDesc roundTripped = _testModule.GetTypeByCustomAttributeTypeName(formatted);
                     Assert.Equal(type, roundTripped);
                 }

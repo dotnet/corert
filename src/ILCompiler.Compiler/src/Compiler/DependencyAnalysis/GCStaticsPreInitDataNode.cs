@@ -79,20 +79,32 @@ namespace ILCompiler.DependencyAnalysis
 
             while (staticOffset < staticOffsetEnd)
             {
+                PreInitFieldInfo fieldInfo = idx < sortedPreInitFields.Count ? sortedPreInitFields[idx] : null;
                 int writeTo = staticOffsetEnd;
-                if (idx < sortedPreInitFields.Count)
-                    writeTo = sortedPreInitFields[idx].Field.Offset.AsInt;
+                if (fieldInfo != null)
+                    writeTo = fieldInfo.Field.Offset.AsInt;
 
                 // Emit the zero before the next preinitField
                 builder.EmitZeros(writeTo - staticOffset);
                 staticOffset = writeTo;
 
-                // Emit a pointer reloc to the frozen data
-                if (idx < sortedPreInitFields.Count)
+                if (fieldInfo != null)
                 {
-                    builder.EmitPointerReloc(factory.SerializedFrozenArray(sortedPreInitFields[idx]));
+                    int count = builder.CountBytes;
+
+                    if (fieldInfo.Field.FieldType.IsValueType)
+                    {
+                        // Emit inlined data for value types
+                        fieldInfo.WriteData(ref builder, factory);
+                    }
+                    else
+                    {
+                        // Emit a pointer reloc to the frozen data for reference types
+                        builder.EmitPointerReloc(factory.SerializedFrozenArray(fieldInfo));
+                    }
+
+                    staticOffset += builder.CountBytes - count;
                     idx++;
-                    staticOffset += factory.Target.PointerSize;
                 }
             }
 

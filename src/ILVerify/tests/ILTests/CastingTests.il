@@ -104,9 +104,33 @@
         stloc.0
         ret
     }
+
+    .method static public hidebysig void Assign.ConstrainedGenericToComparable_Valid<(class [System.Runtime]System.IComparable`1<!!T>) T>(!!T t)
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable`1<!!T> c
+        )
+
+        ldarg.0
+        box     !!T
+        stloc.0
+        ret
+    }
+
+    .method static public hidebysig void Assign.ComplexConstrainedGenericToComparable_Valid<(!!S) T, (class [System.Runtime]System.IComparable`1<!!T>) S>(!!T t)
+    {
+        .locals init (
+            class [System.Runtime]System.IComparable`1<!!T> c
+        )
+
+        ldarg.0
+        box     !!T
+        stloc.0
+        ret
+    }
 }
 
-.class public sequential ansi beforefieldinit GenericOtherFieldsType`1<T>
+.class public sequential ansi sealed beforefieldinit GenericOtherFieldsType`1<T>
        extends [System.Runtime]System.ValueType
 {
     .field public !T GenericField;
@@ -193,10 +217,21 @@
         .locals init (
             class [System.Runtime]System.Func`1<!T> V_0
         )
-        
-        ldarg.0
+
         ldloc.0
         callvirt  instance !0 class [System.Runtime]System.Func`1<!T>::Invoke()
+        pop
+        ret
+    }
+
+    .method public hidebysig instance void Casting.AssignVariantInterfaceToObject_Valid(class [System.Runtime]System.Collections.Generic.IEnumerable`1<string> e) cil managed
+    {
+        .locals init (
+            object o
+        )
+
+        ldarg.1
+        stloc.0
         ret
     }
 

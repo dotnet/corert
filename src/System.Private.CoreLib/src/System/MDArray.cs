@@ -136,7 +136,7 @@ namespace System
         public static ref T Address(T[,] array, int index1, int index2)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -156,8 +156,8 @@ namespace System
 
         public static void Set(T[,] array, int index1, int index2, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
-            {
+            if (RuntimeHelpers.IsReference<T>())
+            {	
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
 
@@ -215,7 +215,7 @@ namespace System
         public static ref T Address(T[,,] array, int index1, int index2, int index3)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -235,7 +235,7 @@ namespace System
 
         public static void Set(T[,,] array, int index1, int index2, int index3, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -299,7 +299,7 @@ namespace System
         public static ref T Address(T[,,,] array, int index1, int index2, int index3, int index4)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -319,7 +319,7 @@ namespace System
 
         public static void Set(T[,,,] array, int index1, int index2, int index3, int index4, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -388,7 +388,7 @@ namespace System
         public static ref T Address(T[,,,,] array, int index1, int index2, int index3, int index4, int index5)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -408,7 +408,7 @@ namespace System
 
         public static void Set(T[,,,,] array, int index1, int index2, int index3, int index4, int index5, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -482,7 +482,7 @@ namespace System
         public static ref T Address(T[,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -502,7 +502,7 @@ namespace System
 
         public static void Set(T[,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -581,7 +581,7 @@ namespace System
         public static ref T Address(T[,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -601,7 +601,7 @@ namespace System
 
         public static void Set(T[,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -685,7 +685,7 @@ namespace System
         public static ref T Address(T[,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -705,7 +705,7 @@ namespace System
 
         public static void Set(T[,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -794,7 +794,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -814,7 +814,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -908,7 +908,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -928,7 +928,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1027,7 +1027,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1047,7 +1047,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1151,7 +1151,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1171,7 +1171,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1280,7 +1280,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1300,7 +1300,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1414,7 +1414,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1434,7 +1434,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1553,7 +1553,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1573,7 +1573,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1697,7 +1697,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1717,7 +1717,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -1846,7 +1846,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -1866,7 +1866,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2000,7 +2000,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2020,7 +2020,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2159,7 +2159,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2179,7 +2179,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2323,7 +2323,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2343,7 +2343,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2492,7 +2492,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2512,7 +2512,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2666,7 +2666,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2686,7 +2686,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -2845,7 +2845,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -2865,7 +2865,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -3029,7 +3029,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -3049,7 +3049,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -3218,7 +3218,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -3238,7 +3238,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -3412,7 +3412,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -3432,7 +3432,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -3611,7 +3611,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -3631,7 +3631,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -3815,7 +3815,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27, index28);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -3835,7 +3835,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -4024,7 +4024,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27, index28, index29);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -4044,7 +4044,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -4238,7 +4238,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27, index28, index29, index30);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -4258,7 +4258,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -4457,7 +4457,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30, int index31)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27, index28, index29, index30, index31);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -4477,7 +4477,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30, int index31, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }
@@ -4681,7 +4681,7 @@ namespace System
         public static ref T Address(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30, int index31, int index32)
         {
             ref T returnValue = ref InternalAddress(array, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11, index12, index13, index14, index15, index16, index17, index18, index19, index20, index21, index22, index23, index24, index25, index26, index27, index28, index29, index30, index31, index32);
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 if (!EETypePtr.EETypePtrOf<T>().FastEquals(array.EETypePtr.ArrayElementType))
                     throw new ArrayTypeMismatchException();
@@ -4701,7 +4701,7 @@ namespace System
 
         public static void Set(T[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] array, int index1, int index2, int index3, int index4, int index5, int index6, int index7, int index8, int index9, int index10, int index11, int index12, int index13, int index14, int index15, int index16, int index17, int index18, int index19, int index20, int index21, int index22, int index23, int index24, int index25, int index26, int index27, int index28, int index29, int index30, int index31, int index32, T value)
         {
-            if (!EETypePtr.EETypePtrOf<T>().IsValueType)
+            if (RuntimeHelpers.IsReference<T>())
             {
                 RuntimeImports.RhCheckArrayStore(array, value);
             }

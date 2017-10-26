@@ -805,6 +805,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetCodeTarget(functionPointer);
         }
 
+        public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
+        {
+            return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
         {
@@ -989,10 +994,15 @@ namespace Internal.Runtime.Augments
         [System.Runtime.InteropServices.McgIntrinsicsAttribute]
         internal class RawCalliHelper
         {
+            [DebuggerHidden]
+            [DebuggerStepThrough]
             public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
             {
                 // This will be filled in by an IL transform
             }
+
+            [DebuggerHidden]
+            [DebuggerStepThrough]
             public static unsafe void Call<T, U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
             {
                 // This will be filled in by an IL transform
@@ -1095,11 +1105,6 @@ namespace Internal.Runtime.Augments
         public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
         {
             RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
-        }
-
-        public static IntPtr RhpGetFuncEvalTargetAddress()
-        {
-            return RuntimeImports.RhpGetFuncEvalTargetAddress();
         }
 
         [CLSCompliant(false)]

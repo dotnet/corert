@@ -31,7 +31,7 @@
 #endif
 
 #ifndef _INC_WINDOWS
-//#ifndef DACCESS_COMPILE 
+//#ifndef DACCESS_COMPILE
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
 // we have to (in which case these definitions will move to CommonTypes.h).
@@ -393,35 +393,43 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     // Integer registers
     //
     UInt32 Cpsr;       // NZVF + DAIF + CurrentEL + SPSel
-    UInt64 X0;
-    UInt64 X1;
-    UInt64 X2;
-    UInt64 X3;
-    UInt64 X4;
-    UInt64 X5;
-    UInt64 X6;
-    UInt64 X7;
-    UInt64 X8;
-    UInt64 X9;
-    UInt64 X10;
-    UInt64 X11;
-    UInt64 X12;
-    UInt64 X13;
-    UInt64 X14;
-    UInt64 X15;
-    UInt64 X16;
-    UInt64 X17;
-    UInt64 X18;
-    UInt64 X19;
-    UInt64 X20;
-    UInt64 X21;
-    UInt64 X22;
-    UInt64 X23;
-    UInt64 X24;
-    UInt64 X25;
-    UInt64 X26;
-    UInt64 X27;
-    UInt64 X28;
+    union {
+        struct {
+            UInt64 X0;
+            UInt64 X1;
+            UInt64 X2;
+            UInt64 X3;
+            UInt64 X4;
+            UInt64 X5;
+            UInt64 X6;
+            UInt64 X7;
+            UInt64 X8;
+            UInt64 X9;
+            UInt64 X10;
+            UInt64 X11;
+            UInt64 X12;
+            UInt64 X13;
+            UInt64 X14;
+            UInt64 X15;
+            UInt64 X16;
+            UInt64 X17;
+            UInt64 X18;
+            UInt64 X19;
+            UInt64 X20;
+            UInt64 X21;
+            UInt64 X22;
+            UInt64 X23;
+            UInt64 X24;
+            UInt64 X25;
+            UInt64 X26;
+            UInt64 X27;
+            UInt64 X28;
+#pragma warning(push)
+#pragma warning(disable:4201) // nameless struct
+        };
+        UInt64 X[29];
+    };
+#pragma warning(pop)
     UInt64 Fp; // X29
     UInt64 Lr; // X30
     UInt64 Sp;
@@ -795,7 +803,7 @@ typedef UInt32 (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
-typedef UInt32 (__stdcall *PalHijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
+typedef UInt32_BOOL (*PalHijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_ETW

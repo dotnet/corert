@@ -23,7 +23,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
 
 using Internal.NativeFormat;
 
@@ -431,7 +430,7 @@ namespace System
                     m_flags |= (ComObjectFlags.GCPressureWinRT_High | ComObjectFlags.GCPressure_Set);
                     break;
                 default:
-                    Debug.Assert(false, "Incorrect GCPressure value");
+                    Debug.Fail("Incorrect GCPressure value");
                     return;
             }
 
@@ -2149,7 +2148,7 @@ namespace System
             // We may not have QI'd for this interface yet.  Do so now, in case the object directly supports
             // the requested interface.  If we find it, call ourselves again so our fast path will pick it up.
             //
-            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr))
+            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr) && requestedType.HasDynamicAdapterClass())
                 return GetDynamicAdapterInternal(requestedType, default(RuntimeTypeHandle));
 
             return null;
@@ -2234,7 +2233,7 @@ namespace System
         /// </summary>
         private unsafe object GetDynamicAdapterInternal(RuntimeTypeHandle requestedType, RuntimeTypeHandle targetType)
         {
-            Debug.Assert(requestedType.HasDynamicAdapterClass());
+            Debug.Assert(requestedType.HasDynamicAdapterClass() || requestedType.IsGenericType());
 
             Debug.Assert(targetType.IsNull() || targetType.HasDynamicAdapterClass());
 
@@ -2450,7 +2449,7 @@ namespace System.Runtime.InteropServices
                 int hr = ExternalInterop.CoGetContextToken(out pCookie);
                 if (hr < 0)
                 {
-                    Debug.Assert(false, "CoGetContextToken failed");
+                    Debug.Fail("CoGetContextToken failed");
                     pCookie = default(IntPtr);
                 }
                 return new ContextCookie(pCookie);
@@ -3067,7 +3066,7 @@ namespace System.Runtime.InteropServices
                     (Interop.COM.__IContextCallback*)(void*)pContextCallback;
                 fixed (Guid* unsafe_iid = &Interop.COM.IID_IEnterActivityWithNoLock)
                 {
-                    int hr = CalliIntrinsics.StdCall<int>(
+                    int hr = CalliIntrinsics.StdCall__int(
                         pContextCallbackNativePtr->vtbl->pfnContextCallback,
                         pContextCallbackNativePtr,                              // Don't forget 'this pointer
                         AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget1>(EnterContextCallbackProc),
@@ -3608,7 +3607,7 @@ namespace System.Runtime.InteropServices
 
                     try
                     {
-                        int hr = CalliIntrinsics.StdCall<int>(
+                        int hr = CalliIntrinsics.StdCall__int(
                             pIStringable->pVtable->pfnToString,
                             pIStringable,
                             &unsafe_hstring

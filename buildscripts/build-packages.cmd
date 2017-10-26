@@ -27,5 +27,5 @@ exit /b %ERRORLEVEL%
 
 :AfterVarSetup
 
-%_msbuildexe% "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=win7-x64 /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
+%_msbuildexe% "%__ProjectDir%\pkg\packages.proj" /m /nologo /flp:v=diag;LogFile=build-packages.log /p:NuPkgRid=%__NugetRuntimeId% /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 exit /b %ERRORLEVEL%

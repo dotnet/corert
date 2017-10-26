@@ -22,6 +22,7 @@ namespace ILCompiler
 
         private string _outputFilePath;
         private bool _isCppCodegen;
+        private bool _isWasmCodegen;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -124,6 +125,7 @@ namespace ILCompiler
                 syntax.DefineOption("O", ref optimize, "Enable optimizations");
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
+                syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -211,15 +213,17 @@ namespace ILCompiler
                     throw new CommandLineException("Target OS is not supported");
             }
 
+            if (_isWasmCodegen)
+                _targetArchitecture = TargetArchitecture.Wasm32;
             //
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || !_isCppCodegen ?
+            SharedGenericsMode genericsMode = _useSharedGenerics || (!_isCppCodegen && !_isWasmCodegen) ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?
-            var simdVectorLength = _isCppCodegen ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
+            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit; 
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, simdVectorLength);
             var typeSystemContext = new CompilerTypeSystemContext(targetDetails, genericsMode);
 
@@ -284,14 +288,26 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    // TODO: Wasm fails to compile some of the exported methods due to missing opcodes
+                    if (!_isWasmCodegen)
+                    {
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    }
                 }
 
                 if (entrypointModule != null)
                 {
-                    LibraryInitializers libraryInitializers =
-                        new LibraryInitializers(typeSystemContext, _isCppCodegen);
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                    // TODO: Wasm fails to compile some of the library initializers
+                    if (!_isWasmCodegen)
+                    {
+                        LibraryInitializers libraryInitializers =
+                            new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, libraryInitializers.LibraryInitializerMethods));
+                    }
+                    else
+                    {
+                        compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
+                    }
                 }
 
                 if (_multiFile)
@@ -317,7 +333,11 @@ namespace ILCompiler
                     if (entrypointModule == null)
                         throw new Exception("No entrypoint module");
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
+                    if (!_isWasmCodegen)
+                    {
+                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
+                    }
 
                     compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
                 }
@@ -333,13 +353,15 @@ namespace ILCompiler
             //
 
             CompilationBuilder builder;
-            if (_isCppCodegen)
+            if (_isWasmCodegen)
+                builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
+            else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen);
 
             useScanner &= !_noScanner;
 
@@ -357,7 +379,7 @@ namespace ILCompiler
                 scanResults = scanner.Scan();
             }
 
-            var logger = _isVerbose ? new Logger(Console.Out, true) : Logger.Null;
+            var logger = new Logger(Console.Out, _isVerbose);
 
             DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
                 (_ilDump == null ? new DebugInformationProvider() : new ILAssemblyGeneratingMethodDebugInfoProvider(_ilDump, new EcmaOnlyDebugInformationProvider())) :
@@ -523,11 +545,11 @@ namespace ILCompiler
 
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
 
-            Console.Write($"--singlemethodtypename {formatter.FormatName(failingMethod.OwningType)}");
+            Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
             Console.Write($" --singlemethodname {failingMethod.Name}");
 
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
-                Console.Write($" --singlemethodgenericarg {formatter.FormatName(failingMethod.Instantiation[i])}");
+                Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
             return false;
         }

@@ -150,16 +150,15 @@ namespace System.Reflection.Runtime.MethodInfos
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor = other as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
-            if (otherConstructor == null)
+            if (!(other is RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor))
                 return false;
+
             return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
         }
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
-            if (other == null)
+            if (!(obj is RuntimePlainConstructorInfo<TRuntimeMethodCommon> other))
                 return false;
             return _common.Equals(other._common);
         }

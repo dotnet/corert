@@ -4,8 +4,9 @@
 
 namespace System.Globalization
 {
-    internal static class GlobalizationMode
+    internal static partial class GlobalizationMode
     {
-        internal static bool Invariant { get; } = false;
+        private const string c_InvariantModeConfigSwitch = "System.Globalization.Invariant";
+        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
     }
 }

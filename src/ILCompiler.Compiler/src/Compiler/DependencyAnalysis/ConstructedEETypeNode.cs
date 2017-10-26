@@ -119,6 +119,8 @@ namespace ILCompiler.DependencyAnalysis
             if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+
+                AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
             }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
@@ -178,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis
                         return false;
 
                     // Byref-like types have interior pointers and cannot be heap allocated.
-                    if (type.IsValueType && ((DefType)type).IsByRefLike)
+                    if (type.IsByRefLike)
                         return false;
 
                     // The global "<Module>" type can never be allocated.

@@ -393,7 +393,12 @@ namespace ILCompiler.CppCodeGen
         {
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-            _compilation.Logger.Writer.WriteLine("Compiling " + method.ToString());
+            if (_compilation.Logger.IsVerbose)
+            {
+                string methodName = method.ToString();
+                _compilation.Logger.Writer.WriteLine("Compiling " + methodName);
+            }
+
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -495,25 +500,33 @@ namespace ILCompiler.CppCodeGen
         private void OutputTypeFields(CppGenerationBuffer sb, TypeDesc t)
         {
             bool explicitLayout = false;
+            bool hasSize = false;
             ClassLayoutMetadata classLayoutMetadata = default(ClassLayoutMetadata);
 
             if (t.IsValueType)
             {
                 MetadataType metadataType = (MetadataType)t;
+                classLayoutMetadata = metadataType.GetClassLayout();
+                hasSize = classLayoutMetadata.Size > 0;
                 if (metadataType.IsExplicitLayout)
                 {
                     explicitLayout = true;
-                    classLayoutMetadata = metadataType.GetClassLayout();
                 }
             }
 
             int instanceFieldIndex = 0;
 
-            if (explicitLayout)
+            if (explicitLayout || hasSize)
             {
                 sb.AppendLine();
                 sb.Append("union {");
                 sb.Indent();
+                if (!explicitLayout)
+                {
+                    sb.Append("struct {");
+                    sb.Indent();
+                }
+                
             }
 
             foreach (var field in t.GetFields())
@@ -565,13 +578,21 @@ namespace ILCompiler.CppCodeGen
                 }
             }
 
-            if (explicitLayout)
+            if (explicitLayout || hasSize)
             {
                 if (classLayoutMetadata.Size > 0)
                 {
                     sb.AppendLine();
                     sb.Append("struct { char __sizePadding[" + classLayoutMetadata.Size + "]; };");
                 }
+
+                if (!explicitLayout)
+                {
+                    sb.Exdent();
+                    sb.AppendLine();
+                    sb.Append("};");
+                }
+
                 sb.Exdent();
                 sb.AppendLine();
                 sb.Append("};");

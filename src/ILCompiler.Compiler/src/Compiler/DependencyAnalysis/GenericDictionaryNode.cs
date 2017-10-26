@@ -69,16 +69,16 @@ namespace ILCompiler.DependencyAnalysis
             if (layout.HasFixedSlots || !relocsOnly)
             {
                 // TODO: pass the layout we already have to EmitDataInternal
-                EmitDataInternal(ref builder, factory);
+                EmitDataInternal(ref builder, factory, relocsOnly);
             }
 
             return builder.ToObjectData();
         }
 
-        protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
+        protected virtual void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory, bool fixedLayoutOnly)
         {
             DictionaryLayoutNode layout = GetDictionaryLayout(factory);
-            layout.EmitDictionaryData(ref builder, factory, this);            
+            layout.EmitDictionaryData(ref builder, factory, this, fixedLayoutOnly: fixedLayoutOnly);
         }
 
         protected sealed override string GetName(NodeFactory factory)
@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList result = result = new DependencyList();
+            DependencyList result = new DependencyList();
 
             result.Add(GetDictionaryLayout(factory), "Layout");
 
@@ -148,6 +148,21 @@ namespace ILCompiler.DependencyAnalysis
 
                     result.Add(factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Cross-objectfile equivalent dictionary");
+                }
+            }
+
+            // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
+            if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningType))
+            {
+                foreach (var arg in _owningType.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    result.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
                 }
             }
 
@@ -211,6 +226,31 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);
 
+            // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
+            if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningMethod))
+            {
+                foreach (var arg in _owningMethod.OwningType.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    dependencies.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
+                }
+                foreach (var arg in _owningMethod.Instantiation)
+                {
+                    // Skip types that do not have a default constructor (not interesting).
+                    if (arg.IsValueType || arg.GetDefaultConstructor() == null)
+                        continue;
+
+                    dependencies.Add(new DependencyListEntry(
+                        factory.DefaultConstructorFromLazy(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                        "Default constructor for lazy generics"));
+                }
+            }
+
             return dependencies;
         }
 
@@ -219,7 +259,7 @@ namespace ILCompiler.DependencyAnalysis
             return factory.GenericDictionaryLayout(_owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
-        protected override void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory)
+        protected override void EmitDataInternal(ref ObjectDataBuilder builder, NodeFactory factory, bool fixedLayoutOnly)
         {
             // Method generic dictionaries get prefixed by the hash code of the owning method
             // to allow quick lookups of additional details by the type loader.
@@ -235,7 +275,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.LazyGenericsPolicy.UsesLazyGenerics(OwningMethod))
                 return;
 
-            base.EmitDataInternal(ref builder, factory);
+            base.EmitDataInternal(ref builder, factory, fixedLayoutOnly);
         }
 
         public MethodGenericDictionaryNode(MethodDesc owningMethod, NodeFactory factory)

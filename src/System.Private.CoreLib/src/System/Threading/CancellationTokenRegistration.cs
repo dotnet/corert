@@ -6,7 +6,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -35,7 +34,7 @@ namespace System.Threading
         /// registration isn't associated with a token (such as after the registration has been disposed),
         /// this will return a default token.
         /// </summary>
-        internal CancellationToken Token => m_callbackInfo?.CancellationTokenSource.Token ?? default(CancellationToken);
+        public CancellationToken Token => m_callbackInfo?.CancellationTokenSource.Token ?? default(CancellationToken);
 
         /// <summary>
         /// Attempts to deregister the item. If it's already being run, this may fail.

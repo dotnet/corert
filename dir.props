@@ -103,7 +103,7 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <LangVersion>7</LangVersion>
+    <LangVersion>latest</LangVersion>
     <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 

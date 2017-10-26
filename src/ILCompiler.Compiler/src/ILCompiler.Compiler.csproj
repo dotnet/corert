@@ -43,6 +43,9 @@
     <Compile Include="..\..\Common\src\Internal\Text\Utf8StringBuilder.cs">
       <Link>Common\Utf8StringBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaSignatureEncoder.cs">
+      <Link>Ecma\EcmaSignatureEncoder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
     </Compile>
@@ -98,12 +101,14 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
-    <Compile Include="Compiler\CompilerGeneratedInteropStubManager .cs" />
+    <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugILImagesSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodMapSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMethodInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugNeedTypeIndicesStoreNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugPseudoAssemblySection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeRecordsSection.cs" />
@@ -190,8 +195,8 @@
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedStaticsNode.cs" />    
-	<Compile Include="Compiler\DependencyAnalysis\ImportedThreadStaticsNode.cs" />    
-	<Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportedThreadStaticsNode.cs" />    
+    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
@@ -208,9 +213,11 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ISpecialUnboxThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodAssociatedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />
@@ -270,6 +277,14 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMUnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\Register.cs" />

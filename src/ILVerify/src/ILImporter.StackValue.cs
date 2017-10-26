@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using ILVerify;
 
 namespace Internal.IL
 {
@@ -15,23 +16,39 @@ namespace Internal.IL
         public enum StackValueFlags
         {
             None = 0,
-            ReadOnly = 1 << 1
+            ReadOnly = 1 << 1,
+            PermanentHome = 1 << 2,
+            ThisPtr = 1 << 3,
         }
         private StackValueFlags Flags;
 
         public readonly StackValueKind Kind;
         public readonly TypeDesc Type;
+        public readonly MethodDesc Method;
 
-        private StackValue(StackValueKind kind, TypeDesc type = null, StackValueFlags flags = StackValueFlags.None)
+        private StackValue(StackValueKind kind, TypeDesc type = null, MethodDesc method = null, StackValueFlags flags = StackValueFlags.None)
         {
             this.Kind = kind;
             this.Type = type;
+            this.Method = method;
             this.Flags = flags;
         }
 
         public void SetIsReadOnly()
         {
+            Debug.Assert(Kind == StackValueKind.ByRef);
             Flags |= StackValueFlags.ReadOnly;
+        }
+
+        public void SetIsPermanentHome()
+        {
+            Debug.Assert(Kind == StackValueKind.ByRef);
+            Flags |= StackValueFlags.PermanentHome;
+        }
+
+        public void SetIsThisPtr()
+        {
+            Flags |= StackValueFlags.ThisPtr;
         }
 
         public bool IsReadOnly
@@ -39,9 +56,29 @@ namespace Internal.IL
             get { return (Flags & StackValueFlags.ReadOnly) == StackValueFlags.ReadOnly; }
         }
 
+        public bool IsPermanentHome
+        {
+            get { return (Flags & StackValueFlags.PermanentHome) == StackValueFlags.PermanentHome; }
+        }
+
+        public bool IsThisPtr
+        {
+            get { return (Flags & StackValueFlags.ThisPtr) == StackValueFlags.ThisPtr; }
+        }
+
         public bool IsNullReference
         {
             get { return Kind == StackValueKind.ObjRef && Type == null; }
+        }
+
+        public bool IsMethod
+        {
+            get { return Kind == StackValueKind.NativeInt && Method != null; }
+        }
+
+        public bool IsBoxedValueType
+        {
+            get { return Kind == StackValueKind.ObjRef && Type.IsValueType; }
         }
 
         public StackValue DereferenceByRef()
@@ -75,9 +112,16 @@ namespace Internal.IL
             return new StackValue(StackValueKind.ValueType, type);
         }
 
-        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false)
+        static public StackValue CreateByRef(TypeDesc type, bool readOnly = false, bool permanentHome = false)
         {
-            return new StackValue(StackValueKind.ByRef, type, readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None);
+            return new StackValue(StackValueKind.ByRef, type, null,
+                (readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None) | 
+                (permanentHome ? StackValueFlags.PermanentHome : StackValueFlags.None));
+        }
+
+        static public StackValue CreateMethod(MethodDesc method)
+        {
+            return new StackValue(StackValueKind.NativeInt, null, method);
         }
 
         static public StackValue CreateFromType(TypeDesc type)
@@ -197,88 +241,6 @@ namespace Internal.IL
 
     partial class ILImporter
     {
-        /// <summary>
-        /// Returns the reduced type as defined in the ECMA-335 standard (I.8.7).
-        /// </summary>
-        public static TypeDesc GetReducedType(TypeDesc type)
-        {
-            if (type == null)
-                return null;
-
-            var category = type.UnderlyingType.Category;
-
-            switch (category)
-            {
-                case TypeFlags.Byte:
-                    return type.Context.GetWellKnownType(WellKnownType.SByte);
-                case TypeFlags.UInt16:
-                    return type.Context.GetWellKnownType(WellKnownType.Int16);
-                case TypeFlags.UInt32:
-                    return type.Context.GetWellKnownType(WellKnownType.Int32);
-                case TypeFlags.UInt64:
-                    return type.Context.GetWellKnownType(WellKnownType.Int64);
-                case TypeFlags.UIntPtr:
-                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
-
-                default:
-                    return type.UnderlyingType; //Reduced type is type itself
-            }
-        }
-
-        /// <summary>
-        /// Returns the "verification type" based on the definition in the ECMA-335 standard (I.8.7).
-        /// </summary>
-        public static TypeDesc GetVerificationType(TypeDesc type)
-        {
-            if (type == null)
-                return null;
-
-            if (type.IsByRef)
-            {
-                var parameterVerificationType = GetVerificationType(type.GetParameterType());
-                return type.Context.GetByRefType(parameterVerificationType);
-            }
-            else
-            {
-                var reducedType = GetReducedType(type);
-                switch (reducedType.Category)
-                {
-                    case TypeFlags.Boolean:
-                        return type.Context.GetWellKnownType(WellKnownType.SByte);
-
-                    case TypeFlags.Char:
-                        return type.Context.GetWellKnownType(WellKnownType.Int16);
-
-                    default:
-                        return reducedType; // Verification type is reduced type
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns the "intermediate type" based on the definition in the ECMA-335 standard (I.8.7).
-        /// </summary>
-        public static TypeDesc GetIntermediateType(TypeDesc type)
-        {
-            var verificationType = GetVerificationType(type);
-
-            if (verificationType == null)
-                return null;
-
-            switch (verificationType.Category)
-            {
-                case TypeFlags.SByte:
-                case TypeFlags.Int16:
-                case TypeFlags.Int32:
-                    return type.Context.GetWellKnownType(WellKnownType.Int32);
-                case TypeFlags.Single:
-                case TypeFlags.Double:
-                    return type.Context.GetWellKnownType(WellKnownType.Double);
-                default:
-                    return verificationType;
-            }
-        }
-
         /// <summary>
         /// Merges two stack values to a common stack value as defined in the ECMA-335 
         /// standard III.1.8.1.3 (Merging stack states).
@@ -504,7 +466,7 @@ namespace Internal.IL
 
         static bool IsSameReducedType(TypeDesc src, TypeDesc dst)
         {
-            return GetReducedType(src) == GetReducedType(dst);
+            return src.GetReducedType() == dst.GetReducedType();
         }
 
         bool IsAssignable(TypeDesc src, TypeDesc dst, bool allowSizeEquivalence = false)

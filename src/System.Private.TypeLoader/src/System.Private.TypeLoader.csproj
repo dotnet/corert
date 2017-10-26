@@ -49,6 +49,7 @@
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
@@ -76,7 +77,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EnumThunks.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassembler.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs" />

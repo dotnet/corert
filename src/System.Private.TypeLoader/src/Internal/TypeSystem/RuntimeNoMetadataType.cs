@@ -31,7 +31,8 @@ namespace Internal.TypeSystem.NoMetadata
         private RuntimeTypeHandle _genericTypeDefinition;
         private DefType _genericTypeDefinitionAsDefType;
         private Instantiation _instantiation;
-        private bool _baseTypeCached;
+
+        // "_baseType == this" means "base type was not initialized yet"
         private DefType _baseType;
 
         public NoMetadataType(TypeSystemContext context, RuntimeTypeHandle genericTypeDefinition, DefType genericTypeDefinitionAsDefType, Instantiation instantiation, int hashcode)
@@ -52,6 +53,9 @@ namespace Internal.TypeSystem.NoMetadata
                 Debug.Assert(((_instantiation.Length > 0) && _genericTypeDefinition.ToEETypePtr()->IsGenericTypeDefinition) ||
                              ((_instantiation.Length == 0) && !_genericTypeDefinition.ToEETypePtr()->IsGenericTypeDefinition));
             }
+
+            // Base type is not initialized
+            _baseType = this;
         }
 
         public override int GetHashCode()
@@ -71,7 +75,8 @@ namespace Internal.TypeSystem.NoMetadata
         {
             get
             {
-                if (_baseTypeCached)
+                // _baseType == this means we didn't initialize it yet
+                if (_baseType != this)
                     return _baseType;
 
                 if (RetrieveRuntimeTypeHandleIfPossible())
@@ -99,7 +104,7 @@ namespace Internal.TypeSystem.NoMetadata
                     NativeParser baseTypeParser = typeInfoParser.GetParserForBagElementKind(BagElementKind.BaseType);
 
                     ParseBaseType(state.NativeLayoutInfo.LoadContext, baseTypeParser);
-                    Debug.Assert(_baseTypeCached);
+                    Debug.Assert(_baseType != this);
                     return _baseType;
                 }
             }
@@ -124,9 +129,8 @@ namespace Internal.TypeSystem.NoMetadata
         /// </summary>
         public void SetBaseType(DefType baseType)
         {
-            Debug.Assert(!_baseTypeCached || _baseType == baseType);
+            Debug.Assert(_baseType == this || _baseType == baseType);
             _baseType = baseType;
-            _baseTypeCached = true;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

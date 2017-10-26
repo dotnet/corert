@@ -432,11 +432,15 @@ namespace ILCompiler.DependencyAnalysis
             FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
+                // Data should only be present if the method has unwind info
+                Debug.Assert(nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) == null);
+
                 return;
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory);
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -458,14 +462,18 @@ namespace ILCompiler.DependencyAnalysis
                 EmitSymbolDef(blobSymbolName);
 
                 FrameInfoFlags flags = frameInfo.Flags;
-                if (ehInfo != null)
-                {
-                    flags |= FrameInfoFlags.HasEHInfo;
-                }
+                flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
+                flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
 
                 EmitBlob(blob);
 
                 EmitIntValue((byte)flags, 1);
+
+                if (associatedDataNode != null)
+                {
+                    EmitSymbolRef(_sb.Clear().Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                    associatedDataNode = null;
+                }
 
                 if (ehInfo != null)
                 {
@@ -512,11 +520,15 @@ namespace ILCompiler.DependencyAnalysis
             FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
+                // Data should only be present if the method has unwind info
+                Debug.Assert(nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) == null);
+
                 return;
             }
 
             byte[] gcInfo = nodeWithCodeInfo.GCInfo;
             ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+            ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory);
 
             for (int i = 0; i < frameInfos.Length; i++)
             {
@@ -539,10 +551,9 @@ namespace ILCompiler.DependencyAnalysis
                 EmitSymbolDef(blobSymbolName);
 
                 FrameInfoFlags flags = frameInfo.Flags;
-                if (ehInfo != null)
-                {
-                    flags |= FrameInfoFlags.HasEHInfo;
-                }
+                flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
+                flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
+
                 EmitIntValue((byte)flags, 1);
 
                 if (i != 0)
@@ -551,6 +562,14 @@ namespace ILCompiler.DependencyAnalysis
 
                     // emit relative offset from the main function
                     EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+                }
+
+                if (associatedDataNode != null)
+                {
+                    _sb.Clear();
+                    AppendExternCPrefix(_sb);
+                    EmitSymbolRef(_sb.Append(associatedDataNode.GetMangledName(_nodeFactory.NameMangler)), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    associatedDataNode = null;
                 }
 
                 if (ehInfo != null)
@@ -779,7 +798,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
-            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, _targetPlatform.PointerSize == 8, factory.Target.Abi);
+            _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, factory);
         }
 
         public void Dispose()
@@ -909,7 +928,7 @@ namespace ILCompiler.DependencyAnalysis
                         catch (ArgumentException)
                         {
                             ISymbolNode alreadyWrittenSymbol = _previouslyWrittenNodeNames[definedSymbol.GetMangledName(factory.NameMangler)];
-                            Debug.Assert(false, "Duplicate node name emitted to file",
+                            Debug.Fail("Duplicate node name emitted to file",
                             $"Symbol {definedSymbol.GetMangledName(factory.NameMangler)} has already been written to the output object file {objectFilePath} with symbol {alreadyWrittenSymbol}");
                         }
                     }
@@ -931,8 +950,10 @@ namespace ILCompiler.DependencyAnalysis
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
-                    // The DWARF CFI unwind is implemented for AMD64 only.
-                    if (!factory.Target.IsWindows && (factory.Target.Architecture == TargetArchitecture.X64))
+                    // The DWARF CFI unwind is implemented for AMD64 & ARM32 only.
+                    TargetArchitecture tarch = factory.Target.Architecture;
+                    if (!factory.Target.IsWindows &&
+                        (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARMEL || tarch == TargetArchitecture.ARM))
                         objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map

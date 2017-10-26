@@ -319,7 +319,7 @@ static int LookupUnwindInfoForMethod(UInt32 RelativePc,
                                      int Low,
                                      int High)
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     RelativePc |= THUMB_CODE;
 #endif 
 
@@ -729,4 +729,11 @@ void * JITCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     // Implement by delegating to corelib code manager
     assert(false);
     return false;
+}
+
+PTR_VOID JITCodeManager::GetAssociatedData(PTR_VOID ControlPC)
+{
+    // @TODO: CORERT: GetAssociatedData
+    assert(false);
+    return NULL;
 }

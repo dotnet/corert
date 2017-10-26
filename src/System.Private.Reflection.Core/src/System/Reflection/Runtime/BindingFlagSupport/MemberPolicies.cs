@@ -172,19 +172,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return true;
             }
 
-            if (t1.IsGenericParameter && t2.IsGenericParameter)
+            if (t1.IsGenericMethodParameter && t2.IsGenericMethodParameter)
             {
-                if (t1.DeclaringMethod != null && t2.DeclaringMethod != null)
-                {
-                    // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
-                    // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
-                    // compare the positions.
-                    return t1.GenericParameterPosition == t2.GenericParameterPosition;
-                }
-                return false;
+                // A generic method parameter. The DeclaringMethods will be different but we don't care about that - we can assume that
+                // the declaring method will be the method that declared the parameter's whose type we're testing. We only need to 
+                // compare the positions.
+                return t1.GenericParameterPosition == t2.GenericParameterPosition;
             }
 
-            // If we got here, either t1 and t2 are different flavors of types or they are both simple named types.
+            // If we got here, either t1 and t2 are different flavors of types or they are both simple named types or both generic type parameters.
             // Either way, we can trust Reflection's result here.
             return false;
         }
@@ -224,7 +220,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             else
             {
-                Debug.Assert(false, "Unknown MemberInfo type.");
+                Debug.Fail("Unknown MemberInfo type.");
             }
         }
 

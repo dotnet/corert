@@ -16,7 +16,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -875,7 +874,6 @@ namespace System
                 {
                     throw new ArgumentException(SR.Argument_TimeZoneInfoInvalidTZif, nameof(data));
                 }
-                Contract.EndContractBlock();
                 UtcOffset = new TimeSpan(0, 0, TZif_ToInt32(data, index + 00));
                 IsDst = (data[index + 4] != 0);
                 AbbreviationIndex = data[index + 5];
@@ -899,7 +897,6 @@ namespace System
                 {
                     throw new ArgumentException("bad data", nameof(data));
                 }
-                Contract.EndContractBlock();
 
                 Magic = (uint)TZif_ToInt32(data, index + 00);
 

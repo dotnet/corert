@@ -12,14 +12,22 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public static class ProjectNDependencyBehavior
+    {
+        // Temporary static variable to enable full analysis when using the ProjectN abi
+        // When full analysis is fully supported, remove this class and field forever.
+        public static bool EnableFullAnalysis = false;
+    }
+
     /// <summary>
     /// Represents a symbol that is defined externally but modeled as a method
     /// in the DependencyAnalysis infrastructure during compilation that is compiled 
     /// in the current compilation process
     /// </summary>
-    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols
+    public class NonExternMethodSymbolNode : ExternSymbolNode, IMethodBodyNodeWithFuncletSymbols, ISpecialUnboxThunkNode
     {
         private MethodDesc _method;
+        private bool _isUnboxing;
         private List<DependencyListEntry> _compilationDiscoveredDependencies;
         ISymbolNode[] _funcletSymbols = Array.Empty<ISymbolNode>();
         bool _dependenciesQueried;
@@ -29,7 +37,12 @@ namespace ILCompiler.DependencyAnalysis
             : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
                   factory.NameMangler.GetMangledMethodName(method))
         {
+            _isUnboxing = isUnboxing;
             _method = method;
+
+            // Ensure all method bodies are fully canonicalized or not at all.
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) || (method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method));
+            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Universal) || (method.GetCanonMethodTarget(CanonicalFormKind.Universal) == method));
         }
 
         protected override string GetName(NodeFactory factory) => "Non" + base.GetName(factory);
@@ -40,6 +53,26 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _method;
             }
+        }
+
+        public bool IsSpecialUnboxingThunk
+        {
+            get
+            {
+                if (_isUnboxing)
+                {
+                    if (!_method.HasInstantiation && _method.OwningType.IsValueType && !_method.Signature.IsStatic)
+                        return _method.IsCanonicalMethod(CanonicalFormKind.Any);
+                }
+
+                return false;
+            }
+        }
+        public ISymbolNode GetUnboxingThunkTarget(NodeFactory factory)
+        {
+            Debug.Assert(IsSpecialUnboxingThunk);
+
+            return factory.MethodEntrypoint(_method.GetCanonMethodTarget(CanonicalFormKind.Specific), false);
         }
 
         public bool HasCompiledBody => _hasCompiledBody;
@@ -72,10 +105,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // TODO Change this to
-                // return HasCompiledBody;
-                // when we fix up creation of NonExternMethodSymbolNode to be correctly handled
-                return true;
+                if (ProjectNDependencyBehavior.EnableFullAnalysis)
+                    return HasCompiledBody;
+                else
+                    return true;
             }
         }
 
@@ -97,6 +130,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.AddRange(_compilationDiscoveredDependencies);
+            }
+
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
 
             return dependencies;

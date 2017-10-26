@@ -102,14 +102,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencyList = null;
+
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
-                var result = new DependencyList();
-                result.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
-                return result;
+                dependencyList = new DependencyList();
+                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            return null;
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
+
+            return dependencyList;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

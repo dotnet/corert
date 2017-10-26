@@ -12,8 +12,13 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    public struct ReadOnlyMemory<T>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
+    public readonly struct ReadOnlyMemory<T>
     {
+        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
+        // as code uses Unsafe.As to cast between them.
+
         // The highest order bit of _index is used to discern whether _arrayOrOwnedMemory is an array or an owned memory
         // if (_index >> 31) == 1, object _arrayOrOwnedMemory is an OwnedMemory<T>
         // else, object _arrayOrOwnedMemory is a T[]
@@ -80,6 +85,9 @@ namespace System
             _index = index | (1 << 31); // Before using _index, check if _index < 0, then 'and' it with RemoveOwnedFlagBitMask
             _length = length;
         }
+
+        //Debugger Display = {T[length]}
+        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Memory{T}"/>
@@ -152,7 +160,7 @@ namespace System
             get
             {
                 if (_index < 0)
-                    return ((OwnedMemory<T>)_arrayOrOwnedMemory).AsSpan().Slice(_index & RemoveOwnedFlagBitMask, _length);
+                    return ((OwnedMemory<T>)_arrayOrOwnedMemory).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
                 return new ReadOnlySpan<T>((T[])_arrayOrOwnedMemory, _index, _length);
             }
         }
@@ -165,6 +173,7 @@ namespace System
                 if (_index < 0)
                 {
                     memoryHandle = ((OwnedMemory<T>)_arrayOrOwnedMemory).Pin();
+                    memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
                 else
                 {

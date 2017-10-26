@@ -17,71 +17,31 @@
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
-  <!-- TODO  We should not include anything from CompilerServices directly -->
+
+  <Import Project="System.Private.Interop.Shared.projitems" />
+  
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
+    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
+    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
+  </ItemGroup>
+ 
   <ItemGroup>
     <Compile Include="TypeForwarders.cs" />
-    <Compile Include="System\Runtime\CompilerServices\UnmanagedValueTypeConstraintAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IgnoresAccessChecksToAttribute.cs" />
+    <!-- TODO  We should not include anything from CompilerServices directly -->
     <Compile Include="System\Runtime\CompilerServices\FunctionPointerHelpers.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs">
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
-    <Compile Include="Shared\__ComObject.cs" />
-    <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComException.cs" />
-    <Compile Include="Shared\ComInterop.cs" />
-    <Compile Include="Shared\Dictionary.cs" />
-    <Compile Include="Shared\DictionaryBase.cs" />
-    <Compile Include="Shared\FixedHashTable.cs" />
-    <Compile Include="Shared\GCEventProvider.cs" />
-    <Compile Include="Shared\HashSet.cs" />
-    <Compile Include="Shared\InternalModule.cs" />
-    <Compile Include="Shared\Interop.Manual.cs" />
-    <Compile Include="Shared\List.cs" />
     <Compile Include="Shared\Marshal.cs" />
-    <Compile Include="Shared\McgAccessorAttribute.cs" />
-    <Compile Include="Shared\McgComCallableAttribute.cs" />
-    <Compile Include="Shared\McgComHelpers.cs" />
-    <Compile Include="Shared\McgData.cs" />
-    <Compile Include="Shared\McgGeneratedAssemblyAttribute.cs" />
-    <Compile Include="Shared\McgGeneratedMarshallingCodeAttribute.cs" />
-    <Compile Include="Shared\McgHelpers.cs" />
-    <Compile Include="Shared\McgInternalTypeAttribute.cs" />
-    <Compile Include="Shared\McgIntrinsics.cs" />
-    <Compile Include="Shared\McgMarshal.cs" />
-    <Compile Include="Shared\McgMethodNameAttribute.cs" />
-    <Compile Include="Shared\McgModule.cs" />
-    <Compile Include="Shared\McgModuleManager.cs" />
-    <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
-    <Compile Include="Shared\McgredirectedMethodAttribute.cs" />
-    <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />
-    <Compile Include="Shared\McgRemovedType.cs" />
-    <Compile Include="Shared\McgRootsTypeAttribute.cs" />
-    <Compile Include="Shared\McgTypeHelpers.cs" />
-    <Compile Include="Shared\RCWWalker.cs" />
-    <Compile Include="Shared\StandardInterfaces.cs" />
-    <Compile Include="Shared\StringPool.cs" />
-    <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
     <Compile Include="System\Runtime\InteropServices\BStrWrapper.cs" />
@@ -102,7 +62,6 @@
     <Compile Include="System\Runtime\InteropServices\DispIdAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ErrorWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleRef.cs" />
-    <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
     <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomAdapter.cs" />
     <Compile Include="System\Runtime\InteropServices\ICustomFactory.cs" />
@@ -113,8 +72,6 @@
     <Compile Include="System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
-    <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
@@ -124,26 +81,11 @@
     <Compile Include="System\Runtime\InteropServices\UnknownWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapper.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
-    <Compile Include="Interop\Interop.Memory.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs"/>
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
-    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
-  </ItemGroup>
-  <ItemGroup  Condition="'$(IsProjectNLibrary)' != 'true'">
-    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
-      <Link>MetadataBlob.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
+
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\bindopts.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\bindptr.cs" />
@@ -199,23 +141,21 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\vardesc.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />
-    <Compile Include="System\__HResults.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs"/>
+
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="Interop\Interop.String.Windows.cs" />
-    <Compile Include="Interop\Interop.WinRT.cs" />
-    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
-    <Compile Include="Interop\Interop.Localization.Windows.cs" />
-    <Compile Include="Interop\Interop.Sync.Windows.cs" />
-    <Compile Include="Interop\Interop.COM.Windows.cs" />
-    <Compile Include="Interop\Interop.Common.Windows.cs" />
+ 
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
-    <Compile Include="System\Reflection\DispatchProxy.cs" />
-    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
-    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
-    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(EnableWinRT)'=='true'">
     <Compile Include="InteropCallbacks.cs" />
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
@@ -227,12 +167,28 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IReferenceArray.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReadOnlyArrayAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
+  
+  <ItemGroup Condition="'$(EnableWinRT)'=='true'">
+    <Compile Include="Windows\Foundation\Collections\IKeyValuePair.cs" />
+    <Compile Include="Windows\Foundation\Point.cs" />
+    <Compile Include="Windows\Foundation\Rect.cs" />
+    <Compile Include="Windows\Foundation\Size.cs" />
+    <Compile Include="Windows\Foundation\TokenizerHelper.cs" />
+    <Compile Include="Windows\Foundation\IReference.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Interop\Interop.Sync.Windows.cs" />
+    <Compile Include="Interop\Interop.WinRT.cs" />
+    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
+
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
       <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
     </Compile>
@@ -243,11 +199,7 @@
       <Link>Interop\Windows\mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <Compile Include="Interop\Interop.String.Unix.cs" />
-    <Compile Include="Interop\Interop.Common.Unix.cs" />
-  </ItemGroup>    
-  <ItemGroup Condition="'$(TargetsUnix)'=='true' and '$(IsProjectKLibrary)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

@@ -59,8 +59,8 @@ namespace ILCompiler
         private MethodDebugInformation GetDebugInformation(MethodIL methodIL)
         {
             MethodDesc owningMethod = methodIL.OwningMethod;
-            var disasm = new ILDisassember(methodIL);
-            var fmt = new ILDisassember.ILTypeNameFormatter(null);
+            var disasm = new ILDisassembler(methodIL);
+            var fmt = new ILDisassembler.ILTypeNameFormatter(null);
 
             ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
 

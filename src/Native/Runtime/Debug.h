@@ -9,6 +9,13 @@
 // team to make sure that your changes are not going to prevent the debugger
 // from working.
 
+enum FuncEvalEntryPointMode : uint32_t
+{
+    FixedAddress = 0,
+    VirtualMethodSlotOnly = 1,
+    InterfaceDispatch = 2,
+};
+
 enum FuncEvalMode : uint32_t
 {
     CallParameterizedFunction = 1,

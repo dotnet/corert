@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -14,7 +13,7 @@ namespace System.Globalization
             _sortName = culture.SortName;
         }
 
-        internal static unsafe int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
@@ -28,7 +27,7 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
@@ -400,7 +399,6 @@ namespace System.Globalization
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
-            Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {

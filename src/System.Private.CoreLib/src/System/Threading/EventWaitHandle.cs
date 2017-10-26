@@ -15,7 +15,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Diagnostics.Contracts;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Diagnostics;
@@ -27,7 +26,6 @@ namespace System.Threading
         public EventWaitHandle(bool initialState, EventResetMode mode)
         {
             VerifyMode(mode);
-            Contract.EndContractBlock();
 
             bool createdNew;
             CreateEventCore(initialState, mode, null, out createdNew);
@@ -37,7 +35,6 @@ namespace System.Threading
         {
             VerifyNameForCreate(name);
             VerifyMode(mode);
-            Contract.EndContractBlock();
 
             bool createdNew;
             CreateEventCore(initialState, mode, name, out createdNew);
@@ -47,7 +44,6 @@ namespace System.Threading
         {
             VerifyNameForCreate(name);
             VerifyMode(mode);
-            Contract.EndContractBlock();
 
             CreateEventCore(initialState, mode, name, out createdNew);
         }

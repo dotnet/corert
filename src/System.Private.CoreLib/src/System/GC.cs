@@ -12,7 +12,6 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 using Internal.Runtime.Augments;
 
@@ -324,24 +323,41 @@ namespace System
 
         private static bool StartNoGCRegionWorker(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
-            StartNoGCRegionStatus status =
-                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
-            if (status == StartNoGCRegionStatus.AmountTooLarge)
+            if (totalSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(totalSize),
-                    SR.ArgumentOutOfRangeException_NoGCRegionSizeTooLarge);
-            }
-            else if (status == StartNoGCRegionStatus.AlreadyInProgress)
-            {
-                throw new InvalidOperationException(
-                    SR.InvalidOperationException_AlreadyInNoGCRegion);
-            }
-            else if (status == StartNoGCRegionStatus.NotEnoughMemory)
-            {
-                return false;
+                    SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(totalSize)));
             }
 
+            if (hasLohSize)
+            {
+                if (lohSize <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(lohSize),
+                        SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(lohSize)));
+                }
+
+                if (lohSize > totalSize)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize);
+                }
+            }
+
+            StartNoGCRegionStatus status =
+                (StartNoGCRegionStatus)RuntimeImports.RhStartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
+            switch (status)
+            {
+                case StartNoGCRegionStatus.NotEnoughMemory:
+                    return false;
+                case StartNoGCRegionStatus.AlreadyInProgress:
+                    throw new InvalidOperationException(SR.InvalidOperationException_AlreadyInNoGCRegion);
+                case StartNoGCRegionStatus.AmountTooLarge:
+                    throw new ArgumentOutOfRangeException(nameof(totalSize), SR.ArgumentOutOfRangeException_NoGCRegionSizeTooLarge);
+            }
+
+            Debug.Assert(status == StartNoGCRegionStatus.Succeeded);
             return true;
         }
 

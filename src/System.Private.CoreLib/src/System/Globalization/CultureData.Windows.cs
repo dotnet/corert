@@ -630,13 +630,17 @@ namespace System.Globalization
             return null;
         }
 
-        private int LocaleNameToLCID(string cultureName)
+        private static int LocaleNameToLCID(string cultureName)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
         }
 
         private static unsafe string LCIDToLocaleName(int culture)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             char *pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
 
@@ -685,6 +689,8 @@ namespace System.Globalization
 
         private static CultureInfo[] EnumCultures(CultureTypes types)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             uint flags = 0;
 
 #pragma warning disable 618

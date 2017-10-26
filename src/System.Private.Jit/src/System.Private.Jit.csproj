@@ -20,6 +20,7 @@
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
@@ -95,6 +96,11 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\AddrMode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\Register.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\TargetRegisterMap.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM64\ARM64ReadyToRunHelperNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\TargetRegisterMap.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\ARMEmitter.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_ARM\Register.cs" />

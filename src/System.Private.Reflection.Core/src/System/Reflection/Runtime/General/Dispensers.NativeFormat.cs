@@ -85,9 +85,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 
             public override bool Equals(Object obj)
             {
-                if (!(obj is RuntimeAssemblyKey))
+                if (!(obj is RuntimeAssemblyKey other))
                     return false;
-                return Equals((RuntimeAssemblyKey)obj);
+                return Equals(other);
             }
 
 

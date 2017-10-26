@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
@@ -68,7 +67,6 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
                     SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
-            Contract.EndContractBlock();
 
             int iTemp = Char.ConvertToUtf32(charUnknownHigh, charUnknownLow);
 
@@ -98,6 +96,8 @@ namespace System.Text
         }
     }
 
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class EncoderFallbackException : ArgumentException
     {
         private char _charUnknown;
@@ -143,11 +143,15 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
                     SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
             }
-            Contract.EndContractBlock();
 
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;
             _index = index;
+        }
+
+        private EncoderFallbackException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
         }
 
         public char CharUnknown

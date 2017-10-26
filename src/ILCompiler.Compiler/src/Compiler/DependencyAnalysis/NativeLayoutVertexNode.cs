@@ -98,11 +98,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             CreateInstantiatedSignature = 1,
             SaveEntryPoint = 2,
-            /// <summary>
-            /// IsUnboxingStub is not set for template methods (all template lookups performed at runtime are done with this flag not set,
-            /// since it can't always be conveniently computed for a concrete method before looking up its template).
-            /// </summary>
-            DisableUnboxingStub = 4
         }
 
         protected readonly MethodDesc _method;
@@ -226,9 +221,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
         {
-            unboxingStub = (_flags & MethodEntryFlags.DisableUnboxingStub) != 0 ? false : _method.OwningType.IsValueType && !_method.Signature.IsStatic;
+            unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
-
             return methodEntryPointNode;
         }
     }
@@ -440,7 +434,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
                 }
 
-                Debug.Assert(false, "UNREACHABLE");
+                Debug.Fail("UNREACHABLE");
                 return null;
             }
         }
@@ -467,7 +461,7 @@ namespace ILCompiler.DependencyAnalysis
                         return GetNativeWriter(factory).GetVariableTypeSignature((uint)((SignatureMethodVariable)_type).Index, true);
                 }
 
-                Debug.Assert(false, "UNREACHABLE");
+                Debug.Fail("UNREACHABLE");
                 return null;
             }
         }
@@ -672,7 +666,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodSignatureVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | MethodEntryFlags.SaveEntryPoint | MethodEntryFlags.DisableUnboxingStub)
+            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | (method.IsVirtual ? MethodEntryFlags.SaveEntryPoint : 0))
         {
         }
 
@@ -683,8 +677,19 @@ namespace ILCompiler.DependencyAnalysis
             Vertex methodEntryVertex = base.WriteVertex(factory);
             return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(methodEntryVertex));
         }
-    }
 
+        protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
+        {
+            // Only GVM templates need entry points.
+            Debug.Assert(_method.IsVirtual);
+            unboxingStub = _method.OwningType.IsValueType;
+            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
+            // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
+            // since it can't always be conveniently computed for a concrete method before looking up its template)
+            unboxingStub = false;
+            return methodEntryPointNode;
+        }
+    }
 
     public sealed class NativeLayoutDictionarySignatureNode : NativeLayoutSavedVertexNode
     {
@@ -737,11 +742,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             if ((ContextKind & GenericContextKind.HasDeclaringType) != 0)
             {
-                return new DependencyListEntry[] { new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature") };
+                return new DependencyListEntry[] 
+                {
+                    new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature"),
+                    new DependencyListEntry(context.GenericDictionaryLayout(_owningMethodOrType), "Dictionary Layout")
+                };
             }
             else
             {
-                return Array.Empty<DependencyListEntry>();
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(context.GenericDictionaryLayout(_owningMethodOrType), "Dictionary Layout")
+                };
             }
         }
 
@@ -752,6 +764,7 @@ namespace ILCompiler.DependencyAnalysis
             VertexSequence sequence = new VertexSequence();
 
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_owningMethodOrType);
+            Debug.Assert(associatedLayout.Marked);
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
 
             foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
@@ -907,7 +920,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            yield return new DependencyListEntry(context.ConstructedTypeSymbol(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Template EEType");
+            ISymbolNode typeNode = context.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+
+            yield return new DependencyListEntry(typeNode, "Template EEType");
 
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType()), "Dictionary layout");
 
@@ -1336,36 +1351,44 @@ namespace ILCompiler.DependencyAnalysis
 
             IEnumerable<MethodDesc> vtableEntriesToProcess;
 
-            switch (whichEntries)
+            if (ConstructedEETypeNode.CreationAllowed(declType))
             {
-                case VTableEntriesToProcess.AllInVTable:
-                    vtableEntriesToProcess = factory.VTable(declType).Slots;
-                    break;
-
-                case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                    if (factory.VTable(declType).HasFixedSlots)
-                    {
+                switch (whichEntries)
+                {
+                    case VTableEntriesToProcess.AllInVTable:
                         vtableEntriesToProcess = factory.VTable(declType).Slots;
-                    }
-                    else
-                    {
-                        vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                    }
-                    break;
+                        break;
 
-                case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                    if (factory.VTable(declType).HasFixedSlots)
-                    {
-                        vtableEntriesToProcess = Array.Empty<MethodDesc>();
-                    }
-                    else
-                    {
-                        vtableEntriesToProcess = EnumVirtualSlotsDeclaredOnType(declType);
-                    }
-                    break;
+                    case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
+                        if (factory.VTable(declType).HasFixedSlots)
+                        {
+                            vtableEntriesToProcess = factory.VTable(declType).Slots;
+                        }
+                        else
+                        {
+                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
+                        }
+                        break;
 
-                default:
-                    throw new Exception();
+                    case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
+                        if (factory.VTable(declType).HasFixedSlots)
+                        {
+                            vtableEntriesToProcess = Array.Empty<MethodDesc>();
+                        }
+                        else
+                        {
+                            vtableEntriesToProcess = EnumVirtualSlotsDeclaredOnType(declType);
+                        }
+                        break;
+
+                    default:
+                        throw new Exception();
+                }
+            }
+            else
+            {
+                // If allocating an object of the EEType isn't permitted, don't process any vtable entries.
+                vtableEntriesToProcess = Array.Empty<MethodDesc>();
             }
 
             // Dictionary slot

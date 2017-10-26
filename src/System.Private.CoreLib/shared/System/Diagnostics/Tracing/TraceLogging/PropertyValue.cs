@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
@@ -8,7 +9,11 @@ using Contract = System.Diagnostics.Contracts.Contract;
 using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 #endif
 
+#if ES_BUILD_STANDALONE
+namespace Microsoft.Diagnostics.Tracing
+#else
 namespace System.Diagnostics.Tracing
+#endif
 {
     /// <summary>
     /// Holds property values of any type.  For common value types, we have inline storage so that we don't need

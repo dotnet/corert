@@ -14,10 +14,10 @@ This will result in the following:
 - Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\<OS>.<arch>.<Config>\tools`.
 - Build and run tests
 
-# Install latest CLI tools
+# Install .NET Core 2.0 SDK
 
-* Download latest CLI tools from [https://github.com/dotnet/cli/](https://github.com/dotnet/cli/) and add them to the path. The latest CLI tools include MSBuild support that the native compilation build integration depends on. These instructions have been tested with build `1.0.0-rc4-004812`.
-* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017' or 'VS2015 x64 Native Tools Command Prompt'
+* Download .NET Core 2.0 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
+* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017'
     (This is distinct from the 'Developer Command Prompt for VS 2017')
 
 You should now be able to use the `dotnet` commands of the CLI tools.
@@ -26,7 +26,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
-* Run `dotnet new` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
+* Run `dotnet new console` on the command/shell prompt. This will add a project template. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
 * Modify `.csproj` file that is part of your project. A few lines at the top and at the bottom are different from the default template.
 
 ```
@@ -35,7 +35,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
 
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
@@ -49,9 +49,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
     * Windows: `set IlcPath=<repo_root>\bin\Windows_NT.x64.Debug`
 
-* Run `dotnet restore`. This will download nuget packages required for compilation.
-
-* Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore. .NET Core integration with MSBuild is work in progress and these instructions need updating accordingly from time to time.
+* Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore.
 
     * Projects with references to other projects or packages require workaround described in https://github.com/dotnet/corert/issues/2619#issuecomment-276095878
 

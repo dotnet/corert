@@ -1195,8 +1195,12 @@ public:
   void      setFP(uint64_t value, uint64_t location) { _registers.__fp = value; _registerLocations.__fp = location; }
 
 private:
+#if !defined(GEN_REG_COUNT)
+#define GEN_REG_COUNT 29
+#endif
+
   struct GPRs {
-    uint64_t __x[29]; // x0-x28
+    uint64_t __x[GEN_REG_COUNT]; // x0-x28
     uint64_t __fp;    // Frame pointer x29
     uint64_t __lr;    // Link register x30
     uint64_t __sp;    // Stack pointer x31
@@ -1205,7 +1209,7 @@ private:
   };
 
   struct GPRLocations {
-    uint64_t __x[29]; // x0-x28
+    uint64_t __x[GEN_REG_COUNT]; // x0-x28
     uint64_t __fp;    // Frame pointer x29
     uint64_t __lr;    // Link register x30
     uint64_t __sp;    // Stack pointer x31

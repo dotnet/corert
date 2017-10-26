@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -21,21 +20,31 @@ namespace System.Globalization
         private void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
-            Interop.GlobalizationInterop.ResultCode resultCode = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle); 
-            if (resultCode != Interop.GlobalizationInterop.ResultCode.Success)
+
+            if (_invariantMode)
             {
-                _sortHandle.Dispose();
-                
-                if (resultCode == Interop.GlobalizationInterop.ResultCode.OutOfMemory)
-                    throw new OutOfMemoryException();
-                
-                throw new ExternalException(SR.Arg_ExternalException);
+                _isAsciiEqualityOrdinal = true;
             }
-            _isAsciiEqualityOrdinal = (_sortName == "en-US" || _sortName == "");
+            else
+            {
+                Interop.GlobalizationInterop.ResultCode resultCode = Interop.GlobalizationInterop.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle);
+                if (resultCode != Interop.GlobalizationInterop.ResultCode.Success)
+                {
+                    _sortHandle.Dispose();
+
+                    if (resultCode == Interop.GlobalizationInterop.ResultCode.OutOfMemory)
+                        throw new OutOfMemoryException();
+
+                    throw new ExternalException(SR.Arg_ExternalException);
+                }
+                _isAsciiEqualityOrdinal = (_sortName == "en-US" || _sortName == "");
+            }
         }
 
-        internal static unsafe int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
@@ -78,8 +87,10 @@ namespace System.Globalization
             return -1;
         }
 
-        internal static unsafe int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static unsafe int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
@@ -125,36 +136,45 @@ namespace System.Globalization
             return -1;
         }
 
-        private int GetHashCodeOfStringCore(string source, CompareOptions options)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            return GetHashCodeOfStringCore(source, options, forceRandomizedHashing: false, additionalEntropy: 0);
-        }
-
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.GlobalizationInterop.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
         }
 
-        private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
+        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // This method shouldn't be necessary, as we should be able to just use the overload
+        // that takes two spans.  But due to this issue, that's adding significant overhead.
+        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
         {
-            Debug.Assert(string1 != null);
+            Debug.Assert(!_invariantMode);
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            fixed (char* pString1 = string1)
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.GetRawStringData())
             {
-                fixed (char* pString2 = string2)
-                {
-                    return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1 + offset1, length1, pString2 + offset2, length2, options);
-                }
+                return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
+            }
+        }
+
+        private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            fixed (char* pString1 = &string1.DangerousGetPinnableReference())
+            fixed (char* pString2 = &string2.DangerousGetPinnableReference())
+            {
+                return Interop.GlobalizationInterop.CompareString(_sortHandle, pString1, string1.Length, pString2, string2.Length, options);
             }
         }
 
         internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
@@ -200,6 +220,8 @@ namespace System.Globalization
 
         private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
@@ -211,7 +233,7 @@ namespace System.Globalization
 
             if (options == CompareOptions.Ordinal)
             {
-                return LastIndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+                return LastIndexOfOrdinalCore(source, target, startIndex, count, ignoreCase: false);
             }
 
 #if CORECLR
@@ -235,6 +257,8 @@ namespace System.Globalization
 
         private bool StartsWith(string source, string prefix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -251,6 +275,8 @@ namespace System.Globalization
 
         private bool EndsWith(string source, string suffix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -267,8 +293,9 @@ namespace System.Globalization
         
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             if (source==null) { throw new ArgumentNullException(nameof(source)); }
-            Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {
@@ -296,6 +323,8 @@ namespace System.Globalization
 
         private unsafe static bool IsSortable(char *text, int length)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             int index = 0;
             UnicodeCategory uc;
 
@@ -335,8 +364,10 @@ namespace System.Globalization
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        internal unsafe int GetHashCodeOfStringCore(string source, CompareOptions options, bool forceRandomizedHashing, long additionalEntropy)
+        internal unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(source != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -352,7 +383,7 @@ namespace System.Globalization
             {
                 byte* pSortKey = stackalloc byte[sortKeyLength];
                 Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength, false, additionalEntropy);
+                return InternalHashSortKey(pSortKey, sortKeyLength);
             }
 
             byte[] sortKey = new byte[sortKeyLength];
@@ -360,38 +391,32 @@ namespace System.Globalization
             fixed (byte* pSortKey = &sortKey[0])
             {
                 Interop.GlobalizationInterop.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength, false, additionalEntropy);
+                return InternalHashSortKey(pSortKey, sortKeyLength);
             }
         }
 
-        private static unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength, bool forceRandomizedHashing, long additionalEntropy)
+        private static unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength)
         {
-            if (forceRandomizedHashing || additionalEntropy != 0)
-            {
-                // TODO: Random hashing is yet to be done
-                // Active Issue: https://github.com/dotnet/corert/issues/2588
-                throw new NotImplementedException();
-            }
-            else
-            {
-                int hash1 = 5381;
-                int hash2 = hash1;
-                if (sortKeyLength == 0)
-                {
-                    return 0;
-                }
-                if (sortKeyLength == 1)
-                {
-                    return (((hash1 << 5) + hash1) ^ sortKey[0]) + (hash2 * 1566083941);
-                }
+            // TODO: Random hashing is yet to be done
+            // Active Issue: https://github.com/dotnet/corert/issues/2588
 
-                for (int i = 0; i < (sortKeyLength & ~1); i += 2) 
-                {
-                    hash1 = ((hash1 << 5) + hash1) ^ sortKey[i];
-                    hash2 = ((hash2 << 5) + hash2) ^ sortKey[i+1];
-                }
-                return hash1 + (hash2 * 1566083941);
+            int hash1 = 5381;
+            int hash2 = hash1;
+            if (sortKeyLength == 0)
+            {
+                return 0;
             }
+            if (sortKeyLength == 1)
+            {
+                return (((hash1 << 5) + hash1) ^ sortKey[0]) + (hash2 * 1566083941);
+            }
+
+            for (int i = 0; i < (sortKeyLength & ~1); i += 2) 
+            {
+                hash1 = ((hash1 << 5) + hash1) ^ sortKey[i];
+                hash2 = ((hash2 << 5) + hash2) ^ sortKey[i+1];
+            }
+            return hash1 + (hash2 * 1566083941);
         }
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
@@ -428,6 +453,8 @@ namespace System.Globalization
         
         private SortVersion GetSortVersion()
         {
+            Debug.Assert(!_invariantMode);
+
             int sortVersion = Interop.GlobalizationInterop.GetSortVersion(_sortHandle);
             return new SortVersion(sortVersion, LCID, new Guid(sortVersion, 0, 0, 0, 0, 0, 0,
                                                              (byte) (LCID >> 24),

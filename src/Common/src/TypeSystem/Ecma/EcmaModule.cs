@@ -442,6 +442,8 @@ namespace Internal.TypeSystem.Ecma
             if (resolutionScope is MetadataType)
             {
                 string typeName = _metadataReader.GetString(typeReference.Name);
+                if (!typeReference.Namespace.IsNil)
+                    typeName = _metadataReader.GetString(typeReference.Namespace) + "." + typeName;
                 MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
                 if (result != null)
                     return result;

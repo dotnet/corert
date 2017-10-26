@@ -305,9 +305,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
 
         public override bool Equals(Object obj)
         {
-            if (!(obj is NativeFormatMethodCommon))
+            if (!(obj is NativeFormatMethodCommon other))
                 return false;
-            return Equals((NativeFormatMethodCommon)obj);
+            return Equals(other);
         }
 
         public bool Equals(NativeFormatMethodCommon other)

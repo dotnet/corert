@@ -729,8 +729,16 @@ namespace ILCompiler
         {
             Debug.Assert(IsReflectionInvokable(method));
 
-            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
-                return false;
+            if (!ProjectNDependencyBehavior.EnableFullAnalysis)
+            {
+                if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                    return false;
+            }
+            else
+            {
+                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    return false;
+            }
 
             MethodDesc reflectionInvokeStub = GetCanonicalReflectionInvokeStub(method);
 

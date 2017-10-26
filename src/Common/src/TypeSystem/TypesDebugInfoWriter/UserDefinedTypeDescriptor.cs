@@ -10,20 +10,25 @@ using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem.Ecma;
 using ILCompiler;
+using ILCompiler.DependencyAnalysis;
 
 namespace Internal.TypeSystem.TypesDebugInfo
 {
     public class UserDefinedTypeDescriptor
     {
         object _lock = new object();
-        bool _is64bit;
-        TargetAbi _abi;
+        NodeFactory _nodeFactory;
 
-        public UserDefinedTypeDescriptor(ITypesDebugInfoWriter objectWriter, bool is64Bit, TargetAbi abi)
+        NodeFactory NodeFactory => _nodeFactory;
+
+        bool Is64Bit => NodeFactory.Target.PointerSize == 8;
+
+        TargetAbi Abi => NodeFactory.Target.Abi;
+
+        public UserDefinedTypeDescriptor(ITypesDebugInfoWriter objectWriter, NodeFactory nodeFactory)
         {
             _objectWriter = objectWriter;
-            _is64bit = is64Bit;
-            _abi = abi;
+            _nodeFactory = nodeFactory;
         }
 
         // Get type index for use as a variable/parameter
@@ -48,7 +53,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
                 // Note the use of GetTypeIndex here instead of GetVariableTypeIndex (We need the type exactly, not a reference to the type (as would happen for arrays/classes), and not a primitive value (as would happen for primitives))
                 descriptor.ElementType = GetTypeIndex(type, true);
-                descriptor.Is64Bit = _is64bit ? 1 : 0;
+                descriptor.Is64Bit = Is64Bit ? 1 : 0;
                 descriptor.IsConst = 1;
                 descriptor.IsReference = 0;
 
@@ -153,7 +158,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
                         PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
                         descriptor.ElementType = typeindex;
-                        descriptor.Is64Bit = _is64bit ? 1 : 0;
+                        descriptor.Is64Bit = Is64Bit ? 1 : 0;
                         descriptor.IsConst = 0;
                         descriptor.IsReference = 1;
 
@@ -232,7 +237,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
             PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
             descriptor.ElementType = GetVariableTypeIndex(pointeeType, false);
-            descriptor.Is64Bit = _is64bit ? 1 : 0;
+            descriptor.Is64Bit = Is64Bit ? 1 : 0;
             descriptor.IsConst = 0;
             descriptor.IsReference = 0;
 
@@ -254,7 +259,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
             PointerTypeDescriptor descriptor = new PointerTypeDescriptor();
             descriptor.ElementType = GetVariableTypeIndex(pointeeType, false);
-            descriptor.Is64Bit = _is64bit ? 1 : 0;
+            descriptor.Is64Bit = Is64Bit ? 1 : 0;
             descriptor.IsConst = 0;
             descriptor.IsReference = 1;
 
@@ -374,6 +379,19 @@ namespace Internal.TypeSystem.TypesDebugInfo
             return 0;
         }
 
+        TypeDesc GetFieldDebugType(FieldDesc field)
+        {
+            TypeDesc type = field.FieldType;
+
+            // TODO: check the type's generic complexity
+            if (NodeFactory.LazyGenericsPolicy.UsesLazyGenerics(type))
+            {
+                type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            }
+
+            return type;
+        }
+
         private uint GetClassTypeIndex(TypeDesc type, bool needsCompleteType)
         {
             DefType defType = type as DefType;
@@ -412,7 +430,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 int fieldOffsetEmit = fieldOffset.IsIndeterminate ? 0xBAAD : fieldOffset.AsInt;
                 DataFieldDescriptor field = new DataFieldDescriptor
                 {
-                    FieldTypeIndex = GetVariableTypeIndex(fieldDesc.FieldType, false),
+                    FieldTypeIndex = GetVariableTypeIndex(GetFieldDebugType(fieldDesc), false),
                     Offset = (ulong)fieldOffsetEmit,
                     Name = fieldDesc.Name
                 };
@@ -433,8 +451,8 @@ namespace Internal.TypeSystem.TypesDebugInfo
             }
 
             InsertStaticFieldRegionMember(fieldsDescs, defType, nonGcStaticFields, WindowsNodeMangler.NonGCStaticMemberName, "__type_" + WindowsNodeMangler.NonGCStaticMemberName, false);
-            InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, "__type_" + WindowsNodeMangler.GCStaticMemberName, _abi == TargetAbi.CoreRT);
-            InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, "__type_" + WindowsNodeMangler.ThreadStaticMemberName, _abi == TargetAbi.CoreRT);
+            InsertStaticFieldRegionMember(fieldsDescs, defType, gcStaticFields, WindowsNodeMangler.GCStaticMemberName, "__type_" + WindowsNodeMangler.GCStaticMemberName, Abi == TargetAbi.CoreRT);
+            InsertStaticFieldRegionMember(fieldsDescs, defType, threadStaticFields, WindowsNodeMangler.ThreadStaticMemberName, "__type_" + WindowsNodeMangler.ThreadStaticMemberName, Abi == TargetAbi.CoreRT);
 
             DataFieldDescriptor[] fields = new DataFieldDescriptor[fieldsDescs.Count];
             for (int i = 0; i < fieldsDescs.Count; ++i)
@@ -489,7 +507,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
                 if (staticDataInObject)
                 {
                     PointerTypeDescriptor pointerTypeDescriptor = new PointerTypeDescriptor();
-                    pointerTypeDescriptor.Is64Bit = _is64bit ? 1 : 0;
+                    pointerTypeDescriptor.Is64Bit = Is64Bit ? 1 : 0;
                     pointerTypeDescriptor.IsConst = 0;
                     pointerTypeDescriptor.IsReference = 0;
                     pointerTypeDescriptor.ElementType = staticFieldRegionTypeIndex;

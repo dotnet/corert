@@ -14,19 +14,12 @@ set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testresults.xml
 set CoreRT_TestName=*
 
-:: Default to highest Visual Studio version available
-set CoreRT_VSVersion=vs2015
-if defined VS150COMNTOOLS set CoreRT_VSVersion=vs2017
-
 :ArgLoop
 if "%1" == "" goto :ArgsDone
 if /i "%1" == "/?" goto :Usage
 if /i "%1" == "x64"    (set CoreRT_BuildArch=x64&&shift&goto ArgLoop)
 if /i "%1" == "x86"    (set CoreRT_BuildArch=x86&&shift&goto ArgLoop)
 if /i "%1" == "arm"    (set CoreRT_BuildArch=arm&&shift&goto ArgLoop)
-
-if /i "%1" == "vs2017"   (set CoreRT_VSVersion=vs2017&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"   (set CoreRT_VSVersion=vs2015&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set CoreRT_BuildType=Debug&shift&goto ArgLoop)
 if /i "%1" == "release"  (set CoreRT_BuildType=Release&shift&goto ArgLoop)
@@ -68,7 +61,7 @@ goto :Usage
 echo %ThisScript% [arch] [flavor] [/mode] [/runtest] [/coreclr ^<subset^>]
 echo     arch          : x64 / x86 / arm
 echo     flavor        : debug / release
-echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit. Default: both
+echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit/wasm. Default: all
 echo     /test         : Run a single test by folder name (ie, BasicThreading)
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
@@ -110,12 +103,18 @@ if NOT "%CoreRT_MultiFileConfiguration%" == "" (
 
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
-:: VS2017 changed the location of vcvarsall.bat.
-if /i "%__VSVersion%" == "vs2017" (
-    call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_BuildArch%
-) else (
-    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
+if defined VisualStudioVersion goto :RunVCVars
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:RunVCVars
+
+call "!VS150COMNTOOLS!\..\..\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_BuildArch%
 
 if "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepo
 
@@ -132,6 +131,8 @@ set /a __CppTotalTests=0
 set /a __CppPassedTests=0
 set /a __JitTotalTests=0
 set /a __JitPassedTests=0
+set /a __WasmTotalTests=0
+set /a __WasmPassedTests=0
 for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
@@ -145,24 +146,38 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
     )
     if NOT "!__SourceFileProj!" == "" (
         if /i not "%CoreRT_TestCompileMode%" == "cpp" (
-            set __Mode=Jit
-            call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-            set /a __JitTotalTests=!__JitTotalTests!+1
+            if /i not "%CoreRT_TestCompileMode%" == "wasm" (
+                    if not exist "!__SourceFolder!\no_ryujit" (
+                    set __Mode=Jit
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __JitTotalTests=!__JitTotalTests!+1
+                )
+            )
         )
         if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
-            if not exist "!__SourceFolder!\no_cpp" (
-                set __Mode=Cpp
-                call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                set /a __CppTotalTests=!__CppTotalTests!+1
+            if /i not "%CoreRT_TestCompileMode%" == "wasm" (
+                if not exist "!__SourceFolder!\no_cpp" (
+                    set __Mode=Cpp
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __CppTotalTests=!__CppTotalTests!+1
+                )
+            )
+            if /i not "%CoreRT_TestCompileMode%" == "cpp" (
+                if exist "!__SourceFolder!\wasm" (
+                    set __Mode=wasm
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __WasmTotalTests=!__WasmTotalTests!+1
+                )
             )
         )
     )
 )
 set /a __CppFailedTests=%__CppTotalTests%-%__CppPassedTests%
 set /a __JitFailedTests=%__JitTotalTests%-%__JitPassedTests%
-set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
-set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
-set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
+set /a __WasmFailedTests=%__WasmTotalTests%-%__WasmPassedTests%
+set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%+%__WasmTotalTests%
+set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%+%__WasmPassedTests%
+set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%+%__WasmFailedTests%
 
 echo ^<assemblies^>  > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
@@ -175,6 +190,7 @@ echo ^</assemblies^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo.
 set __JitStatusPassed=1
 set __CppStatusPassed=1
+set __WasmStatusPassed=1
 
 if /i not "%CoreRT_TestCompileMode%" == "cpp" (
     set __JitStatusPassed=0
@@ -190,8 +206,17 @@ if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
     call :PassFail !__CppStatusPassed! "CPP - TOTAL: %__CppTotalTests% PASSED: %__CppPassedTests%"
 )
 
+
+if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
+    set __WasmStatusPassed=0
+    if %__WasmTotalTests% EQU %__WasmPassedTests% (set __WasmStatusPassed=1)
+    if %__WasmTotalTests% EQU 0 (set __WasmStatusPassed=1)
+    call :PassFail !__WasmStatusPassed! "WASM - TOTAL: %__WasmTotalTests% PASSED: %__WasmPassedTests%"
+)
+
 if not !__JitStatusPassed! EQU 1 (exit /b 1)
 if not !__CppStatusPassed! EQU 1 (exit /b 1)
+if not !__WasmStatusPassed! EQU 1 (exit /b 1)
 exit /b 0
 
 :PassFail
@@ -227,6 +252,8 @@ goto :eof
         if /i "%CoreRT_BuildType%" == "debug" (
             set extraArgs=!extraArgs! /p:UseDebugCrt=true
         )
+    ) else if /i "%__Mode%" == "wasm" (
+        set extraArgs=!extraArgs! /p:NativeCodeGen=wasm
     ) else (
         if "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
             set extraArgs=!extraArgs! "/p:IlcMultiModule=true"
@@ -240,6 +267,7 @@ goto :eof
 
     set __SavedErrorLevel=%ErrorLevel%
     if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
+    if "%__Mode%" == "wasm" (goto :SkipTestRun)
 
     if "%__SavedErrorLevel%"=="0" (
         echo.
@@ -288,7 +316,7 @@ goto :eof
     set INIT_TESTS_LOG=%~dp0..\init-tests.log
     echo Restoring tests (this may take a few minutes)..
     echo Installing '%TESTS_REMOTE_URL%' to '%TESTS_LOCAL_ZIP%' >> "%INIT_TESTS_LOG%"
-    powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { (New-Object Net.WebClient).DownloadFile('%TESTS_REMOTE_URL%', '%TESTS_LOCAL_ZIP%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%TESTS_LOCAL_ZIP%', '%CoreRT_TestExtRepo%') } else { (New-Object -com shell.application).namespace('%CoreRT_TestExtRepo%').CopyHere((new-object -com shell.application).namespace('%TESTS_LOCAL_ZIP%').Items(),16) }" >> "%INIT_TESTS_LOG%"
+    powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('%TESTS_REMOTE_URL%', '%TESTS_LOCAL_ZIP%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%TESTS_LOCAL_ZIP%', '%CoreRT_TestExtRepo%') } else { (New-Object -com shell.application).namespace('%CoreRT_TestExtRepo%').CopyHere((new-object -com shell.application).namespace('%TESTS_LOCAL_ZIP%').Items(),16) }" >> "%INIT_TESTS_LOG%"
     if errorlevel 1 (
       echo ERROR: Could not download CoreCLR tests correctly. See '%INIT_TESTS_LOG%' for more details. 1>&2
       exit /b 1

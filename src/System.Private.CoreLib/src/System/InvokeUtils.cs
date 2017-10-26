@@ -213,7 +213,7 @@ namespace System
                     break;
 
                 default:
-                    Debug.Assert(false, "Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
+                    Debug.Fail("Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
                     dstObject = null;
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
@@ -259,7 +259,7 @@ namespace System
                 case CheckArgumentSemantics.ArraySet:
                     return CreateChangeTypeInvalidCastException(srcEEType, dstEEType);
                 default:
-                    Debug.Assert(false, "Unexpected CheckArgumentSemantics value: " + semantics);
+                    Debug.Fail("Unexpected CheckArgumentSemantics value: " + semantics);
                     throw new InvalidOperationException();
             }
         }

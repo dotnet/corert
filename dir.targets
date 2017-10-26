@@ -17,6 +17,13 @@
     <CLSCompliant Condition="'$(CLSCompliant)'==''">false</CLSCompliant>
   </PropertyGroup>
 
+  <!-- Set default references for netcoreapp2.0 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <!-- This tells VS that this is .NET Core app - uses .NET Core debugger, IntelliSense, etc. -->
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+  </PropertyGroup>
+
   <!-- Set default references for netstandard1.3 -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
@@ -26,22 +33,6 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="NETStandard.Library">
       <Version>1.6.1</Version>
-    </PackageReference>
-  </ItemGroup>
-
-  <!-- Set default references for netcoreapp1.1 -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
-    <!-- This tells VS that this is .NET Core app - uses .NET Core debugger, etc. -->
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v1.1</TargetFrameworkVersion>
-    <NoWarn>$(NoWarn);1701;1702</NoWarn>
-    <!-- Force .dll extension even if output type is exe. -->
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <PackageReference Include="Microsoft.NETCore.App">
-      <Version>1.1.2</Version>
     </PackageReference>
   </ItemGroup>
 

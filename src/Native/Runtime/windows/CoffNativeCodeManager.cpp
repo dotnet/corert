@@ -25,17 +25,52 @@
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
-#define UBF_FUNC_HAS_EHINFO     0x04
+#define UBF_FUNC_HAS_EHINFO             0x04
+#define UBF_FUNC_REVERSE_PINVOKE        0x08
+#define UBF_FUNC_HAS_ASSOCIATED_DATA    0x10
 
-#define UBF_FUNC_REVERSE_PINVOKE 0x08
+#ifdef _TARGET_X86_
+//
+// x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
+//
+typedef struct _RUNTIME_FUNCTION {
+    DWORD BeginAddress;
+    DWORD EndAddress;
+    DWORD UnwindData;
+} RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
-#if defined(_TARGET_AMD64_)
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+
+    // The ordering of these fields should be aligned with that
+    // of corresponding fields in CONTEXT
+    //
+    // (See REGDISPLAY in Runtime/regdisp.h for details)
+    PDWORD Edi;
+    PDWORD Esi;
+    PDWORD Ebx;
+    PDWORD Edx;
+    PDWORD Ecx;
+    PDWORD Eax;
+
+    PDWORD Ebp;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
+typedef struct _UNWIND_INFO {
+    ULONG FunctionLength;
+} UNWIND_INFO, *PUNWIND_INFO;
+
+#elif defined(_TARGET_AMD64_)
+
+#define UNW_FLAG_NHANDLER 0x0
+#define UNW_FLAG_EHANDLER 0x1
+#define UNW_FLAG_UHANDLER 0x2
+#define UNW_FLAG_CHAININFO 0x4
 
 //
 // The following structures are defined in Windows x64 unwind info specification
 // http://www.bing.com/search?q=msdn+Exception+Handling+x64
 //
-
 typedef union _UNWIND_CODE {
     struct {
         uint8_t CodeOffset;
@@ -45,11 +80,6 @@ typedef union _UNWIND_CODE {
 
     uint16_t FrameOffset;
 } UNWIND_CODE, *PUNWIND_CODE;
-
-#define UNW_FLAG_NHANDLER 0x0
-#define UNW_FLAG_EHANDLER 0x1
-#define UNW_FLAG_UHANDLER 0x2
-#define UNW_FLAG_CHAININFO 0x4
 
 typedef struct _UNWIND_INFO {
     uint8_t Version : 3;
@@ -61,10 +91,10 @@ typedef struct _UNWIND_INFO {
     UNWIND_CODE UnwindCode[1];
 } UNWIND_INFO, *PUNWIND_INFO;
 
+#endif // _TARGET_X86_
+
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
-
-#endif // _TARGET_AMD64_
 
 static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ size_t * pSize)
 {
@@ -83,6 +113,14 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     }
 
     *pSize = size;
+
+    return pUnwindInfo;
+
+#elif defined(_TARGET_X86_)
+
+    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + pRuntimeFunction->UnwindInfoAddress));
+
+    *pSize = sizeof(UNWIND_INFO);
 
     return pUnwindInfo;
 
@@ -126,7 +164,9 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     *pSize = size;
     return xdata;
 #else
-    #error unexpected target architecture
+    PORTABILITY_ASSERT("GetUnwindDataBlob");
+    *pSize = 0;
+    return NULL;
 #endif
 }
 
@@ -149,7 +189,7 @@ static int LookupUnwindInfoForMethod(UInt32 relativePc,
                                      int low,
                                      int high)
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     relativePc |= THUMB_CODE;
 #endif 
 
@@ -297,6 +337,9 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
@@ -347,6 +390,9 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
         // Reverse PInvoke transition should on the main function body only
@@ -383,18 +429,29 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     memset(&contextPointers, 0xDD, sizeof(contextPointers));
 #endif
 
-#define FOR_EACH_NONVOLATILE_REGISTER(F) \
-    F(Rax) F(Rcx) F(Rdx) F(Rbx) F(Rbp) F(Rsi) F(Rdi) F(R8) F(R9) F(R10) F(R11) F(R12) F(R13) F(R14) F(R15)
+#ifdef _TARGET_X86_
+    #define FOR_EACH_NONVOLATILE_REGISTER(F) \
+        F(E, ax) F(E, cx) F(E, dx) F(E, bx) F(E, bp) F(E, si) F(E, di)
+    #define WORDPTR PDWORD
+#else
+    #define FOR_EACH_NONVOLATILE_REGISTER(F) \
+        F(R, ax) F(R, cx) F(R, dx) F(R, bx) F(R, bp) F(R, si) F(R, di) \
+        F(R, 8) F(R, 9) F(R, 10) F(R, 11) F(R, 12) F(R, 13) F(R, 14) F(R, 15)
+    #define WORDPTR PDWORD64
+#endif
 
-#define REGDISPLAY_TO_CONTEXT(reg) \
-    contextPointers.reg = (PDWORD64) pRegisterSet->p##reg; \
-    if (pRegisterSet->p##reg != NULL) context.reg = *(pRegisterSet->p##reg);
+#define REGDISPLAY_TO_CONTEXT(prefix, reg) \
+    contextPointers.prefix####reg = (WORDPTR) pRegisterSet->pR##reg; \
+    if (pRegisterSet->pR##reg != NULL) context.prefix##reg = *(pRegisterSet->pR##reg);
 
-#define CONTEXT_TO_REGDISPLAY(reg) \
-    pRegisterSet->p##reg = (PTR_UIntNative) contextPointers.reg;
+#define CONTEXT_TO_REGDISPLAY(prefix, reg) \
+    pRegisterSet->pR##reg = (PTR_UIntNative) contextPointers.prefix####reg;
 
     FOR_EACH_NONVOLATILE_REGISTER(REGDISPLAY_TO_CONTEXT);
 
+#ifdef _TARGET_X86_
+    PORTABILITY_ASSERT("CoffNativeCodeManager::UnwindStackFrame");
+#else // _TARGET_X86_
     memcpy(&context.Xmm6, pRegisterSet->Xmm, sizeof(pRegisterSet->Xmm));
 
     context.Rsp = pRegisterSet->SP;
@@ -418,6 +475,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     pRegisterSet->pIP = PTR_PCODE(pRegisterSet->SP - sizeof(TADDR));
 
     memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
+#endif // _TARGET_X86_
 
     FOR_EACH_NONVOLATILE_REGISTER(CONTEXT_TO_REGDISPLAY);
 
@@ -454,6 +512,9 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
 
     // Check whether this is a funclet
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
@@ -550,6 +611,9 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
     // return if there is no EH info associated with this method
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
     {
@@ -632,6 +696,29 @@ void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
         return nullptr;
 
     return m_pClasslibFunctions[id];
+}
+
+PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
+{
+    TADDR relativePC = dac_cast<TADDR>(ControlPC) - m_moduleBase;
+
+    int MethodIndex = LookupUnwindInfoForMethod((UInt32)relativePC, m_pRuntimeFunctionTable, 0, m_nRuntimeFunctionTable - 1);
+    if (MethodIndex < 0)
+        return NULL;
+
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = m_pRuntimeFunctionTable + MethodIndex;
+
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pRuntimeFunction, &unwindDataBlobSize);
+
+    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+
+    uint8_t unwindBlockFlags = *p++;
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
+        return NULL;
+
+    UInt32 dataRVA = *(UInt32*)p;
+    return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);

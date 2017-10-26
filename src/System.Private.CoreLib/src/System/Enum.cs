@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -175,7 +174,7 @@ namespace System
             ulong rawValue;
             if (!TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
             {
-                Debug.Assert(false, "Caller was expected to do enough validation to avoid reaching this.");
+                Debug.Fail("Caller was expected to do enough validation to avoid reaching this.");
                 throw new ArgumentException();
             }
 
@@ -288,7 +287,7 @@ namespace System
                     }
 
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
+                    Debug.Fail("Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -373,7 +372,7 @@ namespace System
                     }
 
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
+                    Debug.Fail("Invalid Object type in Format");
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
@@ -556,11 +555,11 @@ namespace System
             return result;
         }
 
+        [Intrinsic]
         public Boolean HasFlag(Enum flag)
         {
             if (flag == null)
                 throw new ArgumentNullException(nameof(flag));
-            Contract.EndContractBlock();
 
             if (!(this.EETypePtr == flag.EETypePtr))
                 throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), this.GetType()));
@@ -728,7 +727,6 @@ namespace System
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            Contract.EndContractBlock();
 
             // Delegate rest of error checking to the other functions
             TypeCode typeCode = Convert.GetTypeCode(value);
@@ -1320,7 +1318,7 @@ namespace System
                 return TypeCode.Char;
             }
 
-            Debug.Assert(false, "Unknown underlying type.");
+            Debug.Fail("Unknown underlying type.");
             throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
         }
 

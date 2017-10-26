@@ -9,10 +9,10 @@
 **
 ===========================================================*/
 
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -147,7 +147,6 @@ namespace System
 
             if (startIndex > value.Length - length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            Contract.EndContractBlock();
 
             if (length > 0)
             {
@@ -214,7 +213,6 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
-            Contract.EndContractBlock();
 
             char* pFrom = ptr + startIndex;
             if (pFrom < ptr)
@@ -412,6 +410,28 @@ namespace System
                 wstrcpy(dest, src, value.Length);
             }
             return result;
+        }
+
+        public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            if (length > 0)
+            {
+                string result = FastAllocateString(length);
+                action(new Span<char>(ref result.GetRawStringData(), length), state);
+                return result;
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(length));
         }
 
         public object Clone()

@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 5a1cfc89-a84a-4642-b01d-ead88e60c1ee */
-    0x5a1cfc89,
-    0xa84a,
-    0x4642,
-    { 0xb0, 0x1d, 0xea, 0xd8, 0x8e, 0x60, 0xc1, 0xee }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8f51c68e-d515-425c-9e04-97e4a8148b07 */
+    0x8f51c68e,
+    0xd515,
+    0x425c,
+    {0x9e, 0x04, 0x97, 0xe4, 0xa8, 0x14, 0x8b, 0x07}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -827,7 +827,7 @@ enum CorInfoFlag
     CORINFO_FLG_NOSECURITYWRAP        = 0x04000000, // The method requires no security checks
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined
     CORINFO_FLG_DONT_INLINE_CALLER    = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-//  CORINFO_FLG_UNUSED                = 0x40000000,
+    CORINFO_FLG_JIT_INTRINSIC         = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
     // These are internal flags that can only be on Classes
     CORINFO_FLG_VALUECLASS            = 0x00010000, // is the class a value class
@@ -1954,6 +1954,14 @@ typedef SIZE_T GSCookie;
 
 const int MAX_EnC_HANDLER_NESTING_LEVEL = 6;
 
+// Results from type comparison queries
+enum class TypeCompareState
+{
+    MustNot = -1, // types are not equal
+    May = 0,      // types may be equal (must test at runtime)
+    Must = 1,     // type are equal
+};
+
 //
 // This interface is logically split into sections for each class of information 
 // (ICorMethodInfo, ICorModuleInfo, etc.). This split used to exist physically as well
@@ -2083,6 +2091,12 @@ public:
             CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
             CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
+            ) = 0;
+
+    // Given T, return the type of the default EqualityComparer<T>.
+    // Returns null if the type can't be determined exactly.
+    virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+            CORINFO_CLASS_HANDLE elemType
             ) = 0;
 
     // Given resolved token that corresponds to an intrinsic classified as
@@ -2259,7 +2273,6 @@ public:
     virtual const char* getClassName (
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
-
 
     // Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
     // If fNamespace=TRUE, include the namespace/enclosing classes
@@ -2482,6 +2495,20 @@ public:
 
     // TRUE if cls1 and cls2 are considered equivalent types.
     virtual BOOL areTypesEquivalent(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            ) = 0;
+
+    // See if a cast from fromClass to toClass will succeed, fail, or needs
+    // to be resolved at runtime.
+    virtual TypeCompareState compareTypesForCast(
+            CORINFO_CLASS_HANDLE        fromClass,
+            CORINFO_CLASS_HANDLE        toClass
+            ) = 0;
+
+    // See if types represented by cls1 and cls2 compare equal, not
+    // equal, or the comparison needs to be resolved at runtime.
+    virtual TypeCompareState compareTypesForEquality(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
@@ -2789,6 +2816,15 @@ public:
     virtual const char* getMethodName (
             CORINFO_METHOD_HANDLE       ftn,        /* IN */
             const char                **moduleName  /* OUT */
+            ) = 0;
+
+    // Return method name as in metadata, or nullptr if there is none,
+    // and optionally return the class and namespace names as in metadata.
+    // Suitable for non-debugging use.
+    virtual const char* getMethodNameFromMetadata(
+            CORINFO_METHOD_HANDLE       ftn,            /* IN */
+            const char                **className,      /* OUT */
+            const char                **namespaceName   /* OUT */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that

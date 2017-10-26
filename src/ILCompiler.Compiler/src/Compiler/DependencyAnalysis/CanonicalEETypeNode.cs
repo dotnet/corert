@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
             Debug.Assert(!type.IsMdArray);
+            Debug.Assert(!type.IsByRefLike);
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -55,7 +56,11 @@ namespace ILCompiler.DependencyAnalysis
 
             // Track generic virtual methods that will get added to the GVM tables
             if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+            {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type), "Type with generic virtual methods"));
+
+                AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
+            }
 
             return dependencyList;
         }
@@ -97,26 +102,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override void OutputBaseSize(ref ObjectDataBuilder objData)
+        protected override int BaseSize
         {
-            bool emitMinimumObjectSize = false;
-
-            if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal) && _type.IsDefType)
+            get
             {
-                LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
-
-                if (instanceByteCount.IsIndeterminate)
+                if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal) && _type.IsDefType)
                 {
-                    // For USG types, they may be of indeterminate size, and the size of the type may be meaningless. 
-                    // In that case emit a fixed constant.
-                    emitMinimumObjectSize = true;
-                }
-            }
+                    LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
 
-            if (emitMinimumObjectSize)
-                objData.EmitInt(MinimumObjectSize);
-            else
-                base.OutputBaseSize(ref objData);
+                    if (instanceByteCount.IsIndeterminate)
+                    {
+                        // For USG types, they may be of indeterminate size, and the size of the type may be meaningless. 
+                        // In that case emit a fixed constant.
+                        return MinimumObjectSize;
+                    }
+                }
+
+                return base.BaseSize;
+            }
         }
 
         protected override void ComputeValueTypeFieldPadding()

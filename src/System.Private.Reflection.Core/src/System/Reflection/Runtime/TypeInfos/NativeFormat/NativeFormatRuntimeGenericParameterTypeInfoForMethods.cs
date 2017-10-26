@@ -27,6 +27,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             _declaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
         }
 
+        public sealed override bool IsGenericTypeParameter => false;
+        public sealed override bool IsGenericMethodParameter => true;
+
         public sealed override MethodBase DeclaringMethod
         {
             get

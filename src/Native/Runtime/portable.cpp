@@ -35,7 +35,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
@@ -178,6 +178,9 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
     return (String*)RhpNewArray(pArrayEEType, numElements);
 }
 
+#endif
+#if defined(USE_PORTABLE_HELPERS)
+
 #ifdef _ARM_
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
@@ -207,19 +210,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
     return pObject;
 }
 #endif
-
-//
-// PInvoke
-//
-COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
-{
-    // TODO: RhpPInvoke
-}
-
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
-{
-    // TODO: RhpPInvokeReturn
-}
 
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
@@ -303,6 +293,7 @@ void * ReturnFromCallDescrThunk;
 #endif
 
 #if defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
+#if !defined (_ARM64_)
 // 
 // Return address hijacking
 //
@@ -330,10 +321,12 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+#endif
 #endif // defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 
+#if !defined (_ARM64_)
 COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
@@ -347,6 +340,7 @@ COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
     *dst = ref;
     InlineCheckedWriteBarrier(dst, ref);
 }
+#endif
 
 COOP_PINVOKE_HELPER(Object *, RhpCheckedLockCmpXchg, (Object ** location, Object * value, Object * comparand))
 {
@@ -378,12 +372,14 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
 
 #endif // USE_PORTABLE_HELPERS
 
+#if !defined(_ARM64_)
 COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 {
     PalMemoryBarrier();
 }
+#endif
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
     return NULL;
@@ -453,6 +449,7 @@ COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
 
 #endif
 
+#if !defined(_ARM64_)
 COOP_PINVOKE_HELPER(void, RhpETWLogLiveCom, (Int32 eventType, void * ccwHandle, void * objectId, void * typeRawValue, void * iUnknown, void * vTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags))
 {
     ASSERT_UNCONDITIONALLY("NYI");
@@ -463,3 +460,5 @@ COOP_PINVOKE_HELPER(bool, RhpETWShouldWalkCom, ())
     ASSERT_UNCONDITIONALLY("NYI");
     return false;
 }
+
+#endif

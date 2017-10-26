@@ -571,7 +571,7 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry_BranchIntoFilter() cil managed
+    .method static public hidebysig void Branching.FromTryIntoCatch_Invalid_BranchOutOfTry.BranchIntoHandler() cil managed
     {
         .maxstack 2
 
@@ -594,7 +594,27 @@
         lbl_ret: ret
     }
 
-    .method static public hidebysig void Branching.FromTryIntoFinally_Invalid_BranchOutOfTry_BranchIntoHandler() cil managed
+    .method static public hidebysig void Branching.FromTryIntoFilter_Invalid_BranchOutOfTry.BranchIntoFilter() cil managed
+    {
+        .try
+        {
+            br.s  lbl_filter
+        }
+        filter
+        {
+            lbl_filter: pop
+            ldc.i4.0
+            endfilter
+        } 
+        { 
+            pop
+            leave.s lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Branching.FromTryIntoFinally_Invalid_BranchOutOfTry.BranchIntoHandler() cil managed
     {
         .maxstack 2
 

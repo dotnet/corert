@@ -138,11 +138,17 @@
   <data name="BranchOutOfTry" xml:space="preserve">
     <value>Branch out of try block.</value>
   </data>
+  <data name="ByrefOfByref" xml:space="preserve">
+    <value>ByRef of ByRef.</value>
+  </data>
   <data name="CallAbstract" xml:space="preserve">
     <value>Call not allowed on abstract methods.</value>
   </data>
+  <data name="CallCtor" xml:space="preserve">
+    <value>call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.</value>
+  </data>
   <data name="CallVirtOnStatic" xml:space="preserve">
-    <value>callvirt on static</value>
+    <value>callvirt on static.</value>
   </data>
   <data name="CallVirtOnValueType" xml:space="preserve">
     <value>Callvirt on a value type method.</value>
@@ -152,6 +158,18 @@
   </data>
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
+  </data>
+  <data name="DelegateCtor" xml:space="preserve">
+    <value>Unrecognized arguments for delegate .ctor.</value>
+  </data>
+  <data name="DelegateCtorSigI" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Native Int.</value>
+  </data>
+  <data name="DelegateCtorSigO" xml:space="preserve">
+    <value>Unrecognized delegate .ctor signature; expected Object.</value>
+  </data>
+  <data name="DelegatePattern" xml:space="preserve">
+    <value>Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).</value>
   </data>
   <data name="Endfilter" xml:space="preserve">
     <value>Endfilter from outside an exception filter block.</value>
@@ -189,8 +207,23 @@
   <data name="ExpectedValClassObjRefVariable" xml:space="preserve">
     <value>Value type, ObjRef type or variable type expected.</value>
   </data>
+  <data name="FieldAccess" xml:space="preserve">
+    <value>Field is not visible.</value>
+  </data>
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
+  </data>
+  <data name="LdftnConstructor" xml:space="preserve">
+    <value>ldftn/ldvirtftn not allowed on .ctor.</value>
+  </data>
+  <data name="LdftnNonFinalVirtual" xml:space="preserve">
+    <value>Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.</value>
+  </data>
+  <data name="LdvirtftnOnStatic" xml:space="preserve">
+    <value>ldvirtftn on static.</value>
+  </data>
+  <data name="MethodAccess" xml:space="preserve">
+    <value>Method is not visible.</value>
   </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
@@ -207,8 +240,32 @@
   <data name="Rethrow" xml:space="preserve">
     <value>Rethrow from outside a catch handler.</value>
   </data>
+  <data name="ReturnEmpty" xml:space="preserve">
+    <value>Stack must contain only the return value.</value>
+  </data>
+  <data name="ReturnFromFilter" xml:space="preserve">
+    <value>Return out of exception filter block.</value>
+  </data>
+  <data name="ReturnFromHandler" xml:space="preserve">
+    <value>Return out of exception handler block.</value>
+  </data>
+  <data name="ReturnFromTry" xml:space="preserve">
+    <value>Return out of try block.</value>
+  </data>
+  <data name="ReturnMissing" xml:space="preserve">
+    <value>Return value missing on the stack.</value>
+  </data>
+  <data name="ReturnPtrToStack" xml:space="preserve">
+    <value>Return type is ByRef, TypedReference, ArgHandle, or ArgIterator.</value>
+  </data>
+  <data name="ReturnVoid" xml:space="preserve">
+    <value>Stack must be empty on return from a void function.</value>
+  </data>
   <data name="StackByRef" xml:space="preserve">
     <value>Expected ByRef on the stack.</value>
+  </data>
+  <data name="StackMethod" xml:space="preserve">
+    <value>Expected pointer to function on the stack.</value>
   </data>
   <data name="StackNotEq" xml:space="preserve">
     <value>Non-compatible types on the stack.</value>
@@ -240,6 +297,15 @@
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>
   </data>
+  <data name="ThisMismatch" xml:space="preserve">
+    <value>The 'this' parameter to the call must be the calling method's 'this' parameter.</value>
+  </data>
+  <data name="ThisUninitReturn" xml:space="preserve">
+    <value>Return from .ctor when this is uninitialized.</value>
+  </data>
+  <data name="ThisUninitStore" xml:space="preserve">
+    <value>Store into this when it is uninitialized.</value>
+  </data>
   <data name="TokenResolve" xml:space="preserve">
     <value>Unable to resolve token.</value>
   </data>
@@ -249,11 +315,23 @@
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
   </data>
+  <data name="UninitStack" xml:space="preserve">
+    <value>Uninitialized item on stack.</value>
+  </data>
+  <data name="UnmanagedPointer" xml:space="preserve">
+    <value>Unmanaged pointers are not a verifiable type.</value>
+  </data>
   <data name="UnrecognizedArgumentNumber" xml:space="preserve">
     <value>Unrecognized argument number.</value>
   </data>
   <data name="UnrecognizedLocalNumber" xml:space="preserve">
     <value>Unrecognized local variable number.</value>
+  </data>
+  <data name="UnsatisfiedMethodInst" xml:space="preserve">
+    <value>Method instantiation has unsatisfied method type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedMethodParentInst" xml:space="preserve">
+    <value>Method parent instantiation has unsatisfied class type parameter constraints.</value>
   </data>
   <data name="Unverifiable" xml:space="preserve">
     <value>Instruction cannot be verified.</value>

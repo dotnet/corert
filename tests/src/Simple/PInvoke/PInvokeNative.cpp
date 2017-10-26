@@ -639,6 +639,17 @@ DLL_EXPORT  bool __stdcall InlineStringTest(inlineString* p)
     CopyAnsiString(p->inlineString, "Hello World!");
     return true;
 }
+struct Callbacks
+{
+    int(__stdcall *callback0) (void);
+    int(__stdcall *callback1) (void);
+    int(__stdcall *callback2) (void);
+};
+
+DLL_EXPORT bool __stdcall RegisterCallbacks(Callbacks *callbacks)
+{
+    return callbacks->callback0() == 0 && callbacks->callback1() == 1 && callbacks->callback2() == 2;
+}
 
 #if (_MSC_VER >= 1400)         // Check MSC version
 #pragma warning(pop)           // Renable previous depreciations

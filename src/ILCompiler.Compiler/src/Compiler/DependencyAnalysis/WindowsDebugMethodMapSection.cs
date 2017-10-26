@@ -48,9 +48,9 @@ namespace ILCompiler.DependencyAnalysis
 
             int IComparable<EmittedMethodWithILToken>.CompareTo(EmittedMethodWithILToken other)
             {
-                if (other.IlTokenRid == IlTokenRid)
+                if (IlTokenRid == other.IlTokenRid)
                     return 0;
-                if (other.IlTokenRid < IlTokenRid)
+                if (IlTokenRid < other.IlTokenRid)
                     return -1;
                 return 1;
             }
@@ -91,12 +91,18 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (IMethodBodyNode emitted in emittedMethods)
             {
-                if (!(emitted.Method.GetMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod))
+                NonExternMethodSymbolNode methodNode = emitted as NonExternMethodSymbolNode;
+                if (methodNode != null && !methodNode.HasCompiledBody)
                 {
                     continue;
                 }
 
-                EntityHandle methodHandle = pseudoAssembly.EmitMetadataHandleForTypeSystemEntity(emitted.Method.GetMethodDefinition());
+                if (!(emitted.Method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod))
+                {
+                    continue;
+                }
+
+                EntityHandle methodHandle = pseudoAssembly.EmitMetadataHandleForTypeSystemEntity(emitted.Method.GetTypicalMethodDefinition());
                 Debug.Assert(methodHandle.Kind == HandleKind.MemberReference);
                 uint methodToken = (uint)MetadataTokens.GetToken(methodHandle);
                 uint methodTokenRid = methodToken & 0xFFFFFF;

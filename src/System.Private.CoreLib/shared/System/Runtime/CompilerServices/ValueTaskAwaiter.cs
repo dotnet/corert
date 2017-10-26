@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace System.Runtime.CompilerServices
         public bool IsCompleted => _value.IsCompleted;
 
         /// <summary>Gets the result of the ValueTask.</summary>
+        [StackTraceHidden]
         public TResult GetResult() =>
             _value._task == null ? 
                 _value._result : 
@@ -33,5 +35,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the continuation action for this ValueTask.</summary>
         public void UnsafeOnCompleted(Action continuation) =>
             _value.AsTask().ConfigureAwait(continueOnCapturedContext: true).GetAwaiter().UnsafeOnCompleted(continuation);
+
+        /// <summary>Gets the task underlying <see cref="_value"/>.</summary>
+        internal Task<TResult> AsTask() => _value.AsTask();
     }
 }

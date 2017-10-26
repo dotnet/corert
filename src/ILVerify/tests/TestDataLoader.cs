@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Internal.IL;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Newtonsoft.Json;
 using Xunit;
@@ -29,6 +31,8 @@ namespace ILVerify.Tests
         /// See: https://github.com/dotnet/corert/pull/3725#discussion_r118820770
         /// </summary>
         public static string TESTASSEMBLYPATH = @"..\..\..\ILTests\";
+
+        private const string SPECIALTEST_PREFIX = "special.";
 
         /// <summary>
         /// Returns all methods that contain valid IL code based on the following naming convention:
@@ -101,15 +105,17 @@ namespace ILVerify.Tests
                 foreach (var methodHandle in testModule.MetadataReader.MethodDefinitions)
                 {
                     var method = (EcmaMethod)testModule.GetMethod(methodHandle);
-                    var methodName = method.ToString();
+                    var methodName = method.Name;
 
                     if (!String.IsNullOrEmpty(methodName) && methodName.Contains("_"))
                     {
                         var mparams = methodName.Split('_');
-                        var newItem = methodSelector(mparams, methodHandle);
+                        var specialMethodHandle = HandleSpecialTests(mparams, method);
+                        var newItem = methodSelector(mparams, specialMethodHandle);
 
                         if (newItem != null)
                         {
+                            newItem.TestName = mparams[0];
                             newItem.MethodName = methodName;
                             newItem.ModuleName = testDllName;
 
@@ -119,6 +125,29 @@ namespace ILVerify.Tests
                 }
             }
             return retVal;
+        }
+
+        private static MethodDefinitionHandle HandleSpecialTests(string[] methodParams, EcmaMethod method)
+        {
+            if (!methodParams[0].StartsWith(SPECIALTEST_PREFIX))
+                return method.Handle;
+
+            // Cut off special prefix
+            var specialParams = methodParams[0].Substring(SPECIALTEST_PREFIX.Length);
+
+            // Get friendly name / special name
+            int delimiter = specialParams.IndexOf('.');
+            if (delimiter < 0)
+                return method.Handle;
+
+            var friendlyName = specialParams.Substring(0, delimiter);
+            var specialName = specialParams.Substring(delimiter + 1);
+
+            // Substitute method parameters with friendly name
+            methodParams[0] = friendlyName;
+
+            var specialMethodHandle = (EcmaMethod)method.OwningType.GetMethod(specialName, method.Signature);
+            return specialMethodHandle == null ? method.Handle : specialMethodHandle.Handle;
         }
 
         private static IEnumerable<string> GetAllTestDlls()
@@ -144,6 +173,10 @@ namespace ILVerify.Tests
                 { systemRuntime.GetName().Name, systemRuntime.Location }
             };
 
+            typeSystemContext.ReferenceFilePaths = new Dictionary<string, string>();
+            foreach (var fileName in GetAllTestDlls())
+                typeSystemContext.ReferenceFilePaths.Add(Path.GetFileNameWithoutExtension(fileName), TESTASSEMBLYPATH + fileName);
+
             typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(coreAssembly.GetName().Name));
             return typeSystemContext.GetModuleFromPath(TESTASSEMBLYPATH + assemblyName);
         }
@@ -151,12 +184,14 @@ namespace ILVerify.Tests
 
     abstract class TestCase : IXunitSerializable
     {
+        public string TestName { get; set; }
         public string MethodName { get; set; }
         public int MetadataToken { get; set; }
         public string ModuleName { get; set; }
 
         public virtual void Deserialize(IXunitSerializationInfo info)
         {
+            TestName = info.GetValue<string>(nameof(TestName));
             MethodName = info.GetValue<string>(nameof(MethodName));
             MetadataToken = info.GetValue<int>(nameof(MetadataToken));
             ModuleName = info.GetValue<string>(nameof(ModuleName));
@@ -164,6 +199,7 @@ namespace ILVerify.Tests
 
         public virtual void Serialize(IXunitSerializationInfo info)
         {
+            info.AddValue(nameof(TestName), TestName);
             info.AddValue(nameof(MethodName), MethodName);
             info.AddValue(nameof(MetadataToken), MetadataToken);
             info.AddValue(nameof(ModuleName), ModuleName);
@@ -171,7 +207,7 @@ namespace ILVerify.Tests
 
         public override string ToString()
         {
-            return $"{MethodName}";
+            return $"[{Path.GetFileNameWithoutExtension(ModuleName)}] {TestName}";
         }
     }
 
@@ -199,6 +235,27 @@ namespace ILVerify.Tests
             base.Deserialize(info);
             var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
             ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + GetErrorsString(ExpectedVerifierErrors);
+        }
+
+        private static string GetErrorsString(List<VerifierError> errors)
+        {
+            if (errors == null || errors.Count <= 0)
+                return String.Empty;
+
+            var errorsString = new StringBuilder(" (");
+
+            for (int i = 0; i < errors.Count - 1; ++i)
+                errorsString.Append(errors[i]).Append(", ");
+
+            errorsString.Append(errors[errors.Count - 1]);
+            errorsString.Append(")");
+
+            return errorsString.ToString();
         }
     }
 }

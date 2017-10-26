@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices
     {
         public McgRemovedType()
         {
-            Debug.Assert(false, "A type that was removed by MCG dependency reduction has been instantiated.");
+            Debug.Fail("A type that was removed by MCG dependency reduction has been instantiated.");
             throw new Exception(SR.Arg_RemovedTypeInstantiated);
         }
     }

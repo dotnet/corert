@@ -210,12 +210,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw new ArgumentNullException(nameof(other));
 
             // Do not rewrite as a call to IsConstructedGenericMethod - we haven't yet established that "other" is a runtime-implemented member yet!
-            RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod = other as RuntimeConstructedGenericMethodInfo;
-            if (otherConstructedGenericMethod != null)
+            if (other is RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod)
                 other = otherConstructedGenericMethod.GetGenericMethodDefinition();
 
-            RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod = other as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
-            if (otherMethod == null)
+            if (!(other is RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod))
                 return false;
 
             return _common.HasSameMetadataDefinitionAs(otherMethod._common);
@@ -223,8 +221,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeNamedMethodInfo<TRuntimeMethodCommon> other = obj as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
-            if (other == null)
+            if (!(obj is RuntimeNamedMethodInfo<TRuntimeMethodCommon> other))
                 return false;
             if (!_common.Equals(other._common))
                 return false;

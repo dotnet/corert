@@ -159,7 +159,7 @@ namespace Internal.Runtime.TypeLoader
                     return _typeSystemContext.GetWellKnownType((WellKnownType)data);
 
                 case TypeSignatureKind.FunctionPointer:
-                    Debug.Assert(false, "NYI!");
+                    Debug.Fail("NYI!");
                     parser.ThrowBadImageFormatException();
                     return null;
 

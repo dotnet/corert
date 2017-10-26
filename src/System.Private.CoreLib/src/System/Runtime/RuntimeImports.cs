@@ -41,9 +41,6 @@ namespace System.Runtime
         internal static extern void RhpSendCustomEventToDebugger(IntPtr payload, int length);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr RhpGetFuncEvalTargetAddress();
-
-        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint RhpGetFuncEvalParameterBufferSize();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
@@ -610,6 +607,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
         internal static extern IntPtr RhGetJmpStubCodeTarget(IntPtr pCode);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]
+        public static extern IntPtr RhGetTargetOfUnboxingAndInstantiatingStub(IntPtr pCode);
 
         //
         // EH helpers

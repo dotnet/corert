@@ -12,8 +12,13 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    public struct Memory<T>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
+    public readonly struct Memory<T>
     {
+        // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
+        // as code uses Unsafe.As to cast between them.
+
         // The highest order bit of _index is used to discern whether _arrayOrOwnedMemory is an array or an owned memory
         // if (_index >> 31) == 1, object _arrayOrOwnedMemory is an OwnedMemory<T>
         // else, object _arrayOrOwnedMemory is a T[]
@@ -98,13 +103,11 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Memory{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory)
-        {
-            if (memory._index < 0)
-                return new ReadOnlyMemory<T>((OwnedMemory<T>)memory._arrayOrOwnedMemory, memory._index & RemoveOwnedFlagBitMask, memory._length);
-            return new ReadOnlyMemory<T>((T[])memory._arrayOrOwnedMemory, memory._index, memory._length);
-        }
+        public static implicit operator ReadOnlyMemory<T>(Memory<T> memory) =>
+            Unsafe.As<Memory<T>, ReadOnlyMemory<T>>(ref memory);
+
+        //Debugger Display = {T[length]}
+        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
 
         /// <summary>
         /// Returns an empty <see cref="Memory{T}"/>
@@ -167,7 +170,7 @@ namespace System
             get
             {
                 if (_index < 0)
-                    return ((OwnedMemory<T>)_arrayOrOwnedMemory).AsSpan().Slice(_index & RemoveOwnedFlagBitMask, _length);
+                    return ((OwnedMemory<T>)_arrayOrOwnedMemory).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
                 return new Span<T>((T[])_arrayOrOwnedMemory, _index, _length);
             }
         }
@@ -180,6 +183,7 @@ namespace System
                 if (_index < 0)
                 {
                     memoryHandle = ((OwnedMemory<T>)_arrayOrOwnedMemory).Pin();
+                    memoryHandle.AddOffset((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
                 }
                 else
                 {

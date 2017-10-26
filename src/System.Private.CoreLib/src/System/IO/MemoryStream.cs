@@ -6,7 +6,6 @@ using Internal.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -23,7 +22,6 @@ namespace System.IO
         private byte[] _buffer;    // Either allocated internally or externally.
         private int _origin;       // For user-provided arrays, start at this origin
         private int _position;     // read/write head.
-        [ContractPublicPropertyName("Length")]
         private int _length;       // Number of bytes within the memory stream
         private int _capacity;     // length of usable portion of buffer for stream
         // Note that _capacity == _buffer.Length for non-user-provided byte[]'s
@@ -116,26 +114,11 @@ namespace System.IO
             _isOpen = true;
         }
 
-        public override bool CanRead
-        {
-            [Pure]
-            get
-            { return _isOpen; }
-        }
+        public override bool CanRead => _isOpen;
 
-        public override bool CanSeek
-        {
-            [Pure]
-            get
-            { return _isOpen; }
-        }
+        public override bool CanSeek => _isOpen;
 
-        public override bool CanWrite
-        {
-            [Pure]
-            get
-            { return _writable; }
-        }
+        public override bool CanWrite => _writable;
 
         private void EnsureWriteable()
         {
@@ -487,7 +470,21 @@ namespace System.IO
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return Read(destination.Span);
+            // ReadAsync(Memory<byte>,...) needs to delegate to an existing virtual to do the work, in case an existing derived type
+            // has changed or augmented the logic associated with reads.  If the Memory wraps an array, we could delegate to
+            // ReadAsync(byte[], ...), but that would defeat part of the purpose, as ReadAsync(byte[], ...) often needs to allocate
+            // a Task<int> for the return value, so we want to delegate to one of the synchronous methods.  We could always
+            // delegate to the Read(Span<byte>) method, and that's the most efficient solution when dealing with a concrete
+            // MemoryStream, but if we're dealing with a type derived from MemoryStream, Read(Span<byte>) will end up delegating
+            // to Read(byte[], ...), which requires it to get a byte[] from ArrayPool and copy the data.  So, we special-case the
+            // very common case of the Memory<byte> wrapping an array: if it does, we delegate to Read(byte[], ...) with it,
+            // as that will be efficient in both cases, and we fall back to Read(Span<byte>) if the Memory<byte> wrapped something
+            // else; if this is a concrete MemoryStream, that'll be efficient, and only in the case where the Memory<byte> wrapped
+            // something other than an array and this is a MemoryStream-derived type that doesn't override Read(Span<byte>) will
+            // it then fall back to doing the ArrayPool/copy behavior.
+            return destination.TryGetArray(out ArraySegment<byte> destinationArray) ?
+                Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
+                Read(destination.Span);
         }
 #pragma warning restore 1998
 
@@ -835,7 +832,16 @@ namespace System.IO
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Write(source.Span);
+            // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
+            // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
+            if (source.DangerousTryGetArray(out ArraySegment<byte> sourceArray))
+            {
+                Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
+            }
+            else
+            {
+                Write(source.Span);
+            }
         }
 #pragma warning restore 1998
 

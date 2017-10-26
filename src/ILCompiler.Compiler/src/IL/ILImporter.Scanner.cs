@@ -34,10 +34,16 @@ namespace Internal.IL
         private class BasicBlock
         {
             // Common fields
+            public enum ImportState : byte
+            {
+                Unmarked,
+                IsPending
+            }
+
             public BasicBlock Next;
 
             public int StartOffset;
-            public int EndOffset;
+            public ImportState State = ImportState.Unmarked;
 
             public bool TryStart;
             public bool FilterStart;
@@ -747,10 +753,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    if (ConstructedEETypeNode.CreationAllowed(type))
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(type), "ldtoken");
-                    else
-                        _dependencies.Add(_factory.NecessaryTypeSymbol(type), "ldtoken");
+                    _dependencies.Add(_factory.MaximallyConstructableType(type), "ldtoken");
                 }
 
                 // If this is a ldtoken Type / GetValueInternal sequence, we're done.

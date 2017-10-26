@@ -65,8 +65,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeSyntheticMethodInfo other = obj as RuntimeSyntheticMethodInfo;
-            if (other == null)
+            if (!(obj is RuntimeSyntheticMethodInfo other))
                 return false;
             if (_syntheticMethodId != other._syntheticMethodId)
                 return false;

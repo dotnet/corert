@@ -698,7 +698,7 @@ namespace Internal.JitInterface
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
-                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC | CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
             if (method.IsAbstract)
@@ -847,6 +847,14 @@ namespace Internal.JitInterface
                 return null;
             }
 
+            if (implType.IsValueType)
+            {
+                // TODO: If we resolve to a method on a valuetype, we should return a MethodDesc for the unboxing stub
+                // so that RyuJIT won't try to inline it. We don't have MethodDescs for unboxing stubs in the
+                // type system though.
+                return null;
+            }
+
             implType = implType.GetClosestDefType();
 
             MethodDesc decl = HandleToObject(baseMethod);
@@ -859,12 +867,6 @@ namespace Internal.JitInterface
             if (declOwningType.IsInterface)
             {
                 // Interface call devirtualization.
-
-                if (implType.IsValueType)
-                {
-                    // TODO: this ends up asserting RyuJIT - why?
-                    return null;
-                }
 
                 if (implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
@@ -944,6 +946,13 @@ namespace Internal.JitInterface
                 ISymbolNode constLookup = _compilation.ComputeConstantLookup(helperId, entity);
                 lookup.constLookup = CreateConstLookupToSymbol(constLookup);
             }
+        }
+
+        private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            // TODO: EqualityComparer optimizations
+            // https://github.com/dotnet/corert/issues/763
+            return null;
         }
 
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
@@ -1792,6 +1801,57 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("canCast"); }
         private bool areTypesEquivalent(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
         { throw new NotImplementedException("areTypesEquivalent"); }
+
+        private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
+        {
+            // TODO: Implement
+            return TypeCompareState.May;
+        }
+
+        private TypeCompareState compareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
+        {
+            TypeCompareState result = TypeCompareState.May;
+
+            TypeDesc type1 = HandleToObject(cls1);
+            TypeDesc type2 = HandleToObject(cls2);
+
+            // If neither type is a canonical subtype, type handle comparison suffices
+            if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                result = (type1 == type2 ? TypeCompareState.Must : TypeCompareState.MustNot);
+            }
+            // If either or both types are canonical subtypes, we can sometimes prove inequality.
+            else
+            {
+                // If either is a value type then the types cannot
+                // be equal unless the type defs are the same.
+                if (type1.IsValueType || type2.IsValueType)
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = TypeCompareState.MustNot;
+                        }
+                    }
+                }
+                // If we have two ref types that are not __Canon, then the
+                // types cannot be equal unless the type defs are the same.
+                else
+                {
+                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        if (!type1.HasSameTypeDefinition(type2))
+                        {
+                            result = TypeCompareState.MustNot;
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private CORINFO_CLASS_STRUCT_* mergeClasses(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
         { throw new NotImplementedException("mergeClasses"); }
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
@@ -2295,7 +2355,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.FilterException should not be called");
+            Debug.Fail("CorInfoImpl.FilterException should not be called");
             throw new NotSupportedException("FilterException");
         }
 
@@ -2303,7 +2363,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.HandleException should not be called");
+            Debug.Fail("CorInfoImpl.HandleException should not be called");
             throw new NotSupportedException("HandleException");
         }
 
@@ -2311,7 +2371,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.runWithErrorTrap should not be called");
+            Debug.Fail("CorInfoImpl.runWithErrorTrap should not be called");
             throw new NotSupportedException("runWithErrorTrap");
         }
 
@@ -2336,8 +2396,11 @@ namespace Internal.JitInterface
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 int size = 5 * this.PointerSize;
-                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM ||
+                    _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARMEL)
                     size += this.PointerSize; // m_ChainPointer
+
                 return (uint)size;
             }
         }
@@ -2412,6 +2475,29 @@ namespace Internal.JitInterface
                     *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
                 else
                     *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
+            }
+
+            return (byte*)GetPin(StringToUTF8(method.Name));
+        }
+
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName)
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            MetadataType owningType = method.OwningType as MetadataType;
+            if (owningType != null)
+            {
+                if (className != null)
+                    *className = (byte*)GetPin(StringToUTF8(owningType.Name));
+                if (namespaceName != null)
+                    *namespaceName = (byte*)GetPin(StringToUTF8(owningType.Namespace));
+            }
+            else
+            {
+                if (className != null)
+                    *className = null;
+                if (namespaceName != null)
+                    *namespaceName = null;
             }
 
             return (byte*)GetPin(StringToUTF8(method.Name));
@@ -3270,7 +3356,7 @@ namespace Internal.JitInterface
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
-            Debug.Assert(false, "CorInfoImpl.getMemoryManager should not be called");
+            Debug.Fail("CorInfoImpl.getMemoryManager should not be called");
             throw new NotSupportedException("getMemoryManager");
         }
 

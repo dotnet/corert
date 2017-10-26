@@ -9,6 +9,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 // The following definitions are required for interop with the VS Debugger
 // Prior to making any changes to these, please reach out to the VS Debugger 
@@ -70,6 +71,26 @@ namespace Internal.Runtime.DebuggerSupport
 
     public class TypeSystemHelper
     {
+        public static unsafe IntPtr GetVirtualMethodFunctionPointer(IntPtr thisPointer, uint virtualMethodSlot)
+        {
+            // The first pointer in the object is a pointer to the EEType object
+            EEType* eeType = *(EEType**)thisPointer;
+
+            // The vtable of the object can be found at the end of EEType object
+            IntPtr* vtable = eeType->GetVTableStartAddress();
+
+            // Indexing the vtable to find out the actual function entry point
+            IntPtr entryPoint = vtable[virtualMethodSlot];
+
+            return entryPoint;
+        }
+
+        public static unsafe IntPtr GetInterfaceDispatchFunctionPointer(IntPtr thisPointer, RuntimeTypeHandle interfaceType, uint virtualMethodSlot)
+        {
+            object instance = Unsafe.As<IntPtr, object>(ref thisPointer);
+            return RuntimeAugments.ResolveDispatch(instance, interfaceType, (int)virtualMethodSlot);
+        }
+
         public static bool CallingConverterDataFromMethodSignature(LowLevelNativeFormatReader reader,
                                                                    ulong[] externalReferences,
                                                                    out bool hasThis,

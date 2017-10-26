@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -149,7 +148,7 @@ namespace System.Globalization
             {
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
-                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
+                Debug.Fail("[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
                 return String.Empty;
             }
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -174,7 +173,7 @@ namespace System.Globalization
             if (!result)
             {
                 // Failed, just use 0
-                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
+                Debug.Fail("[CultureData.GetLocaleInfo(LocaleNumberData)] failed");
             }
 
             return value;
@@ -189,7 +188,7 @@ namespace System.Globalization
             bool result = Interop.GlobalizationInterop.GetLocaleInfoGroupingSizes(_sWindowsName, (uint)type, ref primaryGroupingSize, ref secondaryGroupingSize);
             if (!result)
             {
-                Debug.Assert(false, "[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
+                Debug.Fail("[CultureData.GetLocaleInfo(LocaleGroupingData type)] failed");
             }
 
             if (secondaryGroupingSize == 0)
@@ -216,7 +215,7 @@ namespace System.Globalization
             {
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
-                Debug.Assert(false, "[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
                 return String.Empty;
             }
 

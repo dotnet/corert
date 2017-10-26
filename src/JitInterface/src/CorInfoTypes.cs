@@ -620,7 +620,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_NOSECURITYWRAP = 0x04000000, // The method requires no security checks
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-        //  CORINFO_FLG_UNUSED                = 0x40000000,
+        CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
@@ -1436,6 +1436,13 @@ namespace Internal.JitInterface
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
     };
 
+    public enum TypeCompareState
+    {
+        MustNot = -1, // types are not equal
+        May = 0,      // types may be equal (must test at runtime)
+        Must = 1,     // type are equal
+    }
+
     public enum CorJitFlag : uint
     {
         CORJIT_FLAG_CALL_GETJITFLAGS = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a
@@ -1483,6 +1490,18 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
+
+        CORJIT_FLAG_USE_SSE3 = 43,
+        CORJIT_FLAG_USE_SSSE3 = 44,
+        CORJIT_FLAG_USE_SSE41 = 45,
+        CORJIT_FLAG_USE_SSE42 = 46,
+        CORJIT_FLAG_USE_AES = 47,
+        CORJIT_FLAG_USE_BMI1 = 48,
+        CORJIT_FLAG_USE_BMI2 = 49,
+        CORJIT_FLAG_USE_FMA = 50,
+        CORJIT_FLAG_USE_LZCNT = 51,
+        CORJIT_FLAG_USE_PCLMULQDQ = 52,
+        CORJIT_FLAG_USE_POPCNT = 53
     }
 
     public struct CORJIT_FLAGS

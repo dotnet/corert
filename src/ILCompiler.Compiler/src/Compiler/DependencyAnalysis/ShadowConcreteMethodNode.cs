@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
     /// method body, as if it was generated. The node acts as a symbol for the canonical
     /// method for convenience.
     /// </summary>
-    internal class ShadowConcreteMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
+    public class ShadowConcreteMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -16,7 +15,6 @@ namespace System
     {
         // WARNING: Don't allocate these on the heap, the "digits" property will return an unmanaged pointer
         // to an interior character array.
-        [System.Runtime.CompilerServices.IsByRefLike]
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct NumberBuffer
         {

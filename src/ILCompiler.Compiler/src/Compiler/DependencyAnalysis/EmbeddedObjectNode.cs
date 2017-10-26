@@ -16,12 +16,14 @@ namespace ILCompiler.DependencyAnalysis
 
         private int _offset;
 
+        public IHasStartSymbol ContainingNode { get; set; }
+
         public EmbeddedObjectNode()
         {
             _offset = InvalidOffset;
         }
 
-        protected int OffsetFromBeginningOfArray
+        public int OffsetFromBeginningOfArray
         {
             get
             {

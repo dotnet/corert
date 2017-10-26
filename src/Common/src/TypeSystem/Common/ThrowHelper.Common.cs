@@ -66,7 +66,7 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    Debug.Assert(false, "Multi-module assemblies");
+                    Debug.Fail("Multi-module assemblies");
                     return module.ToString();
                 }
             }

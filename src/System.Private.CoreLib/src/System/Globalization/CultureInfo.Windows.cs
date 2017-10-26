@@ -31,6 +31,9 @@ namespace System.Globalization
 
         internal static CultureInfo GetUserDefaultCulture()
         {
+            if (GlobalizationMode.Invariant)
+                return CultureInfo.InvariantCulture;
+
             const uint LOCALE_SNAME = 0x0000005c;
             const string LOCALE_NAME_USER_DEFAULT = null;
             const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";

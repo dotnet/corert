@@ -23,7 +23,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
 using Internal.NativeFormat;
 
 namespace System.Runtime.InteropServices
@@ -91,6 +90,11 @@ namespace System.Runtime.InteropServices
         RuntimeTypeHandle m_interfaceType;             // Refer to interface RuntimeTypeHandle
         // TODO: Define unqiue vtable for shared CCW instances, store McgInterfaceData pointer at negative offset
 
+#if !CORECLR && ENABLE_WINRT
+        // for dynamic created stub, remove/delete stub during __interface_ccw destroy
+        int m_dynamicMethodStart;
+        int m_dynamicMethodEnd; // [m_dynamicMethodStart, m_dynamicMethodEnd)
+#endif
         /// <summary>
         /// Cache for single memory block, perfect for calls like IDependencyProperty.SetValue (System.Object converts to CCW, passed to native code, then released).
         /// Last block not freed at shut-down. Consider more complicated caching when there are evidence for it
@@ -107,11 +111,19 @@ namespace System.Runtime.InteropServices
             IntPtr vt = typeHandle.GetCcwVtable();
 
 #if !CORECLR && ENABLE_WINRT
+            int dynamicMethodStart = 0;
+            int dynamicMethodEnd = 0;
+
             if (vt == default(IntPtr) && McgModuleManager.UseDynamicInterop)
             {
                 // TODO Design an interface, such as IMcgCCWData and each McgModule implements this interface
                 // Dynamic has its own mcg module
-                vt = DynamicInteropHelpers.GetCCWVTable_NoThrow(managedCCW.TargetObject, typeHandle);
+
+                vt = DynamicInteropHelpers.GetCCWVTable_NoThrow(
+                    managedCCW.TargetObject, 
+                    typeHandle, 
+                    out dynamicMethodStart, 
+                    out dynamicMethodEnd);
             }
 #endif
             if (vt == default(IntPtr))
@@ -130,7 +142,10 @@ namespace System.Runtime.InteropServices
             pCcw->m_pVtable = vt.ToPointer();
             pCcw->m_pNativeCCW = managedCCW.NativeCCW;
             pCcw->m_interfaceType = typeHandle;
-
+#if !CORECLR && ENABLE_WINRT
+            pCcw->m_dynamicMethodStart = dynamicMethodStart;
+            pCcw->m_dynamicMethodEnd = dynamicMethodEnd;
+#endif
             managedCCW.NativeCCW->Link(pCcw);
 
             return pCcw;
@@ -138,6 +153,14 @@ namespace System.Runtime.InteropServices
 
         internal static void Destroy(__interface_ccw* pInterfaceCCW)
         {
+#if !CORECLR && ENABLE_WINRT
+            // Remove these dynamic thunk [m_dynamicMethodStart, m_dynamicMethodEnd)
+            for (int i = pInterfaceCCW->m_dynamicMethodStart; i < pInterfaceCCW->m_dynamicMethodEnd; i++)
+            {
+                System.IntPtr thunkAddress  = ((System.IntPtr*)pInterfaceCCW->m_pVtable)[i];
+                InteropCallInterceptor.FreeThunk(thunkAddress);
+            }
+#endif
             McgComHelpers.CachedFree(pInterfaceCCW, ref s_cached_interface_ccw);
         }
 

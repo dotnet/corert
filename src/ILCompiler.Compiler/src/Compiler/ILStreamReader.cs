@@ -175,14 +175,19 @@ namespace Internal.Compiler
         public bool TryReadLdtokenAsTypeSystemEntity(out TypeSystemEntity entity)
         {
             int token;
-            if (!TryReadLdtoken(out token))
+            bool tokenResolved;
+            try
             {
+                tokenResolved = TryReadLdtoken(out token);
+                entity = tokenResolved ?(TypeSystemEntity)_methodIL.GetObject(token) : null;
+            }
+            catch (TypeSystemException.TypeLoadException)
+            {
+                tokenResolved = false;
                 entity = null;
-                return false;
             }
 
-            entity = (TypeSystemEntity)_methodIL.GetObject(token);
-            return true;
+            return tokenResolved;
         }
 
         public TypeSystemEntity ReadLdtokenAsTypeSystemEntity()

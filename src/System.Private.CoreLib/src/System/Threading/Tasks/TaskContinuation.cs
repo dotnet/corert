@@ -68,7 +68,7 @@ namespace System.Threading.Tasks
                 actionWithState(antecedent, m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in ContinuationTaskFromTask");
+            Debug.Fail("Invalid m_action in ContinuationTaskFromTask");
         }
     }
 
@@ -116,7 +116,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(antecedent, m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in ContinuationResultTaskFromTask");
+            Debug.Fail("Invalid m_action in ContinuationResultTaskFromTask");
         }
     }
 
@@ -164,7 +164,7 @@ namespace System.Threading.Tasks
                 actionWithState(antecedent, m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in ContinuationTaskFromResultTask");
+            Debug.Fail("Invalid m_action in ContinuationTaskFromResultTask");
         }
     }
 
@@ -212,7 +212,7 @@ namespace System.Threading.Tasks
                 m_result = funcWithState(antecedent, m_stateObject);
                 return;
             }
-            Debug.Assert(false, "Invalid m_action in ContinuationResultTaskFromResultTask");
+            Debug.Fail("Invalid m_action in ContinuationResultTaskFromResultTask");
         }
     }
 

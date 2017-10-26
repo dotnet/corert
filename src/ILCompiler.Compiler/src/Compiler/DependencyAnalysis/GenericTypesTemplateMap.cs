@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.Text;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 
@@ -57,11 +58,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (!IsEligibleToHaveATemplate(type))
                     continue;
 
-                if (factory.Target.Abi == TargetAbi.ProjectN)
+                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
                 {
-                    // If the type does not have fully constructed type, don't emit it.
+                    // If the type does not have fully constructed type, don't track its dependencies.
                     // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                    if (!factory.ConstructedTypeSymbol(type).Marked)
+                    IDependencyNode node = factory.MaximallyConstructableType(type);
+
+                    if (!node.Marked)
                         continue;
                 }
 
@@ -100,11 +103,13 @@ namespace ILCompiler.DependencyAnalysis
             if (!IsEligibleToHaveATemplate(templateType))
                 return;
 
-            if (factory.Target.Abi == TargetAbi.ProjectN)
+            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
             {
                 // If the type does not have fully constructed type, don't track its dependencies.
                 // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                if (!factory.ConstructedTypeSymbol(templateType).Marked)
+                IDependencyNode node = factory.MaximallyConstructableType(templateType);
+
+                if (!node.Marked)
                     return;
             }
 

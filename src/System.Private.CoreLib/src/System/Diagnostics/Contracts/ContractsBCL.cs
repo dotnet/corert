@@ -42,7 +42,7 @@ namespace System.Diagnostics.Contracts
 
             if (t_assertingMustUseRewriter)
             {
-                System.Diagnostics.Debug.Assert(false, "Asserting that we must use the rewriter went reentrant. Didn't rewrite this System.Private.CoreLib?");
+                System.Diagnostics.Debug.Fail("Asserting that we must use the rewriter went reentrant. Didn't rewrite this System.Private.CoreLib?");
                 return;
             }
             t_assertingMustUseRewriter = true;
@@ -197,26 +197,23 @@ namespace System.Diagnostics.Contracts
     }
 #endif // !FEATURE_CORECLR
 
-#if FEATURE_SERIALIZATION
     [Serializable]
-#else
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")]
-#endif
-    [SuppressMessage("Microsoft.Design", "CA1064:ExceptionsShouldBePublic")]
-    internal sealed class ContractException : Exception
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    // Needs to be public for type forwarding serialization support.
+    public sealed class ContractException : Exception
     {
-        private readonly ContractFailureKind _Kind;
-        private readonly string _UserMessage;
-        private readonly string _Condition;
+        private readonly ContractFailureKind _kind;
+        private readonly string _userMessage;
+        private readonly string _condition;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public ContractFailureKind Kind { get { return _Kind; } }
+        public ContractFailureKind Kind { get { return _kind; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         public string Failure { get { return this.Message; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public string UserMessage { get { return _UserMessage; } }
+        public string UserMessage { get { return _userMessage; } }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public string Condition { get { return _Condition; } }
+        public string Condition { get { return _condition; } }
 
         // Called by COM Interop, if we see COR_E_CODECONTRACTFAILED as an HRESULT.
         private ContractException()
@@ -228,35 +225,26 @@ namespace System.Diagnostics.Contracts
             : base(failure, innerException)
         {
             HResult = System.Runtime.CompilerServices.ContractHelper.COR_E_CODECONTRACTFAILED;
-            _Kind = kind;
-            _UserMessage = userMessage;
-            _Condition = condition;
+            _kind = kind;
+            _userMessage = userMessage;
+            _condition = condition;
         }
-#if FEATURE_SERIALIZATION
+
         private ContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context)
         {
-            _Kind = (ContractFailureKind)info.GetInt32("Kind");
-            _UserMessage = info.GetString("UserMessage");
-            _Condition = info.GetString("Condition");
+            _kind = (ContractFailureKind)info.GetInt32("Kind");
+            _userMessage = info.GetString("UserMessage");
+            _condition = info.GetString("Condition");
         }
-#endif // FEATURE_SERIALIZATION
 
-#if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
-#if FEATURE_LINK_DEMAND && FEATURE_SERIALIZATION
-        [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-#endif // FEATURE_LINK_DEMAND
-#endif // FEATURE_UNTRUSTED_CALLERS
-#if FEATURE_SERIALIZATION
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
         {
             base.GetObjectData(info, context);
-
-            info.AddValue("Kind", _Kind);
-            info.AddValue("UserMessage", _UserMessage);
-            info.AddValue("Condition", _Condition);
+            info.AddValue("Kind", _kind);
+            info.AddValue("UserMessage", _userMessage);
+            info.AddValue("Condition", _condition);
         }
-#endif 
     }
 }
 

@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
-using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
-using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
+using System.Runtime.Versioning;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -22,9 +21,9 @@ namespace System
     /// Span represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
-    [IsReadOnly]
-    [IsByRefLike]
-    public struct Span<T>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [NonVersionable]
+    public readonly ref struct Span<T>
     {
         /// <summary>A byref or a native ptr.</summary>
         private readonly ByReference<T> _pointer;
@@ -117,6 +116,7 @@ namespace System
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length) => new Span<T>(ref objectData, length);
 
         // Constructor for internal use only.
@@ -129,10 +129,15 @@ namespace System
             _length = length;
         }
 
+        //Debugger Display = {T[length]}
+        private string DebuggerDisplay => string.Format("{{{0}[{1}]}}", typeof(T).Name, _length);
+
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public ref T DangerousGetPinnableReference()
         {
             return ref _pointer.Value;
@@ -141,12 +146,26 @@ namespace System
         /// <summary>
         /// The number of items in the span.
         /// </summary>
-        public int Length => _length;
+        public int Length
+        {
+            [NonVersionable]
+            get
+            {
+                return _length;
+            }
+        }
 
         /// <summary>
         /// Returns true if Length is 0.
         /// </summary>
-        public bool IsEmpty => _length == 0;
+        public bool IsEmpty
+        {
+            [NonVersionable]
+            get
+            {
+                return _length == 0;
+            }
+        }
 
         /// <summary>
         /// Returns a reference to specified element of the Span.
@@ -169,6 +188,7 @@ namespace System
             [Intrinsic]
 #endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [NonVersionable]
             get
             {
                 if ((uint)index >= (uint)_length)

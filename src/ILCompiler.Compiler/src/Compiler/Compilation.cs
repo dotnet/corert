@@ -270,18 +270,21 @@ namespace ILCompiler
                     int pointerSize = _nodeFactory.Target.PointerSize;
 
                     GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                    int dictionarySlot = dictionaryLayout.GetSlotForEntry(lookup);
-                    int dictionaryOffset = dictionarySlot * pointerSize;
+                    int dictionarySlot = dictionaryLayout.GetSlotForFixedEntry(lookup);
+                    if (dictionarySlot != -1)
+                    {
+                        int dictionaryOffset = dictionarySlot * pointerSize;
 
-                    if (contextSource == GenericContextSource.MethodParameter)
-                    {
-                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
-                    }
-                    else
-                    {
-                        int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
-                        int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
-                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                        if (contextSource == GenericContextSource.MethodParameter)
+                        {
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
+                        }
+                        else
+                        {
+                            int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
+                            int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                        }
                     }
                 }
             }
@@ -331,14 +334,7 @@ namespace ILCompiler
 
             public void AddCompilationRoot(TypeDesc type, string reason)
             {
-                if (!ConstructedEETypeNode.CreationAllowed(type))
-                {
-                    _graph.AddRoot(_factory.NecessaryTypeSymbol(type), reason);
-                }
-                else
-                {
-                    _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
-                }
+                _graph.AddRoot(_factory.MaximallyConstructableType(type), reason);
             }
 
             public void RootThreadStaticBaseForType(TypeDesc type, string reason)

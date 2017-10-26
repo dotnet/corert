@@ -16,9 +16,9 @@ namespace ILVerify.Tests
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithValidIL), MemberType = typeof(TestDataLoader))]
         [Trait("", "Valid IL Tests")]
-        void TestMethodsWithValidIL(ValidILTestCase validILTestCase)
+        void TestMethodsWithValidIL(ValidILTestCase validIL)
         {
-            ILImporter importer = ConstructILImporter(validILTestCase);
+            ILImporter importer = ConstructILImporter(validIL);
 
             var verifierErrors = new List<VerifierError>();
             importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
@@ -33,9 +33,9 @@ namespace ILVerify.Tests
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetMethodsWithInvalidIL), MemberType = typeof(TestDataLoader))]
         [Trait("", "Invalid IL Tests")]
-        void TestMethodsWithInvalidIL(InvalidILTestCase invalidILTestCase)
+        void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
         {
-            ILImporter importer = ConstructILImporter(invalidILTestCase);
+            ILImporter importer = ConstructILImporter(invalidIL);
 
             var verifierErrors = new List<VerifierError>();
             importer.ReportVerificationError = new Action<VerificationErrorArgs>((err) =>
@@ -56,13 +56,13 @@ namespace ILVerify.Tests
             }
             finally
             {
-                Assert.Equal(invalidILTestCase.ExpectedVerifierErrors.Count, verifierErrors.Count);
+                Assert.Equal(invalidIL.ExpectedVerifierErrors.Count, verifierErrors.Count);
 
-                foreach (var item in invalidILTestCase.ExpectedVerifierErrors)
+                foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
                     Assert.True(verifierErrors.Contains(item));
                 }
-            }        
+            }
         }
 
         private ILImporter ConstructILImporter(TestCase testCase)

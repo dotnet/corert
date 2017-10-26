@@ -153,7 +153,7 @@ namespace Internal.TypeSystem
                 targetOrBase = targetOrBase.BaseType;
             } while (targetOrBase != null);
 
-            Debug.Assert(false, "method has no related type in the type hierarchy of type");
+            Debug.Fail("method has no related type in the type hierarchy of type");
             return null;
         }
 

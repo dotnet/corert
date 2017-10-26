@@ -13,7 +13,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
 using Microsoft.Win32.SafeHandles;
@@ -104,7 +103,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
 
             return WaitOneCore(millisecondsTimeout);
         }
@@ -235,7 +233,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
             SafeWaitHandle[] rentedSafeWaitHandles;
@@ -295,7 +292,6 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
-            Contract.EndContractBlock();
 
             RuntimeThread currentThread = RuntimeThread.CurrentThread;
             SafeWaitHandle[] rentedSafeWaitHandles;
@@ -359,7 +355,6 @@ namespace System.Threading
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
 
-            Contract.EndContractBlock();
 
             safeWaitHandleToSignal.DangerousAddRef();
             try

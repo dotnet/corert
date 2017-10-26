@@ -184,7 +184,7 @@ namespace Internal.TypeSystem
                         _attributes |= PInvokeAttributes.CallingConventionThisCall;
                         break;
                     default:
-                        System.Diagnostics.Debug.Assert(false, "Unexpected Unmanaged Calling Convention.");
+                        System.Diagnostics.Debug.Fail("Unexpected Unmanaged Calling Convention.");
                         break;
                 }
             }

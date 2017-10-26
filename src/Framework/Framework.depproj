@@ -16,22 +16,16 @@
   <ItemGroup>
     <ProjectReference Include="Framework-uapaot.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
     <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(CoreFxVersion)</Version>
-    </PackageReference>
-
-    <!-- TODO: These packages should be comming via regular references -->
-    <PackageReference Include="System.Memory">
-      <Version>$(CoreFxVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>$(CoreFxVersion)</Version>
     </PackageReference>
   </ItemGroup>

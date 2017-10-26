@@ -332,6 +332,11 @@ COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
     return pCallback;
 }
 
+COOP_PINVOKE_HELPER(void *, RhGetTargetOfUnboxingAndInstantiatingStub, (void * pUnboxStub))
+{
+    return GetRuntimeInstance()->GetTargetOfUnboxingAndInstantiatingStub(pUnboxStub);
+}
+
 COOP_PINVOKE_HELPER(Boolean, RhpHasDispatchMap, (EEType * pEEType))
 {
     return pEEType->HasDispatchMap();
@@ -581,7 +586,8 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     }
 
 #elif _TARGET_ARM64_
-    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+        UNREFERENCED_PARAMETER(unboxingStub);
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
 #else
 #error 'Unsupported Architecture'

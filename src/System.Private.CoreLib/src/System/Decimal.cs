@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -123,13 +122,11 @@ namespace System
         [FieldOffset(12), NonSerialized]
         private uint umid;
 
-        // Constructs a zero Decimal.
-        //public Decimal() {
-        //    lo = 0;
-        //    mid = 0;
-        //    hi = 0;
-        //    flags = 0;
-        //}
+        /// <summary>
+        /// The low and mid fields combined in little-endian order
+        /// </summary>
+        [FieldOffset(8), NonSerialized]
+        private ulong ulomidLE;
 
         // Constructs a Decimal from an integer value.
         //
@@ -179,8 +176,7 @@ namespace System
                 uflags = SignMask;
                 value_copy = -value_copy;
             }
-            ulo = (uint)value_copy;
-            umid = (uint)(value_copy >> 32);
+            Low64 = (ulong)value_copy;
             uhi = 0;
         }
 
@@ -190,8 +186,7 @@ namespace System
         public Decimal(ulong value)
         {
             uflags = 0;
-            ulo = (uint)value;
-            umid = (uint)(value >> 32);
+            Low64 = value;
             uhi = 0;
         }
 
@@ -223,7 +218,7 @@ namespace System
             ulong absoluteCy; // has to be ulong to accommodate the case where cy == long.MinValue.
             if (cy < 0)
             {
-                d.Sign = true;
+                d.IsNegative = true;
                 absoluteCy = (ulong)(-cy);
             }
             else
@@ -280,10 +275,6 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            lo = 0;
-            mid = 0;
-            hi = 0;
-            flags = 0;
             SetBits(bits);
         }
 
@@ -291,7 +282,6 @@ namespace System
         {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
-            Contract.EndContractBlock();
             if (bits.Length == 4)
             {
                 uint f = (uint)bits[3];
@@ -313,7 +303,6 @@ namespace System
         {
             if (scale > 28)
                 throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
-            Contract.EndContractBlock();
             this.lo = lo;
             this.mid = mid;
             this.hi = hi;
@@ -479,25 +468,21 @@ namespace System
         //
         public override String ToString()
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, null);
         }
 
         public String ToString(String format)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, null, provider);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            Contract.Ensures(Contract.Result<String>() != null);
             return Number.FormatDecimal(this, format, provider);
         }
 
@@ -528,7 +513,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
-            Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // Check for hex number
                 throw new ArgumentException(SR.Arg_HexStyleNotSupported);
@@ -563,14 +547,23 @@ namespace System
 
         public static Boolean TryParse(String s, out Decimal result)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
             return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
             return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
         }
 
@@ -643,9 +636,8 @@ namespace System
         //
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
-            Decimal decRes;
-            DecCalc.VarDecMul(ref d1, ref d2, out decRes);
-            return decRes;
+            DecCalc.VarDecMul(ref d1, ref d2);
+            return d1;
         }
 
         // Returns the negated value of the given Decimal. If d is non-zero,
@@ -693,7 +685,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, "MidpointRounding"), nameof(mode));
-            Contract.EndContractBlock();
 
             if (mode == MidpointRounding.ToEven)
             {
@@ -707,6 +698,8 @@ namespace System
             }
             return d;
         }
+
+        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //
@@ -792,7 +785,7 @@ namespace System
             if (d.hi == 0 && d.mid == 0)
             {
                 int i = d.lo;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (i >= 0) return i;
                 }
@@ -815,7 +808,7 @@ namespace System
             if (d.uhi == 0)
             {
                 long l = d.ulo | (long)(int)d.umid << 32;
-                if (!d.Sign)
+                if (!d.IsNegative)
                 {
                     if (l >= 0) return l;
                 }
@@ -858,7 +851,7 @@ namespace System
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
             if (d.uhi == 0 && d.umid == 0)
             {
-                if (!d.Sign || d.ulo == 0)
+                if (!d.IsNegative || d.ulo == 0)
                     return d.ulo;
             }
             throw new OverflowException(SR.Overflow_UInt32);
@@ -875,7 +868,7 @@ namespace System
             if (d.uhi == 0)
             {
                 ulong l = (ulong)d.ulo | ((ulong)d.umid << 32);
-                if (!d.Sign || l == 0)
+                if (!d.IsNegative || l == 0)
                     return l;
             }
             throw new OverflowException(SR.Overflow_UInt64);

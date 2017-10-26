@@ -31,7 +31,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -57,12 +56,6 @@ namespace System.Threading
             private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 
             public static WorkStealingQueue[] Queues => _queues;
-
-            // Track whether the WorkStealingQueueList is empty
-            // Three states simplifies race conditions.  They may be considered.
-            // Now Active --> Maybe Inactive -> Confirmed Inactive
-            public const int WsqNowActive = 2;
-            public static int wsqActive;
 
             public static void Add(WorkStealingQueue queue)
             {
@@ -386,6 +379,7 @@ namespace System.Threading
 
                         missedSteal = true;
                     }
+
                     return null;
                 }
             }
@@ -451,18 +445,6 @@ namespace System.Threading
             if (null != tl)
             {
                 tl.workStealingQueue.LocalPush(callback);
-
-                // We must guarantee wsqActive is set to WsqNowActive after we push
-                // The ordering must be global because we rely on other threads
-                // observing in this order
-                Interlocked.MemoryBarrier();
-
-                // We do not want to simply write.  We want to prevent unnecessary writes
-                // which would invalidate reader's caches
-                if (WorkStealingQueueList.wsqActive != WorkStealingQueueList.WsqNowActive)
-                {
-                    Volatile.Write(ref WorkStealingQueueList.wsqActive, WorkStealingQueueList.WsqNowActive);
-                }
             }
             else
             {
@@ -480,55 +462,32 @@ namespace System.Threading
 
         public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
+            WorkStealingQueue localWsq = tl.workStealingQueue;
             IThreadPoolWorkItem callback;
-            int wsqActiveObserved = WorkStealingQueueList.wsqActive;
-            if (wsqActiveObserved > 0)
-            {
-                WorkStealingQueue localWsq = tl.workStealingQueue;
 
-                if ((callback = localWsq.LocalPop()) == null && // first try the local queue
-                    !workItems.TryDequeue(out callback)) // then try the global queue
-                {
-                    // finally try to steal from another thread's local queue
-                    WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
-                    int c = queues.Length;
-                    Debug.Assert(c > 0, "There must at least be a queue for this thread.");
-                    int maxIndex = c - 1;
-                    int i = tl.random.Next(c);
-                    while (c > 0)
-                    {
-                        i = (i < maxIndex) ? i + 1 : 0;
-                        WorkStealingQueue otherQueue = queues[i];
-                        if (otherQueue != localWsq && otherQueue.CanSteal)
-                        {
-                            callback = otherQueue.TrySteal(ref missedSteal);
-                            if (callback != null)
-                            {
-                                break;
-                            }
-                        }
-                        c--;
-                    }
-                    if ((callback == null) && !missedSteal)
-                    {
-                        // Only decrement if the value is unchanged since we started looking for work
-                        // This prevents multiple threads decrementing based on overlapping scans.
-                        //
-                        // When we decrement from active, the producer may have inserted a queue item during our scan
-                        // therefore we cannot transition to empty
-                        //
-                        // When we decrement from Maybe Inactive, if the producer inserted a queue item during our scan,
-                        // the producer must write Active.  We may transition to empty briefly if we beat the
-                        // producer's write, but the producer will then overwrite us before waking threads.
-                        // So effectively we cannot mark the queue empty when an item is in the queue.
-                        Interlocked.CompareExchange(ref WorkStealingQueueList.wsqActive, wsqActiveObserved - 1, wsqActiveObserved);
-                    }
-                }
-            }
-            else
+            if ((callback = localWsq.LocalPop()) == null && // first try the local queue
+                !workItems.TryDequeue(out callback)) // then try the global queue
             {
-                // We only need to look at the global queue since WorkStealingQueueList is inactive
-                workItems.TryDequeue(out callback);
+                // finally try to steal from another thread's local queue
+                WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                int c = queues.Length;
+                Debug.Assert(c > 0, "There must at least be a queue for this thread.");
+                int maxIndex = c - 1;
+                int i = tl.random.Next(c);
+                while (c > 0)
+                {
+                    i = (i < maxIndex) ? i + 1 : 0;
+                    WorkStealingQueue otherQueue = queues[i];
+                    if (otherQueue != localWsq && otherQueue.CanSteal)
+                    {
+                        callback = otherQueue.TrySteal(ref missedSteal);
+                        if (callback != null)
+                        {
+                            break;
+                        }
+                    }
+                    c--;
+                }
             }
 
             return callback;
@@ -642,7 +601,6 @@ namespace System.Threading
         }
     }
 
-
     // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
     internal struct FastRandom // xorshift prng
     {
@@ -668,13 +626,11 @@ namespace System.Threading
         }
     }
 
-
     // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
         [ThreadStatic]
         public static ThreadPoolWorkQueueThreadLocals threadLocals;
-
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
@@ -801,7 +757,6 @@ namespace System.Threading
             wc(obj.state);
         }
     }
-
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
     {
@@ -948,7 +903,6 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
@@ -961,7 +915,6 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
@@ -974,7 +927,6 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
@@ -987,7 +939,6 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1 || millisecondsTimeOutInterval > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Contract.EndContractBlock();
             return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
@@ -1014,9 +965,12 @@ namespace System.Threading
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
-            QueueUserWorkItem(callBack, null);
+            QueueUserWorkItem(callBack, null, preferLocal: false);
 
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state) =>
+            QueueUserWorkItem(callBack, state, preferLocal: false);
+
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state, bool preferLocal)
         {
             if (callBack == null)
             {
@@ -1029,7 +983,7 @@ namespace System.Threading
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 
-            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
             return true;
         }

@@ -614,7 +614,7 @@ namespace Internal.TypeSystem
                         break;
 
                     default:
-                        Debug.Assert(false, "Why is IsHfa true on this type?");
+                        Debug.Fail("Why is IsHfa true on this type?");
                         return null;
                 }
             }
