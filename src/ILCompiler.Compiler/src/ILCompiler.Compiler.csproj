@@ -322,6 +322,7 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
     <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\UtcNodeMangler.cs" />
@@ -395,9 +396,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs">
-      <Link>TypeSystem\TypesDebugInfoWriter\UserDefinedTypeDescriptor.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

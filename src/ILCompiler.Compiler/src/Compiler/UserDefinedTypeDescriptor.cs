@@ -8,11 +8,13 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using ILCompiler;
+using Internal.TypeSystem.TypesDebugInfo;
+
 using ILCompiler.DependencyAnalysis;
 
-namespace Internal.TypeSystem.TypesDebugInfo
+namespace ILCompiler
 {
     public class UserDefinedTypeDescriptor
     {
