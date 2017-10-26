@@ -319,9 +319,10 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     push_nonvol_reg rbx                         //   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    // save the register bitmask
     push_register   \trashReg                   // Thread * (unused by stackwalker)
-    push_register   rbp                         // save caller's RBP
-    mov             \trashReg, [rsp + 10*8]     // Find the return address
-    push_register   \trashReg                   // save m_RIP
+    mov             \trashReg, [rsp + 8*8]      // Find and save the callers RBP
+    push_register   \trashReg
+    mov             \trashReg, [rsp + 10*8]     // Find and save the return address
+    push_register   \trashReg
     lea             \trashReg, [rsp]            // trashReg == address of frame
 .endm
 
