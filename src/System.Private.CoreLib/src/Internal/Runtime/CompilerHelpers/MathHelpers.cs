@@ -220,7 +220,7 @@ namespace Internal.Runtime.CompilerHelpers
 #if ARM
         private const string RuntimeLibrary = "[MRT]";
 
-        [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int32 RhpIDiv(Int32 i, Int32 j);
 
@@ -234,7 +234,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpIDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpUDiv")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt32 RhpUDiv(UInt32 i, UInt32 j);
 
@@ -246,7 +246,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpUDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpULDiv")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt64 RhpULDiv(UInt64 i, UInt64 j);
 
@@ -258,7 +258,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpULDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpLDiv")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int64 RhpLDiv(Int64 i, Int64 j);
 
@@ -272,7 +272,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpLDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpIMod")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int32 RhpIMod(Int32 i, Int32 j);
 
@@ -284,7 +284,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpIMod(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpUMod")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt32 RhpUMod(UInt32 i, UInt32 j);
 
@@ -296,7 +296,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpUMod(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpULMod")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt64 RhpULMod(UInt64 i, UInt64 j);
 
@@ -308,7 +308,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpULMod(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, EntryPoint="RhpLMod")]
+        [RuntimeImport(RuntimeLibrary)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int64 RhpLMod(Int64 i, Int64 j);
 
