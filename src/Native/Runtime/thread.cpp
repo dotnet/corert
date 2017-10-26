@@ -1119,9 +1119,11 @@ extern "C" int InitializeRuntime();
 
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
-    InitializeRuntime();
     if (!IsStateSet(TSF_Attached))
+    {
+        InitializeRuntime();
         ThreadStore::AttachCurrentThread();
+    }
 
     // If the thread is already in cooperative mode, this is a bad transition.
     if (IsCurrentThreadInCooperativeMode())
