@@ -1504,6 +1504,17 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     return false;
 }
 
+bool GCToEEInterface::IsGCThread()
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    return pCurrentThread->IsGCSpecial() || pCurrentThread == ThreadStore::GetSuspendingThread();
+}
+
+bool GCToEEInterface::IsGCSpecialThread()
+{
+    return ThreadStore::RawGetCurrentThread()->IsGCSpecial();
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     assert(g_pFreeObjectMethodTable != nullptr);
