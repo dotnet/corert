@@ -221,6 +221,7 @@ namespace Internal.Runtime.CompilerHelpers
         private const string RuntimeLibrary = "[MRT]";
 
         [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int32 RhpIDiv(Int32 i, Int32 j);
 
         public static int IDiv(Int32 i, Int32 j)
@@ -234,6 +235,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpUDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt32 RhpUDiv(UInt32 i, UInt32 j);
 
         public static long UDiv(UInt32 i, UInt32 j)
@@ -245,6 +247,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpULDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt64 RhpULDiv(UInt64 i, UInt64 j);
 
         public static ulong ULDiv(UInt64 i, UInt64 j)
@@ -256,6 +259,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpLDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int64 RhpLDiv(Int64 i, Int64 j);
 
         public static long LDiv(Int64 i, Int64 j)
@@ -269,6 +273,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpIMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int32 RhpIMod(Int32 i, Int32 j);
 
         public static int IMod(Int32 i, Int32 j)
@@ -280,6 +285,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpUMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt32 RhpUMod(UInt32 i, UInt32 j);
 
         public static long UMod(UInt32 i, UInt32 j)
@@ -291,6 +297,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpULMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern UInt64 RhpULMod(UInt64 i, UInt64 j);
 
         public static ulong ULMod(UInt64 i, UInt64 j)
@@ -302,6 +309,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeImport(RuntimeLibrary, EntryPoint="RhpLMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Int64 RhpLMod(Int64 i, Int64 j);
 
         public static long LMod(Int64 i, Int64 j)
