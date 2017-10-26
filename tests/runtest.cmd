@@ -53,6 +53,7 @@ if /i "%1" == "/test" (set CoreRT_TestName=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shift&goto ArgLoop)
+if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop)
 
 echo Invalid command line argument: %1
 goto :Usage
@@ -68,6 +69,8 @@ echo     /coreclr      : Download and run the CoreCLR repo tests
 echo     /coreclrsingletest ^<absolute\path\to\test.exe^>
 echo                   : Run a single CoreCLR repo test
 echo     /multimodule  : Compile the framework as a .lib and link tests against it (only supports ryujit)
+echo     /determinism  : Compile the test twice with randomized dependency node mark stack to validate
+echo                      compiler determinism in multi-threaded compilation.
 echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
@@ -260,24 +263,54 @@ goto :eof
         )
     )
 
-    echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
-    echo.
-    msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
-    endlocal
+    if "%CoreRT_DeterminismMode%"=="true" (
+        set /a CoreRT_DeterminismSeed=%RANDOM%*32768+%RANDOM%
+        echo Running determinism baseline scenario with seed !CoreRT_DeterminismSeed!
 
-    set __SavedErrorLevel=%ErrorLevel%
-    if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
-    if "%__Mode%" == "wasm" (goto :SkipTestRun)
-
-    if "%__SavedErrorLevel%"=="0" (
+        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
         echo.
-        echo Running test !__SourceFileName!
-        call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.exe
+        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
+
         set __SavedErrorLevel=!ErrorLevel!
+        if not "!__SavedErrorLevel!"=="0" (goto :SkipTestRun)
+
+        REM Back up the map file and delete the obj file so the MSBuild targets won't skip ILC target
+        rename !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.map.xml !__SourceFileName!.baseline.map.xml
+        del !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.obj
+        
+        set /a CoreRT_DeterminismSeed=%RANDOM%*32768+%RANDOM%
+        
+        echo Running determinism comparison scenario with seed !CoreRT_DeterminismSeed!
+        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
+        echo.
+        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" "/p:IlcGenerateMapFile=true" !extraArgs! !__SourceFileProj!
+        endlocal
+        set __SavedErrorLevel=!ErrorLevel!
+        if not "!__SavedErrorLevel!"=="0" (goto :SkipTestRun)
+
+        fc !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.baseline.map.xml !__SourceFolder!\obj\%CoreRT_BuildType%\%CoreRT_BuildArch%\native\!__SourceFileName!.map.xml
+        set __SavedErrorLevel=!ErrorLevel!
+
+    ) else (
+        echo msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
+        echo.
+        msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" !extraArgs! !__SourceFileProj!
+        endlocal
+
+        set __SavedErrorLevel=!ErrorLevel!
+        if "%CoreRT_TestRun%"=="false" (goto :SkipTestRun)
+        if "%__Mode%" == "wasm" (goto :SkipTestRun)
+
+        if "%__SavedErrorLevel%"=="0" (
+            echo.
+            echo Running test !__SourceFileName!
+            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.exe
+            set __SavedErrorLevel=!ErrorLevel!
+        )
     )
 
 :SkipTestRun
-    if "%__SavedErrorLevel%"=="0" (
+    if "!__SavedErrorLevel!"=="0" (
         set /a __%__Mode%PassedTests=!__%__Mode%PassedTests!+1
         echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Pass" /^> >> %__CoreRTTestBinDir%\testResults.tmp
     ) ELSE (
