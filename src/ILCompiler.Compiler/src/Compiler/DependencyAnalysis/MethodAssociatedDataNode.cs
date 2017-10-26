@@ -41,6 +41,13 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => _methodNode.Method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_methodNode.Method.OwningType);
 
+        protected internal override int ClassCode => 1055183914;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_methodNode, ((MethodAssociatedDataNode)other)._methodNode);
+        }
+
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("_associatedData_").Append(nameMangler.GetMangledMethodName(_methodNode.Method));

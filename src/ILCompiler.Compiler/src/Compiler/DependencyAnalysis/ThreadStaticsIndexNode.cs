@@ -5,6 +5,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -17,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // The TLS slot index allocated for this module by the OS loader. We keep a pointer to this
     // value in the module header.
-    public class ThreadStaticsIndexNode : ObjectNode, IExportableSymbolNode
+    public class ThreadStaticsIndexNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode
     {
         string _prefix;
 
@@ -79,6 +80,20 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitInt(0); 
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -968500265;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return string.Compare(_prefix, ((ThreadStaticsIndexNode)other)._prefix);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 
@@ -165,6 +180,13 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitInt(0);                 // characteristics
 
             return objData.ToObjectData();
+        }
+
+        protected internal override int ClassCode => -754150753;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return string.Compare(_prefix, ((ThreadStaticsDirectoryNode)other)._prefix);
         }
     }
 }

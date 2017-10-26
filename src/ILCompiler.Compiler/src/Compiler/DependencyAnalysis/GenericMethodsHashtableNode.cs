@@ -125,5 +125,8 @@ namespace ILCompiler.DependencyAnalysis
             ISymbolNode dictionaryNode = factory.MethodGenericDictionary(method);
             dependencies.Add(new DependencyListEntry(dictionaryNode, "GenericMethodsHashtable entry dictionary"));
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.GenericMethodsHashtableNode;
     }
 }

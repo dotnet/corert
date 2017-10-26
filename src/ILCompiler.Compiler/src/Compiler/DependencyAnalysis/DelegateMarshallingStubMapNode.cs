@@ -6,6 +6,7 @@ using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -74,5 +75,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.DelegateMarshallingStubMapNode;
     }
 }

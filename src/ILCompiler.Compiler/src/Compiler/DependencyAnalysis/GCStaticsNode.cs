@@ -12,7 +12,7 @@ using GCStaticRegionConstants = Internal.Runtime.GCStaticRegionConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticsNode : ObjectNode, IExportableSymbolNode
+    public class GCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode
     {
         private MetadataType _type;
         private List<PreInitFieldInfo> _preInitFieldInfos;
@@ -128,6 +128,20 @@ namespace ILCompiler.DependencyAnalysis
                     return GCStaticsPreInitDataNode.GetDataForPreInitDataField(this, _type, _preInitFieldInfos, 0, factory, relocsOnly);
                 }
             }
+        }
+
+        protected internal override int ClassCode => -522346696;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((GCStaticsNode)other)._type);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 }

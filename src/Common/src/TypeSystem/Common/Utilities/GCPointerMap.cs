@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     /// Represents a bitmap of GC pointers within a memory region divided into
     /// pointer-sized cells.
     /// </summary>
-    public partial struct GCPointerMap : IEquatable<GCPointerMap>
+    public partial struct GCPointerMap : IEquatable<GCPointerMap>, IComparable
     {
         // Each bit in this array represents a pointer-sized cell.
         private int[] _gcFlags;
@@ -129,6 +129,25 @@ namespace Internal.TypeSystem
             foreach (var bit in this)
                 sb.Append(bit ? '1' : '0');
             return sb.ToString();
+        }
+
+        public int CompareTo(object obj)
+        {
+            if (!(obj is GCPointerMap))
+                throw new ArgumentException();
+
+            GCPointerMap other = (GCPointerMap)obj;
+            if (_numCells != other._numCells)
+                return _numCells - other._numCells;
+
+            for (int i = 0; i < _gcFlags.Length; i++)
+            {
+                if (_gcFlags[i] != other._gcFlags[i])
+                    return _gcFlags[i] - other._gcFlags[i];
+            }
+
+            Debug.Assert(Equals(other));
+            return 0;
         }
     }
 

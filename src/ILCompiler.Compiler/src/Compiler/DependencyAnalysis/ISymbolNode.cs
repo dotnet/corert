@@ -32,6 +32,16 @@ namespace ILCompiler.DependencyAnalysis
         bool RepresentsIndirectionCell { get; }
     }
 
+
+    public interface ISortableSymbolNode : ISymbolNode
+    {
+#if !SUPPORT_JIT
+        int ClassCode { get; }
+        int CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer);
+#endif
+    }
+
+
     /// <summary>
     /// Represents a definition of a symbol within an <see cref="ObjectNode"/>. The symbol will be defined
     /// at the specified offset from the beginning of the <see cref="ObjectNode"/> that reports this as one of

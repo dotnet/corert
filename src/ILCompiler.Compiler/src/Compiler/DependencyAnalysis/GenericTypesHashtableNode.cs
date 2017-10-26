@@ -67,5 +67,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.GenericTypesHashtableNode;
     }
 }

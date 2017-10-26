@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode
+    public abstract class GenericDictionaryNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode
     {
         private readonly NodeFactory _factory;
 
@@ -84,6 +84,13 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override string GetName(NodeFactory factory)
         {
             return this.GetMangledName(factory.NameMangler);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
         }
     }
 
@@ -198,6 +205,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _owningType = owningType;
         }
+
+        protected internal override int ClassCode => 889700584;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_owningType, ((TypeGenericDictionaryNode)other)._owningType);
+        }
     }
 
     public sealed class MethodGenericDictionaryNode : GenericDictionaryNode
@@ -286,6 +300,13 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != owningMethod);
 
             _owningMethod = owningMethod;
+        }
+
+        protected internal override int ClassCode => -1245704203;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_owningMethod, ((MethodGenericDictionaryNode)other)._owningMethod);
         }
     }
 }
