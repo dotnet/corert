@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ "$BUILDVARS_DONE" != 1 ]; then
+    . ./buildscripts/hostvars-setup.sh
+fi
+
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __init_tools_log=$__scriptpath/init-tools.log
 __PACKAGES_DIR=$__scriptpath/packages
@@ -52,12 +56,12 @@ if [ -z "$__DOTNET_PKG" ]; then
             ;;
 
         *)
-            echo "Unsupported OS '$OSName' detected. Downloading linux-$__BuildArch tools."
+            echo "Unsupported OS '$OSName' detected. Downloading linux-$__HostArch tools."
             OS=Linux
             __PKG_RID=linux
             ;;
   esac
-  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__BuildArch
+  __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__HostArch
 fi
 
 display_error_message()
