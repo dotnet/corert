@@ -17,6 +17,7 @@
     <TargetNetCoreForCoreCLRFramework>true</TargetNetCoreForCoreCLRFramework>
     <OutputPath>$(OutputPath)\coreclr</OutputPath>
     <TargetFramework>netstandard1.3</TargetFramework>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup> 
 
   <ItemGroup>

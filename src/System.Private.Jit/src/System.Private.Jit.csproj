@@ -9,6 +9,7 @@
     <METADATA_TYPE_LOADER>true</METADATA_TYPE_LOADER>
     <EcmaMetadataSupport>true</EcmaMetadataSupport>
     <JitSupport>true</JitSupport>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(JitSupport)' == 'true'">
     <DefineConstants>SUPPORT_JIT;$(DefineConstants)</DefineConstants>
