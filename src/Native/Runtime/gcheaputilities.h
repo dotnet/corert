@@ -83,6 +83,10 @@ public:
 #endif // FEATURE_SVR_GC
     }
 
+#ifndef DACCESS_COMPILE
+    // Initializes a non-standalone GC.
+    static HRESULT InitializeDefaultGC();
+#endif // DACCESS_COMPILE
 
 private:
     // This class should never be instantiated.

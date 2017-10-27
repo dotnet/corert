@@ -29,3 +29,59 @@ IGCHandleManager* g_pGCHandleManager = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
+
+// The version of the GC that we have loaded.
+VersionInfo g_gc_version_info;
+
+// GC entrypoints for the the linked-in GC. These symbols are invoked
+// directly if we are not using a standalone GC.
+extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
+extern "C" HRESULT GC_Initialize(
+    /* In  */ IGCToCLR* clrToGC,
+    /* Out */ IGCHeap** gcHeap,
+    /* Out */ IGCHandleManager** gcHandleManager,
+    /* Out */ GcDacVars* gcDacVars
+);
+
+#ifndef DACCESS_COMPILE
+
+// Initializes a non-standalone GC. The protocol for initializing a non-standalone GC
+// is similar to loading a standalone one, except that the GC_VersionInfo and
+// GC_Initialize symbols are linked to directory and thus don't need to be loaded.
+//
+// The major and minor versions are still checked in debug builds - it must be the case
+// that the GC and EE agree on a shared version number because they are built from
+// the same sources.
+HRESULT GCHeapUtilities::InitializeDefaultGC()
+{
+    // we should only call this once on startup. Attempting to load a GC
+    // twice is an error.
+    assert(g_pGCHeap == nullptr);
+
+    VersionInfo info;
+    GC_VersionInfo(&g_gc_version_info);
+
+    // the default GC builds with the rest of the EE. By definition, it must have been
+    // built with the same interface version.
+    assert(g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION);
+    assert(g_gc_version_info.MinorVersion == GC_INTERFACE_MINOR_VERSION);
+
+    IGCHeap* heap;
+    IGCHandleManager* manager;
+    HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
+    if (initResult == S_OK)
+    {
+        g_pGCHeap = heap;
+        g_pGCHandleManager = manager;
+        g_gcDacGlobals = &g_gc_dac_vars;
+        LOG((LF_GC, LL_INFO100, "GC load successful\n"));
+    }
+    else
+    {
+        LOG((LF_GC, LL_FATALERROR, "GC initialization failed with HR = 0x%X\n", initResult));
+    }
+
+    return initResult;
+}
+
+#endif // DACCESS_COMPILE
