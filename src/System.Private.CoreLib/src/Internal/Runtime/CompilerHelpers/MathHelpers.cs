@@ -30,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         // Helper to get high 32-bit of 64-bit int
-        [MethodImpl(﻿MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static UInt32 Hi32Bits(Int64 a)
         {
             return (UInt32)(a >> 32);
