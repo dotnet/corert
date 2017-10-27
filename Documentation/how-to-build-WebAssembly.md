@@ -3,7 +3,7 @@ Currently, building WebAssembly is only possible on Windows.
 
 1. Install Emscripten by following the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html). 
 2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to the latest version.
-3. Get CoreRT set up by following the [Visual Studio instructions](Documentation/how-to-build-and-run-ilcompiler-in-visual-studio.md).
+3. Get CoreRT set up by following the [Visual Studio instructions](how-to-build-and-run-ilcompiler-in-visual-studio.md).
 4. Run the WebAssembly "Hello World" test by running ```C:\corert\tests\runtest.cmd /mode wasm```.
 
 To debug compiling WebAssembly:
