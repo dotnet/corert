@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Internal.Text
 {
-    public struct Utf8String : IEquatable<Utf8String>, IComparable
+    public struct Utf8String : IEquatable<Utf8String>, IComparable<Utf8String>
     {
         private byte[] _value;
 
@@ -113,14 +113,6 @@ namespace Internal.Text
             }
         }
 
-        public int CompareTo(object other)
-        {
-            if (!(other is Utf8String))
-                throw new ArgumentException(nameof(other));
-
-            return Compare(this, (Utf8String)other);
-        }
-
         private static int Compare(Utf8String strA, Utf8String strB)
         {
             int length = Math.Min(strA.Length, strB.Length);
@@ -149,6 +141,11 @@ namespace Internal.Text
                     return strA.Length - strB.Length;
                 }
             }
+        }
+
+        public int CompareTo(Utf8String other)
+        {
+            return Compare(this, other);
         }
     }
 }
