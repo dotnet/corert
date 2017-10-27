@@ -48,11 +48,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DepedendencyGraphsForm.cs">
+    <Compile Include="DependencyGraphsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="DepedendencyGraphsForm.Designer.cs">
-      <DependentUpon>DepedendencyGraphsForm.cs</DependentUpon>
+    <Compile Include="DependencyGraphsForm.Designer.cs">
+      <DependentUpon>DependencyGraphsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="NodeForm.cs">
       <SubType>Form</SubType>
@@ -68,8 +68,8 @@
     <Compile Include="SingleDependencyGraphForm.Designer.cs">
       <DependentUpon>SingleDependencyGraphForm.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="DepedendencyGraphsForm.resx">
-      <DependentUpon>DepedendencyGraphsForm.cs</DependentUpon>
+    <EmbeddedResource Include="DependencyGraphsForm.resx">
+      <DependentUpon>DependencyGraphsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="NodeForm.resx">
       <DependentUpon>NodeForm.cs</DependentUpon>
