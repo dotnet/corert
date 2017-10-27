@@ -169,29 +169,29 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Mod:
-                    mangledName = "RhpIMod";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IMod");
                     break;
                 case ReadyToRunHelper.UMod:
-                    mangledName = "RhpUMod";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UMod");
                     break;
                 case ReadyToRunHelper.ULMod:
-                    mangledName = "RhpULMod";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMod");
                     break;
                 case ReadyToRunHelper.LMod:
-                    mangledName = "RhpLMod";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMod");
                     break;
 
                 case ReadyToRunHelper.Div:
-                    mangledName = "RhpIDiv";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "IDiv");
                     break;
                 case ReadyToRunHelper.UDiv:
-                    mangledName = "RhpUDiv";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "UDiv");
                     break;
                 case ReadyToRunHelper.ULDiv:
-                    mangledName = "RhpULDiv";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULDiv");
                     break;
                 case ReadyToRunHelper.LDiv:
-                    mangledName = "RhpLDiv";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LDiv");
                     break;
 
                 case ReadyToRunHelper.LRsz:
