@@ -85,6 +85,11 @@ namespace Internal.Runtime.DebuggerSupport
             return entryPoint;
         }
 
+        public static unsafe bool IsValueType(RuntimeTypeHandle runtimeTypeHandle)
+        {
+            return runtimeTypeHandle.ToEETypePtr()->IsValueType;
+        }
+
         public static unsafe IntPtr GetInterfaceDispatchFunctionPointer(IntPtr thisPointer, RuntimeTypeHandle interfaceType, uint virtualMethodSlot)
         {
             object instance = Unsafe.As<IntPtr, object>(ref thisPointer);
