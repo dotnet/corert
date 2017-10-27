@@ -45,6 +45,7 @@ set(COMMON_RUNTIME_SOURCES
     # module.cpp
     # RHCodeMan.cpp
 
+    ../gc/gcload.cpp
     ../gc/gcconfig.cpp
     ../gc/gchandletable.cpp
     ../gc/gccommon.cpp

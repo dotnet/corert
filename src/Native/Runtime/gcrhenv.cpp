@@ -174,8 +174,6 @@ EEType g_FreeObjectEEType;
 MethodTable* g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 
-extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
-
 // static 
 bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
@@ -213,25 +211,9 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     bool fUseServerGC = (gcType == GCType_Server);
     g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
 
-    // Create the GC heap itself.
-#ifdef FEATURE_STANDALONE_GC
-    IGCToCLR* gcToClr = new (nothrow) GCToEEInterface();
-    if (!gcToClr)
+    HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
+    if (FAILED(hr))
         return false;
-#else
-    IGCToCLR* gcToClr = nullptr;
-#endif // FEATURE_STANDALONE_GC
-
-    IGCHandleManager *pGcHandleManager;
-
-    IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars))
-        return false;
-
-    assert(pGCHeap != nullptr);
-    g_pGCHeap = pGCHeap;
-    g_pGCHandleManager = pGcHandleManager;
-    g_gcDacGlobals = &g_gc_dac_vars;
 
     // Apparently the Windows linker removes global variables if they are never
     // read from, which is a problem for g_gcDacGlobals since it's expected that
@@ -240,7 +222,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     volatile void* _dummy = g_gcDacGlobals;
     
     // Initialize the GC subsystem.
-    HRESULT hr = pGCHeap->Initialize();
+    hr = g_pGCHeap->Initialize();
     if (FAILED(hr))
         return false;
 
