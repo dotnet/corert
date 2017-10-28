@@ -1115,13 +1115,13 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     return true;
 }
 
-extern "C" int InitializeRuntime();
-
+EXTERN_C int (*InitializeRuntimePtr)() = NULL;
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
     {
-        InitializeRuntime();
+        if (*InitializeRuntimePtr != NULL)
+            (*InitializeRuntimePtr)();
         ThreadStore::AttachCurrentThread();
     }
 

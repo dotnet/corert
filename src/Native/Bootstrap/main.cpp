@@ -350,7 +350,8 @@ int main(int argc, char* argv[])
     return retval;
 }
 
-extern "C" int InitializeRuntime()
+extern "C" int (*InitializeRuntimePtr)();
+int InitializeRuntime()
 {
     if (RUNTIME_INITIALIZED)
         return 0;
@@ -393,4 +394,10 @@ extern "C" int InitializeRuntime()
 #else
     return 0;
 #endif // CORERT_DLL
+}
+
+__attribute__ ((__constructor__))
+void Init()
+{
+    InitializeRuntimePtr = &InitializeRuntime;
 }
