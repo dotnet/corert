@@ -741,7 +741,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "DockerTag": {
-      "value": "ubuntu-14.04-coredeps-67592e6-20170319080304"
+      "value": "ubuntu-14.04-198573d-20170319080304"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
