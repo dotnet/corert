@@ -741,7 +741,7 @@
       "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "DockerTag": {
-      "value": "debian-8.2-corert-395a49e-20170403100424"
+      "value": "ubuntu-14.04-198573d-20170319080304"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
