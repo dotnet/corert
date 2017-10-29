@@ -11,6 +11,7 @@
     <CLSCompliant>true</CLSCompliant>
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
     <AssemblyKey>MSFT</AssemblyKey>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
