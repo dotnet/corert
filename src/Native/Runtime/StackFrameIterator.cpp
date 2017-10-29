@@ -249,6 +249,10 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
+#elif defined(_TARGET_WASM_)
+    UNREFERENCED_PARAMETER(pPreservedRegsCursor);
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+
 #else // _TARGET_ARM_
     if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
@@ -458,6 +462,10 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR9  = NULL;
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
+
+#elif defined(_TARGET_WASM_)
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+
 #else // _TARGET_ARM_
     //
     // preserved regs
@@ -614,6 +622,10 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR13 = thisFuncletPtrs.pR13;
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
+
+#elif defined(_TARGET_WASM_)
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+
 #else
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
@@ -945,6 +957,20 @@ public:
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
+#elif defined(_TARGET_WASM_)
+private:
+    // ARM64TODO: #error NYI for this arch
+    UIntNative m_stackPassedArgs[1];        // Placeholder
+public:
+    PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    }
 #else
 #error NYI for this arch
 #endif
@@ -1003,6 +1029,8 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 16
 #elif defined(_TARGET_X86_)
 #define STACK_ALIGN_SIZE 4
+#elif defined(_TARGET_WASM_)
+#define STACK_ALIGN_SIZE 4
 #endif
 
 #ifdef _TARGET_AMD64_
@@ -1032,6 +1060,11 @@ struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbx;
     UIntNative  Rbp;
+    UIntNative  IP;
+};
+#elif defined (_TARGET_WASM_)
+struct CALL_DESCR_CONTEXT
+{
     UIntNative  IP;
 };
 #else
@@ -1103,6 +1136,10 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT) - offsetof(CALL_DESCR_CONTEXT, Rbp);
+
+#elif defined(_TARGET_WASM_)
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    PTR_CALL_DESCR_CONTEXT pContext = NULL;
 #else
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif

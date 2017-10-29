@@ -685,7 +685,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetsUnix)">
+  <ItemGroup Condition="$(TargetsUnix) or '$(Platform)'=='wasm'">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Libraries.cs" />

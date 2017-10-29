@@ -86,7 +86,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
                                           void * pSecondPointer,
                                           bool fFailOnNonNull)
 {
-#if defined(_X86_) || defined(_ARM_)
+#if defined(_X86_) || defined(_ARM_) || defined(_WASM_)
     // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
     Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
 

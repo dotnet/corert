@@ -256,6 +256,8 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 if (b & CSR_MASK_X26) { gcPrintf("X26 "); count++; }
                 if (b & CSR_MASK_X27) { gcPrintf("X27 "); count++; }
                 if (b & CSR_MASK_X28) { gcPrintf("X28 "); count++; }
+#elif defined (_TARGET_WASM_)
+                // No registers
 #else // _ARM_
                 if (b & CSR_MASK_RBX) { gcPrintf("RBX "); count++; }
                 if (b & CSR_MASK_RSI) { gcPrintf("RSI "); count++; }
@@ -296,6 +298,8 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_X26: regName = "X26"; break;
                 case CSR_NUM_X27: regName = "X27"; break;
                 case CSR_NUM_X28: regName = "X28"; break;
+#elif defined (_TARGET_WASM_)
+                // No registers
 #else // _ARM_
                 case CSR_NUM_RBX: regName = "RBX"; break;
                 case CSR_NUM_RSI: regName = "RSI"; break;

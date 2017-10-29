@@ -189,6 +189,31 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
     if (regSet & CSR_MASK_X28) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_X28>(pContext), 0); }
 }
 
+#elif defined(_TARGET_WASM_)
+
+#pragma warning(push)
+#pragma warning(disable:4127)   // conditional expression is constant
+template <CalleeSavedRegNum regNum>
+PTR_PTR_Object GetRegObjectAddr(REGDISPLAY * pContext)
+{
+    UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
+}
+#pragma warning(pop)
+
+PTR_PTR_Object GetRegObjectAddr(CalleeSavedRegNum regNum, REGDISPLAY * pContext)
+{
+    UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
+}
+
+PTR_PTR_Object GetScratchRegObjectAddr(ScratchRegNum regNum, REGDISPLAY * pContext)
+{
+    UNREACHABLE_MSG("unexpected ScratchRegNum");
+}
+
+void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCallback)
+{
+    UNREACHABLE_MSG("unexpected regSet");
+}
 
 #else // _TARGET_ARM_ && _TARGET_ARM64_
 
@@ -829,7 +854,7 @@ bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
 #endif // _TARGET_AMD64_
     }
 
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
+#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_) && !defined (_TARGET_WASM_)
     if (ebpFrame)
         pContext->pRbp = RSP++;
 #endif
@@ -934,6 +959,8 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader 
             // pushed RBP value by subtracting this offset.
             upperBound = pContext->GetFP() - pInfoHeader->GetFramePointerOffset();
 
+#elif defined (_TARGET_WASM_)
+            PORTABILITY_ASSERT("@TODO: FIXME:WASM");
 #else
 #error NYI - For this arch
 #endif
@@ -1025,6 +1052,8 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
         return NULL;
 #elif defined(_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+#elif defined (_WASM_)
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
 #else
         ppvResult = GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
         // Early out if GetReturnAddressLocationFromEpilog indicates a non-hijackable epilog (e.g. exception
@@ -1043,6 +1072,9 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
     goto Finished;
 #elif _ARM64_
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    goto Finished;
+#elif _WASM_
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
     goto Finished;
 #else
 
@@ -1563,6 +1595,10 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
     UNREFERENCED_PARAMETER(pInfoHeader);
     UNREFERENCED_PARAMETER(pbEpilog);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
+#elif defined(_WASM_)
+    UNREFERENCED_PARAMETER(pbEpilog);
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
 
 #endif
 }
@@ -2301,6 +2337,14 @@ bool VerifyEpilogBytesARM64(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UIn
     UNREFERENCED_PARAMETER(epilogSize);
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 }
+#elif defined(_WASM_)
+bool VerifyEpilogBytesWasm(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
+{
+    UNREFERENCED_PARAMETER(pInfoHeader);
+    UNREFERENCED_PARAMETER(pEpilogStart);
+    UNREFERENCED_PARAMETER(epilogSize);
+    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+}
 #endif // _ARM_
 
 bool EECodeManager::VerifyEpilogBytes(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
@@ -2313,6 +2357,8 @@ bool EECodeManager::VerifyEpilogBytes(GCInfoHeader * pInfoHeader, Code * pEpilog
     return VerifyEpilogBytesARM(pInfoHeader, pEpilogStart, epilogSize);
 #elif defined(_ARM64_)
     return VerifyEpilogBytesARM64(pInfoHeader, pEpilogStart, epilogSize);
+#elif defined(_WASM_)
+    return VerifyEpilogBytesWasm(pInfoHeader, pEpilogStart, epilogSize);
 #endif
 }
 

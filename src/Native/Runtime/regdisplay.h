@@ -140,7 +140,25 @@ struct REGDISPLAY
     inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(UIntNative SP) { this->SP = SP; }
 };
+#elif defined(_TARGET_WASM_)
 
-#endif // _X86_ || _AMD64_
+struct REGDISPLAY
+{
+    // TODO: WebAssembly doesn't really have registers. What exactly do we need here?
+
+    UIntNative   SP;
+    PTR_PCODE    pIP;
+    PCODE        IP;
+
+    inline PCODE GetIP() { return NULL; }
+    inline PTR_PCODE GetAddrOfIP() { return NULL; }
+    inline UIntNative GetSP() { return 0; }
+    inline UIntNative GetFP() { return 0; }
+
+    inline void SetIP(PCODE IP) { }
+    inline void SetAddrOfIP(PTR_PCODE pIP) { }
+    inline void SetSP(UIntNative SP) { }
+};
+#endif // _X86_ || _AMD64_ || _ARM_ || _ARM64_ || _WASM_
 
 typedef REGDISPLAY * PREGDISPLAY;

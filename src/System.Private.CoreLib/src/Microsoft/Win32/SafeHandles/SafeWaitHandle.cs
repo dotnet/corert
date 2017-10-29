@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-#if PLATFORM_UNIX
+#if PLATFORM_UNIX || WASM
             WaitSubsystem.DeleteHandle(handle);
 #else
             Interop.Kernel32.CloseHandle(handle);

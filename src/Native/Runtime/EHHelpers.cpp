@@ -207,6 +207,8 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
+#elif defined(_WASM_)
+    // No registers, no work to do yet
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
@@ -412,6 +414,9 @@ static UIntNative UnwindWriteBarrierToCaller(
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
 #elif defined(_ARM_) || defined(_ARM64_)
     UIntNative adjustedFaultingIP = pContext->GetLr();
+#elif defined(_WASM_)
+    UIntNative adjustedFaultingIP = 0; // initializing to make the compiler happy
+    ASSERT(false); // NYI
 #else
 #error "Unknown Architecture"
 #endif

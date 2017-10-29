@@ -10,6 +10,7 @@
 #elif defined(_TARGET_X86_)
 #elif defined(_TARGET_ARM_)
 #elif defined(_TARGET_ARM64_)
+#elif defined(_TARGET_WASM_)
 #else
 #error Unsupported architecture
 #endif
@@ -127,6 +128,11 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
+#elif defined (_WASM_)
+
+#define LOG2_PTRSIZE 2
+#define POINTER_SIZE 4
+
 #else
 #error Unsupported target architecture
 #endif
@@ -156,6 +162,13 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
+#endif
+
+#elif defined(_WASM_)
+
+#define DATA_ALIGNMENT  4
+#ifndef OS_PAGE_SIZE
+#define OS_PAGE_SIZE    0x4
 #endif
 
 #else

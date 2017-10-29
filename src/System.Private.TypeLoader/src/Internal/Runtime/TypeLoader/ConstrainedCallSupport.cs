@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 
-// The function signature of the following architectures is know for the constrained call helper functions
+// The function signature of the following architectures is known for the constrained call helper functions
 #if ARM
 #elif X86
 #elif AMD64
 #elif ARM64
+#elif WASM
 #else
 #error Unknown architecture!
 #endif

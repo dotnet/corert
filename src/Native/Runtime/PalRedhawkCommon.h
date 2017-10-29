@@ -112,6 +112,16 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
     UIntNative GetFp() const { return Rbp; }
+#elif defined _TARGET_WASM_
+    // No registers in WebAssembly, but other code forces us to pretend to have a few
+    UIntNative  IP;
+
+    UIntNative GetIp() const { return 0; }
+    UIntNative GetSp() const { return 0; }
+    UIntNative GetFp() const { return 0; }
+    UIntNative GetLr() const { return 0; }
+    void SetIp(UIntNative ip) { }
+    void SetSp(UIntNative sp) { }
 #else // _TARGET_ARM_
     UIntNative  IP;
     UIntNative  Rsp;

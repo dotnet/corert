@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
-#if PLATFORM_UNIX
+#if PLATFORM_UNIX || WASM
         public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             return PInvokeMarshal.PtrToStringAnsi(ptr);
