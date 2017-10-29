@@ -319,6 +319,22 @@ namespace ILCompiler.DependencyAnalysis
             return returnData;
         }
 
+        public ObjectNode.MethodCode ToMethodCode(DebugLocInfo[] debugLocInfos, DebugVarInfo[] debugVarInfos)
+        {
+#if DEBUG
+            Debug.Assert(_numReservations == 0);
+#endif
+
+            ObjectNode.MethodCode returnData = new ObjectNode.MethodCode(_data.ToArray(),
+                                                                         _relocs.ToArray(),
+                                                                         Alignment,
+                                                                         _definedSymbols.ToArray(),
+                                                                         debugLocInfos,
+                                                                         debugVarInfos);
+
+            return returnData;
+        }
+
         public enum Reservation { }
 
         public void AddSymbol(ISymbolDefinitionNode node)

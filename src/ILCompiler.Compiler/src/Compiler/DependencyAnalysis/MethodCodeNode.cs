@@ -10,7 +10,7 @@ using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, IMethodCodeNode, ISpecialUnboxThunkNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, IMethodCodeNode, ISpecialUnboxThunkNode
     {
         public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
         public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
@@ -22,9 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
-        private DebugLocInfo[] _debugLocInfos;
-        private DebugVarInfo[] _debugVarInfos;
-
+        
         public MethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
@@ -32,10 +30,12 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        public void SetCode(ObjectData data)
+        public void SetCode(byte[] data, Relocation[] relocs, DebugLocInfo[] debugLocInfos, DebugVarInfo[] debugVarInfos)
         {
             Debug.Assert(_methodCode == null);
-            _methodCode = data;
+            _methodCode = new MethodCode(data, relocs,
+                _method.Context.Target.MinimumFunctionAlignment, new ISymbolDefinitionNode[] { this },
+                debugLocInfos, debugVarInfos);
         }
 
         public MethodDesc Method =>  _method;
@@ -136,21 +136,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_ehInfo == null);
             _ehInfo = ehInfo;
-        }
-
-        public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
-        public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
-
-        public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
-        {
-            Debug.Assert(_debugLocInfos == null);
-            _debugLocInfos = debugLocInfos;
-        }
-
-        public void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos)
-        {
-            Debug.Assert(_debugVarInfos == null);
-            _debugVarInfos = debugVarInfos;
         }
     }
 }

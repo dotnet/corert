@@ -26,13 +26,12 @@ namespace Internal.Runtime.JitSupport
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
-        private DebugLocInfo[] _debugLocInfos;
-        private DebugVarInfo[] _debugVarInfos;
 
-        public void SetCode(ObjectData data)
+        public void SetCode(byte[] data, Relocation[] relocs, DebugLocInfo[] debugLocInfos, DebugVarInfo[] debugVarInfos)
         {
             Debug.Assert(_methodCode == null);
-            _methodCode = data;
+            _methodCode = new MethodCode(data, relocs, _method.Context.Target.MinimumFunctionAlignment, new ISymbolDefinitionNode[] { this },
+                debugLocInfos, debugVarInfos);
         }
 
         public MethodDesc Method => _method;
@@ -57,20 +56,6 @@ namespace Internal.Runtime.JitSupport
         {
             Debug.Assert(_ehInfo == null);
             _ehInfo = ehInfo;
-        }
-        public DebugLocInfo[] DebugLocInfos => _debugLocInfos;
-        public DebugVarInfo[] DebugVarInfos => _debugVarInfos;
-
-        public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
-        {
-            Debug.Assert(_debugLocInfos == null);
-            _debugLocInfos = debugLocInfos;
-        }
-
-        public void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos)
-        {
-            Debug.Assert(_debugVarInfos == null);
-            _debugVarInfos = debugVarInfos;
         }
 
         protected override string GetName(NodeFactory factory)
