@@ -378,10 +378,11 @@ namespace Internal.Runtime.TypeLoader
 
                 byte* pSrc = _callerTransitionBlock + ofsCaller;
 
-                TypeHandle thValueType;
-                _callerArgs.GetArgType(out thValueType);
+                TypeHandle thArgType;
+                _callerArgs.GetArgType(out thArgType);
+                Debug.Assert(!thArgType.IsNull());
 
-                if (thValueType.IsNull())
+                if (!thArgType.IsValueType())
                 {
                     Debug.Assert(_callerArgs.GetArgSize() == IntPtr.Size);
 
@@ -395,7 +396,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    RuntimeTypeHandle argEEType = thValueType.GetRuntimeTypeHandle();
+                    RuntimeTypeHandle argEEType = thArgType.GetRuntimeTypeHandle();
 
                     if (_callerArgs.IsArgPassedByRef())
                     {
@@ -506,7 +507,7 @@ namespace Internal.Runtime.TypeLoader
                     // We'll need to create a return buffer, or assign into the return buffer when the actual call completes.
                     if (_calleeArgs.HasRetBuffArg())
                     {
-                        TypeHandle thValueType;
+                        TypeHandle thRetType;
                         bool forceByRefUnused;
                         void* callerRetBuffer = null;
 
@@ -516,8 +517,9 @@ namespace Internal.Runtime.TypeLoader
                             // value, of the same type as the return value type handle in the callee's arguments.
                             Debug.Assert(!_callerArgs.HasRetBuffArg());
 
-                            CorElementType returnType = _calleeArgs.GetReturnType(out thValueType, out forceByRefUnused);
-                            RuntimeTypeHandle returnValueType = thValueType.IsNull() ? typeof(object).TypeHandle : thValueType.GetRuntimeTypeHandle();
+                            CorElementType returnType = _calleeArgs.GetReturnType(out thRetType, out forceByRefUnused);
+                            Debug.Assert(!thRetType.IsNull());
+                            RuntimeTypeHandle returnValueType = thRetType.IsValueType() ? thRetType.GetRuntimeTypeHandle() : typeof(object).TypeHandle;
                             s_pinnedGCHandles._returnObjectHandle.Target = RuntimeAugments.RawNewObject(returnValueType);
 
                             // The transition block has a space reserved for storing return buffer data. This is protected conservatively.
@@ -537,8 +539,8 @@ namespace Internal.Runtime.TypeLoader
                             callerRetBuffer = _callerTransitionBlock + TransitionBlock.GetOffsetOfReturnValuesBlock();
 
                             // Make sure buffer is nulled out, and setup the return buffer location.
-                            CorElementType returnType = _callerArgs.GetReturnType(out thValueType, out forceByRefUnused);
-                            int returnSize = TypeHandle.GetElemSize(returnType, thValueType);
+                            CorElementType returnType = _callerArgs.GetReturnType(out thRetType, out forceByRefUnused);
+                            int returnSize = TypeHandle.GetElemSize(returnType, thRetType);
                             CallConverterThunk.memzeroPointerAligned((byte*)callerRetBuffer, returnSize);
                         }
 
@@ -630,20 +632,21 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(targetDelegate != null);
 
             object result = targetDelegate(arguments ?? Array.Empty<object>());
-            TypeHandle thValueType;
-            bool forceByRefUnused;
 
-            _calleeArgs.GetReturnType(out thValueType, out forceByRefUnused);
+            TypeHandle thArgType;
+            bool forceByRefUnused;
+            _calleeArgs.GetReturnType(out thArgType, out forceByRefUnused);
+            Debug.Assert(!thArgType.IsNull());
 
             unsafe
             {
-                if (!thValueType.IsNull() && thValueType.GetRuntimeTypeHandle().ToEETypePtr()->IsNullable)
+                if (thArgType.IsValueType() && thArgType.GetRuntimeTypeHandle().ToEETypePtr()->IsNullable)
                 {
-                    object nullableObj = RuntimeAugments.RawNewObject(thValueType.GetRuntimeTypeHandle());
+                    object nullableObj = RuntimeAugments.RawNewObject(thArgType.GetRuntimeTypeHandle());
                     s_pinnedGCHandles._returnObjectHandle.Target = nullableObj;
                     if (result != null)
                     {
-                        RuntimeAugments.StoreValueTypeField(ref RuntimeAugments.GetRawData(nullableObj), result, thValueType.GetRuntimeTypeHandle());
+                        RuntimeAugments.StoreValueTypeField(ref RuntimeAugments.GetRawData(nullableObj), result, thArgType.GetRuntimeTypeHandle());
                     }
                 }
                 else
