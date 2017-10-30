@@ -59,7 +59,6 @@
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(JitSupport)' == 'true'">
-    <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs" />
@@ -272,6 +271,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ByRefType.cs">
       <Link>Internal\TypeSystem\ByRefType.cs</Link>
+    </Compile>
+  	<Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
+      <Link>Internal\TypeSystem\CastingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
       <Link>Internal\TypeSystem\ConstructedTypeRewritingHelpers.cs</Link>
