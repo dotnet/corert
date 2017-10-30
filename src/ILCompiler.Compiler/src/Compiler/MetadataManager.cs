@@ -301,10 +301,6 @@ namespace ILCompiler
                 // String constructors are intrinsic and special cased in runtime reflection
                 if (owningType.IsString)
                     return false;
-
-                // IntPtr/UIntPtr constructors are intrinsic and special cased in runtime reflection
-                if (owningType.IsWellKnownType(WellKnownType.IntPtr) || owningType.IsWellKnownType(WellKnownType.UIntPtr))
-                    return false;
             }
 
             // Everything else can go in the mapping table.
