@@ -343,14 +343,10 @@ namespace Internal.Runtime.CallConverter
         public int NumFixedArgs() { return _parameterTypes != null ? _parameterTypes.Length : 0; }
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out TypeHandle thValueType)
+        public CorElementType GetArgumentType(int argNum, out TypeHandle thArgType)
         {
-            thValueType = _parameterTypes[argNum];
-            CorElementType returnValue = thValueType.GetCorElementType();
-            if (!thValueType.IsValueType())
-            {
-                thValueType = default(TypeHandle);
-            }
+            thArgType = _parameterTypes[argNum];
+            CorElementType returnValue = thArgType.GetCorElementType();
             return returnValue;
         }
 
@@ -361,15 +357,10 @@ namespace Internal.Runtime.CallConverter
                 default(TypeHandle);
         }
 
-        public CorElementType GetReturnType(out TypeHandle thValueType)
+        public CorElementType GetReturnType(out TypeHandle thRetType)
         {
-            thValueType = _returnType;
-            CorElementType returnValue = thValueType.GetCorElementType();
-            if (!thValueType.IsValueType())
-            {
-                thValueType = default(TypeHandle);
-            }
-            return returnValue;
+            thRetType = _returnType;
+            return thRetType.GetCorElementType();
         }
 
 #if CCCONVERTER_TRACE
@@ -413,13 +404,13 @@ namespace Internal.Runtime.CallConverter
         public int NumFixedArgs() { return _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0); }
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out TypeHandle thValueType, out bool forceByRefReturn)
+        public CorElementType GetArgumentType(int argNum, out TypeHandle thArgType, out bool forceByRefReturn)
         {
             forceByRefReturn = false;
 
             if (_extraObjectFirstArg && argNum == 0)
             {
-                thValueType = default(TypeHandle);
+                thArgType = new TypeHandle(false, typeof(object).TypeHandle);
                 return CorElementType.ELEMENT_TYPE_CLASS;
             }
 
@@ -431,20 +422,21 @@ namespace Internal.Runtime.CallConverter
 
             if (_extraFunctionPointerArg && argNum == _argData.NumFixedArgs())
             {
-                thValueType = default(TypeHandle);
+                thArgType = new TypeHandle(false, typeof(IntPtr).TypeHandle);
                 return CorElementType.ELEMENT_TYPE_I;
             }
-            return _argData.GetArgumentType(argNum, out thValueType);
+
+            return _argData.GetArgumentType(argNum, out thArgType);
         }
 
-        public CorElementType GetReturnType(out TypeHandle thValueType, out bool forceByRefReturn)
+        public CorElementType GetReturnType(out TypeHandle thRetType, out bool forceByRefReturn)
         {
             if (_forcedByRefParams != null && _forcedByRefParams.Length > 0)
                 forceByRefReturn = _forcedByRefParams[0];
             else
                 forceByRefReturn = false;
 
-            return _argData.GetReturnType(out thValueType);
+            return _argData.GetReturnType(out thRetType);
         }
 
 #if CCCONVERTER_TRACE
@@ -569,7 +561,7 @@ namespace Internal.Runtime.CallConverter
         //
         //  typ:                 the signature type
         //=========================================================================
-        private static bool IsArgumentInRegister(ref int pNumRegistersUsed, CorElementType typ, TypeHandle thValueType)
+        private static bool IsArgumentInRegister(ref int pNumRegistersUsed, CorElementType typ, TypeHandle thArgType)
         {
             //        LIMITED_METHOD_CONTRACT;
             if ((pNumRegistersUsed) < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
@@ -600,7 +592,7 @@ namespace Internal.Runtime.CallConverter
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
                         {
                             // On ProjectN valuetypes of integral size are passed enregistered
-                            int structSize = TypeHandle.GetElemSize(typ, thValueType);
+                            int structSize = TypeHandle.GetElemSize(typ, thArgType);
                             switch (structSize)
                             {
                                 case 1:
@@ -910,18 +902,16 @@ namespace Internal.Runtime.CallConverter
             if (_argNum >= this.NumFixedArgs())
                 return TransitionBlock.InvalidOffset;
 
-            TypeHandle thValueType;
-            CorElementType argType = this.GetArgumentType(_argNum, out thValueType, out _argForceByRef);
+            CorElementType argType = this.GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
 
             _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default(TypeHandle));
 
             _argNum++;
 
-            int argSize = TypeHandle.GetElemSize(argType, thValueType);
+            int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
 
             _argType = argType;
             _argSize = argSize;
-            _argTypeHandle = thValueType;
 
             argType = _argForceByRef ? CorElementType.ELEMENT_TYPE_BYREF : argType;
             argSize = _argForceByRef ? IntPtr.Size : argSize;
@@ -937,7 +927,7 @@ namespace Internal.Runtime.CallConverter
                 return argOfs;
             }
 #endif
-            if (IsArgumentInRegister(ref _numRegistersUsed, argType, thValueType))
+            if (IsArgumentInRegister(ref _numRegistersUsed, argType, _argTypeHandle))
             {
                 return TransitionBlock.GetOffsetOfArgumentRegisters() + (ArchitectureConstants.NUM_ARGUMENT_REGISTERS - _numRegistersUsed) * IntPtr.Size;
             }
@@ -1063,11 +1053,11 @@ namespace Internal.Runtime.CallConverter
                     {
                         // Value type case: extract the alignment requirement, note that this has to handle 
                         // the interop "native value types".
-                        fRequiresAlign64Bit = thValueType.RequiresAlign8();
+                        fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
 
                         // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
                         // registers if possible.
-                        if (thValueType.IsHFA())
+                        if (_argTypeHandle.IsHFA())
                             fFloatingPoint = true;
 
                         break;
@@ -1213,9 +1203,9 @@ namespace Internal.Runtime.CallConverter
                     {
                         // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
                         // registers if possible.
-                        if (thValueType.IsHFA())
+                        if (_argTypeHandle.IsHFA())
                         {
-                            CorElementType type = thValueType.GetHFAType();
+                            CorElementType type = _argTypeHandle.GetHFAType();
                             cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
                         }
                         else
@@ -1351,15 +1341,15 @@ namespace Internal.Runtime.CallConverter
             int nArgs = this.NumFixedArgs();
             for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
             {
-                TypeHandle thValueType;
+                TypeHandle thArgType;
                 bool argForcedToBeByref;
-                CorElementType type = this.GetArgumentType(i, out thValueType, out argForcedToBeByref);
+                CorElementType type = this.GetArgumentType(i, out thArgType, out argForcedToBeByref);
                 if (argForcedToBeByref)
                     type = CorElementType.ELEMENT_TYPE_BYREF;
 
-                if (!IsArgumentInRegister(ref numRegistersUsed, type, thValueType))
+                if (!IsArgumentInRegister(ref numRegistersUsed, type, thArgType))
                 {
-                    int structSize = TypeHandle.GetElemSize(type, thValueType);
+                    int structSize = TypeHandle.GetElemSize(type, thArgType);
 
                     nSizeOfArgStack += ArchitectureConstants.StackElemSize(structSize);
 
@@ -1642,7 +1632,7 @@ namespace Internal.Runtime.CallConverter
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
         //    };
 
-        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thValueType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+        internal static void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
 
         {
             usesRetBuffer = false;
@@ -1671,12 +1661,12 @@ namespace Internal.Runtime.CallConverter
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
 #if ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
                     {
-                        Debug.Assert(!thValueType.IsNull());
+                        Debug.Assert(!thRetType.IsNull() && thRetType.IsValueType());
 
 #if FEATURE_HFA
-                        if (thValueType.IsHFA() && !isVarArgMethod)
+                        if (thRetType.IsHFA() && !isVarArgMethod)
                         {
-                            CorElementType hfaType = thValueType.GetHFAType();
+                            CorElementType hfaType = thRetType.GetHFAType();
 
                             fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
                                 (4 * (uint)sizeof(float)) :
@@ -1686,7 +1676,7 @@ namespace Internal.Runtime.CallConverter
                         }
 #endif
 
-                        uint size = thValueType.GetSize();
+                        uint size = thRetType.GetSize();
 
 #if _TARGET_X86_ || _TARGET_AMD64_
                         // Return value types of size which are not powers of 2 using a RetBuffArg
@@ -1713,12 +1703,12 @@ namespace Internal.Runtime.CallConverter
 
         private void ComputeReturnFlags()
         {
-            TypeHandle thValueType;
-            CorElementType type = this.GetReturnType(out thValueType, out _RETURN_HAS_RET_BUFFER);
+            TypeHandle thRetType;
+            CorElementType type = this.GetReturnType(out thRetType, out _RETURN_HAS_RET_BUFFER);
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                ComputeReturnValueTreatment(type, thValueType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                ComputeReturnValueTreatment(type, thRetType, this.IsVarArg(), out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
             }
 
             _RETURN_FLAGS_COMPUTED = true;

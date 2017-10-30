@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -208,6 +209,61 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new NativeLayoutConstrainedMethodDictionarySlotNode(constrainedMethodUse.ConstrainedMethod, constrainedMethodUse.ConstraintType, constrainedMethodUse.DirectCall);
                 });
+            }
+
+            // Produce a set of dependencies that is necessary such that if this type
+            // needs to be used referenced from a NativeLayout template, that the template
+            // will be properly constructable.  (This is done by ensuring that all
+            // canonical types in the deconstruction of the type are ConstructedEEType instead
+            // of just necessary. (Which is what the actual templates signatures will ensure)
+            public IEnumerable<IDependencyNode> TemplateConstructableTypes(TypeDesc type)
+            {
+                if ((_factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
+                    yield break;
+
+                while (type.IsParameterizedType)
+                {
+                    type = ((ParameterizedType)type).ParameterType;
+                }
+
+                TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                yield return _factory.MaximallyConstructableType(canonicalType);
+
+                foreach (TypeDesc instantiationType in type.Instantiation)
+                {
+                    foreach (var dependency in TemplateConstructableTypes(instantiationType))
+                        yield return dependency;
+                }
+            }
+
+            // Produce a set of dependencies that is necessary such that if this type
+            // needs to be used referenced from a NativeLayout template and any Universal Shared
+            // instantiation is all that is needed, that the template
+            // will be properly constructable.  (This is done by ensuring that all
+            // canonical types in the deconstruction of the type are ConstructedEEType instead
+            // of just necessary, and that the USG variant of the template is created
+            // (Which is what the actual templates signatures will ensure)
+            public IEnumerable<IDependencyNode> UniversalTemplateConstructableTypes(TypeDesc type)
+            {
+                if ((_factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
+                    yield break;
+
+                while (type.IsParameterizedType)
+                {
+                    type = ((ParameterizedType)type).ParameterType;
+                }
+
+                if (type.IsSignatureVariable)
+                    yield break;
+
+                TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Universal);
+                yield return _factory.MaximallyConstructableType(canonicalType);
+
+                foreach (TypeDesc instantiationType in type.Instantiation)
+                {
+                    foreach (var dependency in UniversalTemplateConstructableTypes(instantiationType))
+                        yield return dependency;
+                }
             }
 
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
