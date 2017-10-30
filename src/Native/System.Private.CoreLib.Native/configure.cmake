@@ -6,7 +6,9 @@ check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_
 
 check_include_files(uuid/uuid.h HAVE_LIBUUID_H)
 
-set(CMAKE_REQUIRED_LIBRARIES uuid c)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+   set(CMAKE_REQUIRED_LIBRARIES uuid)
+endif()
 unset(HAVE_UUID_GENERATE_RANDOM CACHE)
 unset(HAVE_UUID_GENERATE CACHE)
 check_function_exists(uuid_generate_random HAVE_UUID_GENERATE_RANDOM)
