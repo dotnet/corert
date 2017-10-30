@@ -42,6 +42,10 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             yield return new DependencyListEntry(
+                context.MaximallyConstructableType(TypeNeedingDefaultCtor),
+                "DefaultConstructorNode type");
+
+            yield return new DependencyListEntry(
                 context.MethodEntrypoint(TypeNeedingDefaultCtor.GetDefaultConstructor(), TypeNeedingDefaultCtor.IsValueType), 
                 "DefaultConstructorNode");
         }

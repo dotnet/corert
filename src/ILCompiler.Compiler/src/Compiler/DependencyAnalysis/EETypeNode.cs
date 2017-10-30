@@ -218,6 +218,9 @@ namespace ILCompiler.DependencyAnalysis
                 yield break;
             }
 
+            if (!EmitVirtualSlotsAndInterfaces)
+                yield break;
+
             DefType defType = _type.GetClosestDefType();
 
             // If we're producing a full vtable, none of the dependencies are conditional.

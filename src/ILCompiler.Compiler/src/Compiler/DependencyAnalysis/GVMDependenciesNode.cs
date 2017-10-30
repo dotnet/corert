@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             List<CombinedDependencyListEntry> dynamicDependencies = new List<CombinedDependencyListEntry>();
 
             // Disable dependence tracking for ProjectN
-            if (factory.Target.Abi == TargetAbi.ProjectN)
+            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
             {
                 return dynamicDependencies;
             }
