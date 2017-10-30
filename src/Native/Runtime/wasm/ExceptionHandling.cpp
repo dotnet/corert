@@ -33,6 +33,8 @@ extern "C" void RhpThrowHwEx(int exceptionCode, void* faultingIP)
     assert(false);
 }
 
+void* PointerToRhpThrowHwEx2;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // RhpThrowEx
@@ -46,6 +48,8 @@ extern "C" void RhpThrowEx(void* exception)
 {
     assert(false);
 }
+
+void* PointerToRhpThrowEx2;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -62,6 +66,8 @@ extern "C" void RhpRethrow()
 {
     assert(false);
 }
+
+void* PointerToRhpRethrow2;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -87,6 +93,8 @@ extern "C" void* RhpCallCatchFunclet(int exceptionObj,
     assert(false);
 }
 
+void* PointerToRhpCallCatchFunclet2;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // void FASTCALL RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
@@ -101,6 +109,8 @@ extern "C" void RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 {
     assert(false);
 }
+
+void* PointerToRhpCallFinallyFunclet2;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -118,3 +128,5 @@ extern "C" void* RhpCallFilterFunclet(int exceptionObj, void* pFilterIP, REGDISP
 {
     assert(false);
 }
+
+void* PointerToRhpCallFilterFunclet2;
