@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// A dependency analysis node that represents a method.
     /// </summary>
-    public interface IMethodNode : ISymbolNode
+    public interface IMethodNode : ISortableSymbolNode
     {
         MethodDesc Method { get; }
     }

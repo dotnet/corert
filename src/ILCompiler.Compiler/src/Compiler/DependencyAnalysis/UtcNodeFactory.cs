@@ -102,7 +102,7 @@ namespace ILCompiler
                 return new GCStaticDescNode(type, true);
             });
 
-            _threadStaticsOffset = new NodeCache<MetadataType, ISymbolNode>((MetadataType type) =>
+            _threadStaticsOffset = new NodeCache<MetadataType, ISortableSymbolNode>((MetadataType type) =>
             {
                 if (CompilationModuleGroup.ContainsType(type))
                 {
@@ -236,7 +236,7 @@ namespace ILCompiler
             CompilationUnitPrefix + "__ThreadStaticGCDescStart", 
             CompilationUnitPrefix + "__ThreadStaticGCDescEnd");
 
-        public ArrayOfEmbeddedDataNode ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode> ThreadStaticsOffsetRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsOffsetNode>(
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionStart",
             CompilationUnitPrefix + "__ThreadStaticOffsetRegionEnd",
             null);
@@ -285,16 +285,16 @@ namespace ILCompiler
             }
         }
 
-        private NodeCache<MetadataType, ISymbolNode> _threadStaticsOffset;
+        private NodeCache<MetadataType, ISortableSymbolNode> _threadStaticsOffset;
 
-        public ISymbolNode TypeThreadStaticsOffsetSymbol(MetadataType type)
+        public ISortableSymbolNode TypeThreadStaticsOffsetSymbol(MetadataType type)
         {
             return _threadStaticsOffset.GetOrAdd(type);            
         }
 
         private NodeCache<MetadataType, ImportedThreadStaticsIndexNode> _importedThreadStaticsIndices;
 
-        public ISymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
+        public ISortableSymbolNode TypeThreadStaticsIndexSymbol(TypeDesc type)
         {
             if (CompilationModuleGroup.ContainsType(type))
             {

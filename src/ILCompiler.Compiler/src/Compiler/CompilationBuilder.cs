@@ -85,10 +85,9 @@ namespace ILCompiler
 
         public abstract CompilationBuilder UseBackendOptions(IEnumerable<string> options);
 
-        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory)
+        protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory, IComparer<DependencyNodeCore<NodeFactory>> comparer = null)
         {
-            // TODO: add graph sorter when we go multi-threaded
-            return _dependencyTrackingLevel.CreateDependencyGraph(factory);
+            return _dependencyTrackingLevel.CreateDependencyGraph(factory, comparer);
         }
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)

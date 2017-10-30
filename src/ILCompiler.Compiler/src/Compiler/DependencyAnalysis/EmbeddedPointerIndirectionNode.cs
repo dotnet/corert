@@ -5,14 +5,16 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// An <see cref="EmbeddedObjectNode"/> whose sole value is a pointer to a different <see cref="ISymbolNode"/>.
     /// <typeparamref name="TTarget"/> represents the node type this pointer points to.
     /// </summary>
-    public abstract class EmbeddedPointerIndirectionNode<TTarget> : EmbeddedObjectNode
-        where TTarget : ISymbolNode
+    public abstract class EmbeddedPointerIndirectionNode<TTarget> : EmbeddedObjectNode, ISortableSymbolNode
+        where TTarget : ISortableSymbolNode
     {
         private TTarget _targetNode;
 
@@ -36,5 +38,20 @@ namespace ILCompiler.DependencyAnalysis
 
         // At minimum, Target needs to be reported as a static dependency by inheritors.
         public abstract override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory);
+
+        int ISymbolNode.Offset => 0;
+
+        public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("_embedded_ptr_");
+            Target.AppendMangledName(nameMangler, sb);
+        }
+
+        int ISortableSymbolNode.ClassCode => -2055384490;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_targetNode, ((EmbeddedPointerIndirectionNode<TTarget>)other)._targetNode);
+        }
     }
 }

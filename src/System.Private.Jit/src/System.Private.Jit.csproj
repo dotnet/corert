@@ -122,6 +122,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DelegateCreationInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />

@@ -5,6 +5,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -39,5 +40,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+#if !SUPPORT_JIT
+        protected internal override int ClassCode => -470351029;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return _name.CompareTo(((BlobNode)other)._name);
+        }
+#endif
     }
 }

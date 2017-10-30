@@ -151,5 +151,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return true;
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.ExactMethodInstantiationsNode;
     }
 }
