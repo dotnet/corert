@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             _enumerableOfObject = val as System.Collections.Generic.IEnumerable<object>;
         }
 
-        internal ReferenceArrayImplBase(object data, global::Windows.Foundation.PropertyType type) : base(data, (int)type)
+        internal ReferenceArrayImplBase(object data, PropertyType type) : base(data, (int)type)
         {
             Initialize(data, (int)type);
         }
