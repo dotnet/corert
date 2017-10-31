@@ -133,6 +133,8 @@ else()
     set(ARCH_SOURCES_DIR arm)
   elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     set(ARCH_SOURCES_DIR i386)
+  elseif(CLR_CMAKE_PLATFORM_ARCH_WASM)
+    set(ARCH_SOURCES_DIR wasm)
   endif()
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
@@ -212,5 +214,8 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
-add_subdirectory(Full)
+if(NOT CLR_CMAKE_PLATFORM_WASM)
+  add_subdirectory(Full)
+endif(NOT CLR_CMAKE_PLATFORM_WASM)
+
 add_subdirectory(Portable)
