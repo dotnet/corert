@@ -544,6 +544,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs">
+      <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Sorting.cs">
+      <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Sorting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs</Link>
     </Compile>
