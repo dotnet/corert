@@ -99,6 +99,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        protected internal override int ClassCode => -762680703;
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return _details.CompareToImpl(((GenericCompositionNode)other)._details, comparer);
+        }
     }
 
     internal struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>
@@ -172,6 +178,36 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return true;
+        }
+
+        public int CompareToImpl(GenericCompositionDetails other, TypeSystemComparer comparer)
+        {
+            var compare = Instantiation.Length.CompareTo(other.Instantiation.Length);
+            if (compare != 0)
+                return compare;
+
+            if (Variance == null && other.Variance != null)
+                return -1;
+
+            if (Variance != null && other.Variance == null)
+                return 1;
+
+            for (int i = 0; i < Instantiation.Length; i++)
+            {
+                compare = comparer.Compare(Instantiation[i], other.Instantiation[i]);
+                if (compare != 0)
+                    return compare;
+
+                if (Variance != null)
+                {
+                    compare = Variance[i].CompareTo(other.Variance[i]);
+                    if (compare != 0)
+                        return compare;
+                }
+            }
+
+            Debug.Assert(Equals(other));
+            return 0;
         }
 
         public override bool Equals(object obj)

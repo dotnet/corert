@@ -152,5 +152,19 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_debugVarInfos == null);
             _debugVarInfos = debugVarInfos;
         }
+
+        protected internal override int ClassCode => 788492407;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_method, ((MethodCodeNode)other)._method);
+        }
+
+        int ISortableSymbolNode.ClassCode => ClassCode;
+
+        int ISortableSymbolNode.CompareToImpl(ISortableSymbolNode other, CompilerComparer comparer)
+        {
+            return CompareToImpl((ObjectNode)other, comparer);
+        }
     }
 }

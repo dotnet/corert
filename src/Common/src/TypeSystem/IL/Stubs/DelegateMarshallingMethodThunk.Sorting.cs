@@ -14,7 +14,7 @@ namespace Internal.IL.Stubs
         protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (DelegateMarshallingMethodThunk)other;
-            int result = Kind - otherMethod.Kind;
+            int result = (int)Kind - (int)otherMethod.Kind;
             if (result != 0)
                 return result;
 

@@ -355,8 +355,8 @@ typedef TADDR OBJECTHANDLE;
 #error The Volatile type is currently only defined for Visual C++ and Clang
 #endif
 
-#if defined(__clang__) && !defined(_X86_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_)
-#error The Volatile type is currently only defined for Clang when targeting x86, AMD64, ARM or ARM64 CPUs
+#if defined(__clang__) && !defined(_X86_) && !defined(_AMD64_) && !defined(_ARM_) && !defined(_ARM64_) && !defined(_WASM_)
+#error The Volatile type is currently only defined for Clang when targeting x86, AMD64, ARM, ARM64 or WASM
 #endif
 
 #if defined(__clang__)

@@ -60,5 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
             return builder.ToObjectData();
         }
+
+        protected internal override int ClassCode => -1421136129;
     }
 }

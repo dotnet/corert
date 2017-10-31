@@ -75,5 +75,12 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialPointerAlignment();
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
         }
+
+        protected internal override int ClassCode => 2091208431;
+
+        protected internal override int CompareToImpl(SortableDependencyNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
+        }
     }
 }

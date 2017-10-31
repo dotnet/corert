@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -113,7 +113,9 @@
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugPseudoAssemblySection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeRecordsSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugTypeSignatureMapSection.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
@@ -122,6 +124,7 @@
     <Compile Include="Compiler\DependencyAnalysis\LoopHijackFlagNode.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="Compiler\PreInitFieldInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenArrayNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />

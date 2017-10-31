@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.NativeFormat;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -93,5 +94,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        protected internal override int ClassCode => (int)ObjectNodeOrder.NativeLayoutInfoNode;
     }
 }

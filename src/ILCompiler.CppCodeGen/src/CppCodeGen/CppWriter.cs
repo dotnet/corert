@@ -1005,6 +1005,10 @@ namespace ILCompiler.CppCodeGen
             //RTR header needs to be declared after all modules have already been output
             string rtrHeader = string.Empty;
 
+            // GetData stabilizes the indices of the embedded objects. This must be done manually
+            // for C++ codegen since we don't currently emit the DispatchMapTable node directly.
+            factory.DispatchMapTable.GetData(factory, false);
+
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {

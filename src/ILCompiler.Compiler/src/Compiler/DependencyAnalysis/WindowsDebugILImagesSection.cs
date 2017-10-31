@@ -30,6 +30,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
+        protected internal override int ClassCode => 2051656903;
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(GetName(null));

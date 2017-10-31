@@ -40,6 +40,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>> _conditional_dependency_store = new Dictionary<DependencyNodeCore<DependencyContextType>, HashSet<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry>>();
         private bool _markingCompleted = false;
+        private Random _stackPopRandomizer = null;
 
         private struct DynamicDependencyNode
         {
@@ -69,6 +70,11 @@ namespace ILCompiler.DependencyAnalysisFramework
             _dependencyContext = dependencyContext;
             _resultSorter = resultSorter;
             _marker.AttachContext(dependencyContext);
+
+            if (int.TryParse(Environment.GetEnvironmentVariable("CoreRT_DeterminismSeed"), out int seed))
+            {
+                _stackPopRandomizer = new Random(seed);
+            }
         }
 
         /// <summary>
@@ -275,7 +281,33 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             if (_marker.MarkNode(node, reason1, reason2, reason))
             {
-                _markStack.Push(node);
+                // Pop the top node of the mark stack
+                if (_stackPopRandomizer == null)
+                {
+                    _markStack.Push(node);
+                }
+                else
+                {
+                    //
+                    // Expose output file determinism bugs in our system by randomizing the order nodes are pushed
+                    // on to the mark stack.
+                    //
+                    int randomNodeIndex = _stackPopRandomizer.Next(_markStack.Count);
+                    var tempStack = new Stack<DependencyNodeCore<DependencyContextType>>();
+
+                    for (int i = 0; i < randomNodeIndex; i++)
+                    {
+                        tempStack.Push(_markStack.Pop());
+                    }
+
+                    _markStack.Push(node);
+
+                    while (tempStack.Count > 0)
+                    {
+                        _markStack.Push(tempStack.Pop());
+                    }
+                }
+                
                 _markedNodes.Add(node);
 
                 node.CallOnMarked(_dependencyContext);
