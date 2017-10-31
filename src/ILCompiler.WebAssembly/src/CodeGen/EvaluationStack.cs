@@ -200,12 +200,7 @@ namespace Internal.IL
 
         public LLVMValueRef ValueAsType(LLVMTypeRef type, LLVMBuilderRef builder)
         {
-            if (!_castValues.TryGetValue(type, out LLVMValueRef value))
-            {
-                value = ValueAsTypeInternal(type, builder, false);
-                _castValues.Add(type, value);
-            }
-            return value;
+            return ValueAsTypeInternal(type, builder, false);
         }
 
         public LLVMValueRef ValueAsType(TypeDesc type, LLVMBuilderRef builder)

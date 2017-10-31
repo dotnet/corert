@@ -162,16 +162,22 @@ namespace Internal.IL
             return llvmFunction;
         }
 
-        public static LLVMValueRef GetOrCreateLLVMFunction(LLVMModuleRef module, string mangledName, LLVMTypeRef returnType)
+        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, LLVMTypeRef functionType)
         {
-            LLVMValueRef llvmFunction = LLVM.GetNamedFunction(module, mangledName);
+            LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if (llvmFunction.Pointer == IntPtr.Zero)
             {
-                LLVMTypeRef plainSignature = LLVM.FunctionType(returnType, new LLVMTypeRef[0], false);
-                return LLVM.AddFunction(module, mangledName, plainSignature);
+                return LLVM.AddFunction(Module, mangledName, functionType);
             }
             return llvmFunction;
+        }
+
+        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, int length)
+        {
+            LLVMValueRef objectSizeValue = BuildConstInt32(length);
+            var memsetSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.Int8Type(), LLVM.Int32Type(), LLVM.Int32Type(), LLVM.Int1Type() }, false);
+            LLVM.BuildCall(_builder, GetOrCreateLLVMFunction("llvm.memset.p0i8.i32", memsetSignature), new LLVMValueRef[] { targetPointer, BuildConstInt8(value), objectSizeValue, BuildConstInt32(1), BuildConstInt1(0) }, String.Empty);
         }
 
         private void PushLoadExpression(StackValueKind kind, string name, LLVMValueRef rawLLVMValue, TypeDesc type)
@@ -743,13 +749,6 @@ namespace Internal.IL
             LLVM.BuildRetVoid(_builder);
         }
 
-        private void CallRuntimeExport(TypeSystemContext context, string methodName)
-        {
-            MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", "RuntimeExports");
-            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            HandleCall(helperMethod);
-        }
-
         private void ImportCall(ILOpcode opcode, int token)
         {
             MethodDesc callee = (MethodDesc)_methodIL.GetObject(token);
@@ -805,15 +804,9 @@ namespace Internal.IL
         {
             MetadataType metadataType = (MetadataType)type;
             int objectSize = metadataType.InstanceByteCount.AsInt;
-            LLVMValueRef objectSizeValue = BuildConstInt32(objectSize);
             LLVMValueRef allocatedMemory = LLVM.BuildMalloc(_builder, LLVM.ArrayType(LLVM.Int8Type(), (uint)objectSize), "newobj");
             LLVMValueRef castMemory = LLVM.BuildPointerCast(_builder, allocatedMemory, LLVM.PointerType(LLVM.Int8Type(), 0), "castnewobj");
-            if (MemsetFunction.Pointer == IntPtr.Zero)
-            {
-                MemsetFunction = LLVM.AddFunction(Module, "llvm.memset.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.Int8Type(), LLVM.Int32Type(), LLVM.Int32Type(), LLVM.Int1Type() }, false));
-            }
-            LLVM.BuildCall(_builder, MemsetFunction, new LLVMValueRef[] { castMemory, BuildConstInt8(0), objectSizeValue, BuildConstInt32(1), BuildConstInt1(0) }, String.Empty);
-
+            ImportCallMemset(castMemory, 0, objectSize);
             LLVMValueRef eeTypePointer = GetEETypeForTypeDesc(type);
             LLVMValueRef objectHeaderPtr = LLVM.BuildPointerCast(_builder, allocatedMemory, LLVM.PointerType(LLVM.TypeOf(eeTypePointer), 0), "objectHeaderPtr");
             LLVM.BuildStore(_builder, eeTypePointer, objectHeaderPtr);
@@ -1632,9 +1625,15 @@ namespace Internal.IL
             var valueEntry = _stack.Pop();
             var llvmType = GetLLVMTypeForTypeDesc(type);
             if (llvmType.TypeKind == LLVMTypeKind.LLVMArrayTypeKind)
-                LLVM.BuildStore(_builder, WebAssemblyObjectWriter.GetConstZeroArray(type.GetElementSize().AsInt), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
+                ImportCallMemset(valueEntry.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), 0, type.GetElementSize().AsInt);
+            else if (llvmType.TypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
+                LLVM.BuildStore(_builder, LLVM.ConstInt(llvmType, 0, LLVMMisc.False), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
+            else if (llvmType.TypeKind == LLVMTypeKind.LLVMPointerTypeKind)
+                LLVM.BuildStore(_builder, LLVM.ConstNull(llvmType), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
+            else if (llvmType.TypeKind == LLVMTypeKind.LLVMFloatTypeKind)
+                LLVM.BuildStore(_builder, LLVM.ConstReal(llvmType, 0.0), valueEntry.ValueAsType(LLVM.PointerType(llvmType, 0), _builder));
             else
-                LLVM.BuildStore(_builder, BuildConstInt32(0), valueEntry.ValueAsType(LLVM.PointerType(LLVM.Int32Type(), 0), _builder));
+                throw new NotImplementedException();
         }
 
         private void ImportBox(int token)
