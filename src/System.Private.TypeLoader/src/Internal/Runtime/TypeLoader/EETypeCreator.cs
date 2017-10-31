@@ -1024,6 +1024,8 @@ namespace Internal.Runtime.TypeLoader
             CreateEETypeWorker(typeof(void*).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, false, state);
             Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
 
+            TypeLoaderLogger.WriteLine("Allocated new POINTER type " + pointerType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with eetype = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
+
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
 
             return state.HalfBakedRuntimeTypeHandle;
@@ -1037,6 +1039,8 @@ namespace Internal.Runtime.TypeLoader
             // Ideally this should be typeof(void&) but C# doesn't support that syntax. We adjust for this below.
             CreateEETypeWorker(typeof(void*).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, false, state);
             Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
+
+            TypeLoaderLogger.WriteLine("Allocated new BYREF type " + byRefType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with eetype = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
 
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
 

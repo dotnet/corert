@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -11,23 +12,35 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class Comparer<T> : IComparer, IComparer<T>
     {
+        // WARNING: We allow diagnostic tools to directly inspect this member (_default). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
+        private static Comparer<T> _default;
+
+        [Intrinsic]
+        private static Comparer<T> Create()
+        {
+#if CORERT
+            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
+            return (_default = new DefaultComparer<T>());
+#else
+            // The compiler will overwrite the Create method with optimized
+            // instantiation-specific implementation.
+            throw new NotSupportedException();
+#endif
+        }
+
         protected Comparer()
         {
         }
-
-        // .NET Native for UWP toolchain overwrites the Default property with optimized 
-        // instantiation-specific implementation.
-
-        // TODO: Initialize the _default field via implicit static constructor for better performance
-        // (https://github.com/dotnet/coreclr/pull/4340).
 
         public static Comparer<T> Default
         {
             get
             {
-                if (_default == null)
-                    _default = new DefaultComparer<T>();
-                return _default;
+                // Lazy initialization produces smaller code for CoreRT than initialization in constructor
+                return _default ?? Create();
             }
         }
 
@@ -48,12 +61,6 @@ namespace System.Collections.Generic
             if (x is T && y is T) return Compare((T)x, (T)y);
             throw new ArgumentException(SR.Argument_InvalidArgumentForComparison);
         }
-
-        // WARNING: We allow diagnostic tools to directly inspect this member (_default). 
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
-        // Get in touch with the diagnostics team if you have questions.
-        private static Comparer<T> _default;
     }
 
     internal class DefaultComparer<T> : Comparer<T>

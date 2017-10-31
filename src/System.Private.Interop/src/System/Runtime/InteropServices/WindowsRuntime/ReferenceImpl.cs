@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             m_value = data;
         }
 
-        internal ReferenceImpl(T data, global::Windows.Foundation.PropertyType type)
+        internal ReferenceImpl(T data, PropertyType type)
             : base(data, (int)type)
         {
             m_unboxed = true;

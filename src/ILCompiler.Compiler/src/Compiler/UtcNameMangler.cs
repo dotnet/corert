@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -32,6 +33,17 @@ namespace ILCompiler
         private string OrdinalPrefix => "_[O]_";
         private string deDuplicatePrefix => "_[D]_";
 
+        // The max length of name allowed in terms of UTF8 string. This is the limit from the compiler.
+        private int _maximumUTF8NameLength = 4000;
+
+        // The max length of prefix+suffix added to the name in terms of UTF8 string. This is usually for generated 
+        // hash code, node-specific prefixes and suffixes, and ordinal prefixes.
+        private int _nameUTF8MarginLength = 1000;
+
+#if DEBUG
+        ConcurrentDictionary<string, string> _longNames = new ConcurrentDictionary<string, string>();
+#endif
+
         private ImportExportOrdinals _importOrdinals;
         private ImportExportOrdinals _exportOrdinals;
 
@@ -53,6 +65,12 @@ namespace ILCompiler
             {
                 _exportOrdinals = ordinals;
             }
+
+            // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+            // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+            // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+            // failure.
+            _sha256 = SHA256.Create();
         }
 
         private bool GetMethodOrdinal(MethodDesc method, out uint ordinal)
@@ -191,15 +209,6 @@ namespace ILCompiler
 
             if (mangledName != literal)
             {
-                if (_sha256 == null)
-                {
-                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                    // failure.
-                    _sha256 = SHA256.Create();
-                }
-
                 var hash = _sha256.ComputeHash(GetBytesFromString(literal));
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
@@ -228,6 +237,32 @@ namespace ILCompiler
                 result = string.Concat(origName, deDuplicatePrefix, (iter++).ToStringInvariant());
             }
             return result;
+        }
+
+        private string TruncateName(string origName)
+        {
+            // A UTF8 char can only expand to 3 bytes
+            if (origName.Length * 3 <= _maximumUTF8NameLength)
+            {
+                return origName;
+            }
+
+            // Compute the exact UTF8 length and compare
+            if (Encoding.UTF8.GetBytes(origName).Length <= _maximumUTF8NameLength)
+            {
+                return origName;
+            }
+
+            var hash = _sha256.ComputeHash(GetBytesFromString(origName));
+            var truncatedName = origName.Substring(0, _maximumUTF8NameLength - _nameUTF8MarginLength);
+            truncatedName = truncatedName + BitConverter.ToString(hash).Replace("-", "");
+
+#if DEBUG
+            string existingName = _longNames.GetOrAdd(truncatedName, origName);
+            Debug.Assert(existingName == origName);
+#endif
+
+            return truncatedName;
         }
 
         public override string GetMangledTypeName(TypeDesc type)
@@ -289,6 +324,7 @@ namespace ILCompiler
                             // Ensure that name is unique and update our tables accordingly.
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
+                            name = TruncateName(name);
                             _mangledTypeNames = _mangledTypeNames.Add(t, name);
                         }
                     }
@@ -349,6 +385,8 @@ namespace ILCompiler
                     }
                     break;
             }
+
+            mangledName = TruncateName(mangledName);
 
             lock (this)
             {
@@ -445,6 +483,8 @@ namespace ILCompiler
 
                             if (prependTypeName != null)
                                 name = prependTypeName + "__" + name;
+
+                            name = TruncateName(name);
                         }
 
                         _mangledMethodNames = _mangledMethodNames.Add(m, name);
@@ -490,6 +530,8 @@ namespace ILCompiler
                 {
                     mangledName += mangledInstantiation;
                 }
+
+                mangledName = TruncateName(mangledName);
 
                 lock (this)
                 {
@@ -567,6 +609,8 @@ namespace ILCompiler
                             if (prependTypeName != null)
                                 name = prependTypeName + "__" + name;
 
+                            name = TruncateName(name);
+
                             _mangledFieldNames = _mangledFieldNames.Add(f, name);
                         }
                     }
@@ -580,6 +624,8 @@ namespace ILCompiler
 
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;
+
+            mangledName = TruncateName(mangledName);
 
             Utf8String utf8MangledName = new Utf8String(mangledName);
 
@@ -613,15 +659,6 @@ namespace ILCompiler
 
         public string GetMangledDataBlobName(byte[] blob)
         {
-            if (_sha256 == null)
-            {
-                // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                // failure.
-                _sha256 = SHA256.Create();
-            }
-
             var hash = _sha256.ComputeHash(blob);
             return "__Data_" + BitConverter.ToString(hash).Replace("-", "");
         }

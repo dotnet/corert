@@ -611,7 +611,8 @@ namespace Internal.Runtime.TypeLoader
             int ofsCallee;
             int ofsCaller;
             TypeHandle thDummy;
-            TypeHandle thValueType;
+            TypeHandle thArgType;
+            TypeHandle thRetType;
             IntPtr argPtr;
 #if CALLDESCR_FPARGREGS
             FloatArgumentRegisters* pFloatArgumentRegisters = null;
@@ -688,7 +689,8 @@ namespace Internal.Runtime.TypeLoader
                             InvokeUtils.DynamicInvokeParamLookupType paramLookupType;
 
                             RuntimeTypeHandle argumentRuntimeTypeHandle;
-                            CorElementType argType = conversionParams._calleeArgs.GetArgType(out thValueType);
+                            CorElementType argType = conversionParams._calleeArgs.GetArgType(out thArgType);
+                            Debug.Assert(!thArgType.IsNull());
 
                             if (argType == CorElementType.ELEMENT_TYPE_BYREF)
                             {
@@ -700,14 +702,15 @@ namespace Internal.Runtime.TypeLoader
                             }
                             else
                             {
-                                argumentRuntimeTypeHandle = (thValueType.IsNull() ? typeof(object).TypeHandle : thValueType.GetRuntimeTypeHandle());
+                                // We need to check the exact type handle of the argument being passed during reflection invoke scenarios.
+                                argumentRuntimeTypeHandle = thArgType.GetRuntimeTypeHandle();
                             }
 
                             object invokeParam = InvokeUtils.DynamicInvokeParamHelperCore(
                                 argumentRuntimeTypeHandle,
                                 out paramLookupType,
                                 out index,
-                                conversionParams._calleeArgs.IsArgPassedByRef() ? InvokeUtils.DynamicInvokeParamType.Ref : InvokeUtils.DynamicInvokeParamType.In);
+                                argType == CorElementType.ELEMENT_TYPE_BYREF ? InvokeUtils.DynamicInvokeParamType.Ref : InvokeUtils.DynamicInvokeParamType.In);
 
                             if (paramLookupType == InvokeUtils.DynamicInvokeParamLookupType.ValuetypeObjectReturned)
                             {
@@ -786,9 +789,10 @@ namespace Internal.Runtime.TypeLoader
 
                         argumentsAsObjectArray = argumentsAsObjectArray ?? new object[conversionParams._callerArgs.NumFixedArgs()];
 
-                        conversionParams._callerArgs.GetArgType(out thValueType);
+                        conversionParams._callerArgs.GetArgType(out thArgType);
+                        Debug.Assert(!thArgType.IsNull());
 
-                        if (thValueType.IsNull())
+                        if (!thArgType.IsValueType())
                         {
                             Debug.Assert(!isCallerArgPassedByRef);
                             Debug.Assert(conversionParams._callerArgs.GetArgSize() == IntPtr.Size);
@@ -798,11 +802,11 @@ namespace Internal.Runtime.TypeLoader
                         {
                             if (isCallerArgPassedByRef)
                             {
-                                argumentsAsObjectArray[arg] = RuntimeAugments.Box(thValueType.GetRuntimeTypeHandle(), new IntPtr(*((void**)pSrc)));
+                                argumentsAsObjectArray[arg] = RuntimeAugments.Box(thArgType.GetRuntimeTypeHandle(), new IntPtr(*((void**)pSrc)));
                             }
                             else
                             {
-                                argumentsAsObjectArray[arg] = RuntimeAugments.Box(thValueType.GetRuntimeTypeHandle(), new IntPtr(pSrc));
+                                argumentsAsObjectArray[arg] = RuntimeAugments.Box(thArgType.GetRuntimeTypeHandle(), new IntPtr(pSrc));
                             }
                         }
                     }
@@ -817,7 +821,7 @@ namespace Internal.Runtime.TypeLoader
                             }
                             else
                             {
-                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thValueType);
+                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thArgType);
                                 ExtendingCopy_NoWriteBarrier(pSrc, pDest, argElemType, stackSizeCaller);
                             }
                         }
@@ -834,7 +838,7 @@ namespace Internal.Runtime.TypeLoader
                             {
                                 // Copy into the destination the data pointed at by the pointer in the source(caller) data.
                                 byte* pRealSrc = *(byte**)pSrc;
-                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thValueType);
+                                CorElementType argElemType = conversionParams._calleeArgs.GetArgType(out thArgType);
                                 ExtendingCopy_NoWriteBarrier(pRealSrc, pDest, argElemType, stackSizeCaller);
                             }
                         }
@@ -970,16 +974,17 @@ namespace Internal.Runtime.TypeLoader
             // the target method called by the delegate. Use the callee's ArgIterator instead to get the return type info
             if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk)
             {
-                returnType = conversionParams._calleeArgs.GetReturnType(out thValueType, out forceByRefUnused);
+                returnType = conversionParams._calleeArgs.GetReturnType(out thRetType, out forceByRefUnused);
             }
             else
             {
-                returnType = conversionParams._callerArgs.GetReturnType(out thValueType, out forceByRefUnused);
+                returnType = conversionParams._callerArgs.GetReturnType(out thRetType, out forceByRefUnused);
             }
-            int returnSize = TypeHandle.GetElemSize(returnType, thValueType);
+            Debug.Assert(!thRetType.IsNull());
+            int returnSize = TypeHandle.GetElemSize(returnType, thRetType);
 
             // Unbox result of object array delegate call
-            if (conversionParams._conversionInfo.IsObjectArrayDelegateThunk && !thValueType.IsNull() && pinnedResultObject != IntPtr.Zero)
+            if (conversionParams._conversionInfo.IsObjectArrayDelegateThunk && thRetType.IsValueType() && pinnedResultObject != IntPtr.Zero)
                 pinnedResultObject += IntPtr.Size;
 
             // Process return values
@@ -1009,7 +1014,7 @@ namespace Internal.Runtime.TypeLoader
 
                     bool useGCSafeCopy = false;
 
-                    if ((returnType == CorElementType.ELEMENT_TYPE_CLASS) || !thValueType.IsNull())
+                    if ((returnType == CorElementType.ELEMENT_TYPE_CLASS) || thRetType.IsValueType())
                     {
                         // The GC Safe copy assumes that memory pointers are pointer-aligned and copy length is a multiple of pointer-size
                         if (isPointerAligned(incomingRetBufPointer) && isPointerAligned(sourceBuffer) && (returnSize % sizeof(IntPtr) == 0))
@@ -1082,7 +1087,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (conversionParams._conversionInfo.IsObjectArrayDelegateThunk)
                 {
-                    if (!thValueType.IsNull())
+                    if (thRetType.IsValueType())
                     {
                         returnValueToCopy = (void*)pinnedResultObject;
 #if _TARGET_X86_
@@ -1107,22 +1112,30 @@ namespace Internal.Runtime.TypeLoader
 #endif
                     }
                 }
-                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk && !thValueType.IsNull())
+                else if (conversionParams._conversionInfo.IsAnyDynamicInvokerThunk && thRetType.IsValueType())
                 {
                     Debug.Assert(returnValueToCopy != null);
 
-                    if (!conversionParams._callerArgs.HasRetBuffArg() && conversionParams._calleeArgs.HasRetBuffArg())
-                        returnValueToCopy = (void*)(new IntPtr(*((void**)returnValueToCopy)) + IntPtr.Size);
+                    if (conversionParams._calleeArgs.GetReturnType(out thDummy, out dummyBool) == CorElementType.ELEMENT_TYPE_VOID)
+                    {
+                        // Invokers returning void need to return a null object
+                        returnValueToCopy = null;
+                    }
+                    else
+                    {
+                        if (!conversionParams._callerArgs.HasRetBuffArg() && conversionParams._calleeArgs.HasRetBuffArg())
+                            returnValueToCopy = (void*)(new IntPtr(*((void**)returnValueToCopy)) + IntPtr.Size);
 
-                    // Need to box value type before returning it
-                    object returnValue = RuntimeAugments.Box(thValueType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
-                    CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
-                    pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
-                    returnValueToCopy = (void*)&pinnedResultObject;
+                        // Need to box value type before returning it
+                        object returnValue = RuntimeAugments.Box(thRetType.GetRuntimeTypeHandle(), new IntPtr(returnValueToCopy));
+                        CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.Target = returnValue;
+                        pinnedResultObject = CallConversionParameters.s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
+                        returnValueToCopy = (void*)&pinnedResultObject;
+                    }
                     // Since we've changed the returnValueToCopy here, we need to update the idea of what we are returning
                     returnType = CorElementType.ELEMENT_TYPE_OBJECT;
-                    thValueType = default(TypeHandle);
-                    returnSize = TypeHandle.GetElemSize(returnType, thValueType);
+                    thRetType = default(TypeHandle);
+                    returnSize = TypeHandle.GetElemSize(returnType, thRetType);
 
 #if _TARGET_X86_
                     ((TransitionBlock*)callerTransitionBlock)->m_returnBlock.returnValue = pinnedResultObject;
@@ -1188,23 +1201,14 @@ namespace Internal.Runtime.TypeLoader
                 return;
 #else
                 // If we reach here, we are returning value in the integer registers.
-                if (conversionParams._conversionInfo.IsObjectArrayDelegateThunk && (!thValueType.IsNull()))
+                if (returnValueToCopy == null)
                 {
-                    if (returnValueToCopy == null)
-                    {
-                        // object array delegate thunk result is a null object. We'll fill the return buffer with 'returnSize' zeros in that case
-                        memzeroPointer(callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnSize);
-                    }
-                    else
-                    {
-                        ExtendingCopy_WriteBarrier(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnType, returnSize);
-                    }
+                    // Return result is a null object. We'll fill the return buffer with 'returnSize' zeros in that case
+                    memzeroPointer(callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnSize);
                 }
                 else
                 {
-                    Debug.Assert(returnValueToCopy != null);
-
-                    ExtendingCopy_NoWriteBarrier(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnType, returnSize);
+                    ExtendingCopy_WriteBarrier(returnValueToCopy, callerTransitionBlock + TransitionBlock.GetOffsetOfArgumentRegisters(), returnType, returnSize);
                 }
                 conversionParams._invokeReturnValue = ReturnIntegerPointReturnThunk;
 #endif

@@ -457,7 +457,8 @@ namespace ILCompiler
 
                 if (method.IsVirtual)
                     rootProvider.RootVirtualMethodForReflection(method, "Required generic method");
-                else
+
+                if (!method.IsAbstract)
                     rootProvider.AddCompilationRoot(method, "Required generic method");
             }
 
@@ -488,7 +489,8 @@ namespace ILCompiler
                 Debug.Assert(method.IsCanonicalMethod(CanonicalFormKind.Any));
                 if (method.IsVirtual)
                     rootProvider.RootVirtualMethodForReflection(method, "Compiler determined template");
-                else
+
+                if (!method.IsAbstract)
                     rootProvider.AddCompilationRoot(method, "Compiler determined template");
             }
         }
