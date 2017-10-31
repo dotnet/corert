@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -104,6 +105,22 @@ namespace Internal.TypeSystem
             {
                 return String.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
             }
+        }
+
+        public override IEnumerable<MethodDesc> GetMethods()
+        {
+            foreach (var method in _rawCanonType.GetMethods())
+            {
+                yield return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
+            }
+        }
+
+        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        {
+            MethodDesc method = _rawCanonType.GetMethod(name, signature);
+            if (method == null)
+                return null;
+            return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
