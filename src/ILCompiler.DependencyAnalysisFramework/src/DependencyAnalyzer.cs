@@ -69,6 +69,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             _dependencyContext = dependencyContext;
             _resultSorter = resultSorter;
+            _marker.AttachContext(dependencyContext);
 
             if (int.TryParse(Environment.GetEnvironmentVariable("CoreRT_DeterminismSeed"), out int seed))
             {

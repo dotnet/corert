@@ -21,6 +21,7 @@
     <Compile Include="DependencyNode.cs" />
     <Compile Include="DependencyNodeCore.cs" />
     <Compile Include="DgmlWriter.cs" />
+    <Compile Include="EventSourceLogStrategy.cs" />
     <Compile Include="FirstMarkLogStrategy.cs" />
     <Compile Include="FullGraphLogStrategy.cs" />
     <Compile Include="IDependencyAnalyzerLogEdgeVisitor.cs" />

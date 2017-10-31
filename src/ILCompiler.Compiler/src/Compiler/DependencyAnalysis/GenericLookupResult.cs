@@ -1576,8 +1576,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            MethodDesc implMethod = instantiatedConstrainedMethod;
 
-            MethodDesc implMethod = instantiatedConstraintType.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
+            if (implMethod.OwningType.IsInterface)
+            {
+                implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(implMethod);
+            }
+
+            implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(implMethod);
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
             Debug.Assert(instantiatedConstraintType.IsValueType);
@@ -1589,7 +1595,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                return factory.MethodEntrypoint(implMethod);
+                return factory.CanonicalEntrypoint(implMethod);
             }
         }
 

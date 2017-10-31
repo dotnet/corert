@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub"));
+                    dependencies.Add(new DependencyListEntry(factory.ExactCallableAddress(method, isUnboxingStub: true), "Reflection unboxing stub"));
 
                 // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
                 // Use a name/sig reference instead.
