@@ -207,12 +207,13 @@ static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unw
     // initialized by unw_init_local(), which are not updated by
     // unw_set_reg().
 
-#define ASSIGN_REG(regIndex, regName)                           \
-    unwContext->data[regIndex] = (regDisplay->regName);
+#define ASSIGN_REG(regIndex, regName) \
+    if ((regDisplay->regName) != NULL) \
+        ((uint32_t*)(unwContext->data))[regIndex] = (regDisplay->regName);
 
 #define ASSIGN_REG_PTR(regIndex, regName) \
     if (regDisplay->p##regName != NULL) \
-        unwContext->data[regIndex] = *(regDisplay->p##regName);
+        ((uint32_t*)(unwContext->data))[regIndex] = *(regDisplay->p##regName);
 
     ASSIGN_REG_PTR(4, R4);
     ASSIGN_REG_PTR(5, R5);
@@ -520,6 +521,8 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
     unw_cursor_t cursor;
     REGDISPLAY regDisplay;
     memset(&regDisplay, 0, sizeof(REGDISPLAY));
+    memset(&unwContext, 0, sizeof(unw_context_t));
+    memset(&cursor, 0, sizeof(unw_cursor_t));
 
     regDisplay.SetIP((PCODE)controlPC);
 
