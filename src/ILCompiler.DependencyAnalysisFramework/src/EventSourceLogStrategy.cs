@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
@@ -51,7 +52,11 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             get
             {
-                return GraphEventSource.Log.IsEnabled();
+                return 
+#if !ALWAYS_SUPPORT_EVENTSOURCE_LOG
+                       RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && // Processing these event source events is only implemented on Windows
+#endif
+                       GraphEventSource.Log.IsEnabled();
             }
         }
 
