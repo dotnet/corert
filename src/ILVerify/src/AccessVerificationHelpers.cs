@@ -72,11 +72,14 @@ namespace ILVerify
             if (targetMethod.HasInstantiation && !currentType.CanAccessInstantiation(targetMethod.Instantiation))
                 return false;
 
-            var targetMethodDef = (EcmaMethod)targetMethod.GetTypicalMethodDefinition();
+            var targetMethodDef = targetMethod.GetTypicalMethodDefinition() as EcmaMethod;
             var currentTypeDef = (MetadataType)currentType.GetTypeDefinition();
 
-            if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask, instance))
-                return false;
+            if (targetMethodDef != null) // Non metadata methods, such as ArrayMethods, may be null at this point
+            {
+                if (!currentTypeDef.CanAccessMember(targetMethod.OwningType, targetMethodDef.Attributes & MethodAttributes.MemberAccessMask, instance))
+                    return false;
+            }
 
             return currentTypeDef.CanAccessMethodSignature(targetMethod);
         }

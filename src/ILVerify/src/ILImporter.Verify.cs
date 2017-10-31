@@ -794,10 +794,12 @@ again:
                 else
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
-                    var owningTypeDef = (MetadataType)ftn.Method.OwningType.GetTypeDefinition();
-
-                    if (ftn.Method.IsVirtual && !(ftn.Method.IsFinal || owningTypeDef.IsSealed) && !obj.IsBoxedValueType)
-                        Check(obj.IsThisPtr && !_modifiesThisPtr, VerifierError.LdftnNonFinalVirtual);
+                    if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
+                    {
+                        var methodTypeDef = ftn.Method.OwningType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
+                        if (methodTypeDef == null || !methodTypeDef.IsSealed)
+                            Check(obj.IsThisPtr && !_modifiesThisPtr, VerifierError.LdftnNonFinalVirtual);
+                    }
                 }
             }
             else if (_currentInstructionOffset - _delegateCreateStart == 7) // dup, ldvirtftn <tok> takes 7 bytes
@@ -1279,10 +1281,12 @@ again:
                     // virtual methods.  (Luckily this does not affect .ctors, since they are not virtual).    
                     // This is stronger than is strictly needed, but implementing a laxer rule is significantly 
                     // harder and more error prone.
-                    var methodTypeDef = (MetadataType)methodType.GetTypeDefinition(); // Method is always considered final if owning type is sealed
-
-                    if (method.IsVirtual && !(method.IsFinal || methodTypeDef.IsSealed) && !actualThis.IsBoxedValueType)
-                        Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
+                    if (method.IsVirtual && !method.IsFinal && !actualThis.IsBoxedValueType)
+                    {
+                        var methodTypeDef = methodType.GetTypeDefinition() as MetadataType; // Method is always considered final if owning type is sealed
+                        if (methodTypeDef == null || !methodTypeDef.IsSealed)
+                            Check(actualThis.IsThisPtr && !_modifiesThisPtr, VerifierError.ThisMismatch);
+                    }
                 }
 
                 if (tailCall)
@@ -1435,9 +1439,9 @@ again:
 
         void ImportReturn()
         {
-            // 'this' must be init before return
+            // 'this' must be init before return, unless System.Object
             if (_trackObjCtorState)
-                Check(_isThisInitialized, VerifierError.ThisUninitReturn);
+                Check(_isThisInitialized || _thisType.IsObject, VerifierError.ThisUninitReturn);
 
             // Check current region type
             Check(_currentBasicBlock.FilterIndex == null, VerifierError.ReturnFromFilter);
