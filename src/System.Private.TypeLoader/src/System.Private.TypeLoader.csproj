@@ -65,6 +65,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\FunctionPointerType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodDesc.RuntimeDetermined.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\TypeSystemContext.EnumMethods.cs" />
     <Compile Include="Internal\TypeSystem\ILStubMethod.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\MethodForRuntimeDeterminedType.Runtime.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\JitSupport.MethodEntrypointStubs.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'" >
