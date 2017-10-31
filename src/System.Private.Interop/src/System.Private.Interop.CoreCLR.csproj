@@ -15,7 +15,7 @@
     <OnlyBuildProjectNLibraries>false</OnlyBuildProjectNLibraries>    
     <TargetsWindows Condition="$(TargetsWindows) ==''">true</TargetsWindows>
     <TargetNetCoreForCoreCLRFramework>true</TargetNetCoreForCoreCLRFramework>
-    <OutputPath>$(OutputPath)\coreclr</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)\Interop\coreclr</OutputPath>
     <TargetFramework>netstandard1.3</TargetFramework>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup> 
