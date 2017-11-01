@@ -163,15 +163,21 @@
       <Link>System\NotImplemented.cs</Link>
     </Compile>      
     <Compile Include="WinRT\ExceptionHelpers.cs" />
-    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IReferenceArray.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\PropertyType.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\PropertyValueImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReadOnlyArrayAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceArrayImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceArrayImplBase.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReferenceImpl.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
   </ItemGroup>
