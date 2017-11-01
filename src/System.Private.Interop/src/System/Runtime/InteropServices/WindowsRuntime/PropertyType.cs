@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         Point = 17,
         Size = 18,
         Rect = 19,
-        Other = 20,
+        OtherType = 20,
         UInt8Array = 1025,
         Int16Array = 1026,
         UInt16Array = 1027,
@@ -46,6 +46,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         PointArray = 1041,
         SizeArray = 1042,
         RectArray = 1043,
-        OtherArray = 1044
+        OtherTypeArray = 1044
     }
 }

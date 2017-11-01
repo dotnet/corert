@@ -17,12 +17,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
         }
 
-        public PropertyType Type
+        public PropertyType get_Type()
         {
-            get
-            {
-                return (PropertyType)m_type;
-            }
+            return (PropertyType)m_type;
         }
 
         public bool IsNumericScalar
@@ -412,9 +409,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private void CheckType(PropertyType unboxType)
         {
-            if (this.Type != unboxType)
+            if (this.get_Type() != unboxType)
             {
-                throw CreateExceptionForInvalidCast(this.Type, unboxType);
+                throw CreateExceptionForInvalidCast(this.get_Type(), unboxType);
             }
         }
 
