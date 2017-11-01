@@ -4,7 +4,7 @@
 
 namespace System
 {
-    public partial struct DateTime
+    public readonly partial struct DateTime
     {
         public static DateTime UtcNow
         {
