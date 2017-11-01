@@ -9,6 +9,7 @@ using ILCompiler.Compiler.CppCodeGen;
 using Internal.TypeSystem;
 using LLVMSharp;
 using ILCompiler.CodeGen;
+using System.Collections.Generic;
 
 namespace Internal.IL
 {
@@ -86,7 +87,7 @@ namespace Internal.IL
         /// <param name="pos">Position where to insert <paramref name="v"/></param>
         public void InsertAt(T v, int pos)
         {
-            Debug.Assert(pos < _top, "Invalid insertion point");
+            Debug.Assert(pos <= _top, "Invalid insertion point");
 
             if (_top >= _stack.Length)
             {
@@ -166,6 +167,20 @@ namespace Internal.IL
         }
     }
 
+    class LLVMTypeRefEqualityComparer : IEqualityComparer<LLVMTypeRef>
+    {
+        public static LLVMTypeRefEqualityComparer Instance = new LLVMTypeRefEqualityComparer();
+        public bool Equals(LLVMTypeRef x, LLVMTypeRef y)
+        {
+            return x.Pointer.Equals(y.Pointer);
+        }
+
+        public int GetHashCode(LLVMTypeRef obj)
+        {
+            return obj.Pointer.GetHashCode();
+        }
+    }
+
     /// <summary>
     /// Abstract representation of a stack entry
     /// </summary>
@@ -181,18 +196,53 @@ namespace Internal.IL
         /// </summary>
         public TypeDesc Type { get; }
 
-        public LLVMValueRef LLVMValue { get; set; }
+        Dictionary<LLVMTypeRef, LLVMValueRef> _castValues = new Dictionary<LLVMTypeRef, LLVMValueRef>(LLVMTypeRefEqualityComparer.Instance);
+
+        public LLVMValueRef ValueAsType(LLVMTypeRef type, LLVMBuilderRef builder)
+        {
+            return ValueAsTypeInternal(type, builder, false);
+        }
+
+        public LLVMValueRef ValueAsType(TypeDesc type, LLVMBuilderRef builder)
+        {
+            return ValueAsType(ILImporter.GetLLVMTypeForTypeDesc(type), builder);
+        }
+
+        public LLVMValueRef ValueForStackKind(StackValueKind kind, LLVMBuilderRef builder, bool signExtend)
+        {
+            if (kind == StackValueKind.Int32)
+                return ValueAsInt32(builder, signExtend);
+            else if (kind == StackValueKind.Int64)
+                return ValueAsInt64(builder, signExtend);
+            else if (kind == StackValueKind.Float)
+                return ValueAsType(LLVM.FloatType(), builder);
+            else if (kind == StackValueKind.NativeInt || kind == StackValueKind.ByRef || kind == StackValueKind.ObjRef)
+                return ValueAsInt32(builder, false);
+            else
+                throw new NotImplementedException();
+        }
+
+        public LLVMValueRef ValueAsInt32(LLVMBuilderRef builder, bool signExtend)
+        {
+            return ValueAsTypeInternal(LLVM.Int32Type(), builder, signExtend);
+        }
+
+        public LLVMValueRef ValueAsInt64(LLVMBuilderRef builder, bool signExtend)
+        {
+            return ValueAsTypeInternal(LLVM.Int32Type(), builder, signExtend);
+        }
+
+        protected abstract LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend);
 
         /// <summary>
         /// Initializes a new instance of StackEntry.
         /// </summary>
         /// <param name="kind">Kind of entry.</param>
         /// <param name="type">Type if any of entry.</param>
-        protected StackEntry(StackValueKind kind, LLVMValueRef llvmValue, TypeDesc type = null)
+        protected StackEntry(StackValueKind kind, TypeDesc type = null)
         {
             Kind = kind;
             Type = type;
-            LLVMValue = llvmValue;
         }
 
         /// <summary>
@@ -206,45 +256,6 @@ namespace Internal.IL
         /// </summary>
         /// <returns>A new instance of the same type as the current entry.</returns>
         public abstract StackEntry Duplicate();
-
-        /// <summary>
-        /// Overridden and sealed to force descendants to override <see cref="BuildRepresentation"/>.
-        /// </summary>
-        /// <returns>String representation of current entry</returns>
-        public override sealed string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-            BuildRepresentation(s);
-            return s.ToString();
-        }
-
-        /// <summary>
-        /// Build a representation of current entry in <paramref name="s"/>.
-        /// </summary>
-        /// <param name="s">StringBuilder where representation will be saved.</param>
-        protected virtual void BuildRepresentation(StringBuilder s)
-        {
-            Debug.Assert(s != null, "StringBuilder is null.");
-            if (Type != null)
-            {
-                s.Append(Type);
-                if (Kind != StackValueKind.Unknown)
-                {
-                    s.Append('(');
-                    s.Append(Kind);
-                    s.Append(')');
-                }
-            }
-            else if (Kind != StackValueKind.Unknown)
-            {
-                if (Kind != StackValueKind.Unknown)
-                {
-                    s.Append('(');
-                    s.Append(Kind);
-                    s.Append(')');
-                }
-            }
-        }
     }
 
     /// <summary>
@@ -252,7 +263,7 @@ namespace Internal.IL
     /// </summary>
     internal abstract class ConstantEntry : StackEntry
     {
-        protected ConstantEntry(StackValueKind kind, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
+        protected ConstantEntry(StackValueKind kind, TypeDesc type = null) : base(kind, type)
         {
         }
 
@@ -271,26 +282,36 @@ namespace Internal.IL
     {
         public T Value { get; }
 
-        protected ConstantEntry(StackValueKind kind, T value, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
+        protected ConstantEntry(StackValueKind kind, T value, TypeDesc type = null) : base(kind, type)
         {
             Value = value;
-        }
-
-        protected override void BuildRepresentation(StringBuilder s)
-        {
-            base.BuildRepresentation(s);
-            if (s.Length > 0)
-            {
-                s.Append(' ');
-            }
-            s.Append(Value);
         }
     }
 
     internal class Int32ConstantEntry : ConstantEntry<int>
     {
-        public Int32ConstantEntry(int value, TypeDesc type = null) : base(StackValueKind.Int32, value, LLVM.ConstInt(LLVM.Int32Type(), (ulong)value, LLVMMisc.False), type)
+        public Int32ConstantEntry(int value, TypeDesc type = null) : base(StackValueKind.Int32, value, type)
         {
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            if (type.TypeKind == LLVMTypeKind.LLVMPointerTypeKind && Value == 0)
+            {
+                return LLVM.ConstPointerNull(type);
+            }
+            else if (type.TypeKind == LLVMTypeKind.LLVMPointerTypeKind && Value != 0)
+            {
+                return LLVM.ConstIntToPtr(LLVM.ConstInt(LLVM.Int32Type(), (ulong)Value, LLVMMisc.False), type);
+            }
+            else if (type.TypeKind != LLVMTypeKind.LLVMIntegerTypeKind)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return LLVM.ConstInt(type, (ulong)Value, LLVMMisc.False);
+            }
         }
 
         public override StackEntry Duplicate()
@@ -324,13 +345,33 @@ namespace Internal.IL
 
     internal class Int64ConstantEntry : ConstantEntry<long>
     {
-        public Int64ConstantEntry(long value, TypeDesc type = null) : base(StackValueKind.Int64, value, LLVM.ConstInt(LLVM.Int64Type(), (ulong)value, LLVMMisc.False), type)
+        public Int64ConstantEntry(long value, TypeDesc type = null) : base(StackValueKind.Int64, value, type)
         {
         }
 
         public override StackEntry Duplicate()
         {
             return new Int64ConstantEntry(Value, Type);
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            if (type.TypeKind == LLVMTypeKind.LLVMPointerTypeKind && Value == 0)
+            {
+                return LLVM.ConstPointerNull(type);
+            }
+            else if (type.TypeKind == LLVMTypeKind.LLVMPointerTypeKind && Value != 0)
+            {
+                return LLVM.ConstIntToPtr(LLVM.ConstInt(LLVM.Int64Type(), (ulong)Value, LLVMMisc.False), type);
+            }
+            else if (type.TypeKind != LLVMTypeKind.LLVMIntegerTypeKind)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return LLVM.ConstInt(type, (ulong)Value, LLVMMisc.False);
+            }
         }
 
         public override bool IsCastNecessary(TypeDesc destType)
@@ -363,8 +404,13 @@ namespace Internal.IL
 
     internal class FloatConstantEntry : ConstantEntry<double>
     {
-        public FloatConstantEntry(double value, TypeDesc type = null) : base(StackValueKind.Float, value, LLVM.ConstReal(LLVM.FloatType(), value), type)
+        public FloatConstantEntry(double value, TypeDesc type = null) : base(StackValueKind.Float, value, type)
         {
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            return LLVM.ConstReal(type, Value);
         }
 
         public override StackEntry Duplicate()
@@ -382,34 +428,77 @@ namespace Internal.IL
         /// String representation of current expression
         /// </summary>
         public string Name { get; set; }
-
+        public LLVMValueRef RawLLVMValue { get; set; }
         /// <summary>
         /// Initializes new instance of ExpressionEntry
         /// </summary>
         /// <param name="kind">Kind of entry</param>
         /// <param name="name">String representation of entry</param>
         /// <param name="type">Type if any of entry</param>
-        public ExpressionEntry(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, llvmValue, type)
+        public ExpressionEntry(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, type)
         {
             Name = name;
+            RawLLVMValue = llvmValue;
         }
 
         public override StackEntry Duplicate()
         {
-            return new ExpressionEntry(Kind, Name, LLVMValue, Type);
+            return new ExpressionEntry(Kind, Name, RawLLVMValue, Type);
         }
 
-        protected override void BuildRepresentation(StringBuilder s)
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            base.BuildRepresentation(s);
-            if (s.Length > 0)
-            {
-                s.Append(' ');
-            }
-            s.Append(Name);
+            //TODO: deal with sign extension here
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
         }
     }
- 
+
+    internal class LoadExpressionEntry : ExpressionEntry
+    {
+        /// <summary>
+        /// Initializes new instance of ExpressionEntry
+        /// </summary>
+        /// <param name="kind">Kind of entry</param>
+        /// <param name="name">String representation of entry</param>
+        /// <param name="type">Type if any of entry</param>
+        public LoadExpressionEntry(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, name, llvmValue, type)
+        {
+        }
+
+        public override StackEntry Duplicate()
+        {
+            return new LoadExpressionEntry(Kind, Name, RawLLVMValue, Type);
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            return ILImporter.LoadValue(builder, RawLLVMValue, Type, type, signExtend);
+        }
+    }
+
+    internal class AddressExpressionEntry : ExpressionEntry
+    {
+        /// <summary>
+        /// Initializes new instance of ExpressionEntry
+        /// </summary>
+        /// <param name="kind">Kind of entry</param>
+        /// <param name="name">String representation of entry</param>
+        /// <param name="type">Type if any of entry</param>
+        public AddressExpressionEntry(StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) : base(kind, name, llvmValue, type)
+        {
+        }
+
+        public override StackEntry Duplicate()
+        {
+            return new LoadExpressionEntry(Kind, Name, RawLLVMValue, Type);
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
+        }
+    }
+
     /// <summary>
     /// Entry representing some token (either of TypeDesc, MethodDesc or FieldDesc) along with its string representation
     /// </summary>
@@ -417,21 +506,19 @@ namespace Internal.IL
     {
         public T LdToken { get; }
 
-        public LdTokenEntry(StackValueKind kind, string name, T token, LLVMValueRef value, TypeDesc type = null) : base(kind, name, value, type)
+        public LdTokenEntry(StackValueKind kind, string name, T token, TypeDesc type = null) : base(kind, name, default(LLVMValueRef), type)
         {
             LdToken = token;
         }
 
         public override StackEntry Duplicate()
         {
-            return new LdTokenEntry<T>(Kind, Name, LdToken, LLVMValue, Type);
+            return new LdTokenEntry<T>(Kind, Name, LdToken, Type);
         }
 
-        protected override void BuildRepresentation(StringBuilder s)
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            base.BuildRepresentation(s);
-            s.Append(' ');
-            s.Append(LdToken);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
         }
     }
 
@@ -442,7 +529,7 @@ namespace Internal.IL
         /// </summary>
         public static InvalidEntry Entry = new InvalidEntry();
 
-        protected InvalidEntry() : base(StackValueKind.Unknown, default(LLVMValueRef), null)
+        protected InvalidEntry() : base(StackValueKind.Unknown, null)
         {
         }
 
@@ -451,9 +538,33 @@ namespace Internal.IL
             return this;
         }
 
-        protected override void BuildRepresentation(StringBuilder s)
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            s.Append("Invalid Entry");
+            throw new InvalidOperationException();
+        }
+    }
+
+    /// <summary>
+    /// Entry representing a writable sharable stack entry that can survive from one basic block to another
+    /// </summary>
+    internal class SpilledExpressionEntry : ExpressionEntry
+    {
+        public int LocalIndex;
+        private ILImporter _importer;
+        public SpilledExpressionEntry(StackValueKind kind, string name, TypeDesc type, int localIndex, ILImporter importer) : base(kind, name, new LLVMValueRef(IntPtr.Zero), type)
+        {
+            LocalIndex = localIndex;
+            _importer = importer;
+        }
+
+        protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
+        {
+            return _importer.LoadTemp(LocalIndex, type);
+        }
+
+        public override StackEntry Duplicate()
+        {
+            return new SpilledExpressionEntry(Kind, Name, Type, LocalIndex, _importer);
         }
     }
 }
