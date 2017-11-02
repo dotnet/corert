@@ -262,7 +262,7 @@ namespace ILVerify
 
             foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
             {
-                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(", ");
+                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(new string[] { ", " }, StringSplitOptions.None);
                 if (friendValues.Length >= 1 && friendValues.Length <= 2)
                 {
                     if (friendValues[0] != friendName.Name)
