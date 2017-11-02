@@ -438,7 +438,14 @@ namespace ILCompiler
                 if (method.IsVirtual)
                     rootProvider.RootVirtualMethodForReflection(method, "Reflection root");
                 else
+                {
+                    if (method.IsConstructor)
+                    {
+                        rootProvider.AddCompilationRoot(method.OwningType, "Type for method reflection root");
+                    }
+
                     rootProvider.AddCompilationRoot(method, "Reflection root");
+                }
             }
 
             // Root all the generic type instantiations from the pre-computed metadata
@@ -459,7 +466,14 @@ namespace ILCompiler
                     rootProvider.RootVirtualMethodForReflection(method, "Required generic method");
 
                 if (!method.IsAbstract)
+                {
+                    if (method.IsConstructor)
+                    {
+                        rootProvider.AddCompilationRoot(method.OwningType, "Type for method required generic method");
+                    }
+
                     rootProvider.AddCompilationRoot(method, "Required generic method");
+                }
             }
 
             foreach (var field in loadedMetadata.RequiredGenericFields)
@@ -491,7 +505,14 @@ namespace ILCompiler
                     rootProvider.RootVirtualMethodForReflection(method, "Compiler determined template");
 
                 if (!method.IsAbstract)
+                {
+                    if (method.IsConstructor)
+                    {
+                        rootProvider.AddCompilationRoot(method.OwningType, "Type for method compiler determined template method");
+                    }
+
                     rootProvider.AddCompilationRoot(method, "Compiler determined template");
+                }
             }
         }
 
