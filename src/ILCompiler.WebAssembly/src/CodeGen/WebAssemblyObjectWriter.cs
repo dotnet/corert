@@ -188,17 +188,6 @@ namespace ILCompiler.DependencyAnalysis
             //throw new NotImplementedException(); // This function isn't complete
         }
 
-        public static LLVMValueRef GetConstZeroArray(int length)
-        {
-            var int8Type = LLVM.Int8Type();
-            var result = new LLVMValueRef[length];
-            for (int i = 0; i < length; i++)
-            {
-                result[i] = LLVM.ConstInt(int8Type, 0, LLVMMisc.False);
-            }
-            return LLVM.ConstArray(int8Type, result);
-        }
-
         public static LLVMValueRef EmitGlobal(LLVMModuleRef module, FieldDesc field, NameMangler nameMangler)
         {
             if (field.IsThreadStatic)
@@ -214,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
                     var valueType = LLVM.ArrayType(LLVM.Int8Type(), (uint)field.FieldType.GetElementSize().AsInt);
                     var llvmValue = LLVM.AddGlobal(module, valueType, nameMangler.GetMangledFieldName(field).ToString());
                     LLVM.SetLinkage(llvmValue, LLVMLinkage.LLVMInternalLinkage);
-                    LLVM.SetInitializer(llvmValue, GetConstZeroArray(field.FieldType.GetElementSize().AsInt));
+                    LLVM.SetInitializer(llvmValue, LLVM.ConstPointerNull(valueType));
                     s_staticFieldMapping.Add(field, llvmValue);
                     return llvmValue;
                 }
@@ -273,7 +262,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 LLVMValueRef valRef = IsFunction ? LLVM.GetNamedFunction(module, SymbolName) : LLVM.GetNamedGlobal(module, SymbolName);
 
-                if (Offset != 0 && valRef.Pointer != IntPtr.Zero)
+                if (Offset != 0)
                 {
                     var pointerType = LLVM.PointerType(LLVM.Int8Type(), 0);
                     var bitCast = LLVM.ConstBitCast(valRef, pointerType);
@@ -324,16 +313,8 @@ namespace ILCompiler.DependencyAnalysis
                     if (ObjectSymbolRefs.TryGetValue(curOffset, out symbolRef))
                     {
                         LLVMValueRef pointedAtValue = symbolRef.ToLLVMValueRef(module);
-                        //TODO: why did this come back null
-                        if (pointedAtValue.Pointer != IntPtr.Zero)
-                        {
-                            var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
-                            entries.Add(ptrValue);
-                        }
-                        else
-                        {
-                            entries.Add(LLVM.ConstPointerNull(intPtrType));
-                        }
+                        var ptrValue = LLVM.ConstBitCast(pointedAtValue, intPtrType);
+                        entries.Add(ptrValue);
                     }
                     else
                     {
@@ -376,6 +357,7 @@ namespace ILCompiler.DependencyAnalysis
             LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
 
             _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
+
 
             foreach (var symbolIdInfo in _symbolDefs)
             {
