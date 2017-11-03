@@ -272,6 +272,9 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
     }
 
 #ifdef _AMD64_
+    // We manually index into the unw_context_t's internals for now because there's
+    // no better way to modify it. This will go away in the future when we locate the
+    // LSDA and other information without initializing an unwind cursor.
     unwContext.data[16] = ip;
 #elif _ARM_
     unwContext.data[15] = ip;
