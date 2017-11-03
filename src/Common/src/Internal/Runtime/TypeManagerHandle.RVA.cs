@@ -51,6 +51,17 @@ namespace System.Runtime
             }
         }
 
+        public unsafe IntPtr OsModuleBase
+        {
+            get
+            {
+                if (IsTypeManager)
+                    return AsTypeManagerPtr->OsHandle;
+                else
+                    return AsOsModuleIntPtr;
+            }
+        }
+
         [CLSCompliant(false)]
         public unsafe byte* ConvertRVAToPointer(int rva)
         {
@@ -64,14 +75,7 @@ namespace System.Runtime
             Environment.FailFast("RVA fixups not supported in CoreRT");
             return null;
 #else
-            IntPtr osModuleBase;
-
-            if (IsTypeManager)
-                osModuleBase = AsTypeManagerPtr->OsHandle;
-            else
-                osModuleBase = AsOsModuleIntPtr;
-
-            return ((byte*)osModuleBase) + rva;
+            return ((byte*)OsModuleBase) + rva;
 #endif
         }
 
