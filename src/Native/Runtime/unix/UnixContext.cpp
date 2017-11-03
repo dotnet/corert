@@ -233,7 +233,7 @@ static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unw
 }
 
 // Update unw_cursor_t from REGDISPLAY
-static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
+static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor, bool setIp)
 {
 #if defined(_AMD64_)
 #define ASSIGN_REG(regName1, regName2) \
@@ -243,7 +243,11 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     if (regDisplay->p##regName2 != NULL) \
         unw_set_reg(cursor, regName1, *(regDisplay->p##regName2));
 
-    ASSIGN_REG(UNW_REG_IP, IP)
+    if (setIp)
+    {
+        ASSIGN_REG(UNW_REG_IP, IP)
+    }
+
     ASSIGN_REG(UNW_REG_SP, SP)
     ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
     ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
@@ -308,7 +312,18 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
+    bool ipSetInUnwindContext = true;
+
+#ifdef _AMD64_
+    // We manually index into the unw_context_t's internals for now because there's
+    // no better way to modify it. This whole function will go away in the future
+    // when we are able to read unwind info without initializing an unwind cursor.
+    unwContext->data[16] = regDisplay->IP;
+#elif _ARM_
     RegDisplayToUnwindContext(regDisplay, unwContext);
+#else
+    ipSetInUnwindContext = false;
+#endif
 
     st = unw_init_local(cursor, unwContext);
     if (st < 0)
@@ -316,8 +331,11 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
-    // Set the unwind context to the specified windows context
-    RegDisplayToUnwindCursor(regDisplay, cursor);
+    // Set the unwind context to the specified Windows context.
+    // We skip the IP register if it was already set in the unw_context
+    // passed into during unw_init_local. Setting it again is not necessary
+    // and causes libunwind to do extra work.
+    RegDisplayToUnwindCursor(regDisplay, cursor, !ipSetInUnwindContext /* setIp */);
 
     return true;
 }
