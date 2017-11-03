@@ -124,6 +124,8 @@ public:
 
     virtual PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo) = 0;
 
+    virtual PTR_VOID GetOsModuleHandle() = 0;
+
     virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
 
     // Returns any custom data attached to the method. Format:

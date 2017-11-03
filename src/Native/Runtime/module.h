@@ -102,7 +102,7 @@ public:
     
     PTR_ModuleHeader GetModuleHeader();
 
-    HANDLE GetOsModuleHandle();
+    PTR_VOID GetOsModuleHandle();
 
     BlobHeader * GetReadOnlyBlobs(UInt32 * pcbBlobs);
 
@@ -119,7 +119,7 @@ private:
     Module(ModuleHeader * pModuleHeader);
 #ifdef FEATURE_CUSTOM_IMPORTS
     static void DoCustomImports(ModuleHeader * pModuleHeader);
-    PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)(size_t)GetOsModuleHandle(); }
+    PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)GetOsModuleHandle(); }
 #endif // FEATURE_CUSTOM_IMPORTS
 
 

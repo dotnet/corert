@@ -682,6 +682,11 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     return true;
 }
 
+PTR_VOID CoffNativeCodeManager::GetOsModuleHandle()
+{
+    return dac_cast<PTR_VOID>(m_moduleBase);
+}
+
 PTR_VOID CoffNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
