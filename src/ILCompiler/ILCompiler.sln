@@ -28,6 +28,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.WebAssembly", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{CE9781B1-0028-4039-A48C-8193F0D28467}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.ManagedAssembliesBuildTask", "..\ILCompiler.ManagedAssembliesBuildTasks\src\ILCompiler.ManagedAssembliesBuildTask.csproj", "{DC752905-8E60-4514-8DD2-62ADE6DC18C9}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\System.Private.CoreLib\shared\System.Private.CoreLib.Shared.projitems*{be95c560-b508-4588-8907-f9fc5bc1a0cf}*SharedItemsImports = 4

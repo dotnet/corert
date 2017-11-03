@@ -26,15 +26,8 @@
     <PackageReference Include="System.CommandLine">
       <Version>0.1.0-e160909-1</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Build.Framework"> 
-      <Version>15.3.0-preview-000388-01</Version> 
-    </PackageReference> 
-    <PackageReference Include="Microsoft.Build.Utilities.Core"> 
-      <Version>15.3.0-preview-000388-01</Version> 
-    </PackageReference> 
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ComputeManagedAssemblies.cs" /> 
+  <ItemGroup> 
     <Compile Include="Program.cs" />
     <Compile Include="RdXmlRootProvider.cs" />
     <Compile Include="EcmaOnlyDebugInformationProvider.cs" />
