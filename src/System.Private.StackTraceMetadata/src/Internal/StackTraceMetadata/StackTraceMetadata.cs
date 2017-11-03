@@ -47,10 +47,17 @@ namespace Internal.StackTraceMetadata
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)(methodStartAddress.ToInt64() - moduleStartAddress.ToInt64());
-            
-            return _perModuleMethodNameResolverHashtable
-                .GetOrCreateValue(moduleStartAddress)
-                .GetMethodNameFromRvaIfAvailable(rva);
+            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
+            {
+                if (handle.OsModuleBase == moduleStartAddress)
+                {
+                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
+                    if (name != null)
+                        return name;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

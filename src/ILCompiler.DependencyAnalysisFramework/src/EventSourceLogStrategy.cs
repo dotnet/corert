@@ -45,6 +45,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         private static int s_GraphIds = 0;
 
         private int GraphId;
+        private int RootIndex;
         private int ObjectIndex;
         private DependencyContextType _context;
 
@@ -83,6 +84,8 @@ namespace ILCompiler.DependencyAnalysisFramework
                         {
                             GraphId = Interlocked.Increment(ref s_GraphIds);
                             GraphEventSource.Log.Graph(GraphId, "");
+                            RootIndex = Interlocked.Increment(ref ObjectIndex);
+                            GraphEventSource.Log.Node(GraphId, RootIndex, "roots");
                         }
                     }
                 }
@@ -106,6 +109,10 @@ namespace ILCompiler.DependencyAnalysisFramework
                 {
                     GraphEventSource.Log.Edge(GraphId, (int)reasonNode.GetMark(), nodeIndex, reason);
                 }
+            }
+            else
+            {
+                GraphEventSource.Log.Edge(GraphId, RootIndex, nodeIndex, reason);
             }
             return retVal;
         }

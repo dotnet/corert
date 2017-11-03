@@ -691,6 +691,15 @@ namespace Internal.Runtime.TypeLoader
                 return false;
             }
 
+            // Module having a type manager means we are not in ProjectN mode. Bail out earlier.
+            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
+            {
+                if (handle.OsModuleBase == associatedModule && handle.IsTypeManager)
+                {
+                    return false;
+                }
+            }
+
             // Get UnboxingAndInstantiatingTable
             UnboxingAndInstantiatingStubMapEntry* pBlob;
             uint cbBlob;

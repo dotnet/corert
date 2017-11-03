@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
+#pragma warning disable 618
     [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
     [McgInternalTypeAttribute]
     public class ReferenceArrayImplBase :
      PropertyValueImpl,
      System.Collections.IList,
-     System.Collections.Generic.IEnumerable<object>
-#if SUPPORTS_ICustomQueryInterface
-     ,System.Runtime.InteropServices.ICustomQueryInterface
-#endif
+     System.Collections.Generic.IEnumerable<object>,
+     System.Runtime.InteropServices.ICustomQueryInterface
     {
         // pinterface({faa585ea-6214-4217-afda-7f46de5869b3};cinterface(IInspectable))
         internal static System.Guid IID_IIterableOfObject =
@@ -39,7 +39,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Initialize(data, (int)type);
         }
 
-#if SUPPORTS_ICustomQueryInterface
         //
         // Customize QI behavior:
         // If this array type doesn't implement IEnumerable<Object>, reject IIterable<Object>
@@ -60,7 +59,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             return System.Runtime.InteropServices.CustomQueryInterfaceResult.NotHandled;
         }
-#endif
+
         //
         // IEnumerable methods. Used by data-binding in Jupiter when you try to data bind
         // against a managed array
@@ -175,4 +174,5 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
     }
+#pragma warning restore 169
 }

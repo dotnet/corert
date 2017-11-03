@@ -48,7 +48,7 @@ namespace ILCompiler
 
         public override void WriteData(ref ObjectDataBuilder builder, NodeFactory factory)
         {
-            builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(TypeFixup));
+            builder.EmitPointerRelocOrIndirectionReference(factory.MaximallyConstructableType(TypeFixup));
         }
     }
 

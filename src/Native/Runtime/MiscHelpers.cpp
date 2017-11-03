@@ -170,11 +170,15 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
-    // TODO, this will always return nullptr in TypeManager based systems.
     Module * pModule = GetRuntimeInstance()->FindModuleByAddress(pPointerVal);
 
     if (pModule != NULL)
         return pModule->GetOsModuleHandle();
+
+    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pPointerVal);
+
+    if (pCodeManager != NULL)
+        return (HANDLE)pCodeManager->GetOsModuleHandle();
 
     return NULL;
 }
