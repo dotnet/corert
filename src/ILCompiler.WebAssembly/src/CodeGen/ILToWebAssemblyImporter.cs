@@ -342,13 +342,13 @@ namespace Internal.IL
             {
                 return value;
             }
-            else if (signExtend && type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
-            {
-                return LLVM.BuildSExtOrBitCast(builder, value, type, "SExtOrBitCast");
-            }
             else if (LLVM.TypeOf(value).TypeKind == LLVMTypeKind.LLVMPointerTypeKind)
             {
                 return LLVM.BuildPtrToInt(builder, value, type, "intcast");
+            }
+            else if (signExtend && type.GetIntTypeWidth() > LLVM.TypeOf(value).GetIntTypeWidth())
+            {
+                return LLVM.BuildSExtOrBitCast(builder, value, type, "SExtOrBitCast");
             }
             else
             {
@@ -1542,24 +1542,35 @@ namespace Internal.IL
             var objectType = objectEntry.Type ?? field.OwningType;
             LLVMValueRef untypedObjectValue;
             LLVMTypeRef llvmObjectType = GetLLVMTypeForTypeDesc(objectType);
-            if (objectEntry is LoadExpressionEntry)
+            
+            if (objectType.IsValueType && !objectType.IsPointer && objectEntry.Kind != StackValueKind.NativeInt && objectEntry.Kind != StackValueKind.ByRef)
             {
-                untypedObjectValue = CastToRawPointer(((LoadExpressionEntry)objectEntry).RawLLVMValue);
-            }
-            else if (objectType.IsValueType && !objectType.IsPointer && objectEntry.Kind != StackValueKind.NativeInt && objectEntry.Kind != StackValueKind.ByRef)
-            {
-                untypedObjectValue = LLVM.BuildAlloca(_builder, llvmObjectType, "objptr");
-                LLVM.BuildStore(_builder, objectEntry.ValueAsType(llvmObjectType, _builder), untypedObjectValue);
-                untypedObjectValue = LLVM.BuildPointerCast(_builder, untypedObjectValue, LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), "objptrcast");
+                if (objectEntry is LoadExpressionEntry)
+                {
+                    untypedObjectValue = CastToRawPointer(((LoadExpressionEntry)objectEntry).RawLLVMValue);
+                }
+                else
+                {
+                    untypedObjectValue = LLVM.BuildAlloca(_builder, llvmObjectType, "objptr");
+                    LLVM.BuildStore(_builder, objectEntry.ValueAsType(llvmObjectType, _builder), untypedObjectValue);
+                    untypedObjectValue = LLVM.BuildPointerCast(_builder, untypedObjectValue, LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), "objptrcast");
+                }
             }
             else
             {
                 untypedObjectValue = objectEntry.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
             }
 
-            var loadLocation = LLVM.BuildGEP(_builder, untypedObjectValue,
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)field.Offset.AsInt, LLVMMisc.False) }, String.Empty);
-            return loadLocation;
+            if (field.Offset.AsInt == 0)
+            {
+                return untypedObjectValue;
+            }
+            else
+            {
+                var loadLocation = LLVM.BuildGEP(_builder, untypedObjectValue,
+                    new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)field.Offset.AsInt, LLVMMisc.False) }, String.Empty);
+                return loadLocation;
+            }
         }
 
         private LLVMValueRef GetFieldAddress(FieldDesc field, bool isStatic)
