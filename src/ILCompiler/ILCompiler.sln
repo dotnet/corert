@@ -28,7 +28,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.WebAssembly", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{CE9781B1-0028-4039-A48C-8193F0D28467}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.ManagedAssembliesBuildTask", "..\ILCompiler.ManagedAssembliesBuildTasks\src\ILCompiler.ManagedAssembliesBuildTask.csproj", "{DC752905-8E60-4514-8DD2-62ADE6DC18C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Build.Tasks", "..\ILCompiler.Build.Tasks\src\ILCompiler.Build.Tasks.csproj", "{44DE7F7B-AD73-40EA-87CC-554F2F57C38A}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

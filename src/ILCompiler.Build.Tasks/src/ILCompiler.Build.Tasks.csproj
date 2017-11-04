@@ -18,7 +18,7 @@
     <Version>15.3.409</Version>
   </PackageReference>
   <PackageReference Include="System.Reflection.Metadata">
-    <Version>1.5.0</Version>
+    <Version>1.4.2</Version>
   </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />

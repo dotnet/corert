@@ -60,11 +60,10 @@ namespace Build.Tasks
 
         public override bool Execute()
         {
-            List<ITaskItem> list = new List<ITaskItem>();
-            List<ITaskItem> assembliesToSkipPublish = new List<ITaskItem>();
+            var list = new List<ITaskItem>();
+            var assembliesToSkipPublish = new List<ITaskItem>();
 
             ITaskItem[] assemblies = this.Assemblies;
-
 
             var coreRTFrameworkAssembliesToUse = new HashSet<string>();
 
