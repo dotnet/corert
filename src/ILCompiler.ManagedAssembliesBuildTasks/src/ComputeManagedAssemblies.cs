@@ -11,10 +11,8 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
-namespace ManagedAssembliesBuildTask
+namespace Build.Tasks
 {
     public class ComputeManagedAssemblies : Task
     {
@@ -67,9 +65,6 @@ namespace ManagedAssembliesBuildTask
 
             ITaskItem[] assemblies = this.Assemblies;
 
-
-            var simdVectorLength = SimdVectorLength.Vector128Bit;
-            var targetDetails = new TargetDetails(TargetArchitecture.ARM64, TargetOS.Windows, TargetAbi.CoreRT, simdVectorLength);
 
             var coreRTFrameworkAssembliesToUse = new HashSet<string>();
 
@@ -133,9 +128,6 @@ namespace ManagedAssembliesBuildTask
                             }
                         }
                     }
-                }
-                catch (TypeSystemException.BadImageFormatException)
-                {
                 }
                 catch (BadImageFormatException)
                 {

@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <ManagedAssembliesBuildTaskPath Condition="'$(ManagedAssembliesBuildTaskPath)' == ''">$(MSBuildThisFileDirectory)..\tools\ILCompiler.ManagedAssembliesBuildTask.dll</ManagedAssembliesBuildTaskPath>
+    <BuildTasksPath Condition="'$(BuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\ILCompiler.Build.Tasks.dll</BuildTasksPath>
     
     <!--
       Prevent dotnet CLI from deploying the CoreCLR shim executable since we produce
@@ -46,7 +46,7 @@
     pipeline we don't want to see in the output (native images, CoreCLR artifacts)
     until we get a proper AOT NetCore app package.
   -->
-  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ManagedAssembliesBuildTaskPath)" />
+  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(BuildTasksPath)" />
   <Target Name="_ComputeAssembliesToCompileToNative">
 
     <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish)" SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)">

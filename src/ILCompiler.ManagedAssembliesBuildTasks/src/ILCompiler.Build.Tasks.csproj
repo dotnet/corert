@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler</RootNamespace>
-    <AssemblyName>ILCompiler.ManagedAssembliesBuildTask</AssemblyName>
+    <AssemblyName>ILCompiler.Build.Tasks</AssemblyName>
     <TargetFramework>netstandard1.3</TargetFramework>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
   </PropertyGroup>
@@ -12,14 +12,14 @@
   </ItemGroup>
   <ItemGroup>
   <PackageReference Include="Microsoft.Build.Framework">
-    <Version>15.3.0-preview-000388-01</Version>
+    <Version>15.3.409</Version>
   </PackageReference>
   <PackageReference Include="Microsoft.Build.Utilities.Core">
-    <Version>15.3.0-preview-000388-01</Version>
+    <Version>15.3.409</Version>
   </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+  <PackageReference Include="System.Reflection.Metadata">
+    <Version>1.5.0</Version>
+  </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
 </Project>

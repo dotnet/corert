@@ -27,7 +27,7 @@
       <Version>0.1.0-e160909-1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup> 
+  <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="RdXmlRootProvider.cs" />
     <Compile Include="EcmaOnlyDebugInformationProvider.cs" />
