@@ -167,20 +167,6 @@ namespace Internal.IL
         }
     }
 
-    class LLVMTypeRefEqualityComparer : IEqualityComparer<LLVMTypeRef>
-    {
-        public static LLVMTypeRefEqualityComparer Instance = new LLVMTypeRefEqualityComparer();
-        public bool Equals(LLVMTypeRef x, LLVMTypeRef y)
-        {
-            return x.Pointer.Equals(y.Pointer);
-        }
-
-        public int GetHashCode(LLVMTypeRef obj)
-        {
-            return obj.Pointer.GetHashCode();
-        }
-    }
-
     /// <summary>
     /// Abstract representation of a stack entry
     /// </summary>
@@ -195,8 +181,6 @@ namespace Internal.IL
         /// Managed type if any of the entry.
         /// </summary>
         public TypeDesc Type { get; }
-
-        Dictionary<LLVMTypeRef, LLVMValueRef> _castValues = new Dictionary<LLVMTypeRef, LLVMValueRef>(LLVMTypeRefEqualityComparer.Instance);
 
         public LLVMValueRef ValueAsType(LLVMTypeRef type, LLVMBuilderRef builder)
         {
