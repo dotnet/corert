@@ -197,41 +197,6 @@
 
 #endif // __APPLE__
 
-// Update unw_context_t from REGDISPLAY
-static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
-{
-#if defined(_ARM_)
-    // Assuming that unw_set_reg() on cursor will point the cursor to the
-    // supposed stack frame is dangerous for libunwind-arm in Linux.
-    // It is because libunwind's unw_cursor_t has other data structure
-    // initialized by unw_init_local(), which are not updated by
-    // unw_set_reg().
-
-#define ASSIGN_REG(regIndex, regName)                           \
-    unwContext->data[regIndex] = (regDisplay->regName);
-
-#define ASSIGN_REG_PTR(regIndex, regName) \
-    if (regDisplay->p##regName != NULL) \
-        unwContext->data[regIndex] = *(regDisplay->p##regName);
-
-    ASSIGN_REG_PTR(4, R4);
-    ASSIGN_REG_PTR(5, R5);
-    ASSIGN_REG_PTR(6, R6);
-    ASSIGN_REG_PTR(7, R7);
-    ASSIGN_REG_PTR(8, R8);
-    ASSIGN_REG_PTR(9, R9);
-    ASSIGN_REG_PTR(10, R10);
-    ASSIGN_REG_PTR(11, R11);
-    ASSIGN_REG(13, SP);
-    ASSIGN_REG_PTR(14, LR);
-    ASSIGN_REG(15, IP);
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-
-#endif // _ARM_
-}
-
 // Update unw_cursor_t from REGDISPLAY
 static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor, bool setIp)
 {
@@ -320,7 +285,7 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
     // when we are able to read unwind info without initializing an unwind cursor.
     unwContext->data[16] = regDisplay->IP;
 #elif _ARM_
-    RegDisplayToUnwindContext(regDisplay, unwContext);
+    unwContext.data[15] = regDisplay->IP;
 #else
     ipSetInUnwindContext = false;
 #endif
