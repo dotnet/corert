@@ -11,10 +11,12 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-      
+        var tempObj = new TestClass(1337);
         int tempInt = 0;
         (*(&tempInt)) = 9;
     
+        tempObj.TestMethod("Hello");
+
         if(tempInt == 9)
         {
             PrintLine("Hello from C#!");
@@ -22,6 +24,8 @@ internal static class Program
         
         TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
         TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
+        *(&str) = str2;
+        str2 = *(&str);
 
         if (str2.second == 4)
         {
@@ -57,6 +61,7 @@ internal static class Program
         {
             PrintLine("shiftRight test: Ok.");
         }
+
         var unsignedShift = UnsignedShift(0xFFFFFFFFu, 4) == 0x0FFFFFFFu;
         if (unsignedShift)
         {
@@ -157,5 +162,23 @@ public struct TwoByteStr
 {
     public byte first;
     public byte second;
+}
+
+public class TestClass
+{
+    public string TestString {get; set;}
+
+    public TestClass(int number)
+    {
+        if(number != 1337)
+            throw new Exception();
+    }
+
+    public void TestMethod(string str)
+    {
+        TestString = str;
+        if(TestString != str)
+            throw new Exception();
+    }
 }
 
