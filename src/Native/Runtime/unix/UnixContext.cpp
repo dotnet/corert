@@ -257,6 +257,46 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 #endif // _AMD64_
 }
 
+// Returns the unw_proc_info_t for a given IP.
+bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
+{
+    int st;
+
+    unw_context_t unwContext;
+    unw_cursor_t cursor;
+
+    st = unw_getcontext(&unwContext);
+    if (st < 0)
+    {
+        return false;
+    }
+
+#ifdef _AMD64_
+    // We manually index into the unw_context_t's internals for now because there's
+    // no better way to modify it. This will go away in the future when we locate the
+    // LSDA and other information without initializing an unwind cursor.
+    unwContext.data[16] = ip;
+#elif _ARM_
+    unwContext.data[15] = ip;
+#else
+    #error "GetUnwindProcInfo is not supported on this arch yet."
+#endif
+
+    st = unw_init_local(&cursor, &unwContext);
+    if (st < 0)
+    {
+        return false;
+    }
+
+    st = unw_get_proc_info(&cursor, procInfo);
+    if (st < 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
 bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
 {
@@ -516,21 +556,9 @@ uint64_t GetPC(void* context)
 // Find LSDA and start address for a function at address controlPC
 bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* lsda)
 {
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-    REGDISPLAY regDisplay;
-    memset(&regDisplay, 0, sizeof(REGDISPLAY));
-
-    regDisplay.SetIP((PCODE)controlPC);
-
-    if (!InitializeUnwindContextAndCursor(&regDisplay, &cursor, &unwContext))
-    {
-        return false;
-    }
-
     unw_proc_info_t procInfo;
-    int st = unw_get_proc_info(&cursor, &procInfo);
-    if (st < 0)
+
+    if (!GetUnwindProcInfo((PCODE)controlPC, &procInfo))
     {
         return false;
     }
