@@ -122,6 +122,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
       <IlcArg Condition="$(OutputType) ==  'Library' and $(NativeLib) != ''" Include="--nativelib" />
+      <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
