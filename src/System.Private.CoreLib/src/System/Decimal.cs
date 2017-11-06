@@ -556,6 +556,11 @@ namespace System
             return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
+        {
+            return Number.TryParseDecimal(s, NumberStyles.Number, null, out result);
+        }
+
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
@@ -567,7 +572,7 @@ namespace System
             return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
         }
 
-        public static Boolean TryParse(ReadOnlySpan<char> s, out Decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
             return Number.TryParseDecimal(s, style, provider, out result);
