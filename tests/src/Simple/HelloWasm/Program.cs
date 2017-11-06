@@ -38,6 +38,12 @@ internal static class Program
             PrintLine("static int field test: Ok.");
         }
 
+        var boxedInt = (object)tempInt;
+        if(((int)boxedInt) == 9)
+        {
+            PrintLine("box test: Ok.");
+        }
+
         var not = Not(0xFFFFFFFF) == 0x00000000;
         if (not)
         {
@@ -167,7 +173,7 @@ public struct TwoByteStr
 public class TestClass
 {
     public string TestString {get; set;}
-
+	
     public TestClass(int number)
     {
         if(number != 1337)

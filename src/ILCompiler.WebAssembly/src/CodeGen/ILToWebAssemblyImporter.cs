@@ -804,6 +804,11 @@ namespace Internal.IL
         {
             MetadataType metadataType = (MetadataType)type;
             int objectSize = metadataType.InstanceByteCount.AsInt;
+            if (metadataType.IsValueType)
+            {
+                objectSize += type.Context.Target.PointerSize;
+            }
+
             LLVMValueRef allocatedMemory = LLVM.BuildMalloc(_builder, LLVM.ArrayType(LLVM.Int8Type(), (uint)objectSize), "newobj");
             LLVMValueRef castMemory = LLVM.BuildPointerCast(_builder, allocatedMemory, LLVM.PointerType(LLVM.Int8Type(), 0), "castnewobj");
             ImportCallMemset(castMemory, 0, objectSize);
@@ -1428,6 +1433,37 @@ namespace Internal.IL
 
         private void ImportUnbox(int token, ILOpcode opCode)
         {
+            TypeDesc type = ResolveTypeToken(token);
+            if (type.IsNullable)
+                throw new NotImplementedException();
+
+            if (opCode == ILOpcode.unbox)
+            {
+                var unboxResult = _stack.Pop().ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+                LLVMValueRef unboxData = LLVM.BuildGEP(_builder, unboxResult, new LLVMValueRef[] { BuildConstInt32(type.Context.Target.PointerSize) }, "unboxData");
+                //push the pointer to the data, but it shouldnt be implicitly dereferenced
+                PushExpression(GetStackValueKind(type), "unboxed", unboxData, type);
+            }
+            else //unbox_any
+            {
+                Debug.Assert(opCode == ILOpcode.unbox_any);
+
+                //TODO: when the runtime is ready switch this to calling the real RhUnboxAny
+                //LLVMValueRef eeType = GetEETypeForTypeDesc(type);
+                //var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                //LLVMValueRef untypedObjectValue = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(type), "objptr");
+                //PushExpression(StackValueKind.ByRef, "objPtr", untypedObjectValue, type.MakePointerType());
+                //PushExpression(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
+                //CallRuntimeExport(_compilation.TypeSystemContext, "RhUnboxAny");
+                //PushLoadExpression(GetStackValueKind(type), "unboxed", untypedObjectValue, type);
+                //this can be removed once we can call RhUnboxAny
+                if (!type.IsValueType)
+                    throw new NotImplementedException(); 
+
+                var unboxResult = _stack.Pop().ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
+                LLVMValueRef unboxData = LLVM.BuildGEP(_builder, unboxResult, new LLVMValueRef[] {  BuildConstInt32(type.Context.Target.PointerSize) }, "unboxData");
+                PushLoadExpression(GetStackValueKind(type), "unboxed", unboxData, type);
+            }
         }
 
         private void ImportRefAnyVal(int token)
@@ -1542,7 +1578,6 @@ namespace Internal.IL
             var objectType = objectEntry.Type ?? field.OwningType;
             LLVMValueRef untypedObjectValue;
             LLVMTypeRef llvmObjectType = GetLLVMTypeForTypeDesc(objectType);
-            
             if (objectType.IsValueType && !objectType.IsPointer && objectEntry.Kind != StackValueKind.NativeInt && objectEntry.Kind != StackValueKind.ByRef)
             {
                 if (objectEntry is LoadExpressionEntry)
@@ -1560,7 +1595,6 @@ namespace Internal.IL
             {
                 untypedObjectValue = objectEntry.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
             }
-
             if (field.Offset.AsInt == 0)
             {
                 return untypedObjectValue;
@@ -1649,7 +1683,19 @@ namespace Internal.IL
 
         private void ImportBox(int token)
         {
+            TypeDesc type = ResolveTypeToken(token);
+            if (type.IsValueType)
+            {
+                if (type.IsNullable)
+                    throw new NotImplementedException();
 
+                var value = _stack.Pop();
+                ExpressionEntry boxTarget = AllocateObject(type);
+                LLVMValueRef boxData = LLVM.BuildGEP(_builder, boxTarget.RawLLVMValue, new LLVMValueRef[] { BuildConstInt32(type.Context.Target.PointerSize) }, "boxData");
+                LLVMValueRef typedBoxData = LLVM.BuildPointerCast(_builder, boxData, LLVM.PointerType(GetLLVMTypeForTypeDesc(type), 0), "typedBoxData");
+                LLVM.BuildStore(_builder, value.ValueAsType(type, _builder), typedBoxData);
+                _stack.Push(boxTarget);
+            }
         }
 
         private void ImportLeave(BasicBlock target)
@@ -1760,6 +1806,13 @@ namespace Internal.IL
 
             MarkBasicBlock(next);
 
+        }
+
+        private void CallRuntimeExport(TypeSystemContext context, string methodName)
+        {
+            MetadataType helperType = context.SystemModule.GetKnownType("System.Runtime", "RuntimeExports");
+            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
+            HandleCall(helperMethod);
         }
 
         private StackEntry NewSpillSlot(StackEntry entry)
