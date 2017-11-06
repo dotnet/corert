@@ -959,7 +959,7 @@ public:
     }
 #elif defined(_TARGET_WASM_)
 private:
-    // ARM64TODO: #error NYI for this arch
+    // WASMTODO: #error NYI for this arch
     UIntNative m_stackPassedArgs[1];        // Placeholder
 public:
     PTR_UIntNative get_CallerSP() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }

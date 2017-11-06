@@ -119,7 +119,6 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetIp() const { return 0; }
     UIntNative GetSp() const { return 0; }
     UIntNative GetFp() const { return 0; }
-    UIntNative GetLr() const { return 0; }
     void SetIp(UIntNative ip) { }
     void SetSp(UIntNative sp) { }
 #else // _TARGET_ARM_

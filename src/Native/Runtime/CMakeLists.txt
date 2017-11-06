@@ -103,7 +103,7 @@ else()
   if(!WASM)
     include_directories(../libunwind/include)
   else()
-    include_directories(C:\\Program Files\\Emscripten\\emscripten\\1.37.19\\system\\lib\\libcxxabi\\include)
+    include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.

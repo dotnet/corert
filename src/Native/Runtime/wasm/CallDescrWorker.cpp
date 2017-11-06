@@ -8,7 +8,7 @@
 // TODO: Implement these. See CallDescrWorker.s under other architectures for how
 // each function should work. This file should ideally be pure WebAssembly for better speed.
 
-void RhCallDescrWorker()
+extern "C" void RhCallDescrWorker()
 {
     assert(false);
 }

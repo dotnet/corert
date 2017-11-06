@@ -28,7 +28,7 @@ struct ExInfo;
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void RhpThrowHwEx(int exceptionCode, void* faultingIP)
+extern "C" void RhpThrowHwEx(int exceptionCode, void* faultingIP)
 {
     assert(false);
 }
@@ -42,7 +42,7 @@ void RhpThrowHwEx(int exceptionCode, void* faultingIP)
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void RhpThrowEx(void* exception)
+extern "C" void RhpThrowEx(void* exception)
 {
     assert(false);
 }
@@ -58,7 +58,7 @@ void RhpThrowEx(void* exception)
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void RhpRethrow()
+extern "C" void RhpRethrow()
 {
     assert(false);
 }
@@ -79,7 +79,7 @@ void RhpRethrow()
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void* RhpCallCatchFunclet(int exceptionObj,
+extern "C" void* RhpCallCatchFunclet(int exceptionObj,
     void* pHandlerIP,
     REGDISPLAY* pRegDisplay,
     ExInfo* pExInfo)
@@ -97,7 +97,7 @@ void* RhpCallCatchFunclet(int exceptionObj,
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
+extern "C" void RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 {
     assert(false);
 }
@@ -114,7 +114,7 @@ void RhpCallFinallyFunclet(void* pHandlerIP, REGDISPLAY* pRegDisplay)
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // exceptionObj should be an RtuObjectRef, but we can't easily pull in its header
-void* RhpCallFilterFunclet(int exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+extern "C" void* RhpCallFilterFunclet(int exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 {
     assert(false);
 }

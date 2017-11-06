@@ -14,7 +14,7 @@
 // The codegenerator must treat the callsite of this helper as GC triggering and generate the GC info for it.
 // Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 //
-void RhPInvoke(void* pInvokeFrameAddress)
+extern "C" void RhPInvoke(void* pInvokeFrameAddress)
 {
 
 }
@@ -24,7 +24,7 @@ void RhPInvoke(void* pInvokeFrameAddress)
 //
 // IN:  R0: address of pinvoke frame
 //
-void RhpPInvokeReturn(void* pInvokeFrameAddress)
+extern "C" void RhpPInvokeReturn(void* pInvokeFrameAddress)
 {
 
 }

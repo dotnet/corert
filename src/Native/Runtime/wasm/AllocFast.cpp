@@ -10,7 +10,7 @@
 
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
-void* RhpNewFast(void* eeType)
+extern "C" void* RhpNewFast(void* eeType)
 {
     assert(false);
     return nullptr;
@@ -20,49 +20,49 @@ void* RhpNewFast(void* eeType)
 // Allocate non-array object with finalizer.
 //  r0 == EEType
 //
-void* RhpNewFinalizable(void* eeType)
+extern "C" void* RhpNewFinalizable(void* eeType)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate non-array object.
-void* RhpNewObject(void* eeType, unsigned int allocFlags)
+extern "C" void* RhpNewObject(void* eeType, unsigned int allocFlags)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate a string.
-void* RhNewString(void* eeType, int elementCount)
+extern "C" void* RhNewString(void* eeType, int elementCount)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate one dimensional, zero based array (SZARRAY).
-void* RhpNewArray(void* eeType, int elementCount)
+extern "C" void* RhpNewArray(void* eeType, int elementCount)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
-void* RhpNewArrayRare(void* eeType, int elementCount, int arraySize, int thread)
+extern "C" void* RhpNewArrayRare(void* eeType, int elementCount, int arraySize, int thread)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
-void* RhpNewFastAlign8(void* eeType)
+extern "C" void* RhpNewFastAlign8(void* eeType)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
-void* RhpNewFinalizableAlign8(void* eeType)
+extern "C" void* RhpNewFinalizableAlign8(void* eeType)
 {
     assert(false);
     return nullptr;
@@ -70,14 +70,14 @@ void* RhpNewFinalizableAlign8(void* eeType)
 
 // Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
 // itself is 8 byte aligned).
-void* RhpNewFastMisalign(void* eeType)
+extern "C" void* RhpNewFastMisalign(void* eeType)
 {
     assert(false);
     return nullptr;
 }
 
 // Allocate an array on an 8 byte boundary.
-void* RhpNewArrayAlign8(void* eeType, int elementCount)
+extern "C" void* RhpNewArrayAlign8(void* eeType, int elementCount)
 {
     assert(false);
     return nullptr;

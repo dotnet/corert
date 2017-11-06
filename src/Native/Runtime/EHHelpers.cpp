@@ -303,7 +303,7 @@ EXTERN_C Int32 RhpPInvokeExceptionGuard()
 }
 #endif
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
+#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_) || defined(_WASM_)
 EXTERN_C REDHAWK_API void __fastcall RhpThrowHwEx();
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())

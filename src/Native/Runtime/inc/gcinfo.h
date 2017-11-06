@@ -303,56 +303,16 @@ enum ScratchRegMask
 };
 
 #elif defined (_TARGET_WASM_)
-// ARM64TODO: add all arm64-related changes in this file to gcinfo.h in E:\ProjNDev3X\src\Nutc\UTC
 
 enum RegMask
 {
     RBM_NONE = 0,
 
-    RBM_X0 = 0x00000001,
-    RBM_X1 = 0x00000002,
-    RBM_X2 = 0x00000004,
-    RBM_X3 = 0x00000008,
-    RBM_X4 = 0x00000010,
-    RBM_X5 = 0x00000020,
-    RBM_X6 = 0x00000040,
-    RBM_X7 = 0x00000080,
-    RBM_X8 = 0x00000100, // ARM64TODO: ARM64 ABI: indirect result register
-    RBM_X9 = 0x00000200,
-    RBM_X10 = 0x00000400,
-    RBM_X11 = 0x00000800,
-    RBM_X12 = 0x00001000,
-    RBM_X13 = 0x00002000,
-    RBM_X14 = 0x00004000,
-    RBM_X15 = 0x00008000,
+    RBM_SCRATCH_REGS = 0,
+    RBM_SCRATCH_REG_COUNT = 0,
 
-    RBM_XIP0 = 0x00010000, // This one is occasionally used as a scratch register (but can be destroyed by branching or a call)
-    RBM_XIP1 = 0x00020000, // This one may be also used as a scratch register (but can be destroyed by branching or a call)
-    RBM_XPR = 0x00040000,
-
-    RBM_X19 = 0x00080000, // RA_CALLEESAVE
-    RBM_X20 = 0x00100000, // RA_CALLEESAVE
-    RBM_X21 = 0x00200000, // RA_CALLEESAVE
-    RBM_X22 = 0x00400000, // RA_CALLEESAVE
-    RBM_X23 = 0x00800000, // RA_CALLEESAVE
-    RBM_X24 = 0x01000000, // RA_CALLEESAVE
-    RBM_X25 = 0x02000000, // RA_CALLEESAVE
-    RBM_X26 = 0x04000000, // RA_CALLEESAVE
-    RBM_X27 = 0x08000000, // RA_CALLEESAVE
-    RBM_X28 = 0x10000000, // RA_CALLEESAVE
-
-    RBM_FP = 0x20000000,
-    RBM_LR = 0x40000000, // ARM64TODO: check to which lists it should be added
-    RBM_SP = 0x80000000,
-
-
-    RBM_RETVAL = RBM_X8,
-    RBM_CALLEE_SAVED_REGS = (RBM_X19 | RBM_X20 | RBM_X21 | RBM_X22 | RBM_X23 | RBM_X24 | RBM_X25 | RBM_X26 | RBM_X27 | RBM_X28),
-    RBM_CALLEE_SAVED_REG_COUNT = 10,
-
-    RBM_SCRATCH_REGS = (RBM_X0 | RBM_X1 | RBM_X2 | RBM_X3 | RBM_X4 | RBM_X5 | RBM_X6 | RBM_X7 | RBM_X8 | RBM_X9 |
-    RBM_X10 | RBM_X11 | RBM_X12 | RBM_X13 | RBM_X14 | RBM_X15 | RBM_XIP0 | RBM_XIP1),
-    RBM_SCRATCH_REG_COUNT = 18,
+    RBM_CALLEE_SAVED_REGS = 0,
+    RBM_CALLEE_SAVED_REG_COUNT = 0,
 };
 
 #define NUM_PRESERVED_REGS RBM_CALLEE_SAVED_REG_COUNT
@@ -540,7 +500,7 @@ UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt16  ebpFrame                : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on WASM, not clear yet
     UInt16  epilogAtEnd             : 1; // 2 [3]
     UInt16  hasFrameSize            : 1; // 2 [4]    1: frame size is encoded below, 0: frame size is 0
-    UInt16 calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [5:7]    3 [0:5]
+    UInt16 calleeSavedRegMask       : 1; // 2 [5]
 #else // _TARGET_ARM_
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7

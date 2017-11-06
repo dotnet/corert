@@ -10,7 +10,7 @@
 // WARNING: Code in EHHelpers.cpp makes assumptions about this helper, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpLockCmpXchg32AVLocation
 // - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
-long RhpLockCmpXchg32(long* destination, long value, long comparand)
+extern "C" long RhpLockCmpXchg32(long* destination, long value, long comparand)
 {
     //int original = *destination;
     //if (*destination == comparand)
@@ -28,7 +28,7 @@ long RhpLockCmpXchg32(long* destination, long value, long comparand)
 // r0      = destination address
 // {r2,r3} = value
 // sp[0+8] = comparand
-__int64 RhpLockCmpXchg64(__int64* destination, __int64 value, __int64 comparand)
+extern "C" __int64 RhpLockCmpXchg64(__int64* destination, __int64 value, __int64 comparand)
 {
     return _InterlockedCompareExchange64(destination, value, comparand);
 }

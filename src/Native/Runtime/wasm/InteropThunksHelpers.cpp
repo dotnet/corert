@@ -15,7 +15,7 @@
 //
 // Custom calling convention
 typedef void (*RhCommonStub_t)();
-void RhCommonStub()
+extern "C" void RhCommonStub()
 {
     assert(false);
 }
@@ -23,7 +23,7 @@ void RhCommonStub()
 //
 // IntPtr RhGetCommonStubAddress()
 //
-RhCommonStub_t RhGetCommonStubAddress()
+extern "C" RhCommonStub_t RhGetCommonStubAddress()
 {
     return RhCommonStub;
 }
@@ -31,7 +31,7 @@ RhCommonStub_t RhGetCommonStubAddress()
 //
 // IntPtr RhGetCurrentThunkContext()
 //
-void* RhGetCurrentThunkContext()
+extern "C" void* RhGetCurrentThunkContext()
 {
     assert(false);
 }
