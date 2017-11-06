@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -44,15 +45,23 @@ namespace ILCompiler
 
         private readonly ModuleDesc _metadataDescribingModule;
         private readonly HashSet<ModuleDesc> _compilationModules;
+        private readonly HashSet<ModuleDesc> _metadataOnlyAssemblies;
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
         private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         private readonly byte[] _metadataBlob;
 
-        public PrecomputedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, ModuleDesc metadataDescribingModule, IEnumerable<ModuleDesc> compilationModules, byte[] metadataBlob)
+        public PrecomputedMetadataManager(
+            CompilationModuleGroup group, 
+            CompilerTypeSystemContext typeSystemContext, 
+            ModuleDesc metadataDescribingModule,
+            IEnumerable<ModuleDesc> compilationModules,
+            IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
+            byte[] metadataBlob)
             : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy())
         {
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
+            _metadataOnlyAssemblies = new HashSet<ModuleDesc>(inputMetadataOnlyAssemblies);
             _loadedMetadata = new Lazy<MetadataLoadedInfo>(LoadMetadata);
             _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
@@ -379,7 +388,7 @@ namespace ILCompiler
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
-            return _loadedMetadata.Value.LocalMetadataModules;
+            return _loadedMetadata.Value.LocalMetadataModules.Union(_metadataOnlyAssemblies);
         }
 
         public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method)

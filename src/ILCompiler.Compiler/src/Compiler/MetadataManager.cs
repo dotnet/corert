@@ -524,6 +524,10 @@ namespace ILCompiler
         public virtual IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
         {
             // TODO: this is temporary until we have a metadata manager for IL scanner. This method should be abstract.
+
+            // TODO: We should also return the list of satellite assemblies here (this API is used by the ResourceDataNode to
+            // generate the BlobIdResourceIndex blob, for the ResourceManager to work at runtime).
+
             return _modulesWithMetadata;
         }
 
