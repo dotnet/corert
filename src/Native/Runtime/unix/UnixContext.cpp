@@ -283,6 +283,8 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
     unwContext.data[16] = ip;
 #elif _ARM_
     ((uint32_t*)(unwContext.data))[15] = ip;
+#elif _WASM_
+    ASSERT(false);
 #else
     #error "GetUnwindProcInfo is not supported on this arch yet."
 #endif
