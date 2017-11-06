@@ -44,6 +44,37 @@ namespace Build.Tasks
             set;
         }
 
+        /// <summary>
+        /// The native apphost (whose name ends up colliding with the CoreRT output binary) 
+        /// </summary>
+        [Required]
+        public string DotNetAppHostExecutableName
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// The CoreCLR dotnet host fixer library that can be skipped during publish
+        /// </summary>
+        [Required]
+        public string DotNetHostFxrLibraryName
+        {
+            get;
+            set;
+        }
+
+
+        /// <summary>
+        /// The CoreCLR dotnet host policy library that can be skipped during publish
+        /// </summary>
+        [Required]
+        public string DotNetHostPolicyLibraryName
+        {
+            get;
+            set;
+        }
+
         [Output]
         public ITaskItem[] ManagedAssemblies
         {
@@ -88,15 +119,16 @@ namespace Build.Tasks
                     continue;
                 }
 
-                // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting assemblies
-                if (taskItem.ItemSpec.EndsWith("apphost.exe", StringComparison.OrdinalIgnoreCase) || taskItem.ItemSpec.Contains("hostfxr") || taskItem.ItemSpec.Contains("hostpolicy"))
+                // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting libraries
+                if (taskItem.ItemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || taskItem.ItemSpec.Contains(DotNetHostFxrLibraryName) || taskItem.ItemSpec.Contains(DotNetHostPolicyLibraryName))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
                 // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                if (taskItem.ItemSpec.Contains("microsoft.netcore.app") && (taskItem.ItemSpec.Contains("\\native\\") || taskItem.ItemSpec.Contains("/native/")))
+                // TODO: Is this a correct approach? 
+                if (taskItem.GetMetadata("AssetType").Equals("native", StringComparison.OrdinalIgnoreCase))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
@@ -115,15 +147,18 @@ namespace Build.Tasks
                     using (var moduleStream = File.OpenRead(taskItem.ItemSpec))
                     using (var module = new PEReader(moduleStream))
                     {
-                        var moduleMetadataReader = module.GetMetadataReader();
-                        if (moduleMetadataReader.IsAssembly)
+                        if (module.HasMetadata)
                         {
-                            string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
-                            if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
+                            var moduleMetadataReader = module.GetMetadataReader();
+                            if (moduleMetadataReader.IsAssembly)
                             {
-                                // CoreRT doesn't consume resource assemblies yet so skip them
-                                assembliesToSkipPublish.Add(taskItem);
-                                list.Add(taskItem);
+                                string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
+                                if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    // CoreRT doesn't consume resource assemblies yet so skip them
+                                    assembliesToSkipPublish.Add(taskItem);
+                                    list.Add(taskItem);
+                                }
                             }
                         }
                     }
