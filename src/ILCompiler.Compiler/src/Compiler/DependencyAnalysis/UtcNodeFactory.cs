@@ -58,7 +58,7 @@ namespace ILCompiler
             return null;
         }
 
-        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile)
+        private static MetadataManager PickMetadataManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, string metadataFile)
         {
             if (metadataFile == null)
             {
@@ -66,7 +66,7 @@ namespace ILCompiler
             }
             else
             {
-                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, ReadBytesFromFile(metadataFile));
+                return new PrecomputedMetadataManager(compilationModuleGroup, context, FindMetadataDescribingModuleInInputSet(inputModules), inputModules, inputMetadataOnlyAssemblies, ReadBytesFromFile(metadataFile));
             }
         }
 
@@ -76,8 +76,17 @@ namespace ILCompiler
             return new EmptyInteropStubManager(compilationModuleGroup, context, null);
         }
 
-        public UtcNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, IEnumerable<ModuleDesc> inputModules, string metadataFile, string outputFile, UTCNameMangler nameMangler, bool buildMRT, DictionaryLayoutProvider dictionaryLayoutProvider) 
-            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, dictionaryLayoutProvider)
+        public UtcNodeFactory(
+            CompilerTypeSystemContext context, 
+            CompilationModuleGroup compilationModuleGroup, 
+            IEnumerable<ModuleDesc> inputModules, 
+            IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies, 
+            string metadataFile, 
+            string outputFile, 
+            UTCNameMangler nameMangler, 
+            bool buildMRT, 
+            DictionaryLayoutProvider dictionaryLayoutProvider) 
+            : base(context, compilationModuleGroup, PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile), NewEmptyInteropStubManager(context, compilationModuleGroup), nameMangler, new AttributeDrivenLazyGenericsPolicy(), null, dictionaryLayoutProvider)
         {
             CreateHostedNodeCaches();
             CompilationUnitPrefix = nameMangler.CompilationUnitPrefix;
