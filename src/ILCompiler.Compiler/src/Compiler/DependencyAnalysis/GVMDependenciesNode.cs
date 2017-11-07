@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
+        private const int UniversalCanonGVMDepthHeuristic_NonCanonDepth = 2;
+        private const int UniversalCanonGVMDepthHeuristic_CanonDepth = 2;
         private readonly MethodDesc _method;
 
         public MethodDesc Method => _method;
@@ -61,6 +63,12 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     MethodDesc canonMethodTarget = instantiatedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
+                    if (context.TypeSystemContext.SupportsUniversalCanon && canonMethodTarget.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_CanonDepth))
+                    {
+                        // fall back to using the universal generic variant of the generic method
+                        yield break;
+                    }
+
                     bool getUnboxingStub = instantiatedMethod.OwningType.IsValueType;
                     yield return new DependencyListEntry(context.MethodEntrypoint(canonMethodTarget, getUnboxingStub), "GVM Dependency - Canon method");
 
@@ -68,14 +76,16 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // Dependency includes the generic method dictionary of the instantiation, and all its dependencies. This is done by adding the 
                         // ShadowConcreteMethod to the list of dynamic dependencies. The generic dictionary will be reported as a dependency of the ShadowConcreteMethod
-                        // TODO: detect large recursive generics and fallback to USG templates
                         Debug.Assert(!instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any));
+
+                        if (context.TypeSystemContext.SupportsUniversalCanon && instantiatedMethod.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_NonCanonDepth))
+                        {
+                            // fall back to using the universal generic variant of the generic method
+                            yield break;
+                        }
+
                         yield return new DependencyListEntry(context.ShadowConcreteMethod(instantiatedMethod), "GVM Dependency - Dictionary");
                     }
-                }
-                else
-                {
-                    // TODO: universal generics
                 }
             }
         }
