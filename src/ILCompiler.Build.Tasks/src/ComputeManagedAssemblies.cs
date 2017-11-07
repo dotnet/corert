@@ -98,36 +98,37 @@ namespace Build.Tasks
 
             var coreRTFrameworkAssembliesToUse = new HashSet<string>();
 
-            foreach (var x in SdkAssemblies)
+            foreach (ITaskItem taskItem in SdkAssemblies)
             {
-                coreRTFrameworkAssembliesToUse.Add(Path.GetFileName(x.ItemSpec));
+                coreRTFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
             }
 
-            foreach (var x in FrameworkAssemblies)
+            foreach (ITaskItem taskItem in FrameworkAssemblies)
             {
-                coreRTFrameworkAssembliesToUse.Add(Path.GetFileName(x.ItemSpec));
+                coreRTFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
             }
 
-            for (int i = 0; i < assemblies.Length; i++)
+            foreach (ITaskItem taskItem in assemblies)
             {
-                ITaskItem taskItem = assemblies[i];
+                // In the case of disk-based assemblies, this holds the file path
+                string itemSpec = taskItem.ItemSpec;
 
                 // Skip crossgen images
-                if (taskItem.ItemSpec.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase))
+                if (itemSpec.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
                 // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting libraries
-                if (taskItem.ItemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || taskItem.ItemSpec.Contains(DotNetHostFxrLibraryName) || taskItem.ItemSpec.Contains(DotNetHostPolicyLibraryName))
+                if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
                 // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                if (taskItem.ItemSpec.Contains("microsoft.netcore.app") && (taskItem.ItemSpec.Contains("\\native\\") || taskItem.ItemSpec.Contains("/native/")))
+                if (itemSpec.Contains("microsoft.netcore.app") && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
@@ -135,7 +136,7 @@ namespace Build.Tasks
 
                 // Remove any assemblies whose implementation we want to come from CoreRT's package.
                 // Currently that's System.Private.* SDK assemblies and a bunch of framework assemblies.
-                if (coreRTFrameworkAssembliesToUse.Contains(Path.GetFileName(taskItem.ItemSpec)))
+                if (coreRTFrameworkAssembliesToUse.Contains(Path.GetFileName(itemSpec)))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
@@ -143,8 +144,7 @@ namespace Build.Tasks
 
                 try
                 {
-
-                    using (var moduleStream = File.OpenRead(taskItem.ItemSpec))
+                    using (FileStream moduleStream = File.OpenRead(itemSpec))
                     using (var module = new PEReader(moduleStream))
                     {
                         if (module.HasMetadata)
