@@ -254,7 +254,7 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
     // LSDA and other information without initializing an unwind cursor.
     unwContext.data[16] = ip;
 #elif _ARM_
-    unwContext.data[15] = ip;
+    ((uint32_t*)(unwContext.data))[15] = ip;
 #else
     #error "GetUnwindProcInfo is not supported on this arch yet."
 #endif
@@ -293,7 +293,7 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
 #ifdef _AMD64_
     unwContext->data[16] = regDisplay->IP;
 #elif _ARM_
-    unwContext.data[15] = regDisplay->IP;
+    ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
 #else
     #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
 #endif
