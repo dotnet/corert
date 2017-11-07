@@ -64,7 +64,6 @@ namespace Build.Tasks
             set;
         }
 
-
         /// <summary>
         /// The CoreCLR dotnet host policy library that can be skipped during publish
         /// </summary>
@@ -94,8 +93,6 @@ namespace Build.Tasks
             var list = new List<ITaskItem>();
             var assembliesToSkipPublish = new List<ITaskItem>();
 
-            ITaskItem[] assemblies = this.Assemblies;
-
             var coreRTFrameworkAssembliesToUse = new HashSet<string>();
 
             foreach (ITaskItem taskItem in SdkAssemblies)
@@ -108,7 +105,7 @@ namespace Build.Tasks
                 coreRTFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
             }
 
-            foreach (ITaskItem taskItem in assemblies)
+            foreach (ITaskItem taskItem in Assemblies)
             {
                 // In the case of disk-based assemblies, this holds the file path
                 string itemSpec = taskItem.ItemSpec;
@@ -149,7 +146,7 @@ namespace Build.Tasks
                     {
                         if (module.HasMetadata)
                         {
-                            var moduleMetadataReader = module.GetMetadataReader();
+                            MetadataReader moduleMetadataReader = module.GetMetadataReader();
                             if (moduleMetadataReader.IsAssembly)
                             {
                                 string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
@@ -162,7 +159,6 @@ namespace Build.Tasks
                                 }
                             }
                         }
-                        
                     }
                 }
                 catch (BadImageFormatException)
