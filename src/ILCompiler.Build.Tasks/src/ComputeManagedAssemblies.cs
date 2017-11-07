@@ -127,8 +127,7 @@ namespace Build.Tasks
                 }
 
                 // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                // TODO: Is this a correct approach? 
-                if (taskItem.GetMetadata("AssetType").Equals("native", StringComparison.OrdinalIgnoreCase))
+                if (taskItem.ItemSpec.Contains("microsoft.netcore.app") && (taskItem.ItemSpec.Contains("\\native\\") || taskItem.ItemSpec.Contains("/native/")))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
@@ -144,6 +143,7 @@ namespace Build.Tasks
 
                 try
                 {
+
                     using (var moduleStream = File.OpenRead(taskItem.ItemSpec))
                     using (var module = new PEReader(moduleStream))
                     {
@@ -153,6 +153,7 @@ namespace Build.Tasks
                             if (moduleMetadataReader.IsAssembly)
                             {
                                 string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
+
                                 if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
                                 {
                                     // CoreRT doesn't consume resource assemblies yet so skip them
@@ -161,6 +162,7 @@ namespace Build.Tasks
                                 }
                             }
                         }
+                        
                     }
                 }
                 catch (BadImageFormatException)
