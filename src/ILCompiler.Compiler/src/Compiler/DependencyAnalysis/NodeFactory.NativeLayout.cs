@@ -229,6 +229,13 @@ namespace ILCompiler.DependencyAnalysis
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 yield return _factory.MaximallyConstructableType(canonicalType);
 
+                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
+                if (canonicalType.IsCanonicalSubtype(CanonicalFormKind.Any) && !_factory.NecessaryTypeSymbol(canonicalType).RepresentsIndirectionCell)
+                {
+                    if (!_factory.TypeSystemContext.IsCanonicalDefinitionType(canonicalType, CanonicalFormKind.Any))
+                        yield return _factory.NativeLayout.TemplateTypeLayout(canonicalType);
+                }
+
                 foreach (TypeDesc instantiationType in type.Instantiation)
                 {
                     foreach (var dependency in TemplateConstructableTypes(instantiationType))
