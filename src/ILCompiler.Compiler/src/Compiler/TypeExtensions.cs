@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -140,6 +141,47 @@ namespace ILCompiler
 
             Debug.Assert(false);
             return -1;
+        }
+
+        /// <summary>
+        /// What is the maximum number of steps that need to be taken from this type to its most contained generic type.
+        /// i.e.
+        /// System.Int32 => 0
+        /// List&lt;System.Int32&gt; => 1
+        /// Dictionary&lt;System.Int32,System.Int32&gt; => 1
+        /// Dictionary&lt;List&lt;System.Int32&gt;,&lt;System.Int32&gt; => 2
+        /// </summary>
+        public static int GetGenericDepth(this TypeDesc type)
+        {
+            if (type.HasInstantiation)
+            {
+                int maxGenericDepthInInstantiation = 0;
+                foreach (TypeDesc instantiationType in type.Instantiation)
+                {
+                    maxGenericDepthInInstantiation = Math.Max(instantiationType.GetGenericDepth(), maxGenericDepthInInstantiation);
+                }
+
+                return maxGenericDepthInInstantiation + 1;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Determine if a type has a generic depth greater than a given value
+        /// </summary>
+        public static bool IsGenericDepthGreaterThan(this TypeDesc type, int depth)
+        {
+            if (depth < 0)
+                return true;
+
+            foreach (TypeDesc instantiationType in type.Instantiation)
+            {
+                if (instantiationType.IsGenericDepthGreaterThan(depth - 1))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

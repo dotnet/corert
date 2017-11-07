@@ -992,6 +992,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (_type.BaseType != null && !_type.BaseType.IsRuntimeDeterminedSubtype)
+            {
+                TypeDesc baseType = _type.BaseType;
+                do
+                {
+                    yield return new DependencyListEntry(context.MaximallyConstructableType(baseType), "base types of canonical types must have their full vtables");
+                    baseType = baseType.BaseType;
+                } while (baseType != null);
+            }
+
             if (_type.BaseType != null && _type.BaseType.IsRuntimeDeterminedSubtype)
             {
                 yield return new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(_type.BaseType)), "template base type");
@@ -1034,6 +1044,12 @@ namespace ILCompiler.DependencyAnalysis
                     else
                     {
                         typeForFieldLayout = new DependencyListEntry(context.NativeLayout.PlacedSignatureVertex(context.NativeLayout.TypeSignatureVertex(field.FieldType)), "universal field layout type");
+
+                        // And ensure the type can be properly laid out
+                        foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(field.FieldType))
+                        {
+                            yield return new DependencyListEntry(dependency, "template construction dependency");
+                        }
                     }
 
                     yield return typeForFieldLayout;
