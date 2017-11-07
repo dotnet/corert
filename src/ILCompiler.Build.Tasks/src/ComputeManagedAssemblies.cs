@@ -110,13 +110,6 @@ namespace Build.Tasks
                 // In the case of disk-based assemblies, this holds the file path
                 string itemSpec = taskItem.ItemSpec;
 
-                // Skip crossgen images
-                if (itemSpec.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase))
-                {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
-                }
-
                 // Skip the native apphost (whose name ends up colliding with the CoreRT output binary) and supporting libraries
                 if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
                 {
