@@ -96,15 +96,6 @@ namespace Internal.TypeSystem.Interop
             if (forceLazyResolution.HasValue)
                 return forceLazyResolution.Value;
 
-            // In multi-module library mode, the WinRT p/invokes in System.Private.Interop cause linker failures
-            // since we don't link against the OS libraries containing those APIs. Force them to be lazy.
-            // See https://github.com/dotnet/corert/issues/2601
-            string assemblySimpleName = ((IAssemblyDesc)((MetadataType)method.OwningType).Module).GetName().Name;
-            if (assemblySimpleName == "System.Private.Interop")
-            {
-                return true;
-            }
-
             // Determine whether this call should be made through a lazy resolution or a static reference
             // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
             if (importModule == "[MRT]" || importModule == "*")
