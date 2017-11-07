@@ -85,10 +85,11 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // !CPPCODEGEN
 
+// Do not warn that extern C methods throw exceptions. This is temporary
+// as long as we have unimplemented/throwing APIs in this file.
+#pragma warning(disable:4297)
 
 #ifdef CPPCODEGEN
-
-#pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
@@ -238,14 +239,17 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
-extern "C" void CCWAddRef()
-{
-    throw "CCWAddRef";
-}
 
 void* RtRHeaderWrapper();
 
 #endif // CPPCODEGEN
+
+// This works around System.Private.Interop's references to Interop.Native.
+// This won't be needed once we stop dragging in S.P.Interop for basic p/invoke support.
+extern "C" void CCWAddRef()
+{
+    throw "CCWAddRef";
+}
 
 extern "C" void __fail_fast()
 {
