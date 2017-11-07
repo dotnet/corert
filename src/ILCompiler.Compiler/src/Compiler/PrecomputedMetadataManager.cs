@@ -56,8 +56,9 @@ namespace ILCompiler
             ModuleDesc metadataDescribingModule,
             IEnumerable<ModuleDesc> compilationModules,
             IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
-            byte[] metadataBlob)
-            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy())
+            byte[] metadataBlob,
+            StackTraceEmissionPolicy stackTraceEmissionPolicy)
+            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy(), stackTraceEmissionPolicy)
         {
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
@@ -169,7 +170,7 @@ namespace ILCompiler
                 {
                     MethodDesc genericMethod = (MethodDesc)tse;
 
-                    if(genericMethod.Instantiation.CheckValidInstantiationArguments() &&
+                    if (genericMethod.Instantiation.CheckValidInstantiationArguments() &&
                        genericMethod.OwningType.Instantiation.CheckValidInstantiationArguments() &&
                        genericMethod.CheckConstraints())
                     {
@@ -238,7 +239,7 @@ namespace ILCompiler
                     Debug.Assert(method.IsTypicalMethodDefinition);
                     Debug.Assert(method.HasInstantiation || method.OwningType.HasInstantiation);
 
-                    if(containingType.HasInstantiation)
+                    if (containingType.HasInstantiation)
                     {
                         containingType = _typeSystemContext.GetInstantiatedType((MetadataType)containingType, GetUniversalCanonicalInstantiation(containingType.Instantiation.Length));
                         method = containingType.GetMethod(method.Name, method.GetTypicalMethodDefinition().Signature);
@@ -247,7 +248,7 @@ namespace ILCompiler
 
                     if (method.HasInstantiation)
                     {
-                        method =  _typeSystemContext.GetInstantiatedMethod(method, GetUniversalCanonicalInstantiation(method.Instantiation.Length));
+                        method = _typeSystemContext.GetInstantiatedMethod(method, GetUniversalCanonicalInstantiation(method.Instantiation.Length));
                     }
 
                     methodTemplates.Add(method);
@@ -335,9 +336,9 @@ namespace ILCompiler
 
             if (requiredTemplatesMethod != null)
             {
-                ReadRequiredTemplates(ilProvider.GetMethodIL(requiredTemplatesMethod), 
-                    result.RequiredTemplateTypes, 
-                    result.RequiredTemplateMethods, 
+                ReadRequiredTemplates(ilProvider.GetMethodIL(requiredTemplatesMethod),
+                    result.RequiredTemplateTypes,
+                    result.RequiredTemplateMethods,
                     result.RequiredTemplateFields);
             }
 

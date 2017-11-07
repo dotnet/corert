@@ -36,6 +36,7 @@ namespace ILCompiler
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
+        protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
 
         private List<NonGCStaticsNode> _cctorContextsGenerated = new List<NonGCStaticsNode>();
         private HashSet<TypeDesc> _typesWithEETypesGenerated = new HashSet<TypeDesc>();
@@ -51,11 +52,12 @@ namespace ILCompiler
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
         public virtual bool SupportsReflection => true;
 
-        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy)
+        public MetadataManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy, StackTraceEmissionPolicy stackTraceEmissionPolicy)
         {
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
+            _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -83,7 +85,7 @@ namespace ILCompiler
 
             var resourceIndexNode = new ResourceIndexNode(resourceDataNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdResourceIndex), resourceIndexNode, resourceIndexNode, resourceIndexNode.EndSymbol);
-          
+
             var typeMapNode = new TypeMetadataMapNode(commonFixupsTableNode);
 
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.TypeMap), typeMapNode, typeMapNode, typeMapNode.EndSymbol);
@@ -139,6 +141,14 @@ namespace ILCompiler
             var defaultConstructorMapNode = new DefaultConstructorMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DefaultConstructorMap), defaultConstructorMapNode, defaultConstructorMapNode, defaultConstructorMapNode.EndSymbol);
 
+#if !CORERT
+            var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
+
+            var stackTraceMethodRvaToTokenMappingNode = new StackTraceMethodRvaToTokenMappingNode(stackTraceEmbeddedMetadataNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodRvaToTokenMappingNode, stackTraceMethodRvaToTokenMappingNode, stackTraceMethodRvaToTokenMappingNode.EndSymbol);
+#endif
+            
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode, commonFixupsTableNode, commonFixupsTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
@@ -316,6 +326,22 @@ namespace ILCompiler
                 return false;
 
             return HasReflectionInvokeStubForInvokableMethod(method);
+        }
+
+        /// <summary>
+        /// Is there a reflection invoke stub for a method that is invokable?
+        /// </summary>
+        public bool ShouldMethodBeInInvokeMap(MethodDesc method)
+        {
+            // The current format requires us to have an EEType for the owning type. We might want to lift this.
+            if (!TypeGeneratesEEType(method.OwningType))
+                return false;
+
+            // We have a method body, we have a metadata token, but we can't get an invoke stub. Bail.
+            if (!IsReflectionInvokable(method))
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -598,6 +624,33 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()
         {
             return _typesWithConstructedEETypesGenerated;
+        }
+
+        public IEnumerable<IMethodBodyNode> GetMethodBodiesForStackTraceEmission(NodeFactory factory)
+        {
+            // Only emit stack trace metadata for those methods which don't have reflection metadata
+            HashSet<MethodDesc> methodInvokeMap = new HashSet<MethodDesc>();
+            foreach (var mappingEntry in GetMethodMapping(factory))
+            {
+                var method = mappingEntry.Entity;
+                if (ShouldMethodBeInInvokeMap(method))
+                    methodInvokeMap.Add(method);
+            }
+
+            foreach (var methodBody in GetCompiledMethodBodies())
+            {
+                NonExternMethodSymbolNode methodNode = methodBody as NonExternMethodSymbolNode;
+                if (methodNode != null && !methodNode.HasCompiledBody)
+                    continue;
+
+                if (methodInvokeMap.Contains(methodBody.Method))
+                    continue;
+
+                if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(methodBody.Method))
+                    continue;
+
+                yield return methodBody;
+            }
         }
 
         public bool IsReflectionBlocked(TypeDesc type)
