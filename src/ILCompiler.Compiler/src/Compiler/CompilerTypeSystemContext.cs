@@ -153,10 +153,20 @@ namespace ILCompiler
                 }
             }
 
-            return AddModule(filePath, simpleName);
+            return AddModule(filePath, simpleName, true);
         }
 
         public EcmaModule GetModuleFromPath(string filePath)
+        {
+            return GetOrAddModuleFromPath(filePath, true);
+        }
+
+        public EcmaModule GetMetadataOnlyModuleFromPath(string filePath)
+        {
+            return GetOrAddModuleFromPath(filePath, false);
+        }
+
+        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
         {
             // This method is not expected to be called frequently. Linear search is acceptable.
             foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
@@ -165,7 +175,7 @@ namespace ILCompiler
                     return entry.Module;
             }
 
-            return AddModule(filePath, null);
+            return AddModule(filePath, null, useForBinding);
         }
 
         private static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
@@ -206,7 +216,7 @@ namespace ILCompiler
             }
         }
 
-        private EcmaModule AddModule(string filePath, string expectedSimpleName)
+        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding)
         {
             MemoryMappedViewAccessor mappedViewAccessor = null;
             PdbSymbolReader pdbReader = null;
@@ -233,12 +243,15 @@ namespace ILCompiler
 
                 lock (this)
                 {
-                    ModuleData actualModuleData = _simpleNameHashtable.AddOrGetExisting(moduleData);
-                    if (actualModuleData != moduleData)
+                    if (useForBinding)
                     {
-                        if (actualModuleData.FilePath != filePath)
-                            throw new FileNotFoundException("Module with same simple name already exists " + filePath);
-                        return actualModuleData.Module;
+                        ModuleData actualModuleData = _simpleNameHashtable.AddOrGetExisting(moduleData);
+                        if (actualModuleData != moduleData)
+                        {
+                            if (actualModuleData.FilePath != filePath)
+                                throw new FileNotFoundException("Module with same simple name already exists " + filePath);
+                            return actualModuleData.Module;
+                        }
                     }
                     mappedViewAccessor = null; // Ownership has been transfered
                     pdbReader = null; // Ownership has been transferred
