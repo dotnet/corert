@@ -60,10 +60,10 @@ This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github
 From the shell/command prompt, issue the following commands, from the folder containing your project, to generate the native executable
 
 ``` 
-    dotnet build /t:LinkNative
+    dotnet publish -r win-x64|linux-x64|osx-x64 
 ``` 
 
-Native executable will be dropped in `./bin/[configuration]/native/` folder and will have the same name as the folder in which your source file is present.
+Native executable will be dropped in `./bin/x64/[configuration]/netcoreapp2.0/publish/` folder and will have the same name as the folder in which your source file is present.
 
 ## Using CPP Code Generator ##
 
@@ -72,10 +72,14 @@ This approach uses [transpiler](https://en.wikipedia.org/wiki/Source-to-source_c
 From the shell/command prompt, issue the following commands to generate the native executable:
 
 ``` 
-    dotnet build /t:LinkNative /p:NativeCodeGen=cpp
+    dotnet publish /p:NativeCodeGen=cpp -r win-x64|linux-x64|osx-x64 
 ```
 
 For CoreRT debug build on Windows, add an extra `/p:AdditionalCppCompilerFlags=/MTd` argument.
+
+## Disabling Native Compilation 
+
+Native compilation can be disabled during publishing by adding an extra `/p:NativeCompilationDuringPublish=false` argument.
 
 ## Workarounds for build errors on Windows ##
 
