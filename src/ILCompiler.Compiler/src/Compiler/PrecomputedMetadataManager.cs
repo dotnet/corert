@@ -435,6 +435,12 @@ namespace ILCompiler
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
 
+            // Add all non-generic reflectable types as roots.
+            foreach (var type in loadedMetadata.TypesWithStrongMetadataMappings)
+            {
+                rootProvider.AddCompilationRoot(type, "Required non-generic type");
+            }
+
             // Add all non-generic reflectable methods as roots.
             // Virtual methods need special handling (e.g. with dependency tracking) since they can be abstract.
             foreach (var method in loadedMetadata.MethodMappings.Keys)
