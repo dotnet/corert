@@ -1,0 +1,123 @@
+diff --git a/include/llvm/MC/MCObjectStreamer.h b/include/llvm/MC/MCObjectStreamer.h
+index 7c1189e46ab..d1d77c97311 100644
+--- a/include/llvm/MC/MCObjectStreamer.h
++++ b/include/llvm/MC/MCObjectStreamer.h
+@@ -101,6 +101,11 @@ public:
+   void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
+                        bool = false) override;
+ 
++  /// \brief EmitValueImpl with additional param, that allows to emit PCRelative
++  /// MCFixup.
++  void EmitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc,
++                     bool isPCRelative);
++
+   /// \brief Emit an instruction to a special fragment, because this instruction
+   /// can change its size during relaxation.
+   virtual void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &);
+diff --git a/lib/MC/MCObjectStreamer.cpp b/lib/MC/MCObjectStreamer.cpp
+index 174397e2739..ef7161fb56c 100644
+--- a/lib/MC/MCObjectStreamer.cpp
++++ b/lib/MC/MCObjectStreamer.cpp
+@@ -122,7 +122,7 @@ void MCObjectStreamer::EmitCFISections(bool EH, bool Debug) {
+ }
+ 
+ void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
+-                                     SMLoc Loc) {
++                                     SMLoc Loc, bool isPCRelative) {
+   MCStreamer::EmitValueImpl(Value, Size, Loc);
+   MCDataFragment *DF = getOrCreateDataFragment();
+   flushPendingLabels(DF, DF->getContents().size());
+@@ -143,10 +143,16 @@ void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
+   }
+   DF->getFixups().push_back(
+       MCFixup::create(DF->getContents().size(), Value,
+-                      MCFixup::getKindForSize(Size, false), Loc));
++                      MCFixup::getKindForSize(Size, isPCRelative), Loc));
+   DF->getContents().resize(DF->getContents().size() + Size, 0);
+ }
+ 
++
++void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
++                                     SMLoc Loc) {
++  EmitValueImpl(Value, Size, Loc, false);
++}
++
+ void MCObjectStreamer::EmitCFIStartProcImpl(MCDwarfFrameInfo &Frame) {
+   // We need to create a local symbol to avoid relocations.
+   Frame.Begin = getContext().createTempSymbol();
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+index a77df7a2598..e1aa7526f9b 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+@@ -48,6 +48,14 @@ public:
+ };
+ } // end anonymous namespace
+ 
++Optional<MCFixupKind> ARMAsmBackend::getFixupKind(StringRef Name) const {
++  return StringSwitch<Optional<MCFixupKind>>(Name)
++      .Case("R_ARM_THM_MOVW_ABS_NC", (MCFixupKind)ARM::fixup_t2_movw_lo16)
++      .Case("R_ARM_THM_MOVT_ABS", (MCFixupKind)ARM::fixup_t2_movt_hi16)
++      .Case("R_ARM_THM_JUMP24", (MCFixupKind)ARM::fixup_arm_thumb_blx)
++      .Default(MCAsmBackend::getFixupKind(Name));
++}
++
+ const MCFixupKindInfo &ARMAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
+   const static MCFixupKindInfo InfosLE[ARM::NumTargetFixupKinds] = {
+       // This table *must* be in the order that the fixup_* kinds are defined in
+@@ -386,6 +394,8 @@ unsigned ARMAsmBackend::adjustFixupValue(const MCAssembler &Asm,
+   case FK_Data_2:
+   case FK_Data_4:
+     return Value;
++  case FK_PCRel_4:
++    return Value;
+   case FK_SecRel_2:
+     return Value;
+   case FK_SecRel_4:
+@@ -825,6 +835,9 @@ static unsigned getFixupKindNumBytes(unsigned Kind) {
+   case ARM::fixup_t2_so_imm:
+     return 4;
+ 
++  case FK_PCRel_4:
++    return 4;
++
+   case FK_SecRel_2:
+     return 2;
+   case FK_SecRel_4:
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+index 02374966daf..01676a01683 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+@@ -36,6 +36,7 @@ public:
+ 
+   bool hasNOP() const { return STI->getFeatureBits()[ARM::HasV6T2Ops]; }
+ 
++  Optional<MCFixupKind> getFixupKind(StringRef Name) const override;
+   const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
+ 
+   bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+index 59f31be69d5..9b95598f99f 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+@@ -103,6 +103,9 @@ unsigned ARMELFObjectWriter::GetRelocTypeInner(const MCValue &Target,
+         break;
+       }
+       break;
++    case FK_PCRel_4:
++      Type = ELF::R_ARM_REL32;
++      break;
+     case ARM::fixup_arm_blx:
+     case ARM::fixup_arm_uncondbl:
+       switch (Modifier) {
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index b654b8c5cb8..58d25159af8 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -46,6 +46,7 @@ add_llvm_external_project(clang)
+ add_llvm_external_project(llgo)
+ add_llvm_external_project(lld)
+ add_llvm_external_project(lldb)
++add_llvm_external_project(ObjWriter)
+ 
+ # Automatically add remaining sub-directories containing a 'CMakeLists.txt'
+ # file as external projects.

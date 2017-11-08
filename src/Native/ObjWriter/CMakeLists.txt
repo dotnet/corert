@@ -1,7 +1,7 @@
 project(objwriter)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti")
 include_directories(${LLVM_INCLUDE_DIRS})
-include_directories(${CORECLR_INCLUDE})
 include_directories(.)
 add_definitions(${LLVM_DEFINITIONS})
 
@@ -32,7 +32,6 @@ add_library(objwriter
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
-
 llvm_map_components_to_libnames(llvm_libs
   ${LLVM_TARGETS_TO_BUILD}
 )
