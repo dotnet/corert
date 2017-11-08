@@ -51,8 +51,6 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 * Please [open an issue](https://github.com/dotnet/corert/issues) if these instructions do not work anymore.
 
-    * Projects with references to other projects or packages require workaround described in https://github.com/dotnet/corert/issues/2619#issuecomment-276095878
-
 ## Using RyuJIT ##
 
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. Linking is done using the platform specific linker.
