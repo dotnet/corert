@@ -29,7 +29,7 @@ namespace ILCompiler
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
 
         public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
-            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy())
+            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy(), new NoStackTraceEmissionPolicy())
         {
             _metadataLogFile = logFile;
 

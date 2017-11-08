@@ -78,6 +78,8 @@ namespace ILCompiler.DependencyAnalysis
             ExternalReferencesTableNode,
             ArrayOfEmbeddedPointersNode,
             DefaultConstructorMapNode,
+            StackTraceEmbeddedMetadataNode,
+            StackTraceMethodRvaToTokenMappingNode,
             ArrayOfEmbeddedDataNode
         }
 
