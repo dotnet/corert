@@ -253,6 +253,8 @@ namespace System
                     return "comparison";
                 case ExceptionArgument.pointer:
                     return "pointer";
+                case ExceptionArgument.start:
+                    return "start";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -341,6 +343,7 @@ namespace System
         action,
         comparison,
         pointer,
+        start
     }
 
     //
