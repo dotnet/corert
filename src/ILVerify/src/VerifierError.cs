@@ -131,6 +131,7 @@ namespace ILVerify
         //E_ARGLIST                     "Allowed only in vararg methods."
         ValueTypeExpected,              // Value type expected.
         //E_OPEN_DLGT_PROT_ACC          "Protected method access through an open instance delegate is not verifiable."
+        TypeAccess,                     // Type is not visible.
         MethodAccess,                   // Method is not visible.
         FieldAccess,                    // Field is not visible.
         //E_DEAD                        "Item is unusable at this point."

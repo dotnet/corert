@@ -1125,11 +1125,9 @@ again:
 
             var value = Pop();
 
-            // TODO
-            // VerifyIsObjRef(tiVal);
+            CheckIsObjRef(value);
 
-            // TODO
-            // verCheckClassAccess(pResolvedToken);
+            Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
             Push(StackValue.CreateObjRef(type));
         }

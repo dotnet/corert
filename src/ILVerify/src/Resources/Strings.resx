@@ -312,6 +312,9 @@
   <data name="TryNonEmptyStack" xml:space="preserve">
     <value>Attempt to enter a try block with nonempty stack.</value>
   </data>
+  <data name="TypeAccess" xml:space="preserve">
+    <value>Type is not visible.</value>
+  </data>
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
   </data>
