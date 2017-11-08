@@ -284,6 +284,16 @@
     }
 }
 
+// Class with private nested class
+.class public auto ansi beforefieldinit ContainingClass
+       extends [System.Runtime]System.Object
+{
+    .class nested private auto ansi beforefieldinit PrivateNestedClass
+        extends [System.Runtime]System.Object
+    {
+    }
+}
+
 .class public auto ansi beforefieldinit CastingTestsType
        extends [System.Runtime]System.Object
 {
@@ -296,6 +306,22 @@
         ldarg.0
         box     [System.Runtime]System.Int32
         stloc.0
+        ret
+    }
+
+    .method public static void Casting.CastToInaccessibleType_Invalid_TypeAccess() cil managed
+    {
+        ldnull
+        castclass ContainingClass/PrivateNestedClass
+        pop
+        ret
+    }
+
+    .method public static void Casting.CastClassInt_Invalid_StackObjRef() cil managed
+    {
+        ldc.i4.0
+        castclass CastingTestsType
+        pop
         ret
     }
 }
