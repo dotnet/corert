@@ -323,6 +323,7 @@
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
+    <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
@@ -332,6 +333,7 @@
     <Compile Include="Compiler\UtcNameMangler.cs" />
     <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\SimdHelper.cs" />
+    <Compile Include="Compiler\UtcStackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />
