@@ -39,6 +39,8 @@
 
 typedef uint32_t BOOL;
 typedef uint32_t DWORD;
+typedef HANDLE HINSTANCE;
+typedef void* LPVOID;
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
