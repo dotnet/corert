@@ -122,9 +122,14 @@ namespace ILCompiler
         /// </summary>
         string GetAppExeDirectory()
         {
+#if !CORERT
             var process = Process.GetCurrentProcess();
             string fullPath = process.MainModule.FileName;
             return Path.GetDirectoryName(fullPath);
+#else
+            Debug.Assert(false);
+            return null;
+#endif
         }
 
         /// <summary>
@@ -132,6 +137,10 @@ namespace ILCompiler
         /// </summary>
         void LoadExceptionFile(string exceptionFileName)
         {
+#if CORERT
+            Debug.Assert(false);
+            return;
+#else
             if (!File.Exists(exceptionFileName))
                 return;
 
@@ -183,6 +192,7 @@ namespace ILCompiler
                     line = tr.ReadLine();
                 }
             }
+#endif
         }
     }
 }
