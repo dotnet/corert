@@ -120,6 +120,9 @@
   <data name="ArrayByRef" xml:space="preserve">
     <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
   </data>
+  <data name="BoxByref" xml:space="preserve">
+    <value>Cannot box byref.</value>
+  </data>
   <data name="BranchIntoFilter" xml:space="preserve">
     <value>Branch into exception filter block.</value>
   </data>
@@ -329,6 +332,9 @@
   </data>
   <data name="UnrecognizedLocalNumber" xml:space="preserve">
     <value>Unrecognized local variable number.</value>
+  </data>
+  <data name="UnsatisfiedBoxOperand" xml:space="preserve">
+    <value>Type operand of box instruction has unsatisfied class type parameter constraints.</value>
   </data>
   <data name="UnsatisfiedMethodInst" xml:space="preserve">
     <value>Method instantiation has unsatisfied method type parameter constraints.</value>

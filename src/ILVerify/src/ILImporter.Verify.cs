@@ -1883,19 +1883,14 @@ again:
 
             var targetType = StackValue.CreateFromType(type);
 
-            // TODO: Change the error message to say "cannot box byref" instead
-            Check(!IsByRefLike(targetType), VerifierError.ExpectedValClassObjRefVariable, targetType);
+            Check(!IsByRefLike(targetType), VerifierError.BoxByref, targetType);
 
-#if false
-            VerifyIsBoxable(tiBox);
+            Check(targetType.Type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef || 
+                targetType.Type.IsGenericParameter, VerifierError.ExpectedValClassObjRefVariable);
 
-            VerifyAndReportFound(m_jitInfo->satisfiesClassConstraints(clsHnd),
-                                 tiBox,
-                                 MVER_E_UNSATISFIED_BOX_OPERAND);  //"boxed type has unsatisfied class constraints"); 
+            Check(targetType.Type.CheckConstraints(), VerifierError.UnsatisfiedBoxOperand);
 
-            //Check for access to the type.
-            verCheckClassAccess(pResolvedToken);
-#endif
+            Check(_method.OwningType.CanAccess(targetType.Type), VerifierError.TypeAccess);
 
             CheckIsAssignable(value, targetType);
 
