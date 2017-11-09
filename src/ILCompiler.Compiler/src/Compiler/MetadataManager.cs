@@ -32,6 +32,7 @@ namespace ILCompiler
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
+        private List<MetadataMapping<MethodDesc>> _stackTraceMappings;
 
         protected readonly CompilationModuleGroup _compilationModuleGroup;
         protected readonly CompilerTypeSystemContext _typeSystemContext;
@@ -145,8 +146,8 @@ namespace ILCompiler
             var stackTraceEmbeddedMetadataNode = new StackTraceEmbeddedMetadataNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata), stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode, stackTraceEmbeddedMetadataNode.EndSymbol);
 
-            var stackTraceMethodRvaToTokenMappingNode = new StackTraceMethodRvaToTokenMappingNode(stackTraceEmbeddedMetadataNode);
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodRvaToTokenMappingNode, stackTraceMethodRvaToTokenMappingNode, stackTraceMethodRvaToTokenMappingNode.EndSymbol);
+            var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode, stackTraceMethodMappingNode, stackTraceMethodMappingNode.EndSymbol);
 #endif
             
             // The external references tables should go last
@@ -522,12 +523,12 @@ namespace ILCompiler
             return instantiatedDynamicInvokeMethod;
         }
 
-        private void EnsureMetadataGenerated(NodeFactory factory)
+        protected void EnsureMetadataGenerated(NodeFactory factory)
         {
             if (_metadataBlob != null)
                 return;
 
-            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings);
+            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings, out _stackTraceMappings);
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -540,7 +541,8 @@ namespace ILCompiler
                                                 out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
-                                                out List<MetadataMapping<FieldDesc>> fieldMappings);
+                                                out List<MetadataMapping<FieldDesc>> fieldMappings,
+                                                out List<MetadataMapping<MethodDesc>> stackTraceMapping);
 
 
 
@@ -579,6 +581,12 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated(factory);
             return _fieldMappings;
+        }
+
+        public IEnumerable<MetadataMapping<MethodDesc>> GetStackTraceMapping(NodeFactory factory)
+        {
+            EnsureMetadataGenerated(factory);
+            return _stackTraceMappings;
         }
 
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
@@ -624,33 +632,6 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()
         {
             return _typesWithConstructedEETypesGenerated;
-        }
-
-        public IEnumerable<IMethodBodyNode> GetMethodBodiesForStackTraceEmission(NodeFactory factory)
-        {
-            // Only emit stack trace metadata for those methods which don't have reflection metadata
-            HashSet<MethodDesc> methodInvokeMap = new HashSet<MethodDesc>();
-            foreach (var mappingEntry in GetMethodMapping(factory))
-            {
-                var method = mappingEntry.Entity;
-                if (ShouldMethodBeInInvokeMap(method))
-                    methodInvokeMap.Add(method);
-            }
-
-            foreach (var methodBody in GetCompiledMethodBodies())
-            {
-                NonExternMethodSymbolNode methodNode = methodBody as NonExternMethodSymbolNode;
-                if (methodNode != null && !methodNode.HasCompiledBody)
-                    continue;
-
-                if (methodInvokeMap.Contains(methodBody.Method))
-                    continue;
-
-                if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(methodBody.Method))
-                    continue;
-
-                yield return methodBody;
-            }
         }
 
         public bool IsReflectionBlocked(TypeDesc type)
