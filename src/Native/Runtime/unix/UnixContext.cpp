@@ -197,45 +197,11 @@
 
 #endif // __APPLE__
 
-// Update unw_context_t from REGDISPLAY
-static void RegDisplayToUnwindContext(REGDISPLAY* regDisplay, unw_context_t *unwContext)
-{
-#if defined(_ARM_)
-    // Assuming that unw_set_reg() on cursor will point the cursor to the
-    // supposed stack frame is dangerous for libunwind-arm in Linux.
-    // It is because libunwind's unw_cursor_t has other data structure
-    // initialized by unw_init_local(), which are not updated by
-    // unw_set_reg().
-
-#define ASSIGN_REG(regIndex, regName)                           \
-    unwContext->data[regIndex] = (regDisplay->regName);
-
-#define ASSIGN_REG_PTR(regIndex, regName) \
-    if (regDisplay->p##regName != NULL) \
-        unwContext->data[regIndex] = *(regDisplay->p##regName);
-
-    ASSIGN_REG_PTR(4, R4);
-    ASSIGN_REG_PTR(5, R5);
-    ASSIGN_REG_PTR(6, R6);
-    ASSIGN_REG_PTR(7, R7);
-    ASSIGN_REG_PTR(8, R8);
-    ASSIGN_REG_PTR(9, R9);
-    ASSIGN_REG_PTR(10, R10);
-    ASSIGN_REG_PTR(11, R11);
-    ASSIGN_REG(13, SP);
-    ASSIGN_REG_PTR(14, LR);
-    ASSIGN_REG(15, IP);
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-
-#endif // _ARM_
-}
-
-// Update unw_cursor_t from REGDISPLAY
+// Update unw_cursor_t from REGDISPLAY.
+// NOTE: We don't set the IP here since the current use cases for this function
+// don't require it.
 static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
 {
-#if defined(_AMD64_)
 #define ASSIGN_REG(regName1, regName2) \
     unw_set_reg(cursor, regName1, regDisplay->regName2);
 
@@ -243,7 +209,7 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     if (regDisplay->p##regName2 != NULL) \
         unw_set_reg(cursor, regName1, *(regDisplay->p##regName2));
 
-    ASSIGN_REG(UNW_REG_IP, IP)
+#if defined(_AMD64_)
     ASSIGN_REG(UNW_REG_SP, SP)
     ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
     ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
@@ -251,10 +217,61 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     ASSIGN_REG_PTR(UNW_X86_64_R13, R13)
     ASSIGN_REG_PTR(UNW_X86_64_R14, R14)
     ASSIGN_REG_PTR(UNW_X86_64_R15, R15)
+#elif _ARM_
+    ASSIGN_REG(UNW_ARM_SP, SP)
+    ASSIGN_REG_PTR(UNW_ARM_R4, R4)
+    ASSIGN_REG_PTR(UNW_ARM_R5, R5)
+    ASSIGN_REG_PTR(UNW_ARM_R6, R6)
+    ASSIGN_REG_PTR(UNW_ARM_R7, R7)
+    ASSIGN_REG_PTR(UNW_ARM_R8, R8)
+    ASSIGN_REG_PTR(UNW_ARM_R9, R9)
+    ASSIGN_REG_PTR(UNW_ARM_R10, R10)
+    ASSIGN_REG_PTR(UNW_ARM_R11, R11)
+    ASSIGN_REG_PTR(UNW_ARM_R14, LR)
+#endif
 
 #undef ASSIGN_REG
 #undef ASSIGN_REG_PTR
-#endif // _AMD64_
+}
+
+// Returns the unw_proc_info_t for a given IP.
+bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
+{
+    int st;
+
+    unw_context_t unwContext;
+    unw_cursor_t cursor;
+
+    st = unw_getcontext(&unwContext);
+    if (st < 0)
+    {
+        return false;
+    }
+
+#ifdef _AMD64_
+    // We manually index into the unw_context_t's internals for now because there's
+    // no better way to modify it. This will go away in the future when we locate the
+    // LSDA and other information without initializing an unwind cursor.
+    unwContext.data[16] = ip;
+#elif _ARM_
+    ((uint32_t*)(unwContext.data))[15] = ip;
+#else
+    #error "GetUnwindProcInfo is not supported on this arch yet."
+#endif
+
+    st = unw_init_local(&cursor, &unwContext);
+    if (st < 0)
+    {
+        return false;
+    }
+
+    st = unw_get_proc_info(&cursor, procInfo);
+    if (st < 0)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
@@ -268,7 +285,18 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
-    RegDisplayToUnwindContext(regDisplay, unwContext);
+    // Set the IP here instead of after unwinder initialization. unw_init_local
+    // will do some initialization of internal structures based on the IP value.
+    // We manually index into the unw_context_t's internals for now because there's
+    // no better way to modify it. This whole function will go away in the future
+    // when we are able to read unwind info without initializing an unwind cursor.
+#ifdef _AMD64_
+    unwContext->data[16] = regDisplay->IP;
+#elif _ARM_
+    ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
+#else
+    #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
+#endif
 
     st = unw_init_local(cursor, unwContext);
     if (st < 0)
@@ -276,7 +304,7 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
         return false;
     }
 
-    // Set the unwind context to the specified windows context
+    // Set the unwind context to the specified Windows context.
     RegDisplayToUnwindCursor(regDisplay, cursor);
 
     return true;
@@ -516,21 +544,9 @@ uint64_t GetPC(void* context)
 // Find LSDA and start address for a function at address controlPC
 bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* lsda)
 {
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-    REGDISPLAY regDisplay;
-    memset(&regDisplay, 0, sizeof(REGDISPLAY));
-
-    regDisplay.SetIP((PCODE)controlPC);
-
-    if (!InitializeUnwindContextAndCursor(&regDisplay, &cursor, &unwContext))
-    {
-        return false;
-    }
-
     unw_proc_info_t procInfo;
-    int st = unw_get_proc_info(&cursor, &procInfo);
-    if (st < 0)
+
+    if (!GetUnwindProcInfo((PCODE)controlPC, &procInfo))
     {
         return false;
     }

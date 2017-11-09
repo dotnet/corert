@@ -19,6 +19,7 @@ See the LICENSE file in the project root for more information.
   <PropertyGroup>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
+    <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <!-- Workaround for lack of current host OS detection - https://github.com/Microsoft/msbuild/issues/539 -->
     <TargetOS Condition="'$(TargetOS)' == '' and '$(OS)' == 'Unix' and Exists('/Applications')">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
@@ -60,20 +61,23 @@ See the LICENSE file in the project root for more information.
     <SharedLibrary Condition="'$(OS)' != 'Windows_NT'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(BuildingFrameworkLibrary) != 'true'">
-    <ManagedBinary Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <IlcCompileInput Include="@(ManagedBinary)" />
-    <IlcReference Include="$(IlcPath)\sdk\*.dll" />
-    <IlcReference Include="$(IlcPath)\framework\*.dll" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(IlcCompileDependsOn)'==''">
-    <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile</IlcCompileDependsOn>
+  <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
+    <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <DefaultFrameworkAssemblies Include="$(IlcPath)\sdk\*.dll" />
+    <DefaultFrameworkAssemblies Include="$(IlcPath)\framework\*.dll" />
+  </ItemGroup>
+
+  <Target Name="ComputeIlcCompileInputs">
+    <ItemGroup>
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <IlcCompileInput Include="@(ManagedBinary)" />
+      <IlcReference Include="@(DefaultFrameworkAssemblies)" />
+    </ItemGroup>
+  </Target>
 
   <!--
     BuildFrameworkLib is invoked before IlcCompile in multi-module builds to 
@@ -107,6 +111,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
+      <IlcArg Condition="$(RdXmlFile) != ''" Include="--rdxml:$(RdXmlFile)" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
@@ -178,4 +183,7 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLibCreator) @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.Publish.targets" Condition="'$(NativeCompilationDuringPublish)' != 'false'" />
+
 </Project>

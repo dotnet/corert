@@ -195,8 +195,6 @@
     <Compile Include="System\Collections\Generic\CompatibilityEqualityComparers.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\Collections\Generic\Dictionary.cs" />
-    <Compile Include="System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
     <Compile Include="System\Collections\LowLevelComparer.cs" />
     <Compile Include="System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="System\Decimal.DecCalc.cs" />
@@ -708,9 +706,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs">
-      <Link>System\Collections\HashHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifier.cs</Link>

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -294,7 +294,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.0.0" />
+    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.1" />
     <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />
   </ItemGroup>

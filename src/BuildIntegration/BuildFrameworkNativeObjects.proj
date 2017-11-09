@@ -1,7 +1,7 @@
 <Project DefaultTargets="CreateLib" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IlcCompileDependsOn>BuildOneFrameworkLibrary</IlcCompileDependsOn>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneFrameworkLibrary</IlcCompileDependsOn>
     <CreateLibDependsOn>BuildAllFrameworkLibrariesAsSingleLib</CreateLibDependsOn>
     <IlcMultiModule>true</IlcMultiModule>
     <NativeIntermediateOutputPath Condition="'$(FrameworkObjPath)' != ''">$(FrameworkObjPath)\</NativeIntermediateOutputPath>
@@ -11,12 +11,12 @@
   <Import Project="Microsoft.NETCore.Native.targets" />
 
   <Target Name="BuildAllFrameworkLibraries"
-    Inputs="@(IlcReference)"
-    Outputs="@(IlcReference->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
+    Inputs="@(DefaultFrameworkAssemblies)"
+    Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
     <ItemGroup>
       <ProjectToBuild Include="$(MSBuildProjectFullPath)">
         <AdditionalProperties>
-          LibraryToCompile=%(IlcReference.Identity)
+          LibraryToCompile=%(DefaultFrameworkAssemblies.Identity)
         </AdditionalProperties>
       </ProjectToBuild>
     </ItemGroup>

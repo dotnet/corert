@@ -189,11 +189,11 @@
     <Compile Include="Windows\Foundation\Size.cs" />
     <Compile Include="Windows\Foundation\TokenizerHelper.cs" />
     <Compile Include="Windows\Foundation\IReference.cs" />
+    <Compile Include="Interop\Interop.WinRT.cs" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
-    <Compile Include="Interop\Interop.WinRT.cs" />
     <Compile Include="Interop\Interop.WinRT.Basic.cs" />
 
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">

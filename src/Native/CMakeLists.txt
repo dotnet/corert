@@ -224,6 +224,7 @@ if(WIN32)
     add_compile_options($<$<CONFIG:Debug>:-DDEBUG>)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
     add_compile_options($<$<CONFIG:Release>:/MT>)
+    add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
     add_compile_options(/Zi) # enable debugging information
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
 

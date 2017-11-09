@@ -101,7 +101,6 @@ namespace Internal.IL
 
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
-
         private static IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from

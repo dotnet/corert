@@ -35,8 +35,10 @@
 // multiple times for different instantiation. 
 // 
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -102,6 +104,38 @@ namespace System
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
+        private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, key, targetType), nameof(key));
+        }
+        internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType)
+        {
+            throw GetWrongKeyTypeArgumentException(key, targetType);
+        }
+
+        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
+        }
+        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        {
+            throw GetWrongValueTypeArgumentException(value, targetType);
+        }
+
+        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
+        {
+            return new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
+        }
+        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key)
+        {
+            throw GetAddingDuplicateWithKeyArgumentException(key);
+        }
+
+        internal static void ThrowKeyNotFoundException()
+        {
+            throw new KeyNotFoundException();
+        }
+
         internal static void ThrowArgumentException(ExceptionResource resource)
         {
             throw new ArgumentException(GetResourceString(resource));
@@ -119,15 +153,6 @@ namespace System
         internal static void ThrowArgumentException_Argument_InvalidArrayType()
         {
             throw new ArgumentException(GetResourceString(ExceptionResource.Argument_InvalidArrayType));
-        }
-
-        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
-        {
-            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
-        }
-        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
-        {
-            throw GetWrongValueTypeArgumentException(value, targetType);
         }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
@@ -155,6 +180,10 @@ namespace System
             throw new InvalidOperationException(GetResourceString(ExceptionResource.InvalidOperation_EnumOpCantHappen));
         }
 
+        internal static void ThrowSerializationException(ExceptionResource resource)
+        {
+            throw new SerializationException(GetResourceString(resource));
+        }
 
         internal static void ThrowNotSupportedException(ExceptionResource resource)
         {
@@ -176,14 +205,20 @@ namespace System
         {
             switch (argument)
             {
+                case ExceptionArgument.obj:
+                    return "obj";
+                case ExceptionArgument.dictionary:
+                    return "dictionary";
                 case ExceptionArgument.array:
                     return "array";
+                case ExceptionArgument.info:
+                    return "info";
+                case ExceptionArgument.key:
+                    return "key";
                 case ExceptionArgument.text:
                     return "text";
                 case ExceptionArgument.values:
                     return "values";
-                case ExceptionArgument.obj:
-                    return "obj";
                 case ExceptionArgument.value:
                     return "value";
                 case ExceptionArgument.startIndex:
@@ -218,6 +253,8 @@ namespace System
                     return "comparison";
                 case ExceptionArgument.pointer:
                     return "pointer";
+                case ExceptionArgument.start:
+                    return "start";
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionArgument Enum.");
@@ -261,6 +298,14 @@ namespace System
                     return SR.InvalidOperation_EnumFailedVersion;
                 case ExceptionResource.InvalidOperation_EnumOpCantHappen:
                     return SR.InvalidOperation_EnumOpCantHappen;
+                case ExceptionResource.Serialization_MissingKeys:
+                    return SR.Serialization_MissingKeys;
+                case ExceptionResource.Serialization_NullKey:
+                    return SR.Serialization_NullKey;
+                case ExceptionResource.NotSupported_KeyCollectionSet:
+                    return SR.NotSupported_KeyCollectionSet;
+                case ExceptionResource.NotSupported_ValueCollectionSet:
+                    return SR.NotSupported_ValueCollectionSet;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -274,10 +319,13 @@ namespace System
     // 
     internal enum ExceptionArgument
     {
+        obj,
+        dictionary,
         array,
+        info,
+        key,
         text,
         values,
-        obj,
         value,
         startIndex,
         task,
@@ -295,6 +343,7 @@ namespace System
         action,
         comparison,
         pointer,
+        start
     }
 
     //
@@ -318,5 +367,9 @@ namespace System
         ArgumentOutOfRange_BiggerThanCollection,
         InvalidOperation_EnumFailedVersion,
         InvalidOperation_EnumOpCantHappen,
+        Serialization_MissingKeys,
+        Serialization_NullKey,
+        NotSupported_KeyCollectionSet,
+        NotSupported_ValueCollectionSet,
     }
 }
