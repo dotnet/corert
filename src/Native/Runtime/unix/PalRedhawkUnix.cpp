@@ -1635,6 +1635,31 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
     return 0;
 }
 
+// Sets the calling thread's affinity to only run on the processor specified
+// in the GCThreadAffinity structure.
+// Parameters:
+//  affinity - The requested affinity for the calling thread. At most one processor
+//             can be provided.
+// Return:
+//  true if setting the affinity was successful, false otherwise.
+bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+{
+    // UNIXTODO: implement this
+    return false;
+}
+
+// Boosts the calling thread's thread priority to a level higher than the default
+// for new threads.
+// Parameters:
+//  None.
+// Return:
+//  true if the priority boost was successful, false otherwise.
+bool GCToOSInterface::BoostThreadPriority()
+{
+    // UNIXTODO: implement this
+    return false;
+}
+
 // Get affinity mask of the current process
 // Parameters:
 //  processMask - affinity mask for the specified process
@@ -1815,47 +1840,6 @@ static void* GCThreadStub(void* param)
     function(threadParam);
 
     return NULL;
-}
-
-// Create a new thread for GC use
-// Parameters:
-//  function - the function to be executed by the thread
-//  param    - parameters of the thread
-//  affinity - processor affinity of the thread
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
-{
-    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
-    if (stubParam == NULL)
-    {
-        return false;
-    }
-
-    stubParam->GCThreadFunction = function;
-    stubParam->GCThreadParam = param;
-
-    pthread_attr_t attrs;
-
-    int st = pthread_attr_init(&attrs);
-    ASSERT(st == 0);
-
-    // Create the thread as detached, that means not joinable
-    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-    ASSERT(st == 0);
-
-    pthread_t threadId;
-    st = pthread_create(&threadId, &attrs, GCThreadStub, stubParam);
-
-    if (st == 0)
-    {
-        stubParam.SuppressRelease();
-    }
-
-    int st2 = pthread_attr_destroy(&attrs);
-    ASSERT(st2 == 0);
-
-    return (st == 0);
 }
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()

@@ -907,11 +907,6 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
     }
 }
 
-Thread * GetThread()
-{
-    return ThreadStore::GetCurrentThread();
-}
-
 // Thread static representing the last allocation.
 // This is used to log the type information for each slow allocation.
 DECLSPEC_THREAD
@@ -1060,7 +1055,7 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 Thread* GCToEEInterface::GetThread()
 {
 #ifndef DACCESS_COMPILE
-    return ::GetThread();
+    return ThreadStore::GetCurrentThread();
 #else
     return NULL;
 #endif
@@ -1072,71 +1067,6 @@ bool GCToEEInterface::TrapReturningThreads()
 }
 
 #ifndef DACCESS_COMPILE
-
-// Context passed to the above.
-struct GCBackgroundThreadContext
-{
-    GCBackgroundThreadFunction  m_pRealStartRoutine;
-    void *                      m_pRealContext;
-    Thread *                    m_pThread;
-    CLREventStatic              m_ThreadStartedEvent;
-};
-
-// Helper used to wrap the start routine of background GC threads so we can do things like initialize the
-// Redhawk thread state which requires running in the new thread's context.
-static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
-{
-    GCBackgroundThreadContext * pStartContext = (GCBackgroundThreadContext*)pContext;
-
-    // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
-    // should not be acquired as part of this operation. This is necessary because this thread is created in
-    // the context of a garbage collection and the lock is already held by the GC.
-    ASSERT(GCHeapUtilities::IsGCInProgress());
-    ThreadStore::AttachCurrentThread(false);
-
-    Thread * pThread = GetThread();
-    pThread->SetGCSpecial(true);
-
-    // Inform the GC which Thread* we are.
-    pStartContext->m_pThread = pThread;
-
-    GCBackgroundThreadFunction realStartRoutine = pStartContext->m_pRealStartRoutine;
-    void* realContext = pStartContext->m_pRealContext;
-
-    pStartContext->m_ThreadStartedEvent.Set();
-
-    STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
-
-    // Run the real start procedure and capture its return code on exit.
-    return realStartRoutine(realContext);
-}
-
-Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg)
-{
-    GCBackgroundThreadContext threadStubArgs;
-
-    threadStubArgs.m_pThread = NULL;
-    threadStubArgs.m_pRealStartRoutine = threadStart;
-    threadStubArgs.m_pRealContext = arg;
-
-    if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
-    {
-        return NULL;
-    }
-
-    if (!PalStartBackgroundGCThread(BackgroundGCThreadStub, &threadStubArgs))
-    {
-        threadStubArgs.m_ThreadStartedEvent.CloseEvent();
-        return NULL;
-    }
-
-    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE);
-    threadStubArgs.m_ThreadStartedEvent.CloseEvent();
-    ASSERT(res == WAIT_OBJECT_0);
-
-    ASSERT(threadStubArgs.m_pThread != NULL);
-    return threadStubArgs.m_pThread;
-}
 
 #ifdef FEATURE_EVENT_TRACE
 void ProfScanRootsHelper(Object** ppObject, ScanContext* pSC, uint32_t dwFlags)
@@ -1492,9 +1422,75 @@ bool GCToEEInterface::IsGCThread()
     return pCurrentThread->IsGCSpecial() || pCurrentThread == ThreadStore::GetSuspendingThread();
 }
 
-bool GCToEEInterface::IsGCSpecialThread()
+bool GCToEEInterface::WasCurrentThreadCreatedByGC()
 {
     return ThreadStore::RawGetCurrentThread()->IsGCSpecial();
+}
+
+struct ThreadStubArguments
+{
+    void (*m_pRealStartRoutine)(void*);
+    void* m_pRealContext;
+    bool m_isSuspendable;
+    CLREventStatic m_ThreadStartedEvent;
+};
+
+bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
+{
+    UNREFERENCED_PARAMETER(name);
+
+    ThreadStubArguments threadStubArgs;
+
+    threadStubArgs.m_pRealStartRoutine = threadStart;
+    threadStubArgs.m_pRealContext = arg;
+    threadStubArgs.m_isSuspendable = is_suspendable;
+
+    if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
+    {
+        return false;
+    }
+
+    // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
+    // Redhawk thread state which requires running in the new thread's context.
+    auto threadStub = [](void* argument) -> DWORD
+    {
+        ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
+
+        if (pStartContext->m_isSuspendable)
+        {
+            // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
+            // should not be acquired as part of this operation. This is necessary because this thread is created in
+            // the context of a garbage collection and the lock is already held by the GC.
+            ASSERT(GCHeapUtilities::IsGCInProgress());
+
+            ThreadStore::AttachCurrentThread(false);
+        }
+
+        ThreadStore::RawGetCurrentThread()->SetGCSpecial(true);
+
+        auto realStartRoutine = pStartContext->m_pRealStartRoutine;
+        void* realContext = pStartContext->m_pRealContext;
+
+        pStartContext->m_ThreadStartedEvent.Set();
+
+        STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
+
+        realStartRoutine(realContext);
+
+        return 0;
+    };
+
+    if (!PalStartBackgroundGCThread(threadStub, &threadStubArgs))
+    {
+        threadStubArgs.m_ThreadStartedEvent.CloseEvent();
+        return false;
+    }
+
+    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE);
+    threadStubArgs.m_ThreadStartedEvent.CloseEvent();
+    ASSERT(res == WAIT_OBJECT_0);
+
+    return true;
 }
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
