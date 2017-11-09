@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             ArrayOfEmbeddedPointersNode,
             DefaultConstructorMapNode,
             StackTraceEmbeddedMetadataNode,
-            StackTraceMethodRvaToTokenMappingNode,
+            StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode
         }
 

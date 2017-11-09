@@ -98,7 +98,8 @@ namespace ILCompiler
                                                 out byte[] metadataBlob, 
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
-                                                out List<MetadataMapping<FieldDesc>> fieldMappings)
+                                                out List<MetadataMapping<FieldDesc>> fieldMappings,
+                                                out List<MetadataMapping<MethodDesc>> stackTraceMapping)
         {
             var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory), GetCompilationModulesWithMetadata());
 
@@ -125,6 +126,7 @@ namespace ILCompiler
             typeMappings = new List<MetadataMapping<MetadataType>>();
             methodMappings = new List<MetadataMapping<MethodDesc>>();
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
+            stackTraceMapping = new List<MetadataMapping<MethodDesc>>();
 
             // Generate type definition mappings
             foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
