@@ -34,8 +34,10 @@ enum CustomSectionAttributes : int32_t {
 enum class RelocType {
   IMAGE_REL_BASED_ABSOLUTE = 0x00,
   IMAGE_REL_BASED_HIGHLOW = 0x03,
+  IMAGE_REL_BASED_THUMB_MOV32 = 0x07,
   IMAGE_REL_BASED_DIR64 = 0x0A,
   IMAGE_REL_BASED_REL32 = 0x10,
+  IMAGE_REL_BASED_THUMB_BRANCH24 = 0x13,
 };
 
 class ObjectWriter {
@@ -116,6 +118,12 @@ private:
 
   void InitTripleName();
   Triple GetTriple();
+  unsigned GetDFSize();
+  bool EmitRelocDirective(const int Offset, StringRef Name, const MCExpr *Expr);
+  const MCExpr *GenTargetExpr(const char *SymbolName,
+                              MCSymbolRefExpr::VariantKind Kind, int Delta,
+                              bool IsPCRel = false, int Size = 0);
+
 
 private:
   std::unique_ptr<MCRegisterInfo> RegisterInfo;
