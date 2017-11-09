@@ -54,6 +54,10 @@ namespace Internal.StackTraceMetadata
                 case HandleType.MethodInstantiation:
                     EmitMethodInstantiationName(methodHandle.ToMethodInstantiationHandle(_metadataReader));
                     break;
+
+                case HandleType.QualifiedMethod:
+                    EmitMethodDefinitionName(methodHandle.ToQualifiedMethodHandle(_metadataReader));
+                    break;
     
                 default:
                     Debug.Assert(false);
@@ -86,6 +90,19 @@ namespace Internal.StackTraceMetadata
             MethodSignature methodSignature;
             EmitReturnTypeContainingTypeAndMethodName(methodRef, out methodSignature);
             EmitGenericArguments(methodInst.GenericTypeArguments);
+            EmitMethodParameters(methodSignature);
+        }
+
+        private void EmitMethodDefinitionName(QualifiedMethodHandle qualifiedMethodHandle)
+        {
+            QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
+            Method method = _metadataReader.GetMethod(qualifiedMethod.Method);
+            MethodSignature methodSignature = _metadataReader.GetMethodSignature(method.Signature);
+            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
+            _outputBuilder.Append(' ');
+            EmitTypeName(qualifiedMethod.EnclosingType, namespaceQualified: true);
+            _outputBuilder.Append('.');
+            EmitString(method.Name);
             EmitMethodParameters(methodSignature);
         }
     
@@ -172,6 +189,10 @@ namespace Internal.StackTraceMetadata
                 case HandleType.ByReferenceSignature:
                     EmitByRefTypeName(typeHandle.ToByReferenceSignatureHandle(_metadataReader));
                     break;
+
+                case HandleType.TypeDefinition:
+                    EmitTypeDefinitionName(typeHandle.ToTypeDefinitionHandle(_metadataReader), namespaceQualified);
+                    break;
     
                 default:
                     Debug.Assert(false);
@@ -190,12 +211,28 @@ namespace Internal.StackTraceMetadata
             if (!namespaceRef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
                 namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
             {
+                int charsWritten = _outputBuilder.Length;
                 EmitNamespaceReferenceName(namespaceRef.ParentScopeOrNamespace.ToNamespaceReferenceHandle(_metadataReader));
-                _outputBuilder.Append('.');
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
             }
             EmitString(namespaceRef.Name);
         }
-    
+
+        private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
+        {
+            NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
+            if (!namespaceDef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
+                namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
+            {
+                int charsWritten = _outputBuilder.Length;
+                EmitNamespaceDefinitionName(namespaceDef.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(_metadataReader));
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
+            }
+            EmitString(namespaceDef.Name);
+        }
+
         /// <summary>
         /// Emit type reference.
         /// </summary>
@@ -214,13 +251,34 @@ namespace Internal.StackTraceMetadata
                 }
                 else if (namespaceQualified)
                 {
+                    int charsWritten = _outputBuilder.Length;
                     EmitNamespaceReferenceName(typeRef.ParentNamespaceOrType.ToNamespaceReferenceHandle(_metadataReader));
-                    _outputBuilder.Append('.');
+                    if (_outputBuilder.Length - charsWritten > 0)
+                        _outputBuilder.Append('.');
                 }
             }
             EmitString(typeRef.TypeName);
         }
-    
+
+        private void EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, bool namespaceQualified)
+        {
+            TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
+            if (!typeDef.EnclosingType.IsNull(_metadataReader))
+            {
+                // Nested type
+                EmitTypeName(typeDef.EnclosingType, namespaceQualified);
+                _outputBuilder.Append('+');
+            }
+            else if (namespaceQualified)
+            {
+                int charsWritten = _outputBuilder.Length;
+                EmitNamespaceDefinitionName(typeDef.NamespaceDefinition);
+                if (_outputBuilder.Length - charsWritten > 0)
+                    _outputBuilder.Append('.');
+            }
+            EmitString(typeDef.Name);
+        }
+
         /// <summary>
         /// Emit an arbitrary type specification.
         /// </summary>
