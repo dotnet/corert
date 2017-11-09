@@ -12,6 +12,7 @@ using Internal.Compiler;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Metadata;
@@ -49,6 +50,7 @@ namespace ILCompiler
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
         private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         private readonly byte[] _metadataBlob;
+        private byte[] _stackTraceBlob;
 
         public PrecomputedMetadataManager(
             CompilationModuleGroup group, 
@@ -532,7 +534,12 @@ namespace ILCompiler
             }
         }
 
-        protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings)
+        protected override void ComputeMetadata(NodeFactory factory,
+                                                out byte[] metadataBlob, 
+                                                out List<MetadataMapping<MetadataType>> typeMappings,
+                                                out List<MetadataMapping<MethodDesc>> methodMappings,
+                                                out List<MetadataMapping<FieldDesc>> fieldMappings,
+                                                out List<MetadataMapping<MethodDesc>> stackTraceMapping)
         {
             MetadataLoadedInfo loadedMetadata = _loadedMetadata.Value;
             metadataBlob = _metadataBlob;
@@ -608,6 +615,8 @@ namespace ILCompiler
                 foreach (FieldDesc field in eetypeGenerated.GetFields())
                     AddFieldMapping(field, canonicalFieldsAddedToMap, fieldMappings);
             }
+
+            stackTraceMapping = GenerateStackTraceMetadata(factory);
         }
 
         private void AddFieldMapping(FieldDesc field, HashSet<FieldDesc> canonicalFieldsAddedToMap, List<MetadataMapping<FieldDesc>> fieldMappings)
@@ -812,6 +821,91 @@ namespace ILCompiler
             return dynamicInvokeStubCanonicalized;
         }
 
+        private List<MetadataMapping<MethodDesc>> GenerateStackTraceMetadata(NodeFactory factory)
+        {
+            var transformed = MetadataTransform.Run(new NoDefinitionMetadataPolicy(), Array.Empty<ModuleDesc>());
+            MetadataTransform transform = transformed.Transform;
+
+            // Generate metadata blob
+            var writer = new MetadataWriter();
+
+            // Only emit stack trace metadata for those methods which don't have reflection metadata
+            HashSet<MethodDesc> methodInvokeMap = new HashSet<MethodDesc>();
+            foreach (var mappingEntry in GetMethodMapping(factory))
+            {
+                var method = mappingEntry.Entity;
+                if (ShouldMethodBeInInvokeMap(method))
+                    methodInvokeMap.Add(method);
+            }
+
+            // Generate entries in the blob for methods that will be necessary for stack trace purposes.
+            var stackTraceRecords = new List<KeyValuePair<MethodDesc, MetadataRecord>>();
+            foreach (var methodBody in GetCompiledMethodBodies())
+            {
+                NonExternMethodSymbolNode methodNode = methodBody as NonExternMethodSymbolNode;
+                if (methodNode != null && !methodNode.HasCompiledBody)
+                    continue;
+
+                MethodDesc method = methodBody.Method;
+
+                if (methodInvokeMap.Contains(method))
+                    continue;
+
+                if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
+                    continue;
+
+                // In the metadata, we only represent the generic definition
+                MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
+                MetadataRecord record = transform.HandleQualifiedMethod(methodToGenerateMetadataFor);
+
+                // As a twist, instantiated generic methods appear as if instantiated over their formals.
+                if (methodToGenerateMetadataFor.HasInstantiation)
+                {
+                    var methodInst = new MethodInstantiation
+                    {
+                        Method = record,
+                    };
+                    methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
+                    foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
+                    {
+                        var genericParam = new TypeReference
+                        {
+                            TypeName = (ConstantStringValue)typeArgument.Name,
+                        };
+                        methodInst.GenericTypeArguments.Add(genericParam);
+                    }
+                    record = methodInst;
+                }
+
+                stackTraceRecords.Add(new KeyValuePair<MethodDesc, MetadataRecord>(
+                    method,
+                    record));
+
+                writer.AdditionalRootRecords.Add(record);
+            }
+
+            var ms = new MemoryStream();
+            writer.Write(ms);
+
+            _stackTraceBlob = ms.ToArray();
+
+            var result = new List<MetadataMapping<MethodDesc>>();
+
+            // Generate stack trace metadata mapping
+            foreach (var stackTraceRecord in stackTraceRecords)
+            {
+                result.Add(new MetadataMapping<MethodDesc>(stackTraceRecord.Key, writer.GetRecordHandle(stackTraceRecord.Value)));
+            }
+
+            return result;
+        }
+
+        public byte[] GetStackTraceBlob(NodeFactory factory)
+        {
+            EnsureMetadataGenerated(factory);
+            return _stackTraceBlob;
+        }
+
         private sealed class AttributeSpecifiedBlockingPolicy : MetadataBlockingPolicy
         {
             public override bool IsBlocked(MetadataType type)
@@ -833,6 +927,16 @@ namespace ILCompiler
                 // TODO: we might need to do something here if we keep this policy.
                 return false;
             }
+        }
+
+        private struct NoDefinitionMetadataPolicy : IMetadataPolicy
+        {
+            public bool GeneratesMetadata(FieldDesc fieldDef) => false;
+            public bool GeneratesMetadata(MethodDesc methodDef) => false;
+            public bool GeneratesMetadata(MetadataType typeDef) => false;
+            public bool IsBlocked(MetadataType typeDef) => false;
+            public bool IsBlocked(MethodDesc methodDef) => false;
+            public ModuleDesc GetModuleOfType(MetadataType typeDef) => typeDef.Module;
         }
     }
 }
