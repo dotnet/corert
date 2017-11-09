@@ -2896,7 +2896,7 @@ namespace System
         **
         ============================================================*/
         [Serializable]
-        public struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
+        public readonly struct TransitionTime : IEquatable<TransitionTime>, ISerializable, IDeserializationCallback
         {
             // ---- SECTION:  members supporting exposed properties -------------*
             private readonly DateTime _timeOfDay;
