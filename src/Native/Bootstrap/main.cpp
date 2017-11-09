@@ -329,8 +329,17 @@ static int InitializeRuntime()
     }
 #endif // !CPPCODEGEN
 
+#ifdef _WASM_
+    // WASMTODO: Emit a reverse pinvoke on main in compilation
+    ReversePInvokeFrame frame;
+    __reverse_pinvoke(&frame);
+#endif // _WASM_
+
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#elif defined _WASM_
+    // WASMTODO: Figure out what to do here. This is a NativeCallable method in the runtime
+    // and we also would have to figure out what to pass for pModuleHeaders
 #else // !CPPCODEGEN
     InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, nullptr, 0);
 #endif // !CPPCODEGEN
@@ -369,6 +378,10 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
+#ifdef _WASM_
+    // WASMTODO: Emit a reverse pinvoke on main in compilation
+    __reverse_pinvoke_return(&frame);
+#endif // _WASM_
 
     RhpShutdown();
 

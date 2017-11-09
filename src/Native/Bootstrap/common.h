@@ -73,7 +73,13 @@ struct RawEEType
 	void*       m_pIndirectionModule;
 };
 
-struct ReversePInvokeFrame;
+class Thread;
+
+struct ReversePInvokeFrame
+{
+    void*   m_savedPInvokeTransitionFrame;
+    Thread* m_savedThread;
+};
 
 void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame);
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame);

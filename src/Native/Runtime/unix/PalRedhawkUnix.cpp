@@ -631,6 +631,10 @@ typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
+#ifdef _WASM_
+    // No threads, so we can't start one
+    ASSERT(false);
+#endif // _WASM_
     pthread_attr_t attrs;
 
     int st = pthread_attr_init(&attrs);
@@ -671,7 +675,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
+#ifdef _WASM_
+    // WASMTODO: No threads so we can't start the finalizer thread
+    return true;
+#else // _WASM_
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
+#endif // _WASM_
 }
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
@@ -802,8 +811,9 @@ bool QueryCacheSize()
     }
 
 #elif defined(_WASM_)
-    // Processor cache size not available on WebAssembly
-    success = false;
+    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick a reasonable value
+    success = true;
+    g_cbLargestOnDieCacheAdjusted = 512 * 1024;
 #else
 #error Do not know how to get cache size on this platform
 #endif // __linux__
