@@ -9,6 +9,7 @@ using System.Text;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.Metadata;
@@ -26,12 +27,14 @@ namespace ILCompiler
     public sealed class CompilerGeneratedMetadataManager : MetadataManager
     {
         private readonly string _metadataLogFile;
+        private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private Dictionary<DynamicInvokeMethodSignature, MethodDesc> _dynamicInvokeThunks;
 
-        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile)
-            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy(), new NoStackTraceEmissionPolicy())
+        public CompilerGeneratedMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext, string logFile, StackTraceEmissionPolicy stackTracePolicy)
+            : base(group, typeSystemContext, new BlockedInternalsBlockingPolicy())
         {
             _metadataLogFile = logFile;
+            _stackTraceEmissionPolicy = stackTracePolicy;
 
             if (DynamicInvokeMethodThunk.SupportsThunks(typeSystemContext))
             {
@@ -102,6 +105,7 @@ namespace ILCompiler
                                                 out List<MetadataMapping<MethodDesc>> stackTraceMapping)
         {
             var transformed = MetadataTransform.Run(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory), GetCompilationModulesWithMetadata());
+            MetadataTransform transform = transformed.Transform;
 
             // TODO: DeveloperExperienceMode: Use transformed.Transform.HandleType() to generate
             //       TypeReference records for _typeDefinitionsGenerated that don't have metadata.
@@ -110,6 +114,52 @@ namespace ILCompiler
             // Generate metadata blob
             var writer = new MetadataWriter();
             writer.ScopeDefinitions.AddRange(transformed.Scopes);
+
+            // Generate entries in the blob for methods that will be necessary for stack trace purposes.
+            var stackTraceRecords = new List<KeyValuePair<MethodDesc, MetadataRecord>>();
+            foreach (var methodBody in GetCompiledMethodBodies())
+            {
+                MethodDesc method = methodBody.Method;
+
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+
+                // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
+                // We'll try looking them up in reflection data at runtime.
+                if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
+                    ShouldMethodBeInInvokeMap(method))
+                    continue;
+
+                if (!_stackTraceEmissionPolicy.ShouldIncludeMethod(method))
+                    continue;
+
+                MetadataRecord record = transform.HandleQualifiedMethod(typicalMethod);
+                
+                // As a twist, instantiated generic methods appear as if instantiated over their formals.
+                if (typicalMethod.HasInstantiation)
+                {
+                    var methodInst = new MethodInstantiation
+                    {
+                        Method = record,
+                    };
+                    methodInst.GenericTypeArguments.Capacity = typicalMethod.Instantiation.Length;
+                    foreach (EcmaGenericParameter typeArgument in typicalMethod.Instantiation)
+                    {
+                        var genericParam = new TypeReference
+                        {
+                            TypeName = (ConstantStringValue)typeArgument.Name,
+                        };
+                        methodInst.GenericTypeArguments.Add(genericParam);
+                    }
+                    record = methodInst;
+                }
+
+                stackTraceRecords.Add(new KeyValuePair<MethodDesc, MetadataRecord>(
+                    method,
+                    record));
+
+                writer.AdditionalRootRecords.Add(record);
+            }
+            
             var ms = new MemoryStream();
 
             // .NET metadata is UTF-16 and UTF-16 contains code points that don't translate to UTF-8.
@@ -186,6 +236,12 @@ namespace ILCompiler
                     if (record != null)
                         fieldMappings.Add(new MetadataMapping<FieldDesc>(field, writer.GetRecordHandle(record)));
                 }
+            }
+
+            // Generate stack trace metadata mapping
+            foreach (var stackTraceRecord in stackTraceRecords)
+            {
+                stackTraceMapping.Add(new MetadataMapping<MethodDesc>(stackTraceRecord.Key, writer.GetRecordHandle(stackTraceRecord.Value)));
             }
         }
 

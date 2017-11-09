@@ -50,6 +50,7 @@ namespace ILCompiler
         private readonly Lazy<MetadataLoadedInfo> _loadedMetadata;
         private Lazy<Dictionary<MethodDesc, MethodDesc>> _dynamicInvokeStubs;
         private readonly byte[] _metadataBlob;
+        private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
         private byte[] _stackTraceBlob;
 
         public PrecomputedMetadataManager(
@@ -60,7 +61,7 @@ namespace ILCompiler
             IEnumerable<ModuleDesc> inputMetadataOnlyAssemblies,
             byte[] metadataBlob,
             StackTraceEmissionPolicy stackTraceEmissionPolicy)
-            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy(), stackTraceEmissionPolicy)
+            : base(group, typeSystemContext, new AttributeSpecifiedBlockingPolicy())
         {
             _metadataDescribingModule = metadataDescribingModule;
             _compilationModules = new HashSet<ModuleDesc>(compilationModules);
@@ -68,6 +69,7 @@ namespace ILCompiler
             _loadedMetadata = new Lazy<MetadataLoadedInfo>(LoadMetadata);
             _dynamicInvokeStubs = new Lazy<Dictionary<MethodDesc, MethodDesc>>(LoadDynamicInvokeStubs);
             _metadataBlob = metadataBlob;
+            _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
         }
 
         /// <summary>
@@ -866,7 +868,7 @@ namespace ILCompiler
                         Method = record,
                     };
                     methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
-                    foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
+                    foreach (EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
                     {
                         var genericParam = new TypeReference
                         {

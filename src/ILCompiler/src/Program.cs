@@ -42,6 +42,7 @@ namespace ILCompiler
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
+        private bool _emitStackTraceData;
         private string _mapFileName;
         private string _metadataLogFileName;
 
@@ -142,6 +143,7 @@ namespace ILCompiler
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
+                syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -388,7 +390,14 @@ namespace ILCompiler
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
-            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(compilationGroup, typeSystemContext, _metadataLogFileName);
+            var stackTracePolicy = _emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+
+            CompilerGeneratedMetadataManager metadataManager = new CompilerGeneratedMetadataManager(
+                compilationGroup,
+                typeSystemContext,
+                _metadataLogFileName,
+                stackTracePolicy);
 
             builder
                 .UseBackendOptions(_codegenOptions)

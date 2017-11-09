@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Text;
-using Internal.TypeSystem.Ecma;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
+
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -60,10 +56,13 @@ namespace ILCompiler.DependencyAnalysis
             objData.AddSymbol(this);
             objData.AddSymbol(_endSymbol);
 
+            RelocType reloc = factory.Target.Abi == TargetAbi.CoreRT ?
+                RelocType.IMAGE_REL_BASED_RELPTR32 : RelocType.IMAGE_REL_BASED_ADDR32NB;
+
             foreach (var mappingEntry in factory.MetadataManager.GetStackTraceMapping(factory))
             {
-                objData.EmitReloc(factory.MethodEntrypoint(mappingEntry.Entity), RelocType.IMAGE_REL_BASED_ADDR32NB);
-                objData.EmitInt(mappingEntry.MetadataHandle);                
+                objData.EmitReloc(factory.MethodEntrypoint(mappingEntry.Entity), reloc);
+                objData.EmitInt(mappingEntry.MetadataHandle);
             }
 
             _endSymbol.SetSymbolOffset(objData.CountBytes);
