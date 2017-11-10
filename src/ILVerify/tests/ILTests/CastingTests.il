@@ -294,6 +294,17 @@
     }
 }
 
+
+// Test enum
+.class public auto ansi sealed Enum
+       extends [System.Runtime]System.Enum
+{
+    .field public static literal valuetype Enum EnumValue1 = int32(0)
+    .field public static literal valuetype Enum EnumValue2 = int32(1)
+
+    .field public specialname rtspecialname int32 value__
+}
+
 .class public auto ansi beforefieldinit CastingTestsType
        extends [System.Runtime]System.Object
 {
@@ -321,6 +332,38 @@
     {
         ldc.i4.0
         castclass CastingTestsType
+        pop
+        ret
+    }
+
+    .method public static void Casting.BoxInaccesibleType_Invalid_TypeAccess(class ContainingClass/PrivateNestedClass c) cil managed
+    {
+        ldarg.0
+        box     ContainingClass/PrivateNestedClass
+        pop
+        ret
+    }
+
+    .method public static void Casting.BoxByRefInt_Invalid_BoxByRef.ExpectedValClassObjRefVariable(int32& i) cil managed
+    {
+        ldarg.0
+        box     int32&
+        pop
+        ret
+    }
+
+    .method public static void Casting.BoxToUnsatisfiedConstraint_Invalid_UnsatisfiedBoxOperand(class GenericTypeWithConstrained<class [System.Runtime]System.Object> c) cil managed
+    {
+        ldarg.0
+        box     class GenericTypeWithConstrained<class [System.Runtime]System.Object>
+        pop
+        ret
+    }
+
+    .method public static void Casting.BoxEnum_Valid(valuetype Enum e) cil managed
+    {
+        ldarg.0
+        box     Enum
         pop
         ret
     }
