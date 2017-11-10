@@ -25,9 +25,9 @@ namespace ILVerify
         //E_FOUND             "[found %s]"
         //E_EXPECTED          "[expected %s]"
 
-        //E_UNKNOWN_OPCODE     "Unknown opcode [0x%08X]."
-        //E_SIG_CALLCONV       "Unknown calling convention [0x%08X]."
-        //E_SIG_ELEMTYPE       "Unknown ELEMENT_TYPE [0x%08x]."
+        UnknownOpcode,         // Unknown opcode.
+        //E_SIG_CALLCONV      "Unknown calling convention [0x%08X]."
+        //E_SIG_ELEMTYPE      "Unknown ELEMENT_TYPE [0x%08x]."
 
         //E_RET_SIG           "[return sig]"
         //E_FIELD_SIG         "[field sig]"
@@ -36,7 +36,7 @@ namespace ILVerify
         //E_STACK_TOO_LARGE    "Stack is too large."
         //E_ARRAY_NAME_LONG    "Array name is too long."
 
-        //E_FALLTHRU                    "fall through end of the method without returning."
+        MethodFallthrough,              // Fall through end of the method without returning.
         //E_TRY_GTEQ_END                "try start >= try end."
         //E_TRYEND_GT_CS                "try end > code size."
         //E_HND_GTEQ_END                "handler start >= handler end."
@@ -173,7 +173,7 @@ namespace ILVerify
         //E_TAIL_RET_TYPE               "Tail call return type not compatible."
         TailStackEmpty,                 // Stack not empty after tail call.
         //E_METHOD_END                  "Method ends in the middle of an instruction."
-        //E_BAD_BRANCH                  "Branch out of the method."
+        BadBranch,                      // Branch out of the method.
         //E_FIN_OVERLAP                 "Finally handler blocks overlap."
         //E_LEXICAL_NESTING             "Lexical nesting."
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.

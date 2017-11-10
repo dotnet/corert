@@ -2448,6 +2448,21 @@ again:
             _pendingPrefix &= ~prefix;
         }
 
+        void ReportInvalidBranchTarget(int targetOffset)
+        {
+            VerificationError(VerifierError.BadBranch);
+        }
+
+        void ReportFallthroughAtEndOfMethod()
+        {
+            VerificationError(VerifierError.MethodFallthrough);
+        }
+
+        void ReportInvalidInstruction(ILOpcode opcode)
+        {
+            VerificationError(VerifierError.UnknownOpcode);
+        }
+
         //
         // Deprecated
         //
@@ -2470,21 +2485,6 @@ again:
         void ImportRefAnyVal(int token)
         {
             throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
-        }
-
-        private void ReportInvalidBranchTarget(int targetOffset)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void ReportFallthroughAtEndOfMethod()
-        {
-            throw new NotImplementedException();
-        }
-
-        private void ReportInvalidInstruction(ILOpcode opcode)
-        {
-            throw new NotImplementedException();
         }
     }
 }

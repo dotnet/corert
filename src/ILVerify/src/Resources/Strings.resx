@@ -120,6 +120,9 @@
   <data name="ArrayByRef" xml:space="preserve">
     <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
   </data>
+  <data name="BadBranch" xml:space="preserve">
+    <value>Branch out of the method.</value>
+  </data>
   <data name="BoxByRef" xml:space="preserve">
     <value>Cannot box byref.</value>
   </data>
@@ -246,6 +249,9 @@
   <data name="MethodAccess" xml:space="preserve">
     <value>Method is not visible.</value>
   </data>
+  <data name="MethodFallthrough" xml:space="preserve">
+    <value>Fall through end of the method without returning.</value>
+  </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
   </data>
@@ -341,6 +347,9 @@
   </data>
   <data name="UninitStack" xml:space="preserve">
     <value>Uninitialized item on stack.</value>
+  </data>
+  <data name="UnknownOpcode" xml:space="preserve">
+    <value>Unknown opcode.</value>
   </data>
   <data name="UnmanagedPointer" xml:space="preserve">
     <value>Unmanaged pointers are not a verifiable type.</value>
