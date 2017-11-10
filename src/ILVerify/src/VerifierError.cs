@@ -25,9 +25,9 @@ namespace ILVerify
         //E_FOUND             "[found %s]"
         //E_EXPECTED          "[expected %s]"
 
-        //E_UNKNOWN_OPCODE     "Unknown opcode [0x%08X]."
-        //E_SIG_CALLCONV       "Unknown calling convention [0x%08X]."
-        //E_SIG_ELEMTYPE       "Unknown ELEMENT_TYPE [0x%08x]."
+        UnknownOpcode,         // Unknown opcode.
+        //E_SIG_CALLCONV      "Unknown calling convention [0x%08X]."
+        //E_SIG_ELEMTYPE      "Unknown ELEMENT_TYPE [0x%08x]."
 
         //E_RET_SIG           "[return sig]"
         //E_FIELD_SIG         "[field sig]"
@@ -36,7 +36,7 @@ namespace ILVerify
         //E_STACK_TOO_LARGE    "Stack is too large."
         //E_ARRAY_NAME_LONG    "Array name is too long."
 
-        //E_FALLTHRU                    "fall through end of the method without returning."
+        MethodFallthrough,              // Fall through end of the method without returning.
         //E_TRY_GTEQ_END                "try start >= try end."
         //E_TRYEND_GT_CS                "try end > code size."
         //E_HND_GTEQ_END                "handler start >= handler end."
@@ -59,6 +59,12 @@ namespace ILVerify
         //E_FALLTHRU_INTO_HND           "fallthru into an exception handler."
         //E_FALLTHRU_INTO_FIL           "fallthru into an exception filter."
         //E_LEAVE                       "Leave from outside a try or catch block."
+        LeaveIntoTry,                   // Leave into try block.
+        LeaveIntoHandler,               // Leave into exception handler block.
+        LeaveIntoFilter,                // Leave into filter block.
+        LeaveOutOfFilter,               // Leave out of filter block.
+        LeaveOutOfFinally,              // Leave out of finally block.
+        LeaveOutOfFault,                // Leave out of fault block.
         Rethrow,                        // Rethrow from outside a catch handler.
         Endfinally,                     // Endfinally from outside a finally handler.
         Endfilter,                      // Endfilter from outside an exception filter block.
@@ -131,6 +137,7 @@ namespace ILVerify
         //E_ARGLIST                     "Allowed only in vararg methods."
         ValueTypeExpected,              // Value type expected.
         //E_OPEN_DLGT_PROT_ACC          "Protected method access through an open instance delegate is not verifiable."
+        TypeAccess,                     // Type is not visible.
         MethodAccess,                   // Method is not visible.
         FieldAccess,                    // Field is not visible.
         //E_DEAD                        "Item is unusable at this point."
@@ -166,7 +173,7 @@ namespace ILVerify
         //E_TAIL_RET_TYPE               "Tail call return type not compatible."
         TailStackEmpty,                 // Stack not empty after tail call.
         //E_METHOD_END                  "Method ends in the middle of an instruction."
-        //E_BAD_BRANCH                  "Branch out of the method."
+        BadBranch,                      // Branch out of the method.
         //E_FIN_OVERLAP                 "Finally handler blocks overlap."
         //E_LEXICAL_NESTING             "Lexical nesting."
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.
@@ -184,6 +191,7 @@ namespace ILVerify
         //E_SIG_C_VC                    "ELEMENT_TYPE_CLASS ValueClass in signature."
         //E_SIG_VC_C                    "ELEMENT_TYPE_VALUETYPE non-ValueClass in signature."
         //E_BOX_PTR_TO_STACK            "Box operation on TypedReference, ArgHandle, or ArgIterator."
+        BoxByRef,                       // Cannot box byref.
         //E_SIG_BYREF_TB_AH             "ByRef of TypedReference, ArgHandle, or ArgIterator."
         //E_SIG_ARRAY_TB_AH             "Array of TypedReference, ArgHandle, or ArgIterator."
         EndfilterStack,                 // Stack not empty when leaving an exception filter.
@@ -221,7 +229,7 @@ namespace ILVerify
         UnsatisfiedMethodInst,                // Method instantiation has unsatisfied method type parameter constraints.
         UnsatisfiedMethodParentInst,          // Method parent instantiation has unsatisfied class type parameter constraints.
         //E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
-        //E_UNSATISFIED_BOX_OPERAND          "Type operand of box instruction has unsatisfied class type parameter constraints."
+        UnsatisfiedBoxOperand,                // Type operand of box instruction has unsatisfied class type parameter constraints.
         ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
         //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
