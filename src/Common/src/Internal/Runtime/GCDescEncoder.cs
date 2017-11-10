@@ -154,9 +154,14 @@ namespace Internal.Runtime
         private static void EncodeAllGCPointersArrayGCDesc<T>(ref T builder, int baseSize)
             where T : struct, ITargetBinaryWriter
         {
-            builder.EmitNaturalInt(-3 * builder.TargetPointerSize);
-            builder.EmitNaturalInt(baseSize);
+            // Construct the gc info as if this array contains exactly one pointer
+            // - the encoding trick where the size of the series is measured as a difference from 
+            // total object size will make this work for arbitrary array lengths
 
+            // Series size
+            builder.EmitNaturalInt(-(baseSize + builder.TargetPointerSize));
+            // Series offset
+            builder.EmitNaturalInt(baseSize);
             // NumSeries
             builder.EmitNaturalInt(1);
         }
