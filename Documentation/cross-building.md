@@ -107,7 +107,7 @@ make -j8 objwriter
 
 7. And to execute use:
 ```
-./corerun ilc.dll --verbose @Hello.ilc.rsp
+./corerun ilc.dll --codegenopt "AltJitNgen=* AltJit=*" --verbose @Hello.ilc.rsp
 
 # For linking
 clang-3.9 -target arm-linux-gnueabi --sysroot=corert/cross/rootfs/armel -Bcorert/cross/rootfs/armel/usr/lib/gcc/armv7l-tizen-linux-gnueabi/6.2.1 -Lcorert/cross/rootfs/armel/usr/lib/gcc/armv7l-tizen-linux-gnueabi/6.2.1 Hello.o -o Hello corert/bin/Linux.armel.Debug/sdk/libbootstrapper.a corert/bin/Linux.armel.Debug/sdk/libRuntime.a corert/bin/Linux.armel.Debug/sdk/libSystem.Private.CoreLib.Native.a corert/bin/Linux.armel.Debug/framework/System.Native.a corert/bin/Linux.armel.Debug/framework/libSystem.Globalization.Native.a -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm -luuid -lrt -fPIC

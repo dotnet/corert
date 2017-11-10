@@ -303,6 +303,15 @@ void ObjectWriter::EmitIntValue(uint64_t Value, unsigned Size) {
 void ObjectWriter::EmitSymbolDef(const char *SymbolName) {
   MCSymbol *Sym = OutContext->getOrCreateSymbol(Twine(SymbolName));
   Streamer->EmitSymbolAttribute(Sym, MCSA_Global);
+
+  // A Thumb2 function symbol should be marked with an appropriate ELF
+  // attribute to make later computation of a relocation address value correct
+  if (GetTriple().getArch() == Triple::thumb &&
+      GetTriple().getObjectFormat() == Triple::ELF &&
+      Streamer->getCurrentSectionOnly()->getKind().isText()) {
+    Streamer->EmitSymbolAttribute(Sym, MCSA_ELF_TypeFunction);
+  }
+
   Streamer->EmitLabel(Sym);
 }
 
@@ -315,9 +324,35 @@ ObjectWriter::GetSymbolRefExpr(const char *SymbolName,
   return MCSymbolRefExpr::create(T, Kind, *OutContext);
 }
 
+unsigned ObjectWriter::GetDFSize() {
+  return Streamer->getOrCreateDataFragment()->getContents().size();
+}
+
+bool ObjectWriter::EmitRelocDirective(const int Offset, StringRef Name, const MCExpr *Expr) {
+  const MCExpr *OffsetExpr = MCConstantExpr::create(Offset, *OutContext);
+  return Streamer->EmitRelocDirective(*OffsetExpr, Name, Expr, SMLoc());
+}
+
+const MCExpr *ObjectWriter::GenTargetExpr(const char *SymbolName,
+                                          MCSymbolRefExpr::VariantKind Kind,
+                                          int Delta, bool IsPCRel, int Size) {
+  const MCExpr *TargetExpr = GetSymbolRefExpr(SymbolName, Kind);
+  if (IsPCRel && Size != 0) {
+    // If the fixup is pc-relative, we need to bias the value to be relative to
+    // the start of the field, not the end of the field
+    TargetExpr = MCBinaryExpr::createSub(
+        TargetExpr, MCConstantExpr::create(Size, *OutContext), *OutContext);
+  }
+  if (Delta != 0) {
+    TargetExpr = MCBinaryExpr::createAdd(
+        TargetExpr, MCConstantExpr::create(Delta, *OutContext), *OutContext);
+  }
+  return TargetExpr;
+}
+
 int ObjectWriter::EmitSymbolRef(const char *SymbolName,
                                 RelocType RelocationType, int Delta) {
-  bool IsPCRelative = false;
+  bool IsPCRel = false;
   int Size = 0;
   MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_None;
 
@@ -336,26 +371,26 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
     break;
   case RelocType::IMAGE_REL_BASED_REL32:
     Size = 4;
-    IsPCRelative = true;
+    IsPCRel = true;
     break;
+  case RelocType::IMAGE_REL_BASED_THUMB_MOV32: {
+    const unsigned Offset = GetDFSize();
+    const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
+    EmitRelocDirective(Offset, "R_ARM_THM_MOVW_ABS_NC", TargetExpr);
+    EmitRelocDirective(Offset + 4, "R_ARM_THM_MOVT_ABS", TargetExpr);
+    return 8;
+  }
+  case RelocType::IMAGE_REL_BASED_THUMB_BRANCH24: {
+    const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
+    EmitRelocDirective(GetDFSize(), "R_ARM_THM_JUMP24", TargetExpr);
+    return 4;
+  }
   default:
     assert(false && "NYI RelocationType!");
   }
 
-  const MCExpr *TargetExpr = GetSymbolRefExpr(SymbolName, Kind);
-
-  if (IsPCRelative) {
-    // If the fixup is pc-relative, we need to bias the value to be relative to
-    // the start of the field, not the end of the field
-    TargetExpr = MCBinaryExpr::createSub(
-        TargetExpr, MCConstantExpr::create(Size, *OutContext), *OutContext);
-  }
-
-  if (Delta != 0) {
-    TargetExpr = MCBinaryExpr::createAdd(
-        TargetExpr, MCConstantExpr::create(Delta, *OutContext), *OutContext);
-  }
-  Streamer->EmitValueImpl(TargetExpr, Size, SMLoc(), IsPCRelative);
+  const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta, IsPCRel, Size);
+  Streamer->EmitValueImpl(TargetExpr, Size, SMLoc(), IsPCRel);
   return Size;
 }
 

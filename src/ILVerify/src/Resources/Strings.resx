@@ -120,6 +120,12 @@
   <data name="ArrayByRef" xml:space="preserve">
     <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
   </data>
+  <data name="BadBranch" xml:space="preserve">
+    <value>Branch out of the method.</value>
+  </data>
+  <data name="BoxByRef" xml:space="preserve">
+    <value>Cannot box byref.</value>
+  </data>
   <data name="BranchIntoFilter" xml:space="preserve">
     <value>Branch into exception filter block.</value>
   </data>
@@ -222,8 +228,29 @@
   <data name="LdvirtftnOnStatic" xml:space="preserve">
     <value>ldvirtftn on static.</value>
   </data>
+  <data name="LeaveIntoFilter" xml:space="preserve">
+    <value>Leave into filter block.</value>
+  </data>
+  <data name="LeaveIntoHandler" xml:space="preserve">
+    <value>Leave into exception handler block.</value>
+  </data>
+  <data name="LeaveIntoTry" xml:space="preserve">
+    <value>Leave into try block.</value>
+  </data>
+  <data name="LeaveOutOfFault" xml:space="preserve">
+    <value>Leave out of fault block.</value>
+  </data>
+  <data name="LeaveOutOfFilter" xml:space="preserve">
+    <value>Leave out of filter block.</value>
+  </data>
+  <data name="LeaveOutOfFinally" xml:space="preserve">
+    <value>Leave out of finally block.</value>
+  </data>
   <data name="MethodAccess" xml:space="preserve">
     <value>Method is not visible.</value>
+  </data>
+  <data name="MethodFallthrough" xml:space="preserve">
+    <value>Fall through end of the method without returning.</value>
   </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
@@ -312,11 +339,17 @@
   <data name="TryNonEmptyStack" xml:space="preserve">
     <value>Attempt to enter a try block with nonempty stack.</value>
   </data>
+  <data name="TypeAccess" xml:space="preserve">
+    <value>Type is not visible.</value>
+  </data>
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
   </data>
   <data name="UninitStack" xml:space="preserve">
     <value>Uninitialized item on stack.</value>
+  </data>
+  <data name="UnknownOpcode" xml:space="preserve">
+    <value>Unknown opcode.</value>
   </data>
   <data name="UnmanagedPointer" xml:space="preserve">
     <value>Unmanaged pointers are not a verifiable type.</value>
@@ -326,6 +359,9 @@
   </data>
   <data name="UnrecognizedLocalNumber" xml:space="preserve">
     <value>Unrecognized local variable number.</value>
+  </data>
+  <data name="UnsatisfiedBoxOperand" xml:space="preserve">
+    <value>Type operand of box instruction has unsatisfied class type parameter constraints.</value>
   </data>
   <data name="UnsatisfiedMethodInst" xml:space="preserve">
     <value>Method instantiation has unsatisfied method type parameter constraints.</value>

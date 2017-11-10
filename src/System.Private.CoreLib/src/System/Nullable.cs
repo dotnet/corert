@@ -13,11 +13,11 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Nullable<T> where T : struct
+    public readonly struct Nullable<T> where T : struct
     {
         // Changing the name of this field will break MDbg and Debugger tests
-        private bool hasValue; // Do not rename (binary serialization)
-        internal T value; // Do not rename (binary serialization)
+        private readonly bool hasValue; // Do not rename (binary serialization)
+        internal readonly T value; // Do not rename (binary serialization)
 
         public Nullable(T value)
         {
