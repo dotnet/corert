@@ -18,6 +18,8 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using LLVMSharp;
 using ILCompiler.CodeGen;
+using System.Linq;
+using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -466,9 +468,7 @@ namespace ILCompiler.DependencyAnalysis
                 return this._nodeFactory.Target.PointerSize;
             }
 
-            
-
-            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, symbolStartOffset + delta));
+            _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, delta));
             return _nodeFactory.Target.PointerSize;
         }
 
@@ -672,6 +672,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private static int GetVTableSlotsCount(NodeFactory factory, TypeDesc type)
+        {
+            if (type == null)
+                return 0;
+            int slotsOnCurrentType = factory.VTable(type).Slots.Count;
+            return slotsOnCurrentType + GetVTableSlotsCount(factory, type.BaseType);
+        }
+
         public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, WebAssemblyCodegenCompilation compilation, IObjectDumper dumper)
         {
             WebAssemblyObjectWriter objectWriter = new WebAssemblyObjectWriter(objectFilePath, factory, compilation);
@@ -690,6 +698,31 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
+
+                    if (node is EETypeNode)
+                    {
+                        TypeDesc t = ((EETypeNode)node).Type;
+                        if (!t.IsArray)
+                        {
+                            int iSlot = GetVTableSlotsCount(factory, t.BaseType);
+                            var pointerSize = factory.Target.PointerSize;
+                            foreach (MethodDesc m in factory.VTable(t).Slots)
+                            {
+                                // set _getslot variable to sizeof(EEType) + iSlot * pointer size
+                                string realSymbolName = factory.NameMangler.GetMangledMethodName(m).ToString();
+                                var globalRefName = "__getslot__" + realSymbolName;
+                                LLVMValueRef slot = LLVM.GetNamedGlobal(compilation.Module, globalRefName);
+                                if (slot.Pointer == IntPtr.Zero)
+                                {
+                                    slot = LLVM.AddGlobal(compilation.Module, LLVM.Int32Type(), globalRefName);
+                                }
+                                LLVM.SetInitializer(slot, LLVM.ConstInt(LLVM.Int32Type(), (ulong)((EETypeNode.GetVTableOffset(pointerSize) / pointerSize) + iSlot), LLVMMisc.False));
+                                LLVM.SetGlobalConstant(slot, LLVMMisc.True);
+                                iSlot++;
+                            }
+                        }
+                    }
+
                     objectWriter.StartObjectNode(node);
                     ObjectData nodeContents = node.GetData(factory);
 

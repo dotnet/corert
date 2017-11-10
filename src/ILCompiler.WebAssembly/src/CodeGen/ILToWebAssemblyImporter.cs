@@ -274,9 +274,17 @@ namespace Internal.IL
             var terminator = basicBlock.Block.GetBasicBlockTerminator();
             if (terminator.Pointer == IntPtr.Zero)
             {
-                if (_basicBlocks[_currentOffset].StartOffset == 0)
-                    throw new InvalidProgramException();
-                LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(_basicBlocks[_currentOffset]));
+                if (_basicBlocks.Length > _currentOffset)
+                {
+                    if (_basicBlocks[_currentOffset].StartOffset == 0)
+                        throw new InvalidProgramException();
+
+                    LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(_basicBlocks[_currentOffset]));
+                }
+                else
+                {
+                    LLVM.BuildRet(_builder, default(LLVMValueRef));
+                }
             }
         }
 
@@ -352,7 +360,9 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(LLVM.TypeOf(value).TypeKind == LLVMTypeKind.LLVMIntegerTypeKind);
+                if (LLVM.TypeOf(value).TypeKind != LLVMTypeKind.LLVMIntegerTypeKind)
+                    throw new NotImplementedException();
+
                 return LLVM.BuildIntCast(builder, value, type, "intcast");
             }
         }
@@ -550,6 +560,14 @@ namespace Internal.IL
             else if (toStoreKind != LLVMTypeKind.LLVMFloatTypeKind && valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind)
             {
                 typedToStore = LLVM.BuildFPCast(builder, source, valueType, "CastIfNecessaryFloat");
+            }
+            else if (toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind && valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
+            {
+                typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastIfNecessaryFloat");
+            }
+            else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
+            {
+                throw new NotImplementedException();
             }
 
             return typedToStore;
@@ -797,7 +815,68 @@ namespace Internal.IL
                 throw new NotImplementedException();
             }
 
-            HandleCall(callee);
+            if (callee.OwningType.IsDelegate)
+            {
+                throw new NotImplementedException();
+            }
+
+            HandleCall(callee, opcode);
+        }
+
+        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt)
+        {
+            string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
+            if (thisPointer != null && callee.IsVirtual && isCallVirt)
+            {
+                // TODO: Full resolution of virtual methods
+                if (!callee.IsNewSlot)
+                    throw new NotImplementedException();
+
+                if (!_compilation.HasFixedSlotVTable(callee.OwningType))
+                    _dependencies.Add(_compilation.NodeFactory.VirtualMethodUse(callee));
+
+                //TODO: needs runtime support for DispatchByInterface
+                if (callee.OwningType.IsInterface)
+                    throw new NotImplementedException();
+
+                return GetVirtualSlot(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
+            }
+            else
+            {
+                return GetOrCreateLLVMFunction(calleeName);
+            }
+        }
+
+        private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
+        {
+            var globalRefName = "__getslot__" + _compilation.NameMangler.GetMangledMethodName(method);
+            LLVMValueRef slot = LLVM.GetNamedGlobal(Module, globalRefName);
+            if(slot.Pointer == IntPtr.Zero)
+            {
+                slot = LLVM.AddGlobal(Module, LLVM.Int32Type(), globalRefName);
+            }
+            return LLVM.BuildLoad(_builder, slot, string.Empty);
+        }
+
+        private LLVMValueRef GetVirtualSlot(LLVMValueRef objectPtr, MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+
+            LLVMValueRef slot = GetOrCreateMethodSlot(method);
+            if (method.OwningType.IsInterface)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                var pointerSize = method.Context.Target.PointerSize;
+                LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+                var rawObjectPtr = CastIfNecessary(objectPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(universalSignature, 0), 0), 0));
+                var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
+                var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
+                var functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
+                return functionPtr;
+            }
         }
 
         private ExpressionEntry AllocateObject(TypeDesc type)
@@ -873,12 +952,9 @@ namespace Internal.IL
             return false;
         }
 
-        private void HandleCall(MethodDesc callee)
+        private void HandleCall(MethodDesc callee, ILOpcode opcode = ILOpcode.call)
         { 
             AddMethodReference(callee);
-            string calleeName = _compilation.NameMangler.GetMangledMethodName(callee).ToString();
-            LLVMValueRef fn = GetOrCreateLLVMFunction(calleeName);
-
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset() + callee.Signature.ReturnType.GetElementSize().AsInt;
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_llvmFunction),
@@ -929,6 +1005,7 @@ namespace Internal.IL
                 argOffset += (uint)argType.GetElementSize().AsInt;
             }
 
+            LLVMValueRef fn = LLVMFunctionForMethod(callee, callee.Signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt);
             LLVM.BuildCall(_builder, fn, new LLVMValueRef[] {
                 castShadowStack,
                 castReturnAddress}, string.Empty);
@@ -1071,41 +1148,47 @@ namespace Internal.IL
 
                     LLVMValueRef left = op1.ValueForStackKind(kind, _builder, false);
                     LLVMValueRef right = op2.ValueForStackKind(kind, _builder, false);
-
-                    switch (opcode)
+                    if (kind == StackValueKind.Float)
                     {
-                        case ILOpcode.beq:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, left, right, "beq");
-                            break;
-                        case ILOpcode.bge:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGE, left, right, "bge");
-                            break;
-                        case ILOpcode.bgt:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, left, right, "bgt");
-                            break;
-                        case ILOpcode.ble:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLE, left, right, "ble");
-                            break;
-                        case ILOpcode.blt:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, left, right, "blt");
-                            break;
-                        case ILOpcode.bne_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, left, right, "bne_un");
-                            break;
-                        case ILOpcode.bge_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGE, left, right, "bge_un");
-                            break;
-                        case ILOpcode.bgt_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, left, right, "bgt_un");
-                            break;
-                        case ILOpcode.ble_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULE, left, right, "ble_un");
-                            break;
-                        case ILOpcode.blt_un:
-                            condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, left, right, "blt_un");
-                            break;
-                        default:
-                            throw new NotSupportedException(); // unreachable
+                        throw new NotSupportedException();
+                    }
+                    else
+                    {
+                        switch (opcode)
+                        {
+                            case ILOpcode.beq:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, left, right, "beq");
+                                break;
+                            case ILOpcode.bge:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGE, left, right, "bge");
+                                break;
+                            case ILOpcode.bgt:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSGT, left, right, "bgt");
+                                break;
+                            case ILOpcode.ble:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLE, left, right, "ble");
+                                break;
+                            case ILOpcode.blt:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntSLT, left, right, "blt");
+                                break;
+                            case ILOpcode.bne_un:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntNE, left, right, "bne_un");
+                                break;
+                            case ILOpcode.bge_un:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGE, left, right, "bge_un");
+                                break;
+                            case ILOpcode.bgt_un:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntUGT, left, right, "bgt_un");
+                                break;
+                            case ILOpcode.ble_un:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULE, left, right, "ble_un");
+                                break;
+                            case ILOpcode.blt_un:
+                                condition = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntULT, left, right, "blt_un");
+                                break;
+                            default:
+                                throw new NotSupportedException(); // unreachable
+                        }
                     }
                 }
                 //TODO: why did this happen only during an optimized build of [System.Private.CoreLib]System.Threading.Lock.ReleaseContended

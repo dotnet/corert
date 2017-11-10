@@ -11,11 +11,12 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-        var tempObj = new TestClass(1337);
+        TestClass tempObj = new TestDerivedClass(1337);
         int tempInt = 0;
         (*(&tempInt)) = 9;
     
         tempObj.TestMethod("Hello");
+        tempObj.TestVirtualMethod("Hello");
 
         if(tempInt == 9)
         {
@@ -107,7 +108,7 @@ internal static class Program
         }
     }
     
-    private static void PrintLine(string s)
+    public static void PrintLine(string s)
     {
         PrintString(s);
         PrintString("\n");
@@ -173,7 +174,7 @@ public struct TwoByteStr
 public class TestClass
 {
     public string TestString {get; set;}
-	
+
     public TestClass(int number)
     {
         if(number != 1337)
@@ -185,6 +186,23 @@ public class TestClass
         TestString = str;
         if(TestString != str)
             throw new Exception();
+    }
+    public virtual void TestVirtualMethod(string str)
+    {
+        Program.PrintLine("Virtual Slot Test: Ok If second");
+    }
+}
+
+public class TestDerivedClass : TestClass
+{
+    public TestDerivedClass(int number) : base(number)
+    {
+
+    }
+    public override void TestVirtualMethod(string str)
+    {
+        Program.PrintLine("Virtual Slot Test: Ok");
+        base.TestVirtualMethod(str);
     }
 }
 
