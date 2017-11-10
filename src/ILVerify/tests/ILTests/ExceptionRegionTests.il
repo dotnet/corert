@@ -66,7 +66,7 @@
     {
         .try
         {
-            leave   MethodEnd
+            leave   AfterTry
         }
         filter
         {
@@ -80,6 +80,8 @@
             pop
             leave   MethodEnd
         }
+    AfterTry:
+        nop
 
         .try
         {
@@ -161,13 +163,15 @@
     {
         .try
         {
-            leave   MethodEnd
+            leave   AfterTry
         }
         finally
         {
             leave   OtherFinally
             endfinally
         }
+    AfterTry:
+        nop
 
         .try
         {
@@ -186,13 +190,15 @@
     {
         .try
         {
-            leave   MethodEnd
+            leave   AfterTry
         }
         fault
         {
             leave   OtherFault
             endfault
         }
+    AfterTry:
+        nop
 
         .try
         {
@@ -357,7 +363,7 @@
         ret
     }
 
-    .method public instance void Leave.ToFirstInstrOfNestedDisjointTry_Invalid_LeaveIntoTry() cil managed
+    .method public instance void Leave.ToSecondInstrOfNestedDisjointTry_Invalid_LeaveIntoTry() cil managed
     {
         .try
         {
@@ -489,12 +495,14 @@
     {
         .try
         {
-            leave   MethodEnd
+            leave   AfterTry
         }
         catch [System.Runtime]System.Object
         {
             leave   DisjointTry
         }
+    AfterTry:
+        nop
 
         .try
         {
@@ -639,6 +647,76 @@
         {
             nop
         IntoTry:
+            leave   MethodEnd
+        }
+        finally
+        {
+            endfinally
+        }
+
+    MethodEnd:
+        ret
+    }
+
+    .method public instance void Leave.FromNestedTryToDisjointTry_Valid() cil managed
+    {
+        .try
+        {
+            .try
+            {
+                leave   DisjointTry
+            }
+            finally
+            {
+                endfinally
+            }
+            leave   AfterTry
+        }
+        finally
+        {
+            endfinally
+        }
+    AfterTry:
+        nop
+
+        .try
+        {
+        DisjointTry:
+            leave   MethodEnd
+        }
+        finally
+        {
+            endfinally
+        }
+
+    MethodEnd:
+        ret
+    }
+
+    .method public instance void Leave.FromNestedTryToDisjointTryBackward_Valid() cil managed
+    {
+        .try
+        {
+        DisjointTry:
+            leave   AfterTry
+        }
+        finally
+        {
+            endfinally
+        }
+    AfterTry:
+        nop
+
+        .try
+        {
+            .try
+            {
+                leave   DisjointTry
+            }
+            finally
+            {
+                endfinally
+            }
             leave   MethodEnd
         }
         finally

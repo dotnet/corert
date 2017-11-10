@@ -596,7 +596,7 @@ again:
                                 invalidLeaveIntoTry = true;
                             }
                         }
-                        else if (!IsDirectSiblingRegion(ref srcRegion, ref targetRegion))
+                        else if (!IsDisjointTryBlock(ref targetRegion, ref srcRegion))
                         {
                             VerificationError(VerifierError.LeaveIntoTry);
                             invalidLeaveIntoTry = true;
@@ -623,7 +623,7 @@ again:
                         targetRegion.TryOffset + targetRegion.TryLength < srcRegion.HandlerOffset))
                     {
                         // If target is not first instruction of try, or not a direct sibling
-                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectSiblingRegion(ref srcRegion, ref targetRegion))
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDisjointTryBlock(ref targetRegion, ref srcRegion))
                             VerificationError(VerifierError.LeaveIntoTry);
                     }
                 }
@@ -807,29 +807,19 @@ again:
         }
 
         /// <summary>
-        /// Checks whether the given try regions are direct sibling blocks, i.e. enclosed by the same or non exception region
-        /// without further nesting.
+        /// Checks whether the try block <paramref name="disjoint"/> is a disjoint try block relative to <paramref name="source"/>.
         /// </summary>
-        /// <returns>True if <paramref name="regionA"/> is a direct sibling try block of <paramref name="regionB"/>.</returns>
-        bool IsDirectSiblingRegion(ref ILExceptionRegion regionA, ref ILExceptionRegion regionB)
+        /// <returns>True if <paramref name="disjoint"/> is a disjoint try block relative to <paramref name="source"/>.</returns>
+        bool IsDisjointTryBlock(ref ILExceptionRegion disjoint, ref ILExceptionRegion source)
         {
-            // Determine which region is first
-            ref var firstRegion = ref regionA;
-            ref var secondRegion = ref regionB;
-            if (regionA.TryOffset > regionB.TryOffset)
+            if (source.TryOffset <= disjoint.TryOffset && source.TryOffset + source.TryLength >= disjoint.TryOffset + disjoint.TryLength)
             {
-                firstRegion = regionB;
-                secondRegion = regionA;
-            }
-
-            if (firstRegion.TryOffset + firstRegion.TryLength >= secondRegion.TryOffset + secondRegion.TryLength)
-            {
-                // firstRegion is enclosing second region
+                // source is enclosing disjoint
                 return false;
             }
 
-            // Walk from second region backwards and check for enclosing exception regions.
-            for (int i = secondRegion.TryOffset - 1; i > firstRegion.TryOffset; --i)
+            // Walk from disjoint region backwards and check for enclosing exception regions.
+            for (int i = disjoint.TryOffset - 1; i >= 0; --i)
             {
                 var block = _basicBlocks[i];
                 if (block == null)
@@ -838,25 +828,28 @@ again:
                 if (block.TryStart)
                 {
                     ref var blockRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
-                    // blockRegion is enclosing secondRegion
-                    if (blockRegion.TryOffset + blockRegion.TryLength > secondRegion.TryOffset)
+                    // blockRegion is enclosing disjoint, but not source
+                    if (blockRegion.TryOffset + blockRegion.TryLength > disjoint.TryOffset &&
+                        (blockRegion.TryOffset > source.TryOffset || blockRegion.TryOffset + blockRegion.TryLength <= source.TryOffset))
                         return false;
                 }
 
                 if (block.HandlerStart)
                 {
                     ref var blockRegion = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
-                    // blockRegion is enclosing secondRegion
-                    if (blockRegion.HandlerOffset + blockRegion.HandlerLength > secondRegion.TryOffset)
+                    // blockRegion is enclosing secondRegion, but not source
+                    if (blockRegion.HandlerOffset + blockRegion.HandlerLength > disjoint.TryOffset &&
+                        (blockRegion.HandlerOffset > source.TryOffset || blockRegion.HandlerOffset + blockRegion.HandlerLength <= source.TryOffset))
                         return false;
                 }
 
                 if (block.FilterStart)
                 {
                     ref var blockRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
-                    // blockRegion is enclosing secondRegion
+                    // blockRegion is enclosing secondRegion, but not source
                     var filterLength = blockRegion.HandlerOffset - blockRegion.FilterOffset;
-                    if (blockRegion.FilterOffset + filterLength > secondRegion.TryOffset)
+                    if (blockRegion.FilterOffset + filterLength > disjoint.TryOffset &&
+                        (blockRegion.FilterOffset > source.TryOffset || blockRegion.FilterOffset + filterLength <= source.TryOffset))
                         return false;
                 }
             }
