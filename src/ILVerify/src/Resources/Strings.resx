@@ -120,7 +120,7 @@
   <data name="ArrayByRef" xml:space="preserve">
     <value>Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.</value>
   </data>
-  <data name="BoxByref" xml:space="preserve">
+  <data name="BoxByRef" xml:space="preserve">
     <value>Cannot box byref.</value>
   </data>
   <data name="BranchIntoFilter" xml:space="preserve">
@@ -224,6 +224,24 @@
   </data>
   <data name="LdvirtftnOnStatic" xml:space="preserve">
     <value>ldvirtftn on static.</value>
+  </data>
+  <data name="LeaveIntoFilter" xml:space="preserve">
+    <value>Leave into filter block.</value>
+  </data>
+  <data name="LeaveIntoHandler" xml:space="preserve">
+    <value>Leave into exception handler block.</value>
+  </data>
+  <data name="LeaveIntoTry" xml:space="preserve">
+    <value>Leave into try block.</value>
+  </data>
+  <data name="LeaveOutOfFault" xml:space="preserve">
+    <value>Leave out of fault block.</value>
+  </data>
+  <data name="LeaveOutOfFilter" xml:space="preserve">
+    <value>Leave out of filter block.</value>
+  </data>
+  <data name="LeaveOutOfFinally" xml:space="preserve">
+    <value>Leave out of finally block.</value>
   </data>
   <data name="MethodAccess" xml:space="preserve">
     <value>Method is not visible.</value>

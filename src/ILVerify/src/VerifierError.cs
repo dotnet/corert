@@ -59,6 +59,12 @@ namespace ILVerify
         //E_FALLTHRU_INTO_HND           "fallthru into an exception handler."
         //E_FALLTHRU_INTO_FIL           "fallthru into an exception filter."
         //E_LEAVE                       "Leave from outside a try or catch block."
+        LeaveIntoTry,                   // Leave into try block.
+        LeaveIntoHandler,               // Leave into exception handler block.
+        LeaveIntoFilter,                // Leave into filter block.
+        LeaveOutOfFilter,               // Leave out of filter block.
+        LeaveOutOfFinally,              // Leave out of finally block.
+        LeaveOutOfFault,                // Leave out of fault block.
         Rethrow,                        // Rethrow from outside a catch handler.
         Endfinally,                     // Endfinally from outside a finally handler.
         Endfilter,                      // Endfilter from outside an exception filter block.
@@ -185,7 +191,7 @@ namespace ILVerify
         //E_SIG_C_VC                    "ELEMENT_TYPE_CLASS ValueClass in signature."
         //E_SIG_VC_C                    "ELEMENT_TYPE_VALUETYPE non-ValueClass in signature."
         //E_BOX_PTR_TO_STACK            "Box operation on TypedReference, ArgHandle, or ArgIterator."
-        BoxByref,                       // Cannot box byref.
+        BoxByRef,                       // Cannot box byref.
         //E_SIG_BYREF_TB_AH             "ByRef of TypedReference, ArgHandle, or ArgIterator."
         //E_SIG_ARRAY_TB_AH             "Array of TypedReference, ArgHandle, or ArgIterator."
         EndfilterStack,                 // Stack not empty when leaving an exception filter.

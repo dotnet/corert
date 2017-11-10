@@ -548,6 +548,118 @@ again:
                 VerificationError(VerifierError.StackUnexpected, src, dst);
         }
 
+        private void CheckIsValidLeaveTarget(BasicBlock src, BasicBlock target)
+        {
+            // If the source is within filter, target shall be within the same
+            if (src.FilterIndex.HasValue && src.FilterIndex != target.FilterIndex)
+            {
+                VerificationError(VerifierError.LeaveOutOfFilter);
+            }
+
+            // If the source is within fault handler or finally handler, target shall be within the same
+            if (src.HandlerIndex.HasValue && src.HandlerIndex != target.HandlerIndex)
+            {
+                var regionKind = _exceptionRegions[src.HandlerIndex.Value].ILRegion.Kind;
+                if (regionKind == ILExceptionRegionKind.Fault)
+                    VerificationError(VerifierError.LeaveOutOfFault);
+                else if (regionKind == ILExceptionRegionKind.Finally)
+                    VerificationError(VerifierError.LeaveOutOfFinally);
+            }
+
+            // If the source is within a try block, target shall be within the same or an enclosing try block
+            // or the first instruction of a disjoint try block
+            // or not within any try block
+            bool invalidLeaveIntoTry = false;
+            if (src.TryIndex.HasValue && src.TryIndex != target.TryIndex)
+            {
+                if (target.TryIndex.HasValue)
+                {
+                    ref var srcRegion = ref _exceptionRegions[src.TryIndex.Value].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
+
+                    // Target is not enclosing source
+                    if (targetRegion.TryOffset > srcRegion.TryOffset || 
+                        src.StartOffset >= targetRegion.TryOffset + targetRegion.TryLength)
+                    {
+                        // Target is not first instruction
+                        if (target.StartOffset != targetRegion.TryOffset)
+                        {
+                            VerificationError(VerifierError.LeaveIntoTry);
+                            invalidLeaveIntoTry = true;
+                        }
+                        else if (srcRegion.TryOffset <= targetRegion.TryOffset &&
+                            srcRegion.TryOffset + srcRegion.TryLength > targetRegion.TryOffset) // Source is enclosing target
+                        {
+                            if (!IsDirectChildRegion(src, target))
+                            {
+                                VerificationError(VerifierError.LeaveIntoTry);
+                                invalidLeaveIntoTry = true;
+                            }
+                        }
+                        else if (!IsDirectSiblingRegion(ref srcRegion, ref targetRegion))
+                        {
+                            VerificationError(VerifierError.LeaveIntoTry);
+                            invalidLeaveIntoTry = true;
+                        }
+                    }
+                }
+            }
+
+            // If the source is within a catch or filtered handler, target shall be within same catch or filtered handler
+            // or within the associated try block
+            // or within a try block enclosing the catch / filtered handler
+            // or the first instruction of a disjoint try block
+            // or not within any try block
+            if (src.HandlerIndex.HasValue && src.HandlerIndex != target.HandlerIndex)
+            {
+                if (target.TryIndex.HasValue)
+                {
+                    ref var srcRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
+
+                    // If target is not associated try block, and not enclosing srcRegion
+                    if (target.TryIndex != src.HandlerIndex && 
+                        (targetRegion.TryOffset > srcRegion.HandlerOffset || 
+                        targetRegion.TryOffset + targetRegion.TryLength < srcRegion.HandlerOffset))
+                    {
+                        // If target is not first instruction of try, or not a direct sibling
+                        if (target.StartOffset != targetRegion.TryOffset || !IsDirectSiblingRegion(ref srcRegion, ref targetRegion))
+                            VerificationError(VerifierError.LeaveIntoTry);
+                    }
+                }
+            }
+
+            // If the target is within a filter or handler, source shall be within same
+            if (target.HandlerIndex.HasValue && src.HandlerIndex != target.HandlerIndex)
+            {
+                ref var targetRegion = ref _exceptionRegions[target.HandlerIndex.Value].ILRegion;
+                // If target region is not enclosing source
+                if (targetRegion.HandlerOffset > src.StartOffset || targetRegion.HandlerOffset + targetRegion.HandlerLength < src.StartOffset)
+                    VerificationError(VerifierError.LeaveIntoHandler);
+            }
+            if (target.FilterIndex.HasValue && src.FilterIndex != target.FilterIndex)
+            {
+                ref var targetRegion = ref _exceptionRegions[target.FilterIndex.Value].ILRegion;
+                var filterLength = targetRegion.HandlerOffset - targetRegion.FilterOffset;
+
+                // If target region is not enclosing source
+                if (targetRegion.FilterOffset > src.StartOffset || targetRegion.FilterOffset + filterLength < src.StartOffset)
+                    VerificationError(VerifierError.LeaveIntoFilter);
+            }
+
+            // If the target is within a try block (except first instruction), source shall be within same
+            // or within associated handler
+            if (!invalidLeaveIntoTry && target.TryIndex.HasValue && src.TryIndex != target.TryIndex)
+            {
+                ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
+
+                if (target.StartOffset != targetRegion.TryOffset && // Not first instruction
+                    (!src.HandlerIndex.HasValue || src.HandlerIndex != target.TryIndex) && // Not associated handler
+                    (targetRegion.TryOffset > src.StartOffset || targetRegion.TryOffset + targetRegion.TryLength < src.StartOffset)) // Target region does not enclose source
+                    VerificationError(VerifierError.LeaveIntoTry);
+            }
+        }
+
         bool IsValidBranchTarget(BasicBlock src, BasicBlock target, bool reportErrors = true)
         {
             bool isValid = true;
@@ -557,7 +669,7 @@ again:
                 if (src.TryIndex == null)
                 {
                     // Branching to first instruction of try-block is valid
-                    if (target.StartOffset != _exceptionRegions[(int)target.TryIndex].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
+                    if (target.StartOffset != _exceptionRegions[target.TryIndex.Value].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
                     {
                         if (reportErrors)
                             VerificationError(VerifierError.BranchIntoTry);
@@ -572,8 +684,8 @@ again:
                 }
                 else
                 {
-                    ref var srcRegion = ref _exceptionRegions[(int)src.TryIndex].ILRegion;
-                    ref var targetRegion = ref _exceptionRegions[(int)target.TryIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[src.TryIndex.Value].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[target.TryIndex.Value].ILRegion;
                     // If target is inside source region
                     if (srcRegion.TryOffset <= targetRegion.TryOffset && 
                         target.StartOffset < srcRegion.TryOffset + srcRegion.TryLength)
@@ -611,8 +723,8 @@ again:
                 }
                 else
                 {
-                    ref var srcRegion = ref _exceptionRegions[(int)src.FilterIndex].ILRegion;
-                    ref var targetRegion = ref _exceptionRegions[(int)target.FilterIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[src.FilterIndex.Value].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[target.FilterIndex.Value].ILRegion;
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                     {
                         if (reportErrors)
@@ -644,8 +756,8 @@ again:
                 }
                 else
                 {
-                    ref var srcRegion = ref _exceptionRegions[(int)src.HandlerIndex].ILRegion;
-                    ref var targetRegion = ref _exceptionRegions[(int)target.HandlerIndex].ILRegion;
+                    ref var srcRegion = ref _exceptionRegions[src.HandlerIndex.Value].ILRegion;
+                    ref var targetRegion = ref _exceptionRegions[target.HandlerIndex.Value].ILRegion;
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                     {
                         if (reportErrors)
@@ -673,7 +785,7 @@ again:
         /// <returns>True if <paramref name="enclosedBlock"/> is a direct child try region of <paramref name="enclosingBlock"/>.</returns>
         bool IsDirectChildRegion(BasicBlock enclosingBlock, BasicBlock enclosedBlock)
         {
-            var enclosedRegion = _exceptionRegions[(int)enclosedBlock.TryIndex].ILRegion;
+            ref var enclosedRegion = ref _exceptionRegions[enclosedBlock.TryIndex.Value].ILRegion;
 
             // Walk from enclosed try start backwards and check each BasicBlock whether it is a try-start
             for (int i = enclosedRegion.TryOffset - 1; i > enclosingBlock.StartOffset; --i)
@@ -684,9 +796,67 @@ again:
 
                 if (block.TryStart && block.TryIndex != enclosingBlock.TryIndex)
                 {
-                    var blockRegion = _exceptionRegions[(int)block.TryIndex].ILRegion;
+                    ref var blockRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
                     // blockRegion is actually enclosing enclosedRegion
                     if (blockRegion.TryOffset + blockRegion.TryLength > enclosedRegion.TryOffset)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks whether the given try regions are direct sibling blocks, i.e. enclosed by the same or non exception region
+        /// without further nesting.
+        /// </summary>
+        /// <returns>True if <paramref name="regionA"/> is a direct sibling try block of <paramref name="regionB"/>.</returns>
+        bool IsDirectSiblingRegion(ref ILExceptionRegion regionA, ref ILExceptionRegion regionB)
+        {
+            // Determine which region is first
+            ref var firstRegion = ref regionA;
+            ref var secondRegion = ref regionB;
+            if (regionA.TryOffset > regionB.TryOffset)
+            {
+                firstRegion = regionB;
+                secondRegion = regionA;
+            }
+
+            if (firstRegion.TryOffset + firstRegion.TryLength >= secondRegion.TryOffset + secondRegion.TryLength)
+            {
+                // firstRegion is enclosing second region
+                return false;
+            }
+
+            // Walk from second region backwards and check for enclosing exception regions.
+            for (int i = secondRegion.TryOffset - 1; i > firstRegion.TryOffset; --i)
+            {
+                var block = _basicBlocks[i];
+                if (block == null)
+                    continue;
+
+                if (block.TryStart)
+                {
+                    ref var blockRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
+                    // blockRegion is enclosing secondRegion
+                    if (blockRegion.TryOffset + blockRegion.TryLength > secondRegion.TryOffset)
+                        return false;
+                }
+
+                if (block.HandlerStart)
+                {
+                    ref var blockRegion = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
+                    // blockRegion is enclosing secondRegion
+                    if (blockRegion.HandlerOffset + blockRegion.HandlerLength > secondRegion.TryOffset)
+                        return false;
+                }
+
+                if (block.FilterStart)
+                {
+                    ref var blockRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
+                    // blockRegion is enclosing secondRegion
+                    var filterLength = blockRegion.HandlerOffset - blockRegion.FilterOffset;
+                    if (blockRegion.FilterOffset + filterLength > secondRegion.TryOffset)
                         return false;
                 }
             }
@@ -1883,14 +2053,14 @@ again:
 
             var targetType = StackValue.CreateFromType(type);
 
-            Check(!IsByRefLike(targetType), VerifierError.BoxByref, targetType);
+            Check(!IsByRefLike(targetType), VerifierError.BoxByRef, targetType);
 
-            Check(targetType.Type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef || 
-                targetType.Type.IsGenericParameter, VerifierError.ExpectedValClassObjRefVariable);
+            Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef || 
+                type.IsGenericParameter || type.IsValueType, VerifierError.ExpectedValClassObjRefVariable);
 
-            Check(targetType.Type.CheckConstraints(), VerifierError.UnsatisfiedBoxOperand);
+            Check(type.CheckConstraints(), VerifierError.UnsatisfiedBoxOperand);
 
-            Check(_method.OwningType.CanAccess(targetType.Type), VerifierError.TypeAccess);
+            Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
             CheckIsAssignable(value, targetType);
 
@@ -1913,7 +2083,7 @@ again:
             PropagateThisState(_currentBasicBlock, target);
             MarkBasicBlock(target);
 
-            // TODO
+            CheckIsValidLeaveTarget(_currentBasicBlock, target);
         }
 
         void ImportEndFinally()
