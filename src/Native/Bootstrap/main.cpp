@@ -292,7 +292,6 @@ static const pfn c_classlibFunctions[] = {
 
 #endif // !CPPCODEGEN
 
-static bool RUNTIME_INITIALIZED = false;
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 extern "C" int InitializeRuntime();
 extern "C" int (*InitializeRuntimePtr)();
@@ -339,7 +338,6 @@ int main(int argc, char* argv[])
 #endif
 
     RhpShutdown();
-    RUNTIME_INITIALIZED = false;
 
     return retval;
 }
@@ -347,9 +345,6 @@ int main(int argc, char* argv[])
 
 int InitializeRuntime()
 {
-    if (RUNTIME_INITIALIZED)
-        return 0;
-
     if (!RhInitialize())
         return -1;
 
@@ -373,8 +368,6 @@ int InitializeRuntime()
         return -1;
     }
 #endif // !CPPCODEGEN
-
-    RUNTIME_INITIALIZED = true;
 
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));

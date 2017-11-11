@@ -33,6 +33,9 @@
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
 EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
 
+EXTERN_C int (*InitializeRuntimePtr)() = NULL;
+static bool INITIALIZING_RUNTIME;
+
 #ifdef _MSC_VER
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
@@ -1115,13 +1118,17 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     return true;
 }
 
-EXTERN_C int (*InitializeRuntimePtr)() = NULL;
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
     {
-        if (*InitializeRuntimePtr != NULL)
+        if (*InitializeRuntimePtr != NULL && !INITIALIZING_RUNTIME)
+        {
+            INITIALIZING_RUNTIME = true;
             (*InitializeRuntimePtr)();
+            INITIALIZING_RUNTIME = false;
+        }
+
         ThreadStore::AttachCurrentThread();
     }
 
