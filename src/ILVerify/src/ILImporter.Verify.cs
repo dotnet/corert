@@ -1847,7 +1847,6 @@ again:
             var field = ResolveFieldToken(token);
 
             TypeDesc instance;
-
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
@@ -1884,13 +1883,15 @@ again:
             bool isPermanentHome = false;
 
             TypeDesc instance;
-
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
 
                 isPermanentHome = true;
                 instance = null;
+
+                if (field.IsInitOnly)
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
             }
             else
             {
@@ -1910,6 +1911,9 @@ again:
 
                 isPermanentHome = actualThis.Kind == StackValueKind.ObjRef || actualThis.IsPermanentHome;
                 instance = actualThis.Type;
+
+                if (field.IsInitOnly)
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
@@ -1927,12 +1931,14 @@ again:
             var field = ResolveFieldToken(token);
 
             TypeDesc instance;
-
             if (isStatic)
             {
                 Check(field.IsStatic, VerifierError.ExpectedStaticField);
 
                 instance = null;
+
+                if (field.IsInitOnly)
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
             }
             else
             {
@@ -1951,6 +1957,9 @@ again:
                 CheckIsAssignable(actualThis, declaredThis);
 
                 instance = actualThis.Type;
+
+                if (field.IsInitOnly)
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);

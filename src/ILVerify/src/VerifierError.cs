@@ -146,7 +146,7 @@ namespace ILVerify
         //E_ADDR                        "Address of not allowed for this item."
         //E_ADDR_BYREF                  "Address of not allowed for ByRef."
         //E_ADDR_LITERAL                "Address of not allowed for literal field."
-        //E_INITONLY                    "Cannot change initonly field outside its .ctor."
+        Initonly,                       // Cannot change initonly field outside its .ctor.
         //E_WRITE_RVA_STATIC            "Cannot modify an imaged based (RVA) static"
         //E_THROW                       "Cannot throw this object."
         CallVirtOnValueType,            // Callvirt on a value type method.

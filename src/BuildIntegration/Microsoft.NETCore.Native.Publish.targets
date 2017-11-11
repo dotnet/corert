@@ -49,6 +49,10 @@
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(BuildTasksPath)" />
   <Target Name="_ComputeAssembliesToCompileToNative">
 
+    <!-- CoreRT SDK and Framework Assemblies need to be defined to avoid CoreCLR implementations being set as compiler inputs -->  
+    <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+
     <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish)" 
     DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)" DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)" DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
     SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)">
