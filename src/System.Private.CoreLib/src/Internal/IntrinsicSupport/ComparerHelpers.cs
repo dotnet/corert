@@ -10,8 +10,9 @@
 // type is being compared.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Runtime;
+
 using Internal.IntrinsicSupport;
 using Internal.Runtime.Augments;
 
@@ -21,32 +22,30 @@ namespace Internal.IntrinsicSupport
     {
         private static bool ImplementsIComparable(RuntimeTypeHandle t)
         {
-            int interfaceCount = RuntimeAugments.GetInterfaceCount(t);
+            EETypePtr objectType = t.ToEETypePtr();
+            EETypePtr icomparableType = typeof(IComparable<>).TypeHandle.ToEETypePtr();
+            int interfaceCount = objectType.Interfaces.Count;
             for (int i = 0; i < interfaceCount; i++)
             {
-                RuntimeTypeHandle interfaceType = RuntimeAugments.GetInterface(t, i);
+                EETypePtr interfaceType = objectType.Interfaces[i];
 
-                if (!RuntimeAugments.IsGenericType(interfaceType))
+                if (!interfaceType.IsGeneric)
                     continue;
 
-                RuntimeTypeHandle genericDefinition;
-                RuntimeTypeHandle[] genericTypeArgs;
-                genericDefinition = RuntimeAugments.GetGenericInstantiation(interfaceType,
-                                                                            out genericTypeArgs);
-
-                if (genericDefinition.Equals(typeof(IComparable<>).TypeHandle))
+                if (interfaceType.GenericDefinition == icomparableType)
                 {
-                    if (genericTypeArgs.Length != 1)
+                    var instantiation = interfaceType.Instantiation;
+                    if (instantiation.Length != 1)
                         continue;
 
-                    if (RuntimeAugments.IsValueType(t))
+                    if (objectType.IsValueType)
                     {
-                        if (genericTypeArgs[0].Equals(t))
+                        if (instantiation[0] == objectType)
                         {
                             return true;
                         }
                     }
-                    else if (RuntimeAugments.IsAssignableFrom(genericTypeArgs[0], t))
+                    else if (RuntimeImports.AreTypesAssignable(objectType, instantiation[0]))
                     {
                         return true;
                     }

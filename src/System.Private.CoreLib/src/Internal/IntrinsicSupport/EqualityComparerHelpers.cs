@@ -25,25 +25,24 @@ namespace Internal.IntrinsicSupport
     {
         private static bool ImplementsIEquatable(RuntimeTypeHandle t)
         {
-            int interfaceCount = RuntimeAugments.GetInterfaceCount(t);
+            EETypePtr objectType = t.ToEETypePtr();
+            EETypePtr iequatableType = typeof(IEquatable<>).TypeHandle.ToEETypePtr();
+            int interfaceCount = objectType.Interfaces.Count;
             for (int i = 0; i < interfaceCount; i++)
             {
-                RuntimeTypeHandle interfaceType = RuntimeAugments.GetInterface(t, i);
+                EETypePtr interfaceType = objectType.Interfaces[i];
 
-                if (!RuntimeAugments.IsGenericType(interfaceType))
+                if (!interfaceType.IsGeneric)
                     continue;
 
-                RuntimeTypeHandle genericDefinition;
-                RuntimeTypeHandle[] genericTypeArgs;
-                genericDefinition = RuntimeAugments.GetGenericInstantiation(interfaceType,
-                                                                            out genericTypeArgs);
-
-                if (genericDefinition.Equals(typeof(IEquatable<>).TypeHandle))
+                if (interfaceType.GenericDefinition == iequatableType)
                 {
-                    if (genericTypeArgs.Length != 1)
+                    var instantiation = interfaceType.Instantiation;
+
+                    if (instantiation.Length != 1)
                         continue;
 
-                    if (genericTypeArgs[0].Equals(t))
+                    if (instantiation[0] == objectType)
                     {
                         return true;
                     }
@@ -55,12 +54,7 @@ namespace Internal.IntrinsicSupport
 
         private static bool IsEnum(RuntimeTypeHandle t)
         {
-            RuntimeTypeHandle baseType;
-            bool success = RuntimeAugments.TryGetBaseType(t, out baseType);
-            if (!success)
-                return false;
-
-            return baseType.Equals(typeof(System.Enum).TypeHandle);
+            return t.ToEETypePtr().IsEnum;
         }
 
         // this function utilizes the template type loader to generate new
