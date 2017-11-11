@@ -295,28 +295,22 @@ static const pfn c_classlibFunctions[] = {
 static bool RUNTIME_INITIALIZED = false;
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 extern "C" int InitializeRuntime();
+extern "C" int (*InitializeRuntimePtr)();
 
-#ifdef CORERT_DLL
-#if defined(_WIN32)
-#define wmain CoreRT_wmain
-#else
-#define main CoreRT_main
-#endif
-#endif // CORERT_DLL
-
-#ifdef CORERT_DLL
-extern "C" void __managed__Startup();
-#endif // CORERT_DLL
-
-#if defined(_WIN32)
 #ifndef CORERT_DLL
+#if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+#else
+extern "C" int __managed__Main(int argc, char* argv[]);
+#endif
+#else
+extern "C" void __managed__Startup();
 #endif // !CORERT_DLL
+
+#ifndef CORERT_DLL
+#if defined(_WIN32)
 int __cdecl wmain(int argc, wchar_t* argv[])
 #else
-#ifndef CORERT_DLL
-extern "C" int __managed__Main(int argc, char* argv[]);
-#endif // !CORERT_DLL
 int main(int argc, char* argv[])
 #endif
 {
@@ -349,8 +343,8 @@ int main(int argc, char* argv[])
 
     return retval;
 }
+#endif // !CORERT_DLL
 
-extern "C" int (*InitializeRuntimePtr)();
 int InitializeRuntime()
 {
     if (RUNTIME_INITIALIZED)
