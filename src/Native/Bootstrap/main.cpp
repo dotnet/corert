@@ -304,19 +304,19 @@ extern "C" int InitializeRuntime();
 #endif
 #endif // CORERT_DLL
 
+#ifdef CORERT_DLL
+extern "C" void __managed__Startup();
+#endif // CORERT_DLL
+
 #if defined(_WIN32)
 #ifndef CORERT_DLL
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-#else
-extern "C" int __managed__Startup(int argc, wchar_t* argv[]);
-#endif // CORERT_DLL
+#endif // !CORERT_DLL
 int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 #ifndef CORERT_DLL
 extern "C" int __managed__Main(int argc, char* argv[]);
-#else
-extern "C" int __managed__Startup(int argc, char* argv[]);
-#endif // CORERT_DLL
+#endif // !CORERT_DLL
 int main(int argc, char* argv[])
 #endif
 {
@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
         retval = __managed__Main(argc, argv);
 #else
         retval = 0;
-#endif // CORERT_DLL
+#endif // !CORERT_DLL
     }
 #ifdef CPPCODEGEN
     catch (const char* &e)
@@ -368,7 +368,7 @@ int InitializeRuntime()
     void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
 #else
     void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Startup);
-#endif // CORERT_DLL
+#endif // !CORERT_DLL
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -390,10 +390,10 @@ int InitializeRuntime()
 
 #ifdef CORERT_DLL
     // Run startup method immediately for a native library
-    return __managed__Startup(0, NULL);
-#else
-    return 0;
+    __managed__Startup();
 #endif // CORERT_DLL
+
+    return 0;
 }
 
 #ifdef CORERT_DLL

@@ -66,8 +66,6 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
-            // Simply return 0
-            codeStream.EmitLdc(0);
             codeStream.Emit(ILOpcode.ret);
             return emitter.Link(this);
         }
@@ -79,10 +77,8 @@ namespace Internal.IL.Stubs.StartupCode
                 if (_signature == null)
                 {
                     _signature = new MethodSignature(MethodSignatureFlags.Static, 0,
-                            Context.GetWellKnownType(WellKnownType.Int32),
-                            new TypeDesc[2] {
-                                Context.GetWellKnownType(WellKnownType.Int32),
-                                Context.GetWellKnownType(WellKnownType.IntPtr) });
+                            Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[0]);
                 }
 
                 return _signature;
