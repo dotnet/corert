@@ -67,8 +67,15 @@ See the LICENSE file in the project root for more information.
   </PropertyGroup>
 
   <ItemGroup>
-    <DefaultFrameworkAssemblies Include="$(IlcPath)\sdk\*.dll" />
-    <DefaultFrameworkAssemblies Include="$(IlcPath)\framework\*.dll" />
+    <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
+    <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
   </ItemGroup>
 
   <Target Name="ComputeIlcCompileInputs">
