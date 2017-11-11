@@ -397,20 +397,11 @@ int InitializeRuntime()
 }
 
 #ifdef CORERT_DLL
-#if defined(_WIN32)
-extern "C" BOOL WINAPI DllMain(
-    _In_ HINSTANCE Instance,
-    _In_ DWORD Reason,
-    _In_ LPVOID Reserved
-    )
-#else
-__attribute__ ((__constructor__))
-void Init()
-#endif
+static struct InitializeRuntimePointerHelper
 {
-    InitializeRuntimePtr = &InitializeRuntime;
-#if defined(_WIN32)
-    return TRUE;
-#endif
-}
+	InitializeRuntimePointerHelper()
+	{
+        InitializeRuntimePtr = &InitializeRuntime;
+	}
+} initializeRuntimePointerHelper;
 #endif // CORERT_DLL
