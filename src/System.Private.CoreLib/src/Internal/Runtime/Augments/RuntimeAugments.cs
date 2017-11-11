@@ -592,10 +592,7 @@ namespace Internal.Runtime.Augments
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
-#if CORERT
-            // Compiler needs to expand this. This is not expressible in IL.
-            throw new NotSupportedException();
-#else
+#if PROJECTN
             switch (kind)
             {
                 case CanonTypeKind.NormalCanon:
@@ -606,6 +603,9 @@ namespace Internal.Runtime.Augments
                     Debug.Assert(false);
                     return default(RuntimeTypeHandle);
             }
+#else
+            // Compiler needs to expand this. This is not expressible in IL.
+            throw new NotSupportedException();
 #endif
         }
 

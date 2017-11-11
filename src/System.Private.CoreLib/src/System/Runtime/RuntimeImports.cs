@@ -529,7 +529,14 @@ namespace System.Runtime
             return RhGetModuleSection(ref module, section, out length);
         }
 
-#if CORERT
+#if PROJECTN
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLoadedOSModules")]
+        internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLoadedModules")]
+        internal static extern uint RhGetLoadedModules(TypeManagerHandle[] resultArray);
+#else
         internal static uint RhGetLoadedOSModules(IntPtr[] resultArray)
         {
             IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.OSModules;
@@ -549,13 +556,6 @@ namespace System.Runtime
             }
             return (uint)loadedModules.Length;
         }
-#else
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetLoadedOSModules")]
-        internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetLoadedModules")]
-        internal static extern uint RhGetLoadedModules(TypeManagerHandle[] resultArray);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -578,7 +578,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
         internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, int threadStaticsBlockOffset, int fieldOffset);
 
-#if CORERT
+#if !PROJECTN
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
         internal static unsafe extern Array RhGetThreadStaticStorageForModule(Int32 moduleIndex);
@@ -747,7 +747,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEtwExceptionThrown")]
         internal extern static unsafe void RhpEtwExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
 
-#if CORERT
+#if !PROJECTN
         //
         // Interlocked helpers
         //
@@ -778,7 +778,7 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal extern static void MemoryBarrier();
-#endif // CORERT
+#endif // !PROJECTN
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

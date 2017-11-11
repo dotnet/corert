@@ -77,30 +77,23 @@ namespace Internal.Runtime.TypeLoader
 
         unsafe public uint GetRvaFromIndex(uint index)
         {
-#if CORERT
-            // The usage of this API will need to go away since this is not fully portable
-            // and we'll not be able to support this for CppCodegen.
-            throw new PlatformNotSupportedException();
-#else
+#if PROJECTN
             Debug.Assert(!_moduleHandle.IsNull);
 
             if (index >= _elementsCount)
                 throw new BadImageFormatException();
 
             return ((TableElement*)_elements)[index];
+#else
+            // The usage of this API will need to go away since this is not fully portable
+            // and we'll not be able to support this for CppCodegen.
+            throw new PlatformNotSupportedException();
 #endif
         }
 
         unsafe public IntPtr GetIntPtrFromIndex(uint index)
         {
-#if CORERT
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            int* pRelPtr32 = &((int*)_elements)[index];
-            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
-#else
+#if PROJECTN
             uint rva = GetRvaFromIndex(index);
             if ((rva & IndirectionConstants.RVAPointsToIndirection) != 0)
             {
@@ -111,19 +104,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
-#endif
-        }
-
-        unsafe public IntPtr GetFunctionPointerFromIndex(uint index)
-        {
-#if CORERT
+#else
             if (index >= _elementsCount)
                 throw new BadImageFormatException();
 
             // TODO: indirection through IAT
             int* pRelPtr32 = &((int*)_elements)[index];
             return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
-#else
+#endif
+        }
+
+        unsafe public IntPtr GetFunctionPointerFromIndex(uint index)
+        {
+#if PROJECTN
             uint rva = GetRvaFromIndex(index);
 
             if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
@@ -134,6 +127,13 @@ namespace Internal.Runtime.TypeLoader
             {
                 return (IntPtr)(_moduleHandle.ConvertRVAToPointer(rva));
             }
+#else
+            if (index >= _elementsCount)
+                throw new BadImageFormatException();
+
+            // TODO: indirection through IAT
+            int* pRelPtr32 = &((int*)_elements)[index];
+            return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
 #endif
         }
 
@@ -154,7 +154,7 @@ namespace Internal.Runtime.TypeLoader
             return GetIntPtrFromIndex(index);
         }
 
-#if CORERT
+#if !PROJECTN
         unsafe public IntPtr GetFieldAddressFromIndex(uint index)
         {
             if (index >= _elementsCount)

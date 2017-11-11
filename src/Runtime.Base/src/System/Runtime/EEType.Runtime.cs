@@ -29,12 +29,12 @@ namespace Internal.Runtime
                 if (pGetArrayEEType != IntPtr.Zero)
                     return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
             }
-#if CORERT
-            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-            return null;
-#else
+#if PROJECTN
             fixed (EEType* pThis = &this)
                 return InternalCalls.RhpGetArrayBaseType(pThis);
+#else
+            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+            return null;
 #endif
         }
 

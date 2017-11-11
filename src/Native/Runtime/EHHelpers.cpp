@@ -361,10 +361,7 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         (UIntNative)&RhpCheckedAssignRefAVLocation,
         (UIntNative)&RhpCheckedLockCmpXchgAVLocation,
         (UIntNative)&RhpCheckedXchgAVLocation,
-#ifdef CORERT
-        (UIntNative)&RhpLockCmpXchg32AVLocation,
-        (UIntNative)&RhpLockCmpXchg64AVLocation,
-#else
+#ifdef PROJECTN
         (UIntNative)&RhpCopyMultibyteDestAVLocation,
         (UIntNative)&RhpCopyMultibyteSrcAVLocation,
         (UIntNative)&RhpCopyMultibyteNoGCRefsDestAVLocation,
@@ -373,6 +370,9 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         (UIntNative)&RhpCopyMultibyteWithWriteBarrierSrcAVLocation,
         (UIntNative)&RhpCopyAnyWithWriteBarrierDestAVLocation,
         (UIntNative)&RhpCopyAnyWithWriteBarrierSrcAVLocation,
+#else
+        (UIntNative)&RhpLockCmpXchg32AVLocation,
+        (UIntNative)&RhpLockCmpXchg64AVLocation,
 #endif
     };
 

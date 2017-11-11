@@ -756,7 +756,7 @@ namespace Internal.Runtime.TypeLoader
 
                         bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
                         MethodDesc canonAlikeForm;
-#if !CORERT
+#if PROJECTN
                         if (methodRequestedIsCanonical)
                         {
                             canonAlikeForm = Method.ReplaceTypesInConstructionOfMethod(Method.Context.CanonTypeArray, Method.Context.CanonAlikeTypeArray);

@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
-#ifndef CORERT
+#ifdef PROJECTN
 #include <roapi.h>
 #endif
 
@@ -1377,7 +1377,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 static LARGE_INTEGER g_performanceFrequency;
 
-#ifndef CORERT
+#ifdef PROJECTN
 static bool g_roInitialized;
 #endif
 
@@ -1391,7 +1391,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-#ifndef CORERT
+#ifdef PROJECTN
     // TODO: Remove the RoInitialize call when we implement non-WinRT framework for classic apps
     HRESULT hr = RoInitialize(RO_INIT_MULTITHREADED);
 
@@ -1415,7 +1415,7 @@ bool GCToOSInterface::Initialize()
 //  Must be called on the same thread as Initialize.
 void GCToOSInterface::Shutdown()
 {
-#ifndef CORERT
+#ifdef PROJECTN
     if (g_roInitialized)
     {
         RoUninitialize();

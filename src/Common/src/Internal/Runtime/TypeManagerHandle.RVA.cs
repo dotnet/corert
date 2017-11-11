@@ -71,11 +71,11 @@ namespace System.Runtime
         [CLSCompliant(false)]
         public unsafe byte* ConvertRVAToPointer(uint rva)
         {
-#if CORERT
-            Environment.FailFast("RVA fixups not supported in CoreRT");
-            return null;
-#else
+#if PROJECTN
             return ((byte*)OsModuleBase) + rva;
+#else
+            Environment.FailFast("RVA fixups not supported");
+            return null;
 #endif
         }
 

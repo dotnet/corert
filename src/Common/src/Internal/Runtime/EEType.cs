@@ -1184,7 +1184,7 @@ namespace Internal.Runtime
             }
         }
 #endif
-#endif // CORERT
+#endif // EETYPE_TYPE_MANAGER
 
         internal unsafe EETypeRareFlags RareFlags
         {
