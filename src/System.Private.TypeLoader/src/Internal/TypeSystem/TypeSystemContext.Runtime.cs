@@ -647,7 +647,7 @@ namespace Internal.TypeSystem
             _typesToFlushTypeSystemStateFrom = null;
         }
 
-#if !CORERT
+#if PROJECTN
         private TypeDesc _canonAlikeType;
 
         public TypeDesc CanonAlikeType

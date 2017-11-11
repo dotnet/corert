@@ -21,7 +21,7 @@ namespace System
     {
         private EETypePtr _pEEType;
 
-#if CORERT
+#if !PROJECTN
         [Intrinsic]
         internal static unsafe IntPtr GetValueInternal(RuntimeTypeHandle handle)
         {

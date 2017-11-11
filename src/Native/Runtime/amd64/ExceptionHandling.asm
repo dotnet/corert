@@ -424,11 +424,11 @@ endif
         movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-ifdef CORERT ;; @TODO Reconcile
+ifdef PROJECTN ;; @TODO Reconcile
+        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
+else
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
         mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
-else
-        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
 endif
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
@@ -666,11 +666,11 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rbp, [rax]
 
         mov     rax, rdx                                            ;; rax <- handler funclet address
-ifdef CORERT ;; @TODO Reconcile
+ifdef PROJECTN ;; @TODO Reconcile
+        ;; RCX still contains the exception object
+else
         mov     rdx, rcx                                            ;; rdx <- exception object
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-else
-        ;; RCX still contains the exception object
 endif
         call    rax
 

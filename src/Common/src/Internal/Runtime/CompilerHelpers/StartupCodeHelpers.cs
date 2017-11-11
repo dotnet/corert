@@ -86,7 +86,7 @@ namespace Internal.Runtime.CompilerHelpers
             section->TypeManager = typeManager;
             section->ModuleIndex = moduleIndex;
 
-#if CORERT
+#if !PROJECTN
             // Initialize statics if any are present
             IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
@@ -141,7 +141,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-#if CORERT
+#if !PROJECTN
         private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
@@ -172,7 +172,7 @@ namespace Internal.Runtime.CompilerHelpers
                 }
             }
         }
-#endif // CORERT
+#endif // !PROJECTN
     }
 
     [StructLayout(LayoutKind.Sequential)]

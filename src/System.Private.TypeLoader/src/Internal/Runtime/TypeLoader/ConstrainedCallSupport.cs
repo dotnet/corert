@@ -36,7 +36,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
         private delegate IntPtr RuntimeCacheFuncSignatureDel(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult);
 
-#if !CORERT
+#if PROJECTN
         [DllImport("*", ExactSpelling = true, EntryPoint = "ConstrainedCallSupport_GetStubs")]
         private extern static unsafe void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
 #endif
@@ -54,7 +54,7 @@ namespace Internal.Runtime.TypeLoader
         static ConstrainedCallSupport()
         {
             // TODO: export this unmanaged API in CoreRT
-#if !CORERT
+#if PROJECTN
             ConstrainedCallSupport_GetStubs(out s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub,
                                             out s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
 #else

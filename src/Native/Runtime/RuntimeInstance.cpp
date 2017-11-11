@@ -715,7 +715,7 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
     }
 
     NewArrayHolder<UInt8> pGcStaticData;
-#ifndef CORERT
+#ifdef PROJECTN
     if (gcStaticDataSize > 0)
     {
         // The value of gcStaticDataSize is read from native layout info in the managed layer, where

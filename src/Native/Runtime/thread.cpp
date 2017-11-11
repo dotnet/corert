@@ -289,10 +289,10 @@ void Thread::Construct()
     m_numDynamicTypesTlsCells = 0;
     m_pDynamicTypesTlsCells = NULL;
 
-#if CORERT
+#ifndef PROJECTN
     m_pThreadLocalModuleStatics = NULL;
     m_numThreadLocalModuleStatics = 0;
-#endif // CORERT
+#endif // PROJECTN
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The 
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -380,7 +380,7 @@ void Thread::Destroy()
         delete[] m_pDynamicTypesTlsCells;
     }
 
-#if CORERT
+#ifndef PROJECTN
     if (m_pThreadLocalModuleStatics != NULL)
     {
         for (UInt32 i = 0; i < m_numThreadLocalModuleStatics; i++)
@@ -392,7 +392,7 @@ void Thread::Destroy()
         }
         delete[] m_pThreadLocalModuleStatics;
     }
-#endif // CORERT
+#endif // !PROJECTN
 
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
@@ -1199,7 +1199,7 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
     return pCurThread->GetThreadAbortException();
 }
 
-#if CORERT
+#ifndef PROJECTN
 Object* Thread::GetThreadStaticStorageForModule(UInt32 moduleIndex)
 {
     // Return a pointer to the TLS storage if it has already been
@@ -1282,7 +1282,7 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
     return (UInt8*)ThreadStore::RawGetCurrentThread();
 #endif // PLATFORM_UNIX
 }
-#endif // CORERT
+#endif // !PROJECTN
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)

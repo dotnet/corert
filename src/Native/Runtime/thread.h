@@ -93,10 +93,10 @@ struct ThreadBuffer
     UInt32          m_numDynamicTypesTlsCells;
     PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
 
-#if CORERT
+#ifndef PROJECTN
     PTR_PTR_VOID    m_pThreadLocalModuleStatics;
     UInt32          m_numThreadLocalModuleStatics;
-#endif // CORERT
+#endif // PROJECTN
 };
 
 struct ReversePInvokeFrame
@@ -261,10 +261,10 @@ public:
     Object * GetThreadAbortException();
     void SetThreadAbortException(Object *exception);
 
-#if CORERT
+#ifndef PROJECTN
     Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
     Boolean SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex);
-#endif // CORERT
+#endif // PROJECTN
 };
 
 #ifndef GCENV_INCLUDED
