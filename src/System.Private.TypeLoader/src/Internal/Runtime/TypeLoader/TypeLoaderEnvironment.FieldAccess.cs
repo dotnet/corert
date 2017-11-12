@@ -236,14 +236,14 @@ namespace Internal.Runtime.TypeLoader
                             }
                             else
                             {
-#if CORERT
+#if PROJECTN
+                                fieldOffset = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
+#else
                                 fieldOffset = 0;
                                 fieldAddressCookie = externalReferences.GetFieldAddressFromIndex(entryParser.GetUnsigned());
 
                                 if((entryFlags & FieldTableFlags.IsGcSection) != 0)
                                     fieldOffset = (int)entryParser.GetUnsigned();
-#else
-                                fieldOffset = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
 #endif
                             }
                         }

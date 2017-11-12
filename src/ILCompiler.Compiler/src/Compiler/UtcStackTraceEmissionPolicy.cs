@@ -122,7 +122,7 @@ namespace ILCompiler
         /// </summary>
         string GetAppExeDirectory()
         {
-#if !CORERT
+#if PROJECTN
             var process = Process.GetCurrentProcess();
             string fullPath = process.MainModule.FileName;
             return Path.GetDirectoryName(fullPath);
@@ -137,10 +137,7 @@ namespace ILCompiler
         /// </summary>
         void LoadExceptionFile(string exceptionFileName)
         {
-#if CORERT
-            Debug.Assert(false);
-            return;
-#else
+#if PROJECTN
             if (!File.Exists(exceptionFileName))
                 return;
 

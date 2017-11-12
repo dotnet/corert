@@ -214,7 +214,7 @@
   </Choose>
 
   <!-- Set up various other constants -->
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <PropertyGroup>
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)'=='true'">

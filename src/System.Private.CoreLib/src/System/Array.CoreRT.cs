@@ -957,7 +957,7 @@ namespace System
         //   correctness as well.
         private static EqualityComparer<T> GetComparerForReferenceTypesOnly<T>()
         {
-#if !CORERT
+#if PROJECTN
             // When T is a reference type or a universal canon type, then this will redirect to EqualityComparer<T>.Default.
             return null;
 #else

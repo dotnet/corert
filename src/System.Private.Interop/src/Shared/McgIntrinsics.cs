@@ -365,7 +365,7 @@ namespace System.Runtime.InteropServices
         // We need to call via an imported stub to do a stdcall without triggering GC
         // We can't use managed calli because the native target address could potentially satisfy a magic
         // bit check and causing the stub to believe it is a managed method which leads to crash.
-#if !RHTESTCL && !CORECLR && !CORERT
+#if !RHTESTCL && PROJECTN
         [MethodImplAttribute(InternalCall)]
 #if X86
         [RuntimeImport("*", "@StdCallCOOP0@8")]

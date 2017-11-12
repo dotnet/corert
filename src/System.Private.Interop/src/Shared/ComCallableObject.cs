@@ -1109,7 +1109,7 @@ namespace System.Runtime.InteropServices
         internal static void InitRefCountedHandleCallback()
         {
             // TODO: <https://github.com/dotnet/corert/issues/1596>
-#if !CORERT
+#if PROJECTN
             //
             // Register the callback to ref-counted handles
             // Inside this callback we'll determine whether the ref count handle to the target object
@@ -1482,7 +1482,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
             // TODO: Dynamic Boxing support
             // TODO: Optimize--it is possible that the following dynamic code is faster than above static code(CCWTemplate)
             // if we cann't find a interfaceType for giving guid, try to enumerate all interfaces implemented by this target object to see anyone matchs given guid

@@ -1313,7 +1313,12 @@ namespace Internal.Reflection.Execution
                         else
                         {
                             Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
-#if CORERT
+#if PROJECTN
+                            // The fieldAccessMetadata.Offset value is not really a field offset, but a static field RVA. We'll use the
+                            // field's address as a 'staticsBase', and just use a field offset of zero.
+                            fieldOffset = 0;
+                            staticsBase = TypeLoaderEnvironment.RvaToNonGenericStaticFieldAddress(fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
+#else
                             if (isGcStatic)
                             {
                                 fieldOffset = fieldAccessMetadata.Offset;
@@ -1326,11 +1331,6 @@ namespace Internal.Reflection.Execution
                                 fieldOffset = 0;
                                 staticsBase = fieldAccessMetadata.Cookie;
                             }
-#else
-                            // The fieldAccessMetadata.Offset value is not really a field offset, but a static field RVA. We'll use the
-                            // field's address as a 'staticsBase', and just use a field offset of zero.
-                            fieldOffset = 0;
-                            staticsBase = TypeLoaderEnvironment.RvaToNonGenericStaticFieldAddress(fieldAccessMetadata.MappingTableModule, fieldAccessMetadata.Offset);
 #endif
                         }
 

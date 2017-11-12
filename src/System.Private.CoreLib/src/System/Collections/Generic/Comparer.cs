@@ -21,13 +21,13 @@ namespace System.Collections.Generic
         [Intrinsic]
         private static Comparer<T> Create()
         {
-#if CORERT
-            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
-            return (_default = new DefaultComparer<T>());
-#else
+#if PROJECTN
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
             throw new NotSupportedException();
+#else
+            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
+            return (_default = new DefaultComparer<T>());
 #endif
         }
 

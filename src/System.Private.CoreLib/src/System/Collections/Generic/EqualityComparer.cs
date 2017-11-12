@@ -22,13 +22,13 @@ namespace System.Collections.Generic
         [Intrinsic]
         private static EqualityComparer<T> Create()
         {
-#if CORERT
-            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
-            return (_default = new DefaultEqualityComparer<T>());
-#else
+#if PROJECTN
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
             throw new NotSupportedException();
+#else
+            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
+            return (_default = new DefaultEqualityComparer<T>());
 #endif
         }
 

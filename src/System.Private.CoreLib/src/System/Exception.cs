@@ -452,7 +452,7 @@ namespace System
 
                 // CORERT-TODO: RhpEtwExceptionThrown
                 // https://github.com/dotnet/corert/issues/2457
-#if !CORERT
+#if PROJECTN
                 if (isFirstFrame)
                 {
                     string typeName = !outOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";

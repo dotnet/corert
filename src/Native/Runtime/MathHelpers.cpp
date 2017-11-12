@@ -15,8 +15,8 @@ EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpDbl2ULng(double val)
     return((UInt64)val);
 }
 
-// CORERT Specific - on Project N the arguments to these helpers are inverted
-#ifdef CORERT
+// On ProjectN the arguments to these helpers are inverted
+#ifndef PROJECTN
 #undef min
 #undef max
 #include <cmath>
@@ -80,7 +80,7 @@ EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRound(float value)
     return roundf(value);
 }
 
-#endif // CORERT
+#endif // !PROJECTN
 
 #ifdef _ARM_
 EXTERN_C REDHAWK_API Int32 REDHAWK_CALLCONV RhpIDiv(Int32 i, Int32 j)

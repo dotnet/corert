@@ -680,7 +680,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-#if !RHTESTCL && !CORECLR && !CORERT && ENABLE_WINRT
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
             // Dynamic boxing support
             // TODO: Consider to use the field boxingStub for all projected reference types.
             // TODO: now it is only used for boxing "System.Uri".

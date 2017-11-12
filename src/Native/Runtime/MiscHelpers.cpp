@@ -185,9 +185,7 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 {
-#if CORERT
-    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-#else
+#if PROJECTN
 #if EETYPE_TYPE_MANAGER
     if (pEEType->HasTypeManager())
         return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
@@ -210,14 +208,14 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
     // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
     RhFailFast();
     return NULL;
-#endif // !CORERT
+#else
+    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+#endif // PROJECTN
 }
 
 COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (EEType * pEEType))
 {
-#if CORERT
-    return *pEEType->GetTypeManagerPtr();
-#else
+#if PROJECTN
 #if EETYPE_TYPE_MANAGER
     if (pEEType->HasTypeManager())
         return *pEEType->GetTypeManagerPtr();
@@ -244,7 +242,9 @@ COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (EEType * pEEType)
     // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
     RhFailFast();
     return TypeManagerHandle::Null();
-#endif // !CORERT
+#else
+    return *pEEType->GetTypeManagerPtr();
+#endif // PROJECTN
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
@@ -268,7 +268,7 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
 
         return pBlob != NULL;
     }
-#if !CORERT
+#if PROJECTN
     else
     {
         HANDLE hOsModule = typeManagerHandle.AsOsModule();
@@ -307,7 +307,7 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
         }
         END_FOREACH_MODULE
     }
-#endif // !CORERT
+#endif // PROJECTN
 
     // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
     // (which could lead to the wrong blob being returned in some cases).
@@ -384,7 +384,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, U
     }
     else
     {
-#if EETYPE_TYPE_MANAGER && !CORERT  /* TODO: CORERT */
+#if EETYPE_TYPE_MANAGER && PROJECTN /* TODO: CORERT */
         if (pEEType->HasTypeManager())
         {
             TypeManager* pTypeManager = pEEType->GetTypeManagerPtr()->AsTypeManager();
