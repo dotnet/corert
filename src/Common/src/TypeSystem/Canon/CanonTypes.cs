@@ -71,8 +71,6 @@ namespace Internal.TypeSystem
 
         public override bool IsExplicitLayout => false;
 
-        public override bool IsSealed => true;
-
         public override ModuleDesc Module => _context.SystemModule;
 
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
@@ -127,6 +125,8 @@ namespace Internal.TypeSystem
                 return _Name;
             }
         }
+
+        public override bool IsSealed => false;
 
         public CanonType(TypeSystemContext context)
             : base(context)
@@ -220,6 +220,8 @@ namespace Internal.TypeSystem
                 return _Name;
             }
         }
+
+        public override bool IsSealed => true;
 
         public UniversalCanonType(TypeSystemContext context)
             : base(context)
