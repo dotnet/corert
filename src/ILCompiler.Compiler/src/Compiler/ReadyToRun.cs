@@ -24,6 +24,7 @@ namespace ILCompiler
         ThrowDivZero                = 0x26,
         ThrowArgumentOutOfRange     = 0x27,
         ThrowArgument               = 0x28,
+        ThrowPlatformNotSupported   = 0x29,
 
         DebugBreak                  = 0x2F,
 

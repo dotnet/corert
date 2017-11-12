@@ -23,6 +23,7 @@ struct JitInterfaceCallbacks
     void* (* getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     void* (* resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
+    void* (* getUnboxedEntry)(void * thisHandle, CorInfoException** ppException, void* ftn, bool* requiresInstMethodTableArg);
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
@@ -299,6 +300,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass, ownerType);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getUnboxedEntry(void* ftn, bool* requiresInstMethodTableArg)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
         if (pException != nullptr)
             throw pException;
         return _ret;
