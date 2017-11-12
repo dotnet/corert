@@ -28,6 +28,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.Interop.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Interop.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.Sorting.cs">
       <Link>TypeSystem\Canon\CanonTypes.Sorting.cs</Link>
     </Compile>
