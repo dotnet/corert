@@ -10,7 +10,6 @@ set(COMMON_RUNTIME_SOURCES
     EHHelpers.cpp
     event.cpp
     FinalizerHelpers.cpp
-    gcdump.cpp
     GCHelpers.cpp
     gcheaputilities.cpp
     GCMemoryHelpers.cpp
@@ -21,14 +20,12 @@ set(COMMON_RUNTIME_SOURCES
     HandleTableHelpers.cpp
     MathHelpers.cpp
     MiscHelpers.cpp
-    module.cpp
     TypeManager.cpp
     ObjectLayout.cpp
     OptionalFieldsRuntime.cpp
     portable.cpp
     profheapwalkhelper.cpp
     RestrictedCallouts.cpp
-    RHCodeMan.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
     RWLock.cpp
@@ -42,6 +39,11 @@ set(COMMON_RUNTIME_SOURCES
     thread.cpp
     threadstore.cpp
     UniversalTransitionHelpers.cpp
+
+    # ProjectN only
+    # gcdump.cpp
+    # module.cpp
+    # RHCodeMan.cpp
 
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp

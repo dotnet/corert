@@ -250,6 +250,7 @@ typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 
 PTR_RuntimeInstance GetRuntimeInstance();
 
+#ifdef PROJECTN
 
 #define FOREACH_MODULE(p_module_name)                       \
 {                                                           \
@@ -262,3 +263,9 @@ PTR_RuntimeInstance GetRuntimeInstance();
     }                       \
 }                           \
 
+#else // PROJECTN
+
+#define FOREACH_MODULE(p_module_name) { Module * p_module_name = NULL; while (p_module_name != NULL) {
+#define END_FOREACH_MODULE            } }
+
+#endif // PROJECTN

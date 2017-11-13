@@ -185,66 +185,62 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 {
-#if PROJECTN
-#if EETYPE_TYPE_MANAGER
-    if (pEEType->HasTypeManager())
-        return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-#endif
-
-    // For dynamically created types, return the module handle that contains the template type
-    if (pEEType->IsDynamicType())
-        pEEType = pEEType->get_DynamicTemplateType();
-
-    if (pEEType->get_DynamicModule() != nullptr)
-        return nullptr;
-
-    FOREACH_MODULE(pModule)
+#ifdef PROJECTN
+    if (!pEEType->HasTypeManager())
     {
-        if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
-            return pModule->GetOsModuleHandle();
-    }
-    END_FOREACH_MODULE
+        // For dynamically created types, return the module handle that contains the template type
+        if (pEEType->IsDynamicType())
+            pEEType = pEEType->get_DynamicTemplateType();
 
-    // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
-    RhFailFast();
-    return NULL;
-#else
-    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+        if (pEEType->get_DynamicModule() != nullptr)
+            return nullptr;
+
+        FOREACH_MODULE(pModule)
+        {
+            if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
+                return pModule->GetOsModuleHandle();
+        }
+        END_FOREACH_MODULE
+
+        // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
+        RhFailFast();
+       return NULL;
+    }
 #endif // PROJECTN
+
+    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
 }
 
 COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (EEType * pEEType))
 {
-#if PROJECTN
-#if EETYPE_TYPE_MANAGER
-    if (pEEType->HasTypeManager())
-        return *pEEType->GetTypeManagerPtr();
-#endif
-
-    // For dynamically created types, return the module handle that contains the template type
-    if (pEEType->IsDynamicType())
-        pEEType = pEEType->get_DynamicTemplateType();
-
-    if (pEEType->get_DynamicModule() != nullptr)
+#ifdef PROJECTN
+    if (!pEEType->HasTypeManager())
     {
+        // For dynamically created types, return the module handle that contains the template type
+        if (pEEType->IsDynamicType())
+            pEEType = pEEType->get_DynamicTemplateType();
+
+        if (pEEType->get_DynamicModule() != nullptr)
+        {
+            // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
+            RhFailFast();
+            return TypeManagerHandle::Null();
+        }
+
+        FOREACH_MODULE(pModule)
+        {
+            if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
+                return TypeManagerHandle::Create(pModule->GetOsModuleHandle());
+        }
+        END_FOREACH_MODULE
+
         // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
         RhFailFast();
         return TypeManagerHandle::Null();
     }
-
-    FOREACH_MODULE(pModule)
-    {
-        if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
-            return TypeManagerHandle::Create(pModule->GetOsModuleHandle());
-    }
-    END_FOREACH_MODULE
-
-    // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
-    RhFailFast();
-    return TypeManagerHandle::Null();
-#else
-    return *pEEType->GetTypeManagerPtr();
 #endif // PROJECTN
+
+    return *pEEType->GetTypeManagerPtr();
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
@@ -822,3 +818,9 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 }
 
 #endif // PLATFORM_UNIX
+
+EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
+{
+    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
+    return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
+}
