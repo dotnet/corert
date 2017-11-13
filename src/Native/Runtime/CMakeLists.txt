@@ -100,7 +100,7 @@ if(WIN32)
 else()
 
   include_directories(unix)
-  if(!WASM)
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
     include_directories(../libunwind/include)
   else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
@@ -120,14 +120,9 @@ else()
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
     unix/UnixNativeCodeManager.cpp
-  )
-
-  if(!WASM)
-    list(APPEND FULL_RUNTIME_SOURCES
       ../libunwind/src/Unwind-EHABI.cpp
       ../libunwind/src/libunwind.cpp
-    )
-  endif()
+  )
 
   if(CLR_CMAKE_PLATFORM_DARWIN)
     list(APPEND FULL_RUNTIME_SOURCES
@@ -146,16 +141,13 @@ else()
     set(ARCH_SOURCES_DIR i386)
   elseif(CLR_CMAKE_PLATFORM_ARCH_WASM)
     set(ARCH_SOURCES_DIR wasm)
-# Using C++ as our "assembly" language for WASM until we figure out how to compile WAST
-    set(ASM_SUFFIX cpp) 
   endif()
 
-  if(!WASM)
-    list(APPEND RUNTIME_SOURCES_ARCH_ASM
-      ../libunwind/src/UnwindRegistersRestore.S
-      ../libunwind/src/UnwindRegistersSave.S
-    )
-  endif()
+
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ../libunwind/src/UnwindRegistersRestore.S
+    ../libunwind/src/UnwindRegistersSave.S
+  )
 endif()
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
@@ -229,6 +221,8 @@ convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
 
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
-add_subdirectory(Full)
+if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
+    add_subdirectory(Full)
+endif()
 
 add_subdirectory(Portable)

@@ -627,7 +627,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
         internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
 
-#if PLATFORM_UNIX || WASM
+#if PLATFORM_UNIX
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
         internal static extern bool RhSetThreadExitCallback(IntPtr pCallback);

@@ -249,10 +249,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
-#elif defined(_TARGET_WASM_)
-    UNREFERENCED_PARAMETER(pPreservedRegsCursor);
-    PORTABILITY_ASSERT("@TODO: FIXME:WASM");
-
 #else // _TARGET_ARM_
     if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }

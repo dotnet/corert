@@ -5,16 +5,6 @@
 #ifndef __COMMONMACROS_H__
 #define __COMMONMACROS_H__
 
-// Some of our header files are shared with the binder, which needs the _TARGET_* macros defined
-#if defined(_TARGET_AMD64_)
-#elif defined(_TARGET_X86_)
-#elif defined(_TARGET_ARM_)
-#elif defined(_TARGET_ARM64_)
-#elif defined(_TARGET_WASM_)
-#else
-#error Unsupported architecture
-#endif
-
 #define EXTERN_C extern "C"
 #define FASTCALL __fastcall
 #define STDCALL __stdcall
