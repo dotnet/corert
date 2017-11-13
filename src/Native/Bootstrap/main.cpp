@@ -262,6 +262,7 @@ extern "C" void __fail_fast()
 extern "C" bool RhInitialize();
 extern "C" void RhpEnableConservativeStackReporting();
 extern "C" void RhpShutdown();
+extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 #ifndef CPPCODEGEN
 
@@ -293,8 +294,6 @@ static const pfn c_classlibFunctions[] = {
 #endif // !CPPCODEGEN
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
-extern "C" int InitializeRuntime();
-extern "C" int (*InitializeRuntimePtr)();
 
 #ifndef CORERT_DLL
 #if defined(_WIN32)
@@ -304,43 +303,6 @@ extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 #else
 extern "C" void __managed__Startup();
-#endif // !CORERT_DLL
-
-#ifndef CORERT_DLL
-#if defined(_WIN32)
-int __cdecl wmain(int argc, wchar_t* argv[])
-#else
-int main(int argc, char* argv[])
-#endif
-{
-    int initval = InitializeRuntime();
-    if (initval != 0)
-        return initval;
-
-    int retval;
-#ifdef CPPCODEGEN
-    try
-#endif
-    {
-#ifndef CORERT_DLL
-        retval = __managed__Main(argc, argv);
-#else
-        retval = 0;
-#endif // !CORERT_DLL
-    }
-#ifdef CPPCODEGEN
-    catch (const char* &e)
-    {
-        printf("Call to an unimplemented runtime method; execution cannot continue.\n");
-        printf("Method: %s\n", e);
-        retval = -1;
-    }
-#endif
-
-    RhpShutdown();
-
-    return retval;
-}
 #endif // !CORERT_DLL
 
 int InitializeRuntime()
@@ -383,12 +345,49 @@ int InitializeRuntime()
     return 0;
 }
 
+#ifndef CORERT_DLL
+#if defined(_WIN32)
+int __cdecl wmain(int argc, wchar_t* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
+{
+    int initval = InitializeRuntime();
+    if (initval != 0)
+        return initval;
+
+    int retval;
+#ifdef CPPCODEGEN
+    try
+#endif
+    {
+#ifndef CORERT_DLL
+        retval = __managed__Main(argc, argv);
+#else
+        retval = 0;
+#endif // !CORERT_DLL
+    }
+#ifdef CPPCODEGEN
+    catch (const char* &e)
+    {
+        printf("Call to an unimplemented runtime method; execution cannot continue.\n");
+        printf("Method: %s\n", e);
+        retval = -1;
+    }
+#endif
+
+    RhpShutdown();
+
+    return retval;
+}
+#endif // !CORERT_DLL
+
 #ifdef CORERT_DLL
 static struct InitializeRuntimePointerHelper
 {
 	InitializeRuntimePointerHelper()
 	{
-        InitializeRuntimePtr = &InitializeRuntime;
+        RhSetRuntimeInitializationCallback(&InitializeRuntime);
 	}
 } initializeRuntimePointerHelper;
 #endif // CORERT_DLL
