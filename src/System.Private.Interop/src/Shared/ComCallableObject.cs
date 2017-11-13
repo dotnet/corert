@@ -1109,7 +1109,7 @@ namespace System.Runtime.InteropServices
         internal static void InitRefCountedHandleCallback()
         {
             // TODO: <https://github.com/dotnet/corert/issues/1596>
-#if PROJECTN
+#if PROJECTN || CORECLR
             //
             // Register the callback to ref-counted handles
             // Inside this callback we'll determine whether the ref count handle to the target object
