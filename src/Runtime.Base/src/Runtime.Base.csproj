@@ -110,7 +110,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsets.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
