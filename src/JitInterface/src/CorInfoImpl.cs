@@ -2667,6 +2667,7 @@ namespace Internal.JitInterface
                 entryPoint = GetHelperFtnUncached(ftnNum);
                 _helperCache.Add(ftnNum, entryPoint);
             }
+            ppIndirection = null;
             return (void*)ObjectToHandle(entryPoint);
         }
 
