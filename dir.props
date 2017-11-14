@@ -135,7 +135,7 @@
     <!-- Use the shared tools host and runtime for testing -->
     <TestHostRootPath Condition="'$(TestHostRootPath)' == ''">$(DotnetCliPath)</TestHostRootPath>
 
-    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(OSPlatformConfig)/$(MSBuildProjectName)/</PackageOutputPath>
+    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(OSPlatformConfig)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
 
     <!-- Folder where we will drop the Nuget package for the toolchain -->
