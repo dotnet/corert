@@ -147,12 +147,13 @@ DLL_EXPORT int __stdcall VerifyAnsiString(char *val)
     return CompareAnsiString(val, "Hello World");
 }
 
-void CopyAnsiString(char *dst, char *src)
+void CopyAnsiString(char *dst, const char *src)
 {
     if (src == NULL || dst == NULL)
         return;
 
-    char *p = dst, *q = src;
+    const char *q = src;
+    char *p = dst;
     while (*q)
     {
         *p++ = *q++;
@@ -470,7 +471,7 @@ DLL_EXPORT void __stdcall StructTest_ByRef(NativeSequentialStruct *nss)
     nss->b++;
 
     char *p = nss->str;
-    while (*p != NULL)
+    while (*p != '\0')
     {
         *p = *p + 1;
         p++;

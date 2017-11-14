@@ -729,7 +729,7 @@ namespace System
             {
                 throw new OverflowException(SR.Overflow_Byte, e);
             }
-            if (temp < Byte.MinValue || temp > Byte.MaxValue) throw new OverflowException(SR.Overflow_Byte);
+            if (temp != (byte)temp) throw new OverflowException(SR.Overflow_Byte);
             return (byte)temp;
         }
 
@@ -749,7 +749,7 @@ namespace System
             {
                 throw new OverflowException(SR.Overflow_SByte, e);
             }
-            if (temp < SByte.MinValue || temp > SByte.MaxValue) throw new OverflowException(SR.Overflow_SByte);
+            if (temp != (sbyte)temp) throw new OverflowException(SR.Overflow_SByte);
             return (sbyte)temp;
         }
 
@@ -768,7 +768,7 @@ namespace System
             {
                 throw new OverflowException(SR.Overflow_Int16, e);
             }
-            if (temp < Int16.MinValue || temp > Int16.MaxValue) throw new OverflowException(SR.Overflow_Int16);
+            if (temp != (short)temp) throw new OverflowException(SR.Overflow_Int16);
             return (short)temp;
         }
 
@@ -842,7 +842,7 @@ namespace System
             {
                 throw new OverflowException(SR.Overflow_UInt16, e);
             }
-            if (temp < UInt16.MinValue || temp > UInt16.MaxValue) throw new OverflowException(SR.Overflow_UInt16);
+            if (temp != (ushort)temp) throw new OverflowException(SR.Overflow_UInt16);
             return (ushort)temp;
         }
 

@@ -390,7 +390,7 @@ namespace Internal.NativeFormat
             }
             set
             {
-                Debug.Assert(value >= 0 && value < _reader.Size);
+                Debug.Assert(value < _reader.Size);
                 _offset = value;
             }
         }
