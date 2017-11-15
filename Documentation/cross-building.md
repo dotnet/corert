@@ -93,21 +93,13 @@ cp ${WORKING_DIR}/libarmelnonjit.so ${WORKING_DIR}/libclrjitilc.so
 # cp ${WORKING_DIR}/libprotojit.so ${WORKING_DIR}/libclrjitilc.so
 ```
 
-6. Build libobjwriter. You have to compile it on x86 chroot. Before compiling put coreclr/bin/Product/Linux.x86.Debug/ to some folder on x86 chroot as well. Versions which to used are mentioned on GitHub:
-https://github.com/dotnet/corert/issues/3776#issuecomment-337682166
-
-   And apply patch:
-https://gist.github.com/alpencolt/ec75fcc05d8c4ffbf143a052f7c115a8
-```
-mkdir build
-cd build
-cmake ../ -DWITH_CORECLR=../../coreclr/bin/Product/Linux.x86.Debug/ -DLLVM_TARGET_ARCH="ARM;X86" -DLLVM_TARGETS_TO_BUILD="ARM;X86" -DLLVM_DEFAULT_TARGET_TRIPLE=thumbv7-linux-gnueabi -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_LLVM_DYLIB=1 -DLLVM_LINK_LLVM_DYLIB=1 -DLLVM_OPTIMIZED_TABLEGEN=1 -DHAVE_POSIX_SPAWN=0 -DLLVM_ENABLE_PIC=1 -DLLVM_BUILD_TESTS=0 -DLLVM_ENABLE_DOXYGEN=0 -DLLVM_INCLUDE_DOCS=0 -DLLVM_INCLUDE_TESTS=0 -DLLVM_BINUTILS_INCDIR=/usr/include
-make -j8 objwriter
-```
+6. [Build ObjectWriter library](how-to-build-ObjectWriter.md). You have to compile it on x86 chroot.
 
 7. And to execute use:
 ```
-./corerun ilc.dll --codegenopt "AltJitNgen=* AltJit=*" --verbose @Hello.ilc.rsp
+./corerun ilc.dll --codegenopt "AltJitNgen=*" --verbose @Hello.ilc.rsp
+# Any other options to RyuJIT could be passed via --codegenopt argument, e.g.:
+#./corerun ilc.dll --codegenopt "AltJitNgen=*" --codegenopt "NgenDisasm=*" --verbose @Hello.ilc.rsp
 
 # For linking
 clang-3.9 -target arm-linux-gnueabi --sysroot=corert/cross/rootfs/armel -Bcorert/cross/rootfs/armel/usr/lib/gcc/armv7l-tizen-linux-gnueabi/6.2.1 -Lcorert/cross/rootfs/armel/usr/lib/gcc/armv7l-tizen-linux-gnueabi/6.2.1 Hello.o -o Hello corert/bin/Linux.armel.Debug/sdk/libbootstrapper.a corert/bin/Linux.armel.Debug/sdk/libRuntime.a corert/bin/Linux.armel.Debug/sdk/libSystem.Private.CoreLib.Native.a corert/bin/Linux.armel.Debug/framework/System.Native.a corert/bin/Linux.armel.Debug/framework/libSystem.Globalization.Native.a -g -Wl,-rpath,'$ORIGIN' -pthread -lstdc++ -ldl -lm -luuid -lrt -fPIC

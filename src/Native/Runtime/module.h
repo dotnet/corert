@@ -13,6 +13,8 @@ struct VSDInterfaceTargetInfo;
 class DispatchMap;
 struct BlobHeader;
 
+#ifdef PROJECTN
+
 class Module : public ICodeManager
 {
     friend class AsmOffsets;
@@ -144,3 +146,50 @@ private:
     ReaderWriterLock            m_loopHijackMapLock;
     MapSHash<UInt32, void*>     m_loopHijackIndexToTargetMap;
 };
+
+#else // PROJECTN
+
+// Stubbed out implementation of "Module" code manager. The "Module" code managed is needed for MDIL binder
+// generated binaries in ProjectN only.
+
+class Module : public ICodeManager
+{
+    friend struct DefaultSListTraits<Module>;
+    friend class RuntimeInstance;
+
+public:
+    static Module * Create(ModuleHeader *pModuleHeader) { return NULL; }
+    void Destroy() { }
+
+    bool ContainsCodeAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsDataAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsReadOnlyDataAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsStubAddress(PTR_VOID pvAddr) { return false; }
+
+    static void EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, PTR_StaticGcDesc pStaticGcInfo, PTR_UInt8 pbStaticData) { }
+    void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData) { }
+
+    bool IsClasslibModule() { return false; }
+    void * GetClasslibInitializeFinalizerThread() { return NULL; }
+
+    bool IsContainedBy(HANDLE hOsHandle) { return false; }
+
+    DispatchMap ** GetDispatchMapLookupTable() { return NULL; }
+
+    PTR_ModuleHeader GetModuleHeader() { return NULL; }
+
+    EEType * GetArrayBaseType() { return NULL; }
+
+    bool IsFinalizerInitComplete() { return false; }
+    void SetFinalizerInitComplete() { }
+
+    void UnsynchronizedResetHijackedLoops() { }
+    void UnsynchronizedHijackAllLoops() { }
+
+    void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader) { return NULL; }
+
+private:
+    PTR_Module m_pNext;
+};
+
+#endif // PROJECTN

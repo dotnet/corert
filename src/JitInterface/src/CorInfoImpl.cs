@@ -948,6 +948,9 @@ namespace Internal.JitInterface
             }
         }
 
+        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)
+        { throw new NotImplementedException(); }
+
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             // TODO: EqualityComparer optimizations
@@ -2562,6 +2565,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO: id = ReadyToRunHelper.ThrowDivZero; break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION: id = ReadyToRunHelper.ThrowArgumentOutOfRange; break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION: id = ReadyToRunHelper.ThrowArgument; break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED: id = ReadyToRunHelper.ThrowPlatformNotSupported; break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF: id = ReadyToRunHelper.WriteBarrier; break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF: id = ReadyToRunHelper.CheckedWriteBarrier; break;
@@ -2663,6 +2667,7 @@ namespace Internal.JitInterface
                 entryPoint = GetHelperFtnUncached(ftnNum);
                 _helperCache.Add(ftnNum, entryPoint);
             }
+            ppIndirection = null;
             return (void*)ObjectToHandle(entryPoint);
         }
 

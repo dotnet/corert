@@ -143,25 +143,25 @@ inline DispatchMap * EEType::GetDispatchMap()
             return get_DynamicTemplateType()->GetDispatchMap();
     }
 
-    // Determine this EEType's module.
-    RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
-
-#if defined(EETYPE_TYPE_MANAGER)
-    if (HasTypeManager())
+#ifdef PROJECTN
+    if (!HasTypeManager())
     {
-        return GetTypeManagerPtr()->AsTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
+        // Determine this EEType's module.
+        RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
+
+        // handle case of R2R cloned string type correctly - the cloned string type is just a copy
+        // of the real string type, with the optional fields in the library. So for consistency,
+        // we need to find the module from the optional fields
+        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(optionalFields);
+        if (pModule == NULL)
+            pModule = pRuntimeInstance->FindModuleByDataAddress(optionalFields);
+        ASSERT(pModule != NULL);
+
+        return pModule->GetDispatchMapLookupTable()[idxDispatchMap];
     }
-#endif
+#endif // PROJECTN
 
-    // handle case of R2R cloned string type correctly - the cloned string type is just a copy
-    // of the real string type, with the optional fields in the library. So for consistency,
-    // we need to find the module from the optional fields
-    Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(optionalFields);
-    if (pModule == NULL)
-        pModule = pRuntimeInstance->FindModuleByDataAddress(optionalFields);
-    ASSERT(pModule != NULL);
-
-    return pModule->GetDispatchMapLookupTable()[idxDispatchMap];
+    return GetTypeManagerPtr()->AsTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
 }
 #endif // !BINDER && !DACCESS_COMPILE
 

@@ -20,7 +20,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
-#if PROJECTN
+#if PROJECTN || CORECLR
             __vtable_IUnknown.Initialize();
             McgModuleManager.Initialize();
 #endif
