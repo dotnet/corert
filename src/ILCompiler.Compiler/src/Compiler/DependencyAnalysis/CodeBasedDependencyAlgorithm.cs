@@ -100,6 +100,48 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
+
+            if (method.IsIntrinsic && factory.Target.Abi != TargetAbi.ProjectN)
+            {
+                if (method.OwningType is MetadataType owningType)
+                {
+                    string name = method.Name;
+
+                    switch (name)
+                    {
+                        // The general purpose code in Comparer/EqualityComparer Create method depends on the template
+                        // type loader being able to load the necessary types at runtime.
+                        case "Create":
+                            if (method.IsSharedByGenericInstantiations
+                                && owningType.Module == factory.TypeSystemContext.SystemModule
+                                && owningType.Namespace == "System.Collections.Generic")
+                            {
+                                TypeDesc[] templateDependencies = null;
+
+                                if (owningType.Name == "Comparer`1")
+                                {
+                                    templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialComparersForType(
+                                        owningType.Instantiation[0]);
+                                }
+                                else if (owningType.Name == "EqualityComparer`1")
+                                {
+                                    templateDependencies = Internal.IL.Stubs.ComparerIntrinsics.GetPotentialEqualityComparersForType(
+                                        owningType.Instantiation[0]);
+                                }
+
+                                if (templateDependencies != null)
+                                {
+                                    dependencies = dependencies ?? new DependencyList();
+                                    foreach (TypeDesc templateType in templateDependencies)
+                                    {
+                                        dependencies.Add(factory.NativeLayout.TemplateTypeLayout(templateType), "Generic comparer");
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
         }
     }
 }

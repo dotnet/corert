@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System;
-using System.Collections;
 using System.Runtime.CompilerServices;
+
+using Internal.IntrinsicSupport;
 
 namespace System.Collections.Generic
 {
@@ -27,8 +27,10 @@ namespace System.Collections.Generic
             // instantiation-specific implementation.
             throw new NotSupportedException();
 #else
-            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
-            return (_default = new DefaultEqualityComparer<T>());
+            // The compiler will overwrite the Create method with optimized
+            // instantiation-specific implementation.
+            // This body serves as a fallback when instantiation-specific implementation is unavailable.
+            return (_default = EqualityComparerHelpers.GetUnknownEquatableComparer<T>());
 #endif
         }
 
@@ -38,6 +40,7 @@ namespace System.Collections.Generic
 
         public static EqualityComparer<T> Default
         {
+            [Intrinsic]
             get
             {
                 // Lazy initialization produces smaller code for CoreRT than initialization in constructor
