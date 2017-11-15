@@ -13,11 +13,6 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     public static partial class StartupCodeHelpers
     {
-        public static IntPtr[] OSModules
-        {
-            get; private set;
-        }
-
         public static TypeManagerHandle[] Modules
         {
             get; private set;
@@ -37,7 +32,6 @@ namespace Internal.Runtime.CompilerHelpers
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
             Modules = modules;
-            OSModules = new IntPtr[] { osModule };
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -45,6 +39,24 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 InitializeEagerClassConstructorsForModule(modules[i]);
             }
+        }
+
+        /// <summary>
+        /// Return the number of registered logical modules; optionally copy them into an array.
+        /// </summary>
+        /// <param name="outputModules">Array to copy logical modules to, null = only return logical module count</param>
+        internal static int GetLoadedModules(TypeManagerHandle[] outputModules)
+        {
+            int moduleCount = (Modules != null ? Modules.Length : 0);
+            if (outputModules != null)
+            {
+                int copyLimit = (moduleCount < outputModules.Length ? moduleCount : outputModules.Length);
+                for (int copyIndex = 0; copyIndex < copyLimit; copyIndex++)
+                {
+                    outputModules[copyIndex] = Modules[copyIndex];
+                }
+            }
+            return moduleCount;
         }
 
         private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)

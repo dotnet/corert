@@ -122,52 +122,6 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
     return cModules;
 }
 
-// Get the list of currently loaded Redhawk modules (as OS HMODULE handles or TypeManager pointers as appropriate).
-//  The caller provides a reference
-// to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
-// that is less than, equal to or greater than the number of elements in the array). If there are more modules
-// loaded than the array will hold then the array is filled to capacity and the caller can tell further
-// modules are available based on the return count. It is also possible to call this method without an array,
-// in which case just the module count is returned (note that it's still possible for the module count to
-// increase between calls to this method).
-COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
-{
-    // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
-
-    // If a result array is passed then it should be an array type with pointer-sized components that are not
-    // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->get_ComponentSize() == sizeof(void*));
-
-    UInt32 cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
-    TypeManagerHandle * pResultElements = pResultArray ? (TypeManagerHandle*)(pResultArray + 1) : NULL;
-
-    UInt32 cModules = 0;
-
-    FOREACH_MODULE(pModule)
-    {
-        if (pResultArray && (cModules < cResultArrayElements))
-            pResultElements[cModules] = TypeManagerHandle::Create(pModule->GetOsModuleHandle());
-
-        cModules++;
-    }
-    END_FOREACH_MODULE
-
-    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
-
-    RuntimeInstance::TypeManagerList typeManagers = GetRuntimeInstance()->GetTypeManagerList();
-    
-    for (RuntimeInstance::TypeManagerList::Iterator iter = typeManagers.Begin(); iter != typeManagers.End(); iter++)
-    {
-        if (pResultArray && (cModules < cResultArrayElements))
-            pResultElements[cModules] = TypeManagerHandle::Create(iter->m_pTypeManager);
-        cModules++;
-    }
-
-    return cModules;
-}
-
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
     Module * pModule = GetRuntimeInstance()->FindModuleByAddress(pPointerVal);
