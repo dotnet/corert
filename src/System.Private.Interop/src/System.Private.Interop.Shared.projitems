@@ -34,7 +34,6 @@
     <Compile Include="Shared\McgIntrinsics.cs" />
     <Compile Include="Shared\McgInternalTypeAttribute.cs" />
     <Compile Include="Shared\McgMarshal.cs" />
-    <Compile Include="Shared\McgMethodNameAttribute.cs" />
     <Compile Include="Shared\McgModule.cs" />
     <Compile Include="Shared\McgModuleManager.cs" />
     <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
