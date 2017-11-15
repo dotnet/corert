@@ -100,6 +100,11 @@ namespace ILCompiler
             default:
                 throw new NotImplementedException();
             }
+
+            // Workaround for https://github.com/dotnet/corefx/issues/25267
+            // If pointer size is 8, we're obviously not an X86 process...
+            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
+                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private ArgumentSyntax ParseCommandLine(string[] args)
