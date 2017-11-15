@@ -214,12 +214,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
-            return (int)RuntimeImports.RhGetLoadedModules(resultArray);
-        }
-
-        public static int GetLoadedOSModules(IntPtr[] resultArray)
-        {
-            return (int)RuntimeImports.RhGetLoadedOSModules(resultArray);
+            return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules(resultArray);
         }
 
         public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
