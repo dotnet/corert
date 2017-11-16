@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -250,54 +251,38 @@ namespace ILVerify
             return false;
         }
 
-        private const string PUBLIC_KEY = "PublicKey=";
-
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
         {
             var assembly = (EcmaAssembly)module;
-            var friendAssembly = (IAssemblyDesc)friendModule;
-
-            var friendName = friendAssembly.GetName();
-            var friendPublicKey = friendName.GetPublicKey();
+            var friendName = ((IAssemblyDesc)friendModule).GetName();
 
             foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
             {
-                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(',');
-                if (friendValues.Length >= 1 && friendValues.Length <= 2)
-                {
-                    string friendToName = friendValues[0].Trim();
-                    if (friendToName != friendName.Name)
-                        continue;
+                AssemblyName friendAttributeName = new AssemblyName((string)attribute.FixedArguments[0].Value);
+                if (friendName.Name != friendAttributeName.Name)
+                    continue;
 
-                    if (friendValues.Length == 2)
-                    {
-                        string friendToPublicKey = friendValues[1].Trim();
-                        if (!friendToPublicKey.StartsWith(PUBLIC_KEY) || !IsSamePublicKey(friendPublicKey, friendToPublicKey.Substring(PUBLIC_KEY.Length)))
-                            continue;
-                    }
-
+                // Comparing PublicKeyToken, since GetPublicKey returns null due to a bug
+                if (IsSamePublicKey(friendAttributeName.GetPublicKeyToken(), friendName.GetPublicKeyToken()))
                     return true;
-                }
             }
             return false;
         }
 
-        private static bool IsSamePublicKey(byte[] key1, string key2)
+        private static bool IsSamePublicKey(byte[] key1, byte[] key2)
         {
-            if (key1.Length * 2 != key2.Length)
+            if (key1 == null)
+                return key2 == null || key2.Length == 0;
+            if (key2 == null)
+                return key1 == null || key1.Length == 0;
+
+            if (key1.Length != key2.Length)
                 return false;
 
-            for (int i = 0; i < key1.Length; i++)
+            for (int i = 0; i < key1.Length; ++i)
             {
-                try
-                {
-                    if (key1[i] != Convert.ToByte(key2[i * 2] + "" + key2[i * 2 + 1], 16))
-                        return false;
-                }
-                catch
-                {
+                if (key1[i] != key2[i])
                     return false;
-                }
             }
 
             return true;
