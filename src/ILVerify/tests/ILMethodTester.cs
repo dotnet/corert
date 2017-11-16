@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using Internal.IL;
 using Internal.TypeSystem.Ecma;
@@ -60,7 +61,8 @@ namespace ILVerify.Tests
 
                 foreach (var item in invalidIL.ExpectedVerifierErrors)
                 {
-                    Assert.True(verifierErrors.Contains(item));
+                    var actual = verifierErrors.Select(e => e.ToString());
+                    Assert.True(verifierErrors.Contains(item), $"Actual errors where: {string.Join(',', actual)}");
                 }
             }
         }
