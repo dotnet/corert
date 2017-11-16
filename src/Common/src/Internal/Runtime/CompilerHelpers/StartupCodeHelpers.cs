@@ -13,10 +13,20 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     public static partial class StartupCodeHelpers
     {
-        public static TypeManagerHandle[] Modules
-        {
-            get; private set;
-        }
+        /// <summary>
+        /// Initial module array allocation used when adding modules dynamically.
+        /// </summary>
+        private const int InitialModuleCount = 8;
+
+        /// <summary>
+        /// Table of logical modules. Only the first s_moduleCount elements of the array are in use.
+        /// </summary>
+        private static TypeManagerHandle[] s_modules;
+
+        /// <summary>
+        /// Number of valid elements in the logical module table.
+        /// </summary>
+        private static int s_moduleCount;
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
@@ -31,7 +41,18 @@ namespace Internal.Runtime.CompilerHelpers
 
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
-            Modules = modules;
+            if (s_modules != null)
+            {
+                for (int i = 0; i < modules.Length; i++)
+                {
+                    AddModule(modules[i]);
+                }
+            }
+            else
+            {
+                s_modules = modules;
+                s_moduleCount = modules.Length;
+            }
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -47,16 +68,38 @@ namespace Internal.Runtime.CompilerHelpers
         /// <param name="outputModules">Array to copy logical modules to, null = only return logical module count</param>
         internal static int GetLoadedModules(TypeManagerHandle[] outputModules)
         {
-            int moduleCount = (Modules != null ? Modules.Length : 0);
             if (outputModules != null)
             {
-                int copyLimit = (moduleCount < outputModules.Length ? moduleCount : outputModules.Length);
+                int copyLimit = (s_moduleCount < outputModules.Length ? s_moduleCount : outputModules.Length);
                 for (int copyIndex = 0; copyIndex < copyLimit; copyIndex++)
                 {
-                    outputModules[copyIndex] = Modules[copyIndex];
+                    outputModules[copyIndex] = s_modules[copyIndex];
                 }
             }
-            return moduleCount;
+            return s_moduleCount;
+        }
+
+        private static void AddModule(TypeManagerHandle newModuleHandle)
+        {
+            if (s_modules == null || s_moduleCount >= s_modules.Length)
+            {
+                // Reallocate logical module array
+                int newModuleLength = 2 * s_moduleCount;
+                if (newModuleLength < InitialModuleCount)
+                {
+                    newModuleLength = InitialModuleCount;
+                }
+
+                TypeManagerHandle[] newModules = new TypeManagerHandle[newModuleLength];
+                for (int copyIndex = 0; copyIndex < s_moduleCount; copyIndex++)
+                {
+                    newModules[copyIndex] = s_modules[copyIndex];
+                }
+                s_modules = newModules;
+            }
+            
+            s_modules[s_moduleCount] = newModuleHandle;
+            s_moduleCount++;
         }
 
         private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
