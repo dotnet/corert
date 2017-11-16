@@ -381,6 +381,9 @@
   <data name="UnsatisfiedBoxOperand" xml:space="preserve">
     <value>Type operand of box instruction has unsatisfied class type parameter constraints.</value>
   </data>
+  <data name="UnsatisfiedFieldParentInst" xml:space="preserve">
+    <value>Field parent instantiation has unsatisfied class type parameter constraints.</value>
+  </data>
   <data name="UnsatisfiedMethodInst" xml:space="preserve">
     <value>Method instantiation has unsatisfied method type parameter constraints.</value>
   </data>

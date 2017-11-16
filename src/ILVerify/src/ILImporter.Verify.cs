@@ -1976,6 +1976,9 @@ again:
                     Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
+            // Check any constraints on the fields's class --- accessing the field might cause a class constructor to run.
+            Check(field.OwningType.CheckConstraints(), VerifierError.UnsatisfiedFieldParentInst);
+
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
             CheckIsAssignable(value, StackValue.CreateFromType(field.FieldType));

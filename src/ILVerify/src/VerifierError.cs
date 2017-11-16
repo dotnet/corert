@@ -229,7 +229,7 @@ namespace ILVerify
 
         UnsatisfiedMethodInst,                // Method instantiation has unsatisfied method type parameter constraints.
         UnsatisfiedMethodParentInst,          // Method parent instantiation has unsatisfied class type parameter constraints.
-        //E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
+        UnsatisfiedFieldParentInst,           // Field parent instantiation has unsatisfied class type parameter constraints.
         UnsatisfiedBoxOperand,                // Type operand of box instruction has unsatisfied class type parameter constraints.
         ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
