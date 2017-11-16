@@ -106,6 +106,9 @@ else()
     include_directories($ENV{EMSCRIPTEN/system/lib/libcxxabi/include})
   endif()
 
+  include_directories(../libunwind/include)
+  include_directories(../libunwind)
+
   # Disable building _Unwind_XXX style APIs of libunwind, since we don't use them.
   add_definitions(-D_LIBUNWIND_DISABLE_ZERO_COST_APIS=1)
 
@@ -119,6 +122,7 @@ else()
   list(APPEND FULL_RUNTIME_SOURCES
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
+    unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
     ../libunwind/src/Unwind-EHABI.cpp
     ../libunwind/src/libunwind.cpp
