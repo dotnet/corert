@@ -237,7 +237,7 @@ namespace ILVerify
         ReadOnlyIllegalWrite,                 // Illegal write to readonly ByRef.
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT               "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
-        //E_TAILCALL_INSIDE_EH                "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
+        TailCallInsideER,                     // The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.
         //E_BACKWARD_BRANCH                   "Stack height at all points must be determinable in a single forward scan of IL."
         //E_CALL_TO_VTYPE_BASE                "Call to base type of valuetype."
         NewobjAbstractClass,                  // Cannot construct an instance of abstract class.

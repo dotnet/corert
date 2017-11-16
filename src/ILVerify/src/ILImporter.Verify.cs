@@ -2421,6 +2421,9 @@ again:
         {
             CheckPendingPrefix(_pendingPrefix);
             _pendingPrefix |= Prefix.Tail;
+
+            Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
+                !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.TailCallInsideER);
         }
 
         void ImportConstrainedPrefix(int token)

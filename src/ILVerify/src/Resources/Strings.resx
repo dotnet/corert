@@ -336,6 +336,9 @@
   <data name="TailCall" xml:space="preserve">
     <value>Missing call/callvirt/calli.</value>
   </data>
+  <data name="TailCallInsideER" xml:space="preserve">
+    <value>The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.</value>
+  </data>
   <data name="TailRetType" xml:space="preserve">
     <value>Tail call return type not compatible.</value>
   </data>
