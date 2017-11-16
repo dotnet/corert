@@ -468,22 +468,22 @@ namespace System
         //
         public override String ToString()
         {
-            return Number.FormatDecimal(this, null, null);
+            return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format)
         {
-            return Number.FormatDecimal(this, format, null);
+            return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            return Number.FormatDecimal(this, null, provider);
+            return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            return Number.FormatDecimal(this, format, provider);
+            return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
 
@@ -497,7 +497,7 @@ namespace System
         public static Decimal Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo);
         }
 
         internal const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
@@ -523,26 +523,26 @@ namespace System
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), style, null);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, provider);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsReadOnlySpan(), style, provider);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
         {
             ValidateParseStyleFloatingPoint(style);
-            return Number.ParseDecimal(s, style, provider);
+            return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Boolean TryParse(String s, out Decimal result)
@@ -553,12 +553,12 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, null, out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
         {
-            return Number.TryParseDecimal(s, NumberStyles.Number, null, out result);
+            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
@@ -569,13 +569,13 @@ namespace System
                 result = 0;
                 return false;
             }
-            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, provider, out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
         {
             ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimal(s, style, provider, out result);
+            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         // Returns a binary representation of a Decimal. The return value is an

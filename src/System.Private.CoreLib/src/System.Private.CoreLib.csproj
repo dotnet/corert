@@ -253,9 +253,7 @@
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Nullable.cs" />
-    <Compile Include="System\Number.cs" />
-    <Compile Include="System\Number.NumberBuffer.cs" />
-    <Compile Include="System\Number.FormatAndParse.cs" />
+    <Compile Include="System\Number.CoreRT.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
