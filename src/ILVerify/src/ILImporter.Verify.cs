@@ -1379,20 +1379,20 @@ again:
             if (opcode == ILOpcode.newobj)
             {
                 Check(method.IsConstructor, VerifierError.CtorExpected);
-                Check(!sig.IsStatic && !method.IsAbstract, VerifierError.CtorSig);
+                Check(!sig.IsStatic && methodType != null && !method.IsAbstract, VerifierError.CtorSig);
 
                 if (methodType != null)
                 {
-                    MetadataType metadataType;
                     if (methodType.IsArray)
                     {
-                        // TODO: handle arrays properly
-                        metadataType = (MetadataType)((ArrayType)methodType).ParameterType;
+                        var arrayType = (ArrayType)methodType;
+                        Check(!IsByRefLike(StackValue.CreateFromType(arrayType.ElementType)), VerifierError.ArrayByRef);
                     }
                     else
-                        metadataType = (MetadataType)methodType;
-
-                    Check(!metadataType.IsAbstract, VerifierError.NewobjAbstractClass);
+                    {
+                        var metadataType = (MetadataType)methodType;
+                        Check(!metadataType.IsAbstract, VerifierError.NewobjAbstractClass);
+                    }
                 }
             }
             else
