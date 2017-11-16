@@ -10,7 +10,11 @@
 {
 }
 
-.assembly AccessTestsExternal
+.assembly extern AccessTestsFriend
+{
+}
+
+.assembly AccessTestsExtern
 {
 }
 
@@ -100,6 +104,13 @@
     .method public hidebysig instance void Call.FamAndAssemMethod_Invalid_MethodAccess() cil managed
     {
         call      void [AccessTests]SimpleClass::FamilyAndAssemblyMethod()
+        ret
+    }
+
+    .method private hidebysig instance void Load.AssemFieldOfFriendAssemblyWithSpace_Valid() cil managed
+    {
+        ldsfld       int32 [AccessTestsFriend]AccessTestsFriendType::assemblyField
+        pop
         ret
     }
 }
