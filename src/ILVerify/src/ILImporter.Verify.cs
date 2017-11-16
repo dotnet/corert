@@ -1003,12 +1003,12 @@ again:
 
             for (int i = 0; i < ftnSignature.Length; i++)
             {
-                if (!IsAssignable(ftnSignature[i], delegateSignature[i]))
+                if (!IsAssignable(delegateSignature[i], ftnSignature[i]))
                     return false;
             }
 
             // Compare return type
-            return IsAssignable(delegateSignature.ReturnType, ftnSignature.ReturnType);
+            return IsAssignable(ftnSignature.ReturnType, delegateSignature.ReturnType);
         }
 
         ILOpcode GetOpcodeAt(int instructionOffset)
