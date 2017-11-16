@@ -1332,7 +1332,7 @@ again:
                 Check(methodType != null, VerifierError.CallVirtOnStatic);
                 Check(!methodType.IsValueType, VerifierError.CallVirtOnValueType);
             }
-            else
+            else if (opcode != ILOpcode.newobj)
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
@@ -1379,9 +1379,11 @@ again:
             if (opcode == ILOpcode.newobj)
             {
                 Check(method.IsConstructor, VerifierError.CtorExpected);
-                Check(!sig.IsStatic && methodType != null && !method.IsAbstract, VerifierError.CtorSig);
-
-                if (methodType != null)
+                if (sig.IsStatic || methodType == null || method.IsAbstract)
+                {
+                    VerificationError(VerifierError.CtorSig);
+                }
+                else
                 {
                     if (methodType.IsArray)
                     {
@@ -1526,9 +1528,12 @@ again:
                 // so we can trust that only the Address operation returns a byref.
                 if (HasPendingPrefix(Prefix.ReadOnly))
                 {
-                    Check(method.OwningType.IsArray && sig.ReturnType.IsByRef, VerifierError.ReadonlyUnexpectedCallee);
+                    if (method.OwningType.IsArray && sig.ReturnType.IsByRef)
+                        returnValue.SetIsReadOnly();
+                    else
+                        VerificationError(VerifierError.ReadonlyUnexpectedCallee);
+
                     ClearPendingPrefix(Prefix.ReadOnly);
-                    returnValue.SetIsReadOnly();
                 }
 
                 if (returnValue.Kind == StackValueKind.ByRef)
@@ -1976,7 +1981,7 @@ again:
                     Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
-            // Check any constraints on the fields's class --- accessing the field might cause a class constructor to run.
+            // Check any constraints on the fields' class --- accessing the field might cause a class constructor to run.
             Check(field.OwningType.CheckConstraints(), VerifierError.UnsatisfiedFieldParentInst);
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);

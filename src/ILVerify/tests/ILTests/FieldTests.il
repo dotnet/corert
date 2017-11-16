@@ -10,11 +10,31 @@
 {
 }
 
+.class private auto ansi beforefieldinit ConstrainedClass`1<([System.Runtime]System.Collections.IEnumerable) T>
+    extends [System.Runtime]System.Object
+{
+    .field public static int32 StaticField
+
+    .method public hidebysig specialname rtspecialname instance void .ctor () cil managed
+    {
+        ldarg.0
+        call      instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit FieldTestsType
         extends [System.Runtime]System.Object
 {
     .field public initonly int32 InstanceInitonlyField
     .field public static initonly int32 StaticInitonlyField
+
+    .method public instance void Stsfld.UnsatisfiedParentConstraints_Invalid_UnsatisfiedFieldParentInst() cil managed
+    {
+        ldc.i4.0
+        stsfld   int32 class ConstrainedClass`1<int32>::StaticField
+        ret
+    }
 
     .method public instance void Stfld.InitonlyFieldOutsideCtor_Invalid_InitOnly() cil managed
     {
