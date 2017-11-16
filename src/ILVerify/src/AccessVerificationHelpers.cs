@@ -262,15 +262,19 @@ namespace ILVerify
 
             foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
             {
-                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(new string[] { ", " }, StringSplitOptions.None);
+                var friendValues = ((string)attribute.FixedArguments[0].Value).Split(',');
                 if (friendValues.Length >= 1 && friendValues.Length <= 2)
                 {
-                    if (friendValues[0] != friendName.Name)
+                    string friendToName = friendValues[0].Trim();
+                    if (friendToName != friendName.Name)
                         continue;
 
-                    if (friendValues.Length == 2 &&
-                        (!friendValues[1].StartsWith(PUBLIC_KEY) || !IsSamePublicKey(friendPublicKey, friendValues[1].Substring(PUBLIC_KEY.Length))))
-                        continue;
+                    if (friendValues.Length == 2)
+                    {
+                        string friendToPublicKey = friendValues[1].Trim();
+                        if (!friendToPublicKey.StartsWith(PUBLIC_KEY) || !IsSamePublicKey(friendPublicKey, friendToPublicKey.Substring(PUBLIC_KEY.Length)))
+                            continue;
+                    }
 
                     return true;
                 }

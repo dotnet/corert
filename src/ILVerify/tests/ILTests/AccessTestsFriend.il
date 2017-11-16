@@ -16,6 +16,13 @@
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.InternalsVisibleToAttribute::.ctor(string) = (
         01 00 0b 41 63 63 65 73 73 54 65 73 74 73 00 00
     )
+
+    // InternalsVisibleTo("AccessTestsExtern ")
+    //                                      ^ purposeful space at the end
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.InternalsVisibleToAttribute::.ctor(string) = (
+        01 00 12 41 63 63 65 73 73 54 65 73 74 73 45 78
+        74 65 72 6e 20 00 00
+    )
 }
 
 .class private auto ansi beforefieldinit AccessTestsFriendType
