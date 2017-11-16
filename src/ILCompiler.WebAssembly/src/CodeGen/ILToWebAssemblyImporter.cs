@@ -553,17 +553,15 @@ namespace Internal.IL
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
                 typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastIfNecessaryInt");
             }
-            else if (toStoreKind == LLVMTypeKind.LLVMFloatTypeKind && valueTypeKind != LLVMTypeKind.LLVMFloatTypeKind)
-            {
-                typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastIfNecessaryFloat");
-            }
             else if (toStoreKind != LLVMTypeKind.LLVMFloatTypeKind && valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind)
             {
                 typedToStore = LLVM.BuildFPCast(builder, source, valueType, "CastIfNecessaryFloat");
             }
-            else if (toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind && valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
+            else if ((toStoreKind == LLVMTypeKind.LLVMDoubleTypeKind || toStoreKind == LLVMTypeKind.LLVMFloatTypeKind) && 
+                valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
-                typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastIfNecessaryFloat");
+                //TODO: keep track of the TypeDesc so we can call BuildFPToUI when the integer is unsigned
+                typedToStore = LLVM.BuildFPToSI(builder, source, valueType, "CastIfNecessaryFloat");
             }
             else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind)
             {

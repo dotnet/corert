@@ -17,7 +17,7 @@ internal static class Program
     
         tempObj.TestMethod("Hello");
         tempObj.TestVirtualMethod("Hello");
-
+        tempObj.TestVirtualMethod2("Hello");
         if(tempInt == 9)
         {
             PrintLine("Hello from C#!");
@@ -191,6 +191,11 @@ public class TestClass
     {
         Program.PrintLine("Virtual Slot Test: Ok If second");
     }
+	
+	public virtual void TestVirtualMethod2(string str)
+    {
+        Program.PrintLine("Virtual Slot Test 2: Ok");
+    }
 }
 
 public class TestDerivedClass : TestClass
@@ -203,6 +208,11 @@ public class TestDerivedClass : TestClass
     {
         Program.PrintLine("Virtual Slot Test: Ok");
         base.TestVirtualMethod(str);
+    }
+    
+    public override string ToString()
+    {
+        throw new Exception();
     }
 }
 
