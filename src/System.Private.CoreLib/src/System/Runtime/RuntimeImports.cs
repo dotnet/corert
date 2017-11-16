@@ -529,34 +529,9 @@ namespace System.Runtime
             return RhGetModuleSection(ref module, section, out length);
         }
 
-#if PROJECTN
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLoadedOSModules")]
         internal static extern uint RhGetLoadedOSModules(IntPtr[] resultArray);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetLoadedModules")]
-        internal static extern uint RhGetLoadedModules(TypeManagerHandle[] resultArray);
-#else
-        internal static uint RhGetLoadedOSModules(IntPtr[] resultArray)
-        {
-            IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.OSModules;
-            if (resultArray != null)
-            {
-                Array.Copy(loadedModules, resultArray, Math.Min(loadedModules.Length, resultArray.Length));
-            }
-            return (uint)loadedModules.Length;
-        }
-
-        internal static uint RhGetLoadedModules(TypeManagerHandle[] resultArray)
-        {
-            TypeManagerHandle[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.Modules;
-            if (resultArray != null)
-            {
-                Array.Copy(loadedModules, resultArray, Math.Min(loadedModules.Length, resultArray.Length));
-            }
-            return (uint)loadedModules.Length;
-        }
-#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetOSModuleFromPointer")]

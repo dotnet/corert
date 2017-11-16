@@ -108,7 +108,6 @@ internal static extern int System.Runtime.RuntimeImports.RhGetGeneration(object 
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCDuration(int generation)
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCStartTime(int generation)
 internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedOSModules(System.IntPtr[] resultArray)
-internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedModules(System.Runtime.TypeManagerHandle[] resultArray)
 internal static extern int System.Runtime.RuntimeImports.RhGetLohCompactionMode()
 internal static extern int System.Runtime.RuntimeImports.RhGetMaxGcGeneration()
 internal static extern int System.Runtime.RuntimeImports.RhGetModuleFileName(System.IntPtr moduleHandle, out char* moduleName)
