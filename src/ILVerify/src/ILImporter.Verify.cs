@@ -2333,7 +2333,7 @@ again:
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
             var result = Pop(allowUninitThis: true);
-            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
