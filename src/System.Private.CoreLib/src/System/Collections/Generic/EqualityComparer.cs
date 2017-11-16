@@ -73,6 +73,7 @@ namespace System.Collections.Generic
         }
     }
 
+#if false
     internal sealed class DefaultEqualityComparer<T> : EqualityComparer<T>
     {
         public DefaultEqualityComparer()
@@ -112,4 +113,5 @@ namespace System.Collections.Generic
         // This needs to use GetType instead of typeof to avoid infinite recursion in the type loader
         public sealed override int GetHashCode() => GetType().GetHashCode();
     }
+#endif
 }
