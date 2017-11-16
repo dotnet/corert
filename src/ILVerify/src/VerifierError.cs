@@ -152,7 +152,8 @@ namespace ILVerify
         CallVirtOnValueType,            // Callvirt on a value type method.
         //E_CALL_SIG                    "Call signature mismatch."
         //E_CALL_STATIC                 "Static function expected."
-        //E_CTOR                        ".ctor expected."
+        CtorExpected,                   // .ctor expected.
+        CtorSig,                        // newobj on static or abstract method.
         //E_CTOR_VIRT                   "Cannot use callvirt on .ctor."
         //E_CTOR_OR_SUPER               "Only super::ctor or typeof(this)::ctor allowed here."
         //E_CTOR_MUL_INIT               "Possible call to .ctor more than once."

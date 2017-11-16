@@ -165,6 +165,12 @@
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
   </data>
+  <data name="CtorExpected" xml:space="preserve">
+    <value>.ctor expected.</value>
+  </data>
+  <data name="CtorSig" xml:space="preserve">
+    <value>newobj on static or abstract method.</value>
+  </data>
   <data name="DelegateCtor" xml:space="preserve">
     <value>Unrecognized arguments for delegate .ctor.</value>
   </data>
@@ -254,6 +260,9 @@
   </data>
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
+  </data>
+  <data name="NewobjAbstractClass" xml:space="preserve">
+    <value>Cannot construct an instance of abstract class.</value>
   </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>

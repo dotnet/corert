@@ -1378,7 +1378,22 @@ again:
 
             if (opcode == ILOpcode.newobj)
             {
-                // TODO:
+                Check(method.IsConstructor, VerifierError.CtorExpected);
+                Check(!sig.IsStatic && !method.IsAbstract, VerifierError.CtorSig);
+
+                if (methodType != null)
+                {
+                    MetadataType metadataType;
+                    if (methodType.IsArray)
+                    {
+                        // TODO: handle arrays properly
+                        metadataType = (MetadataType)((ArrayType)methodType).ParameterType;
+                    }
+                    else
+                        metadataType = (MetadataType)methodType;
+
+                    Check(!metadataType.IsAbstract, VerifierError.NewobjAbstractClass);
+                }
             }
             else
             if (methodType != null)
