@@ -158,7 +158,7 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 
         // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
         RhFailFast();
-       return NULL;
+        return NULL;
     }
 #endif // PROJECTN
 
@@ -201,25 +201,8 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
 {
     TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
 
-    if (typeManagerHandle.IsTypeManager())
-    {
-        ReadyToRunSectionType section =
-            (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
-        ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
-
-        TypeManager* pModule = typeManagerHandle.AsTypeManager();
-
-        int length;
-        void* pBlob;
-        pBlob = pModule->GetModuleSection(section, &length);
-
-        *ppbBlob = (UInt8*)pBlob;
-        *pcbBlob = (UInt32)length;
-
-        return pBlob != NULL;
-    }
-#if PROJECTN
-    else
+#ifdef PROJECTN
+    if (!typeManagerHandle.IsTypeManager())
     {
         HANDLE hOsModule = typeManagerHandle.AsOsModule();
         // Search for the Redhawk module contained by the OS module.
@@ -256,14 +239,28 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
             }
         }
         END_FOREACH_MODULE
+
+        // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
+        // (which could lead to the wrong blob being returned in some cases).
+        RhFailFast();
+        return FALSE;
     }
 #endif // PROJECTN
 
-    // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
-    // (which could lead to the wrong blob being returned in some cases).
-    RhFailFast();
+    ReadyToRunSectionType section =
+        (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
+    ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
 
-    return FALSE;
+    TypeManager* pModule = typeManagerHandle.AsTypeManager();
+
+    int length;
+    void* pBlob;
+    pBlob = pModule->GetModuleSection(section, &length);
+
+    *ppbBlob = (UInt8*)pBlob;
+    *pcbBlob = (UInt32)length;
+
+    return pBlob != NULL;
 }
 
 // This helper is not called directly but is used by the implementation of RhpCheckCctor to locate the
