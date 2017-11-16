@@ -276,6 +276,9 @@
   <data name="ReadOnlyIllegalWrite" xml:space="preserve">
     <value>Illegal write to readonly ByRef.</value>
   </data>
+  <data name="ReadonlyUnexpectedCallee" xml:space="preserve">
+    <value>The readonly prefix may only be applied to calls to array methods returning ByRefs.</value>
+  </data>
   <data name="Rethrow" xml:space="preserve">
     <value>Rethrow from outside a catch handler.</value>
   </data>
@@ -332,6 +335,9 @@
   </data>
   <data name="TailCall" xml:space="preserve">
     <value>Missing call/callvirt/calli.</value>
+  </data>
+  <data name="TailRetType" xml:space="preserve">
+    <value>Tail call return type not compatible.</value>
   </data>
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>

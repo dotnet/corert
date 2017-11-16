@@ -171,7 +171,7 @@ namespace ILVerify
         TailByRef,                      // Cannot pass ByRef to a tail call.
         //E_TAIL_RET                    "Missing ret."
         TailRetVoid,                    // Void ret type expected for tail call.
-        //E_TAIL_RET_TYPE               "Tail call return type not compatible."
+        TailRetType,                    // Tail call return type not compatible.
         TailStackEmpty,                 // Stack not empty after tail call.
         //E_METHOD_END                  "Method ends in the middle of an instruction."
         BadBranch,                      // Branch out of the method.
@@ -233,7 +233,7 @@ namespace ILVerify
         UnsatisfiedBoxOperand,                // Type operand of box instruction has unsatisfied class type parameter constraints.
         ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
-        //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
+        ReadonlyUnexpectedCallee,             // The readonly prefix may only be applied to calls to array methods returning ByRefs.
         ReadOnlyIllegalWrite,                 // Illegal write to readonly ByRef.
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT               "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."

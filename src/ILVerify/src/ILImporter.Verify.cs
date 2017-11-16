@@ -1467,7 +1467,7 @@ again:
 
                 if (tailCall)
                 {
-                    // also check the specil tailcall rule
+                    // also check the special tailcall rule
                     Check(!IsByRefLike(declaredThis), VerifierError.TailByRef, declaredThis);
 
                     // Tail calls on constrained calls should be illegal too:
@@ -1502,7 +1502,9 @@ again:
                 // }
                 else
                 {
-                    CheckIsAssignable(StackValue.CreateFromType(returnType), StackValue.CreateFromType(callerReturnType));
+                    var retStackType = StackValue.CreateFromType(returnType);
+                    var callerRetStackType = StackValue.CreateFromType(callerReturnType);
+                    Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
                 }
 
                 // for tailcall, stack must be empty
@@ -1519,18 +1521,15 @@ again:
             {
                 var returnValue = StackValue.CreateFromType(returnType);
 
-#if false
                 // "readonly." prefixed calls only allowed for the Address operation on arrays.
                 // The methods supported by array types are under the control of the EE
                 // so we can trust that only the Address operation returns a byref.
-                if (readonlyCall)
+                if (HasPendingPrefix(Prefix.ReadOnly))
                 {
-                    VerifyOrReturn ((methodClassFlgs & CORINFO_FLG_ARRAY) && tiRetVal.IsByRef(), 
-                                    MVER_E_READONLY_UNEXPECTED_CALLEE);//"unexpected use of readonly prefix"
-                    vstate->readonlyPrefix = false;
-                    tiRetVal.SetIsReadonlyByRef();
+                    Check(method.OwningType.IsArray && sig.ReturnType.IsByRef, VerifierError.ReadonlyUnexpectedCallee);
+                    ClearPendingPrefix(Prefix.ReadOnly);
+                    returnValue.SetIsReadOnly();
                 }
-#endif
 
                 if (returnValue.Kind == StackValueKind.ByRef)
                     returnValue.SetIsPermanentHome();
