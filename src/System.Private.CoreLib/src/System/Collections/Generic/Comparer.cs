@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Runtime.CompilerServices;
+
+using Internal.IntrinsicSupport;
 
 namespace System.Collections.Generic
 {
@@ -26,8 +26,10 @@ namespace System.Collections.Generic
             // instantiation-specific implementation.
             throw new NotSupportedException();
 #else
-            // CORERT: TODO: https://github.com/dotnet/corert/issues/763
-            return (_default = new DefaultComparer<T>());
+            // The compiler will overwrite the Create method with optimized
+            // instantiation-specific implementation.
+            // This body serves as a fallback when instantiation-specific implementation is unavailable.
+            return (_default = ComparerHelpers.GetUnknownComparer<T>());
 #endif
         }
 

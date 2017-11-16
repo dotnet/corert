@@ -66,6 +66,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\AddrOfIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ArrayMethodILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\CalliIntrinsic.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ComparerIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMarshallingMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\ForwardDelegateCreationThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />

@@ -124,6 +124,57 @@ namespace Internal.IL
                         }
                     }
                     break;
+                case "Comparer`1":
+                    {
+                        if (methodName == "Create" && owningType.Namespace == "System.Collections.Generic")
+                            return ComparerIntrinsics.EmitComparerCreate(method);
+                    }
+                    break;
+                case "EqualityComparer`1":
+                    {
+                        if (methodName == "Create" && owningType.Namespace == "System.Collections.Generic")
+                            return ComparerIntrinsics.EmitEqualityComparerCreate(method);
+                    }
+                    break;
+                case "EqualityComparerHelpers":
+                    {
+                        if (methodName == "EnumOnlyEquals" && owningType.Namespace == "Internal.IntrinsicSupport")
+                        {
+                            // EnumOnlyEquals would basically like to do this:
+                            // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x == y;
+                            // This is not legal though.
+                            // We don't want to do this:
+                            // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x.Equals(y);
+                            // Because it would box y.
+                            // So we resort to some per-instantiation magic.
+
+                            TypeDesc elementType = method.Instantiation[0];
+                            if (!elementType.IsEnum)
+                                return null;
+
+                            ILOpcode convInstruction;
+                            if (((DefType)elementType).InstanceFieldSize.AsInt <= 4)
+                            {
+                                convInstruction = ILOpcode.conv_i4;
+                            }
+                            else
+                            {
+                                Debug.Assert(((DefType)elementType).InstanceFieldSize.AsInt == 8);
+                                convInstruction = ILOpcode.conv_i8;
+                            }
+
+                            return new ILStubMethodIL(method, new byte[] {
+                                (byte)ILOpcode.ldarg_0,
+                                (byte)convInstruction,
+                                (byte)ILOpcode.ldarg_1,
+                                (byte)convInstruction,
+                                (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
+                                (byte)ILOpcode.ret,
+                            },
+                            Array.Empty<LocalVariableDefinition>(), null);
+                        }
+                        break;
+                    }
             }
 
             return null;

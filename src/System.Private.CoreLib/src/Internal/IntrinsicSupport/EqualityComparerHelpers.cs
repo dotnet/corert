@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using Internal.IntrinsicSupport;
 using Internal.Runtime.Augments;
@@ -106,7 +107,7 @@ namespace Internal.IntrinsicSupport
         //----------------------------------------------------------------------
         // target functions of intrinsic replacement in EqualityComparer.get_Default
         //----------------------------------------------------------------------
-        private static EqualityComparer<T> GetUnknownEquatableComparer<T>()
+        internal static EqualityComparer<T> GetUnknownEquatableComparer<T>()
         {
             return (EqualityComparer<T>)GetComparer(typeof(T).TypeHandle);
         }
@@ -136,6 +137,7 @@ namespace Internal.IntrinsicSupport
         //-----------------------------------------------------------------------
 
         // This one is an intrinsic that is used to make enum comparisions more efficient.
+        [Intrinsic]
         internal static bool EnumOnlyEquals<T>(T x, T y) where T : struct
         {
             return x.Equals(y);
