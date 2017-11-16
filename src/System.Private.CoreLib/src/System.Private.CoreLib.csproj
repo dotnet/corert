@@ -64,9 +64,6 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
-      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>
@@ -80,9 +77,17 @@
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.ProjectN.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />

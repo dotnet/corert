@@ -655,6 +655,17 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
+        /// This helper method is called at the end of StartupCodeTrigger during main app build
+        /// to refresh the module list after all modules have been registered in StartupCodeHelpers.
+        /// </summary>
+#if PROJECTN
+        public static void RegisterEagerModules()
+        {
+            TypeLoaderEnvironment.Instance.ModuleList.RegisterNewModules(ModuleType.Eager);
+        }
+#endif
+
+        /// <summary>
         /// Register all modules which were added (Registered) to the runtime and are not already registered with the TypeLoader.
         /// </summary>
         /// <param name="moduleType">Type to assign to all new modules.</param>
