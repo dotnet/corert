@@ -65,6 +65,7 @@ namespace System.Collections.Generic
         }
     }
 
+#if false
     internal class DefaultComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
@@ -108,6 +109,7 @@ namespace System.Collections.Generic
             throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
     }
+#endif
 
     internal class ComparisonComparer<T> : Comparer<T>
     {
