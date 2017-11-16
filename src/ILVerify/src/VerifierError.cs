@@ -146,13 +146,14 @@ namespace ILVerify
         //E_ADDR                        "Address of not allowed for this item."
         //E_ADDR_BYREF                  "Address of not allowed for ByRef."
         //E_ADDR_LITERAL                "Address of not allowed for literal field."
-        Initonly,                       // Cannot change initonly field outside its .ctor.
+        InitOnly,                       // Cannot change initonly field outside its .ctor.
         //E_WRITE_RVA_STATIC            "Cannot modify an imaged based (RVA) static"
         //E_THROW                       "Cannot throw this object."
         CallVirtOnValueType,            // Callvirt on a value type method.
         //E_CALL_SIG                    "Call signature mismatch."
         //E_CALL_STATIC                 "Static function expected."
-        //E_CTOR                        ".ctor expected."
+        CtorExpected,                   // .ctor expected.
+        CtorSig,                        // newobj on static or abstract method.
         //E_CTOR_VIRT                   "Cannot use callvirt on .ctor."
         //E_CTOR_OR_SUPER               "Only super::ctor or typeof(this)::ctor allowed here."
         //E_CTOR_MUL_INIT               "Possible call to .ctor more than once."
@@ -170,7 +171,7 @@ namespace ILVerify
         TailByRef,                      // Cannot pass ByRef to a tail call.
         //E_TAIL_RET                    "Missing ret."
         TailRetVoid,                    // Void ret type expected for tail call.
-        //E_TAIL_RET_TYPE               "Tail call return type not compatible."
+        TailRetType,                    // Tail call return type not compatible.
         TailStackEmpty,                 // Stack not empty after tail call.
         //E_METHOD_END                  "Method ends in the middle of an instruction."
         BadBranch,                      // Branch out of the method.
@@ -228,23 +229,22 @@ namespace ILVerify
 
         UnsatisfiedMethodInst,                // Method instantiation has unsatisfied method type parameter constraints.
         UnsatisfiedMethodParentInst,          // Method parent instantiation has unsatisfied class type parameter constraints.
-        //E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
+        UnsatisfiedFieldParentInst,           // Field parent instantiation has unsatisfied class type parameter constraints.
         UnsatisfiedBoxOperand,                // Type operand of box instruction has unsatisfied class type parameter constraints.
         ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
         //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
-        //E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
+        ReadonlyUnexpectedCallee,             // The readonly prefix may only be applied to calls to array methods returning ByRefs.
         ReadOnlyIllegalWrite,                 // Illegal write to readonly ByRef.
         //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
         //E_UNALIGNED_ALIGNMENT               "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
-        //E_TAILCALL_INSIDE_EH                "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
+        TailCallInsideER,                     // The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.
         //E_BACKWARD_BRANCH                   "Stack height at all points must be determinable in a single forward scan of IL."
         //E_CALL_TO_VTYPE_BASE                "Call to base type of valuetype."
-        //E_NEWOBJ_OF_ABSTRACT_CLASS          "Cannot construct an instance of abstract class."
+        NewobjAbstractClass,                  // Cannot construct an instance of abstract class.
         UnmanagedPointer,                     // Unmanaged pointers are not a verifiable type.
         LdftnNonFinalVirtual,                 // Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.
         //E_FIELD_OVERLAP                     "Accessing type with overlapping fields."
         ThisMismatch,                         // The 'this' parameter to the call must be the calling method's 'this' parameter.
-        //E_STACK_I_I4                        "Expected I4 on the stack."
 
         //E_BAD_PE             "Unverifiable PE Header/native stub."
         //E_BAD_MD             "Unrecognized metadata, unable to verify IL."
