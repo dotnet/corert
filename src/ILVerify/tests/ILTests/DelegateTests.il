@@ -48,8 +48,8 @@
     .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
     {
+        ldarg.0
         call       instance void [System.Runtime]System.Object::.ctor()
-        nop
         ret
     }
 }
