@@ -120,8 +120,8 @@ else()
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
     unix/UnixNativeCodeManager.cpp
-      ../libunwind/src/Unwind-EHABI.cpp
-      ../libunwind/src/libunwind.cpp
+    ../libunwind/src/Unwind-EHABI.cpp
+    ../libunwind/src/libunwind.cpp
   )
 
   if(CLR_CMAKE_PLATFORM_DARWIN)

@@ -14,7 +14,7 @@
 
     <Project Include="Framework\Framework.depproj" />
     <Project Include="Framework\Framework-uapaot.depproj" />
-    <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix)" />
+    <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'" />
 
     <Project Include="ILCompiler\**\*.depproj" />
 

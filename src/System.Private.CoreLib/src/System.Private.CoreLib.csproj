@@ -41,7 +41,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeaturePortableThreadPool Condition="'$(FeaturePortableThreadPool)' == ''">false</FeaturePortableThreadPool>
-    <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true' or '$(Platform)' == 'wasm'">true</FeaturePortableThreadPool>
+    <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
@@ -126,9 +126,9 @@
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.ProjectN.cs" />
     <Compile Condition="'$(IsProjectNLibrary)' != 'true' and '$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.CoreRT.Win32.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Windows.cs" />
-    <Compile Condition="'$(TargetsUnix)'=='true' or '$(Platform)' == 'wasm'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.Unix.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)' != 'true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.Win32.cs" />
-    <Compile Condition="'$(TargetsUnix)'=='true' or '$(EnableWinRT)'=='true' or '$(Platform)' == 'wasm'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.WithoutRegistry.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true' or '$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\EnvironmentAugments.FromRegistry.WithoutRegistry.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
@@ -205,7 +205,7 @@
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\InternalFile.cs" />
     <Compile Include="System\IO\InternalFile.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true' or '$(Platform)' == 'wasm'" />
+    <Compile Include="System\IO\InternalFile.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
     <Compile Include="System\IO\Stream.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
@@ -228,7 +228,7 @@
     <Compile Include="System\Globalization\CultureData.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
     <Compile Include="System\Guid.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true' or '$(Platform)' == 'wasm'" />
+    <Compile Include="System\Guid.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\InsufficientMemoryException.cs" />
     <Compile Include="System\Marvin.cs" />
@@ -356,7 +356,7 @@
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CLSIDFromProgID.cs">
       <Link>Interop\Windows\mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
-    <Compile Condition="'$(TargetsUnix)'=='true' or '$(Platform)' == 'wasm'" Include="System\Type.Unix.cs" />
+    <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
     <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.cs" />
@@ -544,7 +544,7 @@
     <Compile Include="System\Threading\ClrThreadPool.ThreadCounts.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WaitThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
-    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(Platform)' == 'wasm'" />
+    <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
   </ItemGroup>
   <ItemGroup>
@@ -589,11 +589,11 @@
     <Compile Include="System\Globalization\IdnMapping.Dummy.cs" />
     <Compile Include="System\Globalization\Normalization.Dummy.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true' or '$(Platform)' == 'wasm'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' And '$(EnableDummyGlobalizationImplementation)' != 'true'">
     <Compile Include="System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="System\Globalization\CompareInfo.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(Platform)' == 'wasm'">
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Internal\Runtime\Augments\RuntimeThread.Unix.cs" />
     <Compile Include="System\AppContext.Unix.cs" />
     <Compile Include="System\TimeZoneInfo.Unix.cs" />

@@ -86,7 +86,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
                                           void * pSecondPointer,
                                           bool fFailOnNonNull)
 {
-#if defined(_X86_) || defined(_ARM_) || defined(_WASM_)
+#if !defined BIT64
     // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
     Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
 
@@ -108,7 +108,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     // The update failed due to a racing update to the same location. Return the new value of the second
     // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
     return pSecondPointer;
-#elif defined(_AMD64_) || defined(_ARM64_)
+#else // !BIT64
     // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
     // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
 
@@ -129,9 +129,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
 
     // Failure, return the new second pointer value.
     return pSecondPointer;
-#else
-#error Unsupported architecture
-#endif
+#endif // !BIT64
 }
 
 // Helper method for updating an interface dispatch cache entry atomically. See comments by the usage of
