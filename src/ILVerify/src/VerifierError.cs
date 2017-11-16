@@ -146,7 +146,7 @@ namespace ILVerify
         //E_ADDR                        "Address of not allowed for this item."
         //E_ADDR_BYREF                  "Address of not allowed for ByRef."
         //E_ADDR_LITERAL                "Address of not allowed for literal field."
-        Initonly,                       // Cannot change initonly field outside its .ctor.
+        InitOnly,                       // Cannot change initonly field outside its .ctor.
         //E_WRITE_RVA_STATIC            "Cannot modify an imaged based (RVA) static"
         //E_THROW                       "Cannot throw this object."
         CallVirtOnValueType,            // Callvirt on a value type method.
@@ -240,7 +240,7 @@ namespace ILVerify
         //E_TAILCALL_INSIDE_EH                "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
         //E_BACKWARD_BRANCH                   "Stack height at all points must be determinable in a single forward scan of IL."
         //E_CALL_TO_VTYPE_BASE                "Call to base type of valuetype."
-        //E_NEWOBJ_OF_ABSTRACT_CLASS          "Cannot construct an instance of abstract class."
+        NewobjAbstractClass,                  // Cannot construct an instance of abstract class.
         UnmanagedPointer,                     // Unmanaged pointers are not a verifiable type.
         LdftnNonFinalVirtual,                 // Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.
         //E_FIELD_OVERLAP                     "Accessing type with overlapping fields."

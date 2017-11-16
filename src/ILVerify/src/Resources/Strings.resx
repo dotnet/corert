@@ -225,7 +225,7 @@
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>
-  <data name="Initonly" xml:space="preserve">
+  <data name="InitOnly" xml:space="preserve">
     <value>Cannot change initonly field outside its .ctor.</value>
   </data>
   <data name="LdftnConstructor" xml:space="preserve">

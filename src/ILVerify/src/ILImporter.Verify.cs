@@ -1906,7 +1906,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1928,7 +1928,7 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
@@ -1953,7 +1953,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1974,7 +1974,7 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
