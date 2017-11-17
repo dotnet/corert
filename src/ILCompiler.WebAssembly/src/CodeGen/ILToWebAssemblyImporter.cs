@@ -837,7 +837,7 @@ namespace Internal.IL
                 if (callee.OwningType.IsInterface)
                     throw new NotImplementedException();
 
-                return GetVirtualSlot(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
+                return GetCallableVirtualMethod(thisPointer.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder), callee);
             }
             else
             {
@@ -856,17 +856,16 @@ namespace Internal.IL
             return LLVM.BuildLoad(_builder, slot, string.Empty);
         }
 
-        private LLVMValueRef GetVirtualSlot(LLVMValueRef objectPtr, MethodDesc method)
+        private LLVMValueRef GetCallableVirtualMethod(LLVMValueRef objectPtr, MethodDesc method)
         {
             Debug.Assert(method.IsVirtual);
-
-            LLVMValueRef slot = GetOrCreateMethodSlot(method);
             if (method.OwningType.IsInterface)
             {
                 throw new NotImplementedException();
             }
             else
             {
+                LLVMValueRef slot = GetOrCreateMethodSlot(method);
                 var pointerSize = method.Context.Target.PointerSize;
                 LLVMTypeRef universalSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
                 var rawObjectPtr = CastIfNecessary(objectPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(universalSignature, 0), 0), 0));

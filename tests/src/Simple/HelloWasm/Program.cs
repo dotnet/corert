@@ -11,18 +11,18 @@ internal static class Program
     private static unsafe void Main(string[] args)
     {
         Add(1, 2);
-        TestClass tempObj = new TestDerivedClass(1337);
         int tempInt = 0;
         (*(&tempInt)) = 9;
-    
-        tempObj.TestMethod("Hello");
-        tempObj.TestVirtualMethod("Hello");
-        tempObj.TestVirtualMethod2("Hello");
         if(tempInt == 9)
         {
             PrintLine("Hello from C#!");
         }
-        
+
+        TestClass tempObj = new TestDerivedClass(1337);
+        tempObj.TestMethod("Hello");
+        tempObj.TestVirtualMethod("Hello");
+        tempObj.TestVirtualMethod2("Hello");
+
         TwoByteStr str = new TwoByteStr() { first = 1, second = 2 };
         TwoByteStr str2 = new TwoByteStr() { first = 3, second = 4 };
         *(&str) = str2;
