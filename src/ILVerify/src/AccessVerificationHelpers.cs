@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using Internal.TypeSystem;
@@ -257,7 +258,7 @@ namespace ILVerify
             foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
             {
                 AssemblyName friendAttributeName = new AssemblyName((string)attribute.FixedArguments[0].Value);
-                if (friendName.Name != friendAttributeName.Name)
+                if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 // Comparing PublicKeyToken, since GetPublicKey returns null due to a bug
