@@ -502,6 +502,9 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
+            if (RawLLVMValue.Pointer == IntPtr.Zero)
+                throw new NullReferenceException();
+
             return ILImporter.CastIfNecessary(builder, RawLLVMValue, type);
         }
     }
