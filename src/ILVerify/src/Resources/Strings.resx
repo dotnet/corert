@@ -138,6 +138,9 @@
   <data name="BranchOutOfFilter" xml:space="preserve">
     <value>Branch out of exception filter block.</value>
   </data>
+  <data name="BranchOutOfFinally" xml:space="preserve">
+    <value>Branch out of finally block.</value>
+  </data>
   <data name="BranchOutOfHandler" xml:space="preserve">
     <value>Branch out of exception handler block.</value>
   </data>

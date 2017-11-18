@@ -75,7 +75,7 @@ namespace ILVerify
         BranchOutOfTry,                 // Branch out of try block.
         BranchOutOfHandler,             // Branch out of exception handler block.
         BranchOutOfFilter,              // Branch out of exception filter block.
-        //E_BR_OUTOF_FIN                "Branch out of finally block."
+        BranchOutOfFinally,             // Branch out of finally block.
         ReturnFromTry,                  // Return out of try block.
         ReturnFromHandler,              // Return out of exception handler block.
         ReturnFromFilter,               // Return out of exception filter block.

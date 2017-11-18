@@ -636,6 +636,23 @@
         lbl_ret: ret
     }
 
+    .method static public hidebysig void Branching.OutOfFinally_Invalid_BranchOutOfFinally() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            leave.s   lbl_ret
+        }
+        finally
+        {
+            br  lbl_ret
+            endfinally
+        }
+
+        lbl_ret: ret
+    }
+
     .method static public hidebysig void Branching.FromTryIntoOtherTryStart_Invalid_BranchOutOfTry() cil managed
     {
         .maxstack 2

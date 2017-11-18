@@ -751,7 +751,12 @@ again:
                 else if (target.HandlerIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchOutOfHandler);
+                    {
+                        if (_exceptionRegions[src.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally)
+                            VerificationError(VerifierError.BranchOutOfFinally);
+                        else
+                            VerificationError(VerifierError.BranchOutOfHandler);
+                    }
                     isValid = false;
                 }
                 else
@@ -767,7 +772,12 @@ again:
                     else
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchOutOfHandler);
+                        {
+                            if (srcRegion.Kind == ILExceptionRegionKind.Finally)
+                                VerificationError(VerifierError.BranchOutOfFinally);
+                            else
+                                VerificationError(VerifierError.BranchOutOfHandler);
+                        }
                         isValid = false;
                     }
                 }
