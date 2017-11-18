@@ -749,4 +749,66 @@
 
         lbl_ret: ret
     }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoFinally_Invalid_FallthroughException.FallthroughIntoHandler() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        finally
+        {
+            endfinally
+        }
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoCatch_Invalid_FallthroughException.FallthroughIntoHandler() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfCatch_Invalid_FallthroughException() cil managed
+    {
+        .try
+        {
+            nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoFilter_Invalid_FallthroughException.FallthroughIntoFilter() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        filter
+        {
+            pop
+            ldc.i4.0
+            endfilter
+        } 
+        { 
+            pop
+            leave.s lbl_ret
+        }
+
+        lbl_ret: ret
+    }
 }

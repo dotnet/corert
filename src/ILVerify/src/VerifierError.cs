@@ -55,9 +55,9 @@ namespace ILVerify
         //E_FIL_CONT_FIL                "Nested filters."
         //E_FIL_GTEQ_CS                 "filter >= code size."
         //E_FIL_START                   "Filter starts in the middle of an instruction."
-        //E_FALLTHRU_EXCEP              "fallthru the end of an exception block."
-        //E_FALLTHRU_INTO_HND           "fallthru into an exception handler."
-        //E_FALLTHRU_INTO_FIL           "fallthru into an exception filter."
+        FallthroughException,           // Fallthrough the end of an exception block.
+        FallthroughIntoHandler,         // Fallthrough into an exception handler.
+        FallthroughIntoFilter,          // Fallthrough into an exception filter.
         //E_LEAVE                       "Leave from outside a try or catch block."
         LeaveIntoTry,                   // Leave into try block.
         LeaveIntoHandler,               // Leave into exception handler block.
