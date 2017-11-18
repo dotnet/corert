@@ -55,10 +55,9 @@ namespace ILVerify
         //E_FIL_CONT_FIL                "Nested filters."
         //E_FIL_GTEQ_CS                 "filter >= code size."
         //E_FIL_START                   "Filter starts in the middle of an instruction."
-        //E_FALLTHRU_EXCEP              "fallthru the end of an exception block."
-        //E_FALLTHRU_INTO_HND           "fallthru into an exception handler."
-        //E_FALLTHRU_INTO_FIL           "fallthru into an exception filter."
-        //E_LEAVE                       "Leave from outside a try or catch block."
+        FallthroughException,           // Fallthrough the end of an exception block.
+        FallthroughIntoHandler,         // Fallthrough into an exception handler.
+        FallthroughIntoFilter,          // Fallthrough into an exception filter.
         LeaveIntoTry,                   // Leave into try block.
         LeaveIntoHandler,               // Leave into exception handler block.
         LeaveIntoFilter,                // Leave into filter block.
@@ -75,7 +74,7 @@ namespace ILVerify
         BranchOutOfTry,                 // Branch out of try block.
         BranchOutOfHandler,             // Branch out of exception handler block.
         BranchOutOfFilter,              // Branch out of exception filter block.
-        //E_BR_OUTOF_FIN                "Branch out of finally block."
+        BranchOutOfFinally,             // Branch out of finally block.
         ReturnFromTry,                  // Return out of try block.
         ReturnFromHandler,              // Return out of exception handler block.
         ReturnFromFilter,               // Return out of exception filter block.
@@ -205,7 +204,6 @@ namespace ILVerify
         LdvirtftnOnStatic,              // ldvirtftn on static.
         CallVirtOnStatic,               // callvirt on static.
         InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
-        //E_BR_TO_EXCEPTION             "branch/leave to the beginning of a catch/filter handler"
         CallCtor,                       // call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.
 
         ////@GENERICSVER: new generics related error messages

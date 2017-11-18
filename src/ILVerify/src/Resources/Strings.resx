@@ -138,6 +138,9 @@
   <data name="BranchOutOfFilter" xml:space="preserve">
     <value>Branch out of exception filter block.</value>
   </data>
+  <data name="BranchOutOfFinally" xml:space="preserve">
+    <value>Branch out of finally block.</value>
+  </data>
   <data name="BranchOutOfHandler" xml:space="preserve">
     <value>Branch out of exception handler block.</value>
   </data>
@@ -218,6 +221,15 @@
   </data>
   <data name="ExpectedValClassObjRefVariable" xml:space="preserve">
     <value>Value type, ObjRef type or variable type expected.</value>
+  </data>
+  <data name="FallthroughException" xml:space="preserve">
+    <value>Fallthrough the end of an exception block.</value>
+  </data>
+  <data name="FallthroughIntoFilter" xml:space="preserve">
+    <value>Fallthrough into an exception filter.</value>
+  </data>
+  <data name="FallthroughIntoHandler" xml:space="preserve">
+    <value>Fallthrough into an exception handler.</value>
   </data>
   <data name="FieldAccess" xml:space="preserve">
     <value>Field is not visible.</value>
