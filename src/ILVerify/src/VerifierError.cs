@@ -58,7 +58,6 @@ namespace ILVerify
         FallthroughException,           // Fallthrough the end of an exception block.
         FallthroughIntoHandler,         // Fallthrough into an exception handler.
         FallthroughIntoFilter,          // Fallthrough into an exception filter.
-        //E_LEAVE                       "Leave from outside a try or catch block."
         LeaveIntoTry,                   // Leave into try block.
         LeaveIntoHandler,               // Leave into exception handler block.
         LeaveIntoFilter,                // Leave into filter block.
@@ -205,7 +204,6 @@ namespace ILVerify
         LdvirtftnOnStatic,              // ldvirtftn on static.
         CallVirtOnStatic,               // callvirt on static.
         InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
-        //E_BR_TO_EXCEPTION             "branch/leave to the beginning of a catch/filter handler"
         CallCtor,                       // call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj.
 
         ////@GENERICSVER: new generics related error messages
