@@ -532,7 +532,7 @@ namespace System
         {
             checked
             {
-                int loadedModuleCount = RuntimeAugments.GetLoadedOSModules(null);
+                int loadedModuleCount = (int)RuntimeImports.RhGetLoadedOSModules(null);
                 int cbModuleHandles = sizeof(System.IntPtr) * loadedModuleCount;
                 int cbFinalBuffer = sizeof(ERROR_REPORT_BUFFER_HEADER) + sizeof(SERIALIZED_ERROR_REPORT_HEADER) + cbModuleHandles;
                 for (int i = 0; i < serializedExceptions.Count; i++)
@@ -567,7 +567,7 @@ namespace System
 
                     // copy the module-handle array to report buffer
                     IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
-                    RuntimeAugments.GetLoadedOSModules(loadedModuleHandles);
+                    RuntimeImports.RhGetLoadedOSModules(loadedModuleHandles);
                     PInvokeMarshal.CopyToNative(loadedModuleHandles, 0, (IntPtr)pCursor, loadedModuleHandles.Length);
                     cbRemaining -= cbModuleHandles;
                     pCursor += cbModuleHandles;

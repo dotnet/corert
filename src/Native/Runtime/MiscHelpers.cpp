@@ -122,52 +122,6 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
     return cModules;
 }
 
-// Get the list of currently loaded Redhawk modules (as OS HMODULE handles or TypeManager pointers as appropriate).
-//  The caller provides a reference
-// to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
-// that is less than, equal to or greater than the number of elements in the array). If there are more modules
-// loaded than the array will hold then the array is filled to capacity and the caller can tell further
-// modules are available based on the return count. It is also possible to call this method without an array,
-// in which case just the module count is returned (note that it's still possible for the module count to
-// increase between calls to this method).
-COOP_PINVOKE_HELPER(UInt32, RhGetLoadedModules, (Array * pResultArray))
-{
-    // Note that we depend on the fact that this is a COOP helper to make writing into an unpinned array safe.
-
-    // If a result array is passed then it should be an array type with pointer-sized components that are not
-    // GC-references.
-    ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
-    ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->get_ComponentSize() == sizeof(void*));
-
-    UInt32 cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
-    TypeManagerHandle * pResultElements = pResultArray ? (TypeManagerHandle*)(pResultArray + 1) : NULL;
-
-    UInt32 cModules = 0;
-
-    FOREACH_MODULE(pModule)
-    {
-        if (pResultArray && (cModules < cResultArrayElements))
-            pResultElements[cModules] = TypeManagerHandle::Create(pModule->GetOsModuleHandle());
-
-        cModules++;
-    }
-    END_FOREACH_MODULE
-
-    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
-
-    RuntimeInstance::TypeManagerList typeManagers = GetRuntimeInstance()->GetTypeManagerList();
-    
-    for (RuntimeInstance::TypeManagerList::Iterator iter = typeManagers.Begin(); iter != typeManagers.End(); iter++)
-    {
-        if (pResultArray && (cModules < cResultArrayElements))
-            pResultElements[cModules] = TypeManagerHandle::Create(iter->m_pTypeManager);
-        cModules++;
-    }
-
-    return cModules;
-}
-
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
     Module * pModule = GetRuntimeInstance()->FindModuleByAddress(pPointerVal);
@@ -204,7 +158,7 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 
         // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
         RhFailFast();
-       return NULL;
+        return NULL;
     }
 #endif // PROJECTN
 
@@ -247,25 +201,8 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
 {
     TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
 
-    if (typeManagerHandle.IsTypeManager())
-    {
-        ReadyToRunSectionType section =
-            (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
-        ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
-
-        TypeManager* pModule = typeManagerHandle.AsTypeManager();
-
-        int length;
-        void* pBlob;
-        pBlob = pModule->GetModuleSection(section, &length);
-
-        *ppbBlob = (UInt8*)pBlob;
-        *pcbBlob = (UInt32)length;
-
-        return pBlob != NULL;
-    }
-#if PROJECTN
-    else
+#ifdef PROJECTN
+    if (!typeManagerHandle.IsTypeManager())
     {
         HANDLE hOsModule = typeManagerHandle.AsOsModule();
         // Search for the Redhawk module contained by the OS module.
@@ -302,14 +239,28 @@ COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle,
             }
         }
         END_FOREACH_MODULE
+
+        // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
+        // (which could lead to the wrong blob being returned in some cases).
+        RhFailFast();
+        return FALSE;
     }
 #endif // PROJECTN
 
-    // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
-    // (which could lead to the wrong blob being returned in some cases).
-    RhFailFast();
+    ReadyToRunSectionType section =
+        (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
+    ASSERT(section <= ReadyToRunSectionType::ReadonlyBlobRegionEnd);
 
-    return FALSE;
+    TypeManager* pModule = typeManagerHandle.AsTypeManager();
+
+    int length;
+    void* pBlob;
+    pBlob = pModule->GetModuleSection(section, &length);
+
+    *ppbBlob = (UInt8*)pBlob;
+    *pcbBlob = (UInt32)length;
+
+    return pBlob != NULL;
 }
 
 // This helper is not called directly but is used by the implementation of RhpCheckCctor to locate the

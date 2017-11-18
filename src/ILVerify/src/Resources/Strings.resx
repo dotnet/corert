@@ -165,6 +165,12 @@
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
   </data>
+  <data name="CtorExpected" xml:space="preserve">
+    <value>.ctor expected.</value>
+  </data>
+  <data name="CtorSig" xml:space="preserve">
+    <value>newobj on static or abstract method.</value>
+  </data>
   <data name="DelegateCtor" xml:space="preserve">
     <value>Unrecognized arguments for delegate .ctor.</value>
   </data>
@@ -219,7 +225,7 @@
   <data name="InitLocals" xml:space="preserve">
     <value>initlocals must be set for verifiable methods with one or more local variables.</value>
   </data>
-  <data name="Initonly" xml:space="preserve">
+  <data name="InitOnly" xml:space="preserve">
     <value>Cannot change initonly field outside its .ctor.</value>
   </data>
   <data name="LdftnConstructor" xml:space="preserve">
@@ -255,6 +261,9 @@
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>
+  <data name="NewobjAbstractClass" xml:space="preserve">
+    <value>Cannot construct an instance of abstract class.</value>
+  </data>
   <data name="PathStackDepth" xml:space="preserve">
     <value>Stack depth differs depending on path.</value>
   </data>
@@ -266,6 +275,9 @@
   </data>
   <data name="ReadOnlyIllegalWrite" xml:space="preserve">
     <value>Illegal write to readonly ByRef.</value>
+  </data>
+  <data name="ReadonlyUnexpectedCallee" xml:space="preserve">
+    <value>The readonly prefix may only be applied to calls to array methods returning ByRefs.</value>
   </data>
   <data name="Rethrow" xml:space="preserve">
     <value>Rethrow from outside a catch handler.</value>
@@ -324,6 +336,12 @@
   <data name="TailCall" xml:space="preserve">
     <value>Missing call/callvirt/calli.</value>
   </data>
+  <data name="TailCallInsideER" xml:space="preserve">
+    <value>The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.</value>
+  </data>
+  <data name="TailRetType" xml:space="preserve">
+    <value>Tail call return type not compatible.</value>
+  </data>
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>
   </data>
@@ -365,6 +383,9 @@
   </data>
   <data name="UnsatisfiedBoxOperand" xml:space="preserve">
     <value>Type operand of box instruction has unsatisfied class type parameter constraints.</value>
+  </data>
+  <data name="UnsatisfiedFieldParentInst" xml:space="preserve">
+    <value>Field parent instantiation has unsatisfied class type parameter constraints.</value>
   </data>
   <data name="UnsatisfiedMethodInst" xml:space="preserve">
     <value>Method instantiation has unsatisfied method type parameter constraints.</value>

@@ -371,29 +371,23 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#else
-            return (IntPtr)ReadInt64(ptr, ofs);
-#endif
+            if (IntPtr.Size == 4)
+                return (IntPtr)ReadInt32(ptr, ofs);
+            else
+                return (IntPtr)ReadInt64(ptr, ofs);
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#else
-            return (IntPtr)ReadInt64(ptr, ofs);
-#endif
+            if (IntPtr.Size == 4)
+                return (IntPtr)ReadInt32(ptr, ofs);
+            else
+                return (IntPtr)ReadInt64(ptr, ofs);
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, 0);
-#else
-            return (IntPtr)ReadInt64(ptr, 0);
-#endif
+            return ReadIntPtr(ptr, 0);
         }
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
@@ -503,29 +497,24 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, ofs, (int)val);
-#else
-            WriteInt64(ptr, ofs, (long)val);
-#endif
+            if (IntPtr.Size == 4)
+                WriteInt32(ptr, ofs, (int)val);
+            else
+                WriteInt64(ptr, ofs, (long)val);
         }
 
         public static void WriteIntPtr([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, ofs, (int)val);
-#else
-            WriteInt64(ptr, ofs, (long)val);
-#endif
+            if (IntPtr.Size == 4)
+                WriteInt32(ptr, ofs, (int)val);
+            else
+                WriteInt64(ptr, ofs, (long)val);
+
         }
 
         public static void WriteIntPtr(IntPtr ptr, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, 0, (int)val);
-#else
-            WriteInt64(ptr, 0, (long)val);
-#endif
+            WriteIntPtr(ptr, 0, val);
         }
 
         public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)

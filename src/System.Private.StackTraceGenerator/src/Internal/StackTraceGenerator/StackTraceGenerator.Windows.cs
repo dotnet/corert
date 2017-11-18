@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
@@ -585,33 +586,17 @@ namespace Internal.StackTraceGenerator
 
             if (s_loadedModules == null)
             {
-                // Lazily create the parallel arrays s_loadedModules and s_perModuleDebugInfo
-                int moduleCount = RuntimeAugments.GetLoadedOSModules(null);
-
-                s_loadedModules = new IntPtr[moduleCount];
-                s_perModuleDebugInfo = new IDiaSession[moduleCount];
-
-                // Actually read the module addresses into the array
-                RuntimeAugments.GetLoadedOSModules(s_loadedModules);
+                // Lazily create the map from module bases to debug info
+                s_loadedModules = new Dictionary<IntPtr, IDiaSession>();
             }
 
             // Locate module index based on base address
-            int moduleIndex = s_loadedModules.Length;
-            do
-            {
-                if (--moduleIndex < 0)
-                {
-                    return null;
-                }
-            }
-            while(s_loadedModules[moduleIndex] != moduleBase);
-
-            IDiaSession diaSession = s_perModuleDebugInfo[moduleIndex];
-            if (diaSession != null)
+            IDiaSession diaSession;
+            if (s_loadedModules.TryGetValue(moduleBase, out diaSession))
             {
                 return diaSession;
             }
-            
+
             string modulePath = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
             if (modulePath == null)
             {
@@ -644,7 +629,7 @@ namespace Internal.StackTraceGenerator
                 return null;
             }
 
-            s_perModuleDebugInfo[moduleIndex] = diaSession;
+            s_loadedModules.Add(moduleBase, diaSession);
             return diaSession;
         }
 
@@ -664,17 +649,7 @@ namespace Internal.StackTraceGenerator
         /// Loaded binary module addresses.
         /// </summary>
         [ThreadStatic]
-        private static IntPtr[] s_loadedModules;
-
-        /// <summary>
-        /// DIA session COM interfaces for the individual native application modules.
-        /// The array is constructed upon the first call to GetDiaSession but the
-        /// COM interface instances are created lazily on demand.
-        /// This array is parallel to s_loadedModules - it has the same number of elements
-        /// and the corresponding entries have the same indices.
-        /// </summary>
-        [ThreadStatic]
-        private static IDiaSession[] s_perModuleDebugInfo;
+        private static Dictionary<IntPtr, IDiaSession> s_loadedModules;
     }
 }
 

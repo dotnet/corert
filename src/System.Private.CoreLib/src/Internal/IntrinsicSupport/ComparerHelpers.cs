@@ -94,7 +94,7 @@ namespace Internal.IntrinsicSupport
             return RuntimeAugments.NewObject(comparerType);
         }
 
-        private static Comparer<T> GetUnknownComparer<T>()
+        internal static Comparer<T> GetUnknownComparer<T>()
         {
             return (Comparer<T>)GetComparer(typeof(T).TypeHandle);
         }

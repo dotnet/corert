@@ -538,14 +538,26 @@ namespace Internal.JitInterface
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = method.RequiresInstArg() && !isFatFunctionPointer;
 
-            // Some intrinsics will beg to differ about the hasHiddenParameter decision
             if (method.IsIntrinsic)
             {
+                // Some intrinsics will beg to differ about the hasHiddenParameter decision
                 if (_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
                     hasHiddenParameter = false;
 
                 if (method.IsArrayAddressMethod())
                     hasHiddenParameter = true;
+                
+                // We only populate sigInst for intrinsic methods because most of the time,
+                // JIT doesn't care what the instantiation is and this is expensive.
+                Instantiation owningTypeInst = method.OwningType.Instantiation;
+                sig.sigInst.classInstCount = (uint)owningTypeInst.Length;
+                if (owningTypeInst.Length > 0)
+                {
+                    var classInst = new IntPtr[owningTypeInst.Length];
+                    for (int i = 0; i < owningTypeInst.Length; i++)
+                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
+                    sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
+                }
             }
 
             if (hasHiddenParameter)
@@ -953,9 +965,9 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
-            // TODO: EqualityComparer optimizations
-            // https://github.com/dotnet/corert/issues/763
-            return null;
+            TypeDesc comparand = HandleToObject(elemType);
+            TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
+            return comparer != null ? ObjectToHandle(comparer) : null;
         }
 
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
@@ -3282,20 +3294,6 @@ namespace Internal.JitInterface
 
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
             Get_CORINFO_SIG_INFO(targetMethod, out pResult.sig, targetIsFatFunctionPointer);
-            if (targetMethod.IsIntrinsic)
-            {
-                // We only populate sigInst for intrinsic methods because most of the time,
-                // JIT doesn't care what the instantiation is and this is expensive.
-                Instantiation owningTypeInst = targetMethod.OwningType.Instantiation;
-                pResult.sig.sigInst.classInstCount = (uint)owningTypeInst.Length;
-                if (owningTypeInst.Length > 0)
-                {
-                    var classInst = new IntPtr[owningTypeInst.Length];
-                    for (int i = 0; i < owningTypeInst.Length; i++)
-                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
-                    pResult.sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
-                }
-            }
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {

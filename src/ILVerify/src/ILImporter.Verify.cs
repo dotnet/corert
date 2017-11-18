@@ -1003,12 +1003,12 @@ again:
 
             for (int i = 0; i < ftnSignature.Length; i++)
             {
-                if (!IsAssignable(ftnSignature[i], delegateSignature[i]))
+                if (!IsAssignable(delegateSignature[i], ftnSignature[i]))
                     return false;
             }
 
             // Compare return type
-            return IsAssignable(delegateSignature.ReturnType, ftnSignature.ReturnType);
+            return IsAssignable(ftnSignature.ReturnType, delegateSignature.ReturnType);
         }
 
         ILOpcode GetOpcodeAt(int instructionOffset)
@@ -1332,7 +1332,7 @@ again:
                 Check(methodType != null, VerifierError.CallVirtOnStatic);
                 Check(!methodType.IsValueType, VerifierError.CallVirtOnValueType);
             }
-            else
+            else if (opcode != ILOpcode.newobj)
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
@@ -1378,7 +1378,24 @@ again:
 
             if (opcode == ILOpcode.newobj)
             {
-                // TODO:
+                Check(method.IsConstructor, VerifierError.CtorExpected);
+                if (sig.IsStatic || methodType == null || method.IsAbstract)
+                {
+                    VerificationError(VerifierError.CtorSig);
+                }
+                else
+                {
+                    if (methodType.IsArray)
+                    {
+                        var arrayType = (ArrayType)methodType;
+                        Check(!IsByRefLike(StackValue.CreateFromType(arrayType.ElementType)), VerifierError.ArrayByRef);
+                    }
+                    else
+                    {
+                        var metadataType = (MetadataType)methodType;
+                        Check(!metadataType.IsAbstract, VerifierError.NewobjAbstractClass);
+                    }
+                }
             }
             else
             if (methodType != null)
@@ -1452,7 +1469,7 @@ again:
 
                 if (tailCall)
                 {
-                    // also check the specil tailcall rule
+                    // also check the special tailcall rule
                     Check(!IsByRefLike(declaredThis), VerifierError.TailByRef, declaredThis);
 
                     // Tail calls on constrained calls should be illegal too:
@@ -1487,7 +1504,9 @@ again:
                 // }
                 else
                 {
-                    CheckIsAssignable(StackValue.CreateFromType(returnType), StackValue.CreateFromType(callerReturnType));
+                    var retStackType = StackValue.CreateFromType(returnType);
+                    var callerRetStackType = StackValue.CreateFromType(callerReturnType);
+                    Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
                 }
 
                 // for tailcall, stack must be empty
@@ -1504,18 +1523,18 @@ again:
             {
                 var returnValue = StackValue.CreateFromType(returnType);
 
-#if false
                 // "readonly." prefixed calls only allowed for the Address operation on arrays.
                 // The methods supported by array types are under the control of the EE
                 // so we can trust that only the Address operation returns a byref.
-                if (readonlyCall)
+                if (HasPendingPrefix(Prefix.ReadOnly))
                 {
-                    VerifyOrReturn ((methodClassFlgs & CORINFO_FLG_ARRAY) && tiRetVal.IsByRef(), 
-                                    MVER_E_READONLY_UNEXPECTED_CALLEE);//"unexpected use of readonly prefix"
-                    vstate->readonlyPrefix = false;
-                    tiRetVal.SetIsReadonlyByRef();
+                    if (method.OwningType.IsArray && sig.ReturnType.IsByRef)
+                        returnValue.SetIsReadOnly();
+                    else
+                        VerificationError(VerifierError.ReadonlyUnexpectedCallee);
+
+                    ClearPendingPrefix(Prefix.ReadOnly);
                 }
-#endif
 
                 if (returnValue.Kind == StackValueKind.ByRef)
                     returnValue.SetIsPermanentHome();
@@ -1891,7 +1910,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1913,7 +1932,7 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
@@ -1938,7 +1957,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1959,8 +1978,11 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
+
+            // Check any constraints on the fields' class --- accessing the field might cause a class constructor to run.
+            Check(field.OwningType.CheckConstraints(), VerifierError.UnsatisfiedFieldParentInst);
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
@@ -2316,7 +2338,7 @@ again:
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
             var result = Pop(allowUninitThis: true);
-            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
@@ -2404,6 +2426,9 @@ again:
         {
             CheckPendingPrefix(_pendingPrefix);
             _pendingPrefix |= Prefix.Tail;
+
+            Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
+                !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.TailCallInsideER);
         }
 
         void ImportConstrainedPrefix(int token)

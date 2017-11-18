@@ -13,7 +13,12 @@
 .class public auto ansi beforefieldinit PrefixTestsType
        extends [System.Runtime]System.Object
 {
-    .method static public hidebysig void Prefix.Readonly_Valid() cil managed 
+    .method static public hidebysig void StaticMethod() cil managed 
+    {
+        ret
+    }
+
+    .method static public hidebysig void Readonly.Ldelema_Valid() cil managed 
     {
         .locals init (int32[] V_0)
 
@@ -31,7 +36,7 @@
         ret
     }
 
-    .method static public hidebysig void Prefix.Readonly_Invalid_ReadOnly() cil managed 
+    .method static public hidebysig void Readonly.Ldelem_Invalid_ReadOnly() cil managed 
     {
         .locals init (int32[] V_0)
 
@@ -48,7 +53,35 @@
         ret
     }
 
-    .method static public hidebysig void Prefix.PrefixUnalignedAndVolatile_Valid() cil managed 
+    .method static public hidebysig void Readonly.ArrayAddress_Valid() cil managed 
+    {
+        //int[,] array = new int[1, 1];
+        ldc.i4.1
+        ldc.i4.1
+        newobj  instance void int32[0..., 0...]::.ctor(int32, int32)
+        ldc.i4.0
+        ldc.i4.0
+        readonly. 
+        call    instance int32& int32[0..., 0...]::Address(int32, int32)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Readonly.ArrayGet_Invalid_ReadonlyUnexpectedCallee() cil managed 
+    {
+        //int[,] array = new int[1, 1];
+        ldc.i4.1
+        ldc.i4.1
+        newobj  instance void int32[0..., 0...]::.ctor(int32, int32)
+        ldc.i4.0
+        ldc.i4.0
+        readonly. 
+        call    instance int32 int32[0..., 0...]::Get(int32, int32)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Prefix.UnalignedAndVolatile_Valid() cil managed 
     {
         .locals init (int32& V_0, int32 V_1)
         // ref int x;
@@ -59,6 +92,24 @@
         unaligned. 4
         ldind.i4
         stloc.1
+        ret
+    }
+
+    .method static public hidebysig void Tail.FromTry_Invalid_TailCallInsideER() cil managed 
+    {
+        .try
+        {
+            tail.
+            call    void PrefixTestsType::StaticMethod()
+
+            leave   MethodEnd
+        }
+        finally
+        {
+            endfinally
+        }
+
+    MethodEnd:
         ret
     }
 }
