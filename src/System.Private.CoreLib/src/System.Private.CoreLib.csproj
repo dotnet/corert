@@ -225,7 +225,7 @@
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
-    <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
     <Compile Include="System\Diagnostics\StackFrame.cs" />
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
