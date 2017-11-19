@@ -298,7 +298,12 @@ namespace System
 
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
-            var sb = new ValueStringBuilder(s_numberToStringScratch);
+            ValueStringBuilder sb;
+            unsafe
+            {
+                char* stackPtr = stackalloc char[CharStackBufferSize];
+                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            }
             if (fmt != 0)
             {
                 NumberToString(ref sb, ref number, fmt, digits, info, true);
@@ -313,7 +318,12 @@ namespace System
         public static String FormatDouble(double value, String format, IFormatProvider provider)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-            var sb = new ValueStringBuilder(s_numberToStringScratch);
+            ValueStringBuilder sb;
+            unsafe
+            {
+                char* stackPtr = stackalloc char[CharStackBufferSize];
+                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            }
 
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
@@ -383,7 +393,12 @@ namespace System
         public static String FormatSingle(float value, String format, IFormatProvider provider)
         {
             NumberFormatInfo info = provider == null ? NumberFormatInfo.CurrentInfo : NumberFormatInfo.GetInstance(provider);
-            var sb = new ValueStringBuilder(s_numberToStringScratch);
+            ValueStringBuilder sb;
+            unsafe
+            {
+                char* stackPtr = stackalloc char[CharStackBufferSize];
+                sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            }
 
             int digits;
             char fmt = ParseFormatSpecifier(format, out digits);
