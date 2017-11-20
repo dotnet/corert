@@ -50,9 +50,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
