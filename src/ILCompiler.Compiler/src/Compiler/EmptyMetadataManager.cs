@@ -17,7 +17,7 @@ namespace ILCompiler
         public override bool SupportsReflection => false;
 
         public EmptyMetadataManager(CompilationModuleGroup group, CompilerTypeSystemContext typeSystemContext)
-            : base(group, typeSystemContext, new FullyBlockedMetadataPolicy(), new NoStackTraceEmissionPolicy())
+            : base(group, typeSystemContext, new FullyBlockedMetadataPolicy())
         {
         }
 

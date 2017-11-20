@@ -32,8 +32,6 @@ namespace ILCompiler.Metadata
 
         public override MetadataRecord HandleType(Cts.TypeDesc type)
         {
-            Debug.Assert(!IsBlocked(type));
-
             MetadataRecord rec;
             if (_types.TryGet(type, out rec))
             {
@@ -78,6 +76,7 @@ namespace ILCompiler.Metadata
                             var metadataType = (Cts.MetadataType)type;
                             if (_policy.GeneratesMetadata(metadataType))
                             {
+                                Debug.Assert(!_policy.IsBlocked(metadataType));
                                 rec = _types.Create(metadataType, _initTypeDef ?? (_initTypeDef = InitializeTypeDef));
                             }
                             else
