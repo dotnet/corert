@@ -6,11 +6,13 @@
     <BuildAllOSGroups Condition="'$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.TargetingPack.Private.CoreRT\Microsoft.TargetingPack.Private.CoreRT.builds" >
       <OSGroup>AnyOS</OSGroup>
     </Project>
-    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.ILCompiler\Microsoft.DotNet.ILCompiler.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true'"/>
+    <Project Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.ILCompiler\Microsoft.DotNet.ILCompiler.builds" >
+    <OSGroup>AnyOS</OSGroup>
+    </Project>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
