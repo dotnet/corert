@@ -806,14 +806,9 @@ namespace Internal.Runtime.Augments
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
+        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, registeredResolutionFunction, contextObject, out auxResult);
-        }
-
-        public static int RegisterResolutionFunctionWithRuntimeCache(IntPtr functionPointer)
-        {
-            return TypeLoaderExports.RegisterResolutionFunction(functionPointer);
+            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
         }
 
         //==============================================================================================
