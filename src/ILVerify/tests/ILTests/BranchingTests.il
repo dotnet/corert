@@ -636,6 +636,23 @@
         lbl_ret: ret
     }
 
+    .method static public hidebysig void Branching.OutOfFinally_Invalid_BranchOutOfFinally() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            leave.s   lbl_ret
+        }
+        finally
+        {
+            br  lbl_ret
+            endfinally
+        }
+
+        lbl_ret: ret
+    }
+
     .method static public hidebysig void Branching.FromTryIntoOtherTryStart_Invalid_BranchOutOfTry() cil managed
     {
         .maxstack 2
@@ -728,6 +745,68 @@
         {
             pop
             leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoFinally_Invalid_FallthroughException.FallthroughIntoHandler() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        finally
+        {
+            endfinally
+        }
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoCatch_Invalid_FallthroughException.FallthroughIntoHandler() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+            leave.s   lbl_ret
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfCatch_Invalid_FallthroughException() cil managed
+    {
+        .try
+        {
+            nop
+            leave.s   lbl_ret
+        }
+        catch [System.Runtime]System.Object
+        {
+            pop
+        }
+
+        lbl_ret: ret
+    }
+
+    .method static public hidebysig void Fallthrough.OutOfTryIntoFilter_Invalid_FallthroughException.FallthroughIntoFilter() cil managed
+    {
+        .try
+        {
+            nop
+        }
+        filter
+        {
+            pop
+            ldc.i4.0
+            endfilter
+        } 
+        { 
+            pop
+            leave.s lbl_ret
         }
 
         lbl_ret: ret

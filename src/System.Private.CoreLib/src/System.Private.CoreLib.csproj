@@ -225,7 +225,7 @@
     <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
-    <Compile Include="System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
     <Compile Include="System\Diagnostics\StackFrame.cs" />
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
@@ -253,9 +253,7 @@
     <Compile Include="System\MissingMemberException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Nullable.cs" />
-    <Compile Include="System\Number.cs" />
-    <Compile Include="System\Number.NumberBuffer.cs" />
-    <Compile Include="System\Number.FormatAndParse.cs" />
+    <Compile Include="System\Number.CoreRT.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />

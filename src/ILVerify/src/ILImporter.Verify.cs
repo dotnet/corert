@@ -660,7 +660,7 @@ again:
             }
         }
 
-        bool IsValidBranchTarget(BasicBlock src, BasicBlock target, bool reportErrors = true)
+        bool IsValidBranchTarget(BasicBlock src, BasicBlock target, bool isFallthrough, bool reportErrors = true)
         {
             bool isValid = true;
 
@@ -672,14 +672,22 @@ again:
                     if (target.StartOffset != _exceptionRegions[target.TryIndex.Value].ILRegion.TryOffset || !IsDirectChildRegion(src, target))
                     {
                         if (reportErrors)
+                        {
+                            Debug.Assert(!isFallthrough); // This should not be reachable by fallthrough
                             VerificationError(VerifierError.BranchIntoTry);
+                        }
                         isValid = false;
                     }
                 }
                 else if (target.TryIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchOutOfTry);
+                    {
+                        if (isFallthrough)
+                            VerificationError(VerifierError.FallthroughException);
+                        else
+                            VerificationError(VerifierError.BranchOutOfTry);
+                    }
                     isValid = false;
                 }
                 else
@@ -694,14 +702,22 @@ again:
                         if (target.StartOffset != targetRegion.TryOffset || !IsDirectChildRegion(src, target))
                         {
                             if (reportErrors)
+                            {
+                                Debug.Assert(!isFallthrough); // This should not be reachable by fallthrough
                                 VerificationError(VerifierError.BranchIntoTry);
+                            }
                             isValid = false;
                         }
                     }
                     else
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchOutOfTry);
+                        {
+                            if (isFallthrough)
+                                VerificationError(VerifierError.FallthroughException);
+                            else
+                                VerificationError(VerifierError.BranchOutOfTry);
+                        }
                         isValid = false;
                     }
                 }
@@ -712,13 +728,23 @@ again:
                 if (src.FilterIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchIntoFilter);
+                    {
+                        if (isFallthrough)
+                            VerificationError(VerifierError.FallthroughIntoFilter);
+                        else
+                            VerificationError(VerifierError.BranchIntoFilter);
+                    }
                     isValid = false;
                 }
                 else if (target.HandlerIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchOutOfFilter);
+                    {
+                        if (isFallthrough)
+                            VerificationError(VerifierError.FallthroughException);
+                        else
+                            VerificationError(VerifierError.BranchOutOfFilter);
+                    }
                     isValid = false;
                 }
                 else
@@ -728,13 +754,23 @@ again:
                     if (srcRegion.FilterOffset <= targetRegion.FilterOffset)
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchIntoFilter);
+                        {
+                            if (isFallthrough)
+                                VerificationError(VerifierError.FallthroughIntoFilter);
+                            else
+                                VerificationError(VerifierError.BranchIntoFilter);
+                        }
                         isValid = false;
                     }
                     else
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchOutOfFilter);
+                        {
+                            if (isFallthrough)
+                                VerificationError(VerifierError.FallthroughException);
+                            else
+                                VerificationError(VerifierError.BranchOutOfFilter);
+                        }
                         isValid = false;
                     }
                 }
@@ -745,13 +781,28 @@ again:
                 if (src.HandlerIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchIntoHandler);
+                    {
+                        if (isFallthrough)
+                            VerificationError(VerifierError.FallthroughIntoHandler);
+                        else
+                            VerificationError(VerifierError.BranchIntoHandler);
+                    }
                     isValid = false;
                 }
                 else if (target.HandlerIndex == null)
                 {
                     if (reportErrors)
-                        VerificationError(VerifierError.BranchOutOfHandler);
+                    {
+                        if (isFallthrough)
+                            VerificationError(VerifierError.FallthroughException);
+                        else
+                        {
+                            if (_exceptionRegions[src.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally)
+                                VerificationError(VerifierError.BranchOutOfFinally);
+                            else
+                                VerificationError(VerifierError.BranchOutOfHandler);
+                        }
+                    }
                     isValid = false;
                 }
                 else
@@ -761,13 +812,28 @@ again:
                     if (srcRegion.HandlerOffset <= targetRegion.HandlerOffset)
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchIntoHandler);
+                        {
+                            if (isFallthrough)
+                                VerificationError(VerifierError.FallthroughIntoHandler);
+                            else
+                                VerificationError(VerifierError.BranchIntoHandler);
+                        }
                         isValid = false;
                     }
                     else
                     {
                         if (reportErrors)
-                            VerificationError(VerifierError.BranchOutOfHandler);
+                        {
+                            if (isFallthrough)
+                                VerificationError(VerifierError.FallthroughException);
+                            else
+                            {
+                                if (srcRegion.Kind == ILExceptionRegionKind.Finally)
+                                    VerificationError(VerifierError.BranchOutOfFinally);
+                                else
+                                    VerificationError(VerifierError.BranchOutOfHandler);
+                            }
+                        }
                         isValid = false;
                     }
                 }
@@ -1003,12 +1069,12 @@ again:
 
             for (int i = 0; i < ftnSignature.Length; i++)
             {
-                if (!IsAssignable(ftnSignature[i], delegateSignature[i]))
+                if (!IsAssignable(delegateSignature[i], ftnSignature[i]))
                     return false;
             }
 
             // Compare return type
-            return IsAssignable(delegateSignature.ReturnType, ftnSignature.ReturnType);
+            return IsAssignable(ftnSignature.ReturnType, delegateSignature.ReturnType);
         }
 
         ILOpcode GetOpcodeAt(int instructionOffset)
@@ -1332,7 +1398,7 @@ again:
                 Check(methodType != null, VerifierError.CallVirtOnStatic);
                 Check(!methodType.IsValueType, VerifierError.CallVirtOnValueType);
             }
-            else
+            else if (opcode != ILOpcode.newobj)
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
@@ -1378,7 +1444,24 @@ again:
 
             if (opcode == ILOpcode.newobj)
             {
-                // TODO:
+                Check(method.IsConstructor, VerifierError.CtorExpected);
+                if (sig.IsStatic || methodType == null || method.IsAbstract)
+                {
+                    VerificationError(VerifierError.CtorSig);
+                }
+                else
+                {
+                    if (methodType.IsArray)
+                    {
+                        var arrayType = (ArrayType)methodType;
+                        Check(!IsByRefLike(StackValue.CreateFromType(arrayType.ElementType)), VerifierError.ArrayByRef);
+                    }
+                    else
+                    {
+                        var metadataType = (MetadataType)methodType;
+                        Check(!metadataType.IsAbstract, VerifierError.NewobjAbstractClass);
+                    }
+                }
             }
             else
             if (methodType != null)
@@ -1452,7 +1535,7 @@ again:
 
                 if (tailCall)
                 {
-                    // also check the specil tailcall rule
+                    // also check the special tailcall rule
                     Check(!IsByRefLike(declaredThis), VerifierError.TailByRef, declaredThis);
 
                     // Tail calls on constrained calls should be illegal too:
@@ -1487,7 +1570,9 @@ again:
                 // }
                 else
                 {
-                    CheckIsAssignable(StackValue.CreateFromType(returnType), StackValue.CreateFromType(callerReturnType));
+                    var retStackType = StackValue.CreateFromType(returnType);
+                    var callerRetStackType = StackValue.CreateFromType(callerReturnType);
+                    Check(IsAssignable(retStackType, callerRetStackType), VerifierError.TailRetType, retStackType, callerRetStackType);
                 }
 
                 // for tailcall, stack must be empty
@@ -1504,18 +1589,18 @@ again:
             {
                 var returnValue = StackValue.CreateFromType(returnType);
 
-#if false
                 // "readonly." prefixed calls only allowed for the Address operation on arrays.
                 // The methods supported by array types are under the control of the EE
                 // so we can trust that only the Address operation returns a byref.
-                if (readonlyCall)
+                if (HasPendingPrefix(Prefix.ReadOnly))
                 {
-                    VerifyOrReturn ((methodClassFlgs & CORINFO_FLG_ARRAY) && tiRetVal.IsByRef(), 
-                                    MVER_E_READONLY_UNEXPECTED_CALLEE);//"unexpected use of readonly prefix"
-                    vstate->readonlyPrefix = false;
-                    tiRetVal.SetIsReadonlyByRef();
+                    if (method.OwningType.IsArray && sig.ReturnType.IsByRef)
+                        returnValue.SetIsReadOnly();
+                    else
+                        VerificationError(VerifierError.ReadonlyUnexpectedCallee);
+
+                    ClearPendingPrefix(Prefix.ReadOnly);
                 }
-#endif
 
                 if (returnValue.Kind == StackValueKind.ByRef)
                     returnValue.SetIsPermanentHome();
@@ -1636,54 +1721,7 @@ again:
 
         void ImportFallthrough(BasicBlock next)
         {
-            if (!IsValidBranchTarget(_currentBasicBlock, next) || _currentBasicBlock.ErrorCount > 0)
-                return;
-
-            PropagateThisState(_currentBasicBlock, next);
-
-            // Propagate stack across block bounds
-            StackValue[] entryStack = next.EntryStack;
-
-            if (entryStack != null)
-            {
-                FatalCheck(entryStack.Length == _stackTop, VerifierError.PathStackDepth);
-
-                for (int i = 0; i < entryStack.Length; i++)
-                {
-                    // TODO: Do we need to allow conversions?
-                    FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
-                    
-                    if (entryStack[i].Type != _stack[i].Type)
-                    {
-                        if (!IsAssignable(_stack[i], entryStack[i]))
-                        {
-                            StackValue mergedValue;
-                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
-                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
-
-                            // If merge actually changed entry stack
-                            if (mergedValue != entryStack[i])
-                            {
-                                entryStack[i] = mergedValue;
-
-                                if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
-                                    next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                entryStack = (_stackTop != 0) ? new StackValue[_stackTop] : s_emptyStack;
-
-                for (int i = 0; i < entryStack.Length; i++)
-                    entryStack[i] = _stack[i];
-
-                next.EntryStack = entryStack;
-            }
-
-            MarkBasicBlock(next);
+            PropagateControlFlow(next, isFallthrough: true);
         }
 
         void PropagateThisState(BasicBlock current, BasicBlock next)
@@ -1712,7 +1750,7 @@ again:
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
-                ImportFallthrough(target);
+                PropagateControlFlow(target, isFallthrough: false);
             }
 
             if (fallthrough != null)
@@ -1754,10 +1792,62 @@ again:
                     break;
             }
 
-            ImportFallthrough(target);
+            PropagateControlFlow(target, isFallthrough: false);
 
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
+        }
+
+        void PropagateControlFlow(BasicBlock next, bool isFallthrough)
+        {
+            if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) || _currentBasicBlock.ErrorCount > 0)
+                return;
+
+            PropagateThisState(_currentBasicBlock, next);
+
+            // Propagate stack across block bounds
+            StackValue[] entryStack = next.EntryStack;
+
+            if (entryStack != null)
+            {
+                FatalCheck(entryStack.Length == _stackTop, VerifierError.PathStackDepth);
+
+                for (int i = 0; i < entryStack.Length; i++)
+                {
+                    // TODO: Do we need to allow conversions?
+                    FatalCheck(entryStack[i].Kind == _stack[i].Kind, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                    if (entryStack[i].Type != _stack[i].Type)
+                    {
+                        if (!IsAssignable(_stack[i], entryStack[i]))
+                        {
+                            StackValue mergedValue;
+                            if (!TryMergeStackValues(entryStack[i], _stack[i], out mergedValue))
+                                FatalCheck(false, VerifierError.PathStackUnexpected, entryStack[i], _stack[i]);
+
+                            // If merge actually changed entry stack
+                            if (mergedValue != entryStack[i])
+                            {
+                                entryStack[i] = mergedValue;
+
+                                if (next.ErrorCount == 0 && next.State != BasicBlock.ImportState.IsPending)
+                                    next.State = BasicBlock.ImportState.Unmarked; // Make sure block is reverified
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                entryStack = (_stackTop != 0) ? new StackValue[_stackTop] : s_emptyStack;
+
+                for (int i = 0; i < entryStack.Length; i++)
+                    entryStack[i] = _stack[i];
+
+                next.EntryStack = entryStack;
+            }
+
+            MarkBasicBlock(next);
         }
 
         void ImportBinaryOperation(ILOpcode opcode)
@@ -1891,7 +1981,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1913,7 +2003,7 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
@@ -1938,7 +2028,7 @@ again:
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.Initonly);
+                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
             }
             else
             {
@@ -1959,8 +2049,11 @@ again:
                 instance = actualThis.Type;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.Initonly);
+                    Check(_method.IsConstructor && field.OwningType == _method.OwningType && actualThis.IsThisPtr, VerifierError.InitOnly);
             }
+
+            // Check any constraints on the fields' class --- accessing the field might cause a class constructor to run.
+            Check(field.OwningType.CheckConstraints(), VerifierError.UnsatisfiedFieldParentInst);
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
@@ -2316,7 +2409,7 @@ again:
             Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
             var result = Pop(allowUninitThis: true);
-            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected);
+            Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
             Check(_stackTop == 0, VerifierError.EndfilterStack);
         }
 
@@ -2404,6 +2497,9 @@ again:
         {
             CheckPendingPrefix(_pendingPrefix);
             _pendingPrefix |= Prefix.Tail;
+
+            Check(!_currentBasicBlock.TryIndex.HasValue && !_currentBasicBlock.FilterIndex.HasValue &&
+                !_currentBasicBlock.HandlerIndex.HasValue, VerifierError.TailCallInsideER);
         }
 
         void ImportConstrainedPrefix(int token)
