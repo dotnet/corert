@@ -46,15 +46,11 @@ namespace ILVerify
         //E_TRY_OVERLAP                 "Try block overlap with another block."
         //E_TRY_EQ_HND_FIL              "Try and filter/handler blocks are equivalent."
         //E_TRY_SHARE_FIN_FAL           "Shared try has finally or fault handler."
-        //E_HND_OVERLAP                 "Handler block overlaps with another block."
         //E_HND_EQ                      "Handler block is the same as another block."
-        //E_FIL_OVERLAP                 "Filter block overlaps with another block."
-        //E_FIL_EQ                      "Filter block is the same as another block."
         //E_FIL_CONT_TRY                "Filter contains try."
         //E_FIL_CONT_HND                "Filter contains handler."
         //E_FIL_CONT_FIL                "Nested filters."
         //E_FIL_GTEQ_CS                 "filter >= code size."
-        //E_FIL_START                   "Filter starts in the middle of an instruction."
         FallthroughException,           // Fallthrough the end of an exception block.
         FallthroughIntoHandler,         // Fallthrough into an exception handler.
         FallthroughIntoFilter,          // Fallthrough into an exception filter.
@@ -67,7 +63,6 @@ namespace ILVerify
         Rethrow,                        // Rethrow from outside a catch handler.
         Endfinally,                     // Endfinally from outside a finally handler.
         Endfilter,                      // Endfilter from outside an exception filter block.
-        //E_ENDFILTER_MISSING           "Missing Endfilter."
         BranchIntoTry,                  // Branch into try block.
         BranchIntoHandler,              // Branch into exception handler block.
         BranchIntoFilter,               // Branch into exception filter block.
@@ -79,93 +74,55 @@ namespace ILVerify
         ReturnFromHandler,              // Return out of exception handler block.
         ReturnFromFilter,               // Return out of exception filter block.
         //E_BAD_JMP_TARGET              "jmp / exception into the middle of an instruction."
-        //E_PATH_LOC                    "Non-compatible types depending on path."
-        //E_PATH_THIS                   "Init state for this differs depending on path."
         PathStackUnexpected,            // Non-compatible types on stack depending on path.
         PathStackDepth,                 // Stack depth differs depending on path.
-        //E_THIS                        "Instance variable (this) missing."
         //E_THIS_UNINIT_EXCEP           "Uninitialized this on entering a try block."
         ThisUninitStore,                // Store into this when it is uninitialized.
         ThisUninitReturn,               // Return from .ctor when this is uninitialized.
-        //E_THIS_UNINIT_V_RET           "Return from .ctor before all fields are initialized."
-        //E_THIS_UNINIT_BR              "Branch back when this is uninitialized."
         LdftnCtor,                      // ldftn/ldvirtftn not allowed on .ctor.
         //StackNotEq,                   // Non-compatible types on the stack.
         StackUnexpected,                // Unexpected type on the stack.
         StackUnexpectedArrayType,       // Unexpected array type on the stack.
-        //E_STACK_EXCEPTION             "Missing stack slot for exception."
         StackOverflow,                  // Stack overflow.
         StackUnderflow,                 // Stack underflow.
-        //E_STACK_EMPTY                 "Stack empty."
         UninitStack,                    // Uninitialized item on stack.
         ExpectedIntegerType,            // Expected I, I4, or I8 on the stack.
         ExpectedFloatType,              // Expected R, R4, or R8 on the stack.
-        //E_STACK_NO_R_I8               "unexpected R, R4, R8, or I8 on the stack."
         ExpectedNumericType,            // Expected numeric type on the stack.
         StackObjRef,                    // Expected an ObjRef on the stack.
-        //E_STACK_P_OBJREF              "Expected address of an ObjRef on the stack."
         StackByRef,                     // Expected ByRef on the stack.
         StackMethod,                    // Expected pointer to function on the stack.
-        //E_STACK_ARRAY_SD              "Expected single dimension array on the stack."
-        //E_STACK_VALCLASS              "Expected value type instance on the stack."
-        //E_STACK_P_VALCLASS            "Expected address of value type on the stack."
-        //E_STACK_NO_VALCLASS           "Unexpected value type instance on the stack."
-        //E_LOC_DEAD                    "Local variable is unusable at this point."
         UnrecognizedLocalNumber,        // Unrecognized local variable number.
         UnrecognizedArgumentNumber,     // Unrecognized argument number.
         ExpectedTypeToken,              // Expected type token.
         TokenResolve,                   // Unable to resolve token.
         //E_TOKEN_TYPE                  "Unable to resolve type of the token."
         ExpectedMethodToken,            // Expected memberRef, memberDef or methodSpec token.
-        //E_TOKEN_TYPE_FIELD            "Expected memberRef or fieldDef token."
-        //E_TOKEN_TYPE_SIG              "Expected signature token."
         ExpectedFieldToken,             // Expected field token.
-        //E_TOKEN_TYPE_SIG              "Expected signature token."
         Unverifiable,                   // Instruction can not be verified.
         StringOperand,                  // Operand does not point to a valid string ref.
         ReturnPtrToStack,               // Return type is ByRef, TypedReference, ArgHandle, or ArgIterator.
         ReturnVoid,                     // Stack must be empty on return from a void function.
         ReturnMissing,                  // Return value missing on the stack.
         ReturnEmpty,                    // Stack must contain only the return value.
-        //E_RET_UNINIT                  "Return uninitialized data."
-        //E_ARRAY_ACCESS                "Illegal array access."
-        //E_ARRAY_V_STORE               "Store non Object type into Object array."
         ExpectedArray,                  // Expected single-dimension zero-based array.
         //E_ARRAY_SD_PTR                "Expected single dimension array of pointer types."
-        //E_ARRAY_FIELD                 "Array field access is denied."
         //E_ARGLIST                     "Allowed only in vararg methods."
         ValueTypeExpected,              // Value type expected.
         //E_OPEN_DLGT_PROT_ACC          "Protected method access through an open instance delegate is not verifiable."
         TypeAccess,                     // Type is not visible.
         MethodAccess,                   // Method is not visible.
         FieldAccess,                    // Field is not visible.
-        //E_DEAD                        "Item is unusable at this point."
         ExpectedStaticField,            // Expected static field.
-        //E_FIELD_NO_STATIC             "Expected non-static field."
-        //E_ADDR                        "Address of not allowed for this item."
-        //E_ADDR_BYREF                  "Address of not allowed for ByRef."
-        //E_ADDR_LITERAL                "Address of not allowed for literal field."
         InitOnly,                       // Cannot change initonly field outside its .ctor.
         //E_WRITE_RVA_STATIC            "Cannot modify an imaged based (RVA) static"
-        //E_THROW                       "Cannot throw this object."
         CallVirtOnValueType,            // Callvirt on a value type method.
-        //E_CALL_SIG                    "Call signature mismatch."
-        //E_CALL_STATIC                 "Static function expected."
         CtorExpected,                   // .ctor expected.
         CtorSig,                        // newobj on static or abstract method.
-        //E_CTOR_VIRT                   "Cannot use callvirt on .ctor."
-        //E_CTOR_OR_SUPER               "Only super::ctor or typeof(this)::ctor allowed here."
-        //E_CTOR_MUL_INIT               "Possible call to .ctor more than once."
-        //E_SIG                         "Unrecognized signature."
         //E_SIG_ARRAY                   "Cannot resolve Array type."
-        //E_SIG_ARRAY_PTR               "Array of ELEMENT_TYPE_PTR."
         ArrayByRef,                     // Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.
-        //E_SIG_ELEM_PTR                "ELEMENT_TYPE_PTR cannot be verified."
-        //E_SIG_VARARG                  "Unexpected vararg."
-        //E_SIG_VOID                    "Unexpected Void."
         ByrefOfByref,                   // ByRef of ByRef.
         //E_CODE_SIZE_ZERO              "Code size is zero."
-        //E_BAD_VARARG                  "Unrecognized use of vararg."
         TailCall,                       // Missing call/callvirt/calli.
         TailByRef,                      // Cannot pass ByRef to a tail call.
         //E_TAIL_RET                    "Missing ret."
@@ -174,33 +131,24 @@ namespace ILVerify
         TailStackEmpty,                 // Stack not empty after tail call.
         //E_METHOD_END                  "Method ends in the middle of an instruction."
         BadBranch,                      // Branch out of the method.
-        //E_FIN_OVERLAP                 "Finally handler blocks overlap."
         //E_LEXICAL_NESTING             "Lexical nesting."
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.
         Unaligned,                      // Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.
         //E_INNERMOST_FIRST             "Innermost exception blocks should be declared first."
-        //E_CALLI_VIRTUAL               "Calli not allowed on virtual methods."
         CallAbstract,                   // Call not allowed on abstract methods.
-        //E_NOT_IN_GC_HEAP              "Value type with NotInGCHeap attribute being created on the GC heap."
         TryNonEmptyStack,               // Attempt to enter a try block with nonempty stack.
         DelegateCtor,                   // Unrecognized arguments for delegate .ctor.
-        //E_DLGT_BB                     "Delegate .ctor not allowed at the start of a basic block when the function pointer argument is a virtual method."
         DelegatePattern,                // Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).
-        //E_DLGT_LDFTN                  "Ldftn or ldvirtftn instruction required before call to a delegate .ctor."
-        //E_FTN_ABSTRACT                "Attempt to load address of an abstract method."
         //E_SIG_C_VC                    "ELEMENT_TYPE_CLASS ValueClass in signature."
         //E_SIG_VC_C                    "ELEMENT_TYPE_VALUETYPE non-ValueClass in signature."
         //E_BOX_PTR_TO_STACK            "Box operation on TypedReference, ArgHandle, or ArgIterator."
         BoxByRef,                       // Cannot box byref.
         //E_SIG_BYREF_TB_AH             "ByRef of TypedReference, ArgHandle, or ArgIterator."
-        //E_SIG_ARRAY_TB_AH             "Array of TypedReference, ArgHandle, or ArgIterator."
         EndfilterStack,                 // Stack not empty when leaving an exception filter.
         DelegateCtorSigI,               // Unrecognized delegate .ctor signature; expected Native Int.
         DelegateCtorSigO,               // Unrecognized delegate .ctor signature; expected Object.
         //E_RA_PTR_TO_STACK             "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
-        //E_CATCH_VALUE_TYPE            "Value type not allowed as catch type."
         //E_CATCH_BYREF                 "ByRef not allowed as catch type."
-        //E_FIL_PRECEED_HND             "filter block should immediately precede handler block"
         LdvirtftnOnStatic,              // ldvirtftn on static.
         CallVirtOnStatic,               // callvirt on static.
         InitLocals,                     // initlocals must be set for verifiable methods with one or more local variables.
@@ -208,17 +156,6 @@ namespace ILVerify
 
         ////@GENERICSVER: new generics related error messages
         ExpectedValClassObjRefVariable, // Value type, ObjRef type or variable type expected.
-        //E_STACK_P_VALCLASS_OBJREF_VAR "Expected address of value type, ObjRef type or variable type on the stack."
-        //E_SIG_VAR_PARAM               "Unrecognized type parameter of enclosing class."
-        //E_SIG_MVAR_PARAM              "Unrecognized type parameter of enclosing method."
-        //E_SIG_VAR_ARG                 "Unrecognized type argument of referenced class instantiation."
-        //E_SIG_MVAR_ARG                "Unrecognized type argument of referenced method instantiation."
-        //E_SIG_GENERICINST             "Cannot resolve generic type."
-        //E_SIG_METHOD_INST             "Method instantiation contains non boxable type arguments."
-        //E_SIG_METHOD_PARENT_INST      "Method parent instantiation contains non boxable type arguments."
-        //E_SIG_FIELD_PARENT_INST       "Field parent instantiation contains non boxable type arguments."
-        //E_CALLCONV_NOT_GENERICINST    "Unrecognized calling convention for an instantiated generic method."
-        //E_TOKEN_BAD_METHOD_SPEC       "Unrecognized generic method in method instantiation."
         ReadOnly,                       // Missing ldelema or call following readonly prefix.
         Constrained,                    // Missing callvirt following constrained prefix.
 
