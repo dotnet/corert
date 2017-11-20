@@ -10,7 +10,8 @@
     <PackagePlatforms>x64;</PackagePlatforms>
     <PreventImplementationReference>true</PreventImplementationReference>
     <SkipValidatePackage>true</SkipValidatePackage>
-
+    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);</NuspecProperties>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,8 +31,12 @@
     <Dependency Include="System.Collections.Immutable">
       <Version>1.2.0</Version>
     </Dependency>
+  </ItemGroup>
 
-
+  <ItemGroup>
+    <File Include="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.targets" CopyToOutputDirectory="True">
+      <TargetPath>build</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
