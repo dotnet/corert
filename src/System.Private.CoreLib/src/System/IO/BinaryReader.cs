@@ -294,7 +294,7 @@ namespace System.IO
             stringLength = Read7BitEncodedInt();
             if (stringLength < 0)
             {
-                throw new IOException(SR.Format(SR.IO_IO_InvalidStringLen_Len, stringLength));
+                throw new IOException(SR.Format(SR.IO_InvalidStringLen_Len, stringLength));
             }
 
             if (stringLength == 0)
