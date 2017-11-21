@@ -1166,7 +1166,7 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 
 void Thread::EnsureRuntimeInitialized()
 {
-    while (PalInterlockedCompareExchangePointer(&g_RuntimeInitializingThread, this, NULL) != NULL)
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
     {
         PalSleep(1);
     }
@@ -1177,7 +1177,7 @@ void Thread::EnsureRuntimeInitialized()
         g_RuntimeInitializationCallback = NULL;
     }
 
-    PalInterlockedExchangePointer(&g_RuntimeInitializingThread, NULL);
+    PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
