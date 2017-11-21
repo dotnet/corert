@@ -277,7 +277,8 @@ LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           cmp          r2, r3
           bne          LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_r1)
           strex        r3, r1, [r0]
-          cbnz         r3, LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
+          cmp          r3, #0
+          bne          LOCAL_LABEL(RhpCheckedLockCmpXchgRetry)
           mov          r3, r2
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, r1
@@ -299,7 +300,8 @@ ALTERNATE_ENTRY RhpCheckedXchgAVLocation
 LOCAL_LABEL(RhpCheckedXchgRetry):
           ldrex        r2, [r0]
           strex        r3, r1, [r0]
-          cbnz         r3, LOCAL_LABEL(RhpCheckedXchgRetry)
+          cmp          r3, #0
+          bne          LOCAL_LABEL(RhpCheckedXchgRetry)
           mov          r0, r2
 
           DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, r1
