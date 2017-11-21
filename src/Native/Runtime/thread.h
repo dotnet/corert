@@ -142,6 +142,7 @@ private:
     void ResetCachedTransitionFrame();
     void CrossThreadUnhijack();
     void UnhijackWorker();
+    void EnsureRuntimeInitialized();
 #ifdef _DEBUG
     bool DebugIsSuspended();
 #endif

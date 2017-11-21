@@ -1127,11 +1127,9 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
     {
-        if (*g_RuntimeInitializationCallback != NULL && g_RuntimeInitializingThread != this)
+        if (g_RuntimeInitializationCallback != NULL && g_RuntimeInitializingThread != this)
         {
-            g_RuntimeInitializingThread = this;
-            (*g_RuntimeInitializationCallback)();
-            g_RuntimeInitializingThread = NULL;
+            EnsureRuntimeInitialized();
         }
 
         ThreadStore::AttachCurrentThread();
@@ -1164,6 +1162,22 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     {
         WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
+}
+
+void Thread::EnsureRuntimeInitialized()
+{
+    while (PalInterlockedCompareExchangePointer(&g_RuntimeInitializingThread, this, NULL) != NULL)
+    {
+        PalSleep(1);
+    }
+
+    if (g_RuntimeInitializationCallback != NULL)
+    {
+        g_RuntimeInitializationCallback();
+        g_RuntimeInitializationCallback = NULL;
+    }
+
+    PalInterlockedExchangePointer(&g_RuntimeInitializingThread, NULL);
 }
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
