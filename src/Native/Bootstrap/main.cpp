@@ -379,9 +379,9 @@ int main(int argc, char* argv[])
 #ifdef CORERT_DLL
 static struct InitializeRuntimePointerHelper
 {
-	InitializeRuntimePointerHelper()
-	{
+    InitializeRuntimePointerHelper()
+    {
         RhSetRuntimeInitializationCallback(&InitializeRuntime);
-	}
+    }
 } initializeRuntimePointerHelper;
 #endif // CORERT_DLL
