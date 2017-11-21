@@ -163,6 +163,43 @@ namespace Internal.IntrinsicSupport
             return true;
         }
 
+        // These functions look odd, as they are part of a complex series of compiler intrinsics
+        // designed to produce very high quality code for equality comparison cases without utilizing
+        // reflection like other platforms. The major complication is that the specification of
+        // IndexOf is that it is supposed to use IEquatable<T> if possible, but that requirement
+        // cannot be expressed in IL directly due to the lack of constraints.
+        // Instead, specialization at call time is used within the compiler. 
+        // 
+        // General Approach
+        // - Perform fancy redirection for EqualityComparerHelpers.GetComparerForReferenceTypesOnly<T>(). If T is a reference 
+        //   type or UniversalCanon, have this redirect to EqualityComparer<T>.get_Default, Otherwise, use 
+        //   the function as is. (will return null in that case)
+        // - Change the contents of the IndexOf functions to have a pair of loops. One for if 
+        //   GetComparerForReferenceTypesOnly returns null, and one for when it does not. 
+        //   - If it does not return null, call the EqualityComparer<T> code.
+        //   - If it does return null, use a special function StructOnlyEquals<T>(). 
+        //     - Calls to that function result in calls to a pair of helper function in 
+        //       EqualityComparerHelpers (StructOnlyEqualsIEquatable, or StructOnlyEqualsNullable) 
+        //       depending on whether or not they are the right function to call.
+        // - The end result is that in optimized builds, we have the same single function compiled size 
+        //   characteristics that the old EqualsOnlyComparer<T>.Equals function had, but we maintain 
+        //   correctness as well.
+        [Intrinsic]
+        internal static EqualityComparer<T> GetComparerForReferenceTypesOnly<T>()
+        {
+#if PROJECTN
+            // When T is a reference type or a universal canon type, then this will redirect to EqualityComparer<T>.Default.
+            return null;
+#else
+            return EqualityComparer<T>.Default;
+#endif
+        }
+
+        [Intrinsic]
+        internal static bool StructOnlyEquals<T>(T left, T right)
+        {
+            return left.Equals(right);
+        }
     }
 }
 
