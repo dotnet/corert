@@ -1205,8 +1205,6 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-extern "C" int main(int argc, char** argv);
-
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
 // executable module of the current process.
 //

@@ -361,11 +361,7 @@ int main(int argc, char* argv[])
     try
 #endif
     {
-#ifndef CORERT_DLL
         retval = __managed__Main(argc, argv);
-#else
-        retval = 0;
-#endif // !CORERT_DLL
     }
 #ifdef CPPCODEGEN
     catch (const char* &e)
