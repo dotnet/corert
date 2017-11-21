@@ -7,9 +7,6 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
-using AssemblyName = System.Reflection.AssemblyName;
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.IL.Stubs.StartupCode
 {
     /// <summary>
