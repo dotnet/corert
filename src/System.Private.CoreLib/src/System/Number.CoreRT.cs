@@ -585,6 +585,9 @@ namespace System
             return true;
         }
 
+#if PROJECTN
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+#endif
         private static unsafe void DecimalToNumber(Decimal value, ref Number.NumberBuffer number)
         {
             Decimal d = value;

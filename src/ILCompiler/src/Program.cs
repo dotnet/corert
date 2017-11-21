@@ -375,8 +375,13 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
+            // We don't do this for CppCodegen and Wasm, because those codegens are behind.
+            // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
+            // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
+            // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
 
             useScanner &= !_noScanner;
 
