@@ -1894,7 +1894,7 @@
   <data name="ArgumentOutOfRange_AddressSpace" xml:space="preserve">
     <value>The number of bytes cannot exceed the virtual address space on a 32 bit machine.</value>
   </data>
-  <data name="ArgumentOutOfRange_UIntPtrMaxMinusOne" xml:space="preserve">
+  <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
   </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">

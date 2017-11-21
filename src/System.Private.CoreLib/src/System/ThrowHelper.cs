@@ -251,6 +251,10 @@ namespace System
                     return "action";
                 case ExceptionArgument.comparison:
                     return "comparison";
+                case ExceptionArgument.exceptions:
+                    return "exceptions";
+                case ExceptionArgument.exception:
+                    return "exception";
                 case ExceptionArgument.pointer:
                     return "pointer";
                 case ExceptionArgument.start:
@@ -272,10 +276,6 @@ namespace System
                     return SR.ArgumentOutOfRange_Count;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
-                case ExceptionResource.Memory_ThrowIfDisposed:
-                    return SR.Memory_ThrowIfDisposed;
-                case ExceptionResource.Memory_OutstandingReferences:
-                    return SR.Memory_OutstandingReferences;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
                     return SR.NotSupported_ReadOnlyCollection;
                 case ExceptionResource.Arg_RankMultiDimNotSupported:
@@ -306,6 +306,16 @@ namespace System
                     return SR.NotSupported_KeyCollectionSet;
                 case ExceptionResource.NotSupported_ValueCollectionSet:
                     return SR.NotSupported_ValueCollectionSet;
+                case ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted:
+                    return SR.TaskT_TransitionToFinal_AlreadyCompleted;
+                case ExceptionResource.TaskCompletionSourceT_TrySetException_NullException:
+                    return SR.TaskCompletionSourceT_TrySetException_NullException;
+                case ExceptionResource.TaskCompletionSourceT_TrySetException_NoExceptions:
+                    return SR.TaskCompletionSourceT_TrySetException_NoExceptions;
+                case ExceptionResource.Memory_ThrowIfDisposed:
+                    return SR.Memory_ThrowIfDisposed;
+                case ExceptionResource.Memory_OutstandingReferences:
+                    return SR.Memory_OutstandingReferences;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -342,6 +352,8 @@ namespace System
         count,
         action,
         comparison,
+        exceptions,
+        exception,
         pointer,
         start
     }
@@ -354,8 +366,6 @@ namespace System
         ArgumentOutOfRange_Index,
         ArgumentOutOfRange_Count,
         Arg_ArrayPlusOffTooSmall,
-        Memory_ThrowIfDisposed,
-        Memory_OutstandingReferences,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
@@ -371,5 +381,10 @@ namespace System
         Serialization_NullKey,
         NotSupported_KeyCollectionSet,
         NotSupported_ValueCollectionSet,
+        TaskT_TransitionToFinal_AlreadyCompleted,
+        TaskCompletionSourceT_TrySetException_NullException,
+        TaskCompletionSourceT_TrySetException_NoExceptions,
+        Memory_ThrowIfDisposed,
+        Memory_OutstandingReferences,
     }
 }

@@ -4,13 +4,13 @@
 
 /*=============================================================================
 **
-** Class: MarshalDirectiveException
 **
 ** Purpose: This exception is thrown when the marshaller encounters a signature
 **          that has an invalid MarshalAs CA for a given argument or is not
 **          supported.
 **
 =============================================================================*/
+
 
 using System;
 using System.Runtime.Serialization;
