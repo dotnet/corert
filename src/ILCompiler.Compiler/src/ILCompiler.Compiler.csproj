@@ -318,6 +318,7 @@
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
@@ -347,6 +348,8 @@
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.Sorting.cs" />
+    <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.cs" />
+    <Compile Include="IL\Stubs\StartupCode\NativeLibraryStartupMethod.Sorting.cs" />
     <Compile Include="Logger.cs" />
   </ItemGroup>
   <ItemGroup>

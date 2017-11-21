@@ -33,6 +33,9 @@
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
 EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void*);
 
+static int (*g_RuntimeInitializationCallback)();
+static Thread* g_RuntimeInitializingThread;
+
 #ifdef _MSC_VER
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
@@ -1115,10 +1118,22 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     return true;
 }
 
+EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
+{
+    g_RuntimeInitializationCallback = fPtr;
+}
+
 void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
+    {
+        if (g_RuntimeInitializationCallback != NULL && g_RuntimeInitializingThread != this)
+        {
+            EnsureRuntimeInitialized();
+        }
+
         ThreadStore::AttachCurrentThread();
+    }
 
     // If the thread is already in cooperative mode, this is a bad transition.
     if (IsCurrentThreadInCooperativeMode())
@@ -1147,6 +1162,24 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     {
         WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
+}
+
+void Thread::EnsureRuntimeInitialized()
+{
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&g_RuntimeInitializingThread, this, NULL) != NULL)
+    {
+        PalSleep(1);
+    }
+
+    if (g_RuntimeInitializationCallback != NULL)
+    {
+        if (g_RuntimeInitializationCallback() != 0)
+            RhFailFast();
+
+        g_RuntimeInitializationCallback = NULL;
+    }
+
+    PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)

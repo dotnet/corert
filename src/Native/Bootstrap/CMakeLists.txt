@@ -14,3 +14,4 @@ if(NOT CLR_CMAKE_PLATFORM_WASM)
 endif(NOT CLR_CMAKE_PLATFORM_WASM)
 
 add_subdirectory(cpp)
+add_subdirectory(dll)
