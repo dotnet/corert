@@ -138,7 +138,10 @@ namespace Internal.IL
                     break;
                 case "EqualityComparerHelpers":
                     {
-                        if (methodName == "EnumOnlyEquals" && owningType.Namespace == "Internal.IntrinsicSupport")
+                        if (owningType.Namespace != "Internal.IntrinsicSupport")
+                            return null;
+
+                        if (methodName == "EnumOnlyEquals")
                         {
                             // EnumOnlyEquals would basically like to do this:
                             // static bool EnumOnlyEquals<T>(T x, T y) where T: struct => x == y;
@@ -173,11 +176,7 @@ namespace Internal.IL
                             },
                             Array.Empty<LocalVariableDefinition>(), null);
                         }
-                        break;
-                    }
-                case "Array":
-                    {
-                        if (methodName == "GetComparerForReferenceTypesOnly")
+                        else if (methodName == "GetComparerForReferenceTypesOnly")
                         {
                             TypeDesc elementType = method.Instantiation[0];
                             if (!elementType.IsRuntimeDeterminedSubtype
