@@ -1173,7 +1173,9 @@ void Thread::EnsureRuntimeInitialized()
 
     if (g_RuntimeInitializationCallback != NULL)
     {
-        g_RuntimeInitializationCallback();
+        if (g_RuntimeInitializationCallback() != 0)
+            RhFailFast();
+
         g_RuntimeInitializationCallback = NULL;
     }
 

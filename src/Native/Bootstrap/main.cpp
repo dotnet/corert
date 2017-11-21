@@ -296,16 +296,18 @@ static const pfn c_classlibFunctions[] = {
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
 #ifndef CORERT_DLL
+#define CORERT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 #else
+#define CORERT_ENTRYPOINT __managed__Startup
 extern "C" void __managed__Startup();
 #endif // !CORERT_DLL
 
-int InitializeRuntime()
+static int InitializeRuntime()
 {
     if (!RhInitialize())
         return -1;
@@ -315,11 +317,7 @@ int InitializeRuntime()
 #endif // CPPCODEGEN
 
 #ifndef CPPCODEGEN
-#ifndef CORERT_DLL
-    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Main);
-#else
-    void * osModule = PalGetModuleHandleFromPointer((void*)&__managed__Startup);
-#endif // !CORERT_DLL
+    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
