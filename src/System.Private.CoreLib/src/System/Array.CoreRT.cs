@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
+using Internal.IntrinsicSupport;
 using EEType = Internal.Runtime.EEType;
 
 #if BIT64
@@ -935,37 +936,6 @@ namespace System
             return ret;
         }
 
-        // These functions look odd, as they are part of a complex series of compiler intrinsics
-        // designed to produce very high quality code for equality comparison cases without utilizing
-        // reflection like other platforms. The major complication is that the specification of
-        // IndexOf is that it is supposed to use IEquatable<T> if possible, but that requirement
-        // cannot be expressed in IL directly due to the lack of constraints.
-        // Instead, specialization at call time is used within the compiler. 
-        // 
-        // General Approach
-        // - Perform fancy redirection for Array.GetComparerForReferenceTypesOnly<T>(). If T is a reference 
-        //   type or UniversalCanon, have this redirect to EqualityComparer<T>.get_Default, Otherwise, use 
-        //   the function as is. (will return null in that case)
-        // - Change the contents of the IndexOf functions to have a pair of loops. One for if 
-        //   GetComparerForReferenceTypesOnly returns null, and one for when it does not. 
-        //   - If it does not return null, call the EqualityComparer<T> code.
-        //   - If it does return null, use a special function StructOnlyEquals<T>(). 
-        //     - Calls to that function result in calls to a pair of helper function in 
-        //       EqualityComparerHelpers (StructOnlyEqualsIEquatable, or StructOnlyEqualsNullable) 
-        //       depending on whether or not they are the right function to call.
-        // - The end result is that in optimized builds, we have the same single function compiled size 
-        //   characteristics that the old EqualsOnlyComparer<T>.Equals function had, but we maintain 
-        //   correctness as well.
-        private static EqualityComparer<T> GetComparerForReferenceTypesOnly<T>()
-        {
-#if PROJECTN
-            // When T is a reference type or a universal canon type, then this will redirect to EqualityComparer<T>.Default.
-            return null;
-#else
-            return EqualityComparer<T>.Default;
-#endif
-        }
-
         // Wraps an IComparer inside an IComparer<Object>.
         private sealed class ComparerAsComparerT : IComparer<Object>
         {
@@ -1282,11 +1252,6 @@ namespace System
             }
         }
 
-        private static bool StructOnlyEquals<T>(T left, T right)
-        {
-            return left.Equals(right);
-        }
-
         private sealed partial class ArrayEnumerator : IEnumerator, ICloneable
         {
             public Object Current
@@ -1314,8 +1279,8 @@ namespace System
 
         private static int IndexOfImpl<T>(T[] array, T value, int startIndex, int count)
         {
-            // See comment above Array.GetComparerForReferenceTypesOnly for details
-            EqualityComparer<T> comparer = GetComparerForReferenceTypesOnly<T>();
+            // See comment in EqualityComparerHelpers.GetComparerForReferenceTypesOnly for details
+            EqualityComparer<T> comparer = EqualityComparerHelpers.GetComparerForReferenceTypesOnly<T>();
 
             int endIndex = startIndex + count;
             if (comparer != null)
@@ -1330,7 +1295,7 @@ namespace System
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (StructOnlyEquals<T>(array[i], value))
+                    if (EqualityComparerHelpers.StructOnlyEquals<T>(array[i], value))
                         return i;
                 }
             }
@@ -1340,8 +1305,8 @@ namespace System
 
         private static int LastIndexOfImpl<T>(T[] array, T value, int startIndex, int count)
         {
-            // See comment above Array.GetComparerForReferenceTypesOnly for details
-            EqualityComparer<T> comparer = GetComparerForReferenceTypesOnly<T>();
+            // See comment in EqualityComparerHelpers.GetComparerForReferenceTypesOnly for details
+            EqualityComparer<T> comparer = EqualityComparerHelpers.GetComparerForReferenceTypesOnly<T>();
 
             int endIndex = startIndex - count + 1;
             if (comparer != null)
@@ -1356,7 +1321,7 @@ namespace System
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (StructOnlyEquals<T>(array[i], value))
+                    if (EqualityComparerHelpers.StructOnlyEquals<T>(array[i], value))
                         return i;
                 }
             }

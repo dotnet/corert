@@ -39,6 +39,7 @@ namespace ILCompiler
         private string _ilDump;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
+        private bool _nativeLib;
         private bool _useSharedGenerics;
         private bool _useScanner;
         private bool _noScanner;
@@ -132,6 +133,7 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
+                syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("scandgmllog", ref _scanDgmlLogFileName, "Save result of scanner dependency analysis as DGML");
@@ -316,6 +318,12 @@ namespace ILCompiler
                         compilationRoots.Add(new RawMainMethodRootProvider(entrypointModule));
                     }
                 }
+                else if (_nativeLib)
+                {
+                    EcmaModule module = (EcmaModule)typeSystemContext.SystemModule;
+                    LibraryInitializers libraryInitializers = new LibraryInitializers(typeSystemContext, _isCppCodegen);
+                    compilationRoots.Add(new NativeLibraryInitializerRootProvider(module, libraryInitializers.LibraryInitializerMethods));
+                }
 
                 if (_multiFile)
                 {
@@ -337,7 +345,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null)
+                    if (entrypointModule == null && !_nativeLib)
                         throw new Exception("No entrypoint module");
 
                     // TODO: Wasm fails to compile some of the xported methods due to missing opcodes
@@ -367,8 +375,13 @@ namespace ILCompiler
             else
                 builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
+            // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
+            // We don't do this for CppCodegen and Wasm, because those codegens are behind.
+            // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
+            // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
+            // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
 
             useScanner &= !_noScanner;
 
