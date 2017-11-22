@@ -85,11 +85,8 @@ namespace System
 
             private const int DEC_SCALE_MAX = 28;
 
-            private const uint SNGBIAS = 126;
-            private const uint DBLBIAS = 1022;
-
             private const uint TenToPowerNine = 1000000000;
-            private static readonly Split64 s_tenToPowerEighteen = new Split64() { int64 = 1000000000000000000 };
+            private const ulong TenToPowerEighteen = 1000000000000000000;
 
             // The maximum power of 10 that a 32 bit integer can store
             private const Int32 MaxInt32Scale = 9;
@@ -145,9 +142,6 @@ namespace System
                 1e80
             };
 
-            // Value taken via reverse engineering the double that corrisponds to 2^65. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
-            private const double ds2to64 = 1.8446744073709552e+019;
-
             #region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
@@ -159,8 +153,7 @@ namespace System
                 //    ULONG sign:1;
                 //} SNGSTRUCT;
 
-                uint* pf = (uint*)&f;
-                return (*pf >> 23) & 0xFFu;
+                return (byte)(*(uint*)&f >> 23);
             }
 
             private static unsafe uint GetExponent(double d)
@@ -171,16 +164,7 @@ namespace System
                 //   DWORDLONG signexp:12;
                 // } DBLSTRUCT;
 
-                ulong* pd = (ulong*)&d;
-                return (uint)(*pd >> 52) & 0x7FFu;
-            }
-
-            // Use table but enable for computation if necessary
-            private static double GetDoublePower10(int ix)
-            {
-                if (ix >= 0 && ix < s_doublePowers10.Length)
-                    return s_doublePowers10[ix];
-                return Math.Pow(10, ix);
+                return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
             }
 
             private static ulong DivMod64by32(ulong num, uint den)
@@ -192,40 +176,29 @@ namespace System
                 return sdl.int64;
             }
 
-            private static ulong DivMod32by32(uint num, uint den)
-            {
-                Split64 sdl = new Split64();
-
-                sdl.Low32 = num / den;
-                sdl.High32 = num % den;
-                return sdl.int64;
-            }
-
             private static ulong UInt32x32To64(uint a, uint b)
             {
                 return (ulong)a * (ulong)b;
             }
 
-            private static ulong UInt64x64To128(Split64 sdlOp1, Split64 sdlOp2, out ulong dlHi)
+            private static ulong UInt64x64To128(ulong a, ulong b, out ulong dlHi)
             {
-                Split64 sdlTmp1 = new Split64();
-                Split64 sdlTmp2 = new Split64();
-                Split64 sdlTmp3 = new Split64();
+                ulong low = (uint)a * (ulong)(uint)b; // lo partial prod
+                ulong mid = (uint)a * (b >> 32); // mid 1 partial prod
+                ulong high = (a >> 32) * (b >> 32);
+                high += mid >> 32;
+                low += mid <<= 32;
+                if (low < mid)  // test for carry
+                    high++;
 
-                sdlTmp1.int64 = UInt32x32To64(sdlOp1.Low32, sdlOp2.Low32); // lo partial prod
-                sdlTmp2.int64 = UInt32x32To64(sdlOp1.Low32, sdlOp2.High32); // mid 1 partial prod
-                sdlTmp1.High32 += sdlTmp2.Low32;
-                if (sdlTmp1.High32 < sdlTmp2.Low32)  // test for carry
-                    sdlTmp2.High32++;
-                sdlTmp3.int64 = UInt32x32To64(sdlOp1.High32, sdlOp2.High32) + sdlTmp2.High32;
-                sdlTmp2.int64 = UInt32x32To64(sdlOp1.High32, sdlOp2.Low32);
-                sdlTmp1.High32 += sdlTmp2.Low32;
-                if (sdlTmp1.High32 < sdlTmp2.Low32)  // test for carry
-                    sdlTmp2.High32++;
-                sdlTmp3.int64 += sdlTmp2.High32;
+                mid = (a >> 32) * (uint)b;
+                high += mid >> 32;
+                low += mid <<= 32;
+                if (low < mid)  // test for carry
+                    high++;
 
-                dlHi = sdlTmp3.int64;
-                return sdlTmp1.int64;
+                dlHi = high;
+                return low;
             }
 
             /***
@@ -1658,26 +1631,26 @@ ReturnZero:
             //**********************************************************************
             internal static void VarDecFromR4(float input, out Decimal pdecOut)
             {
-                int iExp;    // number of bits to left of binary point
-                int iPower;
-                uint ulMant;
-                double dbl;
-                Split64 sdlLo = new Split64();
-                Split64 sdlHi = new Split64();
-                int lmax, cur;  // temps used during scale reduction
-
                 pdecOut = new Decimal();
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
                 //
-                iExp = (int)(GetExponent(input) - SNGBIAS);
+                const uint SNGBIAS = 126;
+                int iExp = (int)(GetExponent(input) - SNGBIAS);
                 if (iExp < -94)
                     return; // result should be zeroed out
 
                 if (iExp > 96)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    goto ThrowOverflow;
+
+                uint flags = 0;
+                if (input < 0)
+                {
+                    input = -input;
+                    flags = SignMask;
+                }
 
                 // Round the input to a 7-digit integer.  The R4 format has
                 // only 7 digits of precision, and we want to keep garbage digits
@@ -1687,10 +1660,9 @@ ReturnZero:
                 // the exponent by log10(2).  Using scaled integer multiplcation, 
                 // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
                 //
-                dbl = input;
-                if (dbl < 0)
-                    dbl *= -1;
-                iPower = 6 - ((iExp * 19728) >> 16);
+                double dbl = input;
+                int iPower = 6 - ((iExp * 19728) >> 16);
+                // iPower is between -22 and 35
 
                 if (iPower >= 0)
                 {
@@ -1699,29 +1671,29 @@ ReturnZero:
                     if (iPower > DEC_SCALE_MAX)
                         iPower = DEC_SCALE_MAX;
 
-                    dbl = dbl * s_doublePowers10[iPower];
+                    dbl *= s_doublePowers10[iPower];
                 }
                 else
                 {
                     if (iPower != -1 || dbl >= 1E7)
-                        dbl = dbl / GetDoublePower10(-iPower);
+                        dbl /= s_doublePowers10[-iPower];
                     else
                         iPower = 0; // didn't scale it
                 }
 
-                System.Diagnostics.Debug.Assert(dbl < 1E7);
+                Debug.Assert(dbl < 1E7);
                 if (dbl < 1E6 && iPower < DEC_SCALE_MAX)
                 {
                     dbl *= 10;
                     iPower++;
-                    System.Diagnostics.Debug.Assert(dbl >= 1E6);
+                    Debug.Assert(dbl >= 1E6);
                 }
 
                 // Round to integer
                 //
-                ulMant = (uint)dbl;
+                uint ulMant = (uint)dbl;
                 dbl -= (double)ulMant;  // difference between input & integer
-                if (dbl > 0.5 || (dbl == 0.5) && (ulMant & 1) != 0)
+                if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
                     ulMant++;
 
                 if (ulMant == 0)
@@ -1735,7 +1707,6 @@ ReturnZero:
                     if (iPower < 10)
                     {
                         pdecOut.Low64 = UInt32x32To64(ulMant, s_powers10[iPower]);
-                        pdecOut.High = 0;
                     }
                     else
                     {
@@ -1743,27 +1714,26 @@ ReturnZero:
                         //
                         if (iPower > 18)
                         {
-                            sdlLo.int64 = UInt32x32To64(ulMant, s_powers10[iPower - 18]);
-                            ulong tmplong;
-                            sdlLo.int64 = UInt64x64To128(sdlLo, s_tenToPowerEighteen, out tmplong);
-                            sdlHi.int64 = tmplong;
-
-                            if (sdlHi.High32 != 0)
-                                throw new OverflowException(SR.Overflow_Decimal);
+                            ulong low64 = UInt32x32To64(ulMant, s_powers10[iPower - 18]);
+                            low64 = UInt64x64To128(low64, TenToPowerEighteen, out ulong tmplong);
+                            ulong hi64 = tmplong;
+                            if (hi64 > uint.MaxValue)
+                                goto ThrowOverflow;
+                            pdecOut.Low64 = low64;
+                            pdecOut.High = (uint)hi64;
                         }
                         else
                         {
-                            sdlLo.int64 = UInt32x32To64(ulMant, s_powers10[iPower - 9]);
-                            sdlHi.int64 = UInt32x32To64(TenToPowerNine, sdlLo.High32);
-                            sdlLo.int64 = UInt32x32To64(TenToPowerNine, sdlLo.Low32);
-                            sdlHi.int64 += sdlLo.High32;
-                            sdlLo.High32 = sdlHi.Low32;
-                            sdlHi.Low32 = sdlHi.High32;
+                            ulong low64 = UInt32x32To64(ulMant, s_powers10[iPower - 9]);
+                            ulong hi64 = UInt32x32To64(TenToPowerNine, (uint)(low64 >> 32));
+                            low64 = UInt32x32To64(TenToPowerNine, (uint)low64);
+                            pdecOut.Low = (uint)low64;
+                            hi64 += low64 >> 32;
+                            pdecOut.Mid = (uint)hi64;
+                            hi64 >>= 32;
+                            pdecOut.High = (uint)hi64;
                         }
-                        pdecOut.Low64 = sdlLo.int64;
-                        pdecOut.High = sdlHi.Low32;
                     }
-                    pdecOut.Scale = 0;
                 }
                 else
                 {
@@ -1775,34 +1745,54 @@ ReturnZero:
                     // we can't scale by any more than the power we used to
                     // get the integer.
                     //
-                    // DivMod32by32 returns the quotient in Lo, the remainder in Hi.
-                    //
-                    lmax = iPower < 6 ? iPower : 6;
+                    int lmax = iPower;
+                    if (lmax > 6)
+                        lmax = 6;
 
-                    // lmax is the largest power of 10 to try, lmax <= 6.
-                    // We'll try powers 4, 2, and 1 unless they're too big.
-                    //
-                    for (cur = 4; cur > 0; cur >>= 1)
+                    if ((ulMant & 0xF) == 0 && lmax >= 4)
                     {
-                        if (cur > lmax)
-                            continue;
-
-                        sdlLo.int64 = DivMod32by32(ulMant, s_powers10[cur]);
-
-                        if (sdlLo.High32 == 0)
+                        const uint den = 10000;
+                        uint div = ulMant / den;
+                        if (ulMant == div * den)
                         {
-                            ulMant = sdlLo.Low32;
-                            iPower -= cur;
-                            lmax -= cur;
+                            ulMant = div;
+                            iPower -= 4;
+                            lmax -= 4;
                         }
                     }
+
+                    if ((ulMant & 3) == 0 && lmax >= 2)
+                    {
+                        const uint den = 100;
+                        uint div = ulMant / den;
+                        if (ulMant == div * den)
+                        {
+                            ulMant = div;
+                            iPower -= 2;
+                            lmax -= 2;
+                        }
+                    }
+
+                    if ((ulMant & 1) == 0 && lmax >= 1)
+                    {
+                        const uint den = 10;
+                        uint div = ulMant / den;
+                        if (ulMant == div * den)
+                        {
+                            ulMant = div;
+                            iPower--;
+                        }
+                    }
+
+                    flags |= (uint)iPower << ScaleShift;
                     pdecOut.Low = ulMant;
-                    pdecOut.Mid = 0;
-                    pdecOut.High = 0;
-                    pdecOut.Scale = iPower;
                 }
 
-                pdecOut.IsNegative = input < 0;
+                pdecOut.uflags = flags;
+                return;
+
+ThrowOverflow:
+                throw new OverflowException(SR.Overflow_Decimal);
             }
 
             //**********************************************************************
@@ -1810,30 +1800,26 @@ ReturnZero:
             //**********************************************************************
             internal static void VarDecFromR8(double input, out Decimal pdecOut)
             {
-                int iExp;    // number of bits to left of binary point
-                int iPower;  // power-of-10 scale factor
-                Split64 sdlMant = new Split64();
-                Split64 sdlLo = new Split64();
-                double dbl;
-                int lmax, cur;  // temps used during scale reduction
-                uint ulPwrCur;
-                uint ulQuo;
-
                 pdecOut = new Decimal();
 
                 // The most we can scale by is 10^28, which is just slightly more
                 // than 2^93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
                 //
-                iExp = (int)(GetExponent(input) - DBLBIAS);
+                const uint DBLBIAS = 1022;
+                int iExp = (int)(GetExponent(input) - DBLBIAS);
                 if (iExp < -94)
-                    return;  // result should be zeroed out
+                    return; // result should be zeroed out
 
                 if (iExp > 96)
-                    throw new OverflowException(SR.Overflow_Decimal);
-                dbl = input;
-                if (dbl < 0)
-                    dbl *= -1;
+                    goto ThrowOverflow;
+
+                uint flags = 0;
+                if (input < 0)
+                {
+                    input = -input;
+                    flags = SignMask;
+                }
 
                 // Round the input to a 15-digit integer.  The R8 format has
                 // only 15 digits of precision, and we want to keep garbage digits
@@ -1843,8 +1829,9 @@ ReturnZero:
                 // the exponent by log10(2).  Using scaled integer multiplcation, 
                 // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
                 //
-
-                iPower = 14 - ((iExp * 19728) >> 16);
+                double dbl = input;
+                int iPower = 14 - ((iExp * 19728) >> 16);
+                // iPower is between -14 and 43
 
                 if (iPower >= 0)
                 {
@@ -1853,32 +1840,32 @@ ReturnZero:
                     if (iPower > DEC_SCALE_MAX)
                         iPower = DEC_SCALE_MAX;
 
-                    dbl = dbl * s_doublePowers10[iPower];
+                    dbl *= s_doublePowers10[iPower];
                 }
                 else
                 {
                     if (iPower != -1 || dbl >= 1E15)
-                        dbl = dbl / GetDoublePower10(-iPower);
+                        dbl /= s_doublePowers10[-iPower];
                     else
                         iPower = 0; // didn't scale it
                 }
 
-                System.Diagnostics.Debug.Assert(dbl < 1E15);
+                Debug.Assert(dbl < 1E15);
                 if (dbl < 1E14 && iPower < DEC_SCALE_MAX)
                 {
                     dbl *= 10;
                     iPower++;
-                    System.Diagnostics.Debug.Assert(dbl >= 1E14);
+                    Debug.Assert(dbl >= 1E14);
                 }
 
                 // Round to int64
                 //
-                sdlMant.int64 = (ulong)dbl;
-                dbl -= (double)sdlMant.int64;  // dif between input & integer
-                if (dbl > 0.5 || dbl == 0.5 && (sdlMant.Low32 & 1) != 0)
-                    sdlMant.int64++;
+                ulong ulMant = (ulong)dbl;
+                dbl -= (double)ulMant;  // difference between input & integer
+                if (dbl > 0.5 || dbl == 0.5 && (ulMant & 1) != 0)
+                    ulMant++;
 
-                if (sdlMant.int64 == 0)
+                if (ulMant == 0)
                     return;  // result should be zeroed out
 
                 if (iPower < 0)
@@ -1888,27 +1875,27 @@ ReturnZero:
                     iPower = -iPower;
                     if (iPower < 10)
                     {
-                        sdlLo.int64 = UInt32x32To64(sdlMant.Low32, s_powers10[iPower]);
-                        sdlMant.int64 = UInt32x32To64(sdlMant.High32, s_powers10[iPower]);
-                        sdlMant.int64 += sdlLo.High32;
-                        sdlLo.High32 = sdlMant.Low32;
-                        sdlMant.Low32 = sdlMant.High32;
+                        var pow10 = s_powers10[iPower];
+                        ulong low64 = UInt32x32To64((uint)ulMant, pow10);
+                        ulong hi64 = UInt32x32To64((uint)(ulMant >> 32), pow10);
+                        pdecOut.Low = (uint)low64;
+                        hi64 += low64 >> 32;
+                        pdecOut.Mid = (uint)hi64;
+                        hi64 >>= 32;
+                        pdecOut.High = (uint)hi64;
                     }
                     else
                     {
                         // Have a big power of 10.
                         //
-                        System.Diagnostics.Debug.Assert(iPower <= 14);
-                        ulong tmpValue;
-                        sdlLo.int64 = UInt64x64To128(sdlMant, new Split64((ulong)s_doublePowers10[iPower]), out tmpValue);
-                        sdlMant.int64 = tmpValue;
-
-                        if (sdlMant.High32 != 0)
-                            throw new OverflowException(SR.Overflow_Decimal);
+                        Debug.Assert(iPower <= 14);
+                        ulong low64 = UInt64x64To128(ulMant, s_ulongPowers10[iPower - 1], out ulong tmplong);
+                        ulong hi64 = tmplong;
+                        if (hi64 > uint.MaxValue)
+                            goto ThrowOverflow;
+                        pdecOut.Low64 = low64;
+                        pdecOut.High = (uint)hi64;
                     }
-                    pdecOut.Low64 = sdlLo.int64;
-                    pdecOut.High = sdlMant.Low32;
-                    pdecOut.Scale = 0;
                 }
                 else
                 {
@@ -1920,50 +1907,66 @@ ReturnZero:
                     // we can't scale by any more than the power we used to
                     // get the integer.
                     //
-                    // DivMod64by32 returns the quotient in Lo, the remainder in Hi.
-                    //
-                    lmax = iPower < 14 ? iPower : 14;
+                    int lmax = iPower;
+                    if (lmax > 14)
+                        lmax = 14;
 
-                    // lmax is the largest power of 10 to try, lmax <= 14.
-                    // We'll try powers 8, 4, 2, and 1 unless they're too big.
-                    //
-                    for (cur = 8; cur > 0; cur >>= 1)
+                    if ((byte)ulMant == 0 && lmax >= 8)
                     {
-                        if (cur > lmax)
-                            continue;
-
-                        ulPwrCur = s_powers10[cur];
-
-                        if (sdlMant.High32 >= ulPwrCur)
+                        const uint den = 100000000;
+                        ulong div = ulMant / den;
+                        if (ulMant == div * den)
                         {
-                            // Overflow if we try to divide in one step.
-                            //
-                            sdlLo.int64 = DivMod64by32(sdlMant.High32, ulPwrCur);
-                            ulQuo = sdlLo.Low32;
-                            sdlLo.Low32 = sdlMant.Low32;
-                            sdlLo.int64 = DivMod64by32(sdlLo.int64, ulPwrCur);
-                        }
-                        else
-                        {
-                            ulQuo = 0;
-                            sdlLo.int64 = DivMod64by32(sdlMant.int64, ulPwrCur);
-                        }
-
-                        if (sdlLo.High32 == 0)
-                        {
-                            sdlMant.High32 = ulQuo;
-                            sdlMant.Low32 = sdlLo.Low32;
-                            iPower -= cur;
-                            lmax -= cur;
+                            ulMant = div;
+                            iPower -= 8;
+                            lmax -= 8;
                         }
                     }
 
-                    pdecOut.High = 0;
-                    pdecOut.Scale = iPower;
-                    pdecOut.Low64 = sdlMant.int64;
+                    if (((uint)ulMant & 0xF) == 0 && lmax >= 4)
+                    {
+                        const uint den = 10000;
+                        ulong div = ulMant / den;
+                        if (ulMant == div * den)
+                        {
+                            ulMant = div;
+                            iPower -= 4;
+                            lmax -= 4;
+                        }
+                    }
+
+                    if (((uint)ulMant & 3) == 0 && lmax >= 2)
+                    {
+                        const uint den = 100;
+                        ulong div = ulMant / den;
+                        if (ulMant == div * den)
+                        {
+                            ulMant = div;
+                            iPower -= 2;
+                            lmax -= 2;
+                        }
+                    }
+
+                    if (((uint)ulMant & 1) == 0 && lmax >= 1)
+                    {
+                        const uint den = 10;
+                        ulong div = ulMant / den;
+                        if (ulMant == div * den)
+                        {
+                            ulMant = div;
+                            iPower--;
+                        }
+                    }
+
+                    flags |= (uint)iPower << ScaleShift;
+                    pdecOut.Low64 = ulMant;
                 }
 
-                pdecOut.IsNegative = input < 0;
+                pdecOut.uflags = flags;
+                return;
+
+ThrowOverflow:
+                throw new OverflowException(SR.Overflow_Decimal);
             }
 
             //**********************************************************************
@@ -1979,8 +1982,11 @@ ReturnZero:
             //**********************************************************************
             internal static double VarR8FromDec(ref Decimal pdecIn)
             {
+                // Value taken via reverse engineering the double that corrisponds to 2^65. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
+                const double ds2to64 = 1.8446744073709552e+019;
+
                 double dbl = ((double)pdecIn.Low64 +
-                    (double)pdecIn.High * ds2to64) / GetDoublePower10(pdecIn.Scale);
+                      (double)pdecIn.High * ds2to64) / s_doublePowers10[pdecIn.Scale];
 
                 if (pdecIn.IsNegative)
                     dbl = -dbl;
