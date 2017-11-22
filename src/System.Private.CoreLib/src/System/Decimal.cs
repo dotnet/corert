@@ -248,9 +248,7 @@ namespace System
 
         public static long ToOACurrency(Decimal value)
         {
-            long cy;
-            DecCalc.VarCyFromDec(ref value, out cy);
-            return cy;
+            return DecCalc.VarCyFromDec(ref value);
         }
 
         private static bool IsValid(uint flags) => (flags & ~(SignMask | ScaleMask)) == 0 && ((flags & ScaleMask) <= (28 << 16));
